@@ -1,5 +1,6 @@
 %Error-UNSUPPORTED: Unsupported: Using --protect-ids with --public
                     ... Suggest remove --public.
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Warning-INSECURE: Using --protect-ids with --trace may expose private design details
                    ... Suggest remove --trace.
                    ... Use "/* verilator lint_off INSECURE */" and lint_on around source to disable this message.

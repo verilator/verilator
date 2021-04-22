@@ -2,6 +2,7 @@
                                             : ... In instance t.sub
    17 |    wire [5:0] assunu1 = 0;   
       |               ^~~~~~~
+                 ... For warning description see https://verilator.org/warn/UNUSED?v=4.201
                  ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
 %Warning-UNDRIVEN: t/t_lint_unused_bad.v:21:17: Bits of signal are not driven: 'udrb2'[14:13,11]
                                               : ... In instance t.sub

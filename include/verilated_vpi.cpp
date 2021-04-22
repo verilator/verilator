@@ -171,29 +171,51 @@ public:
     vlsint32_t num() const { return m_num; }
 };
 
-class VerilatedVpioParam final : public VerilatedVpio {
-    const VerilatedVar* m_varp;
-    const VerilatedScope* m_scopep;
+class VerilatedVpioVarBase VL_NOT_FINAL : public VerilatedVpio {
+protected:
+    const VerilatedVar* m_varp = nullptr;
+    const VerilatedScope* m_scopep = nullptr;
+    const VerilatedRange& get_range() const {
+        // Determine number of dimensions and return outermost
+        return (m_varp->dims() > 1) ? m_varp->unpacked() : m_varp->packed();
+    }
 
 public:
-    VerilatedVpioParam(const VerilatedVar* varp, const VerilatedScope* scopep)
+    VerilatedVpioVarBase(const VerilatedVar* varp, const VerilatedScope* scopep)
         : m_varp{varp}
         , m_scopep{scopep} {}
-    virtual ~VerilatedVpioParam() override = default;
-
-    static VerilatedVpioParam* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioParam*>(reinterpret_cast<VerilatedVpio*>(h));
+    explicit VerilatedVpioVarBase(const VerilatedVpioVarBase* varp) {
+        if (varp) {
+            m_varp = varp->m_varp;
+            m_scopep = varp->m_scopep;
+        }
     }
-    virtual vluint32_t type() const override { return vpiParameter; }
+    static VerilatedVpioVarBase* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioVarBase*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
     const VerilatedVar* varp() const { return m_varp; }
-    void* varDatap() const { return m_varp->datap(); }
     const VerilatedScope* scopep() const { return m_scopep; }
+    virtual vluint32_t size() const override { return get_range().elements(); }
+    virtual const VerilatedRange* rangep() const override { return &get_range(); }
     virtual const char* name() const override { return m_varp->name(); }
     virtual const char* fullname() const override {
         static VL_THREAD_LOCAL std::string t_out;
         t_out = std::string(m_scopep->name()) + "." + name();
         return t_out.c_str();
     }
+};
+
+class VerilatedVpioParam final : public VerilatedVpioVarBase {
+public:
+    VerilatedVpioParam(const VerilatedVar* varp, const VerilatedScope* scopep)
+        : VerilatedVpioVarBase(varp, scopep) {}
+    virtual ~VerilatedVpioParam() override = default;
+
+    static VerilatedVpioParam* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioParam*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    virtual vluint32_t type() const override { return vpiParameter; }
+    void* varDatap() const { return m_varp->datap(); }
 };
 
 class VerilatedVpioRange final : public VerilatedVpio {
@@ -251,9 +273,7 @@ public:
     virtual const char* fullname() const override { return m_scopep->name(); }
 };
 
-class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpio {
-    const VerilatedVar* m_varp = nullptr;
-    const VerilatedScope* m_scopep = nullptr;
+class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     vluint8_t* m_prevDatap = nullptr;  // Previous value of data, for cbValueChange
     union {
         vluint8_t u8[4];
@@ -263,23 +283,17 @@ class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpio {
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
     vlsint32_t m_index = 0;
-    const VerilatedRange& get_range() const {
-        // Determine number of dimensions and return outermost
-        return (m_varp->dims() > 1) ? m_varp->unpacked() : m_varp->packed();
-    }
 
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
-        : m_varp{varp}
-        , m_scopep{scopep} {
+        : VerilatedVpioVarBase(varp, scopep) {
         m_mask.u32 = VL_MASK_I(varp->packed().elements());
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
     }
-    explicit VerilatedVpioVar(const VerilatedVpioVar* varp) {
+    explicit VerilatedVpioVar(const VerilatedVpioVar* varp)
+        : VerilatedVpioVarBase(varp) {
         if (varp) {
-            m_varp = varp->m_varp;
-            m_scopep = varp->m_scopep;
             m_mask.u32 = varp->m_mask.u32;
             m_entSize = varp->m_entSize;
             m_varDatap = varp->m_varDatap;
@@ -295,22 +309,12 @@ public:
     static VerilatedVpioVar* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    const VerilatedVar* varp() const { return m_varp; }
-    const VerilatedScope* scopep() const { return m_scopep; }
     vluint32_t mask() const { return m_mask.u32; }
     vluint8_t mask_byte(int idx) { return m_mask.u8[idx & 3]; }
     vluint32_t entSize() const { return m_entSize; }
     vluint32_t index() const { return m_index; }
     virtual vluint32_t type() const override {
         return (varp()->dims() > 1) ? vpiMemory : vpiReg;  // but might be wire, logic
-    }
-    virtual vluint32_t size() const override { return get_range().elements(); }
-    virtual const VerilatedRange* rangep() const override { return &get_range(); }
-    virtual const char* name() const override { return m_varp->name(); }
-    virtual const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string t_out;
-        t_out = std::string(m_scopep->name()) + "." + name();
-        return t_out.c_str();
     }
     void* prevDatap() const { return m_prevDatap; }
     void* varDatap() const { return m_varDatap; }
@@ -862,40 +866,40 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
         "vpiVarSelect",
         "vpiWait",
         "vpiWhile",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
+        "vpiCondition",
+        "vpiDelay",
+        "vpiElseStmt",
+        "vpiForIncStmt",
+        "vpiForInitStmt",
+        "vpiHighConn",
+        "vpiLhs",
+        "vpiIndex",
+        "vpiLeftRange",
+        "vpiLowConn",
+        "vpiParent",
+        "vpiRhs",
+        "vpiRightRange",
+        "vpiScope",
+        "vpiSysTfCall",
+        "vpiTchkDataTerm",
+        "vpiTchkNotifier",
+        "vpiTchkRefTerm",
+        "vpiArgument",
+        "vpiBit",
+        "vpiDriver",
+        "vpiInternalScope",
+        "vpiLoad",
+        "vpiModDataPathIn",
+        "vpiModPathIn",
+        "vpiModPathOut",
+        "vpiOperand",
+        "vpiPortInst",
+        "vpiProcess",
+        "vpiVariables",
+        "vpiUse",
+        "vpiExpr",
+        "vpiPrimitive",
+        "vpiStmt",
         "vpiAttribute",
         "vpiBitSelect",
         "vpiCallback",
@@ -910,27 +914,28 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
         "vpiRegArray",
         "vpiSwitchArray",
         "vpiUdpArray",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
-        "*undefined*",
+        "vpiActiveTimeFormat",
+        "vpiInTerm",
+        "vpiInstanceArray",
+        "vpiLocalDriver",
+        "vpiLocalLoad",
+        "vpiOutTerm",
+        "vpiPorts",
+        "vpiSimNet",
+        "vpiTaskFunc",
         "vpiContAssignBit",
         "vpiNamedEventArray",
         "vpiIndexedPartSelect",
-        "*undefined*",
-        "*undefined*",
+        "vpiBaseExpr",
+        "vpiWidthExpr",
         "vpiGenScopeArray",
         "vpiGenScope",
-        "vpiGenVar"
+        "vpiGenVar",
+        "vpiAutomatics"
     };
     // clang-format on
     if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
-    return names[(vpiVal <= vpiGenVar) ? vpiVal : 0];
+    return names[(vpiVal <= vpiAutomatics) ? vpiVal : 0];
 }
 const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE {
     // clang-format off
@@ -1121,11 +1126,141 @@ void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
     SELF_CHECK_ENUM_STR(strFromVpiVal, vpiRawFourStateVal);
 
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAlways);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAssignStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAssignment);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBegin);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiCase);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiCaseItem);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiConstant);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiContAssign);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDeassign);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDefParam);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDelayControl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDisable);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiEventControl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiEventStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiFor);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiForce);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiForever);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiFork);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiFuncCall);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiFunction);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiGate);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIf);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIfElse);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiInitial);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIntegerVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiInterModPath);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIterator);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIODecl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiMemory);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiMemoryWord);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiModPath);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiModule);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiNamedBegin);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiNamedEvent);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiNamedFork);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiNetBit);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiNullStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiOperation);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiParamAssign);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiParameter);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPartSelect);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPathTerm);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPort);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPortBit);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPrimTerm);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRealVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiReg);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRegBit);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRelease);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRepeat);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRepeatControl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSchedEvent);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSpecParam);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSwitch);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSysFuncCall);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSysTaskCall);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTableEntry);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTask);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTaskCall);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTchk);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTchkTerm);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTimeVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTimeQueue);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUdp);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUdpDefn);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUserSystf);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiVarSelect);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiWait);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiWhile);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiCondition);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDelay);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiElseStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiForIncStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiForInitStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiHighConn);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLhs);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIndex);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLeftRange);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLowConn);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiParent);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRhs);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRightRange);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiScope);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSysTfCall);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTchkDataTerm);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTchkNotifier);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTchkRefTerm);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiArgument);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBit);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDriver);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiInternalScope);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLoad);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiModDataPathIn);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiModPathIn);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiModPathOut);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiOperand);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPortInst);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiProcess);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiVariables);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUse);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiExpr);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPrimitive);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStmt);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAttribute);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBitSelect);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiCallback);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDelayTerm);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDelayDevice);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiFrame);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiGateArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiModuleArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPrimitiveArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiNetArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRange);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRegArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSwitchArray);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUdpArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiActiveTimeFormat);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiInTerm);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiInstanceArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLocalDriver);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLocalLoad);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiOutTerm);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPorts);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSimNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTaskFunc);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiContAssignBit);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiNamedEventArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIndexedPartSelect);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBaseExpr);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiWidthExpr);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiGenScopeArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiGenScope);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiGenVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAutomatics);
 
     SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiCondition);
     SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiStmt);
@@ -1302,7 +1437,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
     VL_VPI_ERROR_RESET_();
     switch (type) {
     case vpiLeftRange: {
-        if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+        if (VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object)) {
             if (VL_UNLIKELY(!vop->rangep())) return nullptr;
             return (new VerilatedVpioConst(vop->rangep()->left()))->castVpiHandle();
         } else if (VerilatedVpioRange* vop = VerilatedVpioRange::castp(object)) {
@@ -1315,7 +1450,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         return nullptr;
     }
     case vpiRightRange: {
-        if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+        if (VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object)) {
             if (VL_UNLIKELY(!vop->rangep())) return nullptr;
             return (new VerilatedVpioConst(vop->rangep()->right()))->castVpiHandle();
         } else if (VerilatedVpioRange* vop = VerilatedVpioRange::castp(object)) {
@@ -1333,7 +1468,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         return (new VerilatedVpioConst(vop->index()))->castVpiHandle();
     }
     case vpiScope: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         return (new VerilatedVpioScope(vop->scopep()))->castVpiHandle();
     }
@@ -1437,18 +1572,18 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     }
     case vpiDirection: {
         // By forthought, the directions already are vpi enumerated
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->varp()->vldir();
     }
     case vpiScalar:  // FALLTHRU
     case vpiVector: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return (property == vpiVector) ^ (vop->varp()->dims() == 0);
     }
     case vpiSize: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->size();
     }

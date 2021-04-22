@@ -9,7 +9,7 @@
 // This test exercises the use of DPI to access signals and registers in a
 // module hierarchy in a uniform fashion. See the discussion at
 //
-// https://www.veripool.org/boards/3/topics/show/752-Verilator-Command-line-specification-of-public-access-to-variables
+// https://github.com/verilator/verilator/issues/1750
 //
 // We need to test read and write access to:
 // - scalars

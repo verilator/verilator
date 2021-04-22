@@ -23,15 +23,15 @@ Welcome to Verilator
         * Compiles into multithreaded C++, or SystemC
         * Creates XML to front-end your own tools
      - |Logo|
-   * - |verilator multithreaded performance bg min|
+   * - |verilator multithreaded performance|
      - **Fast**
         * Outperforms many commercial simulators
         * Single- and multi-threaded output models
    * - **Widely Used**
         * Wide industry and academic deployment
         * Out-of-the-box support from Arm, and RISC-V vendor IP
-     - |verilator usage 400x200 min|
-   * - |verilator community 400x125 min|
+     - |verilator usage|
+   * - |verilator community|
      - **Community Driven & Openly Licensed**
         * Guided by the `CHIPS Alliance`_ and `Linux Foundation`_
         * Open, and free as in both speech and beer
@@ -40,7 +40,7 @@ Welcome to Verilator
         * Commercial support contracts
         * Design support contracts
         * Enhancement contracts
-     - |verilator support 400x125 min|
+     - |verilator support|
 
 
 What Verilator Does
@@ -85,15 +85,6 @@ Modelsim, Cadence Incisive/NC-Verilog, Synopsys VCS, VTOC, and Pragmatic
 CVer/CVC). But, Verilator is open-sourced, so you can spend on computes
 rather than licenses. Thus Verilator gives you the best cycles/dollar.
 
-For more information on how Verilator stacks up to some of the other
-closed-sourced and open-sourced Verilog simulators, see the `Verilog
-Simulator Benchmarks
-<https://www.veripool.org/verilog_sim_benchmarks.html>`_.  (If you
-benchmark Verilator, please see the notes in the `Verilator manual (PDF)
-<https://verilator.org/verilator_doc.pdf>`_, and also if possible post on
-the forums the results; there may be additional tweaks possible.)
-
-
 Installation & Documentation
 ============================
 
@@ -123,7 +114,7 @@ We appreciate and welcome your contributions in whatever form; please see
 `Contributing to Verilator
 <https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.rst>`_.
 Thanks to our `Contributors and Sponsors
-<https://verilator.org/verilator_doc.html#CONTRIBUTORS>`_.
+<https://verilator.org/guide/latest/contributors.html>`_.
 
 Verilator also supports and encourages commercial support models and
 organizations; please see `Verilator Commercial Support
@@ -154,7 +145,7 @@ Perl Artistic License Version 2.0. See the documentation for more details.
 .. _Icarus Verilog: http://iverilog.icarus.com
 .. _Linux Foundation: https://www.linuxfoundation.org
 .. |Logo| image:: https://www.veripool.org/img/verilator_256_200_min.png
-.. |verilator multithreaded performance bg min| image:: https://www.veripool.org/img/verilator_multithreaded_performance_bg-min.png
-.. |verilator usage 400x200 min| image:: https://www.veripool.org/img/verilator_usage_400x200-min.png
-.. |verilator community 400x125 min| image:: https://www.veripool.org/img/verilator_community_400x125-min.png
-.. |verilator support 400x125 min| image:: https://www.veripool.org/img/verilator_support_400x125-min.png
+.. |verilator multithreaded performance| image:: https://www.veripool.org/img/verilator_multithreaded_performance_bg-min.png
+.. |verilator usage| image:: https://www.veripool.org/img/verilator_usage_400x200-min.png
+.. |verilator community| image:: https://www.veripool.org/img/verilator_community_400x125-min.png
+.. |verilator support| image:: https://www.veripool.org/img/verilator_support_400x125-min.png

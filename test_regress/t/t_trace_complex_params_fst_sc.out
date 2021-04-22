@@ -1,5 +1,5 @@
 $date
-	Thu Apr  1 15:17:39 2021
+	Mon Apr 19 17:07:10 2021
 
 $end
 $version
@@ -57,15 +57,19 @@ $upscope $end
 $scope module p3 $end
 $var parameter 32 B PARAM $end
 $upscope $end
+$scope module a_module_instantiation_with_a_very_long_name_that_once_its_signals_get_concatenated_and_inlined_will_almost_certainly_result_in_them_getting_hashed $end
+$var parameter 32 C PARAM $end
+$upscope $end
 $upscope $end
 $scope module $unit $end
-$var bit 1 C global_bit $end
+$var bit 1 D global_bit $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
-#0
 $dumpvars
-1C
+#0
+1D
+b00000000000000000000000000000100 C
 b00000000000000000000000000000011 B
 b00000000000000000000000000000010 A
 b00000000000000000000000000000000 @
@@ -100,7 +104,6 @@ b0000 $
 b00 #
 b00000000000000000000000000000000 "
 0!
-$end
 #10
 1!
 b00000000000000000000000000000001 "

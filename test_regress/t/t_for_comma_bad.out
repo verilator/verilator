@@ -1,6 +1,7 @@
 %Error-UNSUPPORTED: t/t_for_comma_bad.v:27:23: Unsupported: for loop initialization after the first comma
    27 |       for (integer a=0, integer b=0; a<1; ) ;
       |                       ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error-UNSUPPORTED: t/t_for_comma_bad.v:28:23: Unsupported: for loop initialization after the first comma
    28 |       for (integer a=0, integer b=0; a<1; a=a+1) ;
       |                       ^

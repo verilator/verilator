@@ -535,83 +535,20 @@ verilator_gantt - Create Gantt chart of multi-threaded execution
 
 =head1 SYNOPSIS
 
-Creates a visual representation to help analyze Verilator multithreaded
-simulation performance, by showing when each macro-task starts and ends,
-and showing when each thread is busy or idle.
+Verilator_gantt creates a visual representation to help analyze Verilator
+multithreaded simulation performance, by showing when each macro-task
+starts and ends, and showing when each thread is busy or idle.
 
-The generated Gantt chart has time on the X-axis. Times shown are to the
-scale printed, i.e. a certain about of time for each character width.  The
-Y-axis shows threads, each thread's execution is shown on one line.  That
-line shows "[" at the position in time when it executes.
+For documentation see
+L<https://verilator.org/guide/latest/exe_verilator_gantt.html>.
 
-Following the "[" is the CPU number the task executed on, followed by zero
-or more "-" to make the width of the characters match the scaled execution
-time, followed by a "]".  If the scale is too small, the CPU number and
-mtask number will not be printed.  If the scale is very small, a "&"
-indicates multiple mtasks started at that time position.
+=head1 ARGUMENT SUMMARY
 
-Also creates a value change dump (VCD) format dump file which may be viewed
-in a waveform viewer (e.g. C<GTKWave>).  See below.
-
-=head1 USAGE
-
-  Build with --prof-threads.
-
-  Run a sim with +verilator+prof+threads+window 2.
-
-  This will create profile_threads.dat.
-
-  Then run:
-
-  verilator_gantt profile_threads.dat
-
-  The report will be printed on standard output, this also generates
-  profile_threads.vcd
-
-  View profile_threads.vcd in a waveform viewer.
-
-=head1 VCD SIGNALS
-
-In waveforms there are the following signals. Most signals the "decimal"
-format will remove the leading zeros and make the traces easier to read.
-
-parallelism: The number of mtasks active at this time, for best performance
-this will match the thread count. You may want to use an "analog step"
-format to view this signal.
-
-cpu#_thread: For the given CPU number, the thread number executing.
-
-mtask#_cpu; For the given mtask id, the CPU it is executing on.
-
-thread#_mtask: For the given thread number, the mtask id executing.
-
-=head1 ARGUMENTS
-
-=over 4
-
-=item I<filename>
-
-The filename to read data from, defaults to "profile_threads.dat".
-
-=item --help
-
-Displays this message and program version and exits.
-
-=item --scale I<n>
-
-On the X-axis of the generated Gantt chart, each character represents this
-many time units. (On x86, time units are rdtsc ticks.)  Defaults to 0,
-which will automatically compute a reasonable scale where no two mtasks
-need to fit into same character width's worth of scaled time.
-
-=item --no-vcd
-
-=item --vcd I<filename>
-
-Set output filename for vcd dump, or disable. Default is
-verilator_gantt.vcd.
-
-=back
+    <filename>    Filename to read data from, default "profile_threads.dat".
+    --help        Displays this message and program version and exits.
+    --scale I<n>  Number of characters per time step.
+    --no-vcd      Do not create a VCD file.
+    --vcd <filename>   Set output filename for vcd dump, default "verilator_gantt.vcd."
 
 =head1 DISTRIBUTION
 
@@ -624,13 +561,12 @@ Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-=head1 AUTHORS
-
-Wilson Snyder <wsnyder@wsnyder.org>
-
 =head1 SEE ALSO
 
 C<verilator>
+
+and L<https://verilator.org/guide/latest/exe_verilator_gantt.html> for
+detailed documentation.
 
 =cut
 

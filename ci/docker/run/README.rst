@@ -1,4 +1,3 @@
-=====================================
 Verilator Executable Docker Container
 =====================================
 
@@ -60,7 +59,7 @@ You can also use the container to build Verilator at a specific commit:
 
 
 Internals
-=========
+---------
 
 The Dockerfile builds Verilator and removes the tree when completed to
 reduce the image size. The entrypoint is set as a wrapper script

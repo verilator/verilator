@@ -2,8 +2,9 @@
                                                 : ... In instance t
    24 |          j.e(0),
       |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error: Internal Error: t/t_fuzz_genintf_bad.v:24:11: ../V3Width.cpp:#: Unlinked pin data type
                                                     : ... In instance t
    24 |          j.e(0),
       |           ^
-                        ... See the manual and https://verilator.org for more assistance.
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

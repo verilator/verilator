@@ -39,6 +39,9 @@ $timescale   1ps $end
    $var wire  2 % v_strp [1:0] $end
    $var wire  4 & v_strp_strp [3:0] $end
    $var wire  2 ' v_unip_strp [1:0] $end
+   $scope module a_module_instantiation_with_a_very_long_name_that_once_its_signals_get_concatenated_and_inlined_will_almost_certainly_result_in_them_getting_hashed $end
+    $var wire 32 J PARAM [31:0] $end
+   $upscope $end
    $scope module p2 $end
     $var wire 32 H PARAM [31:0] $end
    $upscope $end
@@ -92,6 +95,7 @@ b00000000 F
 0G
 b00000000000000000000000000000010 H
 b00000000000000000000000000000011 I
+b00000000000000000000000000000100 J
 #10
 b00000000000000000000000000000001 $
 b11 %

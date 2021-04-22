@@ -5,4 +5,5 @@
                     t/t_tri_pull2_bad.v:22:13: ... Location of conflicting pull.
    22 |    pulldown p2(A);
       |             ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error: Exiting due to

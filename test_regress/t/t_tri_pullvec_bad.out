@@ -5,6 +5,7 @@
                     t/t_tri_pullvec_bad.v:12:11: ... Location of conflicting pull.
    12 |    pullup p0 (w[0]);
       |           ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error-UNSUPPORTED: t/t_tri_pullvec_bad.v:14:13: Unsupported: Conflicting pull directions.
                                                : ... In instance t
    14 |    pulldown p2 (w[2]);

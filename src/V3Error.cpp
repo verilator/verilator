@@ -39,6 +39,7 @@ bool V3Error::s_errorSuppressed = false;
 std::array<bool, V3ErrorCode::_ENUM_MAX> V3Error::s_describedEachWarn;
 std::array<bool, V3ErrorCode::_ENUM_MAX> V3Error::s_pretendError;
 bool V3Error::s_describedWarnings = false;
+bool V3Error::s_describedWeb = false;
 V3Error::MessagesSet V3Error::s_messages;
 V3Error::ErrorExitCb V3Error::s_errorExitCb = nullptr;
 
@@ -225,16 +226,24 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     }
     if (!s_errorSuppressed
         && !(s_errorCode == V3ErrorCode::EC_INFO || s_errorCode == V3ErrorCode::USERINFO)) {
+        const bool anError = isError(s_errorCode, s_errorSuppressed);
+        if (s_errorCode >= V3ErrorCode::EC_FIRST_NAMED && !s_describedWeb) {
+            s_describedWeb = true;
+            std::cerr << warnMore() << "... For " << (anError ? "error" : "warning")
+                      << " description see https://verilator.org/warn/" << s_errorCode.ascii()
+                      << "?v=" << PACKAGE_VERSION_NUMBER_STRING << endl;
+        }
         if (!s_describedEachWarn[s_errorCode] && !s_pretendError[s_errorCode]) {
             s_describedEachWarn[s_errorCode] = true;
             if (s_errorCode >= V3ErrorCode::EC_FIRST_WARN && !s_describedWarnings) {
+                s_describedWarnings = true;
                 std::cerr << warnMore() << "... Use \"/* verilator lint_off "
                           << s_errorCode.ascii()
                           << " */\" and lint_on around source to disable this message." << endl;
-                s_describedWarnings = true;
             }
             if (s_errorCode.dangerous()) {
-                std::cerr << warnMore() << "*** See the manual before disabling this,\n";
+                std::cerr << warnMore() << "*** See https://verilator.org/warn/"
+                          << s_errorCode.ascii() << " before disabling this,\n";
                 std::cerr << warnMore() << "else you may end up with different sim results."
                           << endl;
             }
@@ -248,7 +257,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
                 s_tellManual = 2;
             }
         }
-        if (isError(s_errorCode, s_errorSuppressed)) {
+        if (anError) {
             incErrors();
         } else {
             incWarnings();
@@ -259,10 +268,10 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
             if (!inFatal) {
                 inFatal = true;
                 if (s_tellManual == 1) {
-                    std::cerr
-                        << warnMore()
-                        << "... See the manual and https://verilator.org for more assistance."
-                        << endl;
+                    std::cerr << warnMore()
+                              << "... See the manual at https://verilator.org/verilator_doc.html "
+                                 "for more assistance."
+                              << endl;
                     s_tellManual = 2;
                 }
 #ifndef V3ERROR_NO_GLOBAL_
@@ -276,7 +285,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
             }
 
             vlAbortOrExit();
-        } else if (isError(s_errorCode, s_errorSuppressed)) {
+        } else if (anError) {
             // We don't dump tree on any error because a Visitor may be in middle of
             // a tree cleanup and cause a false broken problem.
             if (s_errorExitCb) s_errorExitCb();

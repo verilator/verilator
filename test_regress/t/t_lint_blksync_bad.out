@@ -2,11 +2,12 @@
                                              : ... Suggest delayed assignments (<=)
    24 |       sync_blk = 1'b1;
       |                ^
+                 ... For warning description see https://verilator.org/warn/BLKSEQ?v=4.201
                  ... Use "/* verilator lint_off BLKSEQ */" and lint_on around source to disable this message.
 %Warning-COMBDLY: t/t_lint_blksync_bad.v:31:18: Delayed assignments (<=) in non-clocked (non flop or latch) block
                                               : ... Suggest blocking assignments (=)
    31 |       combo_nblk <= 1'b1;
       |                  ^~
-                  *** See the manual before disabling this,
+                  *** See https://verilator.org/warn/COMBDLY before disabling this,
                   else you may end up with different sim results.
 %Error: Exiting due to

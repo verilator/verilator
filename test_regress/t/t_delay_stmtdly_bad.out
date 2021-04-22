@@ -1,6 +1,7 @@
 %Warning-ASSIGNDLY: t/t_delay.v:22:13: Unsupported: Ignoring delay on this assignment/primitive.
    22 |    assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
       |             ^~~~~~~~~~~~~~~~~~
+                    ... For warning description see https://verilator.org/warn/ASSIGNDLY?v=4.201
                     ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
 %Warning-ASSIGNDLY: t/t_delay.v:27:19: Unsupported: Ignoring delay on this assignment/primitive.
    27 |          dly0 <= #0 32'h11;

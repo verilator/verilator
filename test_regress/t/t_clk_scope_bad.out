@@ -2,5 +2,6 @@
                                            : ... In instance t.p2
    36 |       q <= d;
       |            ^
+                  ... For warning description see https://verilator.org/warn/CLKDATA?v=4.201
                   ... Use "/* verilator lint_off CLKDATA */" and lint_on around source to disable this message.
 %Error: Exiting due to

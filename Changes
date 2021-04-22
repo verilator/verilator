@@ -11,8 +11,13 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.201 devel
 ==========================
 
+**Major:**
+
+* Documentation has been rewritten into a book format.
+
 **Minor:**
 
+* Add an URL on warnings to point to the manual's description.
 * Add EOFNEWLINE warning when missing a newline at EOF.
 * Changed TIMESCALEMOD from error into a warning.
 * Verilated signals now use VlWide and VlPacked in place of C arrays.
@@ -30,6 +35,8 @@ Verilator 4.201 devel
 * Fix interface localparam access (#2859). [Todd Strader]
 * Fix Cygwin example compile issues (#2856). [Mark Shaw]
 * Fix select of with index variable (#2880). [Alexander Grobman]
+* Fix cmake version number to be numeric (#2881). [Yuri Victorovich]
+* Fix V3Premit infinite loop on always read-and-write (#2898). [Raynard Qiao]
 
 
 Verilator 4.200 2021-03-12
@@ -169,7 +176,7 @@ Verilator 4.102 2020-10-15
 * Support # as a comment in -f files (#2497). [phantom-killua]
 * Support 'this' (#2585). [Rafal Kapuscik]
 * Support defines for FST tracing (#2592). [Markus Krause]
-* Support |=> inside properties (#1292). [Peter Monsson]
+* Support non-overapping implication inside properties (#1292). [Peter Monsson]
 * Fix timescale with --hierarchical (#2554). [Yutetsu TAKATSUKASA]
 * Fix cmake build with --hierarchical (#2560). [Yutetsu TAKATSUKASA]
 * Fix -G dropping public indication (#2561). [Andrew Goessling]
@@ -195,7 +202,7 @@ Verilator 4.100 2020-09-07
 * Support (with limitations) class extern, class extends, virtual class.
 * Support $urandom, $urandom_range without stability.
 * Support assume property. [Peter Monsson]
-* Support |=> inside properties (#1292). [Peter Monsson]
+* Support non-overapping implication inside properties (#1292). [Peter Monsson]
 * Fix false DECLFILENAME on black-boxed modules (#2430). [Philipp Wagner]
 * Fix naming of "id : begin" blocks.
 * Fix class constructor error on assignments to const.
@@ -383,7 +390,7 @@ Verilator 4.028 2020-02-08
 * Add loc column location in XML (replaces fl). (#2122) [Pieter Kapsenberg]
 * Add error on misused define. [Topa Tota]
 * Add parameter to set maximum signal width. (#2082) [Øyvind Harboe]
-* Add warning on genvar in normal for loop. (#2143) [yurivict]
+* Add warning on genvar in normal for loop. (#2143) [Yuri Victorovich]
 * Fix VPI scope naming for public modules. [Nandu Raj]
 * Fix FST tracing of enums inside structs. [fsiegle]
 * Fix WIDTH warning on </<= of narrower value. (#2141) [agrobman]
@@ -401,7 +408,7 @@ Verilator 4.026 2020-01-11
 **Minor:**
 
 * Support bounded queues.
-* Support implication operator "|->" in assertions. (#2069) [Peter Monsson]
+* Support non-overlapping implication operator in assertions. (#2069) [Peter Monsson]
 * Support string compare, ato*, etc methods. (#1606) [Yutetsu TAKATSUKASA]
 * Support immediate cover statements.
 * Ignore `uselib to end-of-line. (#1634) [Frederic Antonin]
@@ -1172,7 +1179,7 @@ Verilator 3.866 2014-11-15
 * Add public enums. (#833) [Jonathon Donaldson]
 * Trace_off now operates on cells. (#826) [Lane Brooks]
 * Fix public parameters in unused packages. (#804) [Jonathon Donaldson]
-* Fix select when partially out-of-bound. (#823) [Cliffort Wolf]
+* Fix select when partially out-of-bound. (#823) [Clifford Wolf]
 * Fix generate unrolling with function call. (#830) [Steven Slatter]
 * Fix cast-to-size context-determined sizing. (#828) [Geoff Barrett]
 * Fix not tracing modules following primitives. (#837) [Jie Xu]
@@ -1513,7 +1520,7 @@ Verilator 3.833 2012-04-15
 **Minor:**
 
 * Support += and -= in standard for loops. (#463) [Alex Solomatnikov]
-* Fix processing unused parametrized modules. (#469) (#470)  [Alex Solomatnikov]
+* Fix processing unused parameterized modules. (#469) (#470)  [Alex Solomatnikov]
 * Add SELRANGE as warning instead of error. (#477) [Alex Solomatnikov]
 * Add readme.pdf and internal.pdf and doxygen. (#483)  [by Jeremy Bennett]
 * Fix change detections on arrays. (#364)  [John Stevenson, Alex Solomatnikov]
@@ -1585,7 +1592,7 @@ Verilator 3.824 2011-10-25
 **Minor:**
 
 * Fix "always @ (* )". (#403) (#404)  [Walter Lavino]
-* Add ASSIGNIN as suppressable error. [Jeremy Bennett]
+* Add ASSIGNIN as suppressible error. [Jeremy Bennett]
 * Fix 3.823 constructor core dump on Debian. (#401)  [Ahmed El-Mahmoudy]
 
 
@@ -1667,7 +1674,7 @@ Verilator 3.811 2011-02-14
 
 * Report error on duplicated or empty pins. (#321)  [Christian Leber]
 * Report error on function call output tied to constant. [Bernard Deadman]
-* Throw UNUSED/UNDRIVEN only once per net in a parametrized module.
+* Throw UNUSED/UNDRIVEN only once per net in a parameterized module.
 * Fix internal error on functions called as SV tasks. [Bernard Deadman]
 * Fix internal error on non-inlined inout pins. [Jeff Winston]
 * Fix false BLKSEQ on non-unrolled for loop indexes. [Jeff Winston]
@@ -1970,7 +1977,7 @@ Verilator 3.700 2009-01-08
 * Line coverage now aggregates by hierarchy automatically.
   Previously this would be done inside SystemPerl, which was slower.
 * Minor performance improvements of Verilator compiler runtime.
-* Coverage of each parametarized module is counted separately. [Bob Fredieu]
+* Coverage of each parameterized module is counted separately. [Bob Fredieu]
 * Fix creating parameterized modules when no parameter values are changed.
 * Fix certain generate-if cells causing "clone" error. [Stephane Laurent]
 * Fix line coverage of public functions. [Soon Koh]
@@ -2381,7 +2388,7 @@ Verilator 3.620 2006-10-04 Stable
 * Optimize variables set to constants within basic blocks for ~3%.
 * Default make no longer makes the docs; if you edit the documentation.
   sources, run "make info" to get them.
-* Optimize additional boolean identities (a|a = a, etc.)
+* Optimize additional Boolean identities (a|a = a, etc.)
 * Fix coredump when dotted cross-ref inside task call. [Eugene Weber]
 * Fix dotted variables in always sensitivity lists. [Allan Cochrane]
 

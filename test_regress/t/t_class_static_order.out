@@ -2,6 +2,7 @@
                                                   : ... In instance t
    23 |    static ClsZ z = new;
       |                ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error-UNSUPPORTED: t/t_class_static_order.v:34:16: Unsupported: 'static' class members
                                                   : ... In instance t
    34 |    static ClsA a = new;

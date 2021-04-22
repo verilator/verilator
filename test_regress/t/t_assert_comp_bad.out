@@ -10,6 +10,7 @@
                                              : ... In instance t
    12 |       $warning;
       |       ^~~~~~~~
+                   ... For warning description see https://verilator.org/warn/USERWARN?v=4.201
                    ... Use "/* verilator lint_off USERWARN */" and lint_on around source to disable this message.
 %Warning-USERWARN: t/t_assert_comp_bad.v:13:7: User elaboration-time warning
                                              : ... In instance t

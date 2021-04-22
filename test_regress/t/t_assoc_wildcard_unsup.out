@@ -1,4 +1,5 @@
 %Error-UNSUPPORTED: t/t_assoc_wildcard_unsup.v:25:19: Unsupported: [*] wildcard associative arrays
    25 |          string a [*];
       |                   ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error: Exiting due to

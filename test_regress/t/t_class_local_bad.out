@@ -5,6 +5,7 @@
                      t/t_class_local_bad.v:71:20: ... Location of definition
    15 |    local int m_loc = 2;
       |              ^~~~~
+                     ... For error description see https://verilator.org/warn/ENCAPSULATED?v=4.201
 %Error-ENCAPSULATED: t/t_class_local_bad.v:72:20: 'm_prot' is hidden as 'protected' within this context (IEEE 1800-2017 8.18)
                                                 : ... In instance t
    72 |       bad(); if (c.m_prot != 20) $stop;

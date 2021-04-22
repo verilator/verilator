@@ -2,4 +2,5 @@
                                                : ... In instance t
    16 |    sub sub(i, o);
       |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error: Exiting due to

@@ -160,122 +160,28 @@ verilator_coverage - Verilator coverage analyzer
 
 Verilator_coverage processes Verilated model-generated coverage reports.
 
-With --annotate, it reads the specified coverage data file and generates
-annotated source code with coverage metrics annotated.  If multiple
-coverage points exist on the same source code line, additional lines will
-be inserted to report the additional points.
+For documentation see
+L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
 
-Additional Verilog-XL-style standard arguments specify the search paths
-necessary to find the source code that the coverage analysis was performed
-on.
+=head1 ARGUMENT SUMMARY
 
-To filter those items to be included in coverage, you may read
-logs/coverage.dat into an editor and do a M-x keep-lines to include only
-those statistics of interest and save to a new .dat file.
+    <filename>    Specify input data filename, default "coverage.dat"
+    --annotate <output_dir>       Directory name for source annotation.
+    --annotate-all                All files should be shown.
+    --annotate-min <count>        Minimum occurrence count for uncovered.
+    --help                        Displays this message and version and exits.
+    --rank                        Compute relative importance of tests.
+    --unlink                      With --write, unlink all inputs
+    --version                     Displays program version and exits.
+    --write <filename>            Write aggregate coverage results.
+    --write-info <filename.info>  Write lcov .info.
 
-For Verilog conditions that should never occur, either add a $stop
-statement to the appropriate statement block, or see the Verilator
-documentation on "// verilator coverage_off" and "coverage_off".  This will
-remove the coverage points after the model is re-Verilated.
-
-=head1 ARGUMENTS
-
-=over 4
-
-=item I<filename>
-
-Specify input data file. May be repeated to read multiple inputs.  If no
-data file is specified, by default coverage.dat is read.
-
-=item --annotate I<output_directory>
-
-Specifies the directory name that source files with annotated coverage data
-should be written to.
-
-=item --annotate-all
-
-Specifies all files should be shown.  By default, only those source files
-which have low coverage are written to the output directory.
-
-=item --annotate-min I<count>
-
-Specifies the minimum occurrence count that should be flagged if the
-coverage point does not include a specified threshold.  Defaults to 10.
-
-=item --help
-
-Displays this message and program version and exits.
-
-=item --rank
-
-Print an experimental report listing the relative importance of each test
-in covering all of the coverage points.  The report shows "Covered" which
-indicates the number of points that test covers; a test is considered to
-cover a point if it has a bucket count of at least 1. The "rank" column has
-a higher number t indicate the test is more important, and rank 0 means the
-test does not need to be run to cover the points.  "RankPts" indicates the
-number of coverage points this test will contribute to overall coverage if
-all tests are run in the order of highest to lowest rank.
-
-=item --unlink
-
-When using --write to combine coverage data, unlink all input files after
-the output has been created.
-
-=item --version
-
-Displays program version and exits.
-
-=item --write I<filename>
-
-Specifies the aggregate coverage results, summed across all the files,
-should be written to the given filename in verilator_coverage data format.
-This is useful in scripts to combine many sequential runs into one master
-coverage file.
-
-=item --write-info I<filename.info>
-
-Specifies the aggregate coverage results, summed across all the files,
-should be written to the given filename in C<lcov> .info format.
-This may be used to use C<lcov> to aggregate or generate reports.
-
-The info format loses data compared to the Verilator coverage data format;
-the info will all forms of coverage converted to line style coverage, and
-if there are multiple coverage points on a single line, the minimum
-coverage across those points will be used to report coverage of the line.
-
-=back
-
-=head1 VERILOG ARGUMENTS
-
-The following arguments are compatible with GCC, VCS and most Verilog
-programs.
-
-=over 4
-
-=item +libext+I<ext>+I<ext>...
-
-Defines the extensions for Verilog files.
-
-=item +define+I<var>+I<value>
-=item -DI<var>=I<value>
-
-Defines the given variable.
-
-=item +incdir+I<dir>
-=item -II<dir>
-
-Specifies a directory for finding include files.
-
-=item -f I<file>
-
-Specifies a file containing additional command line arguments.
-
-=item -y I<dir>
-
-Specifies a module search directory.
-
-=back
+    +libext+I<ext>+I<ext>...      Extensions for Verilog files.
+    +define+I<var>+I<value>       Defines the given variable.
+    -DI<var>=I<value>             Defines the given variable.
+    +incdir+I<dir>                Add directory for finding include files.
+    -II<dir>                      Add directory for finding include files.
+    -y I<dir>                     Specifies module search directory.
 
 =head1 DISTRIBUTION
 
@@ -288,15 +194,14 @@ Artistic License Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-=head1 AUTHORS
-
-Wilson Snyder <wsnyder@wsnyder.org>
-
 =head1 SEE ALSO
 
 C<verilator>, C<lcov>
 
 L<verilator_coverage --help> which is the source for this document.
+
+and L<https://verilator.org/guide/latest/exe_verilator_coverage.html> for
+detailed documentation.
 
 =cut
 

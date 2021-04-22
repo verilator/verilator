@@ -1,8 +1,8 @@
 |Logo|
 
-===================
+*******************
 Verilator Internals
-===================
+*******************
 
 .. contents::
    :depth: 3
@@ -81,7 +81,7 @@ Key Classes Used in the Verilator Flow
 
 
 ``AstNode``
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 The AST is represented at the top level by the class ``AstNode``. This
 abstract class has derived classes for the individual components (e.g.
@@ -115,7 +115,7 @@ pointer to the ``AstNode`` currently being processed.
 
 
 ``AstNVisitor``
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 The passes are implemented by AST visitor classes. These are implemented by
 subclasses of the abstract class, ``AstNVisitor``. Each pass creates an
@@ -124,7 +124,7 @@ the pass.
 
 
 ``V3Graph``
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 A number of passes use graph algorithms, and the class ``V3Graph`` is
 provided to represent those graphs. Graphs are directed, and algorithms are
@@ -134,7 +134,7 @@ documentation of this class.
 
 
 ``V3GraphVertex``
-~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^
 
 ``V3GraphVertex`` is the base class for vertices in a graph. Vertices have
 an associated ``fanout``, ``color`` and ``rank``, which may be used in
@@ -156,7 +156,7 @@ in the form:
 
 
 ``V3GraphEdge``
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 ``V3GraphEdge`` is the base class for directed edges between pairs of
 vertices. Edges have an associated ``weight`` and may also be made
@@ -171,7 +171,7 @@ used in dot output. Typically users provided derived classes from
 
 
 ``V3GraphAlg``
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 This is the base class for graph algorithms. It implements a ``bool``
 method, ``followEdge`` which algorithms can use to decide whether an edge
@@ -204,7 +204,7 @@ synchronization cost is not prohibitive with so few nodes.
 
 
 Partitioning
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 
 Our partitioner is similar to the one Vivek Sarkar described in his 1989
 paper *Partitioning and Scheduling Parallel Programs for Multiprocessors*.
@@ -213,7 +213,7 @@ Let's define some terms:
 
 
 Par Factor
-~~~~~~~~~~
+^^^^^^^^^^
 
 The available parallelism or "par-factor" of a DAG is the total cost to
 execute all nodes, divided by the cost to execute the longest critical path
@@ -223,7 +223,7 @@ synchronization are zero.
 
 
 Macro Task
-~~~~~~~~~~
+^^^^^^^^^^
 
 When the partitioner coarsens the graph, it combines nodes together.  Each
 fine-grained node represents an atomic "task"; combined nodes in the
@@ -235,7 +235,7 @@ ends.)
 
 
 Edge Contraction
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 Verilator's partitioner, like Sarkar's, primarily relies on "edge
 contraction" to coarsen the graph. It starts with one macro-task per atomic
@@ -243,7 +243,7 @@ task and iteratively combines pairs of edge-connected macro-tasks.
 
 
 Local Critical Path
-~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^
 
 Each node in the graph has a "local" critical path. That's the critical
 path from the start of the graph to the start of the node, plus the node's
@@ -263,7 +263,8 @@ it's not guaranteed to produce the best partition (which Sarkar proves is
 NP-hard).
 
 
-Estimating Logic Costs ~~~~~~~~~~~~~~~~~~~~~~
+Estimating Logic Costs
+^^^^^^^^^^^^^^^^^^^^^^
 
 To compute the cost of any given path through the graph, Verilator
 estimates an execution cost for each task. Each macro-task has an execution
@@ -284,7 +285,7 @@ runtime costs estimates. This is an area to improve.
 
 
 Scheduling Macro-Tasks at Runtime
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After coarsening the graph, we must schedule the macro-tasks for
 runtime. Sarkar describes two options: you can dynamically schedule tasks
@@ -306,7 +307,7 @@ fragmentation.
 
 
 Locating Variables for Best Spatial Locality
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After scheduling all code, we attempt to locate variables in memory such
 that variables accessed by a single macro-task are close together in
@@ -339,11 +340,11 @@ locality in serial mode; that is a possible area for improvement.)
 
 
 Improving Multithreaded Performance Further (a TODO list)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Wave Scheduling
-^^^^^^^^^^^^^^^
+"""""""""""""""
 
 To allow the Verilated model to run in parallel with the testbench, it
 might be nice to support "wave" scheduling, in which work on a cycle begins
@@ -355,7 +356,7 @@ however, it's probably the best bet for hiding testbench latency.
 
 
 Efficient Dynamic Scheduling
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""
 
 To scale to more than a few threads, we may revisit a fully dynamic
 scheduler. For large (>16 core) systems it might make sense to dedicate an
@@ -365,7 +366,7 @@ would not be prohibitive.
 
 
 Static Scheduling with Runtime Repack
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""
 
 We could modify the static scheduling approach by gathering actual
 macro-task execution times at run time, and dynamically re-packing the
@@ -377,7 +378,7 @@ or nonuniform competing memory traffic or whatever.
 
 
 Clock Domain Balancing
-^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 Right now Verilator makes no attempt to balance clock domains across
 macro-tasks. For a multi-domain model, that could lead to bad gantt chart
@@ -385,7 +386,7 @@ fragmentation. This could be improved if it's a real problem in practice.
 
 
 Other Forms of MTask Balancing
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""
 
 The largest source of runtime overhead is idle CPUs, which happens due to
 variance between our predicted runtime for each MTask and its actual
@@ -406,7 +407,7 @@ option to scramble things.
 
 
 Performance Regression
-^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 It would be nice if we had a regression of large designs, with some
 diversity of design styles, to test on both single- and multi-threaded
@@ -415,7 +416,7 @@ evaluate the optimizations while minimizing the impact of parasitic noise.
 
 
 Per-Instance Classes
-^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""
 
 If we have multiple instances of the same module, and they partition
 differently (likely; we make no attempt to partition them the same) then
@@ -631,7 +632,7 @@ and takes an argument type ``AstNode*``.
 
 
 Caution on Using Iterators When Child Changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Visitors often replace one node with another node; V3Width and V3Const
 are major examples. A visitor which is the parent of such a replacement
@@ -700,13 +701,13 @@ that type (if it is of class ``SOMETYPE``, or a derived class of
 as that is faster.)
 
 
-.. _Testing
+.. _Testing:
 
 Testing
 =======
 
 For an overview of how to write a test see the BUGS section of the
-Verilator primary manual.
+`Verilator Manual <https://verilator.org/verilator_doc.html>`_.
 
 It is important to add tests for failures as well as success (for
 example to check that an error message is correctly triggered).
@@ -1152,9 +1153,9 @@ Generally what would you do to add a new feature?
 4. If a new Ast type is needed, add it to V3AstNodes.h. Follow the
    convention described above about the AstNode type hierarchy.
 
-5. Now you can run "test_regress/t/t_{new testcase}.pl --debug" and it'll
+5. Now you can run "test_regress/t/t_<newtestcase>.pl --debug" and it'll
    probably fail but you'll see a
-   test_regress/obj_dir/t_{newtestcase}/*.tree file which you can examine
+   "test_regress/obj_dir/t_<newtestcase>/*.tree" file which you can examine
    to see if the parsing worked. See also the sections above on debugging.
 
 6. Modify the later visitor functions to process the new feature as needed.
@@ -1178,8 +1179,6 @@ list in ``src/Makefile_obj.in`` and reconfigure.
 Verilator ideally would support all of IEEE, and has the goal to get close
 to full support. However the following IEEE sections and features are not
 anticipated to be ever implemented for the reasons indicated.
-
-.. list-table::
 
 IEEE 1800-2017 3.3 recursive modules
     Little/no tool support, and arguably not a good practice.

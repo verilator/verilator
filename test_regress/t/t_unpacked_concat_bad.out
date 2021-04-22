@@ -2,6 +2,7 @@
                                                    : ... In instance t
    17 |    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
       |                                              ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Warning-WIDTHCONCAT: t/t_unpacked_concat_bad.v:17:47: Unsized numbers/parameters not allowed in replications.
                                                      : ... In instance t
    17 |    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};

@@ -14,5 +14,6 @@
                                         : ... In instance t
    18 |       if ($past(d, 10000)) $stop;   
       |                    ^~~~~
+                    ... For warning description see https://verilator.org/warn/TICKCOUNT?v=4.201
                     ... Use "/* verilator lint_off TICKCOUNT */" and lint_on around source to disable this message.
 %Error: Exiting due to

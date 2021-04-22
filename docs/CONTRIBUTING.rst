@@ -1,4 +1,3 @@
-=========================
 Contributing to Verilator
 =========================
 
@@ -9,7 +8,7 @@ contributions flow more efficiently.
 
 
 Did you find a bug?
-===================
+-------------------
 
 - Please **Ensure the bug was not already reported** by searching
   `Verilator Issues <https://verilator.org/issues>`__.
@@ -26,7 +25,7 @@ Did you find a bug?
 
 
 Did you write a patch that fixes a bug?
-=======================================
+---------------------------------------
 
 - Please `Open a new issue <https://verilator.org/issues/new>`__.
 
@@ -72,7 +71,7 @@ Did you write a patch that fixes a bug?
 
 
 Do you have questions?
-======================
+----------------------
 
 - Please see FAQ section and rest of the `Verilator
   manual <https://verilator.org/verilator_doc.html>`__, or `Verilator
@@ -83,7 +82,7 @@ Do you have questions?
 
 
 Code of Conduct
-===============
+---------------
 
 - Our contributors and participants pledge to make participation in our
   project and our community a positive experience for everyone. We follow

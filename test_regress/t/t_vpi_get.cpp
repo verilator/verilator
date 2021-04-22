@@ -163,17 +163,23 @@ int mon_check_props() {
            {"fourthreetwoone",
             {2, vpiNoDirection, 0, vpiMemory},
             {2, vpiNoDirection, 0, vpiMemoryWord}},
+           {"theint", {32, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
            {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
            {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
            {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
            {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
            {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
+           {"sub.subparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+           {"sub.the_intf.bytesig", {8, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+           {"sub.the_intf.param", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+           {"sub.the_intf.lparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+           {"twobytwo", {2, vpiNoDirection, 0, vpiMemory}, {2, vpiNoDirection, 0, vpiMemoryWord}},
            {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->signal) {
         TestVpiHandle h = VPI_HANDLE(value->signal);
-        CHECK_RESULT_NZ(h);
         TEST_MSG("%s\n", value->signal);
+        CHECK_RESULT_NZ(h);
         if (int status = _mon_check_props(h, value->attributes.size, value->attributes.direction,
                                           value->attributes.scalar, value->attributes.type))
             return status;
