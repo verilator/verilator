@@ -138,7 +138,7 @@ bom             [\357\273\277]
                           if (LEXP->m_encType != Enctype::BASE64)
                               LEXP->curFilelinep()->v3warn(PROTECTERR, "At the moment, only BASE64 is recognized for `pragma protected encoding");
                           if (res == 3) {
-                              if ((LEXP->m_encType == Enctype::BASE64) && (LEXP->m_protLength & 3 != 0))
+                              if ((LEXP->m_encType == Enctype::BASE64) && (LEXP->m_protLength & 3))
                                   LEXP->curFilelinep()->v3warn(PROTECTERR, "line_length must be multiple of 4 for BASE64");
                           } else {
                               // default values
