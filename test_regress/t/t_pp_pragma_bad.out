@@ -1,6 +1,8 @@
-%Error: t/t_pp_pragma_bad.v:7:1: `pragma is missing a pragma_expression.
+%Warning-PRAGMAERR: t/t_pp_pragma_bad.v:7:1: `pragma is missing a pragma_expression.
     7 | `pragma
       | ^~~~~~~
+                    ... For warning description see https://verilator.org/warn/PRAGMAERR?v=4.201
+                    ... Use "/* verilator lint_off PRAGMAERR */" and lint_on around source to disable this message.
 `line 1 "t/t_pp_pragma_bad.v" 1
  
 
