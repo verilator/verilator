@@ -1,0 +1,10 @@
+%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:8:17: Unknown `pragma
+    8 | `pragma protect encrypt_agent=123
+      |                 ^~~~~~~~~~~~~~~~
+                     ... Use "/* verilator lint_off PROTECTERR */" and lint_on around source to disable this message.
+%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:10:17: Unknown `pragma
+   10 | `pragma protect encrypt_agent_info
+      |                 ^~~~~~~~~~~~~~~~~
+%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:24:1: BASE64 encoding corrupted in `pragma protect key_bloock/data_block
+%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:28:17: multiple `pragma protected encoding sections
+%Error: Exiting due to

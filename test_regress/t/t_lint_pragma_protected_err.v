@@ -1,16 +1,22 @@
-// This part should pass OK
+module t_lint_pragma_protected_err;
 
-module t_lint_pragma_protected;
+// This part should see some failures
 
 `pragma protect begin_protected
-`pragma protect version=1
-`pragma protect encrypt_agent="XXXXX"
-`pragma protect encrypt_agent_info="YYYYY"
+`pragma protect version="xx"
+// should fail because value should be quoted
+`pragma protect encrypt_agent=123
+// should fail because no value given at all
+`pragma protect encrypt_agent_info
 `pragma protect data_method="AES128-CBC"
 `pragma protect key_keyowner="BIG3#1"
 `pragma protect key_keyname="AAAAAA"
 `pragma protect key_method="RSA"
-`pragma protect encoding = (enctype = "BASE64", line_length = 76, bytes = 64)
+
+// expect error in key_block below, 64 bytes but expecting  65
+// also expect "multiple `pragma encoding sections` error because number of
+// bytes does not go down to 0 in the end of the section below due to the 64->65 change
+`pragma protect encoding = (enctype = "BASE64", line_length = 76, bytes = 65)
 `pragma protect key_block
 ICAgICAgICAgICAgICAgICAgIEdOVSBMRVNTRVIgR0VORVJBTCBQVUJMSUMgTElDRU5TRQogICAg
 KSAyMDA3IE==
