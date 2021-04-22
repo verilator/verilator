@@ -51,4 +51,10 @@ ZCBXb3JrIGFzIG==
 
 `pragma protect end_protected
 
+// Should trigger unknown pragma warning, although in principle unknown pragmas should be safely ignored.
+`pragma XXXXX
+
+// Should trigger missing pragma warning
+`pragma
+
 endmodule

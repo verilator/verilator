@@ -1,10 +1,20 @@
-%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:8:17: Unknown `pragma
+%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:8:17: Unknown '`pragma protect' error
     8 | `pragma protect encrypt_agent=123
-      |                 ^~~~~~~~~~~~~~~~
-                     ... Use "/* verilator lint_off PROTECTERR */" and lint_on around source to disable this message.
-%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:10:17: Unknown `pragma
-   10 | `pragma protect encrypt_agent_info
       |                 ^~~~~~~~~~~~~~~~~
-%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:24:1: BASE64 encoding corrupted in `pragma protect key_bloock/data_block
-%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:28:17: multiple `pragma protected encoding sections
+                     ... For warning description see https://verilator.org/warn/PROTECTERR?v=4.201
+                     ... Use "/* verilator lint_off PROTECTERR */" and lint_on around source to disable this message.
+%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:10:17: Unknown '`pragma protect' error
+   10 | `pragma protect encrypt_agent_info
+      |                 ^~~~~~~~~~~~~~~~~~
+%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:23:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Warning-PROTECTERR: t/t_lint_pragma_protected_err.v:27:17: multiple `pragma protected encoding sections
+   27 | `pragma protect encoding = (enctype = "BASE64", line_length = 76, bytes = 128)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-PROTECTED: t/t_lint_pragma_protected_err.v:44:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+%Warning-PRAGMAERR: t/t_lint_pragma_protected_err.v:55:9: Unknown `pragma
+   55 | `pragma XXXXX
+      |         ^~~~~
+%Warning-PRAGMAERR: t/t_lint_pragma_protected_err.v:58:1: `pragma is missing a pragma_expression.
+   58 | `pragma
+      | ^~~~~~~
 %Error: Exiting due to

@@ -980,12 +980,30 @@ List Of Warnings
    be declared before being used.
 
 
+.. option:: PRAGMAERR
+
+   Any error that is related to pragmas, but not specifically to '`pragma protect'.
+   For example, an empty `pragma line.
+
+
 .. option:: PROCASSWIRE
 
    .. TODO better example
 
    Error that a procedural assignment is setting a wire. According to IEEE,
    a var/reg must be used as the target of procedural assignments.
+
+
+.. option:: PROTECTED
+
+   PROTECTED indicates that a '`pragma protected' section was encountered, which
+   will be skipped by Verilator and partly checked for correctness, but is not
+   currently supported.
+
+.. option:: PROTECTERR
+
+   PROTECTERR indicates that errors were detected within a '`pragma protected'
+   section, such as incorrect BASE64 encoding, etc.
 
 
 .. option:: RANDC

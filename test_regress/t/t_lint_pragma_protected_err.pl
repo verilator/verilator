@@ -12,6 +12,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
+    verilator_flags2 => ['--lint-only -Wpedantic'],
     expect_filename => $Self->{golden_filename},
     );
 

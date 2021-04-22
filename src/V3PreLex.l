@@ -80,6 +80,7 @@ static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l)
 %x PRAGMA
 %x PRAGMAERROR
 %x PRAGMAPROTECT
+%x PRAGMAPROTERROR
 %x ENCBASE64
 
 /* drop: Drop Ctrl-Z - can't pass thru or may EOF the output too soon */
@@ -119,11 +120,12 @@ bom             [\357\273\277]
     /* We wanted this to be next to `protect But it must be before `pramga */
     /* we win only because we both match to the end of the line so the length */
     /* is equal and we are first*/
-<PRAGMAPROTECT>"encoding"{wsn}*[^\n\r]*[\n\r] { FL_FWDC; linenoInc();
+<PRAGMAPROTECT>"encoding"{wsn}*[^\n\r]* { FL_FWDC;
                           int res;
                           char enctype[16]; // long enough to hold "quote-printable"
-                          if (LEXP->m_protBytes > 0)
+                          if (LEXP->m_protBytes > 0) {
                               LEXP->curFilelinep()->v3warn(PROTECTERR, "multiple `pragma protected encoding sections");
+                          }
                           res = sscanf(yytext + strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
                           if (res == 0)
                               LEXP->curFilelinep()->v3warn(PROTECTERR, "`pragma protected encoding must have an \"enctype\" field");
@@ -138,31 +140,36 @@ bom             [\357\273\277]
                           if (res == 3) {
                               if ((LEXP->m_encType == Enctype::BASE64) && (LEXP->m_protLength & 3 != 0))
                                   LEXP->curFilelinep()->v3warn(PROTECTERR, "line_length must be multiple of 4 for BASE64");
-                              BEGIN(INITIAL);
-                              return VP_TEXT; /* silently skip it */
+                          } else {
+                              // default values
+                              LEXP->m_protBytes = 0;
+                              LEXP->m_protLength = 76; // ?? default value not mentioned in IEEE spec
                           }
-                          // default values
-                          LEXP->m_protBytes = 0;
-                          LEXP->m_protLength = 76; // ?? default value not mentioned in IEEE spec
                           BEGIN(INITIAL);
                           return VP_TEXT;
                         }
-<PRAGMAPROTECT>("key_block"|"data_block"){wsn}*[\n\r] {
+<PRAGMAPROTECT>"key_block"{wsn}*[\n\r] {
                           FL_FWDC; linenoInc();
+                          BEGIN(ENCBASE64);
+                          return VP_TEXT; }
+<PRAGMAPROTECT>"data_block"{wsn}*[\n\r] {
+                          FL_FWDC; linenoInc();
+                          LEXP->curFilelinep()->v3warn(PROTECTED, "A '`pragma protected data_block' encrypted section was detected and will be skipped.");
                           BEGIN(ENCBASE64);
                           return VP_TEXT; }
 <PRAGMAPROTECT>("begin_protected"|"end_protected")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
 <PRAGMAPROTECT>"version="[^\n\r]*[\n\r] { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
 <PRAGMAPROTECT>("encrypt_agent"|"encrypt_agent_info"|"key_keyowner"|"key_keyname"){wsn}*={wsn}*[\"][^\n\r]*[\"][\n\r] {
                           FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
-<PRAGMAPROTECT>("data_method"|"key_method"){wsn}*={wsn}*[\"][^\n\r]*[\"][\n\r] { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+<PRAGMAPROTECT>("data_method"|"key_method"){wsn}*={wsn}*[\"][^\n\r]*[\"][\n\r] {
+    FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
     /* catch-all for unknown '`pragma protect' rules */
-<PRAGMAPROTECT>. { BEGIN(PRAGMAERROR); return VP_TEXT; }
-<ENCBASE64>[A-Za-z0-9+/]+[=]{0,2}[\n\r] { FL_FWDC; linenoInc();
+<PRAGMAPROTECT>. { yyless(0); BEGIN(PRAGMAPROTERROR); return VP_TEXT; }
+<ENCBASE64>[A-Za-z0-9+/]+[=]{0,2}[\n\r] { FL_FWDC; linenoInc(); FL_BRK;
                           if ((yyourleng()-1) <= size_t(LEXP->m_protLength) && ((yyleng & 3) == 1)) {
                               LEXP->m_protBytes -= (yyleng-1)/4*3;
                           } else {
-                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 line too long");
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 line too long in `pragma protect key_bloock/data_block");
                           }
                           if (yytext[yyleng-3] == '=')
                               LEXP->m_protBytes++;
@@ -171,12 +178,12 @@ bom             [\357\273\277]
                           if (LEXP->m_protBytes == 0) {
                               BEGIN(INITIAL);
                           } else if (LEXP->m_protBytes < 0)
-                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 encoding corrupted in `pragma protect key_bloock/data_block");
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 encoding (too short) in `pragma protect key_bloock/data_block");
                           /*return VP_TEXT;*/ }
-<ENCBASE64>{wsn}*[\n\r] { FL_FWDC; linenoInc();
+<ENCBASE64>{wsn}*[\n\r] { FL_FWDC;
                           if (LEXP->m_protBytes != 0)
-                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 encoding corrupted in `pragma protect key_bloock/data_block");
-                          BEGIN(INITIAL);
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 encoding length mismatch in `pragma protect key_bloock/data_block");
+                          linenoInc(); BEGIN(INITIAL);
                           return VP_TEXT; }
 
     /* Catch only empty `pragma lines */
@@ -188,18 +195,23 @@ bom             [\357\273\277]
                           return VP_TEXT; }
 
     /* catch all other nonempty `pragma */
-<INITIAL>"`pragma"{wsn}*  { FL_FWDC;
-                            if (!v3Global.opt.preprocOnly())
+<INITIAL>"`pragma"{wsn}*[^\n\r]  {
+                          yyless(yyleng-1); FL_FWDC;
+                          if (!v3Global.opt.preprocOnly())
                               BEGIN(PRAGMA);
-                            return VP_TEXT; }
+                          return VP_TEXT; }
 <PRAGMA>"protect"{wsn}* { FL_FWDC; BEGIN(PRAGMAPROTECT); return VP_TEXT;}
 
     /* catch-all for unknown `pragma rules */
-<PRAGMA>. { BEGIN(PRAGMAERROR); return VP_TEXT; }
+<PRAGMA>. { yyless(0); BEGIN(PRAGMAERROR); return VP_TEXT; }
 
     /* the catch-all rule only got 1 char, lets get all line */
-<PRAGMAERROR>[^\n\r]*     { FL_FWDC;
-                          LEXP->curFilelinep()->v3warn(PROTECTERR, "Unknown `pragma");
+<PRAGMAERROR>[^\n\r]* { FL_FWDC;
+                          LEXP->curFilelinep()->v3warn(PRAGMAERR, "Unknown `pragma");
+                          BEGIN(INITIAL);
+                          return VP_TEXT; }
+<PRAGMAPROTERROR>[^\n\r]* { FL_FWDC;
+                          LEXP->curFilelinep()->v3warn(PROTECTERR, "Unknown '`pragma protect' error");
                           BEGIN(INITIAL);
                           return VP_TEXT; }
 <INITIAL,STRIFY>"`__FILE__"     { FL_FWDC;
