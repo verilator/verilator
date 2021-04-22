@@ -147,6 +147,10 @@ private:
 };
 
 //======================================================================
+// Enum Class for `pragma protect encoding types
+enum class Enctype { UUENCODE, BASE64, QUOTE_PRINTABLE, RAW, ERR };
+
+//======================================================================
 // Class entry for each per-lexer state
 
 class V3PreLex final {
@@ -170,8 +174,9 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     bool m_defQuote = false;  // Definition value inside quote
     string m_defValue;  // Definition value being built.
     int m_enterExit = 0;  // For VL_LINE, the enter/exit level
-    int m_protLength;
-    int m_protBytes = 0;
+    int m_protLength; // unencoded length for BASE64
+    int m_protBytes = 0; // decoded length for BASE64
+    Enctype m_encType; // encoding type for `pragma protect
 
     // CONSTRUCTORS
     V3PreLex(V3PreProcImp* preimpp, FileLine* filelinep)

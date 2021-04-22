@@ -4800,10 +4800,26 @@ Error that a package/class appears to have been referenced that has not yet
 been declared.  According to IEEE 1800-2017 26.3 all packages must be
 declared before being used.
 
+=item PRAGMAERR
+
+Any error that is related to pragmas, but not specifically to '`pragma protect'.
+For example, an empty `pragma line.
+
 =item PROCASSWIRE
 
 Error that a procedural assignment is setting a wire. According to IEEE, a
 var/reg must be used as the target of procedural assignments.
+
+=item PROTECTED
+
+PROTECTED indicates that a `pragma protected section was encountered, which
+will be skipped bhy Verilator and partly checked for correctness, but is not
+currently supported.
+
+=item PROTECTERR
+
+PROTECTERR indicates that errors were detected within a `pragma protected\
+section, such as incorrect BASE64 encoding, etc.
 
 =item RANDC
 

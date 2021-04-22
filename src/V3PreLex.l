@@ -77,7 +77,10 @@ static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l)
 %x ARGMODE
 %x INCMODE
 %x PRTMODE
-%x BASE64
+%x PRAGMA
+%x PRAGMAERROR
+%x PRAGMAPROTECT
+%x ENCBASE64
 
 /* drop: Drop Ctrl-Z - can't pass thru or may EOF the output too soon */
 
@@ -116,50 +119,88 @@ bom             [\357\273\277]
     /* We wanted this to be next to `protect But it must be before `pramga */
     /* we win only because we both match to the end of the line so the length */
     /* is equal and we are first*/
-<INITIAL>"`pragma"{wsn}+"protect"[^\n\r]*[\n\r] { FL_FWDC; linenoInc();
-                          if (v3Global.opt.preprocOnly()) {
-                              return VP_TEXT;
+<PRAGMAPROTECT>"encoding"{wsn}*[^\n\r]*[\n\r] { FL_FWDC; linenoInc();
+                          int res;
+                          char enctype[16]; // long enough to hold "quote-printable"
+                          if (LEXP->m_protBytes > 0)
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "multiple `pragma protected encoding sections");
+                          res = sscanf(yytext + strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
+                          if (res == 0)
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "`pragma protected encoding must have an \"enctype\" field");
+                          LEXP->m_encType = !strcasecmp(enctype, "uuencode") ? Enctype::UUENCODE :
+                                            !strcasecmp(enctype, "base64") ? Enctype::BASE64 :
+                                            !strcasecmp(enctype, "quoted-printable") ? Enctype::QUOTE_PRINTABLE :
+                                            !strcasecmp(enctype, "raw") ? Enctype::RAW : Enctype::ERR;
+                          if (LEXP->m_encType == Enctype::ERR)
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "Illegal encoding type for `pragma protected encoding");
+                          if (LEXP->m_encType != Enctype::BASE64)
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "At the moment, only BASE64 is recognized for `pragma protected encoding");
+                          if (res == 3) {
+                              if ((LEXP->m_encType == Enctype::BASE64) && (LEXP->m_protLength & 3 != 0))
+                                  LEXP->curFilelinep()->v3warn(PROTECTERR, "line_length must be multiple of 4 for BASE64");
+                              BEGIN(INITIAL);
+                              return VP_TEXT; /* silently skip it */
                           }
-                          int res, yypos = 7; /* length of `pragma */
-                          char *yyt = yytext;
-                          yyt[yyleng] = 0; /* this is OK because the last char here is \n or \r */
-                          yyt += yypos;
-                          if ((res = sscanf(yyt, " protect %n", &yypos)) != 0)
-                            yyerrorf("scanf failure");
-                          yyt += yypos;
-                          if (LEXP->m_protBytes == 0) {
-                            res = sscanf(yyt, "encoding = (enctype = \"BASE64\", line_length = %d, bytes = %d)%n", &LEXP->m_protLength, &LEXP->m_protBytes, &yypos);
-                            if (res == 2)
-                                return VP_TEXT; /* silently skip it */
-                            LEXP->m_protBytes = 0;
-                          } else if ((strncmp(yyt, "key_block", 9) == 0) || (strncmp(yyt, "data_block", 10) == 0)) {
-                            BEGIN(BASE64);
-                            return VP_TEXT;
+                          // default values
+                          LEXP->m_protBytes = 0;
+                          LEXP->m_protLength = 76; // ?? default value not mentioned in IEEE spec
+                          BEGIN(INITIAL);
+                          return VP_TEXT;
+                        }
+<PRAGMAPROTECT>("key_block"|"data_block"){wsn}*[\n\r] {
+                          FL_FWDC; linenoInc();
+                          BEGIN(ENCBASE64);
+                          return VP_TEXT; }
+<PRAGMAPROTECT>("begin_protected"|"end_protected")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+<PRAGMAPROTECT>"version="[^\n\r]*[\n\r] { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+<PRAGMAPROTECT>("encrypt_agent"|"encrypt_agent_info"|"key_keyowner"|"key_keyname"){wsn}*={wsn}*[\"][^\n\r]*[\"][\n\r] {
+                          FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+<PRAGMAPROTECT>("data_method"|"key_method"){wsn}*={wsn}*[\"][^\n\r]*[\"][\n\r] { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+    /* catch-all for unknown '`pragma protect' rules */
+<PRAGMAPROTECT>. { BEGIN(PRAGMAERROR); return VP_TEXT; }
+<ENCBASE64>[A-Za-z0-9+/]+[=]{0,2}[\n\r] { FL_FWDC; linenoInc();
+                          if ((yyourleng()-1) <= size_t(LEXP->m_protLength) && ((yyleng & 3) == 1)) {
+                              LEXP->m_protBytes -= (yyleng-1)/4*3;
                           } else {
-                              return VP_TEXT;
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 line too long");
                           }
-                        }
-<BASE64>[A-Za-z0-9+/]+[=]{0,2}[\n\r] {FL_FWDC; linenoInc();
-                        if ((yyourleng()-1) <= size_t(LEXP->m_protLength) && ((yyleng & 3) == 1)) {
-                            LEXP->m_protBytes -= (yyleng-1)/4*3;
-                        } else {
-                            yyerrorf("BASE64 line too long");
-                        }
-                        if (yytext[yyleng-3] == '=')
-                            LEXP->m_protBytes++;
-                        if (yytext[yyleng-2] == '=')
-                            LEXP->m_protBytes++;
-                        if (LEXP->m_protBytes == 0) {
-                            BEGIN(INITIAL);
-                        } else if (LEXP->m_protBytes < 0)
-                            yyerrorf("BASE64 encoding corrupted");
-                        /*return VP_TEXT;*/ }
-<INITIAL>"`pragma"{wsn}*[^\n\r]*  { FL_FWDC;
-                          const char* pointp = yytext + strlen("`pragma");
-                          while (isspace(*pointp)) ++pointp;
-                          if (!*pointp && v3Global.opt.pedantic()) {
-                              yyerrorf("`pragma is missing a pragma_expression.");
+                          if (yytext[yyleng-3] == '=')
+                              LEXP->m_protBytes++;
+                          if (yytext[yyleng-2] == '=')
+                              LEXP->m_protBytes++;
+                          if (LEXP->m_protBytes == 0) {
+                              BEGIN(INITIAL);
+                          } else if (LEXP->m_protBytes < 0)
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 encoding corrupted in `pragma protect key_bloock/data_block");
+                          /*return VP_TEXT;*/ }
+<ENCBASE64>{wsn}*[\n\r] { FL_FWDC; linenoInc();
+                          if (LEXP->m_protBytes != 0)
+                              LEXP->curFilelinep()->v3warn(PROTECTERR, "BASE64 encoding corrupted in `pragma protect key_bloock/data_block");
+                          BEGIN(INITIAL);
+                          return VP_TEXT; }
+
+    /* Catch only empty `pragma lines */
+<INITIAL>"`pragma"{wsn}*[\n\r]  {
+                          yyless(yyleng-1); FL_FWDC;
+                          if (v3Global.opt.pedantic()) {
+                              LEXP->curFilelinep()->v3warn(PRAGMAERR, "`pragma is missing a pragma_expression.");
                           }
+                          return VP_TEXT; }
+
+    /* catch all other nonempty `pragma */
+<INITIAL>"`pragma"{wsn}*  { FL_FWDC;
+                            if (!v3Global.opt.preprocOnly())
+                              BEGIN(PRAGMA);
+                            return VP_TEXT; }
+<PRAGMA>"protect"{wsn}* { FL_FWDC; BEGIN(PRAGMAPROTECT); return VP_TEXT;}
+
+    /* catch-all for unknown `pragma rules */
+<PRAGMA>. { BEGIN(PRAGMAERROR); return VP_TEXT; }
+
+    /* the catch-all rule only got 1 char, lets get all line */
+<PRAGMAERROR>[^\n\r]*     { FL_FWDC;
+                          LEXP->curFilelinep()->v3warn(PROTECTERR, "Unknown `pragma");
+                          BEGIN(INITIAL);
                           return VP_TEXT; }
 <INITIAL,STRIFY>"`__FILE__"     { FL_FWDC;
                           static string rtnfile;
