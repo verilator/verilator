@@ -148,7 +148,7 @@ private:
 
 //======================================================================
 // Enum Class for `pragma protect encoding types
-enum class Enctype { UUENCODE, BASE64, QUOTE_PRINTABLE, RAW, ERR };
+enum class Enctype : uint8_t { UUENCODE, BASE64, QUOTE_PRINTABLE, RAW, ERR };
 
 //======================================================================
 // Class entry for each per-lexer state
