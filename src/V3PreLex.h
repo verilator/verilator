@@ -174,7 +174,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     bool m_defQuote = false;  // Definition value inside quote
     string m_defValue;  // Definition value being built.
     int m_enterExit = 0;  // For VL_LINE, the enter/exit level
-    int m_protLength;  // unencoded length for BASE64
+    int m_protLength = 0;  // unencoded length for BASE64
     int m_protBytes = 0;  // decoded length for BASE64
     Enctype m_encType;  // encoding type for `pragma protect
 
