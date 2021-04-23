@@ -980,10 +980,11 @@ List Of Warnings
    be declared before being used.
 
 
-.. option:: PRAGMAERR
+.. option:: BADPRAGMA
 
-   Any error that is related to pragmas, but not specifically to '`pragma protect'.
+   Error that a pragma is badly formed, but not specifically to '`pragma protect'.
    For example, an empty `pragma line.
+   
 
 
 .. option:: PROCASSWIRE
@@ -996,15 +997,17 @@ List Of Warnings
 
 .. option:: PROTECTED
 
-   PROTECTED indicates that a '`pragma protected' section was encountered, which
-   will be skipped by Verilator and partly checked for correctness, but is not
-   currently supported.
+   Warning that a '`pragma protected' section was encountered. The code
+   inside the protected region will be partly checked for correctness, but is
+   otherwise ignored.
 
-.. option:: PROTECTERR
+   Suppressing the warning may make Verilator differ from a simulator that
+   accepts the protected code.
 
-   PROTECTERR indicates that errors were detected within a '`pragma protected'
-   section, such as incorrect BASE64 encoding, etc.
+.. option:: BADPROTECT
 
+   Error that wasdetected within a '`pragma protected' section.
+   such as incorrect BASE64 encoding, etc.
 
 .. option:: RANDC
 

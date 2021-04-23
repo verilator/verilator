@@ -129,14 +129,14 @@ bom             [\357\273\277]
                           res = sscanf(yytext + strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
                           if (res == 0)
                               LEXP->curFilelinep()->v3warn(PROTECTERR, "`pragma protected encoding must have an \"enctype\" field");
-                          LEXP->m_encType = !strcasecmp(enctype, "uuencode") ? Enctype::UUENCODE :
-                                            !strcasecmp(enctype, "base64") ? Enctype::BASE64 :
-                                            !strcasecmp(enctype, "quoted-printable") ? Enctype::QUOTE_PRINTABLE :
-                                            !strcasecmp(enctype, "raw") ? Enctype::RAW : Enctype::ERR;
+                          LEXP->m_encType = !VL_STRCASECMP(enctype, "uuencode") ? Enctype::UUENCODE :
+                                            !VL_STRCASECMP(enctype, "base64") ? Enctype::BASE64 :
+                                            !VL_STRCASECMP(enctype, "quoted-printable") ? Enctype::QUOTE_PRINTABLE :
+                                            !VL_STRCASECMP(enctype, "raw") ? Enctype::RAW : Enctype::ERR;
                           if (LEXP->m_encType == Enctype::ERR)
                               LEXP->curFilelinep()->v3warn(PROTECTERR, "Illegal encoding type for `pragma protected encoding");
                           if (LEXP->m_encType != Enctype::BASE64)
-                              LEXP->curFilelinep()->v3warn(PROTECTERR, "At the moment, only BASE64 is recognized for `pragma protected encoding");
+                              LEXP->curFilelinep()->v3warn(UNSUPPORTED, "Unsupported: only BASE64 is recognized for `pragma protected encoding");
                           if (res == 3) {
                               if ((LEXP->m_encType == Enctype::BASE64) && (LEXP->m_protLength & 3))
                                   LEXP->curFilelinep()->v3warn(PROTECTERR, "line_length must be multiple of 4 for BASE64");
