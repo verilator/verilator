@@ -4,7 +4,7 @@
 %Error-UNSUPPORTED: t/t_process.v:26:20: Unsupported: 'process'
    26 |       p = process::self();
       |                    ^~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Internal Error: t/t_process.v:26:11: ../V3LinkDot.cpp:#: Bad package link
    26 |       p = process::self();
       |           ^~~~~~~

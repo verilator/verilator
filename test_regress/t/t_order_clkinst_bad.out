@@ -1,7 +1,7 @@
 %Warning-IMPERFECTSCH: t/t_order_clkinst.v:19:16: Imperfect scheduling of variable: 't.c1_start'
    19 |    reg         c1_start; initial c1_start = 0;
       |                ^~~~~~~~
-                       ... For warning description see https://verilator.org/warn/IMPERFECTSCH?v=4.201
+                       ... For warning description see https://verilator.org/warn/IMPERFECTSCH?v=latest
                        ... Use "/* verilator lint_off IMPERFECTSCH */" and lint_on around source to disable this message.
 %Warning-IMPERFECTSCH: t/t_order_clkinst.v:20:16: Imperfect scheduling of variable: 't.c1_count'
    20 |    wire [31:0] c1_count;

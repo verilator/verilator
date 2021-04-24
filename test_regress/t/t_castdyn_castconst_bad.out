@@ -3,7 +3,7 @@
                                                      : ... Suggest static cast
    20 |       i = $cast(v, 1);   
       |           ^~~~~
-                    ... For warning description see https://verilator.org/warn/CASTCONST?v=4.201
+                    ... For warning description see https://verilator.org/warn/CASTCONST?v=latest
                     ... Use "/* verilator lint_off CASTCONST */" and lint_on around source to disable this message.
 %Warning-CASTCONST: t/t_castdyn_castconst_bad.v:21:11: $cast will always return one as 'CLASSREFDTYPE 'Base'' is always castable from 'CLASSREFDTYPE 'Base''
                                                      : ... In instance t

@@ -2,5 +2,5 @@
                     ... note: self-recursion (module instantiating itself directly) is supported.
    18 | module looped ( );
       |        ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

@@ -1,6 +1,6 @@
 %Warning-COLONPLUS: t/t_lint_colonplus_bad.v:13:25: Perhaps instead of ':+' the intent was '+:'?
    13 |    output [2:1] z = r[2 :+ 1];
       |                         ^~
-                    ... For warning description see https://verilator.org/warn/COLONPLUS?v=4.201
+                    ... For warning description see https://verilator.org/warn/COLONPLUS?v=latest
                     ... Use "/* verilator lint_off COLONPLUS */" and lint_on around source to disable this message.
 %Error: Exiting due to

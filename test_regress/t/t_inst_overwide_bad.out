@@ -2,7 +2,7 @@
                                          : ... In instance t
    23 |             .outy_w92   (outc_w30),      
       |              ^~~~~~~~
-                ... For warning description see https://verilator.org/warn/WIDTH?v=4.201
+                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
 %Warning-WIDTH: t/t_inst_overwide.v:24:14: Output port connection 'outz_w22' expects 22 bits on the pin connection, but pin connection's VARREF 'outd_w73' generates 73 bits.
                                          : ... In instance t

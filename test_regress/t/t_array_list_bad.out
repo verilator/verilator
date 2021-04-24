@@ -6,6 +6,6 @@
                                           : ... In instance t
    38 |             test_out <= '{'0, '0};  
       |                      ^~
-                ... For warning description see https://verilator.org/warn/WIDTH?v=4.201
+                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
 %Error: Exiting due to

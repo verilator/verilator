@@ -1,5 +1,5 @@
 %Warning-USERFATAL: "f_add = 15"
-                    ... For warning description see https://verilator.org/warn/USERFATAL?v=4.201
+                    ... For warning description see https://verilator.org/warn/USERFATAL?v=latest
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
 %Error: t/t_func_const2_bad.v:22:23: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_add2'
                                    : ... In instance t.b8_a7.c9
