@@ -167,6 +167,7 @@ private:
     }
 
     void createDeepTemp(AstNode* nodep, bool noSubst) {
+        if (nodep->user1()) return;
         if (debug() > 8) nodep->dumpTree(cout, "deepin:");
 
         AstNRelinker linker;
@@ -224,6 +225,7 @@ private:
         {
             bool noopt = PremitAssignVisitor(nodep).noOpt();
             if (noopt && !nodep->user1()) {
+                nodep->user1(true);
                 // Need to do this even if not wide, as e.g. a select may be on a wide operator
                 UINFO(4, "Deep temp for LHS/RHS\n");
                 createDeepTemp(nodep->rhsp(), false);

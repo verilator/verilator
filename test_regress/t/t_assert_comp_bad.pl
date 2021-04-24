@@ -18,5 +18,45 @@ compile(
     expect_filename => $Self->{golden_filename},
     );
 
+extract(
+    in => $Self->{top_filename},
+    out => "../docs/gen/ex_USERWARN_faulty.rst",
+    regexp => qr/\$warn.*User/);
+
+extract(
+    in => $Self->{top_filename},
+    out => "../docs/gen/ex_USERERROR_faulty.rst",
+    regexp => qr/\$error.*User/);
+
+extract(
+    in => $Self->{top_filename},
+    out => "../docs/gen/ex_USERINFO_faulty.rst",
+    regexp => qr/\$info.*User/);
+
+extract(
+    in => $Self->{top_filename},
+    out => "../docs/gen/ex_USERFATAL_faulty.rst",
+    regexp => qr/\$fatal.*User/);
+
+extract(
+    in => $Self->{golden_filename},
+    out => "../docs/gen/ex_USERWARN_msg.rst",
+    regexp => qr/USERWARN:.* User/);
+
+extract(
+    in => $Self->{golden_filename},
+    out => "../docs/gen/ex_USERERROR_msg.rst",
+    regexp => qr/USERERROR:.* User/);
+
+extract(
+    in => $Self->{golden_filename},
+    out => "../docs/gen/ex_USERINFO_msg.rst",
+    regexp => qr/-Info:.* User/);
+
+extract(
+    in => $Self->{golden_filename},
+    out => "../docs/gen/ex_USERFATAL_msg.rst",
+    regexp => qr/USERFATAL/);
+
 ok(1);
 1;

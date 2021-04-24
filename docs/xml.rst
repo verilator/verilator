@@ -1,8 +1,8 @@
 |Logo|
 
-===========================
+***************************
 Verilator XML Output Format
-===========================
+***************************
 
 Introduction
 ============
@@ -69,7 +69,6 @@ The XML document consists of 4 sections within the top level
    by elements in the ``<module>`` elements using the ``dtype_id``
    attribute.
 
-.. __distribution:
 
 Distribution
 ============

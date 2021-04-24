@@ -145,13 +145,12 @@ private:
 
     // Map each varscope to one or more locations where it's accessed.
     // These maps will not include any ASSIGNPOST accesses:
-    typedef std::unordered_map<const AstVarScope*, std::set<LifeLocation>> LocMap;
+    using LocMap = std::unordered_map<const AstVarScope*, std::set<LifeLocation>>;
     LocMap m_reads;  // VarScope read locations
     LocMap m_writes;  // VarScope write locations
 
     // Map each dly var to its AstAssignPost* node and the location thereof
-    typedef std::unordered_map<const AstVarScope*, LifePostLocation> PostLocMap;
-    PostLocMap m_assignposts;  // AssignPost dly var locations
+    std::unordered_map<const AstVarScope*, LifePostLocation> m_assignposts;
 
     const V3Graph* m_mtasksGraphp = nullptr;  // Mtask tracking graph
     std::unique_ptr<GraphPathChecker> m_checker;

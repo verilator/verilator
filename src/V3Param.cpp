@@ -67,13 +67,11 @@
 // Hierarchical block and parameter db (modules without parameter is also handled)
 
 class ParameterizedHierBlocks final {
-    typedef std::multimap<string, const V3HierarchicalBlockOption*> HierBlockOptsByOrigName;
-    typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
-    typedef std::map<const string, AstNodeModule*> HierBlockModMap;
-    typedef std::map<const string, std::unique_ptr<AstConst>> ParamConstMap;
-    typedef std::map<const string, AstVar*> GParamsMap;  // key:parameter name value:parameter
-    typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> HierParamsMap;
-    typedef std::map<const string, GParamsMap> ModParamsMap;  // key:module name
+    using HierBlockOptsByOrigName = std::multimap<std::string, const V3HierarchicalBlockOption*>;
+    using HierMapIt = HierBlockOptsByOrigName::const_iterator;
+    using HierBlockModMap = std::map<const std::string, AstNodeModule*>;
+    using ParamConstMap = std::map<const std::string, std::unique_ptr<AstConst>>;
+    using GParamsMap = std::map<const std::string, AstVar*>;  // key:parameter name value:parameter
 
     // MEMBERS
     // key:Original module name, value:HiearchyBlockOption*
@@ -83,8 +81,9 @@ class ParameterizedHierBlocks final {
     // key:mangled module name, value:AstNodeModule*
     HierBlockModMap m_hierBlockMod;
     // Overridden parameters of the hierarchical block
-    HierParamsMap m_hierParams;
-    ModParamsMap m_modParams;  // Parameter variables of hierarchical blocks
+    std::map<const V3HierarchicalBlockOption*, ParamConstMap> m_hierParams;
+    std::map<const std::string, GParamsMap>
+        m_modParams;  // Parameter variables of hierarchical blocks
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -233,30 +232,28 @@ class ParamProcessor final {
 
     // TYPES
     // Note may have duplicate entries
-    typedef std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>> IfaceRefRefs;
+    using IfaceRefRefs = std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>>;
 
     // STATE
-    typedef std::unordered_map<const AstNode*, AstNode*> CloneMap;
+    using CloneMap = std::unordered_map<const AstNode*, AstNode*>;
     struct ModInfo {
         AstNodeModule* m_modp;  // Module with specified name
         CloneMap m_cloneMap;  // Map of old-varp -> new cloned varp
         explicit ModInfo(AstNodeModule* modp)
             : m_modp{modp} {}
     };
-    typedef std::map<const string, ModInfo> ModNameMap;
-    ModNameMap m_modNameMap;  // Hash of created module flavors by name
+    std::map<const std::string, ModInfo> m_modNameMap;  // Hash of created module flavors by name
 
-    typedef std::map<const string, string> LongMap;
-    LongMap m_longMap;  // Hash of very long names to unique identity number
+    std::map<const std::string, std::string>
+        m_longMap;  // Hash of very long names to unique identity number
     int m_longId = 0;
 
     // All module names that are loaded from source code
     // Generated modules by this visitor is not included
     V3StringSet m_allModuleNames;
 
-    typedef std::pair<int, string> ValueMapValue;
-    typedef std::map<const V3Hash, ValueMapValue> ValueMap;
-    ValueMap m_valueMap;  // Hash of node hash to (param value, name)
+    using ValueMapValue = std::pair<int, std::string>;
+    std::map<const V3Hash, ValueMapValue> m_valueMap;  // Hash of node hash to (param value, name)
     int m_nextValue = 1;  // Next value to use in m_valueMap
 
     AstNodeModule* m_modp = nullptr;  // Current module being processed
@@ -264,7 +261,7 @@ class ParamProcessor final {
     // Database to get protect-lib wrapper that matches parameters in hierarchical Verilation
     ParameterizedHierBlocks m_hierBlocks;
     // Default parameter values key:parameter name, value:default value (can be nullptr)
-    typedef std::map<string, AstConst*> DefaultValueMap;
+    using DefaultValueMap = std::map<std::string, AstConst*>;
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
 
@@ -279,7 +276,7 @@ class ParamProcessor final {
             if (AstVar* varp = VN_CAST(stmtp, Var)) {
                 if (varp->isGParam() || varp->isIfaceRef()) {
                     char ch = varp->name()[0];
-                    ch = toupper(ch);
+                    ch = std::toupper(ch);
                     if (ch < 'A' || ch > 'Z') ch = 'Z';
                     varp->user4(usedLetter[static_cast<int>(ch)] * 256 + ch);
                     usedLetter[static_cast<int>(ch)]++;
@@ -326,7 +323,7 @@ class ParamProcessor final {
             num = it->second.first;
         } else {
             num = m_nextValue++;
-            m_valueMap[hash] = make_pair(num, key);
+            m_valueMap[hash] = std::make_pair(num, key);
         }
         return string("z") + cvtToStr(num);
     }
@@ -715,7 +712,7 @@ class ParamProcessor final {
                         longnamer += ("_" + paramSmallName(srcModp, pinp->modVarp())
                                       + paramValueNumber(pinIrefp));
                         any_overridesr = true;
-                        ifaceRefRefs.push_back(make_pair(portIrefp, pinIrefp));
+                        ifaceRefRefs.push_back(std::make_pair(portIrefp, pinIrefp));
                         if (portIrefp->ifacep() != pinIrefp->ifacep()
                             // Might be different only due to param cloning, so check names too
                             && portIrefp->ifaceName() != pinIrefp->ifaceName()) {
@@ -821,8 +818,7 @@ class ParamVisitor final : public AstNVisitor {
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::deque<AstCell*> m_cellps;  // Cells left to process (in this module)
 
-    typedef std::multimap<int, AstNodeModule*> LevelModMap;
-    LevelModMap m_todoModps;  // Modules left to process
+    std::multimap<int, AstNodeModule*> m_todoModps;  // Modules left to process
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

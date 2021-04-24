@@ -40,7 +40,7 @@ class CUseState final {
 private:
     // MEMBERS
     AstNodeModule* m_modInsertp;  // Current module to insert AstCUse under
-    typedef std::pair<VUseType, string> UseString;
+    using UseString = std::pair<VUseType, std::string>;
     std::map<const UseString, AstCUse*> m_didUse;  // What we already used
 
     // NODE STATE

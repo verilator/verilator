@@ -16,7 +16,7 @@ lint(
     fails => 1,
     expect =>
 '%Error: Internal Error: .*: --debug-fatal-src
-.*See the manual and .*
+.*See the manual .*
 .*in V3Options::.*
 .*%Error: Command Failed.*',
     );

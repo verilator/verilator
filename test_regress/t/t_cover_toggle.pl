@@ -21,6 +21,8 @@ execute(
 # Read the input .v file and do any CHECK_COVER requests
 inline_checks();
 
+file_grep_not("$Self->{obj_dir}/coverage.dat", "largeish");
+
 file_grep($Self->{stats}, qr/Coverage, Toggle points joined\s+(\d+)/i, 25)
     if $Self->{vlt_all};
 

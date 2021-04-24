@@ -44,12 +44,11 @@ template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key
 class SortByValueMap final {
     // TYPES
 private:
-    typedef std::unordered_map<T_Key, T_Value> Key2Val;
-    typedef std::set<T_Key, T_KeyCompare> KeySet;
-    typedef std::map<T_Value, KeySet> Val2Keys;
+    using KeySet = std::set<T_Key, T_KeyCompare>;
+    using Val2Keys = std::map<T_Value, KeySet>;
 
     // MEMBERS
-    Key2Val m_keys;  // Map each key to its value. Not sorted.
+    std::unordered_map<T_Key, T_Value> m_keys;  // Map each key to its value. Not sorted.
     Val2Keys m_vals;  // Map each value to its keys. Sorted.
 
 public:
@@ -59,11 +58,11 @@ public:
     class const_iterator VL_NOT_FINAL {
         // TYPES
     public:
-        typedef const_iterator value_type;
-        typedef const_iterator reference;  // See comment on operator*()
-        typedef void pointer;
-        typedef std::ptrdiff_t difference_type;
-        typedef std::bidirectional_iterator_tag iterator_category;
+        using value_type = const_iterator;
+        using reference = const_iterator;  // See comment on operator*()
+        using pointer = void;
+        using difference_type = std::ptrdiff_t;
+        using iterator_category = std::bidirectional_iterator_tag;
 
     protected:
         friend class SortByValueMap;
@@ -196,8 +195,8 @@ public:
     class iterator final : public const_iterator {
     public:
         // TYPES
-        typedef iterator value_type;
-        typedef iterator reference;
+        using value_type = iterator;
+        using reference = iterator;
         // pointer, difference_type, and iterator_category inherit from
         // const_iterator
 
@@ -223,8 +222,8 @@ public:
         }
     };
 
-    typedef std::reverse_iterator<iterator> reverse_iterator;
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     // METHODS
 private:
@@ -353,7 +352,6 @@ template <typename T_Elem, typename T_Score, class T_ElemCompare = std::less<T_E
 class V3Scoreboard final {
 private:
     // TYPES
-    typedef std::unordered_set<const T_Elem*> NeedRescoreSet;
     class CmpElems final {
     public:
         bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {
@@ -361,11 +359,11 @@ private:
             return cmp.operator()(*ap, *bp);
         }
     };
-    typedef SortByValueMap<const T_Elem*, T_Score, CmpElems> SortedMap;
-    typedef T_Score (*UserScoreFnp)(const T_Elem*);
+    using SortedMap = SortByValueMap<const T_Elem*, T_Score, CmpElems>;
+    using UserScoreFnp = T_Score (*)(const T_Elem*);
 
     // MEMBERS
-    NeedRescoreSet m_unknown;  // Elements with unknown scores
+    std::unordered_set<const T_Elem*> m_unknown;  // Elements with unknown scores
     SortedMap m_sorted;  // Set of elements with known scores
     UserScoreFnp m_scoreFnp;  // Scoring function
     bool m_slowAsserts;  // Do some asserts that require extra lookups

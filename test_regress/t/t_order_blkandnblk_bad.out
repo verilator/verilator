@@ -7,4 +7,5 @@
                    t/t_order_blkandnblk_bad.v:22:6: ... Location of nonblocking assignment
    22 |      array[1] <= array[0];
       |      ^~~~~
+                   ... For error description see https://verilator.org/warn/BLKANDNBLK?v=latest
 %Error: Exiting due to

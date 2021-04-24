@@ -1,7 +1,9 @@
-%Error-TIMESCALEMOD: t/t_timescale_lint_bad.v:7:8: Timescale missing on this module as other modules have it (IEEE 1800-2017 3.14.2.2)
+%Warning-TIMESCALEMOD: t/t_timescale_lint.v:7:8: Timescale missing on this module as other modules have it (IEEE 1800-2017 3.14.2.3)
     7 | module pre_no_ts;
       |        ^~~~~~~~~
-                     t/t_timescale_lint_bad.v:12:8: ... Location of module with timescale
+                       t/t_timescale_lint.v:12:8: ... Location of module with timescale
    12 | module t;
       |        ^
+                       ... For warning description see https://verilator.org/warn/TIMESCALEMOD?v=latest
+                       ... Use "/* verilator lint_off TIMESCALEMOD */" and lint_on around source to disable this message.
 %Error: Exiting due to

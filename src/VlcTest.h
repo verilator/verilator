@@ -87,7 +87,7 @@ public:
 class VlcTests final {
 public:
     // TYPES
-    typedef std::vector<VlcTest*> ByName;
+    using ByName = std::vector<VlcTest*>;
 
 private:
     // MEMBERS
@@ -95,7 +95,7 @@ private:
 
 public:
     // ITERATORS
-    typedef ByName::iterator iterator;
+    using iterator = ByName::iterator;
     ByName::iterator begin() { return m_tests.begin(); }
     ByName::iterator end() { return m_tests.end(); }
 

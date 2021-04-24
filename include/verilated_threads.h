@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2012-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,11 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Thread pool and profiling for Verilated modules
+/// \brief Verilated thread pool and profiling header
+///
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use by Verilated library multithreaded
+/// routines.
 ///
 //=============================================================================
 
@@ -47,11 +51,11 @@
 // VlMTaskVertex and VlThreadpool will work with multiple symbol table types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
 // as a void* here.
-typedef void* VlThrSymTab;
+using VlThrSymTab = void*;
 
-typedef void (*VlExecFnp)(bool, VlThrSymTab);
+using VlExecFnp = void (*)(bool, VlThrSymTab);
 
-/// Track dependencies for a single MTask.
+// Track dependencies for a single MTask.
 class VlMTaskVertex final {
     // MEMBERS
     static std::atomic<vluint64_t> s_yields;  // Statistics
@@ -251,8 +255,7 @@ public:
 
 class VlThreadPool final {
     // TYPES
-    typedef std::vector<VlProfileRec> ProfileTrace;
-    typedef std::set<ProfileTrace*> ProfileSet;
+    using ProfileTrace = std::vector<VlProfileRec>;
 
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
@@ -266,7 +269,7 @@ class VlThreadPool final {
     // this is the only cost we pay in real-time during a profiling cycle.
     // Internal note: Globals may multi-construct, see verilated.cpp top.
     static VL_THREAD_LOCAL ProfileTrace* t_profilep;
-    ProfileSet m_allProfiles VL_GUARDED_BY(m_mutex);
+    std::set<ProfileTrace*> m_allProfiles VL_GUARDED_BY(m_mutex);
     VerilatedMutex m_mutex;
 
 public:

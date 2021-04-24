@@ -1284,9 +1284,31 @@ portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + em
 	|	'(' {VARRESET_LIST(PORT);} list_of_ports ')'	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
 	;
 
+list_of_portsE<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
+		portAndTagE			{ $$ = $1; }
+	|	list_of_portsE ',' portAndTagE		{ $$ = $1->addNextNull($3); }
+	;
+
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
-		portAndTag				{ $$ = $1; }
-	|	list_of_ports ',' portAndTag		{ $$ = $1->addNextNull($3); }
+		portAndTag			{ $$ = $1; }
+	|	list_of_portsE ',' portAndTagE		{ $$ = $1->addNextNull($3); }
+	;
+
+portAndTagE<nodep>:
+		/* empty */
+			{ int p = PINNUMINC();
+			   const string name = "__pinNumber" + cvtToStr(p);
+			  $$ = new AstPort{CRELINE(), p, name};
+			  AstVar* varp = new AstVar{CRELINE(), AstVarType::PORT, name, VFlagChildDType{},
+			                            new AstBasicDType{CRELINE(), LOGIC_IMPLICIT}};
+			  varp->declDirection(VDirection::INPUT);
+			  varp->direction(VDirection::INPUT);
+			  varp->ansi(false);
+			  varp->declTyped(true);
+			  varp->trace(false);
+			  $$ = $$->addNext(varp);
+			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
+	|	portAndTag				{ $$ = $1; }
 	;
 
 portAndTag<nodep>:

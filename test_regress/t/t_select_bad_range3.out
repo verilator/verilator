@@ -2,5 +2,6 @@
                                                 : ... In instance t
    19 |    assign outwires[12] = inwires[13];   
       |                                 ^
+                   ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
 %Error: Exiting due to

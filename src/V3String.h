@@ -193,10 +193,9 @@ class VSpellCheck final {
     static constexpr unsigned NUM_CANDIDATE_LIMIT = 10000;  // Avoid searching huge netlists
     static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search
     // TYPES
-    typedef unsigned int EditDistance;
-    typedef std::vector<string> Candidates;
+    using EditDistance = unsigned int;
     // MEMBERS
-    Candidates m_candidates;  // Strings we try to match
+    std::vector<std::string> m_candidates;  // Strings we try to match
 public:
     // CONSTRUCTORS
     VSpellCheck() = default;

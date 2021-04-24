@@ -328,10 +328,9 @@ void V3File::createMakeDir() {
 // VInFilterImp
 
 class VInFilterImp final {
-    typedef std::map<const string, string> FileContentsMap;
-    typedef VInFilter::StrList StrList;
+    using StrList = VInFilter::StrList;
 
-    FileContentsMap m_contentsMap;  // Cache of file contents
+    std::map<const std::string, std::string> m_contentsMap;  // Cache of file contents
     bool m_readEof = false;  // Received EOF on read
 #ifdef INFILTER_PIPE
     pid_t m_pid = 0;  // fork() process id
@@ -949,10 +948,8 @@ void V3OutCFile::putsGuard() {
 
 class VIdProtectImp final {
     // MEMBERS
-    typedef std::map<const string, string> IdMap;
-    IdMap m_nameMap;  // Map of old name into new name
-    typedef std::unordered_set<std::string> IdSet;
-    IdSet m_newIdSet;  // Which new names exist
+    std::map<const std::string, std::string> m_nameMap;  // Map of old name into new name
+    std::unordered_set<std::string> m_newIdSet;  // Which new names exist
 protected:
     // CONSTRUCTORS
     friend class VIdProtect;

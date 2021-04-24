@@ -98,6 +98,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         V3Number m_bitPolarity;  // Coefficient of each bit
         static int widthOfRef(AstVarRef* refp) {
             if (AstWordSel* selp = VN_CAST(refp->backp(), WordSel)) return selp->width();
+            if (AstCCast* castp = VN_CAST(refp->backp(), CCast)) return castp->width();
             return refp->width();
         }
 
@@ -1531,7 +1532,7 @@ private:
         // Return false if referenced, or tree too deep to be worth it, or side effects
         if (!nodep) return true;
         if (level > 2) return false;
-        if (nodep->isPure()) return false;  // For example a $fgetc can't be reordered
+        if (!nodep->isPure()) return false;  // For example a $fgetc can't be reordered
         if (VN_IS(nodep, NodeVarRef) && VN_CAST(nodep, NodeVarRef)->varp() == varp) return false;
         return (varNotReferenced(nodep->nextp(), varp, level + 1)
                 && varNotReferenced(nodep->op1p(), varp, level + 1)
@@ -2114,7 +2115,7 @@ private:
                         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                         did = true;
                     }
-                } else if (m_params && VN_IS(valuep, InitArray) && VN_IS(nodep->backp(), Pin)) {
+                } else if (m_params && VN_IS(valuep, InitArray)) {
                     // Allow parameters to pass arrays
                     // Earlier recursion of InitArray made sure each array value is constant
                     // This exception is fairly fragile, i.e. doesn't
@@ -2156,7 +2157,7 @@ private:
             }
         }
         if (!did && m_required) {
-            nodep->v3error("Expecting expression to be constant, but variable isn't const: "
+            nodep->v3error("Expecting expression to be constant, but enum value isn't const: "
                            << nodep->itemp()->prettyNameQ());
         }
     }

@@ -1,5 +1,6 @@
 %Warning-INCABSPATH: t/t_lint_incabspath.v:7:10: Suggest `include with absolute path be made relative, and use +include: /dev/null
     7 | `include "/dev/null"
       |          ^~~~~~~~~~~
+                     ... For warning description see https://verilator.org/warn/INCABSPATH?v=latest
                      ... Use "/* verilator lint_off INCABSPATH */" and lint_on around source to disable this message.
 %Error: Exiting due to

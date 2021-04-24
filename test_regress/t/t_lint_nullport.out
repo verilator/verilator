@@ -1,0 +1,108 @@
+%Warning-NULLPORT: t/t_lint_nullport.v:23:13: Null port on module (perhaps extraneous comma)
+   23 | module t5(a,);
+      |             ^
+                   ... For warning description see https://verilator.org/warn/NULLPORT?v=latest
+                   ... Use "/* verilator lint_off NULLPORT */" and lint_on around source to disable this message.
+%Warning-NULLPORT: t/t_lint_nullport.v:27:13: Null port on module (perhaps extraneous comma)
+   27 | module t6(a,,);
+      |             ^
+%Warning-NULLPORT: t/t_lint_nullport.v:27:14: Null port on module (perhaps extraneous comma)
+   27 | module t6(a,,);
+      |              ^
+%Warning-NULLPORT: t/t_lint_nullport.v:31:15: Null port on module (perhaps extraneous comma)
+   31 | module t7(a,b,);
+      |               ^
+%Warning-NULLPORT: t/t_lint_nullport.v:35:15: Null port on module (perhaps extraneous comma)
+   35 | module t8(a,b,,);
+      |               ^
+%Warning-NULLPORT: t/t_lint_nullport.v:35:16: Null port on module (perhaps extraneous comma)
+   35 | module t8(a,b,,);
+      |                ^
+%Warning-NULLPORT: t/t_lint_nullport.v:39:13: Null port on module (perhaps extraneous comma)
+   39 | module t9(a,,b);
+      |             ^
+%Warning-NULLPORT: t/t_lint_nullport.v:43:14: Null port on module (perhaps extraneous comma)
+   43 | module t10(a,,b,);
+      |              ^
+%Warning-NULLPORT: t/t_lint_nullport.v:43:17: Null port on module (perhaps extraneous comma)
+   43 | module t10(a,,b,);
+      |                 ^
+%Warning-NULLPORT: t/t_lint_nullport.v:47:14: Null port on module (perhaps extraneous comma)
+   47 | module t11(a,,b,,);
+      |              ^
+%Warning-NULLPORT: t/t_lint_nullport.v:47:17: Null port on module (perhaps extraneous comma)
+   47 | module t11(a,,b,,);
+      |                 ^
+%Warning-NULLPORT: t/t_lint_nullport.v:47:18: Null port on module (perhaps extraneous comma)
+   47 | module t11(a,,b,,);
+      |                  ^
+%Warning-NULLPORT: t/t_lint_nullport.v:51:12: Null port on module (perhaps extraneous comma)
+   51 | module t12(,a,,b);
+      |            ^
+%Warning-NULLPORT: t/t_lint_nullport.v:51:15: Null port on module (perhaps extraneous comma)
+   51 | module t12(,a,,b);
+      |               ^
+%Warning-NULLPORT: t/t_lint_nullport.v:55:12: Null port on module (perhaps extraneous comma)
+   55 | module t13(,a,,b,);
+      |            ^
+%Warning-NULLPORT: t/t_lint_nullport.v:55:15: Null port on module (perhaps extraneous comma)
+   55 | module t13(,a,,b,);
+      |               ^
+%Warning-NULLPORT: t/t_lint_nullport.v:55:18: Null port on module (perhaps extraneous comma)
+   55 | module t13(,a,,b,);
+      |                  ^
+%Warning-NULLPORT: t/t_lint_nullport.v:59:12: Null port on module (perhaps extraneous comma)
+   59 | module t14(,a,,b,,);
+      |            ^
+%Warning-NULLPORT: t/t_lint_nullport.v:59:15: Null port on module (perhaps extraneous comma)
+   59 | module t14(,a,,b,,);
+      |               ^
+%Warning-NULLPORT: t/t_lint_nullport.v:59:18: Null port on module (perhaps extraneous comma)
+   59 | module t14(,a,,b,,);
+      |                  ^
+%Warning-NULLPORT: t/t_lint_nullport.v:59:19: Null port on module (perhaps extraneous comma)
+   59 | module t14(,a,,b,,);
+      |                   ^
+%Warning-NULLPORT: t/t_lint_nullport.v:63:12: Null port on module (perhaps extraneous comma)
+   63 | module t15(,,a,,b);
+      |            ^
+%Warning-NULLPORT: t/t_lint_nullport.v:63:13: Null port on module (perhaps extraneous comma)
+   63 | module t15(,,a,,b);
+      |             ^
+%Warning-NULLPORT: t/t_lint_nullport.v:63:16: Null port on module (perhaps extraneous comma)
+   63 | module t15(,,a,,b);
+      |                ^
+%Warning-NULLPORT: t/t_lint_nullport.v:67:12: Null port on module (perhaps extraneous comma)
+   67 | module t16(,,a,,b,);
+      |            ^
+%Warning-NULLPORT: t/t_lint_nullport.v:67:13: Null port on module (perhaps extraneous comma)
+   67 | module t16(,,a,,b,);
+      |             ^
+%Warning-NULLPORT: t/t_lint_nullport.v:67:16: Null port on module (perhaps extraneous comma)
+   67 | module t16(,,a,,b,);
+      |                ^
+%Warning-NULLPORT: t/t_lint_nullport.v:67:19: Null port on module (perhaps extraneous comma)
+   67 | module t16(,,a,,b,);
+      |                   ^
+%Warning-NULLPORT: t/t_lint_nullport.v:71:12: Null port on module (perhaps extraneous comma)
+   71 | module t17(,,a,,b,,);
+      |            ^
+%Warning-NULLPORT: t/t_lint_nullport.v:71:13: Null port on module (perhaps extraneous comma)
+   71 | module t17(,,a,,b,,);
+      |             ^
+%Warning-NULLPORT: t/t_lint_nullport.v:71:16: Null port on module (perhaps extraneous comma)
+   71 | module t17(,,a,,b,,);
+      |                ^
+%Warning-NULLPORT: t/t_lint_nullport.v:71:19: Null port on module (perhaps extraneous comma)
+   71 | module t17(,,a,,b,,);
+      |                   ^
+%Warning-NULLPORT: t/t_lint_nullport.v:71:20: Null port on module (perhaps extraneous comma)
+   71 | module t17(,,a,,b,,);
+      |                    ^
+%Warning-NULLPORT: t/t_lint_nullport.v:75:12: Null port on module (perhaps extraneous comma)
+   75 | module t18(,);
+      |            ^
+%Warning-NULLPORT: t/t_lint_nullport.v:75:13: Null port on module (perhaps extraneous comma)
+   75 | module t18(,);
+      |             ^
+%Error: Exiting due to

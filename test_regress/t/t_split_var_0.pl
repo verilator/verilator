@@ -22,7 +22,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 13);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 11);
 file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 27);
 ok(1);
 1;

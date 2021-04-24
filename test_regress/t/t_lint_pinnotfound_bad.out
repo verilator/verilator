@@ -1,0 +1,8 @@
+%Error-PINNOTFOUND: t/t_lint_pinnotfound_bad.v:12:13: Pin not found: 'x'
+   12 | b b_inst1 (.x(1'b0));  
+      |             ^
+                    ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
+%Error-PINNOTFOUND: t/t_lint_pinnotfound_bad.v:13:6: Parameter pin not found: 'PX'
+   13 | b #(.PX(1'b0)) b_inst2 ();  
+      |      ^~
+%Error: Exiting due to

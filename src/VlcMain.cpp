@@ -70,8 +70,6 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
-#define shift \
-    do { ++i; } while (false)
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
         if (argv[i][0] == '-') {
@@ -89,39 +87,38 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             }
             // Parameterized switches
             else if (!strcmp(sw, "-annotate-min") && (i + 1) < argc) {
-                shift;
+                ++i;
                 m_annotateMin = atoi(argv[i]);
             } else if (!strcmp(sw, "-annotate") && (i + 1) < argc) {
-                shift;
+                ++i;
                 m_annotateOut = argv[i];
             } else if (!strcmp(sw, "-debug")) {
                 V3Error::debugDefault(3);
             } else if (!strcmp(sw, "-debugi") && (i + 1) < argc) {
-                shift;
+                ++i;
                 V3Error::debugDefault(atoi(argv[i]));
             } else if (!strcmp(sw, "-V")) {
                 showVersion(true);
-                exit(0);
+                std::exit(0);
             } else if (!strcmp(sw, "-version")) {
                 showVersion(false);
-                exit(0);
+                std::exit(0);
             } else if (!strcmp(sw, "-write") && (i + 1) < argc) {
-                shift;
+                ++i;
                 m_writeFile = argv[i];
             } else if (!strcmp(sw, "-write-info") && (i + 1) < argc) {
-                shift;
+                ++i;
                 m_writeInfoFile = argv[i];
             } else {
                 v3fatal("Invalid option: " << argv[i]);
             }
-            shift;
+            ++i;
         }  // - options
         else {
             addReadFile(argv[i]);
-            shift;
+            ++i;
         }
     }
-#undef shift
 }
 
 void VlcOptions::showVersion(bool verbose) {

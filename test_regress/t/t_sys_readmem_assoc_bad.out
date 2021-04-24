@@ -6,4 +6,5 @@
                                                      : ... In instance t
    14 |       $readmemb("not", assoc_bad_value);
       |                        ^~~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

@@ -5,5 +5,6 @@
                        t/t_lint_syncasyncnet_bad.v:34:14: ... Location of sync usage
    34 |       q2 <= (rst_both_l) ? d : 1'b0;
       |              ^~~~~~~~~~
+                       ... For warning description see https://verilator.org/warn/SYNCASYNCNET?v=latest
                        ... Use "/* verilator lint_off SYNCASYNCNET */" and lint_on around source to disable this message.
 %Error: Exiting due to

@@ -321,7 +321,7 @@ private:
                               + " library, "
                                 "Verliog (%u) and library (%u) hash values do not "
                                 "agree\\n\", protectlib_hash__V, expected_hash__V);\n");
-        txtp->addText(fl, "exit(EXIT_FAILURE);\n");
+        txtp->addText(fl, "std::exit(EXIT_FAILURE);\n");
         txtp->addText(fl, "}\n");
         txtp->addText(fl, "}\n\n");
 

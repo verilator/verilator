@@ -602,7 +602,8 @@ def write_type_enum(fh, typen, idx, processed, kind, indent):
 def write_types(filename):
     with open_file(filename) as fh:
         fh.write("    enum en : uint16_t {\n")
-        (final, last) = write_type_enum(fh, "Node", 0, {}, "concrete-enum", 2)
+        (final, ignored) = write_type_enum(  # pylint: disable=W0612
+            fh, "Node", 0, {}, "concrete-enum", 2)
         fh.write("        _ENUM_END = " + str(final) + "\n")
         fh.write("    };\n")
 

@@ -166,9 +166,9 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       fatal "Unknown test: $TESTS"
       ;;
   esac
-  # Upload coverage data to codecov.io
+  # Upload coverage data
   if [[ $TESTS == coverage-* ]]; then
-    bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info
+    bash <(cat ci/coverage-upload.sh) -f nodist/obj_dir/coverage/app_total.info
   fi
 else
   ##############################################################################

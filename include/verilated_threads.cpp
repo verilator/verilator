@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2012-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,7 +12,12 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Thread pool for verilated modules
+/// \brief Verilated thread pool implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --threads.
+///
+/// Use "verilator --threads" to add this to the Makefile for the linker.
 ///
 //=============================================================================
 
@@ -142,7 +149,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
     const VerilatedLockGuard lk(m_mutex);
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
 
-    FILE* fp = fopen(filenamep, "w");
+    FILE* fp = std::fopen(filenamep, "w");
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filenamep, 0, "", "+prof+threads+file file not writable");
         // cppcheck-suppress resourceLeak   // bug, doesn't realize fp is nullptr
@@ -184,5 +191,5 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
     }
     fprintf(fp, "VLPROF stat ticks %" VL_PRI64 "u\n", ticksElapsed);
 
-    fclose(fp);
+    std::fclose(fp);
 }

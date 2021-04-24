@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2010-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,19 +12,17 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator: String include for all Verilated C files
+/// \brief Verilated string and data-type header
 ///
-///     This file is included automatically by Verilator at the top of
-///     all C++ files it generates.  It is used when strings or other
-///     heavyweight types are required; these contents are not part of
-///     verilated.h to save compile time when such types aren't used.
-///
-/// Code available from: https://verilator.org
+/// This file is included automatically by Verilator at the top of
+/// all C++ files it generates.  It is used when strings or other
+/// heavyweight types are required; these contents are not part of
+/// verilated.h to save compile time when such types aren't used.
 ///
 //*************************************************************************
 
 #ifndef VERILATOR_VERILATED_HEAVY_H_
-#define VERILATOR_VERILATED_HEAVY_H_  ///< Header Guard
+#define VERILATOR_VERILATED_HEAVY_H_
 
 #include "verilated.h"
 
@@ -49,7 +49,7 @@ extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 
 class VlURNG final {
 public:
-    typedef size_t result_type;
+    using result_type = size_t;
     static constexpr size_t min() { return 0; }
     static constexpr size_t max() { return 1ULL << 31; }
     size_t operator()() { return VL_MASK_I(31) & VL_RANDOM_I(32); }
@@ -88,12 +88,14 @@ public:
 };
 
 //===================================================================
-// Verilog wide-number-in-array container
-// Similar to std::array<WData, N>, but lighter weight, only methods needed
-// by Verilator, to help compile time.
-//
-// This is only used when we need an upper-level container and so can't
-// simply use a C style array (which is just a pointer).
+/// Verilog wide unpacked bit container.
+/// Similar to std::array<WData, N>, but lighter weight, only methods needed
+/// by Verilator, to help compile time.
+///
+/// For example a Verilog "bit [94:0]" will become a VlWide<3> because 3*32
+/// bits are needed to hold the 95 bits. The MSB (bit 96) must always be
+/// zero in memory, but during intermediate operations in the Verilated
+/// internals is unpredictable.
 
 template <std::size_t T_Words> class VlWide final {
     EData m_storage[T_Words];
@@ -111,6 +113,7 @@ public:
     const EData& operator[](size_t index) const { return m_storage[index]; };
     EData& operator[](size_t index) { return m_storage[index]; };
     operator WDataOutP() { return &m_storage[0]; }
+    operator WDataInP() const { return &m_storage[0]; }
 
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
@@ -142,10 +145,10 @@ template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& o
 template <class T_Value, size_t T_MaxSize = 0> class VlQueue final {
 private:
     // TYPES
-    typedef std::deque<T_Value> Deque;
+    using Deque = std::deque<T_Value>;
 
 public:
-    typedef typename Deque::const_iterator const_iterator;
+    using const_iterator = typename Deque::const_iterator;
 
 private:
     // MEMBERS
@@ -497,10 +500,10 @@ template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 template <class T_Key, class T_Value> class VlAssocArray final {
 private:
     // TYPES
-    typedef std::map<T_Key, T_Value> Map;
+    using Map = std::map<T_Key, T_Value>;
 
 public:
-    typedef typename Map::const_iterator const_iterator;
+    using const_iterator = typename Map::const_iterator;
 
 private:
     // MEMBERS
@@ -794,21 +797,24 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 }
 
 //===================================================================
-// Verilog packed array container
-// For when a standard C++[] array is not sufficient, e.g. an
-// array under a queue, or methods operating on the array
+/// Verilog packed array container
+/// For when a standard C++[] array is not sufficient, e.g. an
+/// array under a queue, or methods operating on the array.
+///
+/// This class may get exposed to a Verilated Model's top I/O, if the top
+/// IO has an unpacked array.
 
 template <class T_Value, std::size_t T_Depth> class VlUnpacked final {
 private:
     // TYPES
-    typedef std::array<T_Value, T_Depth> Array;
+    using Array = std::array<T_Value, T_Depth>;
 
 public:
-    typedef typename Array::const_iterator const_iterator;
+    using const_iterator = typename Array::const_iterator;
 
 private:
     // MEMBERS
-    Array m_array;  // State of the assoc array
+    Array m_array;  // Contents of the packed array
 
 public:
     // CONSTRUCTORS
@@ -826,13 +832,28 @@ public:
 
     T_Value& operator[](size_t index) { return m_array[index]; };
     const T_Value& operator[](size_t index) const { return m_array[index]; };
+
+    // Dumping. Verilog: str = $sformatf("%p", assoc)
+    std::string to_string() const {
+        std::string out = "'{";
+        std::string comma;
+        for (int i = 0; i < T_Depth; ++i) {
+            out += comma + VL_TO_STRING(m_array[i]);
+            comma = ", ";
+        }
+        return out + "} ";
+    }
 };
+
+template <class T_Value, std::size_t T_Depth>
+std::string VL_TO_STRING(const VlUnpacked<T_Value, T_Depth>& obj) {
+    return obj.to_string();
+}
 
 //===================================================================
 // Verilog class reference container
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
-//
 
 #define VlClassRef std::shared_ptr
 

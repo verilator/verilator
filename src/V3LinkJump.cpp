@@ -43,9 +43,6 @@
 
 class LinkJumpVisitor final : public AstNVisitor {
 private:
-    // TYPES
-    typedef std::vector<AstNodeBlock*> BlockStack;
-
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -53,7 +50,7 @@ private:
     bool m_loopInc = false;  // In loop increment
     bool m_inFork = false;  // Under fork
     int m_modRepeatNum = 0;  // Repeat counter
-    BlockStack m_blockStack;  // All begin blocks above current node
+    std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

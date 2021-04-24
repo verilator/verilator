@@ -62,6 +62,8 @@ module t (/*AUTOARG*/);
       // TODO add a lint check that with clause is provided
       qv = q.find with (item == 2);
       v = $sformatf("%p", qv); `checks(v, "'{'h2, 'h2} ");
+      qv = q.find with (item[0] == 1);
+      v = $sformatf("%p", qv); `checks(v, "'{'h1, 'h3} ");
       qv = q.find_first with (item == 2);
       v = $sformatf("%p", qv); `checks(v, "'{'h2} ");
       qv = q.find_last with (item == 2);

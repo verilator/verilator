@@ -74,6 +74,15 @@ module t;
       $sformat(ochar,"%s","c");
       if (ochar != "c") $stop;
 
+      $swrite(str2, 4'd12);
+      if (str2 != "12") $stop;
+      $swriteb(str2, 4'd12);
+      if (str2 != "1100") $stop;
+      $swriteh(str2, 4'd12);
+      if (str2 != "c") $stop;
+      $swriteo(str2, 4'd12);
+      if (str2 != "14") $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

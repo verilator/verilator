@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.200 2021-03-12],
+AC_INIT([Verilator],[4.202 2021-04-24],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -15,12 +15,13 @@ AC_INIT([Verilator],[4.200 2021-03-12],
 # Then 'make maintainer-dist'
 
 AC_CONFIG_HEADER(src/config_build.h)
-AC_CONFIG_FILES(Makefile docs/Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
+AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
 
 # Version
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 PACKAGE_VERSION_NUMBER=`AS_ECHO("$PACKAGE_VERSION") | sed 's/ .*//g'`
 AC_SUBST(PACKAGE_VERSION_NUMBER)
+AC_DEFINE_UNQUOTED([PACKAGE_VERSION_NUMBER_STRING],["$PACKAGE_VERSION_NUMBER"],[Package version as a number])
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
