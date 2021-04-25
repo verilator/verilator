@@ -96,11 +96,6 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         ConstBitOpTreeVisitor* m_parentp;  // ConstBitOpTreeVisitor that holds this VarInfo
         AstVarRef* m_refp;  // Points the variable that this VarInfo covers
         V3Number m_bitPolarity;  // Coefficient of each bit
-        static int widthOfRef(AstVarRef* refp) {
-            if (AstWordSel* selp = VN_CAST(refp->backp(), WordSel)) return selp->width();
-            if (AstCCast* castp = VN_CAST(refp->backp(), CCast)) return castp->width();
-            return refp->width();
-        }
 
     public:
         // METHODS
@@ -108,6 +103,30 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         bool sameVarAs(const AstNodeVarRef* otherp) const { return m_refp->sameGateTree(otherp); }
         void setPolarity(bool compBit, int bit) {
             UASSERT_OBJ(!hasConstantResult(), m_refp, "Already has result of " << m_constResult);
+            UASSERT_OBJ(bit < VL_QUADSIZE, m_refp,
+                        "bit:" << bit << " is too big after V3Expand"
+                               << " back:" << m_refp->backp());
+            if (bit >= m_bitPolarity.width()) {  // Need to expand m_bitPolarity
+                const V3Number oldPol = std::move(m_bitPolarity);
+                // oldPol.width() is 8, 16, or 32 because this visitor is called after V3Expand
+                // newWidth is increased by 2x because
+                //  - CCast will cast to such bitwidth anyway
+                //  - can avoid frequent expansion
+                int newWidth = oldPol.width();
+                while (bit >= newWidth) newWidth *= 2;
+                m_bitPolarity = V3Number{m_refp, newWidth};
+                UASSERT_OBJ(newWidth == 16 || newWidth == 32 || newWidth == 64, m_refp,
+                            "bit:" << bit << " newWidth:" << newWidth);
+                m_bitPolarity.setAllBitsX();
+                for (int i = 0; i < oldPol.width(); ++i) {
+                    if (oldPol.bitIs0(i))
+                        m_bitPolarity.setBit(i, '0');
+                    else if (oldPol.bitIs1(i))
+                        m_bitPolarity.setBit(i, '1');
+                }
+            }
+            UASSERT_OBJ(bit < m_bitPolarity.width(), m_refp,
+                        "bit:" << bit << " width:" << m_bitPolarity.width() << m_refp);
             if (m_bitPolarity.bitIsX(bit)) {  // The bit is not yet set
                 m_bitPolarity.setBit(bit, compBit);
             } else {  // Priviously set the bit
@@ -129,7 +148,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             FileLine* fl = m_refp->fileline();
             AstNode* srcp = VN_CAST(m_refp->backp(), WordSel);
             if (!srcp) srcp = m_refp;
-            const int width = widthOfRef(m_refp);
+            const int width = m_bitPolarity.width();
 
             if (hasConstantResult())
                 return new AstConst{fl,
@@ -160,7 +179,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         VarInfo(ConstBitOpTreeVisitor* parent, AstVarRef* refp)
             : m_parentp(parent)
             , m_refp(refp)
-            , m_bitPolarity(refp, widthOfRef(refp)) {
+            , m_bitPolarity(refp, refp->isWide() ? VL_EDATASIZE : refp->width()) {
             m_bitPolarity.setAllBitsX();
         }
     };
