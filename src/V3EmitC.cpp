@@ -41,8 +41,8 @@ constexpr int EMITC_NUM_CONSTW
 
 class EmitCStmts VL_NOT_FINAL : public EmitCBaseVisitor {
 private:
-    typedef std::vector<const AstVar*> VarVec;
-    typedef std::map<int, VarVec> VarSortMap;  // Map size class to VarVec
+    using VarVec = std::vector<const AstVar*>;
+    using VarSortMap = std::map<int, VarVec>;  // Map size class to VarVec
 
     bool m_suppressSemi;
     AstVarRef* m_wideTempRefp;  // Variable that _WW macros should be setting
@@ -77,14 +77,14 @@ public:
                     char fmtLetter);
 
     void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
-    typedef enum : uint8_t {
+    enum EisWhich : uint8_t {
         EVL_CLASS_IO,
         EVL_CLASS_SIG,
         EVL_CLASS_TEMP,
         EVL_CLASS_PAR,
         EVL_CLASS_ALL,
         EVL_FUNC_ALL
-    } EisWhich;
+    };
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp, string& sectionr);
     static void emitVarSort(const VarSortMap& vmap, VarVec* sortedp);
     void emitSortedVarList(const VarVec& anons, const VarVec& nonanons, const string& prefixIfImp);
@@ -104,6 +104,12 @@ public:
              : (nodep->isScQuad() ? "SQ" : "SI"));
         // clang-format on
     }
+    void emitDatap(AstNode* nodep) {
+        // When passing to a function with va_args the compiler doesn't
+        // know need a pointer so when wide, need to look inside VlWide
+        if (nodep->isWide()) puts(".data()");
+    }
+
     void emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, AstNode* rhsp,
                     AstNode* thsp);
     void emitDeclArrayBrackets(const AstVar* nodep) {
@@ -221,8 +227,7 @@ public:
         }
     };
     void emitIntFuncDecls(AstNodeModule* modp, bool methodFuncs) {
-        typedef std::vector<const AstCFunc*> FuncVec;
-        FuncVec funcsp;
+        std::vector<const AstCFunc*> funcsp;
 
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
@@ -377,9 +382,6 @@ public:
             iterateAndNextNull(nodep->bitp());
         }
         puts(")");
-        if (nodep->dtypep()->isWide()) {
-            puts(".data()");  // Access returned std::array as C array
-        }
     }
     virtual void visit(AstNodeCCall* nodep) override {
         if (AstCMethodCall* ccallp = VN_CAST(nodep, CMethodCall)) {
@@ -416,12 +418,6 @@ public:
             comma = true;
         }
         puts(")");
-        // if there is a return value that is wide convert to array
-        if (nodep->dtypep()->isWide()
-            && (VN_IS(nodep->fromp()->dtypep(), QueueDType)
-                || VN_IS(nodep->fromp()->dtypep(), DynArrayDType))) {
-            puts(".data()");  // Access returned std::array as C array
-        }
         // Some are statements some are math.
         if (nodep->isStatement()) puts(";\n");
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
@@ -654,7 +650,12 @@ public:
         putbs(", ");
         emitCvtPackStr(nodep->filenamep());
         putbs(", ");
-        iterateAndNextNull(nodep->memp());
+        {
+            const bool need_ptr = !VN_IS(nodep->memp()->dtypep(), AssocArrayDType);
+            if (need_ptr) puts(" &(");
+            iterateAndNextNull(nodep->memp());
+            if (need_ptr) puts(")");
+        }
         putbs(", ");
         if (nodep->lsbp()) {
             iterateAndNextNull(nodep->lsbp());
@@ -710,7 +711,6 @@ public:
         puts("VL_FREAD_I(");
         puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
         putbs(",");
-        bool memory = false;
         uint32_t array_lo = 0;
         uint32_t array_size = 0;
         {
@@ -720,7 +720,6 @@ public:
             } else if (VN_CAST(varrefp->varp()->dtypeSkipRefp(), BasicDType)) {
             } else if (const AstUnpackArrayDType* adtypep
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
-                memory = true;
                 array_lo = adtypep->lo();
                 array_size = adtypep->elementsConst();
             } else {
@@ -732,9 +731,9 @@ public:
         putbs(",");
         puts(cvtToStr(array_size));
         putbs(", ");
-        if (!memory) puts("&(");
+        puts("&(");
         iterateAndNextNull(nodep->memp());
-        if (!memory) puts(")");
+        puts(")");
         putbs(", ");
         iterateAndNextNull(nodep->filep());
         putbs(", ");
@@ -1098,6 +1097,7 @@ public:
         iterateAndNextNull(nodep->fhsp());
         puts(")");
     }
+    virtual void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
     // Terminals
     virtual void visit(AstVarRef* nodep) override {
         puts(nodep->hiernameProtect());
@@ -1266,7 +1266,9 @@ public:
     virtual void visit(AstNode* nodep) override {
         puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
         iterateChildren(nodep);
-        nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+        if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
+            nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+        }
     }
 
     EmitCStmts() {
@@ -1854,7 +1856,7 @@ class EmitCImp final : EmitCStmts {
     void emitTextSection(AstType type);
     // High level
     void emitImpTop(AstNodeModule* modp);
-    void emitImp(AstNodeModule* modp);
+    void emitImp(AstNodeModule* fileModp, AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
     void emitWrapFast(AstNodeModule* modp);
@@ -2194,17 +2196,11 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
                 if (func != "") {
                     puts(func);
                 } else if (argp) {
-                    if (isScan) {
-                        puts("&(");
-                    } else if (fmt == '@') {
-                        puts("&(");
-                    }
+                    bool addrof = isScan || (fmt == '@');
+                    if (addrof) puts("&(");
                     iterate(argp);
-                    if (isScan) {
-                        puts(")");
-                    } else if (fmt == '@') {
-                        puts(")");
-                    }
+                    if (!addrof) emitDatap(argp);
+                    if (addrof) puts(")");
                 }
                 ofp()->indentDec();
             }
@@ -2741,7 +2737,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     puts("\"Verilated model didn't ");
     if (initial) puts("DC ");
     puts("converge\\n\"\n");
-    puts("\"- See DIDNOTCONVERGE in the Verilator manual\");\n");
+    puts("\"- See https://verilator.org/warn/DIDNOTCONVERGE\");\n");
     puts("} else {\n");
     puts("__Vchange = " + protect("_change_request") + "(vlSymsp);\n");
     puts("}\n");
@@ -2958,7 +2954,7 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
     }
 
     // MacroTask mode.  Sort by MTask-affinity group first, size second.
-    typedef std::map<const MTaskIdSet, VarSortMap> MTaskVarSortMap;
+    using MTaskVarSortMap = std::map<const MTaskIdSet, VarSortMap>;
     MTaskVarSortMap m2v;
     for (VarSortMap::const_iterator it = vmap.begin(); it != vmap.end(); ++it) {
         int size_class = it->first;
@@ -3358,7 +3354,7 @@ void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
     emitTextSection(AstType::atScImpHdr);
 }
 
-void EmitCImp::emitImp(AstNodeModule* modp) {
+void EmitCImp::emitImp(AstNodeModule* fileModp, AstNodeModule* modp) {
     puts("\n//==========\n");
     if (m_slow) {
         string section;
@@ -3381,7 +3377,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     // Blocks
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-            maybeSplit(modp);
+            maybeSplit(fileModp);
             mainDoFunc(funcp);
         }
     }
@@ -3434,14 +3430,14 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
 
     m_ofp = newOutCFile(fileModp, !m_fast, true /*source*/);
     emitImpTop(fileModp);
-    emitImp(modp);
+    emitImp(fileModp, modp);
 
     if (AstClassPackage* packagep = VN_CAST(modp, ClassPackage)) {
         // Put the non-static class implementation in same C++ files as
         // often optimizations are possible when both are seen by the
         // compiler together
         m_modp = packagep->classp();
-        emitImp(packagep->classp());
+        emitImp(fileModp, packagep->classp());
         m_modp = modp;
     }
 
@@ -3454,7 +3450,7 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
              vxp = vxp->verticesNextp()) {
             const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp);
             if (mtaskp->threadRoot()) {
-                maybeSplit(modp);
+                maybeSplit(fileModp);
                 // Only define one function for all the mtasks packed on
                 // a given thread. We'll name this function after the
                 // root mtask though it contains multiple mtasks' worth
@@ -3530,7 +3526,7 @@ class EmitCTrace final : EmitCStmts {
             puts("if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
             puts("__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
             puts("trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
-            puts("std::string dumpfile = __VlSymsp->_vm_contextp__->dumpfile();\n");
+            puts("std::string dumpfile = __VlSymsp->_vm_contextp__->dumpfileCheck();\n");
             puts("__VlSymsp->__Vm_dumperp->open(dumpfile.c_str());\n");
             puts("__VlSymsp->__Vm_dumping = true;\n");
             puts("}\n");
@@ -3613,7 +3609,7 @@ class EmitCTrace final : EmitCStmts {
         puts(",");
         if (nodep->isScoped()) puts("Verilated::catName(scopep,");
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
-        if (nodep->isScoped()) puts(",\" \")");
+        if (nodep->isScoped()) puts(",(int)scopet,\" \")");
         // Direction
         if (v3Global.opt.traceFormat().fst()) {
             puts("," + cvtToStr(enumNum));

@@ -1,5 +1,7 @@
-// -*- mode: C++; c-file-style: "cc-mode" -*-
-//*************************************************************************
+// -*- mode: C++; c-file-style: "cc-mode"
+//-*- *************************************************************************
+//
+// Code available from: https://verilator.org
 //
 // Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
@@ -10,21 +12,22 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator: Include to allow symbol inspection
+/// \brief Verilated symbol inspection header
 ///
-///     This file is for inclusion by files that need to inspect the symbol
-///     table.  It is not included in verilated.h (instead see
-///     verilated_sym_props.h) as it requires some heavyweight C++ classes.
+/// This file is for inclusion by user wrapper code that needs to inspect
+/// the symbol table.  It is not included in verilated.h (instead see
+/// verilated_sym_props.h) as it requires some heavyweight C++ classes.
 ///
-///     These classes are thread safe and read only. It is constructed only
-///     when a model is built (from the main thread).
+/// These classes are rarely used by user code; typical user code will
+/// instead use the VPI to access this information.
 ///
-/// Code available from: https://verilator.org
+/// These classes are thread safe and read only. It is constructed only
+/// when a model is built (from the main thread).
 ///
 //*************************************************************************
 
 #ifndef VERILATOR_VERILATED_SYMS_H_
-#define VERILATOR_VERILATED_SYMS_H_  ///< Header Guard
+#define VERILATOR_VERILATED_SYMS_H_
 
 #include "verilatedos.h"
 #include "verilated_heavy.h"
@@ -35,14 +38,14 @@
 #include <vector>
 
 //======================================================================
-/// Types
+// Types
 
-/// Class to sort maps keyed by const char*'s
+// Class to sort maps keyed by const char*'s
 struct VerilatedCStrCmp {
     bool operator()(const char* a, const char* b) const { return std::strcmp(a, b) < 0; }
 };
 
-/// Map of sorted scope names to find associated scope class
+// Map of sorted scope names to find associated scope class
 // This is a class instead of typedef/using to allow forward declaration in verilated.h
 class VerilatedScopeNameMap final
     : public std::map<const char*, const VerilatedScope*, VerilatedCStrCmp> {
@@ -51,7 +54,7 @@ public:
     ~VerilatedScopeNameMap() = default;
 };
 
-/// Map of sorted variable names to find associated variable class
+// Map of sorted variable names to find associated variable class
 // This is a class instead of typedef/using to allow forward declaration in verilated.h
 class VerilatedVarNameMap final : public std::map<const char*, VerilatedVar, VerilatedCStrCmp> {
 public:
@@ -59,7 +62,7 @@ public:
     ~VerilatedVarNameMap() = default;
 };
 
-/// Map of parent scope to vector of children scopes
+// Map of parent scope to vector of children scopes
 // This is a class instead of typedef/using to allow forward declaration in verilated.h
 class VerilatedHierarchyMap final
     : public std::unordered_map<const VerilatedScope*, std::vector<const VerilatedScope*>> {

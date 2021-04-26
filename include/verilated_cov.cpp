@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,12 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Verilator coverage analysis
+/// \brief Verilated coverage analysis implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use coverage.
+///
+/// Use "verilator --coverage" to add this to the Makefile for the linker.
 ///
 //=============================================================================
 
@@ -31,19 +36,19 @@
 
 struct VerilatedCovConst VL_NOT_FINAL {
     // TYPES
-    enum { MAX_KEYS = 33 };  /// Maximum user arguments + filename+lineno
-    enum { KEY_UNDEF = 0 };  /// Magic key # for unspecified values
+    enum { MAX_KEYS = 33 };  // Maximum user arguments + filename+lineno
+    enum { KEY_UNDEF = 0 };  // Magic key # for unspecified values
 };
 
 //=============================================================================
 // VerilatedCovImpItem
-/// Implementation class for a VerilatedCov item
+// Implementation class for a VerilatedCov item
 
 class VerilatedCovImpItem VL_NOT_FINAL {
 public:  // But only local to this file
     // MEMBERS
-    int m_keys[VerilatedCovConst::MAX_KEYS];  ///< Key
-    int m_vals[VerilatedCovConst::MAX_KEYS];  ///< Value for specified key
+    int m_keys[VerilatedCovConst::MAX_KEYS];  // Key
+    int m_vals[VerilatedCovConst::MAX_KEYS];  // Value for specified key
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
@@ -58,15 +63,15 @@ public:  // But only local to this file
 };
 
 //=============================================================================
-/// VerilatedCoverItem templated for a specific class
-/// Creates a new coverage item for the specified type.
-/// This isn't in the header file for auto-magic conversion because it
-/// inlines to too much code and makes compilation too slow.
+// VerilatedCoverItem templated for a specific class
+// Creates a new coverage item for the specified type.
+// This isn't in the header file for auto-magic conversion because it
+// inlines to too much code and makes compilation too slow.
 
 template <class T> class VerilatedCoverItemSpec final : public VerilatedCovImpItem {
 private:
     // MEMBERS
-    T* m_countp;  ///< Count value
+    T* m_countp;  // Count value
 public:
     // METHODS
     // cppcheck-suppress truncLongCastReturn
@@ -83,30 +88,31 @@ public:
 
 //=============================================================================
 // VerilatedCovImp
-///
-/// Implementation class for VerilatedCovContext.  See that class for
-/// public method information.  All value and keys are indexed into a
-/// unique number.  Thus we can greatly reduce the storage requirements for
-/// otherwise identical keys.
+//
+// Implementation class for VerilatedCovContext.  See that class for
+// public method information.  All value and keys are indexed into a
+// unique number.  Thus we can greatly reduce the storage requirements for
+// otherwise identical keys.
 
 class VerilatedCovImp final : public VerilatedCovContext {
 private:
     // TYPES
-    typedef std::map<const std::string, int> ValueIndexMap;
-    typedef std::map<int, std::string> IndexValueMap;
-    typedef std::deque<VerilatedCovImpItem*> ItemList;
+    using ValueIndexMap = std::map<const std::string, int>;
+    using IndexValueMap = std::map<int, std::string>;
+    using ItemList = std::deque<VerilatedCovImpItem*>;
 
     // MEMBERS
-    VerilatedMutex m_mutex;  ///< Protects all members
-    ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for values
-    IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for keys
-    ItemList m_items VL_GUARDED_BY(m_mutex);  ///< List of all items
+    VerilatedMutex m_mutex;  // Protects all members
+    ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  // Unique arbitrary value for values
+    IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  // Unique arbitrary value for keys
+    ItemList m_items VL_GUARDED_BY(m_mutex);  // List of all items
     int m_nextIndex VL_GUARDED_BY(m_mutex)
-        = (VerilatedCovConst::KEY_UNDEF + 1);  ///< Next insert value
+        = (VerilatedCovConst::KEY_UNDEF + 1);  // Next insert value
 
-    VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  ///< Item about to insert
-    const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  ///< Filename about to insert
-    int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  ///< Line number about to insert
+    VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  // Item about to insert
+    const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  // Filename about to insert
+    int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  // Line number about to insert
+    bool m_forcePerInstance VL_GUARDED_BY(m_mutex) = false;  // Force per_instance
 
 public:
     // CONSTRUCTORS
@@ -136,7 +142,7 @@ private:
         // Quote any special characters
         std::string rtn;
         for (const char* pos = text.c_str(); *pos; ++pos) {
-            if (!isprint(*pos) || *pos == '%' || *pos == '"') {
+            if (!std::isprint(*pos) || *pos == '%' || *pos == '"') {
                 char hex[10];
                 VL_SNPRINTF(hex, 10, "%%%02X", pos[0]);
                 rtn += hex;
@@ -152,13 +158,13 @@ private:
         // a letter differently, nor want them to rely on our compression...
         // (Considered using numeric keys, but will remain back compatible.)
         if (key.length() < 2) return false;
-        if (key.length() == 2 && isdigit(key[1])) return false;
+        if (key.length() == 2 && std::isdigit(key[1])) return false;
         return true;
     }
     static std::string keyValueFormatter(const std::string& key,
                                          const std::string& value) VL_PURE {
         std::string name;
-        if (key.length() == 1 && isalpha(key[0])) {
+        if (key.length() == 1 && std::isalpha(key[0])) {
             name += std::string("\001") + key;
         } else {
             name += std::string("\001") + dequote(key);
@@ -190,8 +196,8 @@ private:
         std::string prefix = std::string(a, apre - a);
 
         // Scan backward to last mismatch
-        const char* apost = a + strlen(a) - 1;
-        const char* bpost = b + strlen(b) - 1;
+        const char* apost = a + std::strlen(a) - 1;
+        const char* bpost = b + std::strlen(b) - 1;
         while (*apost == *bpost && apost > apre && bpost > bpre) {
             apost--;
             bpost--;
@@ -245,6 +251,11 @@ private:
 
 public:
     // PUBLIC METHODS
+    void forcePerInstance(bool flag) VL_MT_SAFE_EXCLUDES(m_mutex) {
+        Verilated::quiesce();
+        const VerilatedLockGuard lock(m_mutex);
+        m_forcePerInstance = flag;
+    }
     void clear() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
@@ -294,7 +305,7 @@ public:
         valps[1] = linestr.c_str();
         // Default page if not specified
         const char* fnstartp = m_insertFilenamep;
-        while (const char* foundp = strchr(fnstartp, '/')) fnstartp = foundp + 1;
+        while (const char* foundp = std::strchr(fnstartp, '/')) fnstartp = foundp + 1;
         const char* fnendp = fnstartp;
         for (; *fnendp && *fnendp != '.'; fnendp++) {}
         std::string page_default = "sp_user/" + std::string(fnstartp, fnendp - fnstartp);
@@ -357,12 +368,12 @@ public:
         os << "# SystemC::Coverage-3\n";
 
         // Build list of events; totalize if collapsing hierarchy
-        typedef std::map<const std::string, std::pair<std::string, vluint64_t>> EventMap;
-        EventMap eventCounts;
+        std::map<const std::string, std::pair<std::string, vluint64_t>> eventCounts;
         for (const auto& itemp : m_items) {
             std::string name;
             std::string hier;
             bool per_instance = false;
+            if (m_forcePerInstance) per_instance = true;
 
             for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
                 if (itemp->m_keys[i] != VerilatedCovConst::KEY_UNDEF) {
@@ -396,7 +407,7 @@ public:
                 cit->second.second += itemp->count();
                 cit->second.first = combineHier(oldhier, hier);
             } else {
-                eventCounts.emplace(name, make_pair(hier, itemp->count()));
+                eventCounts.emplace(name, std::make_pair(hier, itemp->count()));
             }
         }
 
@@ -414,6 +425,9 @@ public:
 //=============================================================================
 // VerilatedCovContext
 
+void VerilatedCovContext::forcePerInstance(bool flag) VL_MT_SAFE {
+    impp()->forcePerInstance(flag);
+}
 void VerilatedCovContext::clear() VL_MT_SAFE { impp()->clear(); }
 void VerilatedCovContext::clearNonMatch(const char* matchp) VL_MT_SAFE {
     impp()->clearNonMatch(matchp);
@@ -430,6 +444,7 @@ void VerilatedCovContext::_insertf(const char* filename, int lineno) VL_MT_SAFE 
     impp()->insertf(filename, lineno);
 }
 
+#ifndef DOXYGEN
 #define K(n) const char* key##n
 #define A(n) const char *key##n, const char *valp##n  // Argument list
 #define C(n) key##n, valp##n  // Calling argument list
@@ -478,6 +493,8 @@ void VerilatedCovContext::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K
 #undef C
 #undef N
 #undef K
+
+#endif  // DOXYGEN
 
 //=============================================================================
 // VerilatedCov

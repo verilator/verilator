@@ -12,6 +12,10 @@
 import "DPI-C" context function int mon_check();
 `endif
 
+package somepackage;
+   int someint /*verilator public_flat_rw*/;
+endpackage
+
 module t (/*AUTOARG*/
    // Inputs
    clk

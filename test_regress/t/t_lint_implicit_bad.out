@@ -1,6 +1,7 @@
 %Warning-IMPLICIT: t/t_lint_implicit.v:11:11: Signal definition not found, creating implicitly: 'b'
    11 |    assign b = 1'b1;
       |           ^
+                   ... For warning description see https://verilator.org/warn/IMPLICIT?v=latest
                    ... Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.
 %Warning-IMPLICIT: t/t_lint_implicit.v:13:14: Signal definition not found, creating implicitly: 'nt0'
    13 |    or   OR0 (nt0, a, b);

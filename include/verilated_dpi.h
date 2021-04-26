@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,18 +12,19 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator: Common include for all Verilated C files that use DPI
+/// \brief Verilated DPI header
 ///
-///     This file is included automatically by Verilator at the top of
-///     all C++ files it generates where DPI is used.  It contains
-///     DPI interface functions required by the Verilated code.
+/// This file is included automatically by Verilator at the top of all C++
+/// files it generates where DPI is used.  It contains DPI interface
+/// functions required by the Verilated code.
 ///
-/// Code available from: https://verilator.org
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use.
 ///
 //*************************************************************************
 
 #ifndef VERILATOR_VERILATED_DPI_H_
-#define VERILATOR_VERILATED_DPI_H_  ///< Header Guard
+#define VERILATOR_VERILATED_DPI_H_
 
 #include "verilatedos.h"
 #include "verilated.h"  // Also presumably included by caller

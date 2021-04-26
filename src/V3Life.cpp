@@ -123,7 +123,7 @@ class LifeBlock final {
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
-    typedef std::unordered_map<AstVarScope*, LifeVarEntry> LifeMap;
+    using LifeMap = std::unordered_map<AstVarScope*, LifeVarEntry>;
     LifeMap m_map;  // Current active lifetime map for current scope
     LifeBlock* m_aboveLifep;  // Upper life, or nullptr
     LifeState* m_statep;  // Current global state
@@ -278,7 +278,7 @@ private:
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
-    typedef std::unordered_map<AstVarScope*, LifeVarEntry> LifeMap;
+    using LifeMap = std::unordered_map<AstVarScope*, LifeVarEntry>;
     // cppcheck-suppress memleak  // cppcheck bug - it is deleted
     LifeBlock* m_lifep;  // Current active lifetime map for current scope
 

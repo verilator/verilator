@@ -27,8 +27,8 @@
 
 //============================================================================
 
-typedef std::pair<AstVar*, AstArg*> V3TaskConnect;  // [port, pin-connects-to]
-typedef std::vector<V3TaskConnect> V3TaskConnects;  // [ [port, pin-connects-to] ... ]
+using V3TaskConnect = std::pair<AstVar*, AstArg*>;  // [port, pin-connects-to]
+using V3TaskConnects = std::vector<V3TaskConnect>;  // [ [port, pin-connects-to] ... ]
 
 //============================================================================
 

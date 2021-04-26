@@ -29,7 +29,7 @@
 //######################################################################
 // V3Options - Command line options
 
-typedef std::set<string> VlStringSet;
+using VlStringSet = std::set<std::string>;
 
 class VlcOptions final {
     // MEMBERS (general options)

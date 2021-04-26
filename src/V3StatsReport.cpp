@@ -32,7 +32,7 @@
 
 class StatsReport final {
     // TYPES
-    typedef std::vector<V3Statistic> StatColl;
+    using StatColl = std::vector<V3Statistic>;
 
     // STATE
     std::ofstream& os;  ///< Output stream
@@ -49,8 +49,7 @@ class StatsReport final {
 
     void sumit() {
         // If sumit is set on a statistic, combine with others of same name
-        typedef std::multimap<string, V3Statistic*> ByName;
-        ByName byName;
+        std::multimap<std::string, V3Statistic*> byName;
         // * is always first
         for (auto& itr : s_allStats) {
             V3Statistic* repp = &itr;
@@ -72,8 +71,7 @@ class StatsReport final {
     void stars() {
         // Find all stages
         size_t maxWidth = 0;
-        typedef std::multimap<string, const V3Statistic*> ByName;
-        ByName byName;
+        std::multimap<std::string, const V3Statistic*> byName;
         // * is always first
         for (const auto& itr : s_allStats) {
             const V3Statistic* repp = &itr;
@@ -112,13 +110,11 @@ class StatsReport final {
         // Find all stages
         int stage = 0;
         size_t maxWidth = 0;
-        typedef std::vector<string> Stages;
-        Stages stages;
+        std::vector<std::string> stages;
         std::unordered_map<string, int> stageInt;
-        typedef std::multimap<string, const V3Statistic*> ByName;
-        ByName byName;
+        std::multimap<std::string, const V3Statistic*> byName;
         // * is always first
-        for (StatColl::iterator it = s_allStats.begin(); it != s_allStats.end(); ++it) {
+        for (auto it = s_allStats.begin(); it != s_allStats.end(); ++it) {
             const V3Statistic* repp = &(*it);
             if (repp->stage() != "*" && repp->printit()) {
                 if (maxWidth < repp->name().length()) maxWidth = repp->name().length();
@@ -144,7 +140,7 @@ class StatsReport final {
         string lastName = "__NONE__";
         string lastCommaName = "__NONE__";
         unsigned col = 0;
-        for (ByName::const_iterator it = byName.begin(); it != byName.end(); ++it) {
+        for (auto it = byName.cbegin(); it != byName.cend(); ++it) {
             const V3Statistic* repp = it->second;
             if (lastName != repp->name()) {
                 lastName = repp->name();

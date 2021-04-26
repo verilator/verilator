@@ -117,7 +117,7 @@ static void process() {
     V3Error::abortIfErrors();
     if (v3Global.opt.debugExitParse()) {
         cout << "--debug-exit-parse: Exiting after parse\n";
-        exit(0);
+        std::exit(0);
     }
 
     // Convert parseref's to varrefs, and other directly post parsing fixups
@@ -125,7 +125,7 @@ static void process() {
     if (v3Global.opt.debugExitUvm()) {
         V3Error::abortIfErrors();
         cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
-        exit(0);
+        std::exit(0);
     }
 
     // Cross-link signal names
@@ -664,7 +664,7 @@ static void execBuildJob() {
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
-        exit(exit_code);
+        std::exit(exit_code);
     }
 }
 
@@ -676,7 +676,7 @@ static void execHierVerilation() {
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
-        exit(exit_code);
+        std::exit(exit_code);
     }
 }
 

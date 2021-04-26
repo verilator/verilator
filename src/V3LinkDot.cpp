@@ -140,21 +140,20 @@ public:
 
 private:
     // TYPES
-    typedef std::multimap<string, VSymEnt*> NameScopeSymMap;
-    typedef std::unordered_map<VSymEnt*, VSymEnt*> ScopeAliasMap;
-    typedef std::set<std::pair<AstNodeModule*, string>> ImplicitNameSet;
-    typedef std::vector<VSymEnt*> IfaceVarSyms;
-    typedef std::vector<std::pair<AstIface*, VSymEnt*>> IfaceModSyms;
+    using ScopeAliasMap = std::unordered_map<VSymEnt*, VSymEnt*>;
+    using IfaceModSyms = std::vector<std::pair<AstIface*, VSymEnt*>>;
 
     static LinkDotState* s_errorThisp;  // Last self, for error reporting only
 
     // MEMBERS
     VSymGraph m_syms;  // Symbol table
     VSymEnt* m_dunitEntp;  // $unit entry
-    NameScopeSymMap m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
-    ImplicitNameSet m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
+    std::multimap<std::string, VSymEnt*>
+        m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
+    std::set<std::pair<AstNodeModule*, std::string>>
+        m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
     std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
-    IfaceVarSyms m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
+    std::vector<VSymEnt*> m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
     bool m_forPrimary;  // First link
     bool m_forPrearray;  // Compress cell__[array] refs
@@ -408,18 +407,19 @@ public:
     void implicitOkAdd(AstNodeModule* nodep, const string& varname) {
         // Mark the given variable name as being allowed to be implicitly declared
         if (nodep) {
-            const auto it = m_implicitNameSet.find(make_pair(nodep, varname));
+            const auto it = m_implicitNameSet.find(std::make_pair(nodep, varname));
             if (it == m_implicitNameSet.end()) m_implicitNameSet.emplace(nodep, varname);
         }
     }
     bool implicitOk(AstNodeModule* nodep, const string& varname) {
         return nodep
-               && (m_implicitNameSet.find(make_pair(nodep, varname)) != m_implicitNameSet.end());
+               && (m_implicitNameSet.find(std::make_pair(nodep, varname))
+                   != m_implicitNameSet.end());
     }
 
     // Track and later recurse interface modules
     void insertIfaceModSym(AstIface* nodep, VSymEnt* symp) {
-        m_ifaceModSyms.push_back(make_pair(nodep, symp));
+        m_ifaceModSyms.push_back(std::make_pair(nodep, symp));
     }
     void computeIfaceModSyms();
 
@@ -1392,7 +1392,9 @@ private:
     }
     virtual void visit(AstDefParam* nodep) override {
         iterateChildren(nodep);
-        nodep->v3warn(DEFPARAM, "Suggest replace defparam assignment with Verilog 2001 #(."
+        nodep->v3warn(DEFPARAM, "defparam is deprecated (IEEE 1800-2017 C.4.1)\n"
+                                    << nodep->warnMore()
+                                    << "... Suggest use instantiation with #(."
                                     << nodep->prettyName() << "(...etc...))");
         VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
         AstCell* cellp = foundp ? VN_CAST(foundp->nodep(), Cell) : nullptr;
@@ -2021,9 +2023,10 @@ private:
                                                                  LinkNodeMatcherVarParam())
                                       : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                  LinkNodeMatcherVarIO()));
-                nodep->v3error(ucfirst(whatp)
-                               << " not found: " << nodep->prettyNameQ() << '\n'
-                               << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                nodep->v3warn(PINNOTFOUND,
+                              ucfirst(whatp)
+                                  << " not found: " << nodep->prettyNameQ() << '\n'
+                                  << (suggest.empty() ? "" : nodep->warnMore() + suggest));
             } else if (AstVar* refp = VN_CAST(foundp->nodep(), Var)) {
                 if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
                     nodep->v3error(ucfirst(whatp) << " is not an in/out/inout/param/interface: "

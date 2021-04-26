@@ -1,0 +1,9 @@
+%Warning-CASEOVERLAP: t/t_priority_case.v:34:7: Case item ignored: every matching value is covered by an earlier item
+   34 |       2'b ?1: out1 = 3'd1;
+      |       ^~~~~~
+                      ... For warning description see https://verilator.org/warn/CASEOVERLAP?v=latest
+                      ... Use "/* verilator lint_off CASEOVERLAP */" and lint_on around source to disable this message.
+%Warning-CASEOVERLAP: t/t_priority_case.v:44:7: Case item ignored: every matching value is covered by an earlier item
+   44 |       2'b ?1: out1 = 3'd1;
+      |       ^~~~~~
+%Error: Exiting due to

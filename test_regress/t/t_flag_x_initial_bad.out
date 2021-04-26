@@ -1,0 +1,2 @@
+%Error: Unknown setting for --x-initial: 'bad_one'
+        ... Suggest '0', 'fast', or 'unique'

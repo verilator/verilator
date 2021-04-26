@@ -2,6 +2,7 @@
                                                 : ... In instance t
   118 |          packed_data_32    = {<<8{byte_in}};
       |                            ^
+                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
 %Warning-WIDTH: t/t_stream_integer_type.v:119:28: Operator ASSIGN expects 64 bits on the Assign RHS, but Assign RHS's STREAML generates 16 bits.
                                                 : ... In instance t

@@ -223,6 +223,8 @@ Wilson Snyder <wsnyder@wsnyder.org>
 
 C<verilator>
 
+and L<https://verilator.org/verilator_doc.html> for detailed documentation.
+
 =cut
 
 ######################################################################

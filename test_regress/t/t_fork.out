@@ -2,4 +2,5 @@
                                     : ... In instance t
    10 |       fork : fblk
       |              ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

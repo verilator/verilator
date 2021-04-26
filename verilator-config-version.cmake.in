@@ -15,7 +15,7 @@
 #
 ######################################################################
 
-set(PACKAGE_VERSION "@PACKAGE_VERSION@")
+set(PACKAGE_VERSION "@PACKAGE_VERSION_NUMBER@")
 
 if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)
   set(PACKAGE_VERSION_COMPATIBLE FALSE)

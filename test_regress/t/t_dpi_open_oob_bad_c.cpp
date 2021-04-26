@@ -14,6 +14,8 @@
 #include <iostream>
 #include "svdpi.h"
 
+#include "TestCheck.h"
+
 //======================================================================
 
 // clang-format off
@@ -24,27 +26,9 @@
 #endif
 // clang-format on
 
-#define CHECK_RESULT_HEX(got, exp) \
-    do { \
-        if ((got) != (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
-
-#define CHECK_RESULT_HEX_NE(got, exp) \
-    do { \
-        if ((got) == (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP!=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
-
 //======================================================================
 
-int failure = 0;
+int errors = 0;
 
 void dpii_nullptr() {
     printf("%s:\n", __func__);
@@ -104,16 +88,16 @@ void dpii_int_u3(const svOpenArrayHandle i) {
     printf("%s:\n", __func__);
     // Correct usage
     intptr_t ip = (intptr_t)svGetArrElemPtr3(i, 1, 2, 3);
-    CHECK_RESULT_HEX_NE(ip, 0);
+    TEST_CHECK_HEX_NE(ip, 0);
     // Out of bounds
     ip = (intptr_t)svGetArrElemPtr3(i, 1, 2, 30);
-    CHECK_RESULT_HEX(ip, 0);
+    TEST_CHECK_HEX_EQ(ip, 0);
     ip = (intptr_t)svGetArrElemPtr3(i, 1, 20, 3);
-    CHECK_RESULT_HEX(ip, 0);
+    TEST_CHECK_HEX_EQ(ip, 0);
     ip = (intptr_t)svGetArrElemPtr3(i, 10, 2, 3);
-    CHECK_RESULT_HEX(ip, 0);
+    TEST_CHECK_HEX_EQ(ip, 0);
     ip = (intptr_t)svGetArrElemPtr1(i, 30);
-    CHECK_RESULT_HEX(ip, 0);
+    TEST_CHECK_HEX_EQ(ip, 0);
 }
 
 void dpii_real_u1(const svOpenArrayHandle i) {

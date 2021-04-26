@@ -152,8 +152,8 @@ inline bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
 inline bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
 
-typedef std::vector<string> V3StringList;
-typedef std::set<string> V3StringSet;
+using V3StringList = std::vector<std::string>;
+using V3StringSet = std::set<std::string>;
 
 //######################################################################
 
@@ -161,7 +161,7 @@ typedef std::set<string> V3StringSet;
 class V3HierarchicalBlockOption final {
 public:
     // key:parameter name, value:value (as string)
-    typedef std::map<const string, string> ParamStrMap;
+    using ParamStrMap = std::map<const std::string, std::string>;
 
 private:
     string m_origName;  // module name
@@ -178,7 +178,7 @@ public:
     const ParamStrMap params() const { return m_parameters; }
 };
 
-typedef std::map<const string, V3HierarchicalBlockOption> V3HierBlockOptSet;
+using V3HierBlockOptSet = std::map<const std::string, V3HierarchicalBlockOption>;
 
 //######################################################################
 // V3Options - Command line options
@@ -187,7 +187,7 @@ class V3Options final {
 public:
 private:
     // TYPES
-    typedef std::map<const string, int> DebugSrcMap;
+    using DebugSrcMap = std::map<const std::string, int>;
 
     // MEMBERS (general options)
     V3OptionsImp* m_impp;  // Slow hidden options
@@ -283,6 +283,7 @@ private:
 
     int         m_buildJobs = 1;    // main switch: -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
+    int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_dumpTree = 0;     // main switch: --dump-tree
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_ifDepth = 0;      // main switch: --if-depth
@@ -371,8 +372,6 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
-    static bool onoff(const char* sw, const char* arg, bool& flag);
-    static bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
@@ -479,6 +478,7 @@ public:
 
     int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
+    int coverageMaxWidth() const { return m_coverageMaxWidth; }
     int dumpTree() const { return m_dumpTree; }
     bool dumpTreeAddrids() const { return m_dumpTreeAddrids; }
     int gateStmts() const { return m_gateStmts; }

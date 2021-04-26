@@ -44,13 +44,12 @@ private:
     AstUser2InUse m_inuser2;
 
     // TYPES
-    typedef std::map<const std::pair<void*, string>, AstTypedef*> ImplTypedefMap;
-    typedef std::unordered_set<FileLine*> FileLineSet;
+    using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
 
     // STATE
     AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
-    FileLineSet m_filelines;  // Filelines that have been seen
+    std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
     bool m_inAlways = false;  // Inside an always
     AstNodeModule* m_valueModp
         = nullptr;  // If set, move AstVar->valuep() initial values to this module
@@ -219,6 +218,8 @@ private:
         if (v3Global.opt.publicFlatRW()) {
             switch (nodep->varType()) {
             case AstVarType::VAR:  // FALLTHRU
+            case AstVarType::GPARAM:  // FALLTHRU
+            case AstVarType::LPARAM:  // FALLTHRU
             case AstVarType::PORT:  // FALLTHRU
             case AstVarType::WIRE: nodep->sigUserRWPublic(true); break;
             default: break;
@@ -364,7 +365,7 @@ private:
         // a new type won't change every verilated module.
         AstTypedef* defp = nullptr;
         ImplTypedefMap::iterator it
-            = m_implTypedef.find(make_pair(nodep->containerp(), nodep->name()));
+            = m_implTypedef.find(std::make_pair(nodep->containerp(), nodep->name()));
         if (it != m_implTypedef.end()) {
             defp = it->second;
         } else {
@@ -388,7 +389,7 @@ private:
                 defp = new AstTypedef(nodep->fileline(), nodep->name(), nullptr, VFlagChildDType(),
                                       dtypep);
                 m_implTypedef.insert(
-                    make_pair(make_pair(nodep->containerp(), defp->name()), defp));
+                    std::make_pair(std::make_pair(nodep->containerp(), defp->name()), defp));
                 backp->addNextHere(defp);
             }
         }

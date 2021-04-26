@@ -166,8 +166,7 @@ private:
     vluint64_t m_generation = 0;  // Mark each vertex with this number;
     //                        // confirm we only process each vertex once.
     bool m_slowAsserts;  // Enable nontrivial asserts
-    typedef SortByValueMap<V3GraphVertex*, uint32_t> PropCpPendSet;
-    PropCpPendSet m_pending;  // Pending rescores
+    SortByValueMap<V3GraphVertex*, uint32_t> m_pending;  // Pending rescores
 
 public:
     // CONSTRUCTORS
@@ -248,7 +247,7 @@ private:
     // MEMBERS
     V3Graph m_graph;  // A graph
     V3GraphVertex* m_vx[50];  // All vertices within the graph
-    typedef std::unordered_map<V3GraphVertex*, uint32_t> CpMap;
+    using CpMap = std::unordered_map<V3GraphVertex*, uint32_t>;
     CpMap m_cp;  // Vertex-to-CP map
     CpMap m_seen;  // Set of vertices we've seen
 
@@ -354,7 +353,7 @@ public:
 class LogicMTask final : public AbstractLogicMTask {
 public:
     // TYPES
-    typedef std::list<MTaskMoveVertex*> VxList;
+    using VxList = std::list<MTaskMoveVertex*>;
 
     struct CmpLogicMTask {
         bool operator()(const LogicMTask* ap, const LogicMTask* bp) const {
@@ -443,7 +442,7 @@ private:
     // our edge with them. The SortByValueMap supports iterating over
     // relatives in longest-to-shortest CP order.  We rely on this ordering
     // in more than one place.
-    typedef SortByValueMap<LogicMTask*, uint32_t, CmpLogicMTask> EdgeSet;
+    using EdgeSet = SortByValueMap<LogicMTask*, uint32_t, CmpLogicMTask>;
     std::array<EdgeSet, GraphWay::NUM_WAYS> m_edges;
 
 public:
@@ -1036,9 +1035,9 @@ private:
     // TODO: might get a little more speed by making this a
     // std::unordered_set and defining hash and equal_to functors for the
     // SiblingMC:
-    typedef std::set<SiblingMC> SibSet;
-    typedef std::unordered_set<const SiblingMC*> SibpSet;
-    typedef std::unordered_map<const LogicMTask*, SibpSet> MTask2Sibs;
+    using SibSet = std::set<SiblingMC>;
+    using SibpSet = std::unordered_set<const SiblingMC*>;
+    using MTask2Sibs = std::unordered_map<const LogicMTask*, SibpSet>;
 
     // New CP information for mtaskp reflecting an upcoming merge
     struct NewCp {
@@ -1757,10 +1756,10 @@ private:
 class PartFixDataHazards final {
 private:
     // TYPES
-    typedef std::set<LogicMTask*, MTaskIdLessThan> LogicMTaskSet;
-    typedef std::map<uint32_t /*rank*/, LogicMTaskSet> TasksByRank;
-    typedef std::set<const OrderVarStdVertex*, OrderByPtrId&> OvvSet;
-    typedef std::unordered_map<const OrderLogicVertex*, LogicMTask*> Olv2MTaskMap;
+    using LogicMTaskSet = std::set<LogicMTask*, MTaskIdLessThan>;
+    using TasksByRank = std::map<uint32_t /*rank*/, LogicMTaskSet>;
+    using OvvSet = std::set<const OrderVarStdVertex*, OrderByPtrId&>;
+    using Olv2MTaskMap = std::unordered_map<const OrderLogicVertex*, LogicMTask*>;
 
     // MEMBERS
     V3Graph* m_mtasksp;  // Mtask graph
@@ -2032,16 +2031,15 @@ private:
     uint32_t m_sandbagNumerator;  // Numerator padding for est runtime
     uint32_t m_sandbagDenom;  // Denomerator padding for est runtime
 
-    typedef std::unordered_map<const ExecMTask*, MTaskState> MTaskStateMap;
+    using MTaskStateMap = std::unordered_map<const ExecMTask*, MTaskState>;
     MTaskStateMap m_mtaskState;  // State for each mtask.
 
     MTaskCmp m_mtaskCmp;  // Comparison functor
-    typedef std::set<ExecMTask*, MTaskCmp&> ReadyMTasks;
+    using ReadyMTasks = std::set<ExecMTask*, MTaskCmp&>;
     ReadyMTasks m_ready;  // MTasks ready to be assigned next; all their
     //                    // dependencies are already assigned.
 
-    typedef std::vector<ExecMTask*> MTaskVec;
-    MTaskVec m_prevMTask;  // Previous mtask scheduled to each thread.
+    std::vector<ExecMTask*> m_prevMTask;  // Previous mtask scheduled to each thread.
     std::vector<uint32_t> m_busyUntil;  // Time each thread is occupied until
 
 public:
@@ -2451,14 +2449,14 @@ void V3Partition::go(V3Graph* mtasksp) {
     // order though, otherwise we break CmpLogicMTask for still-existing
     // EdgeSet's that haven't destructed yet.
     {
-        typedef std::set<LogicMTask*, LogicMTask::CmpLogicMTask> SortedMTaskSet;
+        using SortedMTaskSet = std::set<LogicMTask*, LogicMTask::CmpLogicMTask>;
         SortedMTaskSet sorted;
         for (V3GraphVertex* itp = mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
             LogicMTask* mtaskp = dynamic_cast<LogicMTask*>(itp);
             sorted.insert(mtaskp);
         }
         uint32_t nextId = 1;
-        for (SortedMTaskSet::iterator it = sorted.begin(); it != sorted.end(); ++it) {
+        for (auto it = sorted.begin(); it != sorted.end(); ++it) {
             // We shouldn't perturb the sort order of the set, despite
             // changing the IDs, they should all just remain in the same
             // relative order. Confirm that:

@@ -2,6 +2,7 @@
                                                    : ... In instance t
    17 |    localparam bit_int_t [1:0] count_bits = {2{$bits(count_t)}};
       |                                               ^~~~~
+                      ... For warning description see https://verilator.org/warn/WIDTHCONCAT?v=latest
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
 %Warning-WIDTHCONCAT: t/t_packed_concat_bad.v:18:46: Unsized numbers/parameters not allowed in concatenations.
                                                    : ... In instance t
