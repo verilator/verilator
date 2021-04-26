@@ -128,6 +128,13 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: BADSTDPRAGMA
+
+   Error that a pragma is badly formed, when that pragma is defined by IEEE1800-2017.
+   For example, an empty `pragma line, or an incorrect specified '`pragma protect'.
+   Note that 3rd party pragmas not defined by IEEE1800-2017 are ignored.
+
+
 .. option:: BLKANDNBLK
 
    .. TODO better example
@@ -986,6 +993,16 @@ List Of Warnings
 
    Error that a procedural assignment is setting a wire. According to IEEE,
    a var/reg must be used as the target of procedural assignments.
+
+
+.. option:: PROTECTED
+
+   Warning that a '`pragma protected' section was encountered. The code
+   inside the protected region will be partly checked for correctness, but is
+   otherwise ignored.
+
+   Suppressing the warning may make Verilator differ from a simulator that
+   accepts the protected code.
 
 
 .. option:: RANDC
