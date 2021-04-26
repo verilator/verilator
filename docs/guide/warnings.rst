@@ -128,16 +128,11 @@ List Of Warnings
    simulate correctly.
 
 
-.. option:: BADPRAGMA
+.. option:: BADSTDPRAGMA
 
-   Error that a pragma is badly formed, but not specifically to '`pragma protect'.
-   For example, an empty `pragma line.
-
-
-.. option:: BADPROTECT
-
-   Error that was detected within a '`pragma protected' section.
-   such as incorrect BASE64 encoding, etc.
+   Error that a pragma is badly formed, when that pragma is defined by IEEE1800-2017.
+   For example, an empty `pragma line, or an incorrect specified '`pragma protect'.
+   Note that 3rd party pragmas not defined by IEEE1800-2017 are ignored.
 
 
 .. option:: BLKANDNBLK

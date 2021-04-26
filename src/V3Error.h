@@ -64,8 +64,7 @@ public:
         ALWCOMBORDER,   // Always_comb with unordered statements
         ASSIGNDLY,      // Assignment delays
         ASSIGNIN,       // Assigning to input
-        BADPRAGMA,      // Any error related to pragmas
-        BADPROTECT,     // detected errors within `pragma protected
+        BADSTDPRAGMA,   // Any error related to pragmas
         BLKANDNBLK,     // Blocked and non-blocking assignments to same variable
         BLKLOOPINIT,    // Delayed assignment to array inside for loops
         BLKSEQ,         // Blocking assignments in sequential block
@@ -162,7 +161,7 @@ public:
             "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADPRAGMA", "BADPROTECT",
+            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
@@ -195,7 +194,7 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const {
-        return (m_e == ASSIGNIN || m_e == BADPRAGMA || m_e == BADPROTECT || m_e == BLKANDNBLK
+        return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK
                 || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == IMPURE || m_e == PINNOTFOUND
                 || m_e == PKGNODECL || m_e == PROCASSWIRE);  // Says IEEE
     }
