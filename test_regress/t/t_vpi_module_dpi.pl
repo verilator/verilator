@@ -13,12 +13,16 @@ scenarios(simulator => 1);
 skip("Known compiler limitation")
     if $Self->cxx_version =~ /\(GCC\) 4.4/;
 
+VM_PREFIX("Vt_vpi_module");
+top_filename("t/t_vpi_module.v");
+pli_filename("t_vpi_module.cpp");
+
 compile(
     make_top_shell => 0,
     make_main => 0,
     make_pli => 1,
     iv_flags2 => ["-g2005-sv"],
-    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' +define+USE_DOLLAR_C32 --exe --vpi --no-l2name $Self->{t_dir}/t_vpi_module.cpp"],
+    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi --no-l2name $Self->{t_dir}/t_vpi_module.cpp"],
     );
 
 execute(
