@@ -128,6 +128,18 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: BADPRAGMA
+
+   Error that a pragma is badly formed, but not specifically to '`pragma protect'.
+   For example, an empty `pragma line.
+
+
+.. option:: BADPROTECT
+
+   Error that was detected within a '`pragma protected' section.
+   such as incorrect BASE64 encoding, etc.
+
+
 .. option:: BLKANDNBLK
 
    .. TODO better example
@@ -980,13 +992,6 @@ List Of Warnings
    be declared before being used.
 
 
-.. option:: BADPRAGMA
-
-   Error that a pragma is badly formed, but not specifically to '`pragma protect'.
-   For example, an empty `pragma line.
-   
-
-
 .. option:: PROCASSWIRE
 
    .. TODO better example
@@ -1004,10 +1009,6 @@ List Of Warnings
    Suppressing the warning may make Verilator differ from a simulator that
    accepts the protected code.
 
-.. option:: BADPROTECT
-
-   Error that wasdetected within a '`pragma protected' section.
-   such as incorrect BASE64 encoding, etc.
 
 .. option:: RANDC
 

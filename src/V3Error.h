@@ -64,6 +64,8 @@ public:
         ALWCOMBORDER,   // Always_comb with unordered statements
         ASSIGNDLY,      // Assignment delays
         ASSIGNIN,       // Assigning to input
+        BADPRAGMA,      // Any error related to pragmas
+        BADPROTECT,     // detected errors within `pragma protected
         BLKANDNBLK,     // Blocked and non-blocking assignments to same variable
         BLKLOOPINIT,    // Delayed assignment to array inside for loops
         BLKSEQ,         // Blocking assignments in sequential block
@@ -108,10 +110,8 @@ public:
         PINNOCONNECT,   // Cell pin not connected
         PINNOTFOUND,    // instance port name not found in it's module
         PKGNODECL,      // Error: Package/class needs to be predeclared
-        PRAGMAERR,      // Any error related to pragmas
         PROCASSWIRE,    // Procedural assignment on wire
         PROTECTED,      // detected `pragma protected
-        PROTECTERR,     // detected errors within `pragma protected
         RANDC,          // Unsupported: 'randc' converted to 'rand'
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
@@ -162,7 +162,7 @@ public:
             "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
+            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADPRAGMA", "BADPROTECT",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
@@ -173,8 +173,8 @@ public:
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
-            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PRAGMAERR", "PROCASSWIRE",
-            "PROTECTED", "PROTECTERR", "RANDC", "REALCVT", "REDEFMACRO",
+            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
+            "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
@@ -195,9 +195,9 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const {
-        return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
-                || m_e == PROCASSWIRE);  // Says IEEE
+        return (m_e == ASSIGNIN || m_e == BADPRAGMA || m_e == BADPROTECT || m_e == BLKANDNBLK
+                || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == IMPURE || m_e == PINNOTFOUND
+                || m_e == PKGNODECL || m_e == PROCASSWIRE);  // Says IEEE
     }
     // Warnings to mention manual
     bool mentionManual() const {

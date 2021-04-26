@@ -13,7 +13,6 @@ scenarios(linter => 1);
 
 lint(
     verilator_flags2 => ['--lint-only -Wno-PROTECTED'],
-    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);
