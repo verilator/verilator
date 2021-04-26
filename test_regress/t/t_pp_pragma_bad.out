@@ -1,7 +1,7 @@
 %Error-BADSTDPRAGMA: t/t_pp_pragma_bad.v:7:1: `pragma is missing a pragma_expression.
     7 | `pragma
       | ^~~~~~~
-                     ... For error description see https://verilator.org/warn/BADSTDPRAGMA?v=4.201
+                     ... For error description see https://verilator.org/warn/BADSTDPRAGMA?v=latest
 `line 1 "t/t_pp_pragma_bad.v" 1
  
 

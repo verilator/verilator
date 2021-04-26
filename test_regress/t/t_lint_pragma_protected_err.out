@@ -1,7 +1,7 @@
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_err.v:8:17: Unknown '`pragma protect' error
     8 | `pragma protect encrypt_agent=123
       |                 ^~~~~~~~~~~~~~~~~
-                     ... For error description see https://verilator.org/warn/BADSTDPRAGMA?v=4.201
+                     ... For error description see https://verilator.org/warn/BADSTDPRAGMA?v=latest
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_err.v:10:17: Unknown '`pragma protect' error
    10 | `pragma protect encrypt_agent_info
       |                 ^~~~~~~~~~~~~~~~~~
