@@ -1266,7 +1266,9 @@ public:
     virtual void visit(AstNode* nodep) override {
         puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
         iterateChildren(nodep);
-        nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+        if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
+            nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+        }
     }
 
     EmitCStmts() {

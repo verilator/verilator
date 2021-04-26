@@ -14,7 +14,7 @@
                                        : ... In instance t
    11 |       x;  
       |       ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_func_bad.v:14:17: No such argument 'no_such' in function call to FUNC 'f'
                             : ... In instance t
    14 |       f(.j(1), .no_such(2));  

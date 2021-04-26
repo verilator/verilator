@@ -2,7 +2,7 @@
                                         : ... In instance t
    15 |       a = new [s];   
       |           ^~~
-                ... For warning description see https://verilator.org/warn/WIDTH?v=4.201
+                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
 %Error: Internal Error: t/t_dynarray_bad.v:15:16: ../V3Number.cpp:#: Number operation called with non-logic (double or string) argument: '"str""
    15 |       a = new [s];   

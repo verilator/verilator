@@ -170,7 +170,12 @@ class EmitCSyms final : EmitCBaseVisitor {
             const auto scpit = m_vpiScopeCandidates.find(scp);
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
-                m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
+                auto scopeNameit = m_scopeNames.find(scpit->second.m_symName);
+                if (scopeNameit == m_scopeNames.end()) {
+                    m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
+                } else {
+                    scopeNameit->second.m_type = scpit->second.m_type;
+                }
             }
             string::size_type pos = scp.rfind("__DOT__");
             if (pos == string::npos) {
@@ -233,20 +238,20 @@ class EmitCSyms final : EmitCBaseVisitor {
              ++it) {
             if (it->second.m_type != "SCOPE_MODULE") continue;
 
-            string name = it->second.m_prettyName;
-            if (name.substr(0, 4) == "TOP.") name.replace(0, 4, "");
+            string symName = it->second.m_symName;
+            string above = symName;
+            if (above.substr(0, 4) == "TOP.") above.replace(0, 4, "");
 
-            string above = name;
             while (!above.empty()) {
-                string::size_type pos = above.rfind('.');
+                string::size_type pos = above.rfind("__");
                 if (pos == string::npos) break;
                 above.resize(pos);
                 if (m_vpiScopeHierarchy.find(above) != m_vpiScopeHierarchy.end()) {
-                    m_vpiScopeHierarchy[above].push_back(name);
+                    m_vpiScopeHierarchy[above].push_back(symName);
                     break;
                 }
             }
-            m_vpiScopeHierarchy[name] = std::vector<string>();
+            m_vpiScopeHierarchy[symName] = std::vector<string>();
         }
     }
 

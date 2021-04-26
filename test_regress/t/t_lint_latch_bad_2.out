@@ -2,6 +2,6 @@
                                            : ... Suggest use of always_latch for intentional latches
    11 |    always @(a or b)
       |    ^~~~~~
-                ... For warning description see https://verilator.org/warn/LATCH?v=4.201
+                ... For warning description see https://verilator.org/warn/LATCH?v=latest
                 ... Use "/* verilator lint_off LATCH */" and lint_on around source to disable this message.
 %Error: Exiting due to

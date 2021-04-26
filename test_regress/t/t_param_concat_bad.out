@@ -2,7 +2,7 @@
                                               : ... In instance t
    19 |          if ({UNSIZED,UNSIZED+1} != {32'd10, 32'd11}) $stop;
       |               ^~~~~~~
-                      ... For warning description see https://verilator.org/warn/WIDTHCONCAT?v=4.201
+                      ... For warning description see https://verilator.org/warn/WIDTHCONCAT?v=latest
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
 %Warning-WIDTHCONCAT: t/t_param_concat.v:19:22: Unsized numbers/parameters not allowed in replications.
                                               : ... In instance t

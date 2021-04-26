@@ -2144,6 +2144,7 @@ sub files_identical {
                 $l1[$l] =~ s/Command Failed[^\n]+/Command Failed/mig;
                 $l1[$l] =~ s/Version: Verilator[^\n]+/Version: Verilator ###/mig;
                 $l1[$l] =~ s/CPU Time: +[0-9.]+ seconds[^\n]+/CPU Time: ###/mig;
+                $l1[$l] =~ s/\?v=[0-9.]+/?v=latest/mig;  # warning URL
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest
                     last;

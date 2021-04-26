@@ -2,7 +2,7 @@
                                           : ... In instance t
    20 |       static int st = 2; st++; return st;
       |                  ^~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_var_static.v:30:18: Unsupported: 'static' function/task variables
                                           : ... In instance t
    30 |       static int st = 2; st++; return st;

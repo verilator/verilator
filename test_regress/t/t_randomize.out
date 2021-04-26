@@ -1,7 +1,7 @@
 %Error-UNSUPPORTED: t/t_randomize.v:11:4: Unsupported: extern constraint
    11 |    extern constraint ex;
       |    ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_randomize.v:29:29: Unsupported: solve before
    29 |    constraint order { solve length before header; }
       |                             ^~~~~~

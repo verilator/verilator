@@ -1,7 +1,7 @@
 %Error-UNSUPPORTED: t/t_wait.v:12:7: Unsupported: wait statements
    12 |       wait (value == 1);
       |       ^~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_wait.v:14:7: Unsupported: wait statements
    14 |       wait (0);
       |       ^~~~

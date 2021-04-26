@@ -1,7 +1,7 @@
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:7:13: 'should_show_warning_global0' has split_var metacomment, but will not be split because it is not declared in a module.
     7 | logic [7:0] should_show_warning_global0 /*verilator split_var*/ ;
       |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
-                   ... For warning description see https://verilator.org/warn/SPLITVAR?v=4.201
+                   ... For warning description see https://verilator.org/warn/SPLITVAR?v=latest
                    ... Use "/* verilator lint_off SPLITVAR */" and lint_on around source to disable this message.
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:8:13: 'should_show_warning_global1' has split_var metacomment, but will not be split because it is not declared in a module.
     8 | logic [7:0] should_show_warning_global1 [1:0] /*verilator split_var*/ ;

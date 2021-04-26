@@ -20,19 +20,20 @@ module t(/*AUTOARG*/
    logic       bank_rd_vec_m3;
    always_ff @(posedge clk) bank_rd_vec_m3 <= crc[33];
 
-
-   wire        out;
-   ecc_check_pipe u_bank_data_ecc_check(
-                                        .clk          (clk),
-                                        .bank_rd_m3  (bank_rd_vec_m3),
-                                        .data_i      (in),
-                                        .ecc_err_o   (out)
-                                        );
-
-
+   logic [3:0][31:0] data_i;
+   wire [3:0]        out;
+   for (genvar i = 0; i < 4; ++i) begin
+      always_ff @(posedge clk) data_i[i] <= crc[63:32];
+      ecc_check_pipe u_bank_data_ecc_check(
+                                           .clk          (clk),
+                                           .bank_rd_m3  (bank_rd_vec_m3),
+                                           .data_i      ({1'b0, data_i[i]}),
+                                           .ecc_err_o   (out[i])
+                                           );
+   end
 
    // Aggregate outputs into a single result vector
-   wire [63:0] result = {63'b0, out};
+   wire [63:0] result = {60'b0, out};
 
    // Test loop
    always @ (posedge clk) begin
@@ -54,7 +55,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h768b162c5835e35b
+`define EXPECTED_SUM 64'ha2601675a6ae4972
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;

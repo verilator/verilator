@@ -4,7 +4,7 @@
                     t/t_var_bad_hide.v:13:12: ... Location of original declaration
    13 |    integer top;
       |            ^~~
-                    ... For warning description see https://verilator.org/warn/VARHIDDEN?v=4.201
+                    ... For warning description see https://verilator.org/warn/VARHIDDEN?v=latest
                     ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
 %Warning-VARHIDDEN: t/t_var_bad_hide.v:22:18: Declaration of signal hides declaration in upper scope: 'top'
    22 |          integer top;

@@ -2,7 +2,7 @@
                                              : ... Suggest delayed assignments (<=)
    24 |       sync_blk = 1'b1;
       |                ^
-                 ... For warning description see https://verilator.org/warn/BLKSEQ?v=4.201
+                 ... For warning description see https://verilator.org/warn/BLKSEQ?v=latest
                  ... Use "/* verilator lint_off BLKSEQ */" and lint_on around source to disable this message.
 %Warning-COMBDLY: t/t_lint_blksync_bad.v:31:18: Delayed assignments (<=) in non-clocked (non flop or latch) block
                                               : ... Suggest blocking assignments (=)

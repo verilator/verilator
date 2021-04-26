@@ -8,35 +8,48 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 4.201 devel
+Verilator 4.202 2021-04-24
 ==========================
 
 **Major:**
 
 * Documentation has been rewritten into a book format.
+* Verilated signals now use VlWide and VlPacked in place of C arrays.
 
 **Minor:**
 
 * Add an URL on warnings to point to the manual's description.
 * Add EOFNEWLINE warning when missing a newline at EOF.
 * Changed TIMESCALEMOD from error into a warning.
-* Verilated signals now use VlWide and VlPacked in place of C arrays.
 * Mark --no-relative-cfuncs as scheduled for deprecation.
 * Add --coverage-max-width (#2853). [xuejiazidi]
 * Add VerilatedCovContext::forcePerInstance (#2793). [Kevin Laeufer]
+* Add FST SystemC tracing (#2806). [Alex Torregrosa]
+* Add PINNOTFOUND warning in place of error (#2868). [Udi Finkelstein]
+* Support overlaps in priority case statements (#2864). [Rupert Swarbrick]
+* Support for null ports (#2875). [Udi Finkelstein]
 * Fix class unpacked-array compile error (#2774). [Iru Cai]
+* Fix scope types in FST and VCD traces (#2805). [Alex Torregrosa]
 * Fix exceeding command-line ar limit (#2834). [Yinan Xu]
 * Fix false $dumpfile warning on model save (#2834). [Yinan Xu]
 * Fix --timescale-override not suppressing TIMESCALEMOD (#2838). [Kaleb Barrett]
 * Fix false TIMESCALEMOD on generate-ignored instances (#2838). [Kaleb Barrett]
 * Fix --output-split with class extends (#2839). [Iru Cai]
 * Fix false WIDTHCONCAT on casted constant (#2849). [Rupert Swarbrick]
+* Fix tracing of long hashed names (#2854). [Graham Rushton]
 * Fix --public-flat-rw / DPI issue (#2858). [Todd Strader]
 * Fix interface localparam access (#2859). [Todd Strader]
 * Fix Cygwin example compile issues (#2856). [Mark Shaw]
 * Fix select of with index variable (#2880). [Alexander Grobman]
 * Fix cmake version number to be numeric (#2881). [Yuri Victorovich]
+* Fix MinGW not supportting 'localtime_r' (#2882). [HyungKi Jeong]
+* Fix cast from packed, typedef'ed interface signal (#2884). [Todd Strader]
+* Fix VPI package reported as vpiModule (#2885). [Todd Strader]
+* Fix dumping waveforms to multiple FST files (#2889). [David Metz]
+* Fix assertion failure in bitOpTree (#2892). [Yutetsu TAKATSUKASA]
 * Fix V3Premit infinite loop on always read-and-write (#2898). [Raynard Qiao]
+* Fix VPI packed vectors (#2900). [Todd Strader]
+* Fix VPI public interface parameters (#2901). [Todd Strader]
 
 
 Verilator 4.200 2021-03-12

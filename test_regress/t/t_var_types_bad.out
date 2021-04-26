@@ -21,7 +21,7 @@
 %Warning-REALCVT: t/t_var_types_bad.v:46:7: Implicit conversion of real to integer
    46 |       d_real[0] = 1'b1;          
       |       ^~~~~~
-                  ... For warning description see https://verilator.org/warn/REALCVT?v=4.201
+                  ... For warning description see https://verilator.org/warn/REALCVT?v=latest
                   ... Use "/* verilator lint_off REALCVT */" and lint_on around source to disable this message.
 %Error: t/t_var_types_bad.v:47:17: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'real'
                                  : ... In instance t
