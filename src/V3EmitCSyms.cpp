@@ -762,6 +762,7 @@ void EmitCSyms::emitSymImp() {
             AstScope* scopep = it->second.m_scopep;
             AstVar* varp = it->second.m_varp;
             //
+            int pwidth = 1;
             int pdim = 0;
             int udim = 0;
             string bounds;
@@ -773,6 +774,7 @@ void EmitCSyms::emitSymImp() {
                     bounds += ",";
                     bounds += cvtToStr(basicp->lo());
                     pdim++;
+                    pwidth *= basicp->hi() - basicp->lo() + 1;
                 }
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
                     dtypep
@@ -784,6 +786,7 @@ void EmitCSyms::emitSymImp() {
                         bounds += cvtToStr(adtypep->right());
                         if (VN_IS(dtypep, PackArrayDType)) {
                             pdim++;
+                            pwidth *= adtypep->hi() - adtypep->lo() + 1;
                         } else {
                             udim++;
                         }
@@ -793,8 +796,14 @@ void EmitCSyms::emitSymImp() {
                     }
                 }
             }
-            //
-            if (udim > 1 && (pdim && udim)) {
+            // TODO: actually expose packed arrays as vpiRegArray
+            if (pdim > 1 && udim == 0) {
+                bounds = " ,";
+                bounds += cvtToStr(pwidth - 1);
+                bounds += ",0";
+                pdim = 1;
+            }
+            if (pdim > 1 || udim > 1) {
                 puts("//UNSUP ");  // VerilatedImp can't deal with >2d or packed arrays
             }
             puts(protect("__Vscope_" + it->second.m_scopeName) + ".varInsert(__Vfinal,");

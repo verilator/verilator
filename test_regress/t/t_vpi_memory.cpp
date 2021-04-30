@@ -50,6 +50,12 @@ unsigned int main_time = 0;
         return __LINE__; \
     }
 
+#define CHECK_RESULT_Z(got) \
+    if ((got)) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
         printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
@@ -112,45 +118,68 @@ int _mon_check_range(const TestVpiHandle& handle, int size, int left, int right)
     return 0;  // Ok
 }
 
-int _mon_check_memory() {
+int _mem_check(const char* name, int size, int left, int right, int words) {
     s_vpi_value value;
-    value.format = vpiIntVal;
-    value.value.integer = 0;
     s_vpi_error_info e;
 
-    vpi_printf((PLI_BYTE8*)"Check memory vpi ...\n");
-    TestVpiHandle mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted("mem0"), NULL);
+    vpi_printf((PLI_BYTE8*)"Check memory vpi (%s) ...\n", name);
+    TestVpiHandle mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
     CHECK_RESULT_NZ(mem_h);
-    {
-        // check type
-        int vpitype = vpi_get(vpiType, mem_h);
-        CHECK_RESULT(vpitype, vpiMemory);
+    // check type
+    int vpitype = vpi_get(vpiType, mem_h);
+    if (vpitype != vpiMemory && vpitype != vpiReg) {
+        printf("%%Error: %s:%d vpiType neither vpiMemory or vpiReg: %d\n", FILENM, __LINE__,
+               vpitype);
+        return __LINE__;
     }
-    if (int status = _mon_check_range(mem_h, 16, 16, 1)) return status;
+    std::string binStr;
+    for (int i = words; i >= 1; i--) {
+        for (int pos = size - 1; pos >= 0; pos--) {
+            int posValue = (i >> pos) & 0x1;
+            binStr += std::to_string(posValue);
+        }
+    }
     // iterate and store
-    {
+    if (vpitype == vpiMemory) {
+        if (int status = _mon_check_range(mem_h, words, words, 1)) return status;
         TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
         int cnt = 0;
         while (TestVpiHandle lcl_h = vpi_scan(iter_h)) {
+            value.format = vpiIntVal;
             value.value.integer = ++cnt;
             vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
+            CHECK_RESULT_Z(vpi_chk_error(&e));
             // check size and range
-            if (int status = _mon_check_range(lcl_h, 32, 31, 0)) return status;
+            if (int status = _mon_check_range(lcl_h, size, left, right)) return status;
         }
         iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
-        CHECK_RESULT(cnt, 16);  // should be 16 addresses
+        CHECK_RESULT(cnt, words);  // should be words addresses
+    } else {
+        int expSize = size * words;
+        if (int status = _mon_check_range(mem_h, expSize, expSize - 1, 0)) return status;
+        value.format = vpiBinStrVal;
+        value.value.str = const_cast<char*>(binStr.c_str());
+        vpi_put_value(mem_h, &value, NULL, vpiNoDelay);
+        CHECK_RESULT_Z(vpi_chk_error(&e));
     }
-    {
+    if (vpitype == vpiMemory) {
         // iterate and accumulate
         TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
         int cnt = 0;
         while (TestVpiHandle lcl_h = vpi_scan(iter_h)) {
             ++cnt;
+            value.format = vpiIntVal;
             vpi_get_value(lcl_h, &value);
+            CHECK_RESULT_Z(vpi_chk_error(&e));
             CHECK_RESULT(value.value.integer, cnt);
         }
         iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
-        CHECK_RESULT(cnt, 16);  // should be 16 addresses
+        CHECK_RESULT(cnt, words);  // should be words addresses
+    } else {
+        value.format = vpiBinStrVal;
+        vpi_get_value(mem_h, &value);
+        CHECK_RESULT_Z(vpi_chk_error(&e));
+        CHECK_RESULT(std::string(value.value.str), binStr);
     }
 
     // don't care for non verilator
@@ -175,7 +204,7 @@ int _mon_check_memory() {
         should_be_NULL = vpi_handle(vpiScope, iter_h);
         CHECK_RESULT(should_be_NULL, 0);
     }
-    {
+    if (vpitype == vpiMemory) {
         // check vpiRange
         TestVpiHandle iter_h = vpi_iterate(vpiRange, mem_h);
         CHECK_RESULT_NZ(iter_h);
@@ -202,6 +231,29 @@ int _mon_check_memory() {
             iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
             CHECK_RESULT(zero_h, 0);
         }
+    }
+    return 0;
+}
+
+struct params {
+    const char* name;
+    int size;
+    int left;
+    int right;
+    int words;
+};
+
+int _mon_check_memory() {
+    // See note in t_vpi_get.cpp about static
+    static struct params values[]
+        = {{"mem0", 32, 31, 0, 16},   {"memp32", 32, 31, 0, 16}, {"memp31", 31, 30, 0, 16},
+           {"memp33", 33, 32, 0, 15}, {"memw", 32, 31, 0, 16},   {NULL, 0, 0, 0, 0}};
+    struct params* value = values;
+    while (value->name) {
+        if (int result
+            = _mem_check(value->name, value->size, value->left, value->right, value->words))
+            return result;
+        value++;
     }
     return 0;  // Ok
 }
