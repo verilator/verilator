@@ -332,8 +332,8 @@ public:
 
 class VerilatedVpioReg final : public VerilatedVpioVar {
 public:
-    VerilatedVpioReg(const VerilatedVar* varp, const VerilatedScope* scopep,
-                            vlsint32_t index, int offset)
+    VerilatedVpioReg(const VerilatedVar* varp, const VerilatedScope* scopep, vlsint32_t index,
+                     int offset)
         : VerilatedVpioVar{varp, scopep} {
         m_index = index;
         m_varDatap = (static_cast<vluint8_t*>(varp->datap())) + entSize() * offset;
@@ -1418,14 +1418,14 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
                             || indx < varop->varp()->unpacked().right()))
                 return nullptr;
             return (new VerilatedVpioReg(varop->varp(), varop->scopep(), indx,
-                                                indx - varop->varp()->unpacked().right()))
+                                         indx - varop->varp()->unpacked().right()))
                 ->castVpiHandle();
         }
         if (VL_UNLIKELY(indx < varop->varp()->unpacked().left()
                         || indx > varop->varp()->unpacked().right()))
             return nullptr;
         return (new VerilatedVpioReg(varop->varp(), varop->scopep(), indx,
-                                            indx - varop->varp()->unpacked().left()))
+                                     indx - varop->varp()->unpacked().left()))
             ->castVpiHandle();
     }
     VL_VPI_INTERNAL_(__FILE__, __LINE__, "%s : can't resolve handle", __func__);
@@ -1526,7 +1526,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     case vpiReg: {
         VerilatedVpioVar* voarp = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(voarp)) {
-           if (voarp->varp()->udims() >= 1) return vpi_iterate(vpiMemoryWord, object);
+            if (voarp->varp()->udims() >= 1) return vpi_iterate(vpiMemoryWord, object);
         }
         VerilatedVpioScope* vop = VerilatedVpioScope::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;

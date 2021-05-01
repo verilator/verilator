@@ -351,7 +351,7 @@ int _mon_check_var() {
         p = vpi_get_str(vpiType, vh10);
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
-    TestVpiHandle vh6  = VPI_HANDLE("twounpacked");
+    TestVpiHandle vh6 = VPI_HANDLE("twounpacked");
     CHECK_RESULT_NZ(vh6);
     if (TestSimulator::has_get_scalar()) {
         d = vpi_get(vpiScalar, vh6);
@@ -372,7 +372,7 @@ int _mon_check_arr() {
     const char* p;
     t_vpi_value tmpValue;
     PLI_INT32 d;
-    TestVpiHandle vha  = VPI_HANDLE("a");
+    TestVpiHandle vha = VPI_HANDLE("a");
     CHECK_RESULT_NZ(vha);
     {
         p = vpi_get_str(vpiType, vha);
@@ -382,21 +382,21 @@ int _mon_check_arr() {
         d = vpi_get(vpiSize, vha);
         CHECK_RESULT(d, 1);
     }
-    TestVpiHandle vha_p0  = VPI_HANDLE("a_p0");
+    TestVpiHandle vha_p0 = VPI_HANDLE("a_p0");
     CHECK_RESULT_NZ(vha_p0);
     {
         p = vpi_get_str(vpiType, vha_p0);
         CHECK_RESULT_CSTR(p, "vpiReg");
         d = vpi_get(vpiVector, vha_p0);
         if (TestSimulator::is_icarus()) {
-           CHECK_RESULT(d, 0);
+            CHECK_RESULT(d, 0);
         } else {
-           CHECK_RESULT(d, 1);
+            CHECK_RESULT(d, 1);
         }
         d = vpi_get(vpiSize, vha_p0);
         CHECK_RESULT(d, 1);
     }
-    TestVpiHandle vha_p1  = VPI_HANDLE("a_p1");
+    TestVpiHandle vha_p1 = VPI_HANDLE("a_p1");
     CHECK_RESULT_NZ(vha_p1);
     {
         p = vpi_get_str(vpiType, vha_p1);
@@ -406,7 +406,7 @@ int _mon_check_arr() {
         d = vpi_get(vpiSize, vha_p1);
         CHECK_RESULT(d, 2);
     }
-    TestVpiHandle vha_u0  = VPI_HANDLE("a_u0");
+    TestVpiHandle vha_u0 = VPI_HANDLE("a_u0");
     CHECK_RESULT_NZ(vha_u0);
     {
         p = vpi_get_str(vpiType, vha_u0);
@@ -416,7 +416,7 @@ int _mon_check_arr() {
         p = vpi_get_str(vpiType, vha_u0_0);
         CHECK_RESULT_CSTR(p, "vpiReg");
     }
-    TestVpiHandle vha_p0u0  = VPI_HANDLE("a_p0u0");
+    TestVpiHandle vha_p0u0 = VPI_HANDLE("a_p0u0");
     CHECK_RESULT_NZ(vha_p0u0);
     {
         p = vpi_get_str(vpiType, vha_p0u0);
@@ -450,7 +450,7 @@ int _mon_check_arr() {
     v.format = vpiIntVal;
     v.value.integer = 1;
     vpi_put_value(vha_u0_idx0, &v, &t, vpiNoDelay);
-   return 0;
+    return 0;
 }
 
 int _mon_check_varlist() {
@@ -525,14 +525,14 @@ int _mon_check_quad() {
 
     // TODO: Verilator should correctly access packed vector elements
     if (!TestSimulator::is_verilator()) {
-       TestVpiHandle vhidx3idx0 = vpi_handle_by_index(vhidx3, 0);
-       CHECK_RESULT_NZ(vhidx3idx0);
-       TestVpiHandle vhidx2idx2 = vpi_handle_by_index(vhidx2, 2);
-       CHECK_RESULT_NZ(vhidx2idx2);
-       TestVpiHandle vhidx3idx3 = vpi_handle_by_index(vhidx3, 3);
-       CHECK_RESULT_NZ(vhidx3idx3);
-       TestVpiHandle vhidx2idx61 = vpi_handle_by_index(vhidx2, 61);
-       CHECK_RESULT_NZ(vhidx2idx61);
+        TestVpiHandle vhidx3idx0 = vpi_handle_by_index(vhidx3, 0);
+        CHECK_RESULT_NZ(vhidx3idx0);
+        TestVpiHandle vhidx2idx2 = vpi_handle_by_index(vhidx2, 2);
+        CHECK_RESULT_NZ(vhidx2idx2);
+        TestVpiHandle vhidx3idx3 = vpi_handle_by_index(vhidx3, 3);
+        CHECK_RESULT_NZ(vhidx3idx3);
+        TestVpiHandle vhidx2idx61 = vpi_handle_by_index(vhidx2, 61);
+        CHECK_RESULT_NZ(vhidx2idx61);
     }
 
     v.format = vpiVectorVal;
@@ -744,10 +744,10 @@ int mon_check() {
     printf("-mon_check()\n");
 #endif
 
-   if (TestSimulator::is_verilator()) {
-      if (int status = _mon_check_mcd()) return status;
-      if (int status = _mon_check_callbacks()) return status;
-      if (int status = _mon_check_value_callbacks()) return status;
+    if (TestSimulator::is_verilator()) {
+        if (int status = _mon_check_mcd()) return status;
+        if (int status = _mon_check_callbacks()) return status;
+        if (int status = _mon_check_value_callbacks()) return status;
     }
     if (int status = _mon_check_var()) return status;
     if (int status = _mon_check_arr()) return status;
@@ -756,8 +756,8 @@ int mon_check() {
     if (int status = _mon_check_quad()) return status;
     if (int status = _mon_check_string()) return status;
     if (TestSimulator::is_verilator()) {
-       if (int status = _mon_check_putget_str(NULL)) return status;
-       if (int status = _mon_check_vlog_info()) return status;
+        if (int status = _mon_check_putget_str(NULL)) return status;
+        if (int status = _mon_check_vlog_info()) return status;
     }
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
