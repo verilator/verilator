@@ -1759,13 +1759,17 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
         opCleanThis();  // Mult produces extra bits in result
     } else {
         for (int lword = 0; lword < lhs.words(); lword++) {
+            const vluint64_t lwordval = static_cast<vluint64_t>(lhs.m_value[lword]);
+            if (lwordval == 0) continue;
             for (int rword = 0; rword < rhs.words(); rword++) {
-                vluint64_t mul = static_cast<vluint64_t>(lhs.m_value[lword])
-                                 * static_cast<vluint64_t>(rhs.m_value[rword]);
+                const vluint64_t rwordval = static_cast<vluint64_t>(rhs.m_value[rword]);
+                if (rwordval == 0) continue;
+                vluint64_t mul = lwordval * rwordval;
                 for (int qword = lword + rword; qword < this->words(); qword++) {
                     mul += static_cast<vluint64_t>(m_value[qword]);
                     m_value[qword] = (mul & 0xffffffffULL);
                     mul = (mul >> 32ULL) & 0xffffffffULL;
+                    if (mul == 0) break;
                 }
             }
         }
