@@ -6125,6 +6125,7 @@ private:
     }
     void userIterateAndNext(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
+        if (nodep->didWidth()) return;  // Avoid iterating list we have already iterated
         {
             VL_RESTORER(m_vup);
             m_vup = vup;
