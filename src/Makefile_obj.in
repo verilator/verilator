@@ -221,6 +221,7 @@ RAW_OBJS = \
 	V3MergeCond.o \
 	V3Name.o \
 	V3Number.o \
+	V3OptionParser.o \
 	V3Options.o \
 	V3Order.o \
 	V3Os.o \
