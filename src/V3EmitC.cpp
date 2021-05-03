@@ -1778,19 +1778,19 @@ class EmitCImp final : EmitCStmts {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
-                                       ".atDefault()" + cvtarray);
+                                       suffix + ".atDefault()" + cvtarray);
         } else if (VN_IS(dtypep, ClassRefDType)) {
             return "";  // Constructor does it
         } else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
-                                       ".atDefault()" + cvtarray);
+                                       suffix + ".atDefault()" + cvtarray);
         } else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
-                                       ".atDefault()" + cvtarray);
+                                       suffix + ".atDefault()" + cvtarray);
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                         "Should have swapped msb & lsb earlier.");

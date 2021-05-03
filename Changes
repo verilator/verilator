@@ -11,6 +11,10 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.203 devel
 ==========================
 
+**Minor:**
+
+* Fix initialization of assoc in assoc array (#2914). [myftptoyman]
+
 
 Verilator 4.202 2021-04-24
 ==========================
