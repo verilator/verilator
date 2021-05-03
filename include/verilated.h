@@ -2705,7 +2705,7 @@ static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP lwp, IData
 static inline IData VL_SEL_IWII(int, int lbits, int, int, WDataInP lwp, IData lsb,
                                 IData width) VL_MT_SAFE {
     int msb = lsb + width - 1;
-    if (VL_UNLIKELY(msb > lbits)) {
+    if (VL_UNLIKELY(msb >= lbits)) {
         return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
     } else if (VL_BITWORD_E(msb) == VL_BITWORD_E(static_cast<int>(lsb))) {
         return VL_BITRSHIFT_W(lwp, lsb);
