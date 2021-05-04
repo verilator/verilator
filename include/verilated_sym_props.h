@@ -233,8 +233,8 @@ protected:
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
-                 VerilatedVarFlags vlflags, int dims, bool isParam)
-        : VerilatedVarProps{vltype, vlflags, (dims > 0 ? 1 : 0), ((dims > 1) ? dims - 1 : 0)}
+                 VerilatedVarFlags vlflags, int pdims, int udims, bool isParam)
+        : VerilatedVarProps{vltype, vlflags, pdims, udims}
         , m_datap{datap}
         , m_namep{namep}
         , m_isParam{isParam} {}

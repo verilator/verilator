@@ -598,7 +598,7 @@ public:  // But internals only - called from VerilatedModule's
                    const char* identifier, vlsint8_t timeunit, const Type& type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap, bool isParam,
-                   VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
+                   VerilatedVarType vltype, int vlflags, int pdims, int udims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const { return m_namep; }
     const char* identifier() const { return m_identifierp; }

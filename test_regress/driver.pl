@@ -601,6 +601,7 @@ sub new {
                         ? " -Wl,-undefined,dynamic_lookup"
                         : " -export-dynamic")
                       .($opt_verbose ? " -DTEST_VERBOSE=1":"")
+                      ." -DTEST_OBJ_DIR=$self->{obj_dir}"
                       ." -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
         # ATSIM
