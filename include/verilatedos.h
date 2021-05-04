@@ -43,6 +43,12 @@
 # define VL_ATTR_COLD __attribute__((cold))
 # define VL_ATTR_HOT __attribute__((hot))
 # define VL_ATTR_NORETURN __attribute__((noreturn))
+// Clang or GCC-8.0+ supports no_sanitize("string") style attribute
+# if defined(__clang__) || (__GNUC__ >= 8)
+#  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize("alignment")))
+#else  // Older GCC has to disable the entire undefined sanitizer
+#  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize_undefined))
+#endif
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
@@ -84,6 +90,9 @@
 #endif
 #ifndef VL_ATTR_NORETURN
 # define VL_ATTR_NORETURN  ///< Attribute that function does not ever return
+#endif
+#ifndef VL_ATTR_NO_SANITIZE_ALIGN
+# define VL_ATTR_NO_SANITIZE_ALIGN ///< Attribute that the function contains intended unaligned access
 #endif
 #ifndef VL_ATTR_PRINTF
 # define VL_ATTR_PRINTF(fmtArgNum)  ///< Attribute for function with printf format checking
