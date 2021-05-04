@@ -143,13 +143,14 @@ public:
 };
 
 #define V3OPTION_PARSER_DECL_TAGS \
-    const auto Set = V3OptionParser::AppendHelper::Set{}; \
-    const auto OnOff = V3OptionParser::AppendHelper::OnOff{}; \
-    const auto CbCall = V3OptionParser::AppendHelper::CbCall{}; \
-    const auto CbOnOff = V3OptionParser::AppendHelper::CbOnOff{}; \
-    const auto CbVal = V3OptionParser::AppendHelper::CbVal{}; \
-    const auto CbPartialMatch = V3OptionParser::AppendHelper::CbPartialMatch{}; \
-    const auto CbPartialMatchVal = V3OptionParser::AppendHelper::CbPartialMatchVal {}
+    const auto Set VL_ATTR_UNUSED = V3OptionParser::AppendHelper::Set{}; \
+    const auto OnOff VL_ATTR_UNUSED = V3OptionParser::AppendHelper::OnOff{}; \
+    const auto CbCall VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbCall{}; \
+    const auto CbOnOff VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbOnOff{}; \
+    const auto CbVal VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbVal{}; \
+    const auto CbPartialMatch VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbPartialMatch{}; \
+    const auto CbPartialMatchVal VL_ATTR_UNUSED \
+        = V3OptionParser::AppendHelper::CbPartialMatchVal {}
 
 //######################################################################
 
