@@ -80,7 +80,6 @@ private:
     vluint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
     std::vector<char> m_suffixes;  // VCD line end string codes + metadata
-    const char* m_suffixesp;  // Pointer to first element of above
 
     using NameMap = std::map<const std::string, const std::string>;
     NameMap* m_namemapp = nullptr;  // List of names for the header
