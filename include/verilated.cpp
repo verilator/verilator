@@ -2811,7 +2811,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, boo
 
     int dims = pdims + udims;
     va_list ap;
-    if (pdims > 1 || udims > 1) {
+    if (udims > 1) {
         // We could have a linked list of ranges, but really this whole thing needs
         // to be generalized to support structs and unions, etc.
         VL_FATAL_MT(

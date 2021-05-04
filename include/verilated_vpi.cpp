@@ -1407,7 +1407,7 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
     // Used to get array entries
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_index %p %d\n", object, indx););
     VerilatedVpiImp::assertOneCheck();
-    VL_VPI_ERROR_RESET();
+    VL_VPI_ERROR_RESET_();
     VerilatedVpioReg* vop = VerilatedVpioReg::castp(object);
     if (VL_UNLIKELY(vop)) return nullptr;
     VerilatedVpioVar* varop = VerilatedVpioVar::castp(object);

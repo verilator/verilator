@@ -118,14 +118,18 @@ int _mon_check_mcd() {
     status = vpi_mcd_printf(mcd, (PLI_BYTE8*)"hello %s", "vpi_mcd_printf");
     CHECK_RESULT(status, strlen("hello vpi_mcd_printf"));
 
-    status = vpi_mcd_printf(0, (PLI_BYTE8*)"empty");
-    CHECK_RESULT(status, 0);
+    if (!TestSimulator::is_icarus()) {
+        status = vpi_mcd_printf(0, (PLI_BYTE8*)"empty");
+        CHECK_RESULT(status, 0);
+    }
 
     status = vpi_mcd_flush(mcd);
     CHECK_RESULT(status, 0);
 
-    status = vpi_mcd_flush(0);
-    CHECK_RESULT(status, 1);
+    if (!TestSimulator::is_icarus()) {
+        status = vpi_mcd_flush(0);
+        CHECK_RESULT(status, 1);
+    }
 
     status = vpi_mcd_close(mcd);
     // Icarus says 'error' on ones we're not using, so check only used ones return 0.
@@ -150,12 +154,14 @@ int _mon_check_callbacks() {
     cb_data.value = NULL;
     cb_data.time = NULL;
 
-    TestVpiHandle vh = vpi_register_cb(&cb_data);
-    CHECK_RESULT_NZ(vh);
+    if (!TestSimulator::is_icarus()) {
+        TestVpiHandle vh = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(vh);
 
-    PLI_INT32 status = vpi_remove_cb(vh);
-    vh.freed();
-    CHECK_RESULT_NZ(status);
+        PLI_INT32 status = vpi_remove_cb(vh);
+        vh.freed();
+        CHECK_RESULT_NZ(status);
+    }
 
     return 0;
 }
@@ -180,11 +186,13 @@ int _value_callback_half(p_cb_data cb_data) {
 }
 
 int _value_callback_quad(p_cb_data cb_data) {
-    for (int index = 0; index < 2; index++) {
-        CHECK_RESULT_HEX(cb_data->value->value.vector[1].aval,
-                         (unsigned long)((index == 2) ? 0x1c77bb9bUL : 0x12819213UL));
-        CHECK_RESULT_HEX(cb_data->value->value.vector[0].aval,
-                         (unsigned long)((index == 2) ? 0x3784ea09UL : 0xabd31a1cUL));
+    if (!TestSimulator::is_icarus()) {
+        for (int index = 0; index < 2; index++) {
+            CHECK_RESULT_HEX(cb_data->value->value.vector[1].aval,
+                             (unsigned long)((index == 2) ? 0x1c77bb9bUL : 0x12819213UL));
+            CHECK_RESULT_HEX(cb_data->value->value.vector[0].aval,
+                             (unsigned long)((index == 2) ? 0x3784ea09UL : 0xabd31a1cUL));
+        }
     }
     callback_count_quad++;
     return 0;
@@ -318,7 +326,11 @@ int _mon_check_var() {
         TestVpiHandle vh11 = vpi_scan(vh10);
         CHECK_RESULT_NZ(vh11);
         p = vpi_get_str(vpiType, vh11);
-        CHECK_RESULT_CSTR(p, "vpiReg");
+        if (TestSimulator::is_icarus()) {
+            CHECK_RESULT_CSTR(p, "vpiMemoryWord");
+        } else {
+            CHECK_RESULT_CSTR(p, "vpiReg");
+        }
         TestVpiHandle vh12 = vpi_handle(vpiLeftRange, vh11);
         CHECK_RESULT_NZ(vh12);
         vpi_get_value(vh12, &tmpValue);
@@ -410,21 +422,37 @@ int _mon_check_arr() {
     CHECK_RESULT_NZ(vha_u0);
     {
         p = vpi_get_str(vpiType, vha_u0);
-        CHECK_RESULT_CSTR(p, "vpiRegArray");
+        if (TestSimulator::is_icarus()) {
+            CHECK_RESULT_CSTR(p, "vpiMemory");
+        } else {
+            CHECK_RESULT_CSTR(p, "vpiRegArray");
+        }
         TestVpiHandle vha_u0_0 = vpi_handle_by_index(vha_u0, 0);
         CHECK_RESULT_NZ(vha_u0_0);
         p = vpi_get_str(vpiType, vha_u0_0);
-        CHECK_RESULT_CSTR(p, "vpiReg");
+        if (TestSimulator::is_icarus()) {
+            CHECK_RESULT_CSTR(p, "vpiMemoryWord");
+        } else {
+            CHECK_RESULT_CSTR(p, "vpiReg");
+        }
     }
     TestVpiHandle vha_p0u0 = VPI_HANDLE("a_p0u0");
     CHECK_RESULT_NZ(vha_p0u0);
     {
         p = vpi_get_str(vpiType, vha_p0u0);
-        CHECK_RESULT_CSTR(p, "vpiRegArray");
+        if (TestSimulator::is_icarus()) {
+            CHECK_RESULT_CSTR(p, "vpiMemory");
+        } else {
+            CHECK_RESULT_CSTR(p, "vpiRegArray");
+        }
         TestVpiHandle vha_p0u0_0 = vpi_handle_by_index(vha_p0u0, 0);
         CHECK_RESULT_NZ(vha_p0u0_0);
         p = vpi_get_str(vpiType, vha_p0u0_0);
-        CHECK_RESULT_CSTR(p, "vpiReg");
+        if (TestSimulator::is_icarus()) {
+            CHECK_RESULT_CSTR(p, "vpiMemoryWord");
+        } else {
+            CHECK_RESULT_CSTR(p, "vpiReg");
+        }
     }
 
     s_vpi_value v;
@@ -524,7 +552,7 @@ int _mon_check_quad() {
     CHECK_RESULT_NZ(vhidx3);
 
     // TODO: Verilator should correctly access packed vector elements
-    if (!TestSimulator::is_verilator()) {
+    if (!TestSimulator::is_verilator() && !TestSimulator::is_icarus()) {
         TestVpiHandle vhidx3idx0 = vpi_handle_by_index(vhidx3, 0);
         CHECK_RESULT_NZ(vhidx3idx0);
         TestVpiHandle vhidx2idx2 = vpi_handle_by_index(vhidx2, 2);
@@ -744,21 +772,17 @@ int mon_check() {
     printf("-mon_check()\n");
 #endif
 
-    if (TestSimulator::is_verilator()) {
-        if (int status = _mon_check_mcd()) return status;
-        if (int status = _mon_check_callbacks()) return status;
-        if (int status = _mon_check_value_callbacks()) return status;
-    }
+    if (int status = _mon_check_mcd()) return status;
+    if (int status = _mon_check_callbacks()) return status;
+    if (int status = _mon_check_value_callbacks()) return status;
     if (int status = _mon_check_var()) return status;
     if (int status = _mon_check_arr()) return status;
     if (int status = _mon_check_varlist()) return status;
     if (int status = _mon_check_getput()) return status;
     if (int status = _mon_check_quad()) return status;
     if (int status = _mon_check_string()) return status;
-    if (TestSimulator::is_verilator()) {
-        if (int status = _mon_check_putget_str(NULL)) return status;
-        if (int status = _mon_check_vlog_info()) return status;
-    }
+    if (int status = _mon_check_putget_str(NULL)) return status;
+    if (int status = _mon_check_vlog_info()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif

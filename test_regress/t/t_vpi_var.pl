@@ -11,11 +11,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    make_top_shell => 0,
+    make_top_shell => 1,
     make_main => 0,
     make_pli => 1,
     sim_time => 2100,
-    iv_flags2 => ["-g2005-sv -D USE_VPI_NOT_DPI -DWAVES"],
+    iv_flags2 => ["-g2012 -D USE_VPI_NOT_DPI -DWAVES"],
     v_flags2 => ["+define+USE_VPI_NOT_DPI"],
     verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi --no-l2name $Self->{t_dir}/t_vpi_var.cpp"],
     );

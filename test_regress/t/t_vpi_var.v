@@ -39,8 +39,6 @@ extern "C" int mon_check();
    logic [0:0][0:0] a_p00/*verilator public_flat_rw @(posedge clk) */;
    logic        a_u0 [0:0]/*verilator public_flat_rw @(posedge clk) */;
    logic [0:0]    a_p0u0 [0:0]/*verilator public_flat_rw @(posedge clk) */;
-   logic [0:0]    a_p0u00 [0:0][0:0]/*verilator public_flat_rw @(posedge clk) */;
-   logic [0:0][0:0] a_p00u00 [0:0][0:0]/*verilator public_flat_rw @(posedge clk) */;
 
    reg [31:0] 	   count	/*verilator public_flat_rd */;
    reg [31:0] 	   half_count	/*verilator public_flat_rd */;
@@ -67,8 +65,6 @@ extern "C" int mon_check();
       a_p00 = 0;
       a_u0[0] = 0;
       a_p0u0[0] = 0;
-      a_p0u00[0][0] = 0;
-      a_p00u00[0][0] = 0;
       text_byte = "B";
       text_half = "Hf";
       text_word = "Word";
@@ -76,7 +72,6 @@ extern "C" int mon_check();
       text = "Verilog Test module";
 `ifdef VERILATOR
       status = $c32("mon_check()");
-`else
 `endif
 `ifdef IVERILOG
       status = $mon_check();
