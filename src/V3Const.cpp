@@ -100,7 +100,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     public:
         // METHODS
         bool hasConstantResult() const { return m_constResult >= 0; }
-        bool sameVarAs(const AstNodeVarRef* otherp) const { return m_refp->sameGateTree(otherp); }
+        bool sameVarAs(const AstNodeVarRef* otherp) const { return m_refp->same(otherp); }
         void setPolarity(bool compBit, int bit) {
             UASSERT_OBJ(!hasConstantResult(), m_refp, "Already has result of " << m_constResult);
             UASSERT_OBJ(bit < VL_QUADSIZE, m_refp,
