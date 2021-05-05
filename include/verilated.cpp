@@ -646,17 +646,17 @@ std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
     int shift = prec - userUnits + fracDigits;  // 0..-15
     double shiftd = vl_time_multiplier(shift);
     double scaled = ld * shiftd;
-    QData fracDiv = static_cast<QData>(vl_time_multiplier(fracDigits));
-    QData whole = static_cast<QData>(scaled) / fracDiv;
-    QData fraction = static_cast<QData>(scaled) % fracDiv;
+    const double fracDivFloat = vl_time_multiplier(fracDigits);
+    const double wholeFloat = scaled / fracDivFloat;
     int digits = 0;
     if (!fracDigits) {
-        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u%s", whole,
+        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.0f%s", wholeFloat,
                              suffix.c_str());
     } else {
-        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u.%0*" VL_PRI64 "u%s",
-                             whole, fracDigits, fraction, suffix.c_str());
+        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.*f%s", fracDigits, wholeFloat,
+                             suffix.c_str());
     }
+
     int needmore = width - digits;
     std::string padding;
     if (needmore > 0) padding.append(needmore, ' ');  // Pad with spaces
