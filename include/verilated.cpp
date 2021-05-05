@@ -650,8 +650,7 @@ std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
     const double wholeFloat = scaled / fracDivFloat;
     int digits = 0;
     if (!fracDigits) {
-        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.0f%s", wholeFloat,
-                             suffix.c_str());
+        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.0f%s", wholeFloat, suffix.c_str());
     } else {
         digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.*f%s", fracDigits, wholeFloat,
                              suffix.c_str());
