@@ -774,7 +774,7 @@ void EmitCSyms::emitSymImp() {
                     bounds += ",";
                     bounds += cvtToStr(basicp->lo());
                     pdim++;
-                    pwidth *= basicp->hi() - basicp->lo() + 1;
+                    pwidth *= basicp->elements();
                 }
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
                     dtypep
@@ -786,7 +786,7 @@ void EmitCSyms::emitSymImp() {
                         bounds += cvtToStr(adtypep->right());
                         if (VN_IS(dtypep, PackArrayDType)) {
                             pdim++;
-                            pwidth *= adtypep->hi() - adtypep->lo() + 1;
+                            pwidth *= adtypep->elementsConst();
                         } else {
                             udim++;
                         }
@@ -798,7 +798,7 @@ void EmitCSyms::emitSymImp() {
             }
             // TODO: actually expose packed arrays as vpiRegArray
             if (pdim > 1 && udim == 0) {
-                bounds = " ,";
+                bounds = ", ";
                 bounds += cvtToStr(pwidth - 1);
                 bounds += ",0";
                 pdim = 1;

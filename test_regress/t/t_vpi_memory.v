@@ -51,7 +51,7 @@ extern "C" int mon_check();
      status = mon_check();
 `endif
       if (status!=0) begin
-	 $write("%%Error: t_vpi_memory.cpp:%0d: C Test failed\n", status);
+	 $write("%%Error: t_vpi_memory.cpp: C Test failed (rc=%0d)\n", status);
 	 $stop;
       end
       `CHECK_MEM(mem0, 16)
@@ -60,7 +60,7 @@ extern "C" int mon_check();
       `CHECK_MEM(memp33, 15)
       `CHECK_MEM(memw, 16)
       if (status!=0) begin
-	 $write("%%Error: t_vpi_memory.cpp:%0d: C Test failed\n", status);
+	 $write("%%Error: Verilog memory checks failed\n");
 	 $stop;
       end
       $write("*-* All Finished *-*\n");

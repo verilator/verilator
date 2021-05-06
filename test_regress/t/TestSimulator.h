@@ -29,14 +29,12 @@ public:
         vpi_get_vlog_info(&m_info);
         if (0 == strcmp(m_info.product, "Verilator")) {
             m_simulators.verilator = true;
-        } else if (0 == strcmp(m_info.product, "Icarus Verilog")) {
+        } else if (0 == strcmp(m_info.product, "Verilator")) {
             m_simulators.icarus = true;
         } else if (0
                    == strncmp(m_info.product, "Chronologic Simulation VCS",
                               strlen("Chronologic Simulation VCS"))) {
             m_simulators.vcs = true;
-        } else if (0 == strcmp(m_info.product, "xmsim(64)")) {
-            m_simulators.ncsim = true;
         } else {
             printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n", __FILE__,
                    __LINE__, m_info.product);
@@ -64,7 +62,7 @@ public:
     static bool has_get_scalar() { return !simulators().icarus; }
     // return test level scope
     static const char* top() {
-        if (simulators().verilator || simulators().ncsim) {
+        if (simulators().verilator) {
             return "t";
         } else {
             return "top.t";
