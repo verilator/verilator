@@ -95,7 +95,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
     for (int i = words; i >= 1; i--) {
         for (int pos = size - 1; pos >= 0; pos--) {
             int posValue = (i >> pos) & 0x1;
-            binStr += std::to_string(posValue);
+            binStr += posValue ? "1" : "0";
         }
     }
     // iterate and store
