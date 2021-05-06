@@ -1526,11 +1526,8 @@ bool V3Number::isCaseEq(const V3Number& rhs) const {
     if (isString()) return toString() == rhs.toString();
     if (isDouble()) return toDouble() == rhs.toDouble();
     if (this->width() != rhs.width()) return false;
-
-    for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs(bit) != rhs.bitIs(bit)) return false;
-    }
-    return true;
+    if (m_value != rhs.m_value) return false;
+    return m_valueX == rhs.m_valueX;
 }
 
 V3Number& V3Number::opCaseEq(const V3Number& lhs, const V3Number& rhs) {

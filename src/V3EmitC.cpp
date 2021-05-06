@@ -1814,13 +1814,18 @@ class EmitCImp final : EmitCStmts {
             splitSizeInc(1);
             if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
                 string out;
-                if (zeroit) {
-                    out += "VL_ZERO_RESET_W(";
+                if (varp->valuep()) {
+                    AstConst* const constp = VN_CAST(varp->valuep(), Const);
+                    if (!constp) varp->v3fatalSrc("non-const initializer for variable");
+                    for (int w = 0; w < varp->widthWords(); ++w) {
+                        out += varp->nameProtect() + suffix + "[" + cvtToStr(w) + "] = ";
+                        out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
+                    }
                 } else {
-                    out += "VL_RAND_RESET_W(";
+                    out += zeroit ? "VL_ZERO_RESET_W(" : "VL_RAND_RESET_W(";
+                    out += cvtToStr(dtypep->widthMin());
+                    out += ", " + varp->nameProtect() + suffix + ");\n";
                 }
-                out += cvtToStr(dtypep->widthMin());
-                out += ", " + varp->nameProtect() + suffix + ");\n";
                 return out;
             } else {
                 string out = varp->nameProtect() + suffix;
