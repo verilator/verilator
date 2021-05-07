@@ -54,6 +54,15 @@ static const bool verbose = false;
         } \
     } while (0)
 
+#define TEST_CHECK_Z(got) \
+    do { \
+        if ((got)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
+                      << ": GOT!= NULL   EXP=NULL" << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
 #define TEST_CHECK_NZ(got) \
     do { \
         if (!(got)) { \

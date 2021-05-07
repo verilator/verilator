@@ -935,6 +935,7 @@ public:
     const VNumRange& nrange() const { return m.m_nrange; }
     int hi() const { return (rangep() ? rangep()->hiConst() : m.m_nrange.hi()); }
     int lo() const { return (rangep() ? rangep()->loConst() : m.m_nrange.lo()); }
+    int elements() const { return (rangep() ? rangep()->elementsConst() : m.m_nrange.elements()); }
     int left() const { return littleEndian() ? lo() : hi(); }  // How to show a declaration
     int right() const { return littleEndian() ? hi() : lo(); }
     bool littleEndian() const {
