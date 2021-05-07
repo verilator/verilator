@@ -7,7 +7,7 @@ Time scale of t is 1ps / 1fs
   dig%0t=5432109876.543000ns dig%0d=5432109876543
   rdig%0t=5432109876.543209ns rdig%0f=5432109876543.209961
 [0.060000ns] stime%0t=0.060000ns  stime%0d=60  stime%0f=60.000000
-[0.060000ns] rtime%0t=0.059999ns  rtime%0d=60  rtime%0f=60.000000
+[0.060000ns] rtime%0t=0.060000ns  rtime%0d=60  rtime%0f=60.000000
 global vpiSimTime = 0,60000  vpiScaledRealTime = 60000
 global vpiTimeUnit = -12  vpiTimePrecision = -15
 top.t vpiSimTime = 0,60000  vpiScaledRealTime = 60
