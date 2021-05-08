@@ -360,7 +360,8 @@ Verilate in CMake
      verilate(target SOURCES source ... [TOP_MODULE top] [PREFIX name]
               [TRACE] [TRACE_FST] [SYSTEMC] [COVERAGE]
               [INCLUDE_DIRS dir ...] [OPT_SLOW ...] [OPT_FAST ...]
-              [OPT_GLOBAL ..] [DIRECTORY dir] [VERILATOR_ARGS ...])
+              [OPT_GLOBAL ..] [DIRECTORY dir] [THREADS num]
+              [TRACE_THREADS num] [VERILATOR_ARGS ...])
 
 Lowercase and ... should be replaced with arguments, the uppercase parts
 delimit the arguments and can be passed in any order, or left out entirely
@@ -428,6 +429,15 @@ SystemC include directories and link to the SystemC libraries.
    Don't forget to set the same C++ standard for the Verilated sources as
    the SystemC library. This can be specified using the SYSTEMC_CXX_FLAGS
    environment variable.
+
+.. describe:: THREADS
+
+   Optional. Generated a multi-threaded model, same as "--threads".
+
+.. describe:: TRACE_THREADS
+
+   Optional. Generated multi-threaded trace dumping, same as
+   "--trace-threads".
 
 .. describe:: TOP_MODULE
 
