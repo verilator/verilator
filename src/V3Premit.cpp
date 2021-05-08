@@ -30,8 +30,12 @@
 #include "V3Global.h"
 #include "V3Premit.h"
 #include "V3Ast.h"
+#include "V3Hashed.h"
+#include "V3Stats.h"
 
 #include <algorithm>
+
+constexpr int STATIC_CONST_MIN_WIDTH = 256;  // Minimum size to extract to static constant
 
 //######################################################################
 // Structure for global state
@@ -39,8 +43,8 @@
 class PremitAssignVisitor final : public AstNVisitor {
 private:
     // NODE STATE
-    //  AstVar::user4()         // bool; occurs on LHS of current assignment
-    AstUser4InUse m_inuser4;
+    //  AstVar::user3()         // bool; occurs on LHS of current assignment
+    AstUser3InUse m_inuser3;
 
     // STATE
     bool m_noopt = false;  // Disable optimization of variables in this block
@@ -50,7 +54,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) override {
-        // AstNode::user4ClearTree();  // Implied by AstUser4InUse
+        // AstNode::user3ClearTree();  // Implied by AstUser3InUse
         // LHS first as fewer varrefs
         iterateAndNextNull(nodep->lhsp());
         // Now find vars marked as lhs
@@ -59,9 +63,9 @@ private:
     virtual void visit(AstVarRef* nodep) override {
         // it's LHS var is used so need a deep temporary
         if (nodep->access().isWriteOrRW()) {
-            nodep->varp()->user4(true);
+            nodep->varp()->user3(true);
         } else {
-            if (nodep->varp()->user4()) {
+            if (nodep->varp()->user3()) {
                 if (!m_noopt) UINFO(4, "Block has LHS+RHS var: " << nodep << endl);
                 m_noopt = true;
             }
@@ -88,9 +92,11 @@ private:
     //  AstNodeMath::user()     -> bool.  True if iterated already
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
+    //  AstConst::user2p()      -> Replacement static variable pointer
     //  *::user4()              -> See PremitAssignVisitor
     AstUser1InUse m_inuser1;
     AstUser2InUse m_inuser2;
+    // AstUser4InUse     part of V3Hashed
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -99,6 +105,11 @@ private:
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
+
+    V3Hashed m_hashed;  // Hash set for static constants that can be reused
+
+    VDouble0 m_staticConstantsExtracted;  // Statistic tracking
+    VDouble0 m_staticConstantsReused;  // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -139,14 +150,6 @@ private:
         }
     }
 
-    AstVar* getBlockTemp(AstNode* nodep) {
-        string newvarname = (string("__Vtemp") + cvtToStr(m_modp->varNumGetInc()));
-        AstVar* varp
-            = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep());
-        m_cfuncp->addInitsp(varp);
-        return varp;
-    }
-
     void insertBeforeStmt(AstNode* newp) {
         // Insert newp before m_stmtp
         if (m_inWhilep) {
@@ -173,28 +176,66 @@ private:
         AstNRelinker linker;
         nodep->unlinkFrBack(&linker);
 
-        AstVar* varp = getBlockTemp(nodep);
+        AstVar* varp = nullptr;
+
+        AstConst* const constp = VN_CAST(nodep, Const);
+
+        const bool useStatic = constp && (constp->width() >= STATIC_CONST_MIN_WIDTH)
+                               && !constp->num().isFourState();
+        if (useStatic) {
+            // Extract as static constant
+            m_hashed.hash(constp);
+            const auto& it = m_hashed.findDuplicate(constp);
+            if (it == m_hashed.end()) {
+                const string newvarname = string("__Vconst") + cvtToStr(m_modp->varNumGetInc());
+                varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP, newvarname,
+                                  nodep->dtypep());
+                varp->isConst(true);
+                varp->isStatic(true);
+                varp->valuep(constp);
+                m_modp->addStmtp(varp);
+                m_hashed.hashAndInsert(constp);
+                nodep->user2p(varp);
+                ++m_staticConstantsExtracted;
+            } else {
+                varp = VN_CAST(it->second->user2p(), Var);
+                ++m_staticConstantsReused;
+            }
+        } else {
+            // Keep as local temporary
+            const string newvarname = string("__Vtemp") + cvtToStr(m_modp->varNumGetInc());
+            varp
+                = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep());
+            m_cfuncp->addInitsp(varp);
+        }
+
         if (noSubst) varp->noSubst(true);  // Do not remove varrefs to this in V3Const
+
         // Replace node tree with reference to var
         AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
         linker.relink(newp);
-        // Put assignment before the referencing statement
-        AstAssign* assp = new AstAssign(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), nodep);
-        insertBeforeStmt(assp);
-        if (debug() > 8) assp->dumpTree(cout, "deepou:");
+
+        if (!useStatic) {
+            // Put assignment before the referencing statement
+            AstAssign* assp = new AstAssign(
+                nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), nodep);
+            insertBeforeStmt(assp);
+            if (debug() > 8) assp->dumpTree(cout, "deepou:");
+        }
+
         nodep->user1(true);  // Don't add another assignment
     }
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_cfuncp = nullptr;
-            iterateChildren(nodep);
-        }
+        UASSERT_OBJ(m_modp == nullptr, nodep, "Nested modules ?");
+        UASSERT_OBJ(m_hashed.mmap().empty(), nodep, "Statements outside module ?");
+        m_modp = nodep;
+        m_cfuncp = nullptr;
+        iterateChildren(nodep);
+        m_modp = nullptr;
+        m_hashed.clear();
     }
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
@@ -401,7 +442,11 @@ private:
 public:
     // CONSTRUCTORS
     explicit PremitVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~PremitVisitor() override = default;
+    virtual ~PremitVisitor() {
+        V3Stats::addStat("Optimizations, Prelim static constants extracted",
+                         m_staticConstantsExtracted);
+        V3Stats::addStat("Optimizations, Prelim static constants reused", m_staticConstantsReused);
+    }
 };
 
 //----------------------------------------------------------------------
