@@ -646,13 +646,13 @@ std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
     int shift = prec - userUnits + fracDigits;  // 0..-15
     double shiftd = vl_time_multiplier(shift);
     double scaled = ld * shiftd;
-    const double fracDivFloat = vl_time_multiplier(fracDigits);
-    const double wholeFloat = scaled / fracDivFloat;
+    const double fracDiv = vl_time_multiplier(fracDigits);
+    const double whole = scaled / fracDiv;
     int digits = 0;
     if (!fracDigits) {
-        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.0f%s", wholeFloat, suffix.c_str());
+        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.0f%s", whole, suffix.c_str());
     } else {
-        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.*f%s", fracDigits, wholeFloat,
+        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.*f%s", fracDigits, whole,
                              suffix.c_str());
     }
 

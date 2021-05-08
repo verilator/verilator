@@ -43,10 +43,10 @@
 # define VL_ATTR_COLD __attribute__((cold))
 # define VL_ATTR_HOT __attribute__((hot))
 # define VL_ATTR_NORETURN __attribute__((noreturn))
-// Clang or GCC-8.0+ supports no_sanitize("string") style attribute
+// clang and gcc-8.0+ support no_sanitize("string") style attribute
 # if defined(__clang__) || (__GNUC__ >= 8)
 #  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize("alignment")))
-#else  // Older GCC has to disable the entire undefined sanitizer
+#else  // The entire undefined sanitizer has to be disabled for older gcc
 #  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize_undefined))
 #endif
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))

@@ -582,11 +582,8 @@ void VerilatedVcd::declTriArray(vluint32_t code, const char* name, bool array, i
 //=============================================================================
 // Trace rendering prinitives
 
-static inline void VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* suffixp)
-#ifdef VL_X86_64
-    VL_ATTR_NO_SANITIZE_ALIGN
-#endif
-    ;
+static inline void
+VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* suffixp) VL_ATTR_NO_SANITIZE_ALIGN;
 
 static inline void VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* suffixp) {
     // Copy the whole suffix (this avoid having hard to predict branches which
