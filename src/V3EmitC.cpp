@@ -2268,6 +2268,18 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
             emitDispState.pushArg(' ', nullptr, cvtToStr(argp->widthMin()));
         }
         emitDispState.pushArg(fmtLetter, argp, "");
+        if (fmtLetter == 't' || fmtLetter == '^') {
+            AstSFormatF* fmtp = nullptr;
+            if (AstDisplay* nodep = VN_CAST(dispp, Display))
+                fmtp = nodep->fmtp();
+            else if (AstSFormat* nodep = VN_CAST(dispp, SFormat))
+                fmtp = nodep->fmtp();
+            else
+                fmtp = VN_CAST(dispp, SFormatF);
+            UASSERT_OBJ(fmtp, dispp, "must be either AstDisplay, AstSFormat, or AstSFormatF");
+            UASSERT_OBJ(!fmtp->timeunit().isNone(), fmtp, "timenunit must be set");
+            emitDispState.pushArg(' ', nullptr, cvtToStr((int)fmtp->timeunit().powerOfTen()));
+        }
     } else {
         emitDispState.pushArg(fmtLetter, nullptr, "");
     }

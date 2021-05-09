@@ -637,13 +637,12 @@ std::string VL_DECIMAL_NW(int width, WDataInP lwp) VL_MT_SAFE {
     return output;
 }
 
-std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
+std::string _vl_vsformat_time(char* tmp, double ld, int timeunit, bool left, size_t width) {
     // Double may lose precision, but sc_time_stamp has similar limit
     std::string suffix = Verilated::threadContextp()->impp()->timeFormatSuffix();
     int userUnits = Verilated::threadContextp()->impp()->timeFormatUnits();  // 0..-15
     int fracDigits = Verilated::threadContextp()->impp()->timeFormatPrecision();  // 0..N
-    int prec = Verilated::threadContextp()->timeprecision();  // 0..-15
-    int shift = prec - userUnits + fracDigits;  // 0..-15
+    int shift = -userUnits + fracDigits + timeunit;  // 0..-15
     double shiftd = vl_time_multiplier(shift);
     double scaled = ld * shiftd;
     const double fracDiv = vl_time_multiplier(fracDigits);
@@ -656,7 +655,7 @@ std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
                              suffix.c_str());
     }
 
-    int needmore = width - digits;
+    const int needmore = width - digits;
     std::string padding;
     if (needmore > 0) padding.append(needmore, ' ');  // Pad with spaces
     return left ? (tmp + padding) : (padding + tmp);
@@ -751,7 +750,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 if (lbits) {}  // UNUSED - always 64
                 if (fmt == '^') {  // Realtime
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
-                    output += _vl_vsformat_time(t_tmp, d, left, width);
+                    const int timeunit = va_arg(ap, int);
+                    output += _vl_vsformat_time(t_tmp, d, timeunit, left, width);
                 } else {
                     std::string fmts(pctp, pos - pctp + 1);
                     VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, fmts.c_str(), d);
@@ -850,7 +850,9 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 }
                 case 't': {  // Time
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
-                    output += _vl_vsformat_time(t_tmp, static_cast<double>(ld), left, width);
+                    const int timeunit = va_arg(ap, int);
+                    output += _vl_vsformat_time(t_tmp, static_cast<double>(ld), timeunit, left,
+                                                width);
                     break;
                 }
                 case 'b':

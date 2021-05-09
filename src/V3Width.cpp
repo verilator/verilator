@@ -3864,27 +3864,6 @@ private:
                         if (nodep->timeunit().isNone()) {
                             nodep->v3fatalSrc("display %t has no time units");
                         }
-                        double scale = nodep->timeunit().multiplier()
-                                       / v3Global.rootp()->timeprecision().multiplier();
-                        if (scale != 1.0) {
-                            AstNode* newp;
-                            AstNRelinker relinkHandle;
-                            argp->unlinkFrBack(&relinkHandle);
-                            if (argp->isDouble()) {  // Convert it
-                                ch = '^';
-                                newp = new AstMulD(
-                                    argp->fileline(),
-                                    new AstConst(argp->fileline(), AstConst::RealDouble(), scale),
-                                    argp);
-                            } else {
-                                newp = new AstMul(argp->fileline(),
-                                                  new AstConst(argp->fileline(),
-                                                               AstConst::Unsized64(),
-                                                               std::llround(scale)),
-                                                  argp);
-                            }
-                            relinkHandle.relink(newp);
-                        }
                         argp = nextp;
                     }
                     break;
