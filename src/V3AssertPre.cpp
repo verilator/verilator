@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -148,7 +148,7 @@ private:
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 
-        if (m_disablep) { lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp); }
+        if (m_disablep) lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp);
 
         AstNode* past = new AstPast(fl, lhsp, nullptr);
         past->dtypeFrom(lhsp);

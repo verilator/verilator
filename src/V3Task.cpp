@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -66,7 +66,6 @@ public:
     AstNodeFTask* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
     virtual string dotColor() const override { return pure() ? "black" : "red"; }
-    virtual FileLine* fileline() const override { return nodep()->fileline(); }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
 };
@@ -103,9 +102,8 @@ private:
     AstUser4InUse m_inuser4;
 
     // TYPES
-    typedef std::map<std::pair<AstScope*, AstVar*>, AstVarScope*> VarToScopeMap;
-    typedef std::unordered_map<const AstNodeFTask*, AstClass*> FuncToClassMap;
-    typedef std::vector<AstInitial*> Initials;
+    using VarToScopeMap = std::map<std::pair<AstScope*, AstVar*>, AstVarScope*>;
+    using FuncToClassMap = std::unordered_map<const AstNodeFTask*, AstClass*>;
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
     FuncToClassMap m_funcToClassMap;  // Map for ctor func -> class
@@ -114,7 +112,7 @@ private:
     AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
-    Initials m_initialps;  // Initial blocks to move
+    std::vector<AstInitial*> m_initialps;  // Initial blocks to move
 
 public:
     // METHODS
@@ -124,7 +122,7 @@ public:
         return scopep;
     }
     AstVarScope* findVarScope(AstScope* scopep, AstVar* nodep) {
-        const auto iter = m_varToScopeMap.find(make_pair(scopep, nodep));
+        const auto iter = m_varToScopeMap.find(std::make_pair(scopep, nodep));
         UASSERT_OBJ(iter != m_varToScopeMap.end(), nodep, "No scope for var");
         return iter->second;
     }
@@ -182,7 +180,7 @@ private:
         }
         // Likewise, all FTask->scope mappings
         for (AstNode* stmtp = nodep->blocksp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstNodeFTask* taskp = VN_CAST(stmtp, NodeFTask)) { taskp->user3p(nodep); }
+            if (AstNodeFTask* taskp = VN_CAST(stmtp, NodeFTask)) taskp->user3p(nodep);
         }
         iterateChildren(nodep);
     }
@@ -386,7 +384,7 @@ private:
         IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end
     };
-    typedef std::map<const string, std::pair<AstNodeFTask*, string>> DpiNames;
+    using DpiNames = std::map<const string, std::pair<AstNodeFTask*, std::string>>;
 
     // STATE
     TaskStateVisitor* m_statep;  // Common state between visitors
@@ -786,8 +784,8 @@ private:
             // Static doesn't need save-restore as if below will re-fill proper value
             stmt += "static int __Vfuncnum = -1;\n";
             // First time init (faster than what the compiler does if we did a singleton
-            stmt += "if (VL_UNLIKELY(__Vfuncnum==-1)) { __Vfuncnum = Verilated::exportFuncNum(\""
-                    + nodep->cname() + "\"); }\n";
+            stmt += "if (VL_UNLIKELY(__Vfuncnum == -1)) __Vfuncnum = Verilated::exportFuncNum(\""
+                    + nodep->cname() + "\");\n";
             // If the find fails, it will throw an error
             stmt += "const VerilatedScope* __Vscopep = Verilated::dpiScope();\n";
             // If dpiScope is fails and is null; the exportFind function throws and error
@@ -912,7 +910,7 @@ private:
         // as it's legal for the user to attach multiple tasks to one dpi cname
         const auto iter = m_dpiNames.find(nodep->cname());
         if (iter == m_dpiNames.end()) {
-            m_dpiNames.insert(make_pair(nodep->cname(), make_pair(nodep, dpiproto)));
+            m_dpiNames.emplace(nodep->cname(), std::make_pair(nodep, dpiproto));
             return false;
         } else if (iter->second.second != dpiproto) {
             nodep->v3error(
@@ -1470,8 +1468,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Missing pin/expr?  We return (pinvar, nullptr)
     // Extra   pin/expr?  We clean it up
 
-    typedef std::map<const string, int> NameToIndex;
-    NameToIndex nameToIndex;
+    std::map<const std::string, int> nameToIndex;
     V3TaskConnects tconnects;
     UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
 
@@ -1481,9 +1478,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
         if (AstVar* portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO()) {
-                tconnects.push_back(make_pair(portp, static_cast<AstArg*>(nullptr)));
+                tconnects.push_back(std::make_pair(portp, static_cast<AstArg*>(nullptr)));
                 nameToIndex.insert(
-                    make_pair(portp->name(), tpinnum));  // For name based connections
+                    std::make_pair(portp->name(), tpinnum));  // For name based connections
                 tpinnum++;
                 if (portp->attrSFormat()) {
                     sformatp = portp;
@@ -1523,7 +1520,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         } else {  // By pin number
             if (ppinnum >= tpinnum) {
                 if (sformatp) {
-                    tconnects.push_back(make_pair(sformatp, static_cast<AstArg*>(nullptr)));
+                    tconnects.push_back(std::make_pair(sformatp, static_cast<AstArg*>(nullptr)));
                     tconnects[ppinnum].second = argp;
                     tpinnum++;
                 } else {

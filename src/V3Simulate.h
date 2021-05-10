@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,8 +29,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3SIMULATE_H_
-#define _V3SIMULATE_H_ 1
+#ifndef VERILATOR_V3SIMULATE_H_
+#define VERILATOR_V3SIMULATE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -60,8 +60,8 @@ public:
     ~SimStackNode() = default;
 };
 
-typedef std::deque<AstConst*> ConstDeque;
-typedef std::unordered_map<const AstNodeDType*, ConstDeque> ConstPile;
+using ConstDeque = std::deque<AstConst*>;
+using ConstPile = std::unordered_map<const AstNodeDType*, ConstDeque>;
 
 class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
     // Simulate a node tree, returning value of variables
@@ -191,8 +191,9 @@ public:
                     AstVar* portp = conIt->first;
                     AstNode* pinp = conIt->second->exprp();
                     AstNodeDType* dtypep = pinp->dtypep();
-                    stack << "\n           " << portp->prettyName() << " = "
-                          << prettyNumber(&fetchConst(pinp)->num(), dtypep);
+                    if (AstConst* valp = fetchConstNull(pinp))
+                        stack << "\n           " << portp->prettyName() << " = "
+                              << prettyNumber(&valp->num(), dtypep);
                 }
             }
             m_whyNotOptimizable += stack.str();

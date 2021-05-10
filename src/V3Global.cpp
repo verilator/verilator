@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -78,6 +78,18 @@ void V3Global::readFiles() {
         // Resolve all modules cells refer to
         V3LinkCells::link(v3Global.rootp(), &filter, &parseSyms);
     }
+}
+
+string V3Global::debugFilename(const string& nameComment, int newNumber) {
+    ++m_debugFileNumber;
+    if (newNumber) m_debugFileNumber = newNumber;
+    return opt.hierTopDataDir() + "/" + opt.prefix() + "_" + digitsFilename(m_debugFileNumber)
+           + "_" + nameComment;
+}
+string V3Global::digitsFilename(int number) {
+    std::stringstream ss;
+    ss << std::setfill('0') << std::setw(3) << number;
+    return ss.str();
 }
 
 void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool doDump) {

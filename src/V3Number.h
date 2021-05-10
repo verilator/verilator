@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3NUMBER_H_
-#define _V3NUMBER_H_ 1
+#ifndef VERILATOR_V3NUMBER_H_
+#define VERILATOR_V3NUMBER_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -30,7 +30,8 @@
 
 // Return if two numbers within Epsilon of each other
 inline bool v3EpsilonEqual(double a, double b) {
-    return fabs(a - b) <= (std::numeric_limits<double>::epsilon() * std::max(1.0, std::max(a, b)));
+    return std::fabs(a - b)
+           <= (std::numeric_limits<double>::epsilon() * std::max(1.0, std::max(a, b)));
 }
 
 //============================================================================
@@ -109,6 +110,8 @@ private:
         return ("01zx"[(((m_value[bit / 32] & (1UL << (bit & 31))) ? 1 : 0)
                         | ((m_valueX[bit / 32] & (1UL << (bit & 31))) ? 2 : 0))]);
     }
+
+public:
     bool bitIs0(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return !bitIsXZ(m_width - 1);
@@ -144,6 +147,8 @@ private:
         return ((~m_value[bit / 32] & (1UL << (bit & 31)))
                 && (m_valueX[bit / 32] & (1UL << (bit & 31))));
     }
+
+private:
     uint32_t bitsValue(int lsb, int nbits) const {
         uint32_t v = 0;
         for (int bitn = 0; bitn < nbits; bitn++) { v |= (bitIs1(lsb + bitn) << bitn); }
@@ -198,6 +203,7 @@ private:
     void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
     void init(AstNode* nodep, int swidth, bool sized = true) {
         setNames(nodep);
+        // dtype info does NOT from nodep's dtype; nodep only for error reporting
         m_signed = false;
         m_double = false;
         m_isNull = false;
@@ -205,7 +211,7 @@ private:
         m_autoExtend = false;
         m_fromString = false;
         width(swidth, sized);
-        for (int i = 0; i < words(); i++) m_value[i] = m_valueX[i] = 0;
+        for (int i = 0; i < words(); ++i) m_value[i] = m_valueX[i] = 0;
     }
     void setNames(AstNode* nodep);
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
@@ -307,8 +313,8 @@ public:
     // STATICS
     static int log2b(uint32_t num);
 
-    typedef V3Number& (*UniopFuncp)(V3Number&);
-    typedef V3Number& (*BiopFuncp)(V3Number&, V3Number&);
+    using UniopFuncp = V3Number& (*)(V3Number&);
+    using BiopFuncp = V3Number& (*)(V3Number&, V3Number&);
 
     // MATH
     // "this" is the output, as we need the output width before some computations

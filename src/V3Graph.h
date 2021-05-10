@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GRAPH_H_
-#define _V3GRAPH_H_ 1
+#ifndef VERILATOR_V3GRAPH_H_
+#define VERILATOR_V3GRAPH_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -37,7 +37,7 @@ class OrderLogicVertex;
 // Most graph algorithms accept an arbitrary function that returns
 // True for those edges we should honor.
 
-typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
+using V3EdgeFuncP = bool (*)(const V3GraphEdge* edgep);
 
 //=============================================================================
 // When the Graph represents a directional acyclical graph (DAG), following

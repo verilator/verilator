@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -69,12 +69,12 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     VDouble0 m_statUnsup;  // Statistic tracking
 
-    typedef std::vector<AstNodeModule*> ModVec;
+    using ModVec = std::vector<AstNodeModule*>;
     ModVec m_allMods;  // All modules, in top-down order.
 
     // Within the context of a given module, LocalInstanceMap maps
     // from child modules to the count of each child's local instantiations.
-    typedef std::unordered_map<AstNodeModule*, int> LocalInstanceMap;
+    using LocalInstanceMap = std::unordered_map<AstNodeModule*, int>;
 
     // We keep a LocalInstanceMap for each module in the design
     std::unordered_map<AstNodeModule*, LocalInstanceMap> m_instances;
@@ -108,7 +108,9 @@ private:
             // If inlining moves post-scope this can perhaps be relaxed.
             cantInline("modIface", true);
         }
-        if (m_modp->modPublic()) cantInline("modPublic", false);
+        if (m_modp->modPublic() && (m_modp->isTop() || !v3Global.opt.flatten())) {
+            cantInline("modPublic", false);
+        }
 
         iterateChildren(nodep);
         m_modp = nullptr;
@@ -137,7 +139,7 @@ private:
         } else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
             if (!m_modp) {
                 nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
-            } else {
+            } else if (!v3Global.opt.flatten()) {
                 cantInline("Pragma NO_INLINE_MODULE", false);
             }
             // Remove so don't propagate to upper cell...
@@ -262,14 +264,12 @@ public:
 
 class InlineRelinkVisitor final : public AstNVisitor {
 private:
-    typedef std::unordered_set<string> StringSet;
-
     // NODE STATE
     //  Input:
     //   See InlineVisitor
 
     // STATE
-    StringSet m_renamedInterfaces;  // Name of renamed interface variables
+    std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
     AstNodeModule* m_modp;  // Current module
     AstCell* m_cellp;  // Cell being cloned
 
@@ -379,8 +379,8 @@ private:
         string name = m_cellp->name() + "__DOT__" + nodep->name();
         if (!nodep->isFuncLocal() && !nodep->isClassMember()) nodep->inlineAttrReset(name);
         if (!m_cellp->isTrace()) nodep->trace(false);
-        if (debug() >= 9) { nodep->dumpTree(cout, "varchanged:"); }
-        if (debug() >= 9 && nodep->valuep()) { nodep->valuep()->dumpTree(cout, "varchangei:"); }
+        if (debug() >= 9) nodep->dumpTree(cout, "varchanged:");
+        if (debug() >= 9 && nodep->valuep()) nodep->valuep()->dumpTree(cout, "varchangei:");
         iterateChildren(nodep);
     }
     virtual void visit(AstNodeFTask* nodep) override {
@@ -593,7 +593,7 @@ private:
             // Cleanup var names, etc, to not conflict
             { InlineRelinkVisitor(newmodp, m_modp, nodep); }
             // Move statements to top module
-            if (debug() >= 9) { newmodp->dumpTree(cout, "fixmod:"); }
+            if (debug() >= 9) newmodp->dumpTree(cout, "fixmod:");
             AstNode* stmtsp = newmodp->stmtsp();
             if (stmtsp) stmtsp->unlinkFrBackWithNext();
             if (stmtsp) m_modp->addStmtp(stmtsp);
@@ -601,7 +601,7 @@ private:
             VL_DO_DANGLING(newmodp->deleteTree(), newmodp);  // Clear any leftover ports, etc
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            if (debug() >= 9) { m_modp->dumpTree(cout, "donemod:"); }
+            if (debug() >= 9) m_modp->dumpTree(cout, "donemod:");
         }
     }
 
@@ -636,7 +636,7 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstModule* nodep) override {
-        if (nodep->isTop()) { iterateChildren(nodep); }
+        if (nodep->isTop()) iterateChildren(nodep);
     }
     virtual void visit(AstCell* nodep) override {
         VL_RESTORER(m_scope);

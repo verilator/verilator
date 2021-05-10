@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -135,20 +135,18 @@ private:
                    "See instructions in your simulator for how"
                    " to use DPI libraries\n");
 
-        bool timescaleShown = false;
-        if (v3Global.opt.hierChild() && !modp->timeunit().isNone()) {
-            // Emit timescale for hierarhical verilation
-            timescaleShown = true;
-            txtp->addText(fl, string("`timescale ") + modp->timeunit().ascii() + "/"
-                                  + v3Global.rootp()->timeprecision().ascii() + "\n\n");
-        }
         // Module declaration
         m_modPortsp = new AstTextBlock(fl, "module " + m_libName + " (\n", false, true);
         txtp->addNodep(m_modPortsp);
         txtp->addText(fl, ");\n\n");
 
         // Timescale
-        if (!timescaleShown) {
+        if (v3Global.opt.hierChild() && v3Global.rootp()->timescaleSpecified()) {
+            // Emit timescale for hierarhical verilation if input HDL specifies timespec
+            txtp->addText(fl, string("timeunit ") + modp->timeunit().ascii() + ";\n");
+            txtp->addText(fl, string("timeprecision ") + +v3Global.rootp()->timeprecision().ascii()
+                                  + ";\n");
+        } else {
             addComment(txtp, fl,
                        "Precision of submodule"
                        " (commented out to avoid requiring timescale on all modules)");
@@ -207,7 +205,7 @@ private:
         m_tmpDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_tmpDeclsp);
         txtp->addText(fl, "\ntime last_combo_seqnum__V;\n");
-        if (m_hasClk) { txtp->addText(fl, "time last_seq_seqnum__V;\n\n"); }
+        if (m_hasClk) txtp->addText(fl, "time last_seq_seqnum__V;\n\n");
 
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
@@ -265,7 +263,7 @@ private:
             m_seqAssignsp = new AstTextBlock(fl, "if (last_seq_seqnum__V > "
                                                  "last_combo_seqnum__V) begin\n");
             txtp->addNodep(m_seqAssignsp);
-            m_comboAssignsp = new AstTextBlock(fl, "end else begin\n");
+            m_comboAssignsp = new AstTextBlock(fl, "end\nelse begin\n");
             txtp->addNodep(m_comboAssignsp);
             txtp->addText(fl, "end\n");
         } else {
@@ -323,7 +321,7 @@ private:
                               + " library, "
                                 "Verliog (%u) and library (%u) hash values do not "
                                 "agree\\n\", protectlib_hash__V, expected_hash__V);\n");
-        txtp->addText(fl, "exit(EXIT_FAILURE);\n");
+        txtp->addText(fl, "std::exit(EXIT_FAILURE);\n");
         txtp->addText(fl, "}\n");
         txtp->addText(fl, "}\n\n");
 
@@ -427,7 +425,7 @@ private:
         m_comboPortsp->addNodep(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "\n");
         m_comboIgnorePortsp->addNodep(varp->cloneTree(false));
-        if (m_hasClk) { m_comboIgnoreParamsp->addText(fl, varp->name() + "\n"); }
+        if (m_hasClk) m_comboIgnoreParamsp->addText(fl, varp->name() + "\n");
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cComboInsp->addText(fl, cInputConnection(varp));
         m_cIgnoreParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
@@ -439,7 +437,6 @@ private:
         AstVar* newVarp
             = new AstVar(varp->fileline(), AstVarType::VAR, varp->name() + suffix, varp->dtypep());
         textp->addNodep(newVarp);
-        textp->addText(varp->fileline(), ";\n");
     }
 
     void handleOutput(AstVar* varp) {

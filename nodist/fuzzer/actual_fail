@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,C0321,R0911
 ######################################################################
 # DESCRIPTION: Fuzzer result checker
 #
@@ -15,6 +16,7 @@
 from glob import glob
 from subprocess import getstatusoutput
 from argparse import ArgumentParser
+
 
 def interesting(s):
     if 'assert' in s: return 1
@@ -33,17 +35,19 @@ def interesting(s):
 
 def main():
     p = ArgumentParser()
-    p.add_argument('--dir',default='out1/queue')
+    p.add_argument('--dir', default='out1/queue')
     args = p.parse_args()
 
-    for infile in glob(args.dir+'/*'):
+    for infile in glob(args.dir + '/*'):
         # Input filenames are known not to contain spaces or other unusual
         # characters, therefore this works.
-        status,output = getstatusoutput('../../bin/verilator_bin --cc '+infile)
+        status, output = getstatusoutput('../../bin/verilator_bin --cc ' +
+                                         infile)
         if interesting(output):
             print(infile)
             print(status)
             print(output)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     main()

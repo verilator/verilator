@@ -33,6 +33,7 @@
 
 #include "TestSimulator.h"
 #include "TestVpi.h"
+#include "TestCheck.h"
 
 // __FILE__ is too long
 #define FILENM "t_vpi_memory.cpp"
@@ -41,154 +42,181 @@
     if (0) printf
 
 unsigned int main_time = 0;
+int errors = 0;
 
 //======================================================================
 
-#define CHECK_RESULT_VH(got, exp) \
-    if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", FILENM, __LINE__, (got), (exp)); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_NZ(got) \
-    if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
-        return __LINE__; \
-    }
-
-// Use cout to avoid issues with %d/%lx etc
-#define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << std::hex \
-                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
-               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
-
-int _mon_check_range(TestVpiHandle& handle, int size, int left, int right) {
-    TestVpiHandle iter_h, left_h, right_h;
+void _mon_check_range(const TestVpiHandle& handle, int size, int left, int right) {
     s_vpi_value value;
     value.format = vpiIntVal;
     value.value.integer = 0;
     // check size of object
-    int vpisize = vpi_get(vpiSize, handle);
-    CHECK_RESULT(vpisize, size);
-    // check left hand side of range
-    left_h = vpi_handle(vpiLeftRange, handle);
-    CHECK_RESULT_NZ(left_h);
-    vpi_get_value(left_h, &value);
-    CHECK_RESULT(value.value.integer, left);
-    int coherency = value.value.integer;
-    // check right hand side of range
-    right_h = vpi_handle(vpiRightRange, handle);
-    CHECK_RESULT_NZ(right_h);
-    vpi_get_value(right_h, &value);
-    CHECK_RESULT(value.value.integer, right);
-    coherency -= value.value.integer;
+    {
+        int vpisize = vpi_get(vpiSize, handle);
+        TEST_CHECK_EQ(vpisize, size);
+    }
+    int coherency;
+    {
+        // check left hand side of range
+        TestVpiHandle left_h = vpi_handle(vpiLeftRange, handle);
+        TEST_CHECK_NZ(left_h);
+        vpi_get_value(left_h, &value);
+        TEST_CHECK_EQ(value.value.integer, left);
+        coherency = value.value.integer;
+    }
+    {
+        // check right hand side of range
+        TestVpiHandle right_h = vpi_handle(vpiRightRange, handle);
+        TEST_CHECK_NZ(right_h);
+        vpi_get_value(right_h, &value);
+        TEST_CHECK_EQ(value.value.integer, right);
+        coherency -= value.value.integer;
+    }
     // calculate size & check
     coherency = abs(coherency) + 1;
-    CHECK_RESULT(coherency, size);
-    return 0;  // Ok
+    TEST_CHECK_EQ(coherency, size);
 }
 
-int _mon_check_memory() {
-    int cnt;
-    TestVpiHandle mem_h, lcl_h, side_h;
-    vpiHandle iter_h;  // Icarus does not like auto free of iterator handles
+void _mem_check(const char* name, int size, int left, int right, int words) {
     s_vpi_value value;
-    value.format = vpiIntVal;
-    value.value.integer = 0;
     s_vpi_error_info e;
 
-    vpi_printf((PLI_BYTE8*)"Check memory vpi ...\n");
-    mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted("mem0"), NULL);
-    CHECK_RESULT_NZ(mem_h);
+    vpi_printf((PLI_BYTE8*)"Check memory vpi (%s) ...\n", name);
+    TestVpiHandle mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
+    TEST_CHECK_NZ(mem_h);
     // check type
     int vpitype = vpi_get(vpiType, mem_h);
-    CHECK_RESULT(vpitype, vpiMemory);
-    if (int status = _mon_check_range(mem_h, 16, 16, 1)) return status;
+    if (vpitype != vpiMemory && vpitype != vpiReg) {
+        printf("%%Error: %s:%d vpiType neither vpiMemory or vpiReg: %d\n", FILENM, __LINE__,
+               vpitype);
+        errors++;
+    }
+    std::string binStr;
+    for (int i = words; i >= 1; i--) {
+        for (int pos = size - 1; pos >= 0; pos--) {
+            int posValue = (i >> pos) & 0x1;
+            binStr += posValue ? "1" : "0";
+        }
+    }
     // iterate and store
-    iter_h = vpi_iterate(vpiMemoryWord, mem_h);
-    cnt = 0;
-    while ((lcl_h = vpi_scan(iter_h))) {
-        value.value.integer = ++cnt;
-        vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
-        // check size and range
-        if (int status = _mon_check_range(lcl_h, 32, 31, 0)) return status;
+    if (vpitype == vpiMemory) {
+        _mon_check_range(mem_h, words, words, 1);
+        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        int cnt = 0;
+        while (TestVpiHandle lcl_h = vpi_scan(iter_h)) {
+            value.format = vpiIntVal;
+            value.value.integer = ++cnt;
+            vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
+            TEST_CHECK_Z(vpi_chk_error(&e));
+            // check size and range
+            _mon_check_range(lcl_h, size, left, right);
+        }
+        iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+        TEST_CHECK_EQ(cnt, words);  // should be words addresses
+    } else {
+        int expSize = size * words;
+        _mon_check_range(mem_h, expSize, expSize - 1, 0);
+        value.format = vpiBinStrVal;
+        value.value.str = const_cast<char*>(binStr.c_str());
+        vpi_put_value(mem_h, &value, NULL, vpiNoDelay);
+        TEST_CHECK_Z(vpi_chk_error(&e));
     }
-    CHECK_RESULT(cnt, 16);  // should be 16 addresses
-    // iterate and accumulate
-    iter_h = vpi_iterate(vpiMemoryWord, mem_h);
-    cnt = 0;
-    while ((lcl_h = vpi_scan(iter_h))) {
-        ++cnt;
-        vpi_get_value(lcl_h, &value);
-        CHECK_RESULT(value.value.integer, cnt);
+    if (vpitype == vpiMemory) {
+        // iterate and accumulate
+        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        int cnt = 0;
+        while (TestVpiHandle lcl_h = vpi_scan(iter_h)) {
+            ++cnt;
+            value.format = vpiIntVal;
+            vpi_get_value(lcl_h, &value);
+            TEST_CHECK_Z(vpi_chk_error(&e));
+            TEST_CHECK_EQ(value.value.integer, cnt);
+        }
+        iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+        TEST_CHECK_EQ(cnt, words);  // should be words addresses
+    } else {
+        value.format = vpiBinStrVal;
+        vpi_get_value(mem_h, &value);
+        TEST_CHECK_Z(vpi_chk_error(&e));
+        TEST_CHECK_EQ(std::string(value.value.str), binStr);
     }
-    CHECK_RESULT(cnt, 16);  // should be 16 addresses
+
     // don't care for non verilator
     // (crashes on Icarus)
     if (TestSimulator::is_icarus()) {
         vpi_printf((PLI_BYTE8*)"Skipping property checks for simulator %s\n",
                    TestSimulator::get_info().product);
-        return 0;  // Ok
+        return;  // Ok
     }
-    // make sure trying to get properties that don't exist
-    // doesn't crash
-    int should_be_0 = vpi_get(vpiSize, iter_h);
-    CHECK_RESULT(should_be_0, 0);
-    should_be_0 = vpi_get(vpiIndex, iter_h);
-    CHECK_RESULT(should_be_0, 0);
-    vpiHandle should_be_NULL = vpi_handle(vpiLeftRange, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
-    should_be_NULL = vpi_handle(vpiRightRange, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
-    should_be_NULL = vpi_handle(vpiScope, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
+    {
+        // make sure trying to get properties that don't exist
+        // doesn't crash
+        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        int should_be_0 = vpi_get(vpiSize, iter_h);
+        TEST_CHECK_EQ(should_be_0, 0);
+        should_be_0 = vpi_get(vpiIndex, iter_h);
+        TEST_CHECK_EQ(should_be_0, 0);
+        vpiHandle should_be_NULL = vpi_handle(vpiLeftRange, iter_h);
+        TEST_CHECK_EQ(should_be_NULL, 0);
+        should_be_NULL = vpi_handle(vpiRightRange, iter_h);
+        TEST_CHECK_EQ(should_be_NULL, 0);
+        should_be_NULL = vpi_handle(vpiScope, iter_h);
+        TEST_CHECK_EQ(should_be_NULL, 0);
+    }
+    if (vpitype == vpiMemory) {
+        // check vpiRange
+        TestVpiHandle iter_h = vpi_iterate(vpiRange, mem_h);
+        TEST_CHECK_NZ(iter_h);
+        TestVpiHandle lcl_h = vpi_scan(iter_h);
+        TEST_CHECK_NZ(lcl_h);
+        {
+            TestVpiHandle side_h = vpi_handle(vpiLeftRange, lcl_h);
+            TEST_CHECK_NZ(side_h);
+            vpi_get_value(side_h, &value);
+            TEST_CHECK_EQ(value.value.integer, 16);
+        }
+        {
+            TestVpiHandle side_h = vpi_handle(vpiRightRange, lcl_h);
+            TEST_CHECK_NZ(side_h);
+            vpi_get_value(side_h, &value);
+            TEST_CHECK_EQ(value.value.integer, 1);
+            // check writing to vpiConstant
+            vpi_put_value(side_h, &value, NULL, vpiNoDelay);
+            TEST_CHECK_NZ(vpi_chk_error(&e));
+        }
+        {
+            // iterator should exhaust after 1 dimension
+            TestVpiHandle zero_h = vpi_scan(iter_h);
+            iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+            TEST_CHECK_EQ(zero_h, 0);
+        }
+    }
+}
 
-    // check vpiRange
-    iter_h = vpi_iterate(vpiRange, mem_h);
-    CHECK_RESULT_NZ(iter_h);
-    lcl_h = vpi_scan(iter_h);
-    CHECK_RESULT_NZ(lcl_h);
-    side_h = vpi_handle(vpiLeftRange, lcl_h);
-    CHECK_RESULT_NZ(side_h);
-    vpi_get_value(side_h, &value);
-    CHECK_RESULT(value.value.integer, 16);
-    side_h = vpi_handle(vpiRightRange, lcl_h);
-    CHECK_RESULT_NZ(side_h);
-    vpi_get_value(side_h, &value);
-    CHECK_RESULT(value.value.integer, 1);
-    // iterator should exhaust after 1 dimension
-    lcl_h = vpi_scan(iter_h);
-    CHECK_RESULT(lcl_h, 0);
+struct params {
+    const char* name;
+    int size;
+    int left;
+    int right;
+    int words;
+};
 
-    // check writing to vpiConstant
-    vpi_put_value(side_h, &value, NULL, vpiNoDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(&e));
-
-    return 0;  // Ok
+void _mon_check_memory() {
+    // See note in t_vpi_get.cpp about static
+    static struct params values[]
+        = {{"mem0", 32, 31, 0, 16},   {"memp32", 32, 31, 0, 16}, {"memp31", 31, 30, 0, 16},
+           {"memp33", 33, 32, 0, 15}, {"memw", 32, 31, 0, 16},   {NULL, 0, 0, 0, 0}};
+    struct params* value = values;
+    while (value->name) {
+        _mem_check(value->name, value->size, value->left, value->right, value->words);
+        value++;
+    }
 }
 
 int mon_check() {
     // Callback from initial block in monitor
-    if (int status = _mon_check_memory()) return status;
-    return 0;  // Ok
+    _mon_check_memory();
+    return errors;
 }
 
 //======================================================================
@@ -224,7 +252,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
     // we're going to be checking for these errors do don't crash out
@@ -250,7 +278,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 10;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();
@@ -270,7 +298,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

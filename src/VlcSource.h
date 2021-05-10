@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _VLCSOURCE_H_
-#define _VLCSOURCE_H_ 1
+#ifndef VERILATOR_VLCSOURCE_H_
+#define VERILATOR_VLCSOURCE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -60,8 +60,8 @@ public:
 class VlcSource final {
 public:
     // TYPES
-    typedef std::map<int, VlcSourceCount> ColumnMap;  // Map of {column}
-    typedef std::map<int, ColumnMap> LinenoMap;  // Map of {lineno}{column}
+    using ColumnMap = std::map<int, VlcSourceCount>;  // Map of {column}
+    using LinenoMap = std::map<int, ColumnMap>;  // Map of {lineno}{column}
 
 private:
     // MEMBERS
@@ -84,11 +84,11 @@ public:
     // METHODS
     void incCount(int lineno, int column, vluint64_t count, bool ok) {
         LinenoMap::iterator lit = m_lines.find(lineno);
-        if (lit == m_lines.end()) lit = m_lines.insert(make_pair(lineno, ColumnMap())).first;
+        if (lit == m_lines.end()) lit = m_lines.insert(std::make_pair(lineno, ColumnMap())).first;
         ColumnMap& cmap = lit->second;
         ColumnMap::iterator cit = cmap.find(column);
         if (cit == cmap.end()) {
-            cit = cmap.insert(make_pair(column, VlcSourceCount(lineno, column))).first;
+            cit = cmap.insert(std::make_pair(column, VlcSourceCount(lineno, column))).first;
         }
         VlcSourceCount& sc = cit->second;
         sc.incCount(count, ok);
@@ -101,7 +101,7 @@ public:
 class VlcSources final {
 public:
     // TYPES
-    typedef std::map<const string, VlcSource> NameMap;
+    using NameMap = std::map<const std::string, VlcSource>;
 
 private:
     // MEMBERS
@@ -109,7 +109,7 @@ private:
 
 public:
     // ITERATORS
-    typedef NameMap::iterator iterator;
+    using iterator = NameMap::iterator;
     NameMap::iterator begin() { return m_sources.begin(); }
     NameMap::iterator end() { return m_sources.end(); }
 
@@ -123,7 +123,7 @@ public:
         if (iter != m_sources.end()) {
             return iter->second;
         } else {
-            iter = m_sources.insert(make_pair(name, VlcSource(name))).first;
+            iter = m_sources.insert(std::make_pair(name, VlcSource(name))).first;
             return iter->second;
         }
     }

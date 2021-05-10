@@ -15,27 +15,47 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
   COVERAGE: 1
-  CI_BUILD_STAGE_NAME: test
 
 jobs:
 
-  buildjob:
+
+  Build:
     runs-on: ubuntu-20.04
+    env:
+      CI_BUILD_STAGE_NAME: build
+      CI_RUNS_ON: ubuntu-20.04
+      CACHE_KEY: ubuntu-20.04-${{ matrix.compiler.cc }}-coverage
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache
+      uses: actions/cache@v2
       env:
         cache-name: ccache
       with:
         path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: coverage-${{ env.cache-name }}
+
+    - name: Install packages for build
+      env:
+        CI_BUILD_STAGE_NAME: build
+      run: ./ci/ci-install.bash
+
+    - name: Build
+      run: |
+        ./ci/ci-script.bash
+        tar cvzf verilator-${CI_COMMIT}-coverage.tgz bin src/obj*/*.o src/obj*/*.gcno
+
+    - uses: actions/upload-artifact@v2
+      with:
+        path: verilator-${{ env.CI_COMMIT }}-coverage.tgz
 
 
-  test:
-    needs: buildjob
+  Test:
+    needs: Build
     strategy:
       fail-fast: false
       matrix:
@@ -47,19 +67,43 @@ jobs:
         - 1
         - 2
         - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
         include:
         - { test: dist, num: '' }
-    name: test-${{ matrix.test }}${{ matrix.num }}
     runs-on: ubuntu-20.04
+    name: test-${{ matrix.test }}${{ matrix.num }}
+    env:
+      CI_BUILD_STAGE_NAME: test
+      CI_RUNS_ON: ubuntu-20.04
+      CACHE_KEY: ubuntu-20.04-${{ matrix.compiler.cc }}-coverage
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache
+      uses: actions/cache@v2
       env:
         cache-name: ccache
       with:
         path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-${{ matrix.test }}${{ matrix.num }} ci/ci-script.bash"
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: coverage-${{ env.cache-name }}
+
+    - uses: actions/download-artifact@v2
+
+    - name: Install Verilator and test dependencies
+      run: |
+        tar xvzf artifact/verilator-${CI_COMMIT}-coverage.tgz
+        touch src/obj*/*.o src/obj*/*.gcno
+        ./ci/ci-install.bash
+
+    - name: Test
+      env:
+        TESTS: coverage-${{ matrix.test }}${{ matrix.num }}
+      run: ./ci/ci-script.bash

@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_interface_typedef.v:46:4: Unsupported: SystemVerilog 2005 typedef in this context
+   46 |    typedef ifc_if.struct_t struct_t;
+      |    ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_interface_typedef.v:51:16: syntax error, unexpected IDENTIFIER
+   51 |       struct_t substruct;
+      |                ^~~~~~~~~
+%Error: Exiting due to

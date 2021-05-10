@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -46,6 +46,7 @@
 #include "V3Stats.h"
 
 #include <map>
+#include <limits>
 #include <set>
 
 //######################################################################
@@ -183,9 +184,9 @@ private:
     VDouble0 m_statUniqCodes;  // Statistic tracking
 
     // All activity numbers applying to a given trace
-    typedef std::set<uint32_t> ActCodeSet;
+    using ActCodeSet = std::set<uint32_t>;
     // For activity set, what traces apply
-    typedef std::multimap<ActCodeSet, TraceTraceVertex*> TraceVec;
+    using TraceVec = std::multimap<ActCodeSet, TraceTraceVertex*>;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -299,7 +300,7 @@ private:
             nextp = itp->verticesNextp();
             if (TraceActivityVertex* const vtxp = dynamic_cast<TraceActivityVertex*>(itp)) {
                 // Leave in the always vertex for later use.
-                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) { vtxp->unlinkDelete(&m_graph); }
+                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) vtxp->unlinkDelete(&m_graph);
             }
         }
     }
@@ -363,7 +364,7 @@ private:
                     // make slow routines set all activity flags.
                     actSet.erase(TraceActivityVertex::ACTIVITY_SLOW);
                 }
-                traces.insert(make_pair(actSet, vtxp));
+                traces.emplace(actSet, vtxp);
             }
         }
     }
@@ -604,7 +605,8 @@ private:
             AstCFunc* topFuncp = nullptr;
             AstCFunc* subFuncp = nullptr;
             int subStmts = 0;
-            const uint32_t maxCodes = (nAllCodes + parallelism - 1) / parallelism;
+            uint32_t maxCodes = (nAllCodes + parallelism - 1) / parallelism;
+            if (maxCodes < 1) maxCodes = 1;
             uint32_t nCodes = 0;
             const ActCodeSet* prevActSet = nullptr;
             AstIf* ifp = nullptr;
@@ -644,7 +646,7 @@ private:
                         }
                     }
                     ifp = new AstIf(flp, condp, nullptr, nullptr);
-                    if (!always) { ifp->branchPred(VBranchPred::BP_UNLIKELY); }
+                    if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subFuncp->addStmtsp(ifp);
                     subStmts += EmitCBaseCounterVisitor(ifp).count();
                     prevActSet = &actSet;

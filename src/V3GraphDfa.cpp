@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -58,8 +58,8 @@ class GraphNfaToDfa final : GraphAlg<> {
     // Edges from DFA to DFA indicate a completed input transition
 private:
     // TYPES
-    typedef std::deque<DfaVertex*> DfaStates;
-    typedef std::multimap<vluint64_t, DfaVertex*> HashMap;
+    using DfaStates = std::deque<DfaVertex*>;
+    using HashMap = std::multimap<vluint64_t, DfaVertex*>;
 
     // MEMBERS
     uint32_t m_step;  // Processing step, so we can avoid clearUser all the time
@@ -167,7 +167,7 @@ private:
     void insertDfaOrigins(DfaVertex* dfaStatep) {
         // Record the NFA states this dfa came from
         uint32_t hash = hashDfaOrigins(dfaStatep);
-        m_hashMap.insert(make_pair(hash, dfaStatep));
+        m_hashMap.emplace(hash, dfaStatep);
     }
 
     DfaVertex* findDfaOrigins(const DfaStates& nfasWithInput) {
@@ -177,7 +177,7 @@ private:
         uint32_t hash = hashDfaOrigins(nfasWithInput);
 
         const auto eqrange = m_hashMap.equal_range(hash);
-        for (HashMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
+        for (auto it = eqrange.first; it != eqrange.second; ++it) {
             DfaVertex* testp = it->second;
             if (compareDfaOrigins(nfasWithInput, testp)) {
                 UINFO(9, "              DFA match for set: " << testp << endl);
@@ -445,7 +445,7 @@ private:
         for (V3GraphVertex *nextp, *vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = nextp) {
             nextp = vertexp->verticesNextp();
-            if (!vertexp->user()) { VL_DO_DANGLING(vertexp->unlinkDelete(m_graphp), vertexp); }
+            if (!vertexp->user()) VL_DO_DANGLING(vertexp->unlinkDelete(m_graphp), vertexp);
         }
     }
 

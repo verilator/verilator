@@ -2,5 +2,6 @@
                                                 : ... In instance t
    13 |       if (uns > 3'b111) $stop;
       |               ^
+                   ... For warning description see https://verilator.org/warn/CMPCONST?v=latest
                    ... Use "/* verilator lint_off CMPCONST */" and lint_on around source to disable this message.
 %Error: Exiting due to

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3PREPROC_H_
-#define _V3PREPROC_H_ 1
+#ifndef VERILATOR_V3PREPROC_H_
+#define VERILATOR_V3PREPROC_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -45,7 +45,7 @@ public:
     // CONSTANTS
     enum MiscConsts {
         DEFINE_RECURSION_LEVEL_MAX = 1000,  // How many `def substitutions before an error
-        LINE_TOKEN_MAX = 20000,  // How many tokens on a line before an error
+        LINE_TOKEN_MAX = 40000,  // How many tokens on a line before an error
         INCLUDE_DEPTH_MAX = 500,  // How many `includes deep before an error
         // Streams deep (sometimes `def deep) before an error.
         // Set more than DEFINE_RECURSION_LEVEL_MAX or INCLUDE_DEPTH_MAX.
@@ -61,7 +61,7 @@ public:
     virtual void insertUnreadback(const string& text) = 0;
 
     int debug() const { return m_debug; }
-    void debug(int level) { m_debug = level; }
+    void debug(int level);
 
     FileLine* fileline();  ///< File/Line number for last getline call
 

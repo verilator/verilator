@@ -39,7 +39,8 @@ sub formats {
             foreach my $line (split /\n/, $wholefile) {
                 ++$lineno;
                 $line =~ s/(\$display|\$write).*\".*%(Error|Warning)//;
-                if ($line =~ /(Error|Warning)/) {
+                if ($line =~ /(Error|Warning)/
+                    && $line !~ /Error-internal-contents-bad/) {
                     # These formats are documented in bin/verilator
                     # Error with fileline
                     # For testing only: we assume no : in filename

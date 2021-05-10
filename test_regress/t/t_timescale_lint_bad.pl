@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(linter => 1);
 
+top_filename("t/t_timescale_lint.v");
+
 lint(
     verilator_flags2 => ["--lint-only"],
     fails => 1,

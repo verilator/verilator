@@ -1,13 +1,13 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2020 by Wilson Snyder. Verilator is free software; you
+# Copyright 2003-2021 by Wilson Snyder. Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.107 devel],
+AC_INIT([Verilator],[4.203 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -15,12 +15,13 @@ AC_INIT([Verilator],[4.107 devel],
 # Then 'make maintainer-dist'
 
 AC_CONFIG_HEADER(src/config_build.h)
-AC_CONFIG_FILES(Makefile docs/Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
+AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
 
 # Version
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 PACKAGE_VERSION_NUMBER=`AS_ECHO("$PACKAGE_VERSION") | sed 's/ .*//g'`
 AC_SUBST(PACKAGE_VERSION_NUMBER)
+AC_DEFINE_UNQUOTED([PACKAGE_VERSION_NUMBER_STRING],["$PACKAGE_VERSION_NUMBER"],[Package version as a number])
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
@@ -137,6 +138,11 @@ AC_RUN_IFELSE(
 AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
    AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])
+fi
+
+AC_PATH_PROG(PYTHON3,python3)
+if test "x$PYTHON3" = "x" ; then
+   AC_MSG_ERROR([Cannot find "python3" in your PATH, please install it])
 fi
 
 AC_PATH_PROG(LEX,flex)

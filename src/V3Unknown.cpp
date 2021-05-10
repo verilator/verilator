@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -357,7 +357,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
-            AstNode* basefromp = AstArraySel::baseFromp(nodep);
+            AstNode* basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();
@@ -405,7 +405,7 @@ private:
         if (!nodep->user1SetOnce()) {
             if (debug() == 9) nodep->dumpTree(cout, "-in: ");
             // Guard against reading/writing past end of arrays
-            AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
+            AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp(), true);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();

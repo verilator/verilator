@@ -214,34 +214,31 @@ the functions are then transformed, assuming the user used Verilator's
 --prof-cfuncs, and a report printed showing the percentage of time, etc,
 in each Verilog block.
 
-=head1 ARGUMENTS
+For documentation see
+L<https://verilator.org/guide/latest/exe_verilator_profcfuncs.html>.
 
-=over 4
+=head1 ARGUMENT SUMMARY
 
-=item --help
-
-Displays this message and program version and exits.
-
-=back
+    <filename>  Input file (gprof.out)
+    --help      Display this help
 
 =head1 DISTRIBUTION
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2007-2020 by Wilson Snyder. This program is free software; you
+Copyright 2007-2021 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-=head1 AUTHORS
-
-Wilson Snyder <wsnyder@wsnyder.org>
-
 =head1 SEE ALSO
 
 C<verilator>
+
+and L<https://verilator.org/guide/latest/exe_verilator_profcfuncs.html> for
+detailed documentation.
 
 =cut
 

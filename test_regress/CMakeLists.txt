@@ -4,7 +4,7 @@
 #
 # This CMake file is meant to be consumed by regression tests.
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -52,9 +52,10 @@ string(REGEX REPLACE "(^|;)--" "\\1-"
 
 getarg(TEST_VERILATOR_ARGS_NORM "-prefix" TEST_PREFIX)
 getarg(TEST_VERILATOR_ARGS_NORM "-threads" TEST_THREADS)
+getarg(TEST_VERILATOR_ARGS_NORM "-trace-threads" TEST_TRACE_THREADS)
 
 # Strip unwanted args with 1 parameter
-string(REGEX REPLACE "(^|;)--?(Mdir|make|prefix|threads);[^;]*" ""
+string(REGEX REPLACE "(^|;)--?(Mdir|make|prefix|threads|trace-threads);[^;]*" ""
        TEST_VERILATOR_ARGS
        "${TEST_VERILATOR_ARGS}")
 # Strip unwanted args
@@ -80,6 +81,9 @@ if(TEST_OPT_GLOBAL)
 endif()
 if(TEST_THREADS)
   list(APPEND verilate_ARGS THREADS ${TEST_THREADS})
+endif()
+if(TEST_TRACE_THREADS)
+  list(APPEND verilate_ARGS TRACE_THREADS ${TEST_TRACE_THREADS})
 endif()
 if(TEST_SYSTEMC)
   list(APPEND verilate_ARGS SYSTEMC)

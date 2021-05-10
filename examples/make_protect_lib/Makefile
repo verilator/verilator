@@ -36,6 +36,12 @@ VERILATOR_FLAGS += -cc
 VERILATOR_FLAGS += -Os -x-assign 0
 # Warn abount lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wall
+# This example does not use vl_time_stamp but rather
+# VerilatedContext::timeInc(), so to avoid a linker error on cygwin which
+# does not support weak symbols, we need to define VL_TIME_CONTEXT *in CPP*
+# to not compile in the vl_time_stamp using code.
+VERILATOR_FLAGS += -CFLAGS -DVL_TIME_CONTEXT
+
 # Make waveforms
 TOP_VERILATOR_FLAGS = $(VERILATOR_FLAGS) --trace
 

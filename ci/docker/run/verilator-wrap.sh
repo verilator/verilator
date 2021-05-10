@@ -27,5 +27,5 @@ if [ -e ${obj_dir} ]; then
     cp -r /usr/local/share/verilator/bin ${obj_dir}/vlt
     cp -r /usr/local/share/verilator/include ${obj_dir}/vlt
     # Point Makefile to that folder
-    perl -i -pe 's/VERILATOR_ROOT = \/usr\/local\/share\/verilator/VERILATOR_ROOT = vlt/g' ${obj_dir}/*.mk
+    sed -i 's/VERILATOR_ROOT = \/usr\/local\/share\/verilator/VERILATOR_ROOT = vlt/g' ${obj_dir}/*.mk
 fi

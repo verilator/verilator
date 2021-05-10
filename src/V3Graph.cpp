@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -325,12 +325,11 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     *logp << "\t\t rankdir=" << dotRankDir() << "];\n";
 
     // List of all possible subgraphs
-    typedef std::multimap<string, V3GraphVertex*> SubgraphMmap;
-    SubgraphMmap subgraphs;
+    std::multimap<std::string, V3GraphVertex*> subgraphs;
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         string vertexSubgraph
             = (colorAsSubgraph && vertexp->color()) ? cvtToStr(vertexp->color()) : "";
-        subgraphs.insert(make_pair(vertexSubgraph, vertexp));
+        subgraphs.emplace(vertexSubgraph, vertexp);
     }
 
     // We use a map here, as we don't want to corrupt anything (userp) in the graph,
@@ -340,7 +339,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // Print vertices
     int n = 0;
     string subgr;
-    for (SubgraphMmap::const_iterator it = subgraphs.begin(); it != subgraphs.end(); ++it) {
+    for (auto it = subgraphs.cbegin(); it != subgraphs.cend(); ++it) {
         string vertexSubgraph = it->first;
         V3GraphVertex* vertexp = it->second;
         numMap[vertexp] = n;
@@ -377,7 +376,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
                       << (edgep->dotLabel() != "" ? edgep->dotLabel() : "") << "\""
                       << " weight=" << edgep->weight() << " color=" << edgep->dotColor();
                 if (edgep->dotStyle() != "") *logp << " style=" << edgep->dotStyle();
-                // if (edgep->cutable()) { *logp<<",constraint=false"; }    // to rank without
+                // if (edgep->cutable()) *logp << ",constraint=false";  // to rank without
                 // following edges
                 *logp << "];\n";
             }

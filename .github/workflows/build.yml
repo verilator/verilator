@@ -1,5 +1,5 @@
 # DESCRIPTION: Github actions config
-# This name is key to badges in README.adoc, so we use the name build
+# This name is key to badges in README.rst, so we use the name build
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 name: build
@@ -11,67 +11,127 @@ on:
   schedule:
   - cron: '0 0 * * 0' # weekly
 
+env:
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
+
 jobs:
 
-  vlt:
+
+  Matrix:
+    runs-on: ubuntu-latest
+    name: Generate Build matrix
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@v2
+    - id: generate
+      name: Run 'generate_matrix.sh'
+      run: |
+        if [ '${{ github.event_name}}' = 'pull_request' ]; then
+          matrix='[ "ubuntu-20.04" ]'
+        else
+          matrix='[ "ubuntu-16.04", "ubuntu-18.04", "ubuntu-20.04" ]'
+        fi
+        echo "::set-output name=matrix::$matrix"
+
+
+  Build:
+    needs: Matrix
     strategy:
       fail-fast: false
       matrix:
-        include:
+        os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
+        debug: [ opt, dbg ]
+        compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-    runs-on: ubuntu-20.04
-    name: Ubuntu 20.04 | ${{ matrix.cc }} | build-test
+    runs-on: ${{ matrix.os }}
+    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }}
     env:
-      CI_OS_NAME: linux
-      CI_RUNS_ON: ubuntu-20.04
-      CI_COMMIT: ${{ github.sha }}
-      CCACHE_COMPRESS: 1
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
+      CI_BUILD_STAGE_NAME: build
+      CI_RUNS_ON: ${{ matrix.os }}
+      CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
+      CC: ${{ matrix.compiler.cc }}
+      CXX: ${{ matrix.compiler.cxx }}
+      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
     steps:
 
-      - name: Checkout
-        uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
-      - name: Cache
-        uses: actions/cache@v2
-        env:
-          cache-name: ccache
-        with:
-          path: ${{ github.workspace }}/.ccache
-          key: ubuntu-20.04-${{ matrix.cc }}-${{ env.cache-name }}-${{ github.sha }}
-          restore-keys: |
-            ubuntu-20.04-${{ matrix.cc }}-${{ env.cache-name }}
+    - name: Cache
+      uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
 
-      - name: Install packages for build
-        env:
-          CI_BUILD_STAGE_NAME: build
-        run: bash ci/ci-install.bash
+    - name: Install packages for build
+      run: ./ci/ci-install.bash
 
-      - name: CCACHE maintenance
-        run: mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
+    - name: Build
+      run: |
+        ./ci/ci-script.bash
+        tar cvzf verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz ./bin
 
-      - name: Build
-        env:
-          CI_BUILD_STAGE_NAME: build
-        run: bash ci/ci-script.bash
+    - uses: actions/upload-artifact@v2
+      with:
+        path: verilator-${{ matrix.os}}-${{ env.CI_COMMIT }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
 
-      - name: Install packages for tests
-        env:
-          CI_BUILD_STAGE_NAME: test
-        run: bash ci/ci-install.bash
 
-      - name: Test
-        env:
-          CI_BUILD_STAGE_NAME: test
-        run: |
-          for item in dist-vlt-0 dist-vlt-1 vltmt-0 vltmt-1; do
-            echo "::group::${item}"
+  Test:
+    needs: [ Matrix, Build ]
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
+        compiler:
+          - { cc: clang, cxx: clang++ }
+          - { cc: gcc,   cxx: g++     }
+        suite:
+          - dist-vlt-0
+          - dist-vlt-1
+          - vltmt-0
+          - vltmt-1
+    runs-on: ${{ matrix.os }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }}
+    env:
+      CI_BUILD_STAGE_NAME: test
+      CI_RUNS_ON: ${{ matrix.os }}
+      CC: ${{ matrix.compiler.cc }}
+      CXX: ${{ matrix.compiler.cxx }}
+      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
+    steps:
 
-            TESTS="${item}" bash ci/ci-script.bash
+    - name: Checkout
+      uses: actions/checkout@v2
 
-            echo '::endgroup::'
-          done
+    - name: Cache
+      uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
+
+    - uses: actions/download-artifact@v2
+
+    - name: Install Verilator and test dependencies
+      run: |
+        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-opt.tgz
+        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-dbg.tgz
+        rm -rf artifact
+        ./ci/ci-install.bash
+
+    - name: Test
+      env:
+        TESTS: ${{ matrix.suite }}
+      run: ./ci/ci-script.bash

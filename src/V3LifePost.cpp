@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -110,8 +110,8 @@ public:
     bool operator<(const LifeLocation& b) const {
         unsigned a_id = mtaskp ? mtaskp->id() : 0;
         unsigned b_id = b.mtaskp ? b.mtaskp->id() : 0;
-        if (a_id < b_id) { return true; }
-        if (b_id < a_id) { return false; }
+        if (a_id < b_id) return true;
+        if (b_id < a_id) return false;
         return sequence < b.sequence;
     }
 };
@@ -145,13 +145,12 @@ private:
 
     // Map each varscope to one or more locations where it's accessed.
     // These maps will not include any ASSIGNPOST accesses:
-    typedef std::unordered_map<const AstVarScope*, std::set<LifeLocation>> LocMap;
+    using LocMap = std::unordered_map<const AstVarScope*, std::set<LifeLocation>>;
     LocMap m_reads;  // VarScope read locations
     LocMap m_writes;  // VarScope write locations
 
     // Map each dly var to its AstAssignPost* node and the location thereof
-    typedef std::unordered_map<const AstVarScope*, LifePostLocation> PostLocMap;
-    PostLocMap m_assignposts;  // AssignPost dly var locations
+    std::unordered_map<const AstVarScope*, LifePostLocation> m_assignposts;
 
     const V3Graph* m_mtasksGraphp = nullptr;  // Mtask tracking graph
     std::unique_ptr<GraphPathChecker> m_checker;

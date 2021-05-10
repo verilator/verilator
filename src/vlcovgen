@@ -1,171 +1,108 @@
-#!/usr/bin/env perl
-# See copyright, etc in below POD section.
+#!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0116,eval-used
 ######################################################################
 
-use warnings;
-use Getopt::Long;
-use IO::File;
-use Pod::Usage;
-use strict;
-use vars qw($Debug);
+import argparse
+import re
+import sys
+# from pprint import pprint
 
-our @Items;
+Items = []
 
-#======================================================================
-# main
-
-$Debug = 0;
-my $Opt_Srcdir = ".";
-Getopt::Long::config("pass_through", "no_auto_abbrev");
-if (! GetOptions(
-          "help"        => \&usage,
-          "debug"       => sub { $Debug = 1; },
-          "srcdir=s"    => \$Opt_Srcdir,
-          "<>"          => sub { die "%Error: Unknown parameter: $_[0],"; },
-    )) {
-    usage();
-}
-
-read_keys("$Opt_Srcdir/../include/verilated_cov_key.h");
-lint();
-write_keys("$Opt_Srcdir/../include/verilated_cov_key.h");
-
-#----------------------------------------------------------------------
-
-sub usage {
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
-    exit(1);  # Unreachable
-}
-
-#######################################################################
-
-sub read_keys {
-    my $filename = shift;
-
-    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
-    while (defined (my $line = $fh->getline())) {
-        $line =~ s/\/\/.*$//;
-        next if $line =~ /^\s*$/;
-        if ($line =~ /^\s*VLCOVGEN_ITEM/) {
-            $line =~ /^\s*VLCOVGEN_ITEM *\( *"([^"]+)" *\)/
-                or die "%Error: $filename:$.: Misformed VLCOVGEN_ITEM line,";
-            my @data;
-            my $code = "\@data = ($1);";
-            eval $code;
-            die "%Error: $filename:$.: Parsing '$code': $@," if $@;
-            push @Items, {@data};
-        }
-    }
-}
-
-#######################################################################
-
-sub lint {
-    my %shorts;
-    my $ok = 1;
-    foreach my $itemref (@Items) {
-        if ($shorts{$itemref->{short}}) {
-            die "%Error: Duplicate short code: $itemref->{short},";
-            $ok = 0;
-        }
-        $shorts{$itemref->{short}} = 1;
-    }
-    return $ok;
-}
-
-sub write_keys {
-    my $filename = shift;
-
-    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
-
-    my @in;
-    my @out;
-    my $deleting;
-    while (defined(my $line = $fh->getline)) {
-        push @in, $line;
-        if ($line =~ /VLCOVGEN_CIK_AUTO_EDIT_BEGIN/) {
-            $deleting = 1;
-            push @out, $line;
-            foreach my $keyref (sort {$a->{name} cmp $b->{name}} @Items) {
-                push @out, sprintf("#define VL_CIK_%s \"%s\"\n",
-                                   uc $keyref->{name}, $keyref->{short});
-            }
-        }
-        elsif ($line =~ /VLCOVGEN_SHORT_AUTO_EDIT_BEGIN/) {
-            $deleting = 1;
-            push @out, $line;
-            foreach my $keyref (sort {$a->{name} cmp $b->{name}} @Items) {
-                push @out, sprintf("        if (key == \"%s\") return VL_CIK_%s;\n",
-                                   $keyref->{name}, uc $keyref->{name});
-            }
-        }
-        elsif ($line =~ /VLCOVGEN_.*AUTO_EDIT_END/) {
-            $deleting = 0;
-            push @out, $line;
-        }
-        elsif ($deleting) {
-        }
-        else {
-            push @out, $line;
-        }
-    }
-    $fh->close;
-
-    my $ok = join("", @out) eq join("", @in);
-    if (!$ok) {
-        my $fh = IO::File->new(">$filename") or die "%Error: $! writing $filename\n";
-        $fh->print(join "", @out);
-        $fh->close;
-    }
-}
+######################################################################
 
 
-#######################################################################
-__END__
+def read_keys(filename):
+    with open(filename) as fh:
+        for line in fh:
+            line = re.sub(r'\/\/.*$', '', line)
+            if re.match(r'^\s*$', line):
+                continue
+            if re.search(r'^\s*VLCOVGEN_ITEM', line):
+                match = re.search(r'^\s*VLCOVGEN_ITEM *\( *"([^"]+)" *\)',
+                                  line)
+                if not match:
+                    sys.exit("%Error: " + filename +
+                             ": vlcovgen misformed VLCOVGEN_ITEM line")
+                code = "{" + match.group(1) + "}"
+                data = eval(code)
+                # pprint(data)
+                Items.append(data)
 
-=pod
 
-=head1 NAME
+######################################################################
 
-vlcovgen - Generate verilated_cov headers to reduce C++ code duplication
 
-=head1 SYNOPSIS
+def lint():
+    shorts = {}
+    for item in Items:
+        if item['short'] in shorts:
+            sys.exit("%Error: vlcovgen duplicate short code: " + item['short'])
+        shorts[item['short']] = True
 
-  (called from make rules)
-  vlcovgen
 
-=head1 DESCRIPTION
+def write_keys(filename):
+    orig = []
+    out = []
 
-Generates several files for Verilator compilations.
+    with open(filename) as fh:
+        deleting = False
+        for line in fh:
+            orig.append(line)
+            if re.search(r'VLCOVGEN_CIK_AUTO_EDIT_BEGIN', line):
+                deleting = True
+                out.append(line)
+                for keyref in sorted(Items, key=lambda a: a['name']):
+                    out.append("#define VL_CIK_%s \"%s\"\n" %
+                               (keyref['name'].upper(), keyref['short']))
+            elif re.search(r'VLCOVGEN_SHORT_AUTO_EDIT_BEGIN', line):
+                deleting = True
+                out.append(line)
+                for keyref in sorted(Items, key=lambda a: a['name']):
+                    out.append(
+                        "        if (key == \"%s\") return VL_CIK_%s;\n" %
+                        (keyref['name'], keyref['name'].upper()))
+            elif re.search(r'VLCOVGEN_.*AUTO_EDIT_END', line):
+                deleting = False
+                out.append(line)
+            elif not deleting:
+                out.append(line)
 
-=head1 ARGUMENTS
+    ok = "".join(out) == "".join(orig)
+    if not ok:
+        with open(filename, "w") as fhw:
+            fhw.write("".join(out))
 
-=over 4
 
-=item --help
+######################################################################
+######################################################################
 
-Displays this message and program version and exits.
-
-=back
-
-=head1 DISTRIBUTION
-
-Copyright 2002-2020 by Wilson Snyder. This program is free software; you
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description=
+    """Generate verilated_cov headers to reduce C++ code duplication.""",
+    epilog=
+    """Copyright 2002-2021 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
-SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-=head1 AUTHORS
+parser.add_argument('--srcdir',
+                    action='store',
+                    help='directory containing Verilator sources')
 
-Wilson Snyder <wsnyder@wsnyder.org>
+parser.set_defaults(srcdir=".")
 
-=head1 SEE ALSO
+Args = parser.parse_args()
 
-=cut
+read_keys(Args.srcdir + "/../include/verilated_cov_key.h")
+lint()
+write_keys(Args.srcdir + "/../include/verilated_cov_key.h")
 
 ######################################################################
-### Local Variables:
-### compile-command: "./vlcovgen --srcdir ."
-### End:
+# Local Variables:
+# compile-command: "./vlcovgen --srcdir ."
+# End:

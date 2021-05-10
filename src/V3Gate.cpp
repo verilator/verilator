@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -37,7 +37,7 @@
 #include <map>
 #include <unordered_set>
 
-typedef std::list<AstNodeVarRef*> GateVarRefList;
+using GateVarRefList = std::list<AstNodeVarRef*>;
 
 constexpr int GATE_DEDUP_MAX_DEPTH = 20;
 
@@ -264,7 +264,7 @@ private:
     virtual void visit(AstNode* nodep) override {
         // *** Special iterator
         if (!m_isSimple) return;  // Fastpath
-        if (++m_ops > v3Global.opt.gateStmts()) { clearSimple("--gate-stmts exceeded"); }
+        if (++m_ops > v3Global.opt.gateStmts()) clearSimple("--gate-stmts exceeded");
         if (!(m_dedupe ? nodep->isGateDedupable() : nodep->isGateOptimizable())  //
             || !nodep->isPure() || nodep->isBrancher()) {
             UINFO(5, "Non optimizable type: " << nodep << endl);
@@ -282,7 +282,7 @@ public:
         // Iterate
         iterate(nodep);
         // Check results
-        if (!m_substTreep) { clearSimple("No assignment found\n"); }
+        if (!m_substTreep) clearSimple("No assignment found\n");
         for (GateVarRefList::const_iterator it = m_rhsVarRefs.begin(); it != m_rhsVarRefs.end();
              ++it) {
             if (m_lhsVarRef && m_lhsVarRef->varScopep() == (*it)->varScopep()) {
@@ -681,9 +681,9 @@ bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp,
     // Return true if can optimize
     // Return false if the consuming logic has an output signal that the
     // replacement logic has as an input
-    typedef std::unordered_set<AstVarScope*> VarScopeSet;
+
     // Use map to find duplicates between two lists
-    VarScopeSet varscopes;
+    std::unordered_set<AstVarScope*> varscopes;
     // Replacement logic usually has shorter input list, so faster to build list based on it
     const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
     for (GateVarRefList::const_iterator it = rhsVarRefs.begin(); it != rhsVarRefs.end(); ++it) {
@@ -901,10 +901,6 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 // Auxiliary hash class for GateDedupeVarVisitor
 
 class GateDedupeHash final : public V3HashedUserSame {
-public:
-    // TYPES
-    typedef std::unordered_set<AstNode*> NodeSet;
-
 private:
     // NODE STATE
     // Ast*::user2p     -> parent AstNodeAssign* for this rhsp
@@ -919,7 +915,7 @@ private:
     AstUser5InUse m_inuser5;
 
     V3Hashed m_hashed;  // Hash, contains rhs of assigns
-    NodeSet m_nodeDeleteds;  // Any node in this hash was deleted
+    std::unordered_set<AstNode*> m_nodeDeleteds;  // Any node in this hash was deleted
 
     VL_DEBUG_FUNC;  // Declare debug()
 

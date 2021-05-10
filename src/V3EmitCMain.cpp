@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -45,6 +45,9 @@ private:
         V3OutCFile cf(filename);
         m_ofp = &cf;
 
+        // Not defining main_time/vl_time_stamp, so
+        v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
+
         // Heavly commented output, as users are likely to look at or copy this code
         ofp()->putsHeader();
         puts("// DESCRIPTION: main() calling loop, created with Verilator --main\n");
@@ -55,41 +58,40 @@ private:
 
         puts("\n//======================\n\n");
 
-        puts(topClassName() + "* topp;\n");
-        puts("\n");
-        puts("// Requires -DVL_TIME_STAMP64\n");
-        v3Global.opt.addCFlags("-DVL_TIME_STAMP64");
-        puts("vluint64_t main_time = 0;\n");
-        puts("vluint64_t vl_time_stamp64() { return main_time; }\n");
+        puts("int main(int argc, char** argv, char**) {\n");
+        puts("// Setup context, defaults, and parse command line\n");
+        puts("Verilated::debug(0);\n");
+        puts("const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n");
+        puts("contextp->commandArgs(argc, argv);\n");
         puts("\n");
 
-        puts("int main(int argc, char** argv, char**) {\n");
-        puts("// Setup defaults and parse command line\n");
-        puts("Verilated::debug(0);\n");
-        puts("Verilated::commandArgs(argc, argv);\n");
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
-        puts("topp = new " + topClassName() + "(\"top\");\n");
+        puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName()
+             + "{contextp.get()}};\n");
+        puts("\n");
+
         puts("// Evaluate initials\n");
         puts("topp->eval();  // Evaluate\n");
+        puts("\n");
 
         puts("// Simulate until $finish\n");
-        puts("while (!Verilated::gotFinish()) {\n");
+        puts("while (!contextp->gotFinish()) {\n");
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
         puts(/**/ "// Advance time\n");
-        puts(/**/ "++main_time;\n");
+        puts(/**/ "contextp->timeInc(1);\n");
+
         puts("}\n");
         puts("\n");
 
-        puts("if (!Verilated::gotFinish()) {\n");
+        puts("if (!contextp->gotFinish()) {\n");
         puts(/**/ "VL_DEBUG_IF(VL_PRINTF(\"+ Exiting without $finish; no events left\\n\"););\n");
         puts("}\n");
         puts("\n");
 
         puts("// Final model cleanup\n");
         puts("topp->final();\n");
-        puts("VL_DO_DANGLING(delete topp, topp);\n");
-        puts("exit(0);\n");
+        puts("return 0;\n");
         puts("}\n");
     }
 };

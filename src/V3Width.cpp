@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -77,7 +77,7 @@
 #include <algorithm>
 
 // More code; this file was getting too large; see actions there
-#define _V3WIDTH_CPP_
+#define VERILATOR_V3WIDTH_CPP_
 #include "V3WidthCommit.h"
 
 //######################################################################
@@ -198,9 +198,8 @@ public:
 class WidthVisitor final : public AstNVisitor {
 private:
     // TYPES
-    typedef std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*> TableMap;
-    typedef std::map<int, AstPatMember*> PatVecMap;
-    typedef std::map<const AstNodeDType*, AstQueueDType*> DTypeQMap;
+    using TableMap = std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*>;
+    using PatVecMap = std::map<int, AstPatMember*>;
 
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state
@@ -214,7 +213,8 @@ private:
     bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
     TableMap m_tableMap;  // Created tables so can remove duplicates
-    DTypeQMap m_queueDTypeIndexed;  // Queues with given index type
+    std::map<const AstNodeDType*, AstQueueDType*>
+        m_queueDTypeIndexed;  // Queues with given index type
 
     // ENUMS
     enum ExtendRule : uint8_t {
@@ -804,8 +804,8 @@ private:
             }
             // We're extracting, so just make sure the expression is at least wide enough.
             if (nodep->fromp()->width() < width) {
-                nodep->v3error("Extracting " << width << " bits from only "
-                                             << nodep->fromp()->width() << " bit number");
+                nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
+                                                      << nodep->fromp()->width() << " bit number");
                 // Extend it.
                 AstNodeDType* subDTypep
                     = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
@@ -1091,7 +1091,7 @@ private:
                 iterateCheckSizedSelf(nodep, "Ticks", nodep->ticksp(), SELF, BOTH);
                 V3Const::constifyParamsEdit(nodep->ticksp());  // ticksp may change
                 const AstConst* constp = VN_CAST(nodep->ticksp(), Const);
-                if (!constp || constp->toSInt() < 1) {
+                if (!constp) {
                     nodep->v3error("$past tick value must be constant (IEEE 1800-2017 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
                 } else if (constp->toSInt() < 1) {
@@ -1821,6 +1821,7 @@ private:
         if (m_vup->final()) {
             // CastSize not needed once sizes determined
             AstNode* underp = nodep->lhsp()->unlinkFrBack();
+            underp->dtypeFrom(nodep);
             nodep->replaceWith(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
@@ -2060,7 +2061,7 @@ private:
                                << otherp->warnOther() << "... Location of original declaration\n"
                                << otherp->warnContextSecondary());
             } else {
-                inits.insert(make_pair(num, itemp));
+                inits.emplace(num, itemp);
             }
             num.opAdd(one, constp->num());
         }
@@ -2669,7 +2670,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) { newp->makeStatement(); }
+            if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
             methodOkArguments(nodep, 0, 0);
@@ -2762,7 +2763,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) { newp->makeStatement(); }
+            if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
@@ -2876,7 +2877,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), nullptr);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) { newp->makeStatement(); }
+            if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "push_back" || nodep->name() == "push_front") {
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -2894,7 +2895,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) { newp->makeStatement(); }
+            if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
@@ -3336,7 +3337,7 @@ private:
         // which member each AstPatMember corresponds to before we can
         // determine the dtypep for that PatMember's value, and then
         // width the initial value appropriately.
-        typedef std::map<const AstMemberDType*, AstPatMember*> PatMap;
+        using PatMap = std::map<const AstMemberDType*, AstPatMember*>;
         PatMap patmap;
         {
             AstMemberDType* memp = vdtypep->membersp();
@@ -3371,8 +3372,7 @@ private:
                         patp = nullptr;
                         break;
                     } else {
-                        std::pair<PatMap::iterator, bool> ret
-                            = patmap.insert(make_pair(memp, patp));
+                        std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
                         if (!ret.second) {
                             patp->v3error("Assignment pattern contains duplicate entry: "
                                           << VN_CAST(patp->keyp(), Text)->text());
@@ -3428,9 +3428,10 @@ private:
     void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
         VNumRange range = arrayDtp->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
-        UINFO(9, "ent " << range.hi() << " to " << range.lo() << endl);
+        UINFO(9, "ent " << range.left() << " to " << range.right() << endl);
         AstNode* newp = nullptr;
-        for (int ent = range.hi(); ent >= range.lo(); --ent) {
+        for (int entn = 0, ent = range.left(); entn < range.elements();
+             ++entn, ent += range.leftToRightInc()) {
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             const auto it = patmap.find(ent);
@@ -3879,7 +3880,7 @@ private:
                                 newp = new AstMul(argp->fileline(),
                                                   new AstConst(argp->fileline(),
                                                                AstConst::Unsized64(),
-                                                               llround(scale)),
+                                                               std::llround(scale)),
                                                   argp);
                             }
                             relinkHandle.relink(newp);
@@ -3938,11 +3939,13 @@ private:
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         if (!m_paramsOnly) {
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
+            string text = nodep->fmtp()->text();
+            if (text.empty()) text = "Elaboration system task message (IEEE 1800-2017 20.11)";
             switch (nodep->displayType()) {
-            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, nodep->fmtp()->text()); break;
+            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, text); break;
+            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, text); break;
+            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, text); break;
+            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, text); break;
             default: UASSERT_OBJ(false, nodep, "Unexpected elaboration display type");
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -5593,7 +5596,7 @@ private:
     AstNodeBiop* replaceWithDVersion(AstNodeBiop* nodep) {
         // Given a signed/unsigned node type, create the opposite type
         // Return new node or nullptr if nothing
-        if (nodep->doubleFlavor()) { return nullptr; }
+        if (nodep->doubleFlavor()) return nullptr;
         FileLine* fl = nodep->fileline();
         AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
@@ -5814,7 +5817,7 @@ private:
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(make_pair(nodep, attrType));
+        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         AstNodeArrayDType* vardtypep
             = new AstUnpackArrayDType(nodep->fileline(), nodep->findSigned32DType(),
@@ -5836,7 +5839,7 @@ private:
             initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.insert(make_pair(make_pair(nodep, attrType), varp));
+        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
         return varp;
     }
     uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
@@ -5861,7 +5864,7 @@ private:
     }
     AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(make_pair(nodep, attrType));
+        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " max=" << msbdim << " for "
                                             << nodep << endl);
@@ -5936,7 +5939,7 @@ private:
             if (values[i]) initp->addIndexValuep(i, values[i]);
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.insert(make_pair(make_pair(nodep, attrType), varp));
+        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
         return varp;
     }
 
@@ -5956,7 +5959,7 @@ private:
             if (patmap.find(element) != patmap.end()) {
                 patp->v3error("Assignment pattern key used multiple times: " << element);
             } else {
-                patmap.insert(make_pair(element, patp));
+                patmap.emplace(element, patp);
             }
             element += range.leftToRightInc();
         }
@@ -6023,8 +6026,15 @@ private:
         toDtp = toDtp->skipRefToEnump();
         fromDtp = fromDtp->skipRefToEnump();
         if (toDtp == fromDtp) return COMPATIBLE;
-        bool fromNumericable = VN_IS(fromDtp, BasicDType) || VN_IS(fromDtp, EnumDType)
-                               || VN_IS(fromDtp, NodeUOrStructDType);
+        AstNodeDType* fromBaseDtp = fromDtp;
+        while (AstPackArrayDType* packp = VN_CAST(fromBaseDtp, PackArrayDType)) {
+            fromBaseDtp = packp->subDTypep();
+            while (AstRefDType* refp = VN_CAST(fromBaseDtp, RefDType)) {
+                fromBaseDtp = refp->refDTypep();
+            }
+        }
+        bool fromNumericable = VN_IS(fromBaseDtp, BasicDType) || VN_IS(fromBaseDtp, EnumDType)
+                               || VN_IS(fromBaseDtp, NodeUOrStructDType);
         // UNSUP unpacked struct/unions (treated like BasicDType)
         if (VN_IS(toDtp, BasicDType) || VN_IS(toDtp, NodeUOrStructDType)) {
             if (fromNumericable) return COMPATIBLE;
@@ -6115,6 +6125,7 @@ private:
     }
     void userIterateAndNext(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
+        if (nodep->didWidth()) return;  // Avoid iterating list we have already iterated
         {
             VL_RESTORER(m_vup);
             m_vup = vup;

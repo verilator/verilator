@@ -9,6 +9,8 @@
 #include <verilated.h>
 #include "Vt_func_rand.h"
 
+double sc_time_stamp() { return 0; }
+
 int main(int argc, char* argv[]) {
     Vt_func_rand* topp = new Vt_func_rand;
 

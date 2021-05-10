@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -136,8 +136,8 @@ private:
     const AstSenTree* m_domainp;  // Domain all vertices belong to
     const AstScope* m_scopep;  // Scope all vertices belong to
 
-    typedef std::pair<const AstSenTree*, const AstScope*> DomScopeKey;
-    typedef std::map<DomScopeKey, OrderMoveDomScope*> DomScopeMap;
+    using DomScopeKey = std::pair<const AstSenTree*, const AstScope*>;
+    using DomScopeMap = std::map<DomScopeKey, OrderMoveDomScope*>;
     static DomScopeMap s_dsMap;  // Structure registered for each dom/scope pairing
 
 public:
@@ -158,13 +158,13 @@ public:
     }
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
     static OrderMoveDomScope* findCreate(const AstSenTree* domainp, const AstScope* scopep) {
-        const DomScopeKey key = make_pair(domainp, scopep);
+        const DomScopeKey key = std::make_pair(domainp, scopep);
         const auto iter = s_dsMap.find(key);
         if (iter != s_dsMap.end()) {
             return iter->second;
         } else {
             OrderMoveDomScope* domScopep = new OrderMoveDomScope(domainp, scopep);
-            s_dsMap.insert(make_pair(key, domScopep));
+            s_dsMap.emplace(key, domScopep);
             return domScopep;
         }
     }
@@ -421,11 +421,8 @@ template <class T_MoveVertex> class ProcessMoveBuildGraph {
     //   works the same way for both cases.
 
     // TYPES
-    typedef std::pair<const V3GraphVertex*, const AstSenTree*> VxDomPair;
-    // Maps an (original graph vertex, domain) pair to a T_MoveVertex
-    // Not std::unordered_map, because std::pair doesn't provide std::hash
-    typedef std::map<VxDomPair, T_MoveVertex*> Var2Move;
-    typedef std::unordered_map<const OrderLogicVertex*, T_MoveVertex*> Logic2Move;
+    using VxDomPair = std::pair<const V3GraphVertex*, const AstSenTree*>;
+    using Logic2Move = std::unordered_map<const OrderLogicVertex*, T_MoveVertex*>;
 
 public:
     class MoveVertexMaker VL_NOT_FINAL {
@@ -446,7 +443,9 @@ private:
     V3Graph* m_outGraphp;  // Output graph of T_MoveVertex's
     MoveVertexMaker* m_vxMakerp;  // Factory class for T_MoveVertex's
     Logic2Move m_logic2move;  // Map Logic to Vertex
-    Var2Move m_var2move;  // Map Vars to Vertex
+    // Maps an (original graph vertex, domain) pair to a T_MoveVertex
+    // Not std::unordered_map, because std::pair doesn't provide std::hash
+    std::map<VxDomPair, T_MoveVertex*> m_var2move;
 
 public:
     // CONSTRUCTORS
@@ -487,7 +486,7 @@ public:
         for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (OrderLogicVertex* lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
                 T_MoveVertex* moveVxp = m_logic2move[lvertexp];
-                if (moveVxp) { iterate(moveVxp, lvertexp, lvertexp->domainp()); }
+                if (moveVxp) iterate(moveVxp, lvertexp, lvertexp->domainp());
             }
         }
     }
@@ -730,7 +729,7 @@ private:
 
     void process();
     void processCircular();
-    typedef std::deque<OrderEitherVertex*> VertexVec;
+    using VertexVec = std::deque<OrderEitherVertex*>;
     void processInputs();
     void processInputsInIterate(OrderEitherVertex* vertexp, VertexVec& todoVec);
     void processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec& todoVec);
@@ -752,14 +751,13 @@ private:
 
     // processMTask* routines schedule threaded execution
     struct MTaskState {
-        typedef std::list<const OrderLogicVertex*> Logics;
         AstMTaskBody* m_mtaskBodyp = nullptr;
-        Logics m_logics;
+        std::list<const OrderLogicVertex*> m_logics;
         ExecMTask* m_execMTaskp = nullptr;
         MTaskState() = default;
     };
     void processMTasks();
-    typedef enum : uint8_t { LOGIC_INITIAL, LOGIC_SETTLE } InitialLogicE;
+    enum InitialLogicE : uint8_t { LOGIC_INITIAL, LOGIC_SETTLE };
     void processMTasksInitial(InitialLogicE logic_type);
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep,
@@ -1661,7 +1659,7 @@ void OrderVisitor::processMovePrepReady() {
     UINFO(5, "  MovePrepReady\n");
     for (OrderMoveVertex* vertexp = m_pomWaiting.begin(); vertexp;) {
         OrderMoveVertex* nextp = vertexp->pomWaitingNextp();
-        if (vertexp->isWait() && vertexp->inEmpty()) { processMoveReadyOne(vertexp); }
+        if (vertexp->isWait() && vertexp->inEmpty()) processMoveReadyOne(vertexp);
         vertexp = nextp;
     }
 }

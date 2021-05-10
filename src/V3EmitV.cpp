@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -310,13 +310,15 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     virtual void visit(AstNodeFor* nodep) override {
         putfs(nodep, "for (");
-        m_suppressSemi = true;
-        iterateAndNextNull(nodep->initsp());
-        puts(";");
-        iterateAndNextNull(nodep->condp());
-        puts(";");
-        iterateAndNextNull(nodep->incsp());
-        m_suppressSemi = false;
+        {
+            VL_RESTORER(m_suppressSemi);
+            m_suppressSemi = true;
+            iterateAndNextNull(nodep->initsp());
+            puts(";");
+            iterateAndNextNull(nodep->condp());
+            puts(";");
+            iterateAndNextNull(nodep->incsp());
+        }
         puts(") begin\n");
         iterateAndNextNull(nodep->bodysp());
         putqs(nodep, "end\n");
@@ -381,9 +383,13 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     virtual void visit(AstTextBlock* nodep) override {
         visit(VN_CAST(nodep, NodeSimpleText));
-        for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
-            iterate(childp);
-            if (nodep->commas() && childp->nextp()) puts(", ");
+        {
+            VL_RESTORER(m_suppressSemi);
+            m_suppressVarSemi = nodep->commas();
+            for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
+                iterate(childp);
+                if (nodep->commas() && childp->nextp()) puts(", ");
+            }
         }
     }
     virtual void visit(AstScopeName* nodep) override {}
@@ -659,11 +665,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             puts(cvtToStr(unpackp->rangep()->rightConst()));
             puts("]");
         }
-        if (!m_suppressVarSemi) {
-            puts(";\n");
-        } else {
-            puts("\n");
-        }
+        puts(m_suppressVarSemi ? "\n" : ";\n");
     }
     virtual void visit(AstActive* nodep) override {
         m_sensesp = nodep->sensesp();
@@ -711,12 +713,10 @@ class EmitVFileVisitor final : public EmitVBaseVisitor {
     virtual void putsNoTracking(const string& str) override { ofp()->putsNoTracking(str); }
 
 public:
-    EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText, bool suppressVarSemi,
-                     bool suppressUnknown)
+    EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText, bool suppressUnknown)
         : EmitVBaseVisitor{suppressUnknown, nullptr} {
         m_ofp = ofp;
         m_trackText = trackText;
-        m_suppressVarSemi = suppressVarSemi;
         iterate(nodep);
     }
     virtual ~EmitVFileVisitor() override = default;
@@ -815,7 +815,7 @@ public:
                          AstSenTree* domainp, bool user3mark)
         : EmitVBaseVisitor{false, domainp}
         , m_formatter{os, prefix, flWidth} {
-        if (user3mark) { AstUser3InUse::check(); }
+        if (user3mark) AstUser3InUse::check();
         iterate(nodep);
     }
     virtual ~EmitVPrefixedVisitor() override = default;
@@ -840,7 +840,7 @@ void V3EmitV::emitvFiles() {
             V3OutVFile of(vfilep->name());
             of.puts("// DESCR"
                     "IPTION: Verilator generated Verilog\n");
-            EmitVFileVisitor visitor(vfilep->tblockp(), &of, true, true, false);
+            EmitVFileVisitor visitor(vfilep->tblockp(), &of, true, false);
         }
     }
 }
@@ -849,5 +849,5 @@ void V3EmitV::debugEmitV(const string& stage) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__" + stage + ".v";
     V3OutVFile of(filename);
-    EmitVFileVisitor visitor(v3Global.rootp(), &of, true, false, true);
+    EmitVFileVisitor visitor(v3Global.rootp(), &of, true, true);
 }

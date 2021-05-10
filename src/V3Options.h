@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3OPTIONS_H_
-#define _V3OPTIONS_H_ 1
+#ifndef VERILATOR_V3OPTIONS_H_
+#define VERILATOR_V3OPTIONS_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -37,7 +37,7 @@ class VOptionBool final {
     // Class to track options that are either not specified (and default
     // true/false), versus user setting the option to true or false
 public:
-    enum en : uint8_t { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
+    enum en : uint8_t { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE };
     enum en m_e;
     inline VOptionBool()
         : m_e{OPT_DEFAULT_FALSE} {}
@@ -49,23 +49,15 @@ public:
     operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
-    bool isFalse() const { return m_e == OPT_FALSE || m_e == OPT_DEFAULT_FALSE; }
     bool isSetTrue() const { return m_e == OPT_TRUE; }
     bool isSetFalse() const { return m_e == OPT_FALSE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? OPT_TRUE : OPT_FALSE; }
-    const char* ascii() const {
-        static const char* const names[] = {"DEFAULT_FALSE", "DEFAULT_TRUE", "TRUE", "FALSE"};
-        return names[m_e];
-    }
 };
 inline bool operator==(const VOptionBool& lhs, const VOptionBool& rhs) {
     return lhs.m_e == rhs.m_e;
 }
 inline bool operator==(const VOptionBool& lhs, VOptionBool::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(VOptionBool::en lhs, const VOptionBool& rhs) { return lhs == rhs.m_e; }
-inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
-    return os << rhs.ascii();
-}
 
 //######################################################################
 
@@ -97,43 +89,11 @@ public:
     VTimescale(const string& value, bool& badr);
     VTimescale(double value, bool& badr) {
         badr = false;
-        if (value == 10e2) {
-            m_e = TS_100S;
-        } else if (value == 1e1) {
-            m_e = TS_10S;
-        } else if (value == 1e0) {
-            m_e = TS_1S;
-        } else if (value == 1e-1) {
-            m_e = TS_100MS;
-        } else if (value == 1e-2) {
-            m_e = TS_10MS;
-        } else if (value == 1e-3) {
-            m_e = TS_1MS;
-        } else if (value == 1e-4) {
-            m_e = TS_100US;
-        } else if (value == 1e-5) {
-            m_e = TS_10US;
-        } else if (value == 1e-6) {
-            m_e = TS_1US;
-        } else if (value == 1e-7) {
-            m_e = TS_100NS;
-        } else if (value == 1e-8) {
-            m_e = TS_10NS;
-        } else if (value == 1e-9) {
-            m_e = TS_1NS;
-        } else if (value == 1e-10) {
-            m_e = TS_100PS;
-        } else if (value == 1e-11) {
-            m_e = TS_10PS;
-        } else if (value == 1e-12) {
-            m_e = TS_1PS;
-        } else if (value == 1e-13) {
-            m_e = TS_100FS;
-        } else if (value == 1e-14) {
-            m_e = TS_10FS;
-        } else if (value == 1e-15) {
-            m_e = TS_1FS;
-        } else {
+        for (int i = TS_100S; i < _ENUM_END; ++i) {
+            m_e = static_cast<en>(i);
+            if (multiplier() == value) break;
+        }
+        if (multiplier() != value) {
             m_e = NONE;
             badr = true;
         }
@@ -192,8 +152,8 @@ inline bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
 inline bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
 
-typedef std::vector<string> V3StringList;
-typedef std::set<string> V3StringSet;
+using V3StringList = std::vector<std::string>;
+using V3StringSet = std::set<std::string>;
 
 //######################################################################
 
@@ -201,7 +161,7 @@ typedef std::set<string> V3StringSet;
 class V3HierarchicalBlockOption final {
 public:
     // key:parameter name, value:value (as string)
-    typedef std::map<const string, string> ParamStrMap;
+    using ParamStrMap = std::map<const std::string, std::string>;
 
 private:
     string m_origName;  // module name
@@ -218,7 +178,7 @@ public:
     const ParamStrMap params() const { return m_parameters; }
 };
 
-typedef std::map<const string, V3HierarchicalBlockOption> V3HierBlockOptSet;
+using V3HierBlockOptSet = std::map<const std::string, V3HierarchicalBlockOption>;
 
 //######################################################################
 // V3Options - Command line options
@@ -227,7 +187,7 @@ class V3Options final {
 public:
 private:
     // TYPES
-    typedef std::map<const string, int> DebugSrcMap;
+    using DebugSrcMap = std::map<const std::string, int>;
 
     // MEMBERS (general options)
     V3OptionsImp* m_impp;  // Slow hidden options
@@ -323,6 +283,7 @@ private:
 
     int         m_buildJobs = 1;    // main switch: -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
+    int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_dumpTree = 0;     // main switch: --dump-tree
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_ifDepth = 0;      // main switch: --if-depth
@@ -381,6 +342,7 @@ private:
     bool        m_oCase;        // main switch: -Oe: case tree conversion
     bool        m_oCombine;     // main switch: -Ob: common icode packing
     bool        m_oConst;       // main switch: -Oc: constant folding
+    bool        m_oConstBitOpTree;  // main switch: -Oo: constant bit op tree
     bool        m_oDedupe;      // main switch: -Od: logic deduplication
     bool        m_oExpand;      // main switch: -Ox: expansion of C macros
     bool        m_oGate;        // main switch: -Og: gate wire elimination
@@ -410,8 +372,6 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
-    static bool onoff(const char* sw, const char* arg, bool& flag);
-    static bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
@@ -450,7 +410,6 @@ public:
     string bin() const { return m_bin; }
     string flags() const { return m_flags; }
     bool systemC() const { return m_systemC; }
-    bool usingSystemCLibs() const { return !lintOnly() && systemC(); }
     bool savable() const { return m_savable; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
@@ -519,6 +478,7 @@ public:
 
     int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
+    int coverageMaxWidth() const { return m_coverageMaxWidth; }
     int dumpTree() const { return m_dumpTree; }
     bool dumpTreeAddrids() const { return m_dumpTreeAddrids; }
     int gateStmts() const { return m_gateStmts; }
@@ -562,7 +522,6 @@ public:
     string modPrefix() const { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }
     string prefix() const { return m_prefix; }
-    string protectKey() const { return m_protectKey; }
     string protectKeyDefaulted();  // Set default key if not set by user
     string protectLib() const { return m_protectLib; }
     string protectLibName(bool shared) {
@@ -589,7 +548,6 @@ public:
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }
-    const V3LangCode& defaultLanguage() const { return m_defaultLanguage; }
 
     bool hasParameter(const string& name);
     string parameter(const string& name);
@@ -606,6 +564,7 @@ public:
     bool oCase() const { return m_oCase; }
     bool oCombine() const { return m_oCombine; }
     bool oConst() const { return m_oConst; }
+    bool oConstBitOpTree() const { return m_oConstBitOpTree; }
     bool oDedupe() const { return m_oDedupe; }
     bool oExpand() const { return m_oExpand; }
     bool oGate() const { return m_oGate; }

@@ -2,5 +2,6 @@
                                               : ... In instance t
    22 |       else if (value==11) begin end   
       |            ^~
+                  ... For warning description see https://verilator.org/warn/IFDEPTH?v=latest
                   ... Use "/* verilator lint_off IFDEPTH */" and lint_on around source to disable this message.
 %Error: Exiting due to

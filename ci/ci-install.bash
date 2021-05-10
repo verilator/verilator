@@ -17,6 +17,8 @@
 set -e
 set -x
 
+cd $(dirname "$0")/..
+
 fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
@@ -46,14 +48,12 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update
-    sudo apt-get install libfl-dev
-    sudo apt-get install libgoogle-perftools-dev
-    sudo apt-get install ccache
+    sudo apt-get install libfl-dev libgoogle-perftools-dev ccache
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
       sudo apt-get install libsystemc libsystemc-dev
     fi
     if [ "$COVERAGE" = 1 ]; then
-      yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
+      yes yes | sudo cpan -fi Parallel::Forker
     fi
     if [ "$M32" = 1 ]; then
       sudo apt-get install gcc-multilib g++-multilib
@@ -66,6 +66,10 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   else
     fatal "Unknown os: '$CI_OS_NAME'"
   fi
+
+  if [ -n "$CCACHE_DIR" ]; then
+    mkdir -p "$CCACHE_DIR" && ./ci/ci-ccache-maint.bash
+  fi
 elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
   # Dependencies of jobs in the 'test' stage, i.e.: packages required to
@@ -73,7 +77,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
 
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update
-    sudo apt-get install gdb gtkwave lcov
+    # libfl-dev needed for internal coverage's test runs
+    sudo apt-get install gdb gtkwave lcov libfl-dev ccache
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
       sudo apt-get install libsystemc-dev
     fi
@@ -94,8 +99,11 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   if [ "$CI_RUNS_ON" != "ubuntu-14.04" ]; then
     CI_CPAN_REPO=https://cpan.org
   fi
-  yes yes | sudo cpan -M $CI_CPAN_REPO -fi Unix::Processors Parallel::Forker
+  yes yes | sudo cpan -M $CI_CPAN_REPO -fi Parallel::Forker
   install-vcddiff
+
+  autoconf
+  ./configure --enable-longtests --enable-ccwarn
 else
   ##############################################################################
   # Unknown build stage

@@ -123,7 +123,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
         int vpidir = vpi_get(vpiDirection, handle);
         // Don't check port directions in verilator
         // see #681
-        if (!TestSimulator::is_verilator()) { CHECK_RESULT(vpidir, direction); }
+        if (!TestSimulator::is_verilator()) CHECK_RESULT(vpidir, direction);
     }
 
     // check type of object
@@ -163,17 +163,23 @@ int mon_check_props() {
            {"fourthreetwoone",
             {2, vpiNoDirection, 0, vpiMemory},
             {2, vpiNoDirection, 0, vpiMemoryWord}},
+           {"theint", {32, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
            {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
            {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
            {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
            {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
            {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
+           {"sub.subparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+           {"sub.the_intf.bytesig", {8, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+           {"sub.the_intf.param", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+           {"sub.the_intf.lparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+           {"twobytwo", {4, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
            {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->signal) {
         TestVpiHandle h = VPI_HANDLE(value->signal);
-        CHECK_RESULT_NZ(h);
         TEST_MSG("%s\n", value->signal);
+        CHECK_RESULT_NZ(h);
         if (int status = _mon_check_props(h, value->attributes.size, value->attributes.direction,
                                           value->attributes.scalar, value->attributes.type))
             return status;
@@ -201,6 +207,8 @@ int mon_check() {
     if (int status = mon_check_props()) return status;
     return 0;  // Ok
 }
+
+void dpi_print(const char* somestring) { printf("SOMESTRING = %s\n", somestring); }
 
 //======================================================================
 
@@ -234,7 +242,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 #else
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
@@ -258,7 +266,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 10;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();
@@ -278,7 +286,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

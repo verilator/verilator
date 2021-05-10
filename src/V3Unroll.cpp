@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -230,6 +230,7 @@ private:
             AstConst new_con(clonep->fileline(), *res);
             new_con.dtypeFrom(dtypep);
             outNum = new_con.num();
+            outNum.isSigned(dtypep->isSigned());
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return true;
         }
@@ -364,10 +365,10 @@ private:
         } else {
             nodep->unlinkFrBack();
         }
-        if (bodysp) { VL_DO_DANGLING(pushDeletep(bodysp), bodysp); }
-        if (precondsp) { VL_DO_DANGLING(pushDeletep(precondsp), precondsp); }
-        if (initp) { VL_DO_DANGLING(pushDeletep(initp), initp); }
-        if (incp && !incp->backp()) { VL_DO_DANGLING(pushDeletep(incp), incp); }
+        if (bodysp) VL_DO_DANGLING(pushDeletep(bodysp), bodysp);
+        if (precondsp) VL_DO_DANGLING(pushDeletep(precondsp), precondsp);
+        if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
+        if (incp && !incp->backp()) VL_DO_DANGLING(pushDeletep(incp), incp);
         if (debug() >= 9 && newbodysp) newbodysp->dumpTree(cout, "-  _new: ");
         return true;
     }
@@ -384,7 +385,7 @@ private:
             // Grab initial value
             AstNode* initp = nullptr;  // Should be statement before the while.
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
-            if (initp) { VL_DO_DANGLING(V3Const::constifyEdit(initp), initp); }
+            if (initp) VL_DO_DANGLING(V3Const::constifyEdit(initp), initp);
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
             // Grab assignment
             AstNode* incp = nullptr;  // Should be last statement

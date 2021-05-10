@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _VLCTEST_H_
-#define _VLCTEST_H_ 1
+#ifndef VERILATOR_VLCTEST_H_
+#define VERILATOR_VLCTEST_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -87,7 +87,7 @@ public:
 class VlcTests final {
 public:
     // TYPES
-    typedef std::vector<VlcTest*> ByName;
+    using ByName = std::vector<VlcTest*>;
 
 private:
     // MEMBERS
@@ -95,7 +95,7 @@ private:
 
 public:
     // ITERATORS
-    typedef ByName::iterator iterator;
+    using iterator = ByName::iterator;
     ByName::iterator begin() { return m_tests.begin(); }
     ByName::iterator end() { return m_tests.end(); }
 

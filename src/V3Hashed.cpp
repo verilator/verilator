@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -115,7 +115,7 @@ V3Hash V3Hashed::uncachedHash(const AstNode* nodep) {
 
 V3Hashed::iterator V3Hashed::hashAndInsert(AstNode* nodep) {
     hash(nodep);
-    return m_hashMmap.insert(make_pair(nodeHash(nodep), nodep));
+    return m_hashMmap.emplace(nodeHash(nodep), nodep);
 }
 
 void V3Hashed::hash(AstNode* nodep) {
@@ -162,7 +162,7 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
             if (it != end()) lasthash = it->first;
             if (num_in_bucket) {
                 if (dist.find(num_in_bucket) == dist.end()) {
-                    dist.insert(make_pair(num_in_bucket, 1));
+                    dist.emplace(num_in_bucket, 1);
                 } else {
                     ++dist[num_in_bucket];
                 }

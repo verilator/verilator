@@ -28,6 +28,13 @@ typedef struct packed {
    // verilator lint_on LITENDIAN
 } t2;
 
+logic [2:0][31:0] test2l;
+// verilator lint_off LITENDIAN
+logic [0:2][31:0] test2b;
+logic [0:2][31:0] test1b;
+// verilator lint_on LITENDIAN
+logic [2:0][31:0] test1l;
+
 module t;
    t2 t;
    initial begin
@@ -64,6 +71,23 @@ module t;
       t.clb[1].a[4] = 1'b1;
       t.dl[7] = 1'b1;
       `checkh(t, 80'h80_0002040000100800_01);
+
+      test1b = '{0, 1, 2};
+      test1l = test1b;
+      test2l = '{2, 1, 0};
+      test2b = test2l;
+      `checkh(test2l[0], 0);
+      `checkh(test2l[2], 2);
+      `checkh(test2l, {32'h2, 32'h1, 32'h0});
+      `checkh(test2b[0], 2);
+      `checkh(test2b[2], 0);
+      `checkh(test2b, {32'h2, 32'h1, 32'h0});
+      `checkh(test1b[0], 0);
+      `checkh(test1b[2], 2);
+      `checkh(test1b, {32'h0, 32'h1, 32'h2});
+      `checkh(test1l[0], 2);
+      `checkh(test1l[2], 0);
+      `checkh(test1l, {32'h0, 32'h1, 32'h2});
 
       $write("*-* All Finished *-*\n");
       $finish;

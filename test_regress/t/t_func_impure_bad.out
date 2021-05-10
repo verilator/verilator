@@ -4,4 +4,5 @@
                t/t_func_impure_bad.v:13:7: ... Location of the external reference: 't.sig'
    13 |       sig = '1;
       |       ^~~
+               ... For error description see https://verilator.org/warn/IMPURE?v=latest
 %Error: Exiting due to

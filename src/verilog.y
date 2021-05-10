@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -288,10 +288,7 @@ static void UNSUPREAL(FileLine* fileline) {
 
 //======================================================================
 
-void yyerror(const char* errmsg) {
-    PARSEP->bisonLastFileline()->v3error(errmsg);
-    static const char* const colonmsg = "syntax error, unexpected";
-}
+void yyerror(const char* errmsg) { PARSEP->bisonLastFileline()->v3error(errmsg); }
 
 void yyerrorf(const char* format, ...) {
     const int maxlen = 2000;
@@ -1287,9 +1284,31 @@ portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + em
 	|	'(' {VARRESET_LIST(PORT);} list_of_ports ')'	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
 	;
 
+list_of_portsE<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
+		portAndTagE			{ $$ = $1; }
+	|	list_of_portsE ',' portAndTagE		{ $$ = $1->addNextNull($3); }
+	;
+
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
-		portAndTag				{ $$ = $1; }
-	|	list_of_ports ',' portAndTag		{ $$ = $1->addNextNull($3); }
+		portAndTag			{ $$ = $1; }
+	|	list_of_portsE ',' portAndTagE		{ $$ = $1->addNextNull($3); }
+	;
+
+portAndTagE<nodep>:
+		/* empty */
+			{ int p = PINNUMINC();
+			   const string name = "__pinNumber" + cvtToStr(p);
+			  $$ = new AstPort{CRELINE(), p, name};
+			  AstVar* varp = new AstVar{CRELINE(), AstVarType::PORT, name, VFlagChildDType{},
+			                            new AstBasicDType{CRELINE(), LOGIC_IMPLICIT}};
+			  varp->declDirection(VDirection::INPUT);
+			  varp->direction(VDirection::INPUT);
+			  varp->ansi(false);
+			  varp->declTyped(true);
+			  varp->trace(false);
+			  $$ = $$->addNext(varp);
+			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
+	|	portAndTag				{ $$ = $1; }
 	;
 
 portAndTag<nodep>:
@@ -1383,9 +1402,9 @@ portDirNetE:			// IEEE: part of port, optional net type and/or direction
 		/* empty */				{ }
 	//			// Per spec, if direction given default the nettype.
 	//			// The higher level rule may override this VARDTYPE with one later in the parse.
-	|	port_direction					{ VARDECL(PORT); VARDTYPE_NDECL(nullptr/*default_nettype*/); }
-	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE_NDECL(nullptr/*default_nettype*/); }  // net_type calls VARDECL
-	|	net_type					{ } // net_type calls VARDECL
+	|	port_direction					{ VARDECL(PORT); VARDTYPE_NDECL(nullptr); }
+	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE_NDECL(nullptr); }  // net_type calls VARDECL
+	|	net_type					{ VARDTYPE_NDECL(nullptr); } // net_type calls VARDECL
 	;
 
 port_declNetE:			// IEEE: part of port_declaration, optional net type
@@ -2212,7 +2231,7 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 			  AstNodeDType* dtp = GRAMMARP->createArray(refp, $4, true);
 			  $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
 	//			//
-	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'
+	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
 			{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
 	//			// Allow redeclaring same typedef again
 	//			// Alternative is use of idAny below, but this will cause conflicts with ablve

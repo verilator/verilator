@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _VLCBUCKET_H_
-#define _VLCBUCKET_H_ 1
+#ifndef VERILATOR_VLCBUCKET_H_
+#define VERILATOR_VLCBUCKET_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -39,7 +39,7 @@ private:
         if (m_dataSize < point) m_dataSize = (point + 64) & ~63ULL;  // Keep power of two
         m_dataSize *= 2;
         // UINFO(9, "Realloc "<<allocSize()<<" for "<<point<<"  "<<cvtToHex(m_datap)<<endl);
-        vluint64_t* newp = static_cast<vluint64_t*>(realloc(m_datap, allocSize()));
+        vluint64_t* newp = static_cast<vluint64_t*>(std::realloc(m_datap, allocSize()));
         if (VL_UNCOVERABLE(!newp)) {
             // cppcheck-suppress doubleFree  // cppcheck 1.90 bug - realloc doesn't free on fail
             free(m_datap);  // LCOV_EXCL_LINE

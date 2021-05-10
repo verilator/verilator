@@ -1,245 +1,184 @@
-#!/usr/bin/env perl
-# See copyright, etc in below POD section.
+#!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,R0911,R0912,R0915,W0621
 ######################################################################
 
-use warnings;
-use Getopt::Long;
-use IO::File;
-use Pod::Usage;
-use strict;
-use vars qw($Debug $VERSION);
+import argparse
+import os
+import re
+import sys
 
-$VERSION = '3.881';
-
-our %SuppressMap = (
-    # New cpp check error          Can suppress with old error
-    'nullPointerRedundantCheck' => 'nullPointer',
-    );
-
-#======================================================================
-# main
-
-our $Opt_Debug;
-
-autoflush STDOUT 1;
-autoflush STDERR 1;
-Getopt::Long::config("no_auto_abbrev","pass_through");
-our @Opt_Args = ("cppcheck", grep { $_ ne "--debug" } @ARGV);
-if (! GetOptions(
-          # Local options
-          "debug!"		=> sub { $Debug = 9; },
-          "help"                => \&usage,
-          "version"             => sub { print "Version $VERSION\n"; system("cppcheck","--version"); exit(0); },
-    )) {
-    die "%Error: Bad usage, try 'cppcheck_filtered --help'\n";
+SuppressMap = {
+    # New cpp check error        Can suppress with old error
+    'nullPointerRedundantCheck': 'nullPointer'
 }
 
-process();
+######################################################################
 
-#----------------------------------------------------------------------
 
-sub usage {
-    print "Version $VERSION\n";
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT, -noperldoc=>1);
-    exit(1);  # Unreachable
-}
-
-#######################################################################
-
-sub process {
-    my $cmd = join(' ', @Opt_Args);
-    print "\t$cmd\n" if $Debug;
-    my $fh = IO::File->new("$cmd 2>&1 |");
-    $fh or die "%Error: '$cmd' failed: $!\n";
-    my %uniq;
-    my %errs;
-    my $last_error = "";
-    while (defined(my $line = $fh->getline())) {
-        print ">>>$line" if $Debug;
-        $line =~ s/^\s+//;
-        $line =~ s/Checking usage of global functions\.+//;  # Sometimes tacked at end-of-line
+def process(cppcheck_args):
+    cmd = " ".join(cppcheck_args) + " 2>&1"
+    if Args.debug:
+        print("\t" + cmd)
+    fh = os.popen(cmd)
+    uniq = {}
+    errs = False
+    last_error = ""
+    for line in fh:
+        line = line.rstrip()
+        if Args.debug:
+            print(">>>" + line)
+        line = re.sub(r'^\s+', '', line)
+        # Sometimes tacked at end-of-line
+        line = re.sub(r'Checking usage of global functions\.+', '', line)
         # General gunk
-        next if $uniq{$line}++;
-        next if $line =~ m!^<\?xml version!;
-        next if $line =~ m!^<cppcheck!;
-        next if $line =~ m!^<results!;
-        next if $line =~ m!^</results>!;
-        next if $line =~ m!^<errors!;
-        next if $line =~ m!^</error>!;
-        next if $line =~ m!^</errors>!;
-        next if $line =~ m!^<error.*id="unmatchedSuppression"!;  # --suppress=unmatchedSuppression doesn't work
-        next if $line =~ m!Cppcheck cannot find all the include files!; # An earlier id line is more specific
-        next if $line =~ m!^Checking !;
-        next if $line =~ m!^make.*Entering directory !;
-        next if $line =~ m!^make.*Leaving directory !;
-        next if $line =~ m!^\s+$!g;
+        if line in uniq:
+            continue
+        uniq[line] = 1
+
+        if re.search(r'^<\?xml version', line):
+            continue
+        if re.search(r'^<cppcheck', line):
+            continue
+        if re.search(r'^<results', line):
+            continue
+        if re.search(r'^</results>', line):
+            continue
+        if re.search(r'^<errors', line):
+            continue
+        if re.search(r'^</error>', line):
+            continue
+        if re.search(r'^</errors>', line):
+            continue
+        # --suppress=unmatchedSuppression doesn't work
+        if re.search(r'^<error.*id="unmatchedSuppression"', line):
+            continue
+        # An earlier id line is more specific
+        if re.search(r'Cppcheck cannot find all the include files', line):
+            continue
+        if re.search(r'^Checking ', line):
+            continue
+        if re.search(r'^make.*Entering directory ', line):
+            continue
+        if re.search(r'^make.*Leaving directory ', line):
+            continue
+        if re.search(r'^\s+$', line):
+            continue
 
         # Specific suppressions (see _suppress also)
-        next if $line =~ m!id="unusedPrivateFunction" .*::debug!;  # Doesn't know UINFO will use it
+        # Doesn't know UINFO will use it
+        if re.search(r'id="unusedPrivateFunction" .*::debug', line):
+            continue
 
         # Output
-        if ($line =~ /^cppcheck --/) {
-            print $line if $Debug;
-        } elsif ($line =~ m!^\d+/\d+ files checked!) {
-            print $line;
-        } else {
-            my $suppress;
-            # --xml-format=1
-            if ($line =~ /file="([^"]+)"\s+line="(\d+)"\s+id="([^"]+)"/) {
-                my $file = $1; my $linenum = $2; my $id = $3;
-                #$file = $1 if $line =~ /file0="([^"]+)"/;  # Still incorrect
-                $suppress = 1 if _suppress($file,$linenum,$id);
-            }
-            # --xml-format=2
-            if ($line =~ /<error id.*/) {
-                $last_error = $line;
-                chomp $last_error;
-                $suppress = 1;
-            }
-            elsif ($line =~ /<location.* file="([^"]+)"\s+line="(\d+)"/) {
-                my $file = $1; my $linenum = $2; my $id;
-                #$file = $1 if $line =~ /file0="([^"]+)"/;  # Still incorrect
-                if ($last_error =~ / id="([^"]+)"/) {
-                    $id = $1;
-                } else {
-                    $id = "?";
-                }
-                $suppress = 1 if _suppress($file,$linenum,$id);
-                $suppress = 1 if $file eq "*";
-                if (!$suppress) {
-                    chomp $line;
-                    print "$file:$linenum: ".$last_error."\n";
-                    $suppress = 1;
-                }
-            }
-            if (!$suppress) {
-                my $eline = "%Error: cppcheck: $line";
-                print $eline;
-                $errs{$eline}++;
-            }
-        }
-    }
-    if (scalar(keys %errs)) {
-        #my $all = join('',sort(keys %errs));
-        #$Self->error("Cppcheck errors:\n$all");
-        #die "%Error: cppcheck_filtered found errors\n";
-        exit(1);
-    }
-}
+        if re.search(r'^cppcheck --', line):
+            if Args.debug:
+                print(line)
+            continue
+        if re.search(r'^\d+/\d+ files checked', line):
+            print(line)
+            continue
+
+        suppress = False
+        # --xml-format=2
+        if re.search(r'<error id', line):
+            last_error = line
+            continue
+
+        match = re.search(r'<location.* file="([^"]+)"\s+line="(\d+)"', line)
+        if match:
+            file = match.group(1)
+            linenum = match.group(2)
+            match = re.search(r' id="([^"]+)"', last_error)
+            eid = match.group(1) if match else '?'
+            if _suppress(file, linenum, eid):
+                suppress = True
+            if file == "*":
+                suppress = True
+            if not suppress:
+                print(file + ":" + linenum + ": " + last_error)
+                suppress = True
+
+        if not suppress:
+            eline = "%Error: cppcheck: " + line
+            print(eline)
+            errs = True
+
+    if errs:
+        sys.exit(1)
+
 
 ######################################################################
 
-sub _suppress {
-    my $filename = shift;
-    my $linenum = shift;
-    my $id = shift;
-    #print "-Suppression search $filename $linenum $id\n" if $Self->{verbose};
 
-    return undef if $filename eq "*";
+def _suppress(filename, linenum, eid):
+    if Args.debug:
+        print("-Suppression search %s %s %s" % (filename, linenum, eid))
+
+    if filename == "*":
+        return False
 
     # Cleanup for e.g. ../V3AstNodes.h
-    $filename = "src/$1" if $filename =~ m!^\.\./(.*)!;
+    filename = re.sub(r'^\.\./(.*)', r'src/\1', filename)
 
     # Specific suppressions
-    return 1 if $id eq "missingInclude" && $filename =~ m!systemc.h!;
-    return 1 if $id eq "missingInclude" && $filename =~ m!svdpi.h!;
-    return 1 if $id eq "unusedFunction" && $filename =~ m!verilated_dpi.cpp!;
-    return 1 if $id eq "unusedFunction" && $filename =~ m!verilated_vpi.cpp!;
-    return 1 if $id eq "unreachableCode" && $filename =~ /V3ParseBison.c/;
-    return 1 if $id eq 'variableScope' && $filename =~ /fstapi.c/;
+    if eid == 'missingInclude' and re.search(r'systemc.h', filename):
+        return True
+    if eid == 'missingInclude' and re.search(r'svdpi.h', filename):
+        return True
+    if eid == 'unusedFunction' and re.search(r'verilated_dpi.cpp', filename):
+        return True
+    if eid == 'unusedFunction' and re.search(r'verilated_vpi.cpp', filename):
+        return True
+    if eid == 'unreachableCode' and re.search(r'V3ParseBison.c', filename):
+        return True
+    if eid == 'variableScope' and re.search(r'fstapi.c', filename):
+        return True
 
-    my $fh = IO::File->new("<$filename");
-    if (!$fh) {
-        warn "%Warning: $! $filename,";
-        return undef;
-    }
-    my $l = 0;
-    while (defined(my $line = $fh->getline())) {
-        ++$l;
-        if ($l+1 == $linenum) {
-            if ($line =~ /cppcheck-suppress((\s+\S+)+)/) {
-                my $supids = $1;
-                foreach my $supid (split /\s+/, $supids) {
-                    if ($supid eq $id
-                        || $supid eq ($SuppressMap{$id}||'')) {
-                        return 1;
-                    }
-                }
-                warn "%Warning: $filename: $l: Found suppress for ids='$supids', not expected id='$id'\n";
-            }
-        }
-        if ($l == $linenum) {
-            if (0 &&   # We now use VL_DANGLING instead of this rule
-                $id eq "uselessAssignmentPtrArg"
-                && $line =~ /(delete|Delete|Edit).*p *= *(NULL|nullptr);/) {
-                # delete(nodep); nodep=NULL;   # This is ok, it's how we prevent later using nodep
-                return 1;
-            }
-        }
-    }
-    return undef;
-}
+    if not os.path.exists(filename):
+        print("%Warning: " + filename + " does not exist, ignored",
+              file=sys.stderr)
+        return False
 
-1;
+    with open(filename) as fh:
+        lineno = 0
+        for line in fh:
+            lineno += 1
+            if lineno + 1 == linenum:
+                match = re.search(r'cppcheck-suppress((\s+\S+)+)', line)
+                if match:
+                    for supid in match.group(1).split():
+                        if (supid == eid or (eid in SuppressMap
+                                             and supid == SuppressMap[eid])):
+                            return True
+        return False
+
 
 #######################################################################
-__END__
+#######################################################################
 
-=pod
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""cppcheck_filtered passes all arguments to cppcheck, then
+filters out unnecessary warnings related to Verilator. Run as:
 
-=head1 NAME
-
-cppcheck_filtered - cppcheck wrapper with post-processing
-
-=head1 SYNOPSIS
-
-  cppcheck_filtered ...normal cpp check flags...
-
-
-=head1 DESCRIPTION
-
-Cppcheck_Filtered is a wrapper for cppcheck that filters out unnecessary
-warnings related to Verilator.
-
-=head1 ARGUMENTS
-
-Most arguments are passed through to cppcheck
-
-=over 4
-
-=item --help
-
-Displays this message and program version and exits.
-
-=item --version
-
-Print the version number and exit.
-
-=back
-
-=head1 DISTRIBUTION
-
-This is part of the L<https://www.veripool.org/> free Verilog EDA software
-tool suite.  The latest version is available from CPAN and from
-L<https://www.veripool.org/>.
-
-Copyright 2014-2020 by Wilson Snyder. This program is free software; you
+    cd $VERILATOR_ROOT
+    make -k cppcheck""",
+    epilog=
+    """Copyright 2014-2021 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
-Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
 
-SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-=head1 AUTHORS
+parser.add_argument('--debug', action='store_true', help='enable debug')
 
-Wilson Snyder <wsnyder@wsnyder.org>
+Args, cppcheck_args = parser.parse_known_args()
 
-=head1 SEE ALSO
-
-C<cppcheck>
-
-=cut
+process(cppcheck_args)
 
 ######################################################################
-### Local Variables:
-### compile-command: "./cppcheck_filtered --xml V3Width.cpp"
-### End:
+# Local Variables:
+# compile-command: "cd .. ; src/cppcheck_filtered cppcheck --xml --enable=all src/V3Width.cpp"
+# End:

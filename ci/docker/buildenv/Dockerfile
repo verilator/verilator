@@ -40,7 +40,7 @@ RUN apt-get update \
 
 WORKDIR /tmp
 
-RUN cpan install -fi Unix::Processors Parallel::Forker
+RUN cpan install -fi Parallel::Forker
 
 RUN git clone https://github.com/veripool/vcddiff.git && \
     make -C vcddiff && \

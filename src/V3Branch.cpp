@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -42,13 +42,10 @@ private:
     //  AstFTask::user1()       -> int.  Number of references
     AstUser1InUse m_inuser1;
 
-    // TYPES
-    typedef std::vector<AstCFunc*> CFuncVec;
-
     // STATE
     int m_likely;  // Excuses for branch likely taken
     int m_unlikely;  // Excuses for branch likely not taken
-    CFuncVec m_cfuncsp;  // List of all tasks
+    std::vector<AstCFunc*> m_cfuncsp;  // List of all tasks
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

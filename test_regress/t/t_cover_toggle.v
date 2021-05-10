@@ -6,10 +6,14 @@
 
 module t (/*AUTOARG*/
    // Inputs
-   clk
+   clk,
+   check_real,
+   check_string
    );
 
    input clk;
+   input real check_real; // Check issue #2741
+   input string check_string; // Check issue #2766
 
    typedef struct packed {
       union packed {
@@ -58,7 +62,7 @@ module t (/*AUTOARG*/
 
    reg [1:0]  memory[121:110];
 
-   reg [1023:0] largeish;
+   wire [1023:0] largeish = {992'h0, cyc};
    // CHECK_COVER_MISSING(-1)
 
    always @ (posedge clk) begin

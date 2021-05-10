@@ -1,7 +1,9 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
+// Code available from: https://verilator.org
+//
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -10,30 +12,27 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator: Include to provide information about symbol inspection
+/// \brief Verilated symbol inspection header
 ///
-///     This file is for inclusion by internal files that need to inspect
-///     specific symbols.
+/// This file is for inclusion by internal files that need to inspect
+/// specific symbols.  Applications typically use the VPI instead.
 ///
-///     User routines wanting to inspect the symbol table should use
-///     verilated_syms.h instead.
-///
-///     These classes are thread safe, and read only.
-///
-/// Code available from: https://verilator.org
+/// User wrapper code wanting to inspect the symbol table should use
+/// verilated_syms.h instead.
 ///
 //*************************************************************************
+// These classes are thread safe, and read only.
 
-#ifndef _VERILATED_SYM_PROPS_H_
-#define _VERILATED_SYM_PROPS_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_SYM_PROPS_H_
+#define VERILATOR_VERILATED_SYM_PROPS_H_
 
 #include "verilatedos.h"
 
 #include <vector>
 
 //===========================================================================
-/// Verilator range
-/// Thread safety: Assume is constructed only with model, then any number of readers
+// Verilator range
+// Thread safety: Assume is constructed only with model, then any number of readers
 
 // See also V3Ast::VNumRange
 class VerilatedRange final {
@@ -44,15 +43,15 @@ protected:
     friend class VerilatedVarProps;
     friend class VerilatedScope;
     VerilatedRange() = default;
-    VerilatedRange(int left, int right)
-        : m_left{left}
-        , m_right{right} {}
     void init(int left, int right) {
         m_left = left;
         m_right = right;
     }
 
 public:
+    VerilatedRange(int left, int right)
+        : m_left{left}
+        , m_right{right} {}
     ~VerilatedRange() = default;
     int left() const { return m_left; }
     int right() const { return m_right; }
@@ -65,12 +64,12 @@ public:
 };
 
 //===========================================================================
-/// Verilator variable
-/// Thread safety: Assume is constructed only with model, then any number of readers
+// Verilator variable
+// Thread safety: Assume is constructed only with model, then any number of readers
 
 class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
-    enum { MAGIC = 0xddc4f829 };
+    static constexpr vluint32_t MAGIC = 0xddc4f829UL;
     // MEMBERS
     const vluint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
@@ -81,9 +80,9 @@ class VerilatedVarProps VL_NOT_FINAL {
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     void initUnpacked(const int* ulims) {
         for (int i = 0; i < m_udims; ++i) {
-            const int left = ulims ? ulims[2 * i + 0] : 0;
-            const int right = ulims ? ulims[2 * i + 1] : 0;
-            m_unpacked.push_back(VerilatedRange(left, right));
+            const int uleft = ulims ? ulims[2 * i + 0] : 0;
+            const int uright = ulims ? ulims[2 * i + 1] : 0;
+            m_unpacked.emplace_back(uleft, uright);
         }
     }
     // CONSTRUCTORS
@@ -145,7 +144,7 @@ public:
     }
     vluint32_t entSize() const;
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
-    /// DPI compatible C standard layout
+    // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
     int udims() const { return m_udims; }
     int dims() const { return m_pdims + m_udims; }
@@ -178,14 +177,14 @@ public:
                    ? m_packed.elements()
                    : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements() : 0;
     }
-    /// Total size in bytes (note DPI limited to 4GB)
+    // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;
-    /// Adjust a data pointer to access a given array element, NuLL if something goes bad
+    // Adjust a data pointer to access a given array element, NuLL if something goes bad
     void* datapAdjustIndex(void* datap, int dim, int indx) const;
 };
 
 //===========================================================================
-/// Verilator DPI open array variable
+// Verilator DPI open array variable
 
 class VerilatedDpiOpenVar final {
     // MEMBERS
@@ -222,8 +221,8 @@ public:
 };
 
 //===========================================================================
-/// Verilator variable
-/// Thread safety: Assume is constructed only with model, then any number of readers
+// Verilator variable
+// Thread safety: Assume is constructed only with model, then any number of readers
 
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS

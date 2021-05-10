@@ -1,0 +1,9 @@
+%Warning-VARHIDDEN: t/t_var_bad_hide_docs.v:8:12: Declaration of signal hides declaration in upper scope: 't'
+    8 |    integer t;   
+      |            ^
+                    t/t_var_bad_hide_docs.v:7:8: ... Location of original declaration
+    7 | module t;
+      |        ^
+                    ... For warning description see https://verilator.org/warn/VARHIDDEN?v=latest
+                    ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
+%Error: Exiting due to

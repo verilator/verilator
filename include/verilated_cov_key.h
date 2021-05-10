@@ -1,9 +1,9 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -12,12 +12,15 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Coverage item keys
+/// \brief Verilated coverage item keys internal header
+///
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use by the Verilated library coverage routines.
 ///
 //=============================================================================
 
-#ifndef _VERILATED_COV_KEY_H_
-#define _VERILATED_COV_KEY_H_ 1
+#ifndef VERILATOR_VERILATED_COV_KEY_H_
+#define VERILATOR_VERILATED_COV_KEY_H_
 
 #include "verilatedos.h"
 
@@ -29,17 +32,17 @@
 #define VLCOVGEN_ITEM(string_parsed_by_vlcovgen)
 
 // clang-format off
-VLCOVGEN_ITEM("name=>'column',      short=>'n',  group=>1, default=>0,     descr=>'Column number for the item.  Used to disambiguate multiple coverage points on the same line number'")
-VLCOVGEN_ITEM("name=>'filename',    short=>'f',  group=>1, default=>undef, descr=>'Filename of the item'")
-VLCOVGEN_ITEM("name=>'linescov',    short=>'S',  group=>1, default=>'',    descr=>'List of comma-separated lines covered'")
-VLCOVGEN_ITEM("name=>'per_instance',short=>'P',  group=>1, default=>0,     descr=>'True if every hierarchy is independently counted; otherwise all hierarchies will be combined into a single count'")
-VLCOVGEN_ITEM("name=>'thresh',      short=>'s',  group=>1, default=>undef, descr=>'Number of hits to consider covered (aka at_least)'")
-VLCOVGEN_ITEM("name=>'type',        short=>'t',  group=>1, default=>'',    descr=>'Type of coverage (block, line, fsm, etc)'")
+VLCOVGEN_ITEM("'name':'column',      'short':'n',  'group':1, 'default':0,    'descr':'Column number for the item.  Used to disambiguate multiple coverage points on the same line number'")
+VLCOVGEN_ITEM("'name':'filename',    'short':'f',  'group':1, 'default':None, 'descr':'Filename of the item'")
+VLCOVGEN_ITEM("'name':'linescov',    'short':'S',  'group':1, 'default':'',   'descr':'List of comma-separated lines covered'")
+VLCOVGEN_ITEM("'name':'per_instance','short':'P',  'group':1, 'default':0,    'descr':'True if every hierarchy is independently counted; otherwise all hierarchies will be combined into a single count'")
+VLCOVGEN_ITEM("'name':'thresh',      'short':'s',  'group':1, 'default':None, 'descr':'Number of hits to consider covered (aka at_least)'")
+VLCOVGEN_ITEM("'name':'type',        'short':'t',  'group':1, 'default':'',   'descr':'Type of coverage (block, line, fsm, etc)'")
 // Bin attributes
-VLCOVGEN_ITEM("name=>'comment',     short=>'o',  group=>0, default=>'',    descr=>'Textual description for the item'")
-VLCOVGEN_ITEM("name=>'hier',        short=>'h',  group=>0, default=>'',    descr=>'Hierarchy path name for the item'")
-VLCOVGEN_ITEM("name=>'lineno',      short=>'l',  group=>0, default=>0,     descr=>'Line number for the item'")
-VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr=>'For totaling items, weight of this item'")
+VLCOVGEN_ITEM("'name':'comment',     'short':'o',  'group':0, 'default':'',   'descr':'Textual description for the item'")
+VLCOVGEN_ITEM("'name':'hier',        'short':'h',  'group':0, 'default':'',   'descr':'Hierarchy path name for the item'")
+VLCOVGEN_ITEM("'name':'lineno',      'short':'l',  'group':0, 'default':0,    'descr':'Line number for the item'")
+VLCOVGEN_ITEM("'name':'weight',      'short':'w',  'group':0, 'default':None, 'descr':'For totaling items, weight of this item'")
 // clang-format on
 
 // VLCOVGEN_CIK_AUTO_EDIT_BEGIN
@@ -57,11 +60,11 @@ VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr
 
 //=============================================================================
 // VerilatedCovKey
-/// Verilator coverage global class.
-/// This class is thread safe.
+// Namespace-style static class for \internal use.
 
 class VerilatedCovKey final {
 public:
+    // Return the short key code for a given a long coverage key
     static std::string shortKey(const std::string& key) VL_PURE {
         // VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
         if (key == "column") return VL_CIK_COLUMN;

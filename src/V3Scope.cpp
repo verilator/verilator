@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -45,10 +45,8 @@ private:
     AstUser2InUse m_inuser2;
 
     // TYPES
-    typedef std::unordered_map<AstNodeModule*, AstScope*> PackageScopeMap;
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
-    typedef std::map<std::pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
-    typedef std::set<std::pair<AstVarRef*, AstScope*>> VarRefScopeSet;
+    using VarScopeMap = std::map<std::pair<AstVar*, AstScope*>, AstVarScope*>;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -57,9 +55,10 @@ private:
     AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
     AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
 
-    PackageScopeMap m_packageScopes;  // Scopes for each package
+    std::unordered_map<AstNodeModule*, AstScope*> m_packageScopes;  // Scopes for each package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
-    VarRefScopeSet m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
+    std::set<std::pair<AstVarRef*, AstScope*>>
+        m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -73,7 +72,7 @@ private:
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
-            const auto it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
+            const auto it3 = m_varScopes.find(std::make_pair(nodep->varp(), scopep));
             UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
             AstVarScope* varscp = it3->second;
             nodep->varScopep(varscp);
@@ -109,7 +108,7 @@ private:
             (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp) : static_cast<AstNode*>(nodep))
                 ->fileline(),
             nodep, scopename, m_aboveScopep, m_aboveCellp);
-        if (VN_IS(nodep, Package)) m_packageScopes.insert(make_pair(nodep, m_scopep));
+        if (VN_IS(nodep, Package)) m_packageScopes.emplace(nodep, m_scopep);
 
         // Now for each child cell, iterate the module this cell points to
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
@@ -169,7 +168,7 @@ private:
                                             : static_cast<AstNode*>(nodep));
             m_scopep
                 = new AstScope(abovep->fileline(), m_modp, scopename, m_aboveScopep, m_aboveCellp);
-            m_packageScopes.insert(make_pair(nodep, m_scopep));
+            m_packageScopes.emplace(nodep, m_scopep);
 
             // Create scope for the current usage of this cell
             AstNode::user1ClearTree();
@@ -272,7 +271,7 @@ private:
                 nodep->attrClocker(VVarAttrClocker::CLOCKER_NO);
             }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
-            m_varScopes.insert(make_pair(make_pair(nodep, m_scopep), varscp));
+            m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
             m_scopep->addVarp(varscp);
         }
     }
@@ -287,7 +286,7 @@ private:
             // the var's referenced package etc might not be created yet.
             // So push to a list and post-correct.
             // No check here for nodep->classOrPackagep(), will check when walk list.
-            m_varRefScopes.insert(make_pair(nodep, m_scopep));
+            m_varRefScopes.emplace(nodep, m_scopep);
         }
     }
     virtual void visit(AstScopeName* nodep) override {

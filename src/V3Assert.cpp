@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -96,7 +96,8 @@ private:
                    :  // If assertions are off, have constant propagation rip them out later
                  // This allows syntax errors and such to be detected normally.
                  (v3Global.opt.assertOn()
-                      ? static_cast<AstNode*>(new AstCMath(fl, "Verilated::assertOn()", 1))
+                      ? static_cast<AstNode*>(
+                          new AstCMath(fl, "vlSymsp->_vm_contextp__->assertOn()", 1))
                       : static_cast<AstNode*>(new AstConst(fl, AstConst::BitFalse())))),
             nodep, nullptr);
         newp->user1(true);  // Don't assert/cover this if

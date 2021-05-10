@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -21,7 +21,7 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3String.h"
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
 # include "V3Global.h"
 # include "V3Config.h"
 # include "V3File.h"
@@ -63,7 +63,7 @@ int FileLineSingleton::nameToNumber(const string& filename) {
     int num = m_names.size();
     m_names.push_back(filename);
     m_languages.push_back(V3LangCode::mostRecent());
-    m_namemap.insert(make_pair(filename, num));
+    m_namemap.emplace(filename, num);
     return num;
 }
 
@@ -71,7 +71,7 @@ int FileLineSingleton::nameToNumber(const string& filename) {
 //! Experimental. Updated to also put out the language.
 void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os << "<files>\n";
-    for (FileNameNumMap::const_iterator it = m_namemap.begin(); it != m_namemap.end(); ++it) {
+    for (auto it = m_namemap.cbegin(); it != m_namemap.cend(); ++it) {
         os << "<file id=\"" << filenameLetters(it->second) << "\" filename=\""
            << V3OutFormatter::quoteNameControls(it->first, V3OutFormatter::LA_XML)
            << "\" language=\"" << numberToLang(it->second).ascii() << "\"/>\n";
@@ -165,11 +165,8 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    char numbuf[20];
-    sprintf(numbuf, "%d", lastLineno());
-    char levelbuf[20];
-    sprintf(levelbuf, "%d", enterExit);
-    return (string("`line ") + numbuf + " \"" + filename() + "\" " + levelbuf + "\n");
+    return std::string("`line ") + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
+           + cvtToStr(enterExit) + "\n";
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {
@@ -228,7 +225,7 @@ void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
         if (*sp == '\n') {
             if (trackLines) linenoInc();
             m_lastColumn = 1;
-        } else if (*sp == '\r') {
+        } else if (VL_UNCOVERABLE(*sp == '\r')) {  // Generally stripped by preproc
         } else {  // Tabs are considered one column; hence column means number of chars
             ++m_lastColumn;
         }
@@ -240,7 +237,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line, file & warn state.
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
     V3Config::applyIgnores(this);  // Toggle warnings based on global config file
 #endif
     static FileLine* lastNewp = nullptr;
@@ -338,7 +335,7 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
         V3ErrorCode code = V3ErrorCode(codei);
-        if (fromp->warnIsOff(code)) { warnOff(code, true); }
+        if (fromp->warnIsOff(code)) warnOff(code, true);
     }
 }
 
@@ -358,7 +355,7 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     } else if (!V3Error::errorContexted()) {
         nsstr << warnContextPrimary();
     }
-    if (!m_waive) { V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str()); }
+    if (!m_waive) V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str());
     V3Error::v3errorEnd(nsstr, lstr.str());
 }
 
@@ -430,8 +427,7 @@ string FileLine::warnContext(bool secondary) const {
 }
 
 #ifdef VL_LEAK_CHECKS
-typedef std::unordered_set<FileLine*> FileLineCheckSet;
-FileLineCheckSet fileLineLeakChecks;
+std::unordered_set<FileLine*> fileLineLeakChecks;
 
 void* FileLine::operator new(size_t size) {
     FileLine* objp = static_cast<FileLine*>(::operator new(size));

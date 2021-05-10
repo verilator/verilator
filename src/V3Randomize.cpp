@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -39,8 +39,8 @@ private:
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
     AstUser1InUse m_inuser1;
 
-    typedef std::unordered_set<AstClass*> DerivedSet;
-    typedef std::unordered_map<AstClass*, DerivedSet> BaseToDerivedMap;
+    using DerivedSet = std::unordered_set<AstClass*>;
+    using BaseToDerivedMap = std::unordered_map<AstClass*, DerivedSet>;
 
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
 
@@ -54,10 +54,10 @@ private:
                 // If member is rand and of class type, mark its class
                 if (VN_IS(memberp, Var) && VN_CAST(memberp, Var)->isRand()) {
                     if (auto* classRefp = VN_CAST(memberp->dtypep(), ClassRefDType)) {
-                        auto* classp = classRefp->classp();
-                        markMembers(classp);
-                        markDerived(classp);
-                        classRefp->classp()->user1(true);
+                        auto* rclassp = classRefp->classp();
+                        markMembers(rclassp);
+                        markDerived(rclassp);
+                        rclassp->user1(true);
                     }
                 }
             }
@@ -158,10 +158,10 @@ private:
                       StructDType)) {
             AstNodeStmt* stmtsp = nullptr;
             offset += memberp ? memberp->lsb() : 0;
-            for (auto* memberp = structDtp->membersp(); memberp;
-                 memberp = VN_CAST(memberp->nextp(), MemberDType)) {
+            for (auto* smemberp = structDtp->membersp(); smemberp;
+                 smemberp = VN_CAST(smemberp->nextp(), MemberDType)) {
                 auto* randp = newRandStmtsp(fl, stmtsp ? varrefp->cloneTree(false) : varrefp,
-                                            offset, memberp);
+                                            offset, smemberp);
                 if (stmtsp) {
                     stmtsp->addNext(randp);
                 } else {

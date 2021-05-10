@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -123,7 +123,7 @@ class LifeBlock final {
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
-    typedef std::unordered_map<AstVarScope*, LifeVarEntry> LifeMap;
+    using LifeMap = std::unordered_map<AstVarScope*, LifeVarEntry>;
     LifeMap m_map;  // Current active lifetime map for current scope
     LifeBlock* m_aboveLifep;  // Upper life, or nullptr
     LifeState* m_statep;  // Current global state
@@ -165,7 +165,7 @@ public:
             checkRemoveAssign(it);
             it->second.simpleAssign(assp);
         } else {
-            m_map.insert(make_pair(nodep, LifeVarEntry(LifeVarEntry::SIMPLEASSIGN(), assp)));
+            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::SIMPLEASSIGN(), assp));
         }
         // lifeDump();
     }
@@ -175,7 +175,7 @@ public:
         if (it != m_map.end()) {
             it->second.complexAssign();
         } else {
-            m_map.insert(make_pair(nodep, LifeVarEntry(LifeVarEntry::COMPLEXASSIGN())));
+            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::COMPLEXASSIGN()));
         }
     }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
@@ -196,7 +196,7 @@ public:
             UINFO(4, "     usage: " << nodep << endl);
             it->second.consumed();
         } else {
-            m_map.insert(make_pair(nodep, LifeVarEntry(LifeVarEntry::CONSUMED())));
+            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::CONSUMED()));
         }
     }
     void complexAssignFind(AstVarScope* nodep) {
@@ -205,7 +205,7 @@ public:
             UINFO(4, "     casfind: " << it->first << endl);
             it->second.complexAssign();
         } else {
-            m_map.insert(make_pair(nodep, LifeVarEntry(LifeVarEntry::COMPLEXASSIGN())));
+            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::COMPLEXASSIGN()));
         }
     }
     void consumedFind(AstVarScope* nodep) {
@@ -213,7 +213,7 @@ public:
         if (it != m_map.end()) {
             it->second.consumed();
         } else {
-            m_map.insert(make_pair(nodep, LifeVarEntry(LifeVarEntry::CONSUMED())));
+            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::CONSUMED()));
         }
     }
     void lifeToAbove() {
@@ -278,7 +278,7 @@ private:
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
-    typedef std::unordered_map<AstVarScope*, LifeVarEntry> LifeMap;
+    using LifeMap = std::unordered_map<AstVarScope*, LifeVarEntry>;
     // cppcheck-suppress memleak  // cppcheck bug - it is deleted
     LifeBlock* m_lifep;  // Current active lifetime map for current scope
 

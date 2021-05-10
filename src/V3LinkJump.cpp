@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -43,9 +43,6 @@
 
 class LinkJumpVisitor final : public AstNVisitor {
 private:
-    // TYPES
-    typedef std::vector<AstNodeBlock*> BlockStack;
-
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -53,7 +50,7 @@ private:
     bool m_loopInc = false;  // In loop increment
     bool m_inFork = false;  // Under fork
     int m_modRepeatNum = 0;  // Repeat counter
-    BlockStack m_blockStack;  // All begin blocks above current node
+    std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

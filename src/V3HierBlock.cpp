@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -224,7 +224,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     for (const auto& hierblockp : m_children) *of << hierblockp->hierBlockArgs().front() << "\n";
     // Hierarchical blocks should not use multi-threading,
     // but needs to be thread safe when top is multi-threaded.
-    if (v3Global.opt.threads() > 0) { *of << "--threads 1\n"; }
+    if (v3Global.opt.threads() > 0) *of << "--threads 1\n";
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
 
@@ -240,7 +240,7 @@ class HierBlockUsageCollectVisitor final : public AstNVisitor {
     AstUser1InUse m_inuser1;
 
     // STATE
-    typedef std::unordered_set<const AstModule*> ModuleSet;
+    using ModuleSet = std::unordered_set<const AstModule*>;
     V3HierBlockPlan* const m_planp;
     AstModule* m_modp = nullptr;  // The current module
     AstModule* m_hierBlockp = nullptr;  // The nearest parent module that is a hierarchical block
@@ -314,7 +314,7 @@ void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>&
         V3HierBlock* hblockp = new V3HierBlock(modp, gparams);
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << gparams.size() << " parameters"
                         << std::endl);
-        m_blocks.insert(std::make_pair(modp, hblockp));
+        m_blocks.emplace(modp, hblockp);
     }
 }
 
@@ -344,7 +344,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
     }
 
     std::unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
-    { HierBlockUsageCollectVisitor visitor(planp.get(), nodep); }
+    { HierBlockUsageCollectVisitor{planp.get(), nodep}; }
 
     V3Stats::addStat("HierBlock, Hierarchical blocks", planp->m_blocks.size());
 
@@ -355,8 +355,8 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
 }
 
 V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
-    typedef std::unordered_map<const V3HierBlock*, std::unordered_set<const V3HierBlock*>>
-        ChildrenMap;
+    using ChildrenMap
+        = std::unordered_map<const V3HierBlock*, std::unordered_set<const V3HierBlock*>>;
     ChildrenMap childrenOfHierBlock;
 
     HierVector sorted;

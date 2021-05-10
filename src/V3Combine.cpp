@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -67,7 +67,7 @@ class CombCallVisitor final : CombBaseVisitor {
     // Find all CCALLS of each CFUNC, so that we can later rename them
 private:
     // NODE STATE
-    typedef std::multimap<AstCFunc*, AstCCall*> CallMmap;
+    using CallMmap = std::multimap<AstCFunc*, AstCCall*>;
     CallMmap m_callMmap;  // Associative array of {function}{call}
     // METHODS
 public:
@@ -79,7 +79,7 @@ public:
             UINFO(4, "   Remove " << oldfuncp << endl);
         }
         // Note: m_callMmap modified in loop, so not using equal_range.
-        for (CallMmap::iterator it = m_callMmap.find(oldfuncp); it != m_callMmap.end();
+        for (auto it = m_callMmap.find(oldfuncp); it != m_callMmap.end();
              it = m_callMmap.find(oldfuncp)) {
             AstCCall* callp = it->second;
             if (!callp->user3()) {  // !already done
@@ -106,7 +106,7 @@ public:
         }
     }
     // METHODS
-    void addCall(AstCCall* nodep) { m_callMmap.insert(make_pair(nodep->funcp(), nodep)); }
+    void addCall(AstCCall* nodep) { m_callMmap.emplace(nodep->funcp(), nodep); }
     void deleteCall(AstCCall* nodep) {
         std::pair<CallMmap::iterator, CallMmap::iterator> eqrange
             = m_callMmap.equal_range(nodep->funcp());
@@ -173,7 +173,7 @@ private:
     // AstUser4InUse     part of V3Hashed
 
     // STATE
-    typedef enum : uint8_t { STATE_IDLE, STATE_HASH, STATE_DUP } CombineState;
+    enum CombineState : uint8_t { STATE_IDLE, STATE_HASH, STATE_DUP };
     VDouble0 m_statCombs;  // Statistic tracking
     CombineState m_state = STATE_IDLE;  // Major state
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -224,6 +224,7 @@ private:
                 AstNode* node1p = it->second;
                 AstCFunc* cfunc1p = VN_CAST(node1p, CFunc);
                 if (!cfunc1p) continue;
+                // cppcheck-suppress compareBoolExpressionWithInt
                 if (cfunc1p->slow() != slow) continue;
                 V3Hash hashval = it->first;
                 UASSERT_OBJ(!hashval.isIllegal(), node1p, "Illegal (unhashed) nodes");

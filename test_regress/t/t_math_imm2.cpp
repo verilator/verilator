@@ -6,6 +6,8 @@
 #include <verilated.h>
 #include "Vt_math_imm2.h"
 
+double sc_time_stamp() { return 0; }
+
 QData MaskVal(int lbit, int hbit) {
     QData val;
     for (val = 0; lbit <= hbit; lbit++) val |= (1ULL << lbit);
@@ -52,6 +54,6 @@ int main(int argc, char* argv[]) {
         exit(10);
     } else {
         printf("*-* All Finished *-*\n");
-        exit(0);
+        return 0;
     }
 }

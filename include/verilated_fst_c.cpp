@@ -1,9 +1,9 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -12,10 +12,14 @@
 //=============================================================================
 ///
 /// \file
-/// \brief C++ Tracing in FST Format
+/// \brief Verilated C++ tracing in FST format implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --trace-fst.
+///
+/// Use "verilator --trace-fst" to add this to the Makefile for the linker.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 // clang-format off
 
@@ -48,6 +52,33 @@
 // clang-format on
 
 //=============================================================================
+// Check that vltscope_t matches fstScopeType
+static_assert((int)FST_ST_VCD_MODULE == (int)VLT_TRACE_SCOPE_MODULE,
+              "VLT_TRACE_SCOPE_MODULE mismatches");
+static_assert((int)FST_ST_VCD_TASK == (int)VLT_TRACE_SCOPE_TASK,
+              "VLT_TRACE_SCOPE_TASK mismatches");
+static_assert((int)FST_ST_VCD_FUNCTION == (int)VLT_TRACE_SCOPE_FUNCTION,
+              "VLT_TRACE_SCOPE_FUNCTION mismatches");
+static_assert((int)FST_ST_VCD_BEGIN == (int)VLT_TRACE_SCOPE_BEGIN,
+              "VLT_TRACE_SCOPE_BEGIN mismatches");
+static_assert((int)FST_ST_VCD_FORK == (int)VLT_TRACE_SCOPE_FORK,
+              "VLT_TRACE_SCOPE_FORK mismatches");
+static_assert((int)FST_ST_VCD_GENERATE == (int)VLT_TRACE_SCOPE_GENERATE,
+              "VLT_TRACE_SCOPE_GENERATE mismatches");
+static_assert((int)FST_ST_VCD_STRUCT == (int)VLT_TRACE_SCOPE_STRUCT,
+              "VLT_TRACE_SCOPE_STRUCT mismatches");
+static_assert((int)FST_ST_VCD_UNION == (int)VLT_TRACE_SCOPE_UNION,
+              "VLT_TRACE_SCOPE_UNION mismatches");
+static_assert((int)FST_ST_VCD_CLASS == (int)VLT_TRACE_SCOPE_CLASS,
+              "VLT_TRACE_SCOPE_CLASS mismatches");
+static_assert((int)FST_ST_VCD_INTERFACE == (int)VLT_TRACE_SCOPE_INTERFACE,
+              "VLT_TRACE_SCOPE_INTERFACE mismatches");
+static_assert((int)FST_ST_VCD_PACKAGE == (int)VLT_TRACE_SCOPE_PACKAGE,
+              "VLT_TRACE_SCOPE_PACKAGE mismatches");
+static_assert((int)FST_ST_VCD_PROGRAM == (int)VLT_TRACE_SCOPE_PROGRAM,
+              "VLT_TRACE_SCOPE_PROGRAM mismatches");
+
+//=============================================================================
 // Specialization of the generics for this trace format
 
 #define VL_DERIVED_T VerilatedFst
@@ -66,14 +97,15 @@ VerilatedFst::~VerilatedFst() {
     if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = nullptr);
 }
 
-void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
-    m_assertOne.check();
+void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
 #ifdef VL_TRACE_FST_WRITER_THREAD
     fstWriterSetParallelMode(m_fst, 1);
 #endif
+    fullDump(true);  // First dump must be full for fst
 
     m_curScope.clear();
 
@@ -94,18 +126,19 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_code2symbol.clear();
 
     // Allocate string buffer for arrays
-    if (!m_strbuf) { m_strbuf = new char[maxBits() + 32]; }
+    if (!m_strbuf) m_strbuf = new char[maxBits() + 32];
 }
 
-void VerilatedFst::close() {
-    m_assertOne.check();
-    VerilatedTrace<VerilatedFst>::close();
+void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
+    VerilatedTrace<VerilatedFst>::closeBase();
     fstWriterClose(m_fst);
     m_fst = nullptr;
 }
 
-void VerilatedFst::flush() {
-    VerilatedTrace<VerilatedFst>::flush();
+void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
+    VerilatedTrace<VerilatedFst>::flushBase();
     fstWriterFlushContext(m_fst);
 }
 
@@ -135,6 +168,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
     std::string symbol_name(tokens.back());
     tokens.pop_back();  // Remove symbol name from hierarchy
     tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
+    std::string tmpModName;
 
     // Find point where current and new scope diverge
     auto cur_it = m_curScope.begin();
@@ -153,7 +187,15 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     // Follow the hierarchy of the new variable from the common scope point
     while (new_it != tokens.end()) {
-        fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
+        if ((new_it->back() & 0x80)) {
+            tmpModName = *new_it;
+            tmpModName.pop_back();
+            // If the scope ends with a non-ascii character, it will be 0x80 + fstScopeType
+            fstWriterSetScope(m_fst, (fstScopeType)(new_it->back() & 0x7f), tmpModName.c_str(),
+                              nullptr);
+        } else
+            fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
+
         m_curScope.push_back(*new_it);
         new_it = tokens.erase(new_it);
     }

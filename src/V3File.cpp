@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -320,7 +320,7 @@ void V3File::createMakeDir() {
     if (!created) {
         created = true;
         V3Os::createDir(v3Global.opt.makeDir());
-        if (v3Global.opt.hierTop()) { V3Os::createDir(v3Global.opt.hierTopDataDir()); }
+        if (v3Global.opt.hierTop()) V3Os::createDir(v3Global.opt.hierTopDataDir());
     }
 }
 
@@ -328,10 +328,9 @@ void V3File::createMakeDir() {
 // VInFilterImp
 
 class VInFilterImp final {
-    typedef std::map<const string, string> FileContentsMap;
-    typedef VInFilter::StrList StrList;
+    using StrList = VInFilter::StrList;
 
-    FileContentsMap m_contentsMap;  // Cache of file contents
+    std::map<const std::string, std::string> m_contentsMap;  // Cache of file contents
     bool m_readEof = false;  // Received EOF on read
 #ifdef INFILTER_PIPE
     pid_t m_pid = 0;  // fork() process id
@@ -580,16 +579,16 @@ protected:
             // Cache small files (only to save space)
             // It's quite common to `include "timescale" thousands of times
             // This isn't so important if it's just an open(), but filtering can be slow
-            m_contentsMap.insert(make_pair(filename, listString(outl)));
+            m_contentsMap.emplace(filename, listString(outl));
         }
         return true;
     }
-    static size_t listSize(StrList& sl) {
+    static size_t listSize(const StrList& sl) {
         size_t out = 0;
         for (const string& i : sl) out += i.length();
         return out;
     }
-    static string listString(StrList& sl) {
+    static string listString(const StrList& sl) {
         string out;
         for (const string& i : sl) out += i;
         return out;
@@ -787,11 +786,11 @@ void V3OutFormatter::puts(const char* strg) {
             wordstart = false;
             break;
         case 'e':
-            if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) { indentDec(); }
+            if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
             wordstart = false;
             break;
         case 'm':
-            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp, "module")) { indentInc(); }
+            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp, "module")) indentInc();
             wordstart = false;
             break;
         default: wordstart = false; break;
@@ -873,9 +872,7 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
             } else if (isprint(c)) {
                 out += c;
             } else {
-                char decimal[10];
-                sprintf(decimal, "&#%u;", (unsigned char)c);
-                out += decimal;
+                out += string("&#") + cvtToStr((unsigned int)(c & 0xff)) + ";";
             }
         }
     } else {
@@ -893,9 +890,8 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += c;
             } else {
                 // This will also cover \a etc
-                // Can't use %03o as messes up when signed
-                char octal[10];
-                sprintf(octal, "\\%o%o%o", (c >> 6) & 3, (c >> 3) & 7, c & 7);
+                string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
+                               + cvtToStr(c & 7);
                 out += octal;
             }
         }
@@ -907,10 +903,11 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
 // Simple wrappers
 
 void V3OutFormatter::printf(const char* fmt...) {
-    char sbuff[5000];
+    constexpr size_t bufsize = 5000;
+    char sbuff[bufsize];
     va_list ap;
     va_start(ap, fmt);
-    vsprintf(sbuff, fmt, ap);
+    VL_VSNPRINTF(sbuff, bufsize, fmt, ap);
     va_end(ap);
     this->puts(sbuff);
 }
@@ -938,7 +935,7 @@ void V3OutFile::putsForceIncs() {
 void V3OutCFile::putsGuard() {
     UASSERT(!m_guard, "Already called putsGuard in emit file");
     m_guard = true;
-    string var = VString::upcase(string("_") + V3Os::filenameNonDir(filename()) + "_");
+    string var = VString::upcase(string("VERILATED_") + V3Os::filenameNonDir(filename()) + "_");
     for (char& c : var) {
         if (!isalnum(c)) c = '_';
     }
@@ -951,10 +948,8 @@ void V3OutCFile::putsGuard() {
 
 class VIdProtectImp final {
     // MEMBERS
-    typedef std::map<const string, string> IdMap;
-    IdMap m_nameMap;  // Map of old name into new name
-    typedef std::unordered_set<std::string> IdSet;
-    IdSet m_newIdSet;  // Which new names exist
+    std::map<const std::string, std::string> m_nameMap;  // Map of old name into new name
+    std::unordered_set<std::string> m_newIdSet;  // Which new names exist
 protected:
     // CONSTRUCTORS
     friend class VIdProtect;
@@ -980,7 +975,7 @@ public:
             UASSERT(old == it->second,
                     "Passthru request for '" + old + "' after already --protect-ids of it.");
         } else {
-            m_nameMap.insert(make_pair(old, old));
+            m_nameMap.emplace(old, old);
             m_newIdSet.insert(old);
         }
         return old;
@@ -1011,7 +1006,7 @@ public:
                     }
                 }
             }
-            m_nameMap.insert(make_pair(old, out));
+            m_nameMap.emplace(old, out);
             m_newIdSet.insert(out);
             return out;
         }

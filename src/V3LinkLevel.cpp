@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -101,12 +101,17 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
     v3Global.rootp()->timeunit(unit);
 
     for (AstNodeModule* nodep : mods) {
+        if (!v3Global.opt.timeOverrideUnit().isNone()) nodep->timeunit(unit);
         if (nodep->timeunit().isNone()) {
-            if (modTimedp && !VN_IS(nodep, Iface)
-                && !(VN_IS(nodep, Package) && VN_CAST(nodep, Package)->isDollarUnit())) {
+            if (modTimedp  // Got previous
+                && (  // unit doesn't already include an override
+                    v3Global.opt.timeOverrideUnit().isNone()
+                    && v3Global.opt.timeDefaultUnit().isNone())
+                && nodep->timescaleMatters()) {
                 nodep->v3warn(TIMESCALEMOD,
                               "Timescale missing on this module as other modules have "
-                              "it (IEEE 1800-2017 3.14.2.2)\n"
+                              "it (IEEE 1800-2017 3.14.2.3)\n"
+                                  << nodep->warnContextPrimary() << '\n'
                                   << modTimedp->warnOther()
                                   << "... Location of module with timescale\n"
                                   << modTimedp->warnContextSecondary());
@@ -114,6 +119,8 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
             nodep->timeunit(unit);
         }
     }
+
+    v3Global.rootp()->timescaleSpecified(modTimedp);  // true if some module specifies timescale
 
     if (v3Global.rootp()->timeprecision().isNone()) {
         v3Global.rootp()->timeprecisionMerge(v3Global.rootp()->fileline(),
@@ -168,7 +175,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     UASSERT_OBJ(newmodp && newmodp->isTop(), rootp, "No TOP module found to insert under");
 
     // Find all duplicate signal names (if multitop)
-    typedef std::unordered_set<std::string> NameSet;
+    using NameSet = std::unordered_set<std::string>;
     NameSet ioNames;
     NameSet dupNames;
     // For all modules, skipping over new top

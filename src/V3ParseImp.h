@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2009-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3PARSEIMP_H_
-#define _V3PARSEIMP_H_ 1
+#ifndef VERILATOR_V3PARSEIMP_H_
+#define VERILATOR_V3PARSEIMP_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -37,9 +37,9 @@ class V3Lexer;
 //======================================================================
 // Types (between parser & lexer)
 
-typedef enum : uint8_t { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY } V3UniqState;
+enum V3UniqState : uint8_t { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY };
 
-typedef enum : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
+enum V3ImportProperty : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE };
 
 //============================================================================
 // Member qualifiers

@@ -6,6 +6,9 @@
 // SPDX-License-Identifier: CC0-1.0
 //======================================================================
 
+// For std::unique_ptr
+#include <memory>
+
 // SystemC global header
 #include <systemc.h>
 
@@ -26,40 +29,47 @@ int sc_main(int argc, char* argv[]) {
     // Prevent unused variable warnings
     if (false && argc && argv) {}
 
+    // Create logs/ directory in case we have traces to put under it
+    Verilated::mkdir("logs");
+
     // Set debug level, 0 is off, 9 is highest presently used
-    // May be overridden by commandArgs
+    // May be overridden by commandArgs argument parsing
     Verilated::debug(0);
 
     // Randomization reset policy
-    // May be overridden by commandArgs
+    // May be overridden by commandArgs argument parsing
     Verilated::randReset(2);
+
+#if VM_TRACE
+    // Before any evaluation, need to know to calculate those signals only used for tracing
+    Verilated::traceEverOn(true);
+#endif
 
     // Pass arguments so Verilated code can see them, e.g. $value$plusargs
     // This needs to be called before you create any model
     Verilated::commandArgs(argc, argv);
 
-    // Create logs/ directory in case we have traces to put under it
-    Verilated::mkdir("logs");
-
     // General logfile
     ios::sync_with_stdio();
 
     // Define clocks
-    sc_clock clk("clk", 10, SC_NS, 0.5, 3, SC_NS, true);
-    sc_clock fastclk("fastclk", 2, SC_NS, 0.5, 2, SC_NS, true);
+    sc_clock clk{"clk", 10, SC_NS, 0.5, 3, SC_NS, true};
+    sc_clock fastclk{"fastclk", 2, SC_NS, 0.5, 2, SC_NS, true};
 
     // Define interconnect
     sc_signal<bool> reset_l;
     sc_signal<vluint32_t> in_small;
     sc_signal<vluint64_t> in_quad;
-    sc_signal<sc_bv<70> > in_wide;
+    sc_signal<sc_bv<70>> in_wide;
     sc_signal<vluint32_t> out_small;
     sc_signal<vluint64_t> out_quad;
-    sc_signal<sc_bv<70> > out_wide;
+    sc_signal<sc_bv<70>> out_wide;
 
     // Construct the Verilated model, from inside Vtop.h
-    Vtop* top = new Vtop("top");
-    // Attach signals to the model
+    // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end
+    const std::unique_ptr<Vtop> top{new Vtop{"top"}};
+
+    // Attach Vtop's signals to this upper model
     top->clk(clk);
     top->fastclk(fastclk);
     top->reset_l(reset_l);
@@ -69,11 +79,6 @@ int sc_main(int argc, char* argv[]) {
     top->out_small(out_small);
     top->out_quad(out_quad);
     top->out_wide(out_wide);
-
-#if VM_TRACE
-    // Before any evaluation, need to know to calculate those signals only used for tracing
-    Verilated::traceEverOn(true);
-#endif
 
     // You must do one evaluation before enabling waves, in order to allow
     // SystemC to interconnect everything for testing.
@@ -123,16 +128,12 @@ int sc_main(int argc, char* argv[]) {
     }
 #endif
 
-    //  Coverage analysis (since test passed)
+    // Coverage analysis (calling write only after the test is known to pass)
 #if VM_COVERAGE
     Verilated::mkdir("logs");
     VerilatedCov::write("logs/coverage.dat");
 #endif
 
-    // Destroy model
-    delete top;
-    top = nullptr;
-
-    // Fin
+    // Return good completion status
     return 0;
 }

@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -15,8 +15,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3TSP_H_
-#define _V3TSP_H_ 1
+#ifndef VERILATOR_V3TSP_H_
+#define VERILATOR_V3TSP_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -43,7 +43,7 @@ public:
     virtual ~TspStateBase() = default;
 };
 
-typedef std::vector<const TspStateBase*> StateVec;
+using StateVec = std::vector<const TspStateBase*>;
 
 // Given an unsorted set of TspState's, sort them to minimize
 // the transition cost for walking the sorted list.

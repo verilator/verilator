@@ -13,6 +13,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 top_filename("t/t_trace_complex.v");
+golden_filename("t/t_trace_complex.out");
 
 compile(
     verilator_flags2 => ['--cc --trace -CFLAGS -DVL_TRACE_VCD_OLD_API'],
@@ -32,7 +33,7 @@ file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arru\(/);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arrp\(/);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_strp\(/);
 
-vcd_identical ("$Self->{obj_dir}/simx.vcd", "t/t_trace_complex.out");
+vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 ok(1);
 1;

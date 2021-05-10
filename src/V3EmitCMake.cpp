@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -58,7 +58,7 @@ class CMakeEmitter final {
     static void cmake_set_raw(std::ofstream& of, const string& name, const string& raw_value,
                               const string& cache_type = "", const string& docstring = "") {
         of << "set(" << name << " " << raw_value;
-        if (!cache_type.empty()) { of << " CACHE " << cache_type << " \"" << docstring << "\""; }
+        if (!cache_type.empty()) of << " CACHE " << cache_type << " \"" << docstring << "\"";
         of << ")\n";
     }
 
@@ -113,6 +113,8 @@ class CMakeEmitter final {
         cmake_set_raw(*of, name + "_COVERAGE", v3Global.opt.coverage() ? "1" : "0");
         *of << "# Threaded output mode?  0/1/N threads (from --threads)\n";
         cmake_set_raw(*of, name + "_THREADS", cvtToStr(v3Global.opt.threads()));
+        *of << "# Threaded tracing output mode?  0/1/N threads (from --trace-threads)\n";
+        cmake_set_raw(*of, name + "_TRACE_THREADS", cvtToStr(v3Global.opt.traceThreads()));
         *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
         cmake_set_raw(*of, name + "_TRACE_VCD",
                       (v3Global.opt.trace() && (v3Global.opt.traceFormat() == TraceFormat::VCD))
@@ -167,11 +169,6 @@ class CMakeEmitter final {
             global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceBase()
                                 + "_c.cpp");
             if (v3Global.opt.systemC()) {
-                if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
-                    v3warn(E_UNSUPPORTED,
-                           "Unsupported: This trace format is not supported in SystemC, "
-                           "use VCD format.");
-                }
                 global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceLang()
                                     + ".cpp");
             }

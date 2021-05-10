@@ -15,6 +15,8 @@ compile(
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
     make_main => 0,
+    # Check that code --main produces uses only most modern API features
+    make_flags => 'CPPFLAGS_ADD=-DVL_NO_LEGACY',
     );
 
 execute(

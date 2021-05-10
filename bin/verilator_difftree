@@ -208,7 +208,7 @@ Do not show differences in line numbering.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+Copyright 2005-2021 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
@@ -222,6 +222,8 @@ Wilson Snyder <wsnyder@wsnyder.org>
 =head1 SEE ALSO
 
 C<verilator>
+
+and L<https://verilator.org/verilator_doc.html> for detailed documentation.
 
 =cut
 

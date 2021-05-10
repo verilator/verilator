@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -101,23 +101,17 @@ public:
                     // have them.
                 } else if (support == 2 && !slow) {
                     putMakeClassEntry(of, "verilated.cpp");
-                    if (v3Global.dpi()) { putMakeClassEntry(of, "verilated_dpi.cpp"); }
-                    if (v3Global.opt.vpi()) { putMakeClassEntry(of, "verilated_vpi.cpp"); }
-                    if (v3Global.opt.savable()) { putMakeClassEntry(of, "verilated_save.cpp"); }
-                    if (v3Global.opt.coverage()) { putMakeClassEntry(of, "verilated_cov.cpp"); }
+                    if (v3Global.dpi()) putMakeClassEntry(of, "verilated_dpi.cpp");
+                    if (v3Global.opt.vpi()) putMakeClassEntry(of, "verilated_vpi.cpp");
+                    if (v3Global.opt.savable()) putMakeClassEntry(of, "verilated_save.cpp");
+                    if (v3Global.opt.coverage()) putMakeClassEntry(of, "verilated_cov.cpp");
                     if (v3Global.opt.trace()) {
                         putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
                         if (v3Global.opt.systemC()) {
-                            if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
-                                v3warn(E_UNSUPPORTED,
-                                       "Unsupported: This trace format is not supported "
-                                       "in SystemC, use VCD format.");
-                            } else {
-                                putMakeClassEntry(of, v3Global.opt.traceSourceLang() + ".cpp");
-                            }
+                            putMakeClassEntry(of, v3Global.opt.traceSourceLang() + ".cpp");
                         }
                     }
-                    if (v3Global.opt.mtasks()) { putMakeClassEntry(of, "verilated_threads.cpp"); }
+                    if (v3Global.opt.mtasks()) putMakeClassEntry(of, "verilated_threads.cpp");
                 } else if (support == 2 && slow) {
                 } else {
                     for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
@@ -167,7 +161,7 @@ public:
         of.puts(string("SYSTEMC_LIBDIR ?= ") + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
 
         // Only check it if we really need the value
-        if (v3Global.opt.usingSystemCLibs() && !V3Options::systemCFound()) {
+        if (v3Global.opt.systemC() && !V3Options::systemCFound()) {
             v3fatal("Need $SYSTEMC_INCLUDE in environment or when Verilator configured,\n"
                     "and need $SYSTEMC_LIBDIR in environment or when Verilator configured\n"
                     "Probably System-C isn't installed, see http://www.systemc.org\n");
@@ -298,8 +292,8 @@ class EmitMkHierVerilation final {
         of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
         of.puts("# Common options for hierarchical blocks\n");
         const string fullpath_bin = V3Os::filenameRealPath(v3Global.opt.bin());
-        const string perl_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
-        of.puts("VM_HIER_VERILATOR := " + perl_wrapper + "\n");
+        const string verilator_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
+        of.puts("VM_HIER_VERILATOR := " + verilator_wrapper + "\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
         const V3StringList& vFiles = v3Global.opt.vFiles();
         for (const string& i : vFiles) of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
@@ -310,9 +304,6 @@ class EmitMkHierVerilation final {
             of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
         }
         of.puts("\n");
-    }
-    void emitOpts(V3OutMkFile& of, const V3StringList& opts) const {
-        for (const string& i : opts) { of.puts("\t\t" + i + " \\\n"); }
     }
     void emitLaunchVerilator(V3OutMkFile& of, const string& argsFile) const {
         of.puts("\t@$(MAKE) -C $(VM_HIER_RUN_DIR) -f " + m_makefile
@@ -420,5 +411,5 @@ void V3EmitMk::emitmk() {
 
 void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitMkHierVerilation emitter(planp);
+    EmitMkHierVerilation{planp};
 }

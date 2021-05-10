@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3PARTITIONGRAPH_H_
-#define _V3PARTITIONGRAPH_H_
+#ifndef VERILATOR_V3PARTITIONGRAPH_H_
+#define VERILATOR_V3PARTITIONGRAPH_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -40,7 +40,7 @@ public:
 class AbstractLogicMTask VL_NOT_FINAL : public AbstractMTask {
 public:
     // TYPES
-    typedef std::list<MTaskMoveVertex*> VxList;
+    using VxList = std::list<MTaskMoveVertex*>;
     // CONSTRUCTORS
     AbstractLogicMTask(V3Graph* graphp)
         : AbstractMTask{graphp} {}

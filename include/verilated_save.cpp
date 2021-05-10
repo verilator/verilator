@@ -1,9 +1,9 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -12,13 +12,21 @@
 //=============================================================================
 ///
 /// \file
-/// \brief C++ Tracing in VCD Format
+/// \brief Verilated save/restore implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --savable.
+///
+/// Use "verilator --savable" to add this to the Makefile for the linker.
 ///
 //=============================================================================
+
+#define VERILATOR_VERILATED_SAVE_CPP_
 
 #include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_save.h"
+#include "verilated_imp.h"
 
 #include <cerrno>
 #include <fcntl.h>
@@ -42,9 +50,9 @@
 // clang-format on
 
 // CONSTANTS
-/// Value of first bytes of each file (must be multiple of 8 bytes)
-static const char* const VLTSAVE_HEADER_STR = "verilatorsave01\n";
-/// Value of last bytes of each file (must be multiple of 8 bytes)
+// Value of first bytes of each file (must be multiple of 8 bytes)
+static const char* const VLTSAVE_HEADER_STR = "verilatorsave02\n";
+// Value of last bytes of each file (must be multiple of 8 bytes)
 static const char* const VLTSAVE_TRAILER_STR = "vltsaved";
 
 //=============================================================================
@@ -75,18 +83,13 @@ VerilatedDeserialize& VerilatedDeserialize::readAssert(const void* __restrict da
 
 void VerilatedSerialize::header() VL_MT_UNSAFE_ONE {
     VerilatedSerialize& os = *this;  // So can cut and paste standard << code below
-    assert((strlen(VLTSAVE_HEADER_STR) & 7) == 0);  // Keep aligned
-    os.write(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR));
-
-    // Verilated doesn't do it itself, as if we're not using save/restore
-    // it doesn't need to compile this stuff in
-    os.write(Verilated::serialized1Ptr(), Verilated::serialized1Size());
-    os.write(Verilated::serialized2Ptr(), Verilated::serialized2Size());
+    assert((std::strlen(VLTSAVE_HEADER_STR) & 7) == 0);  // Keep aligned
+    os.write(VLTSAVE_HEADER_STR, std::strlen(VLTSAVE_HEADER_STR));
 }
 
 void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
-    if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
+    if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, std::strlen(VLTSAVE_HEADER_STR)))) {
         std::string fn = filename();
         std::string msg
             = std::string(
@@ -95,19 +98,17 @@ void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         // Die before we close() as close would infinite loop
     }
-    os.read(Verilated::serialized1Ptr(), Verilated::serialized1Size());
-    os.read(Verilated::serialized2Ptr(), Verilated::serialized2Size());
 }
 
 void VerilatedSerialize::trailer() VL_MT_UNSAFE_ONE {
     VerilatedSerialize& os = *this;  // So can cut and paste standard << code below
-    assert((strlen(VLTSAVE_TRAILER_STR) & 7) == 0);  // Keep aligned
-    os.write(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR));
+    assert((std::strlen(VLTSAVE_TRAILER_STR) & 7) == 0);  // Keep aligned
+    os.write(VLTSAVE_TRAILER_STR, std::strlen(VLTSAVE_TRAILER_STR));
 }
 
 void VerilatedDeserialize::trailer() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
-    if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR)))) {
+    if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, std::strlen(VLTSAVE_TRAILER_STR)))) {
         std::string fn = filename();
         std::string msg = std::string("Can't deserialize; file has wrong end-of-file signature: ")
                           + filename();
@@ -201,7 +202,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
+                std::string msg = std::string(__FUNCTION__) + ": " + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
@@ -232,7 +233,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
+                std::string msg = std::string(__FUNCTION__) + ": " + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
@@ -249,3 +250,19 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
 
 //=============================================================================
 // Serialization of types
+
+VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp) {
+    os.write(rhsp->serialized1Ptr(), rhsp->serialized1Size());
+    os << rhsp->impp()->timeFormatSuffix();
+    os << rhsp->dumpfile();
+    return os;
+}
+VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhsp) {
+    os.read(rhsp->serialized1Ptr(), rhsp->serialized1Size());
+    std::string s;
+    os >> s;
+    rhsp->impp()->timeFormatSuffix(s);
+    os >> s;
+    rhsp->dumpfile(s);
+    return os;
+}

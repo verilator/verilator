@@ -14,6 +14,8 @@
 #include <iostream>
 #include "svdpi.h"
 
+#include "TestCheck.h"
+
 //======================================================================
 
 // clang-format off
@@ -52,26 +54,8 @@ extern int dpii_failure();
 }
 #endif
 
-int failure = 0;
-int dpii_failure() { return failure; }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    do { \
-        if ((got) != (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
-
-#define CHECK_RESULT_HEX_NE(got, exp) \
-    do { \
-        if ((got) == (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP!=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
+int errors = 0;
+int dpii_failure() { return errors; }
 
 void dpii_unused(const svOpenArrayHandle u) {}
 
@@ -82,8 +66,7 @@ static void _dpii_bit_elem_ux(int p, int u, const svOpenArrayHandle i, const svO
     int dim = svDimensions(i);
 #ifndef NC
     // NC always returns zero and warns
-    CHECK_RESULT_HEX(dim, u);
-    // svSizeOfArray(i) undeterministic as not in C representation
+    TEST_CHECK_HEX_EQ(dim, u);
 #endif
 
     for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {
@@ -91,7 +74,7 @@ static void _dpii_bit_elem_ux(int p, int u, const svOpenArrayHandle i, const svO
         if (dim == 1) {
             svBit v = svGetBitArrElem(i, a);
             svBit v2 = svGetBitArrElem1(i, a);
-            CHECK_RESULT_HEX(v, v2);
+            TEST_CHECK_HEX_EQ(v, v2);
             svPutBitArrElem(o, v ? 0 : 1, a);
             svPutBitArrElem1(q, v ? 0 : 1, a);
         } else {
@@ -99,7 +82,7 @@ static void _dpii_bit_elem_ux(int p, int u, const svOpenArrayHandle i, const svO
                 if (dim == 2) {
                     svBit v = svGetBitArrElem(i, a, b);
                     svBit v2 = svGetBitArrElem2(i, a, b);
-                    CHECK_RESULT_HEX(v, v2);
+                    TEST_CHECK_HEX_EQ(v, v2);
                     svPutBitArrElem(o, v ? 0 : 1, a, b);
                     svPutBitArrElem2(q, v ? 0 : 1, a, b);
                 } else {
@@ -107,7 +90,7 @@ static void _dpii_bit_elem_ux(int p, int u, const svOpenArrayHandle i, const svO
                         if (dim == 3) {
                             svBit v = svGetBitArrElem(i, a, b, c);
                             svBit v2 = svGetBitArrElem3(i, a, b, c);
-                            CHECK_RESULT_HEX(v, v2);
+                            TEST_CHECK_HEX_EQ(v, v2);
                             svPutBitArrElem(o, v ? 0 : 1, a, b, c);
                             svPutBitArrElem3(q, v ? 0 : 1, a, b, c);
                         }
@@ -135,19 +118,20 @@ void dpii_bit_elem_p0_u3(int p, int u, const svOpenArrayHandle i, const svOpenAr
 
 static void _dpii_logic_elem_ux(int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o,
                                 const svOpenArrayHandle q) {
-    int sizeInputOfArray = svSizeOfArray(i);
     int dim = svDimensions(i);
 #ifndef NC
     // NC always returns zero and warns
-    CHECK_RESULT_HEX(dim, u);
-    // svSizeOfArray(i) undeterministic as not in C representation
+    TEST_CHECK_HEX_EQ(dim, u);
 #endif
+    int sizeInputOfArray = svSizeOfArray(i);
+    // svSizeOfArray(i) undeterministic as not in C representation
+    if (sizeInputOfArray) {}
 
     for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {
         if (dim == 1) {
             svLogic v = svGetLogicArrElem(i, a);
             svLogic v2 = svGetLogicArrElem1(i, a);
-            CHECK_RESULT_HEX(v, v2);
+            TEST_CHECK_HEX_EQ(v, v2);
             svPutLogicArrElem(o, v ? 0 : 1, a);
             svPutLogicArrElem1(q, v ? 0 : 1, a);
         } else {
@@ -155,7 +139,7 @@ static void _dpii_logic_elem_ux(int p, int u, const svOpenArrayHandle i, const s
                 if (dim == 2) {
                     svLogic v = svGetLogicArrElem(i, a, b);
                     svLogic v2 = svGetLogicArrElem2(i, a, b);
-                    CHECK_RESULT_HEX(v, v2);
+                    TEST_CHECK_HEX_EQ(v, v2);
                     svPutLogicArrElem(o, v ? 0 : 1, a, b);
                     svPutLogicArrElem2(q, v ? 0 : 1, a, b);
                 } else {
@@ -163,7 +147,7 @@ static void _dpii_logic_elem_ux(int p, int u, const svOpenArrayHandle i, const s
                         if (dim == 3) {
                             svLogic v = svGetLogicArrElem(i, a, b, c);
                             svLogic v2 = svGetLogicArrElem3(i, a, b, c);
-                            CHECK_RESULT_HEX(v, v2);
+                            TEST_CHECK_HEX_EQ(v, v2);
                             svPutLogicArrElem(o, v ? 0 : 1, a, b, c);
                             svPutLogicArrElem3(q, v ? 0 : 1, a, b, c);
                         }

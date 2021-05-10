@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -77,10 +77,8 @@ public:
 
 class LatchDetectGraph final : public V3Graph {
 protected:
-    typedef std::vector<AstVarRef*> VarRefVec;
-
     LatchDetectGraphVertex* m_curVertexp;  // Current latch detection graph vertex
-    VarRefVec m_outputs;  // Vector of lvalues encountered on this pass
+    std::vector<AstVarRef*> m_outputs;  // Vector of lvalues encountered on this pass
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -176,7 +174,7 @@ public:
         for (const auto& vrp : m_outputs) {
             LatchDetectGraphVertex* vertp = castVertexp(vrp->varp()->user1p());
             vertp->user(true);  // Identify the output vertex we are checking paths _to_
-            if (!latchCheckInternal(castVertexp(verticesBeginp()))) { latch_detected = true; }
+            if (!latchCheckInternal(castVertexp(verticesBeginp()))) latch_detected = true;
             if (latch_detected && !latch_expected) {
                 nodep->v3warn(
                     LATCH,
@@ -185,7 +183,7 @@ public:
                         << " (not all control paths of combinational always assign a value)\n"
                         << nodep->warnMore()
                         << "... Suggest use of always_latch for intentional latches");
-                if (debug() >= 9) { dumpDotFilePrefixed("latch_" + vrp->name()); }
+                if (debug() >= 9) dumpDotFilePrefixed("latch_" + vrp->name());
             }
             vertp->user(false);  // Clear again (see above)
             vrp->varp()->isLatched(latch_detected);
@@ -213,7 +211,7 @@ private:
     AstActive* m_cActivep = nullptr;  // For current scope, the SActive(combo) we're building
 
     SenTreeSet m_activeSens;  // Sen lists for each active we've made
-    typedef std::unordered_map<AstSenTree*, AstActive*> ActiveMap;
+    using ActiveMap = std::unordered_map<AstSenTree*, AstActive*>;
     ActiveMap m_activeMap;  // Map sentree to active, for folding.
 
     // METHODS

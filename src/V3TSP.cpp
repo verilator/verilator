@@ -11,7 +11,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -71,11 +71,10 @@ private:
 template <typename T_Key> class TspGraphTmpl : public V3Graph {
 public:
     // TYPES
-    typedef TspVertexTmpl<T_Key> Vertex;
+    using Vertex = TspVertexTmpl<T_Key>;
 
     // MEMBERS
-    typedef std::unordered_map<T_Key, Vertex*> VMap;
-    VMap m_vertices;  // T_Key to Vertex lookup map
+    std::unordered_map<T_Key, Vertex*> m_vertices;  // T_Key to Vertex lookup map
 
     // CONSTRUCTORS
     TspGraphTmpl()
@@ -152,7 +151,7 @@ public:
         std::unordered_set<Vertex*> visited_set;
 
         EdgeCmp cmp;
-        typedef std::set<V3GraphEdge*, EdgeCmp&> PendingEdgeSet;
+        using PendingEdgeSet = std::set<V3GraphEdge*, EdgeCmp&>;
         // This is the set of pending edges from visited to unvisited
         // nodes.
         PendingEdgeSet pendingEdges(cmp);
@@ -222,7 +221,7 @@ public:
 
         std::list<Vertex*> odds = keysToVertexList(oddKeys);
         std::unordered_set<Vertex*> unmatchedOdds;
-        typedef typename std::list<Vertex*>::iterator VertexListIt;
+        using VertexListIt = typename std::list<Vertex*>::iterator;
         for (VertexListIt it = odds.begin(); it != odds.end(); ++it) {
             outp->addVertex((*it)->key());
             unmatchedOdds.insert(*it);
@@ -247,7 +246,7 @@ public:
         // bidir edge will collide in the pendingEdges set here, but this
         // is OK, we'll ignore the direction on the edge anyway.
         EdgeCmp cmp;
-        typedef std::set<V3GraphEdge*, EdgeCmp&> PendingEdgeSet;
+        using PendingEdgeSet = std::set<V3GraphEdge*, EdgeCmp&>;
         PendingEdgeSet pendingEdges(cmp);
 
         for (VertexListIt it = odds.begin(); it != odds.end(); ++it) {
@@ -379,7 +378,7 @@ public:
             for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 degree++;
             }
-            if (degree & 1) { result.push_back(tspvp->key()); }
+            if (degree & 1) result.push_back(tspvp->key());
         }
         return result;
     }
@@ -402,14 +401,14 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     // Make this TSP implementation work for graphs of size 0 or 1
     // which, unfortunately, is a special case as the following
     // code assumes >= 2 nodes.
-    if (states.empty()) { return; }
+    if (states.empty()) return;
     if (states.size() == 1) {
         resultp->push_back(*(states.begin()));
         return;
     }
 
     // Build the initial graph from the starting state set.
-    typedef TspGraphTmpl<const TspStateBase*> Graph;
+    using Graph = TspGraphTmpl<const TspStateBase*>;
     Graph graph;
     for (const auto& state : states) graph.addVertex(state);
     for (V3TSP::StateVec::const_iterator it = states.begin(); it != states.end(); ++it) {
@@ -482,7 +481,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
         while (i != max_cost_idx) {
             new_result.push_back((*resultp)[i]);
             i++;
-            if (i >= resultp->size()) { i = 0; }
+            if (i >= resultp->size()) i = 0;
         }
         new_result.push_back((*resultp)[i]);
 
@@ -516,7 +515,7 @@ public:
         unsigned yabs;
         xabs = diff(otherp->m_xpos, m_xpos);
         yabs = diff(otherp->m_ypos, m_ypos);
-        return lround(sqrt(xabs * xabs + yabs * yabs));
+        return std::lround(std::sqrt(xabs * xabs + yabs * yabs));
     }
     unsigned xpos() const { return m_xpos; }
     unsigned ypos() const { return m_ypos; }
@@ -614,7 +613,7 @@ void V3TSP::selfTestStates() {
 }
 
 void V3TSP::selfTestString() {
-    typedef TspGraphTmpl<string> Graph;
+    using Graph = TspGraphTmpl<std::string>;
     Graph graph;
     graph.addVertex("0");
     graph.addVertex("1");

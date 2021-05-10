@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3AST_H_
-#define _V3AST_H_ 1
+#ifndef VERILATOR_V3AST_H_
+#define VERILATOR_V3AST_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -42,7 +42,7 @@ class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
 
 // Used as key for another map, needs operator<, hence not an unordered_set
-typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
+using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 
 //######################################################################
 
@@ -1706,7 +1706,7 @@ public:
         }
     }
     void dtypeFrom(AstNode* fromp) {
-        if (fromp) { dtypep(fromp->dtypep()); }
+        if (fromp) dtypep(fromp->dtypep());
     }
     void dtypeChgSigned(bool flag = true);
     void dtypeChgWidth(int width, int widthMin);
@@ -1922,7 +1922,7 @@ public:
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCStmts::emitOpName
     virtual string emitC() = 0;
-    virtual string emitSimpleOperator() { return ""; }
+    virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node
@@ -2450,7 +2450,6 @@ public:
     bool widthSized() const { return !m_widthMin || m_widthMin == m_width; }
     bool generic() const { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
-    AstNodeDType* dtypeDimensionp(int dimension);
     std::pair<uint32_t, uint32_t> dimensions(bool includeBasic);
     uint32_t arrayUnpackedElements();  // 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
@@ -2468,7 +2467,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // A struct or union; common handling
 private:
     // TYPES
-    typedef std::map<const string, AstMemberDType*> MemberNameMap;
+    using MemberNameMap = std::map<const std::string, AstMemberDType*>;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
     bool m_packed;
@@ -2547,7 +2546,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
@@ -2614,7 +2613,7 @@ class AstNodeStream VL_NOT_FINAL : public AstNodeBiop {
 public:
     AstNodeStream(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : AstNodeBiop{t, fl, lhsp, rhsp} {
-        if (lhsp->dtypep()) { dtypeSetLogicSized(lhsp->dtypep()->width(), VSigning::UNSIGNED); }
+        if (lhsp->dtypep()) dtypeSetLogicSized(lhsp->dtypep()->width(), VSigning::UNSIGNED);
     }
     ASTNODE_BASE_FUNCS(NodeStream)
 };
@@ -2811,7 +2810,7 @@ public:
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const override;
     virtual void cloneRelink() override {
-        if (m_taskp && m_taskp->clonep()) { m_taskp = m_taskp->clonep(); }
+        if (m_taskp && m_taskp->clonep()) m_taskp = m_taskp->clonep();
     }
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual string name() const override { return m_name; }  // * = Var name
@@ -2880,6 +2879,7 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual bool maybePointedTo() const override { return true; }
     virtual string name() const override { return m_name; }
+    virtual bool timescaleMatters() const = 0;
     AstNode* stmtsp() const { return op2p(); }  // op2 = List of statements
     AstActive* activesp() const { return VN_CAST(op3p(), Active); }  // op3 = List of i/sblocks
     // METHODS

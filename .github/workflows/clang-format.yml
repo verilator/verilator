@@ -1,5 +1,4 @@
 # DESCRIPTION: Github actions config
-# This name is key to badges in README.adoc, so we use the name build
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 name: clang-format
@@ -27,14 +26,14 @@ jobs:
           CI_BUILD_STAGE_NAME: build
         run: |
           bash ci/ci-install.bash &&
-          sudo apt-get install clang-10 &&
+          sudo apt-get install clang-10 yapf3 &&
           git config --global user.email "action@example.com" &&
           git config --global user.name "github action"
       - name: Format code
         run: |
           autoconf &&
           ./configure &&
-          make clang-format CLANGFORMAT=clang-format-10 &&
+          make -j 2 format CLANGFORMAT=clang-format-10 &&
           git status
       - name: Push
         run: |

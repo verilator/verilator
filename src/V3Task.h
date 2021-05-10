@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3TASK_H_
-#define _V3TASK_H_ 1
+#ifndef VERILATOR_V3TASK_H_
+#define VERILATOR_V3TASK_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -27,8 +27,8 @@
 
 //============================================================================
 
-typedef std::pair<AstVar*, AstArg*> V3TaskConnect;  // [port, pin-connects-to]
-typedef std::vector<V3TaskConnect> V3TaskConnects;  // [ [port, pin-connects-to] ... ]
+using V3TaskConnect = std::pair<AstVar*, AstArg*>;  // [port, pin-connects-to]
+using V3TaskConnects = std::vector<V3TaskConnect>;  // [ [port, pin-connects-to] ... ]
 
 //============================================================================
 

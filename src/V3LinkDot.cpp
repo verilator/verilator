@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -140,21 +140,20 @@ public:
 
 private:
     // TYPES
-    typedef std::multimap<string, VSymEnt*> NameScopeSymMap;
-    typedef std::unordered_map<VSymEnt*, VSymEnt*> ScopeAliasMap;
-    typedef std::set<std::pair<AstNodeModule*, string>> ImplicitNameSet;
-    typedef std::vector<VSymEnt*> IfaceVarSyms;
-    typedef std::vector<std::pair<AstIface*, VSymEnt*>> IfaceModSyms;
+    using ScopeAliasMap = std::unordered_map<VSymEnt*, VSymEnt*>;
+    using IfaceModSyms = std::vector<std::pair<AstIface*, VSymEnt*>>;
 
     static LinkDotState* s_errorThisp;  // Last self, for error reporting only
 
     // MEMBERS
     VSymGraph m_syms;  // Symbol table
     VSymEnt* m_dunitEntp;  // $unit entry
-    NameScopeSymMap m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
-    ImplicitNameSet m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
+    std::multimap<std::string, VSymEnt*>
+        m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
+    std::set<std::pair<AstNodeModule*, std::string>>
+        m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
     std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
-    IfaceVarSyms m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
+    std::vector<VSymEnt*> m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
     bool m_forPrimary;  // First link
     bool m_forPrearray;  // Compress cell__[array] refs
@@ -304,7 +303,7 @@ public:
         nodep->user1p(symp);
         checkDuplicate(rootEntp(), nodep, nodep->origName());
         rootEntp()->insert(nodep->origName(), symp);
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
         return symp;
     }
     VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp, AstCell* nodep,
@@ -326,11 +325,11 @@ public:
             // have 2 same cells under an if
             modSymp->reinsert(nodep->name(), symp);
         }
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
         return symp;
     }
     void insertMap(VSymEnt* symp, const string& scopename) {
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
     }
 
     VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* modSymp, AstCellInline* nodep,
@@ -369,7 +368,7 @@ public:
         symp->classOrPackagep(classOrPackagep);
         symp->fallbackp(abovep);
         nodep->user1p(symp);
-        if (name != "") { checkDuplicate(abovep, nodep, name); }
+        if (name != "") checkDuplicate(abovep, nodep, name);
         // Duplicates are possible, as until resolve generates might have 2 same cells under an if
         abovep->reinsert(name, symp);
         return symp;
@@ -408,20 +407,19 @@ public:
     void implicitOkAdd(AstNodeModule* nodep, const string& varname) {
         // Mark the given variable name as being allowed to be implicitly declared
         if (nodep) {
-            const auto it = m_implicitNameSet.find(make_pair(nodep, varname));
-            if (it == m_implicitNameSet.end()) {
-                m_implicitNameSet.insert(make_pair(nodep, varname));
-            }
+            const auto it = m_implicitNameSet.find(std::make_pair(nodep, varname));
+            if (it == m_implicitNameSet.end()) m_implicitNameSet.emplace(nodep, varname);
         }
     }
     bool implicitOk(AstNodeModule* nodep, const string& varname) {
         return nodep
-               && (m_implicitNameSet.find(make_pair(nodep, varname)) != m_implicitNameSet.end());
+               && (m_implicitNameSet.find(std::make_pair(nodep, varname))
+                   != m_implicitNameSet.end());
     }
 
     // Track and later recurse interface modules
     void insertIfaceModSym(AstIface* nodep, VSymEnt* symp) {
-        m_ifaceModSyms.push_back(make_pair(nodep, symp));
+        m_ifaceModSyms.push_back(std::make_pair(nodep, symp));
     }
     void computeIfaceModSyms();
 
@@ -501,7 +499,7 @@ public:
         UASSERT_OBJ(
             !(VN_IS(rhsp->nodep(), Cell) && !VN_IS(VN_CAST(rhsp->nodep(), Cell)->modp(), Iface)),
             rhsp->nodep(), "Got a non-IFACE alias RHS");
-        m_scopeAliasMap[samn].insert(make_pair(lhsp, rhsp));
+        m_scopeAliasMap[samn].emplace(lhsp, rhsp);
     }
     void computeScopeAliases() {
         UINFO(9, "computeIfaceAliases\n");
@@ -1285,9 +1283,9 @@ class LinkDotFindVisitor final : public AstNVisitor {
             VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        const auto indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
-        const auto valueArgRefp = new AstLambdaArgRef(argFl, name, false);
         if (nodep->exprp()) {  // Else empty expression and pretend no "with"
+            const auto indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
+            const auto valueArgRefp = new AstLambdaArgRef(argFl, name, false);
             const auto newp = new AstWith(nodep->fileline(), indexArgRefp, valueArgRefp,
                                           nodep->exprp()->unlinkFrBackWithNext());
             funcrefp->addPinsp(newp);
@@ -1394,7 +1392,9 @@ private:
     }
     virtual void visit(AstDefParam* nodep) override {
         iterateChildren(nodep);
-        nodep->v3warn(DEFPARAM, "Suggest replace defparam assignment with Verilog 2001 #(."
+        nodep->v3warn(DEFPARAM, "defparam is deprecated (IEEE 1800-2017 C.4.1)\n"
+                                    << nodep->warnMore()
+                                    << "... Suggest use instantiation with #(."
                                     << nodep->prettyName() << "(...etc...))");
         VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
         AstCell* cellp = foundp ? VN_CAST(foundp->nodep(), Cell) : nullptr;
@@ -2023,9 +2023,10 @@ private:
                                                                  LinkNodeMatcherVarParam())
                                       : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                  LinkNodeMatcherVarIO()));
-                nodep->v3error(ucfirst(whatp)
-                               << " not found: " << nodep->prettyNameQ() << '\n'
-                               << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                nodep->v3warn(PINNOTFOUND,
+                              ucfirst(whatp)
+                                  << " not found: " << nodep->prettyNameQ() << '\n'
+                                  << (suggest.empty() ? "" : nodep->warnMore() + suggest));
             } else if (AstVar* refp = VN_CAST(foundp->nodep(), Var)) {
                 if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
                     nodep->v3error(ucfirst(whatp) << " is not an in/out/inout/param/interface: "
@@ -2089,9 +2090,9 @@ private:
                     } else {
                         auto cextp = VN_CAST(classp->extendsp(), ClassExtends);
                         UASSERT_OBJ(cextp, nodep, "Bad super extends link");
-                        auto classp = cextp->classp();
-                        UASSERT_OBJ(classp, nodep, "Bad superclass");
-                        m_ds.m_dotSymp = m_statep->getNodeSym(classp);
+                        auto sclassp = cextp->classp();
+                        UASSERT_OBJ(sclassp, nodep, "Bad superclass");
+                        m_ds.m_dotSymp = m_statep->getNodeSym(sclassp);
                         UINFO(8, "     super. " << m_ds.ascii() << endl);
                     }
                 }
@@ -2109,7 +2110,7 @@ private:
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
                 m_ds.m_unlinkedScopep = nodep->lhsp();
             }
-            if (VN_IS(nodep->lhsp(), LambdaArgRef)) { m_ds.m_unlinkedScopep = nodep->lhsp(); }
+            if (VN_IS(nodep->lhsp(), LambdaArgRef)) m_ds.m_unlinkedScopep = nodep->lhsp();
             if (!m_ds.m_dotErr) {  // Once something wrong, give up
                 // Top 'final' dot RHS is final RHS, else it's a
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
@@ -2154,7 +2155,7 @@ private:
         // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
-        if (nodep->name() == "super") { nodep->v3warn(E_UNSUPPORTED, "Unsupported: super"); }
+        if (nodep->name() == "super") nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
         DotStates lastStates = m_ds;
         bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
@@ -2454,8 +2455,9 @@ private:
                 // Generally set by parse, but might be an import
                 nodep->classOrPackagep(foundp->classOrPackagep());
             }
-            if (!nodep->varp()) {
-                nodep->v3error("Can't find definition of signal, again: " << nodep->prettyNameQ());
+            if (VL_UNCOVERABLE(!nodep->varp())) {
+                nodep->v3error("Can't find definition of signal, again: "  // LCOV_EXCL_LINE
+                               << nodep->prettyNameQ());
             }
         }
     }

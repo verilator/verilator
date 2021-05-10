@@ -1,6 +1,7 @@
 %Warning-CASEX: t/t_case_x_bad.v:14:7: Suggest casez (with ?'s) in place of casex (with X's)
    14 |       casex (value)
       |       ^~~~~
+                ... For warning description see https://verilator.org/warn/CASEX?v=latest
                 ... Use "/* verilator lint_off CASEX */" and lint_on around source to disable this message.
 %Warning-CASEWITHX: t/t_case_x_bad.v:19:9: Use of x/? constant in case statement, (perhaps intended casex/casez)
    19 |         4'b1xxx: $stop;

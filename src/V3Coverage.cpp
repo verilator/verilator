@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -40,9 +40,7 @@
 class CoverageVisitor final : public AstNVisitor {
 private:
     // TYPES
-    typedef std::unordered_map<string, int> VarNameMap;
-    typedef std::set<int> LinenoSet;
-    typedef std::unordered_map<int, LinenoSet> HandleLines;
+    using LinenoSet = std::set<int>;
 
     struct ToggleEnt {
         string m_comment;  // Comment for coverage dump
@@ -81,9 +79,10 @@ private:
     CheckState m_state;  // State save-restored on each new coverage scope/block
     AstNodeModule* m_modp = nullptr;  // Current module to add statement to
     bool m_inToggleOff = false;  // In function/task etc
-    VarNameMap m_varnames;  // Uniquification of inserted variable names
+    std::unordered_map<std::string, int> m_varnames;  // Uniquification of inserted variable names
     string m_beginHier;  // AstBegin hier name for user coverage points
-    HandleLines m_handleLines;  // All line numbers for a given m_stateHandle
+    std::unordered_map<int, LinenoSet>
+        m_handleLines;  // All line numbers for a given m_stateHandle
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -97,8 +96,9 @@ private:
             if (prettyName[0] == '_') return "Leading underscore";
             if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
         }
-        if ((nodep->width() * nodep->dtypep()->arrayUnpackedElements()) > 256) {
-            return "Wide bus/array > 256 bits";
+        if ((nodep->width() * nodep->dtypep()->arrayUnpackedElements())
+            > static_cast<uint32_t>(v3Global.opt.coverageMaxWidth())) {
+            return "Wide bus/array > --coverage-max-width setting's bits";
         }
         // We allow this, though tracing doesn't
         // if (nodep->arrayp(1)) return "Unsupported: Multi-dimensional array";
@@ -142,7 +142,7 @@ private:
                       + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
         const auto it = m_varnames.find(name);
         if (it == m_varnames.end()) {
-            m_varnames.insert(make_pair(name, 1));
+            m_varnames.emplace(name, 1);
         } else {
             int suffix = (it->second)++;
             name += "_" + cvtToStr(suffix);

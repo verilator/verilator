@@ -175,7 +175,7 @@ void set_3d(svBitVecVal* v, int bitwidth) {
 
 template <typename T> bool compare(const T& act, const T& exp) {
     if (exp == act) {
-        if (VERBOSE_MESSAGE) { std::cout << "OK Exp:" << exp << " actual:" << act << std::endl; }
+        if (VERBOSE_MESSAGE) std::cout << "OK Exp:" << exp << " actual:" << act << std::endl;
         return true;
     } else {
         std::cout << "NG Exp:" << exp << " actual:" << act << std::endl;

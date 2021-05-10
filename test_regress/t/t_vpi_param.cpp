@@ -112,7 +112,7 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     }
 
     // values
-    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
+    if (verbose) vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str());
     value.value.integer = exp_value;
     vpi_put_value(param_h, &value, NULL, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
@@ -120,7 +120,7 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
         vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
     }
 
-    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
+    if (verbose) vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str());
     vpi_get_value(param_h, &value);
     CHECK_RESULT_NZ(!vpi_chk_error(&e));
     if (verbose && vpi_chk_error(&e)) {
@@ -166,7 +166,7 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     }
 
     // values
-    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
+    if (verbose) vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str());
     value.value.str = (PLI_BYTE8*)exp_value.c_str();
     vpi_put_value(param_h, &value, NULL, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
@@ -174,7 +174,7 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
         vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
     }
 
-    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
+    if (verbose) vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str());
     vpi_get_value(param_h, &value);
     CHECK_RESULT_NZ(!vpi_chk_error(&e));
     if (verbose && vpi_chk_error(&e)) {
@@ -242,7 +242,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
     // we're going to be checking for these errors do don't crash out
@@ -268,7 +268,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 10;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();
@@ -288,7 +288,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -81,7 +81,7 @@ public:
         m_tlFuncp->isStatic(false);
         m_tlFuncp->slow(!VN_IS(m_modp, Class));  // Only classes construct on fast path
         m_tlFuncp->argTypes(m_argsp);
-        if (stmt != "") { m_tlFuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt)); }
+        if (stmt != "") m_tlFuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
         m_funcp = m_tlFuncp;
         m_modp->addStmtp(m_tlFuncp);
     }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -248,12 +248,9 @@ private:
     AstUser4InUse m_inuser4;
 
 protected:
-    // TYPES
-    typedef std::vector<SplitLogicVertex*> VStack;
-
     // STATE
     string m_noReorderWhy;  // Reason we can't reorder
-    VStack m_stmtStackps;  // Current statements being tracked
+    std::vector<SplitLogicVertex*> m_stmtStackps;  // Current statements being tracked
     SplitPliVertex* m_pliVertexp;  // Element specifying PLI ordering
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
     bool m_inDly;  // Inside ASSIGNDLY
@@ -523,19 +520,18 @@ protected:
         // Reorder statements in the completed graph
 
         // Map the rank numbers into nodes they associate with
-        typedef std::multimap<uint32_t, AstNode*> RankNodeMap;
-        RankNodeMap rankMap;
+        std::multimap<uint32_t, AstNode*> rankMap;
         int currOrder = 0;  // Existing sequence number of assignment
         for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
             SplitLogicVertex* vvertexp = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
-            rankMap.insert(make_pair(vvertexp->rank(), nextp));
+            rankMap.emplace(vvertexp->rank(), nextp);
             nextp->user4(++currOrder);  // Record current ordering
         }
 
         // Is the current ordering OK?
         bool leaveAlone = true;
         int newOrder = 0;  // New sequence number of assignment
-        for (RankNodeMap::const_iterator it = rankMap.begin(); it != rankMap.end(); ++it) {
+        for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
             AstNode* nextp = it->second;
             if (++newOrder != nextp->user4()) leaveAlone = false;
         }
@@ -544,7 +540,7 @@ protected:
         } else {
             AstNRelinker replaceHandle;  // Where to add the list
             AstNode* newListp = nullptr;
-            for (RankNodeMap::const_iterator it = rankMap.begin(); it != rankMap.end(); ++it) {
+            for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
                 AstNode* nextp = it->second;
                 UINFO(6, "   New order: " << nextp << endl);
                 if (nextp == nodep) {
@@ -619,18 +615,17 @@ private:
     VL_UNCOPYABLE(ReorderVisitor);
 };
 
-typedef std::unordered_set<uint32_t> ColorSet;
-typedef std::vector<AstAlways*> AlwaysVec;
+using ColorSet = std::unordered_set<uint32_t>;
+using AlwaysVec = std::vector<AstAlways*>;
 
 class IfColorVisitor final : public AstNVisitor {
     // MEMBERS
     ColorSet m_colors;  // All colors in the original always block
 
-    typedef std::vector<AstNodeIf*> IfStack;
-    IfStack m_ifStack;  // Stack of nested if-statements we're currently processing
+    std::vector<AstNodeIf*> m_ifStack;  // Stack of nested if-statements we're currently processing
 
-    typedef std::unordered_map<AstNodeIf*, ColorSet> IfColorMap;
-    IfColorMap m_ifColors;  // Map each if-statement to the set of colors (split blocks)
+    std::unordered_map<AstNodeIf*, ColorSet>
+        m_ifColors;  // Map each if-statement to the set of colors (split blocks)
     // that will get a copy of that if-statement
 
     // CONSTRUCTORS
@@ -657,7 +652,7 @@ private:
             UINFO(8, "  SVL " << vertexp << " has color " << color << "\n");
 
             // Record that all containing ifs have this color.
-            for (IfStack::const_iterator it = m_ifStack.begin(); it != m_ifStack.end(); ++it) {
+            for (auto it = m_ifStack.cbegin(); it != m_ifStack.cend(); ++it) {
                 m_ifColors[*it].insert(color);
             }
         }
@@ -686,8 +681,7 @@ class EmitSplitVisitor final : public AstNVisitor {
     const IfColorVisitor* m_ifColorp;  // Digest of results of prior coloring
 
     // Map each color to our current place within the color's new always
-    typedef std::unordered_map<uint32_t, AstNode*> LocMap;
-    LocMap m_addAfter;
+    std::unordered_map<uint32_t, AstNode*> m_addAfter;
 
     AlwaysVec* m_newBlocksp;  // Split always blocks we have generated
 
@@ -758,7 +752,7 @@ protected:
 
     virtual void visit(AstNodeIf* nodep) override {
         const ColorSet& colors = m_ifColorp->colors(nodep);
-        typedef std::unordered_map<uint32_t, AstNodeIf*> CloneMap;
+        using CloneMap = std::unordered_map<uint32_t, AstNodeIf*>;
         CloneMap clones;
 
         for (unsigned int color : colors) {
@@ -794,8 +788,7 @@ private:
 };
 
 class RemovePlaceholdersVisitor final : public AstNVisitor {
-    typedef std::unordered_set<AstNode*> NodeSet;
-    NodeSet m_removeSet;  // placeholders to be removed
+    std::unordered_set<AstNode*> m_removeSet;  // placeholders to be removed
 public:
     explicit RemovePlaceholdersVisitor(AstNode* nodep) {
         iterate(nodep);
@@ -817,8 +810,7 @@ private:
     // Keys are original always blocks pending delete,
     // values are newly split always blocks pending insertion
     // at the same position as the originals:
-    typedef std::unordered_map<AstAlways*, AlwaysVec> ReplaceMap;
-    ReplaceMap m_replaceBlocks;
+    std::unordered_map<AstAlways*, AlwaysVec> m_replaceBlocks;
 
     // AstNodeIf* whose condition we're currently visiting
     AstNode* m_curIfConditional = nullptr;
@@ -831,8 +823,7 @@ public:
         // Splice newly-split blocks into the tree. Remove placeholders
         // from newly-split blocks. Delete the original always blocks
         // that we're replacing.
-        for (ReplaceMap::iterator it = m_replaceBlocks.begin(); it != m_replaceBlocks.end();
-             ++it) {
+        for (auto it = m_replaceBlocks.begin(); it != m_replaceBlocks.end(); ++it) {
             AstAlways* origp = it->first;
             for (AlwaysVec::iterator addme = it->second.begin(); addme != it->second.end();
                  ++addme) {
@@ -851,7 +842,7 @@ protected:
     virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
         // Each 'if' depends on rvalues in its own conditional ONLY,
         // not rvalues in the if/else bodies.
-        for (VStack::const_iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end(); ++it) {
+        for (auto it = m_stmtStackps.cbegin(); it != m_stmtStackps.cend(); ++it) {
             AstNodeIf* ifNodep = VN_CAST((*it)->nodep(), NodeIf);
             if (ifNodep && (m_curIfConditional != ifNodep)) continue;
             new SplitRVEdge(&m_graph, *it, vstdp);

@@ -1,6 +1,7 @@
 %Warning-PINMISSING: t/t_lint_pindup_bad.v:19:4: Cell has missing pin: 'exists'
    19 |    sub (.o(o),
       |    ^~~
+                     ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
                      ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
 %Error: t/t_lint_pindup_bad.v:21:10: Duplicate pin connection: 'i'
    21 |         .i(i2),   
@@ -8,12 +9,12 @@
         t/t_lint_pindup_bad.v:20:10: ... Location of original pin connection
    20 |         .i(i),
       |          ^
-%Error: t/t_lint_pindup_bad.v:22:10: Pin not found: 'nexist'
-                                   : ... Suggested alternative: 'exists'
+%Error-PINNOTFOUND: t/t_lint_pindup_bad.v:22:10: Pin not found: 'nexist'
+                                               : ... Suggested alternative: 'exists'
    22 |         .nexist(i2)   
       |          ^~~~~~
-%Error: t/t_lint_pindup_bad.v:16:9: Parameter pin not found: 'NEXIST'
-                                  : ... Suggested alternative: 'EXIST'
+%Error-PINNOTFOUND: t/t_lint_pindup_bad.v:16:9: Parameter pin not found: 'NEXIST'
+                                              : ... Suggested alternative: 'EXIST'
    16 |        .NEXIST(1),   
       |         ^~~~~~
 %Error: t/t_lint_pindup_bad.v:17:9: Duplicate parameter pin connection: 'P'

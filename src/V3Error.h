@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3ERROR_H_
-#define _V3ERROR_H_ 1
+#ifndef VERILATOR_V3ERROR_H_
+#define VERILATOR_V3ERROR_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -44,6 +44,7 @@ public:
         EC_FATALEXIT,   // Kill the program, suppress with --quiet-exit
         EC_FATALSRC,    // Kill the program, for internal source errors
         EC_ERROR,       // General error out, can't suppress
+        EC_FIRST_NAMED,  // Just a code so the program knows where to start info/errors
         // Boolean information we track per-line, but aren't errors
         I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
@@ -63,6 +64,7 @@ public:
         ALWCOMBORDER,   // Always_comb with unordered statements
         ASSIGNDLY,      // Assignment delays
         ASSIGNIN,       // Assigning to input
+        BADSTDPRAGMA,   // Any error related to pragmas
         BLKANDNBLK,     // Blocked and non-blocking assignments to same variable
         BLKLOOPINIT,    // Delayed assignment to array inside for loops
         BLKSEQ,         // Blocking assignments in sequential block
@@ -82,6 +84,7 @@ public:
         DECLFILENAME,   // Declaration doesn't match filename
         DEPRECATED,     // Feature will be deprecated
         ENDLABEL,       // End lable name mismatch
+        EOFNEWLINE,     // End-of-file missing newline
         GENCLK,         // Generated Clock
         HIERBLOCK,      // Ignored hierarchical block setting
         IFDEPTH,        // If statements too deep
@@ -100,11 +103,14 @@ public:
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
         NOLATCH,        // No latch detected in always_latch block
+        NULLPORT,       // Null port detected in module definition
+        PINCONNECTEMPTY,// Cell pin connected by name with empty reference
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
-        PINCONNECTEMPTY,// Cell pin connected by name with empty reference
+        PINNOTFOUND,    // instance port name not found in it's module
         PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
+        PROTECTED,      // detected `pragma protected
         RANDC,          // Unsupported: 'randc' converted to 'rand'
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
@@ -148,26 +154,26 @@ public:
         // clang-format off
         static const char* const names[] = {
             // Leading spaces indicate it can't be disabled.
-            " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR",
+            " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
             "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
+            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
             "DEFPARAM", "DECLFILENAME", "DEPRECATED",
-            "ENDLABEL", "GENCLK", "HIERBLOCK",
+            "ENDLABEL", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MODDUP",
-            "MULTIDRIVEN", "MULTITOP","NOLATCH",
-            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
-            "RANDC", "REALCVT", "REDEFMACRO",
+            "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
+            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
+            "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
@@ -188,9 +194,9 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const {
-        return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PKGNODECL || m_e == PROCASSWIRE  //
-                || m_e == TIMESCALEMOD);  // Says IEEE
+        return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK || m_e == BLKLOOPINIT
+                || m_e == CONTASSREG || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
+                || m_e == PROCASSWIRE);  // Says IEEE
     }
     // Warnings to mention manual
     bool mentionManual() const {
@@ -207,9 +213,10 @@ public:
     // Warnings that are style only
     bool styleError() const {
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
-                || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == IMPORTSTAR
-                || m_e == INCABSPATH || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT
-                || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSED || m_e == VARHIDDEN);
+                || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
+                || m_e == IMPORTSTAR || m_e == INCABSPATH || m_e == PINCONNECTEMPTY
+                || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSED
+                || m_e == VARHIDDEN);
     }
 };
 inline bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
@@ -226,11 +233,12 @@ inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
 class V3Error final {
     // Base class for any object that wants debugging and error reporting
 
-    typedef std::set<string> MessagesSet;
-    typedef void (*ErrorExitCb)(void);
+    using MessagesSet = std::set<std::string>;
+    using ErrorExitCb = void (*)(void);
 
 private:
     static bool s_describedWarnings;  // Told user how to disable warns
+    static bool s_describedWeb;  // Told user to see web
     static std::array<bool, V3ErrorCode::_ENUM_MAX>
         s_describedEachWarn;  // Told user specifics about this warning
     static std::array<bool, V3ErrorCode::_ENUM_MAX>
@@ -364,12 +372,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 // Assertion without object, generally UOBJASSERT preferred
 #define UASSERT(condition, stmsg) \
     do { \
-        if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); } \
+        if (VL_UNCOVERABLE(!(condition))) v3fatalSrc(stmsg); \
     } while (false)
 // Assertion with object
 #define UASSERT_OBJ(condition, obj, stmsg) \
     do { \
-        if (VL_UNCOVERABLE(!(condition))) { (obj)->v3fatalSrc(stmsg); } \
+        if (VL_UNCOVERABLE(!(condition))) (obj)->v3fatalSrc(stmsg); \
     } while (false)
 // For use in V3Ast static functions only
 #define UASSERT_STATIC(condition, stmsg) \

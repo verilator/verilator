@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -134,7 +134,7 @@ private:
             iterateChildren(nodep);
         }
         m_ftaskp = nullptr;
-        if (nodep->dpiExport()) { nodep->scopeNamep(new AstScopeName(nodep->fileline())); }
+        if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName(nodep->fileline()));
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
@@ -218,7 +218,7 @@ private:
             // variable we're extracting from (to determine MSB/LSB/endianness/etc.)
             // So we replicate it in another node
             // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
-            AstNode* basefromp = AstArraySel::baseFromp(nodep);
+            AstNode* basefromp = AstArraySel::baseFromp(nodep, false);
             if (AstNodeVarRef* varrefp
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
@@ -227,6 +227,9 @@ private:
                        = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            uvxrp->cloneTree(false)));
+            } else if (auto* fromp = VN_CAST(basefromp, LambdaArgRef)) {
+                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+                                           fromp->cloneTree(false)));
             } else if (AstMemberSel* fromp = VN_CAST(basefromp, MemberSel)) {
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
                                            fromp->cloneTree(false)));
@@ -235,11 +238,9 @@ private:
                                            fromp->cloneTree(false)));
             } else if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
-                if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Select of concatenation");
-                nodep = nullptr;
+                if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
             } else {
-                if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
+                if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
                 nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
             }
         }

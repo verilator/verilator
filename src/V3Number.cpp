@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -401,7 +401,7 @@ V3Number& V3Number::setLongS(vlsint32_t value) {
     return *this;
 }
 V3Number& V3Number::setDouble(double value) {
-    if (VL_UNCOVERABLE(width() != 64)) { v3fatalSrc("Real operation on wrong sized number"); }
+    if (VL_UNCOVERABLE(width() != 64)) v3fatalSrc("Real operation on wrong sized number");
     m_double = true;
     union {
         double d;
@@ -516,7 +516,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 
     bool binary = (isFourState()
 #ifdef V3NUMBER_ASCII_BINARY
-                   || 1
+                   // cppcheck-suppress konwnConditionTrueFalse
+                   || true
 #endif
     );
     // out<<"-"<<hex<<m_value[0]<<"-";
@@ -695,7 +696,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     case 'g':
     case '^': {  // Realtime
         char tmp[MAX_SPRINTF_DOUBLE_SIZE];
-        sprintf(tmp, vformat.c_str(), toDouble());
+        VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, vformat.c_str(), toDouble());
         return tmp;
     }
     // 'l'   // Library - converted to text by V3LinkResolve
@@ -950,10 +951,10 @@ bool V3Number::isAnyZ() const {
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
     for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs1(bit) && rhs.bitIs0(bit)) { return true; }
-        if (rhs.bitIs1(bit) && this->bitIs0(bit)) { return false; }
-        if (this->bitIsXZ(bit)) { return true; }
-        if (rhs.bitIsXZ(bit)) { return false; }
+        if (this->bitIs1(bit) && rhs.bitIs0(bit)) return true;
+        if (rhs.bitIs1(bit) && this->bitIs0(bit)) return false;
+        if (this->bitIsXZ(bit)) return true;
+        if (rhs.bitIsXZ(bit)) return false;
     }
     return false;
 }
@@ -1346,14 +1347,14 @@ V3Number& V3Number::opLogAnd(const V3Number& lhs, const V3Number& rhs) {
             loutc = 1;
             break;
         }
-        if (lhs.bitIsXZ(bit) && loutc == 0) { loutc = 'x'; }
+        if (lhs.bitIsXZ(bit) && loutc == 0) loutc = 'x';
     }
     for (int bit = 0; bit < rhs.width(); bit++) {
         if (rhs.bitIs1(bit)) {
             routc = 1;
             break;
         }
-        if (rhs.bitIsXZ(bit) && routc == 0) { routc = 'x'; }
+        if (rhs.bitIsXZ(bit) && routc == 0) routc = 'x';
     }
     char outc = 'x';
     if (routc == 1 && loutc == 1) outc = 1;
@@ -1525,11 +1526,8 @@ bool V3Number::isCaseEq(const V3Number& rhs) const {
     if (isString()) return toString() == rhs.toString();
     if (isDouble()) return toDouble() == rhs.toDouble();
     if (this->width() != rhs.width()) return false;
-
-    for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs(bit) != rhs.bitIs(bit)) { return false; }
-    }
-    return true;
+    if (m_value != rhs.m_value) return false;
+    return m_valueX == rhs.m_valueX;
 }
 
 V3Number& V3Number::opCaseEq(const V3Number& lhs, const V3Number& rhs) {
@@ -1758,13 +1756,17 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
         opCleanThis();  // Mult produces extra bits in result
     } else {
         for (int lword = 0; lword < lhs.words(); lword++) {
+            const vluint64_t lwordval = static_cast<vluint64_t>(lhs.m_value[lword]);
+            if (lwordval == 0) continue;
             for (int rword = 0; rword < rhs.words(); rword++) {
-                vluint64_t mul = static_cast<vluint64_t>(lhs.m_value[lword])
-                                 * static_cast<vluint64_t>(rhs.m_value[rword]);
+                const vluint64_t rwordval = static_cast<vluint64_t>(rhs.m_value[rword]);
+                if (rwordval == 0) continue;
+                vluint64_t mul = lwordval * rwordval;
                 for (int qword = lword + rword; qword < this->words(); qword++) {
                     mul += static_cast<vluint64_t>(m_value[qword]);
                     m_value[qword] = (mul & 0xffffffffULL);
                     mul = (mul >> 32ULL) & 0xffffffffULL;
+                    if (mul == 0) break;
                 }
             }
         }

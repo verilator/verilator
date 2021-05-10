@@ -10,72 +10,72 @@ $timescale   1ps $end
    $var wire 32 # cyc [31:0] $end
    $scope module a $end
     $scope module ac1 $end
-     $scope module intf_for_check $end
+     $scope interface intf_for_check $end
       $var wire  1 0 clk $end
       $var wire 32 # cyc [31:0] $end
       $var wire 32 $ value [31:0] $end
-      $scope module the_struct $end
+      $scope struct the_struct $end
        $var wire 32 % val100 [31:0] $end
        $var wire 32 & val200 [31:0] $end
       $upscope $end
      $upscope $end
     $upscope $end
     $scope module ac2 $end
-     $scope module intf_for_check $end
+     $scope interface intf_for_check $end
       $var wire  1 0 clk $end
       $var wire 32 # cyc [31:0] $end
       $var wire 32 ' value [31:0] $end
-      $scope module the_struct $end
+      $scope struct the_struct $end
        $var wire 32 ( val100 [31:0] $end
        $var wire 32 ) val200 [31:0] $end
       $upscope $end
      $upscope $end
     $upscope $end
     $scope module ac3 $end
-     $scope module intf_for_check $end
+     $scope interface intf_for_check $end
       $var wire  1 0 clk $end
       $var wire 32 # cyc [31:0] $end
       $var wire 32 * value [31:0] $end
-      $scope module the_struct $end
+      $scope struct the_struct $end
        $var wire 32 + val100 [31:0] $end
        $var wire 32 , val200 [31:0] $end
       $upscope $end
      $upscope $end
     $upscope $end
     $scope module as3 $end
-     $scope module intf_for_struct $end
+     $scope interface intf_for_struct $end
       $var wire  1 0 clk $end
       $var wire 32 # cyc [31:0] $end
       $var wire 32 * value [31:0] $end
-      $scope module the_struct $end
+      $scope struct the_struct $end
        $var wire 32 + val100 [31:0] $end
        $var wire 32 , val200 [31:0] $end
       $upscope $end
      $upscope $end
     $upscope $end
-    $scope module intf_in_sub_all $end
+    $scope interface intf_in_sub_all $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 * value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 + val100 [31:0] $end
       $var wire 32 , val200 [31:0] $end
      $upscope $end
     $upscope $end
-    $scope module intf_one $end
+    $scope interface intf_one $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 $ value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 % val100 [31:0] $end
       $var wire 32 & val200 [31:0] $end
      $upscope $end
     $upscope $end
-    $scope module intf_two $end
+    $scope interface intf_two $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 ' value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 ( val100 [31:0] $end
       $var wire 32 ) val200 [31:0] $end
      $upscope $end
@@ -83,134 +83,134 @@ $timescale   1ps $end
    $upscope $end
    $scope module abcdefghijklmnopqrstuvwxyz $end
     $scope module ac1 $end
-     $scope module intf_for_check $end
+     $scope interface intf_for_check $end
       $var wire  1 0 clk $end
       $var wire 32 # cyc [31:0] $end
       $var wire 32 ' value [31:0] $end
-      $scope module the_struct $end
+      $scope struct the_struct $end
        $var wire 32 ( val100 [31:0] $end
        $var wire 32 ) val200 [31:0] $end
       $upscope $end
      $upscope $end
     $upscope $end
     $scope module ac2 $end
-     $scope module intf_for_check $end
+     $scope interface intf_for_check $end
       $var wire  1 0 clk $end
       $var wire 32 # cyc [31:0] $end
       $var wire 32 $ value [31:0] $end
-      $scope module the_struct $end
+      $scope struct the_struct $end
        $var wire 32 % val100 [31:0] $end
        $var wire 32 & val200 [31:0] $end
       $upscope $end
      $upscope $end
     $upscope $end
     $scope module ac3 $end
-     $scope module intf_for_check $end
+     $scope interface intf_for_check $end
       $var wire  1 0 clk $end
       $var wire 32 # cyc [31:0] $end
       $var wire 32 - value [31:0] $end
-      $scope module the_struct $end
+      $scope struct the_struct $end
        $var wire 32 . val100 [31:0] $end
        $var wire 32 / val200 [31:0] $end
       $upscope $end
      $upscope $end
     $upscope $end
     $scope module as3 $end
-     $scope module intf_for_struct $end
+     $scope interface intf_for_struct $end
       $var wire  1 0 clk $end
       $var wire 32 # cyc [31:0] $end
       $var wire 32 - value [31:0] $end
-      $scope module the_struct $end
+      $scope struct the_struct $end
        $var wire 32 . val100 [31:0] $end
        $var wire 32 / val200 [31:0] $end
       $upscope $end
      $upscope $end
     $upscope $end
-    $scope module intf_in_sub_all $end
+    $scope interface intf_in_sub_all $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 - value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 . val100 [31:0] $end
       $var wire 32 / val200 [31:0] $end
      $upscope $end
     $upscope $end
-    $scope module intf_one $end
+    $scope interface intf_one $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 ' value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 ( val100 [31:0] $end
       $var wire 32 ) val200 [31:0] $end
      $upscope $end
     $upscope $end
-    $scope module intf_two $end
+    $scope interface intf_two $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 $ value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 % val100 [31:0] $end
       $var wire 32 & val200 [31:0] $end
      $upscope $end
     $upscope $end
    $upscope $end
    $scope module c1 $end
-    $scope module intf_for_check $end
+    $scope interface intf_for_check $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 $ value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 % val100 [31:0] $end
       $var wire 32 & val200 [31:0] $end
      $upscope $end
     $upscope $end
    $upscope $end
    $scope module c2 $end
-    $scope module intf_for_check $end
+    $scope interface intf_for_check $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 ' value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 ( val100 [31:0] $end
       $var wire 32 ) val200 [31:0] $end
      $upscope $end
     $upscope $end
    $upscope $end
-   $scope module intf_1 $end
+   $scope interface intf_1 $end
     $var wire  1 0 clk $end
     $var wire 32 # cyc [31:0] $end
     $var wire 32 $ value [31:0] $end
-    $scope module the_struct $end
+    $scope struct the_struct $end
      $var wire 32 % val100 [31:0] $end
      $var wire 32 & val200 [31:0] $end
     $upscope $end
    $upscope $end
-   $scope module intf_2 $end
+   $scope interface intf_2 $end
     $var wire  1 0 clk $end
     $var wire 32 # cyc [31:0] $end
     $var wire 32 ' value [31:0] $end
-    $scope module the_struct $end
+    $scope struct the_struct $end
      $var wire 32 ( val100 [31:0] $end
      $var wire 32 ) val200 [31:0] $end
     $upscope $end
    $upscope $end
    $scope module s1 $end
-    $scope module intf_for_struct $end
+    $scope interface intf_for_struct $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 $ value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 % val100 [31:0] $end
       $var wire 32 & val200 [31:0] $end
      $upscope $end
     $upscope $end
    $upscope $end
    $scope module s2 $end
-    $scope module intf_for_struct $end
+    $scope interface intf_for_struct $end
      $var wire  1 0 clk $end
      $var wire 32 # cyc [31:0] $end
      $var wire 32 ' value [31:0] $end
-     $scope module the_struct $end
+     $scope struct the_struct $end
       $var wire 32 ( val100 [31:0] $end
       $var wire 32 ) val200 [31:0] $end
      $upscope $end

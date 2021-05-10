@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -67,6 +67,8 @@ class SliceVisitor final : public AstNVisitor {
                 nodep->v3error(
                     nodep->prettyTypeName()
                     << " is not an unpacked array, but is in an unpacked array context");
+            } else {
+                V3Error::incErrors();  // Otherwise might infinite loop
             }
             m_assignError = true;
             return nodep->cloneTree(false);  // Likely will cause downstream errors
@@ -107,7 +109,7 @@ class SliceVisitor final : public AstNVisitor {
                                    : offset));
             newp = new AstArraySel(nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset);
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
-                   || VN_IS(nodep, CMethodHard)) {
+                   || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
             int leOffset = !arrayp->rangep()->littleEndian()
                                ? arrayp->rangep()->elementsConst() - 1 - offset
@@ -141,7 +143,7 @@ class SliceVisitor final : public AstNVisitor {
                     AstNode* newp = nodep->cloneType  // AstNodeAssign
                                     (cloneAndSel(nodep->lhsp(), elements, offset),
                                      cloneAndSel(nodep->rhsp(), elements, offset));
-                    if (debug() >= 9) { newp->dumpTree(cout, "-new "); }
+                    if (debug() >= 9) newp->dumpTree(cout, "-new ");
                     newlistp = AstNode::addNextNull(newlistp, newp);
                 }
                 if (debug() >= 9) nodep->dumpTree(cout, " Deslice-Dn: ");
