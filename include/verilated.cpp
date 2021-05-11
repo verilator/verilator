@@ -639,9 +639,10 @@ std::string VL_DECIMAL_NW(int width, WDataInP lwp) VL_MT_SAFE {
 
 template <typename T>
 std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t width) {
-    const std::string suffix = Verilated::threadContextp()->impp()->timeFormatSuffix();
-    const int userUnits = Verilated::threadContextp()->impp()->timeFormatUnits();  // 0..-15
-    const int fracDigits = Verilated::threadContextp()->impp()->timeFormatPrecision();  // 0..N
+    const VerilatedContextImp* const ctxImpp = Verilated::threadContextp()->impp();
+    const std::string suffix = ctxImpp->timeFormatSuffix();
+    const int userUnits = ctxImpp->timeFormatUnits();  // 0..-15
+    const int fracDigits = ctxImpp->timeFormatPrecision();  // 0..N
     const int shift = -userUnits + fracDigits + timeunit;  // 0..-15
     int digits = 0;
     if (std::numeric_limits<T>::is_integer) {
