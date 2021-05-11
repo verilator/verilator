@@ -255,7 +255,7 @@ public:  // But only for verilated*.cpp
     void timeFormatPrecision(int value) VL_MT_SAFE { m_s.m_timeFormatPrecision = value; }
     int timeFormatWidth() const VL_MT_SAFE { return m_s.m_timeFormatWidth; }
     void timeFormatWidth(int value) VL_MT_SAFE { m_s.m_timeFormatWidth = value; }
-    std::string timeFormatSuffix() VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
+    std::string timeFormatSuffix() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
         const VerilatedLockGuard lock(m_timeDumpMutex);
         return m_timeFormatSuffix;
     }
