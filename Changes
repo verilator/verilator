@@ -37,6 +37,7 @@ Verilator 4.202 2021-04-24
 * Support overlaps in priority case statements (#2864). [Rupert Swarbrick]
 * Support for null ports (#2875). [Udi Finkelstein]
 * Optimize large lookup tables to static data (#2925). [Geza Lore]
+* Split always blocks to better respect --output-split-cfuncs. [Geza Lore]
 * Fix class unpacked-array compile error (#2774). [Iru Cai]
 * Fix scope types in FST and VCD traces (#2805). [Alex Torregrosa]
 * Fix exceeding command-line ar limit (#2834). [Yinan Xu]
