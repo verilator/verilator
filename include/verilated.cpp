@@ -646,36 +646,16 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
     const int shift = -userUnits + fracDigits + timeunit;  // 0..-15
     int digits = 0;
     if (std::numeric_limits<T>::is_integer) {
-        static const vluint64_t pow10[20] = {
-            1ULL,
-            10ULL,
-            100ULL,
-            1000ULL,
-            10000ULL,
-            100000ULL,
-            1000000ULL,
-            10000000ULL,
-            100000000ULL,
-            1000000000ULL,
-            10000000000ULL,
-            100000000000ULL,
-            1000000000000ULL,
-            10000000000000ULL,
-            100000000000000ULL,
-            1000000000000000ULL,
-            10000000000000000ULL,
-            100000000000000000ULL,
-            1000000000000000000ULL,
-        };
         // static_cast suppresses warning when T=double
         unsigned __int128 shifted = static_cast<vluint64_t>(ld);
         if (shift < 0) {
-            shifted /= pow10[-shift];
+            shifted /= vl_time_pow10(-shift);
         } else {
-            shifted *= pow10[shift];
+            shifted *= vl_time_pow10(shift);
         }
-        const unsigned __int128 integer = shifted / pow10[fracDigits];
-        const vluint64_t frac = shifted % pow10[fracDigits];
+        const vluint64_t fracDigitsPow10 = vl_time_pow10(fracDigits);
+        const unsigned __int128 integer = shifted / fracDigitsPow10;
+        const vluint64_t frac = shifted % fracDigitsPow10;
         if (integer > static_cast<unsigned __int128>(std::numeric_limits<vluint64_t>::max())) {
             unsigned __int128 v = integer;
             char buf[128];  // 128B is obviously long enough to represent 128bit integer in decimal
@@ -2214,6 +2194,30 @@ double vl_time_multiplier(int scale) VL_PURE {
                                        1000000000000000000.0};
         return pow10[scale];
     }
+}
+vluint64_t vl_time_pow10(int n) {
+    static const vluint64_t pow10[20] = {
+        1ULL,
+        10ULL,
+        100ULL,
+        1000ULL,
+        10000ULL,
+        100000ULL,
+        1000000ULL,
+        10000000ULL,
+        100000000ULL,
+        1000000000ULL,
+        10000000000ULL,
+        100000000000ULL,
+        1000000000000ULL,
+        10000000000000ULL,
+        100000000000000ULL,
+        1000000000000000ULL,
+        10000000000000000ULL,
+        100000000000000000ULL,
+        1000000000000000000ULL,
+    };
+    return pow10[n];
 }
 
 void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,

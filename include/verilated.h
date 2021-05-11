@@ -1187,6 +1187,8 @@ inline vluint64_t VerilatedContext::time() const VL_MT_SAFE {
 
 // Return time precision as multiplier of time units
 double vl_time_multiplier(int scale) VL_PURE;
+// Return power of 10. e.g. returns 100 if n==2
+vluint64_t vl_time_pow10(int n) VL_PURE;
 
 #ifdef VL_DEBUG
 /// Evaluate statement if Verilated::debug() enabled
