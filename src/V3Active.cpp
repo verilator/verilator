@@ -317,8 +317,6 @@ private:
         iterateAndNextNull(nodep->elsesp());
         m_graph.currentp(parentp);
     }
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep) {}
     //--------------------
     virtual void visit(AstNode* nodep) { iterateChildren(nodep); }
 
