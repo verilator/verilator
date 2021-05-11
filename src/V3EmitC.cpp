@@ -812,11 +812,19 @@ public:
         if (!nodep->branchPred().unknown()) puts(")");
         puts(") {\n");
         iterateAndNextNull(nodep->ifsp());
-        if (nodep->elsesp()) {
-            puts("} else {\n");
-            iterateAndNextNull(nodep->elsesp());
+        puts("}");
+        if (!nodep->elsesp()) {
+            puts("\n");
+        } else {
+            if (VN_IS(nodep->elsesp(), NodeIf) && !nodep->elsesp()->nextp()) {
+                puts(" else ");
+                iterateAndNextNull(nodep->elsesp());
+            } else {
+                puts(" else {\n");
+                iterateAndNextNull(nodep->elsesp());
+                puts("}\n");
+            }
         }
-        puts("}\n");
     }
     virtual void visit(AstExprStmt* nodep) override {
         // GCC allows compound statements in expressions, but this is not standard.
