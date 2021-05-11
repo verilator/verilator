@@ -2284,7 +2284,8 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
                 fmtp = nodep->fmtp();
             else
                 fmtp = VN_CAST(dispp, SFormatF);
-            UASSERT_OBJ(fmtp, dispp, "Use of %t must be under AstDisplay, AstSFormat, or AstSFormatF");
+            UASSERT_OBJ(fmtp, dispp,
+                        "Use of %t must be under AstDisplay, AstSFormat, or AstSFormatF");
             UASSERT_OBJ(!fmtp->timeunit().isNone(), fmtp, "timenunit must be set");
             emitDispState.pushArg(' ', nullptr, cvtToStr((int)fmtp->timeunit().powerOfTen()));
         }
