@@ -245,7 +245,7 @@ public:  // But only for verilated*.cpp
     static vluint32_t randSeedEpoch() VL_MT_SAFE { return s().s_randSeedEpoch; }
 
     // METHODS - timeformat
-    int timeFormatUnits() VL_MT_SAFE {
+    int timeFormatUnits() const VL_MT_SAFE {
         if (m_s.m_timeFormatUnits == VerilatedContext::Serialized::UNITS_NONE)
             return timeprecision();
         return m_s.m_timeFormatUnits;
