@@ -118,9 +118,9 @@ A. Pass the :vlopt:`--trace` option to Verilator, and in your top level C
 
 B. Or, for finer-grained control, or C++ files with multiple Verilated
    modules you may also create the trace purely from C++.  Create a
-   VerilatedVcdC object, and in your main loop call
-   ``trace_object->dump(time)`` every time step, and finally call
-   ``trace_object->close()``.
+   VerilatedVcdC object, and in your main loop right after ``eval()`` call
+   ``trace_object->dump(contextp->time())`` every time step, and finally
+   call ``trace_object->close()``.
 
    .. code-block:: C++
       :emphasize-lines: 1,5-8,12
@@ -128,15 +128,17 @@ B. Or, for finer-grained control, or C++ files with multiple Verilated
       #include "verilated_vcd_c.h"
       ...
       int main(int argc, char** argv, char** env) {
+          const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
           ...
           Verilated::traceEverOn(true);
           VerilatedVcdC* tfp = new VerilatedVcdC;
           topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
           tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
           ...
-          while (Verilated::time() < sim_time && !Verilated::gotFinish()) {
-              Verilated::timeInc(1);
-              tfp->dump(main_time);
+          while (contextp->time() < sim_time && !contextp->gotFinish()) {
+              contextp->timeInc(1);
+              topp->eval();
+              tfp->dump(contextp->time());
           }
           tfp->close();
       }
