@@ -273,7 +273,7 @@ AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
 # Currently enabled gnu++14/c++14 due to packaged SystemC dependency
-# gnu++17 is the newest that Verilator supports enable flags according to one's environment.
+# gnu++17 is the newest that Verilator supports
 # std++03 is the oldest that Verilator supports
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
