@@ -646,41 +646,56 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
     const int shift = -userUnits + fracDigits + timeunit;  // 0..-15
     int digits = 0;
     if (std::numeric_limits<T>::is_integer) {
-        // static_cast suppresses warning when T=double
-        unsigned __int128 shifted = static_cast<vluint64_t>(ld);
+        constexpr int b = 128;
+        constexpr int w = VL_WORDS_I(b);
+        using uint128 = WData[w];
+        uint128 tmp0, tmp1, tmp2, tmp3;
+
+        WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, ld);
         if (shift < 0) {
-            shifted /= vl_time_pow10(-shift);
+            WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(-shift));
+            shifted = VL_DIV_WWW(b, tmp2, shifted, pow10);
         } else {
-            shifted *= vl_time_pow10(shift);
+            WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(shift));
+            shifted = VL_MUL_W(w, tmp2, shifted, pow10);
         }
-        const vluint64_t fracDigitsPow10 = vl_time_pow10(fracDigits);
-        const unsigned __int128 integer = shifted / fracDigitsPow10;
-        const vluint64_t frac = shifted % fracDigitsPow10;
-        if (integer > static_cast<unsigned __int128>(std::numeric_limits<vluint64_t>::max())) {
-            unsigned __int128 v = integer;
+
+        WDataInP fracDigitsPow10 = VL_EXTEND_WQ(b, 0, tmp3, vl_time_pow10(fracDigits));
+        WDataInP integer = VL_DIV_WWW(b, tmp0, shifted, fracDigitsPow10);
+        WDataInP frac = VL_MODDIV_WWW(b, tmp1, shifted, fracDigitsPow10);
+        WDataInP max64Bit
+            = VL_EXTEND_WQ(b, 0, tmp2, std::numeric_limits<vluint64_t>::max());  // breaks shifted
+        if (VL_GT_W(w, integer, max64Bit)) {
+            WDataOutP v = VL_ASSIGN_W(b, tmp3, integer);  // breaks fracDigitsPow10
+            uint128 zero, ten;
+            VL_ZERO_W(b, zero);
+            VL_EXTEND_WI(b, 0, ten, 10);
             char buf[128];  // 128B is obviously long enough to represent 128bit integer in decimal
             char* ptr = buf + sizeof(buf) - 1;
             *ptr = '\0';
-            while (v > 0) {
+            while (VL_GT_W(w, v, zero)) {
                 --ptr;
-                *ptr = "0123456789"[v % 10];
-                v /= 10;
+                WDataInP mod = VL_MODDIV_WWW(b, tmp2, v, ten);  // breaks max64Bit
+                *ptr = "0123456789"[VL_SET_QW(mod)];
+                uint128 divided;
+                VL_DIV_WWW(b, divided, v, ten);
+                VL_ASSIGN_W(b, v, divided);
             }
             if (!fracDigits) {
                 digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s%s", ptr, suffix.c_str());
             } else {
                 digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s.%0*" VL_PRI64 "u%s", ptr,
-                                     fracDigits, frac, suffix.c_str());
+                                     fracDigits, VL_SET_QW(frac), suffix.c_str());
             }
         } else {
-            const vluint64_t integer64 = integer;
+            const vluint64_t integer64 = VL_SET_QW(integer);
             if (!fracDigits) {
                 digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u%s", integer64,
                                      suffix.c_str());
             } else {
                 digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH,
                                      "%" VL_PRI64 "u.%0*" VL_PRI64 "u%s", integer64, fracDigits,
-                                     frac, suffix.c_str());
+                                     VL_SET_QW(frac), suffix.c_str());
             }
         }
     } else {
