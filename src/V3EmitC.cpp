@@ -1343,6 +1343,7 @@ unsigned EmitVarTspSorter::s_serialNext = 0;
 class EmitCImp final : EmitCStmts {
     // MEMBERS
     AstNodeModule* m_modp = nullptr;
+    AstNodeModule* m_fileModp = nullptr;  // Files (names, headers) constructed using this module
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
     bool m_slow = false;  // Creating __Slow file
     bool m_fast = false;  // Creating non __Slow file (or both)
@@ -1391,8 +1392,8 @@ class EmitCImp final : EmitCStmts {
         }
     }
 
-    V3OutCFile* newOutCFile(AstNodeModule* modp, bool slow, bool source, int filenum = 0) {
-        string filenameNoExt = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp);
+    V3OutCFile* newOutCFile(bool slow, bool source, int filenum = 0) {
+        string filenameNoExt = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
         if (filenum) filenameNoExt += "__" + cvtToStr(filenum);
         filenameNoExt += (slow ? "__Slow" : "");
         V3OutCFile* ofp = nullptr;
@@ -1413,7 +1414,7 @@ class EmitCImp final : EmitCStmts {
         }
 
         ofp->putsHeader();
-        if (modp->isTop() && !source) {
+        if (m_fileModp->isTop() && !source) {
             ofp->puts("// DESCR"
                       "IPTION: Verilator output: Primary design header\n");
             ofp->puts("//\n");
@@ -1501,7 +1502,10 @@ class EmitCImp final : EmitCStmts {
     }
 
     virtual void visit(AstMTaskBody* nodep) override {
-        ExecMTask* mtp = nodep->execMTaskp();
+        maybeSplit();
+        splitSizeInc(10);
+
+        const ExecMTask* const mtp = nodep->execMTaskp();
         puts("\n");
         puts("void ");
         puts(prefixNameProtect(m_modp) + "::" + protect(mtp->cFuncName()));
@@ -1524,6 +1528,8 @@ class EmitCImp final : EmitCStmts {
         if (nodep->funcType().isTrace()) return;
         if (nodep->dpiImport()) return;
         if (!(nodep->slow() ? m_slow : m_fast)) return;
+
+        maybeSplit();
 
         m_blkChangeDetVec.clear();
 
@@ -1868,8 +1874,8 @@ class EmitCImp final : EmitCStmts {
     void emitSavableImp(AstNodeModule* modp);
     void emitTextSection(AstType type);
     // High level
-    void emitImpTop(AstNodeModule* modp);
-    void emitImp(AstNodeModule* fileModp, AstNodeModule* modp);
+    void emitImpTop();
+    void emitImp(AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
     void emitWrapFast(AstNodeModule* modp);
@@ -1877,7 +1883,7 @@ class EmitCImp final : EmitCStmts {
     void emitMTaskVertexCtors(bool* firstp);
     void emitIntTop(AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
-    void maybeSplit(AstNodeModule* modp);
+    void maybeSplit();
 
 public:
     EmitCImp() = default;
@@ -3351,9 +3357,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
 //----------------------------------------------------------------------
 
-void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
+void EmitCImp::emitImpTop() {
     puts("\n");
-    puts("#include \"" + prefixNameProtect(fileModp) + ".h\"\n");
+    puts("#include \"" + prefixNameProtect(m_fileModp) + ".h\"\n");
     puts("#include \"" + symClassName() + ".h\"\n");
 
     if (v3Global.dpi()) {
@@ -3361,13 +3367,13 @@ void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
         puts("#include \"verilated_dpi.h\"\n");
     }
 
-    emitModCUse(fileModp, VUseType::IMP_INCLUDE);
-    emitModCUse(fileModp, VUseType::IMP_FWD_CLASS);
+    emitModCUse(m_fileModp, VUseType::IMP_INCLUDE);
+    emitModCUse(m_fileModp, VUseType::IMP_FWD_CLASS);
 
     emitTextSection(AstType::atScImpHdr);
 }
 
-void EmitCImp::emitImp(AstNodeModule* fileModp, AstNodeModule* modp) {
+void EmitCImp::emitImp(AstNodeModule* modp) {
     puts("\n//==========\n");
     if (m_slow) {
         string section;
@@ -3389,37 +3395,33 @@ void EmitCImp::emitImp(AstNodeModule* fileModp, AstNodeModule* modp) {
 
     // Blocks
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-            maybeSplit(fileModp);
-            mainDoFunc(funcp);
-        }
+        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) { mainDoFunc(funcp); }
     }
 }
 
 //######################################################################
 
-void EmitCImp::maybeSplit(AstNodeModule* fileModp) {
-    if (splitNeeded()) {
-        // Splitting file, so using parallel build.
-        v3Global.useParallelBuild(true);
-        // Close old file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
-        // Open a new file
-        m_ofp = newOutCFile(fileModp, !m_fast, true /*source*/, splitFilenumInc());
-        emitImpTop(fileModp);
-    }
-    splitSizeInc(10);  // Even blank functions get a file with a low csplit
+void EmitCImp::maybeSplit() {
+    if (!splitNeeded()) return;
+
+    // Splitting file, so using parallel build.
+    v3Global.useParallelBuild(true);
+    // Close old file
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    // Open a new file
+    m_ofp = newOutCFile(!m_fast, true /*source*/, splitFilenumInc());
+    emitImpTop();
 }
 
 void EmitCImp::mainInt(AstNodeModule* modp) {
-    AstNodeModule* fileModp = modp;  // Filename constructed using this module
     m_modp = modp;
+    m_fileModp = modp;
     m_slow = true;
     m_fast = true;
 
     UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
 
-    m_ofp = newOutCFile(fileModp, false /*slow*/, false /*source*/);
+    m_ofp = newOutCFile(false /*slow*/, false /*source*/);
     emitIntTop(modp);
     emitInt(modp);
     if (AstClassPackage* packagep = VN_CAST(modp, ClassPackage)) {
@@ -3434,23 +3436,23 @@ void EmitCImp::mainInt(AstNodeModule* modp) {
 
 void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
     // Output a module
-    AstNodeModule* fileModp = modp;  // Filename constructed using this module
     m_modp = modp;
+    m_fileModp = modp;
     m_slow = slow;
     m_fast = !slow;
 
     UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
 
-    m_ofp = newOutCFile(fileModp, !m_fast, true /*source*/);
-    emitImpTop(fileModp);
-    emitImp(fileModp, modp);
+    m_ofp = newOutCFile(!m_fast, true /*source*/);
+    emitImpTop();
+    emitImp(modp);
 
     if (AstClassPackage* packagep = VN_CAST(modp, ClassPackage)) {
         // Put the non-static class implementation in same C++ files as
         // often optimizations are possible when both are seen by the
         // compiler together
         m_modp = packagep->classp();
-        emitImp(fileModp, packagep->classp());
+        emitImp(packagep->classp());
         m_modp = modp;
     }
 
@@ -3463,7 +3465,6 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
              vxp = vxp->verticesNextp()) {
             const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp);
             if (mtaskp->threadRoot()) {
-                maybeSplit(fileModp);
                 // Only define one function for all the mtasks packed on
                 // a given thread. We'll name this function after the
                 // root mtask though it contains multiple mtasks' worth
@@ -3938,21 +3939,29 @@ void V3EmitC::emitc() {
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
-        // clang-format off
-        EmitCImp cint; cint.mainInt(nodep);
-        cint.mainImp(nodep, true);
-        { EmitCImp fast; fast.mainImp(nodep, false); }
-        // clang-format on
+        {
+            EmitCImp cint;
+            cint.mainInt(nodep);
+            cint.mainImp(nodep, true);
+        }
+        {
+            EmitCImp fast;
+            fast.mainImp(nodep, false);
+        }
     }
 }
 
 void V3EmitC::emitcTrace() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (v3Global.opt.trace()) {
-        // clang-format off
-        { EmitCTrace slow(true); slow.main(); }
-        { EmitCTrace fast(false); fast.main(); }
-        // clang-format on
+        {
+            EmitCTrace slow(true);
+            slow.main();
+        }
+        {
+            EmitCTrace fast(false);
+            fast.main();
+        }
     }
 }
 
