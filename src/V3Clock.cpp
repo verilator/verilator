@@ -301,20 +301,6 @@ private:
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep) override {
-        if (AstNode* stmtsp = nodep->bodysp()) {
-            stmtsp->unlinkFrBackWithNext();
-            nodep->addNextHere(stmtsp);
-        }
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-    virtual void visit(AstAlwaysPostponed* nodep) override {
-        if (AstNode* stmtsp = nodep->bodysp()) {
-            stmtsp->unlinkFrBackWithNext();
-            nodep->addNextHere(stmtsp);
-        }
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
     virtual void visit(AstCoverToggle* nodep) override {
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->

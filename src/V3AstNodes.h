@@ -3349,6 +3349,7 @@ public:
     void sensesp(AstSenTree* nodep) { setOp1p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
 };
+
 class AstAlwaysPostponed final : public AstNodeProcedure {
     // Like always but postponement scheduling region
 
@@ -3356,6 +3357,16 @@ public:
     AstAlwaysPostponed(FileLine* fl, AstNode* bodysp)
         : ASTGEN_SUPER(fl, bodysp) {}
     ASTNODE_NODE_FUNCS(AlwaysPostponed)
+};
+
+class AstAlwaysPost final : public AstNodeProcedure {
+    // Like always but post assignments for memory assignment IFs
+public:
+    AstAlwaysPost(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
+        : ASTGEN_SUPER(fl, bodysp) {
+        addNOp1p(sensesp);
+    }
+    ASTNODE_NODE_FUNCS(AlwaysPost)
 };
 
 class AstAlwaysPublic final : public AstNodeStmt {
@@ -3376,20 +3387,6 @@ public:
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     // Special accessors
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
-};
-
-class AstAlwaysPost final : public AstNode {
-    // Like always but post assignments for memory assignment IFs
-public:
-    AstAlwaysPost(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
-        : ASTGEN_SUPER(fl) {
-        addNOp1p(sensesp);
-        addNOp2p(bodysp);
-    }
-    ASTNODE_NODE_FUNCS(AlwaysPost)
-    //
-    AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
-    void addBodysp(AstNode* newp) { addOp2p(newp); }
 };
 
 class AstAssign final : public AstNodeAssign {
