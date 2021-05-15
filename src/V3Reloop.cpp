@@ -39,8 +39,6 @@
 
 #include <algorithm>
 
-constexpr unsigned RELOOP_MIN_ITERS = 40;  // Need at least this many loops to do this optimization
-
 //######################################################################
 
 class ReloopVisitor final : public AstNVisitor {
@@ -85,7 +83,7 @@ private:
             uint32_t items = m_mgIndexHi - m_mgIndexLo + 1;
             UINFO(9, "End merge iter=" << items << " " << m_mgIndexHi << ":" << m_mgIndexLo << " "
                                        << m_mgOffset << " " << m_mgAssignps[0] << endl);
-            if (items >= RELOOP_MIN_ITERS) {
+            if (items >= static_cast<uint32_t>(v3Global.opt.reloopLimit())) {
                 UINFO(6, "Reloop merging items=" << items << " " << m_mgIndexHi << ":"
                                                  << m_mgIndexLo << " " << m_mgOffset << " "
                                                  << m_mgAssignps[0] << endl);

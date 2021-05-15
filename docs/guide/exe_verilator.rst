@@ -915,6 +915,15 @@ Summary:
    the path of the referencing file, instead of relative to the current
    directory.
 
+.. option:: --reloop-limit
+
+   Rarely needed. Verilator attempts to turn some common sequences of
+   statements into loops in the output. This argument specifies the minimum
+   number of iterations the resulting loop needs to have in order to perform
+   this transformation. Default limit is 40. A smaller number may slightly
+   improve C++ compilation time on designs where these sequences are common,
+   however effect on model performance requires benchmarking.
+
 .. option:: --report-unoptflat
 
    Extra diagnostics for UNOPTFLAT warnings. This includes for each loop,
