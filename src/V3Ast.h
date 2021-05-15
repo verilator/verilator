@@ -1912,9 +1912,11 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 
 class AstNodeMath VL_NOT_FINAL : public AstNode {
     // Math -- anything that's part of an expression tree
-public:
+protected:
     AstNodeMath(AstType t, FileLine* fl)
         : AstNode{t, fl} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
     virtual void dump(std::ostream& str) const override;
@@ -1932,9 +1934,11 @@ public:
 
 class AstNodeTermop VL_NOT_FINAL : public AstNodeMath {
     // Terminal operator -- a operator with no "inputs"
-public:
+protected:
     AstNodeTermop(AstType t, FileLine* fl)
         : AstNodeMath{t, fl} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeTermop)
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
@@ -1945,12 +1949,14 @@ public:
 
 class AstNodeUniop VL_NOT_FINAL : public AstNodeMath {
     // Unary math
-public:
+protected:
     AstNodeUniop(AstType t, FileLine* fl, AstNode* lhsp)
         : AstNodeMath{t, fl} {
         dtypeFrom(lhsp);
         setOp1p(lhsp);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeUniop)
     AstNode* lhsp() const { return op1p(); }
     void lhsp(AstNode* nodep) { return setOp1p(nodep); }
@@ -1971,12 +1977,14 @@ public:
 
 class AstNodeBiop VL_NOT_FINAL : public AstNodeMath {
     // Binary math
-public:
+protected:
     AstNodeBiop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
         : AstNodeMath{t, fl} {
         setOp1p(lhs);
         setOp2p(rhs);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeBiop)
     // Clone single node, just get same type back.
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) = 0;
@@ -2003,13 +2011,15 @@ public:
 
 class AstNodeTriop VL_NOT_FINAL : public AstNodeMath {
     // Trinary math
-public:
+protected:
     AstNodeTriop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
         : AstNodeMath{t, fl} {
         setOp1p(lhs);
         setOp2p(rhs);
         setOp3p(ths);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeTriop)
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
@@ -2036,7 +2046,7 @@ public:
 
 class AstNodeQuadop VL_NOT_FINAL : public AstNodeMath {
     // Quaternary math
-public:
+protected:
     AstNodeQuadop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths, AstNode* fhs)
         : AstNodeMath{t, fl} {
         setOp1p(lhs);
@@ -2044,6 +2054,8 @@ public:
         setOp3p(ths);
         setOp4p(fhs);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeQuadop)
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
@@ -2073,21 +2085,26 @@ public:
 
 class AstNodeBiCom VL_NOT_FINAL : public AstNodeBiop {
     // Binary math with commutative properties
-public:
+protected:
     AstNodeBiCom(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
         : AstNodeBiop{t, fl, lhs, rhs} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeBiCom)
 };
 
 class AstNodeBiComAsv VL_NOT_FINAL : public AstNodeBiCom {
     // Binary math with commutative & associative properties
-public:
+protected:
     AstNodeBiComAsv(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
         : AstNodeBiCom{t, fl, lhs, rhs} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeBiComAsv)
 };
+
 class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
-public:
+protected:
     AstNodeCond(AstType t, FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
         : AstNodeTriop{t, fl, condp, expr1p, expr2p} {
         if (expr1p) {
@@ -2096,6 +2113,8 @@ public:
             dtypeFrom(expr2p);
         }
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeCond)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) override;
@@ -2124,13 +2143,15 @@ class AstNodeBlock VL_NOT_FINAL : public AstNode {
 private:
     string m_name;  // Name of block
     bool m_unnamed;  // Originally unnamed (name change does not affect this)
-public:
+protected:
     AstNodeBlock(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
         : AstNode{t, fl}
         , m_name{name} {
         addNOp1p(stmtsp);
         m_unnamed = (name == "");
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeBlock)
     virtual void dump(std::ostream& str) const override;
     virtual string name() const override { return m_name; }  // * = Block name
@@ -2143,13 +2164,15 @@ public:
 
 class AstNodePreSel VL_NOT_FINAL : public AstNode {
     // Something that becomes an AstSel
-public:
+protected:
     AstNodePreSel(AstType t, FileLine* fl, AstNode* fromp, AstNode* rhs, AstNode* ths)
         : AstNode{t, fl} {
         setOp1p(fromp);
         setOp2p(rhs);
         setNOp3p(ths);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodePreSel)
     AstNode* fromp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
@@ -2166,11 +2189,13 @@ public:
 
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
-public:
+protected:
     AstNodeProcedure(AstType t, FileLine* fl, AstNode* bodysp)
         : AstNode{t, fl} {
         addNOp2p(bodysp);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeProcedure)
     // METHODS
     virtual void dump(std::ostream& str) const override;
@@ -2182,10 +2207,12 @@ public:
 class AstNodeStmt VL_NOT_FINAL : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)
-public:
+protected:
     AstNodeStmt(AstType t, FileLine* fl, bool statement = true)
         : AstNode{t, fl}
         , m_statement{statement} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
     bool isStatement() const { return m_statement; }  // Really a statement
@@ -2198,13 +2225,15 @@ public:
 };
 
 class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
-public:
+protected:
     AstNodeAssign(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : AstNodeStmt{t, fl} {
         setOp1p(rhsp);
         setOp2p(lhsp);
         dtypeFrom(lhsp);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeAssign)
     // Clone single node, just get same type back.
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) = 0;
@@ -2223,7 +2252,7 @@ public:
 };
 
 class AstNodeFor VL_NOT_FINAL : public AstNodeStmt {
-public:
+protected:
     AstNodeFor(AstType t, FileLine* fl, AstNode* initsp, AstNode* condp, AstNode* incsp,
                AstNode* bodysp)
         : AstNodeStmt{t, fl} {
@@ -2232,6 +2261,8 @@ public:
         addNOp3p(incsp);
         addNOp4p(bodysp);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeFor)
     AstNode* initsp() const { return op1p(); }  // op1 = initial statements
     AstNode* condp() const { return op2p(); }  // op2 = condition to continue
@@ -2246,13 +2277,15 @@ public:
 class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
 private:
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
-public:
+protected:
     AstNodeIf(AstType t, FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
         : AstNodeStmt{t, fl} {
         setOp1p(condp);
         addNOp2p(ifsp);
         addNOp3p(elsesp);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeIf)
     AstNode* condp() const { return op1p(); }  // op1 = condition
     AstNode* ifsp() const { return op2p(); }  // op2 = list of true statements
@@ -2270,12 +2303,14 @@ public:
 };
 
 class AstNodeCase VL_NOT_FINAL : public AstNodeStmt {
-public:
+protected:
     AstNodeCase(AstType t, FileLine* fl, AstNode* exprp, AstNode* casesp)
         : AstNodeStmt{t, fl} {
         setOp1p(exprp);
         addNOp2p(casesp);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeCase)
     virtual int instrCount() const override { return instrCountBranch(); }
     AstNode* exprp() const { return op1p(); }  // op1 = case condition <expression>
@@ -2299,7 +2334,7 @@ private:
     string m_hiernameToUnprot;  // Scope converted into name-> for emitting
     bool m_hierThis = false;  // Hiername points to "this" function
 
-public:
+protected:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
         : AstNodeMath{t, fl}
         , m_access{access}
@@ -2313,6 +2348,8 @@ public:
         // May have varp==nullptr
         this->varp(varp);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeVarRef)
     virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
@@ -2346,12 +2383,14 @@ class AstNodeText VL_NOT_FINAL : public AstNode {
 private:
     string m_text;
 
-public:
+protected:
     // Node that simply puts text into the output stream
     AstNodeText(AstType t, FileLine* fl, const string& textp)
         : AstNode{t, fl} {
         m_text = textp;  // Copy it
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeText)
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual V3Hash sameHash() const override { return V3Hash(text()); }
@@ -2375,7 +2414,7 @@ private:
     // Unique number assigned to each dtype during creation for IEEE matching
     static int s_uniqueNum;
 
-public:
+protected:
     // CONSTRUCTORS
     AstNodeDType(AstType t, FileLine* fl)
         : AstNode{t, fl} {
@@ -2383,6 +2422,8 @@ public:
         m_widthMin = 0;
         m_generic = false;
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeDType)
     // ACCESSORS
     virtual void dump(std::ostream& str) const override;
@@ -2474,7 +2515,7 @@ private:
     bool m_isFourstate;
     MemberNameMap m_members;
 
-public:
+protected:
     AstNodeUOrStructDType(AstType t, FileLine* fl, VSigning numericUnpack)
         : AstNodeDType{t, fl} {
         // VSigning::NOSIGN overloaded to indicate not packed
@@ -2482,6 +2523,8 @@ public:
         m_isFourstate = false;  // V3Width computes
         numeric(VSigning::fromBool(numericUnpack.isSigned()));
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeUOrStructDType)
     virtual const char* broken() const override;
     virtual void dump(std::ostream& str) const override;
@@ -2534,9 +2577,11 @@ class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
     AstNode* rangenp() const { return op2p(); }  // op2 = Array(s) of variable
-public:
+protected:
     AstNodeArrayDType(AstType t, FileLine* fl)
         : AstNodeDType{t, fl} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeArrayDType)
     virtual void dump(std::ostream& str) const override;
     virtual void dumpSmall(std::ostream& str) const override;
@@ -2594,9 +2639,11 @@ public:
 
 class AstNodeSel VL_NOT_FINAL : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
-public:
+protected:
     AstNodeSel(AstType t, FileLine* fl, AstNode* fromp, AstNode* bitp)
         : AstNodeBiop{t, fl, fromp, bitp} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeSel)
     AstNode* fromp() const {
         return op1p();
@@ -2610,11 +2657,13 @@ public:
 
 class AstNodeStream VL_NOT_FINAL : public AstNodeBiop {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
-public:
+protected:
     AstNodeStream(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : AstNodeBiop{t, fl, lhsp, rhsp} {
         if (lhsp->dtypep()) dtypeSetLogicSized(lhsp->dtypep()->width(), VSigning::UNSIGNED);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeStream)
 };
 
@@ -2629,7 +2678,7 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     string m_hiernameToUnprot;
     string m_argTypes;
 
-public:
+protected:
     AstNodeCCall(AstType t, FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
         : AstNodeStmt{t, fl, true}
         , m_funcp{funcp} {
@@ -2645,6 +2694,8 @@ public:
         m_argTypes = oldp->argTypes();
         if (oldp->argsp()) addNOp2p(oldp->argsp()->unlinkFrBackWithNext());
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeCCall)
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual void cloneRelink() override;
@@ -2696,7 +2747,7 @@ private:
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
-public:
+protected:
     AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
         : AstNode{t, fl}
         , m_name{name}
@@ -2720,6 +2771,8 @@ public:
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeFTask)
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual string name() const override { return m_name; }  // * = Var name
@@ -2796,7 +2849,7 @@ private:
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
-public:
+protected:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
         : AstNodeStmt{t, fl, statement} {
         setOp1p(namep);
@@ -2807,6 +2860,8 @@ public:
         , m_name{name} {
         addNOp3p(pinsp);
     }
+
+public:
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const override;
     virtual void cloneRelink() override {
@@ -2862,7 +2917,7 @@ private:
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
-public:
+protected:
     AstNodeModule(AstType t, FileLine* fl, const string& name)
         : AstNode{t, fl}
         , m_name{name}
@@ -2875,6 +2930,8 @@ public:
         , m_internal{false}
         , m_recursive{false}
         , m_recursiveClone{false} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeModule)
     virtual void dump(std::ostream& str) const override;
     virtual bool maybePointedTo() const override { return true; }
@@ -2922,9 +2979,11 @@ public:
 
 class AstNodeRange VL_NOT_FINAL : public AstNode {
     // A range, sized or unsized
-public:
+protected:
     AstNodeRange(AstType t, FileLine* fl)
         : AstNode{t, fl} {}
+
+public:
     ASTNODE_BASE_FUNCS(NodeRange)
     virtual void dump(std::ostream& str) const override;
 };
