@@ -8975,10 +8975,6 @@ class AstCCall final : public AstNodeCCall {
 public:
     AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
         : ASTGEN_SUPER(fl, funcp, argsp) {}
-    // Replacement form for V3Combine
-    // Note this removes old attachments from the oldp
-    AstCCall(AstCCall* oldp, AstCFunc* funcp)
-        : ASTGEN_SUPER(oldp, funcp) {}
     ASTNODE_NODE_FUNCS(CCall)
 };
 
@@ -9012,10 +9008,6 @@ public:
         : ASTGEN_SUPER(fl, funcp, argsp) {
         statement(false);
     }
-    // Replacement form for V3Combine
-    // Note this removes old attachments from the oldp
-    AstCNew(AstCCall* oldp, AstCFunc* funcp)
-        : ASTGEN_SUPER(oldp, funcp) {}
     virtual bool hasDType() const override { return true; }
     ASTNODE_NODE_FUNCS(CNew)
 };

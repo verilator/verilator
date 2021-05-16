@@ -2684,16 +2684,6 @@ protected:
         , m_funcp{funcp} {
         addNOp2p(argsp);
     }
-    // Replacement form for V3Combine
-    // Note this removes old attachments from the oldp
-    AstNodeCCall(AstType t, AstNodeCCall* oldp, AstCFunc* funcp)
-        : AstNodeStmt{t, oldp->fileline(), true}
-        , m_funcp{funcp} {
-        m_hiernameToProt = oldp->hiernameToProt();
-        m_hiernameToUnprot = oldp->hiernameToUnprot();
-        m_argTypes = oldp->argTypes();
-        if (oldp->argsp()) addNOp2p(oldp->argsp()->unlinkFrBackWithNext());
-    }
 
 public:
     ASTNODE_BASE_FUNCS(NodeCCall)
