@@ -637,26 +637,80 @@ std::string VL_DECIMAL_NW(int width, WDataInP lwp) VL_MT_SAFE {
     return output;
 }
 
-std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
-    // Double may lose precision, but sc_time_stamp has similar limit
-    std::string suffix = Verilated::threadContextp()->impp()->timeFormatSuffix();
-    int userUnits = Verilated::threadContextp()->impp()->timeFormatUnits();  // 0..-15
-    int fracDigits = Verilated::threadContextp()->impp()->timeFormatPrecision();  // 0..N
-    int prec = Verilated::threadContextp()->timeprecision();  // 0..-15
-    int shift = prec - userUnits + fracDigits;  // 0..-15
-    double shiftd = vl_time_multiplier(shift);
-    double scaled = ld * shiftd;
-    const double fracDiv = vl_time_multiplier(fracDigits);
-    const double whole = scaled / fracDiv;
+template <typename T>
+std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t width) {
+    const VerilatedContextImp* const ctxImpp = Verilated::threadContextp()->impp();
+    const std::string suffix = ctxImpp->timeFormatSuffix();
+    const int userUnits = ctxImpp->timeFormatUnits();  // 0..-15
+    const int fracDigits = ctxImpp->timeFormatPrecision();  // 0..N
+    const int shift = -userUnits + fracDigits + timeunit;  // 0..-15
     int digits = 0;
-    if (!fracDigits) {
-        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.0f%s", whole, suffix.c_str());
+    if (std::numeric_limits<T>::is_integer) {
+        constexpr int b = 128;
+        constexpr int w = VL_WORDS_I(b);
+        WData tmp0[w], tmp1[w], tmp2[w], tmp3[w];
+
+        WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, ld);
+        if (shift < 0) {
+            WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(-shift));
+            shifted = VL_DIV_WWW(b, tmp2, shifted, pow10);
+        } else {
+            WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(shift));
+            shifted = VL_MUL_W(w, tmp2, shifted, pow10);
+        }
+
+        WDataInP fracDigitsPow10 = VL_EXTEND_WQ(b, 0, tmp3, vl_time_pow10(fracDigits));
+        WDataInP integer = VL_DIV_WWW(b, tmp0, shifted, fracDigitsPow10);
+        WDataInP frac = VL_MODDIV_WWW(b, tmp1, shifted, fracDigitsPow10);
+        WDataInP max64Bit
+            = VL_EXTEND_WQ(b, 0, tmp2, std::numeric_limits<vluint64_t>::max());  // breaks shifted
+        if (VL_GT_W(w, integer, max64Bit)) {
+            WDataOutP v = VL_ASSIGN_W(b, tmp3, integer);  // breaks fracDigitsPow10
+            WData zero[w], ten[w];
+            VL_ZERO_W(b, zero);
+            VL_EXTEND_WI(b, 0, ten, 10);
+            char buf[128];  // 128B is obviously long enough to represent 128bit integer in decimal
+            char* ptr = buf + sizeof(buf) - 1;
+            *ptr = '\0';
+            while (VL_GT_W(w, v, zero)) {
+                --ptr;
+                WDataInP mod = VL_MODDIV_WWW(b, tmp2, v, ten);  // breaks max64Bit
+                *ptr = "0123456789"[VL_SET_QW(mod)];
+                WData divided[w];
+                VL_DIV_WWW(b, divided, v, ten);
+                VL_ASSIGN_W(b, v, divided);
+            }
+            if (!fracDigits) {
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s%s", ptr, suffix.c_str());
+            } else {
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s.%0*" VL_PRI64 "u%s", ptr,
+                                     fracDigits, VL_SET_QW(frac), suffix.c_str());
+            }
+        } else {
+            const vluint64_t integer64 = VL_SET_QW(integer);
+            if (!fracDigits) {
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u%s", integer64,
+                                     suffix.c_str());
+            } else {
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH,
+                                     "%" VL_PRI64 "u.%0*" VL_PRI64 "u%s", integer64, fracDigits,
+                                     VL_SET_QW(frac), suffix.c_str());
+            }
+        }
     } else {
-        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.*f%s", fracDigits, whole,
-                             suffix.c_str());
+        double shiftd = vl_time_multiplier(shift);
+        double scaled = ld * shiftd;
+        const double fracDiv = vl_time_multiplier(fracDigits);
+        const double whole = scaled / fracDiv;
+        if (!fracDigits) {
+            digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.0f%s", whole, suffix.c_str());
+        } else {
+            digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%.*f%s", fracDigits, whole,
+                                 suffix.c_str());
+        }
     }
 
-    int needmore = width - digits;
+    const int needmore = width - digits;
     std::string padding;
     if (needmore > 0) padding.append(needmore, ' ');  // Pad with spaces
     return left ? (tmp + padding) : (padding + tmp);
@@ -751,7 +805,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 if (lbits) {}  // UNUSED - always 64
                 if (fmt == '^') {  // Realtime
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
-                    output += _vl_vsformat_time(t_tmp, d, left, width);
+                    const int timeunit = va_arg(ap, int);
+                    output += _vl_vsformat_time(t_tmp, d, timeunit, left, width);
                 } else {
                     std::string fmts(pctp, pos - pctp + 1);
                     VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, fmts.c_str(), d);
@@ -850,7 +905,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 }
                 case 't': {  // Time
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
-                    output += _vl_vsformat_time(t_tmp, static_cast<double>(ld), left, width);
+                    const int timeunit = va_arg(ap, int);
+                    output += _vl_vsformat_time(t_tmp, ld, timeunit, left, width);
                     break;
                 }
                 case 'b':
@@ -2152,6 +2208,30 @@ double vl_time_multiplier(int scale) VL_PURE {
                                        1000000000000000000.0};
         return pow10[scale];
     }
+}
+vluint64_t vl_time_pow10(int n) {
+    static const vluint64_t pow10[20] = {
+        1ULL,
+        10ULL,
+        100ULL,
+        1000ULL,
+        10000ULL,
+        100000ULL,
+        1000000ULL,
+        10000000ULL,
+        100000000ULL,
+        1000000000ULL,
+        10000000000ULL,
+        100000000000ULL,
+        1000000000000ULL,
+        10000000000000ULL,
+        100000000000000ULL,
+        1000000000000000ULL,
+        10000000000000000ULL,
+        100000000000000000ULL,
+        1000000000000000000ULL,
+    };
+    return pow10[n];
 }
 
 void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
