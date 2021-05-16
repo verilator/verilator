@@ -648,8 +648,7 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
     if (std::numeric_limits<T>::is_integer) {
         constexpr int b = 128;
         constexpr int w = VL_WORDS_I(b);
-        using uint128 = WData[w];
-        uint128 tmp0, tmp1, tmp2, tmp3;
+        WData tmp0[w], tmp1[w], tmp2[w], tmp3[w];
 
         WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, ld);
         if (shift < 0) {
@@ -667,7 +666,7 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
             = VL_EXTEND_WQ(b, 0, tmp2, std::numeric_limits<vluint64_t>::max());  // breaks shifted
         if (VL_GT_W(w, integer, max64Bit)) {
             WDataOutP v = VL_ASSIGN_W(b, tmp3, integer);  // breaks fracDigitsPow10
-            uint128 zero, ten;
+            WData zero[w], ten[w];
             VL_ZERO_W(b, zero);
             VL_EXTEND_WI(b, 0, ten, 10);
             char buf[128];  // 128B is obviously long enough to represent 128bit integer in decimal
@@ -677,7 +676,7 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
                 --ptr;
                 WDataInP mod = VL_MODDIV_WWW(b, tmp2, v, ten);  // breaks max64Bit
                 *ptr = "0123456789"[VL_SET_QW(mod)];
-                uint128 divided;
+                WData divided[w];
                 VL_DIV_WWW(b, divided, v, ten);
                 VL_ASSIGN_W(b, v, divided);
             }
