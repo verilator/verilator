@@ -650,7 +650,7 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
         constexpr int w = VL_WORDS_I(b);
         WData tmp0[w], tmp1[w], tmp2[w], tmp3[w];
 
-        WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, ld);
+        WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, static_cast<QData>(ld));
         if (shift < 0) {
             WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(-shift));
             shifted = VL_DIV_WWW(b, tmp2, shifted, pow10);
