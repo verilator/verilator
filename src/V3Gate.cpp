@@ -919,16 +919,8 @@ private:
 
     VL_DEBUG_FUNC;  // Declare debug()
 
-    bool sameHash(AstNode* node1p, AstNode* node2p) {
-        return node1p  //
-               && node2p  //
-               && !node1p->sameHash().isIllegal()  //
-               && !node2p->sameHash().isIllegal()  //
-               && m_dupFinder.sameNodes(node1p, node2p);
-    }
-
     bool same(AstNode* node1p, AstNode* node2p) {
-        return node1p == node2p || sameHash(node1p, node2p);
+        return node1p == node2p || (node1p && node1p->sameTree(node2p));
     }
 
 public:

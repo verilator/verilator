@@ -132,8 +132,7 @@ private:
 
             // Remove calls to empty function
             UASSERT_OBJ(!oldfuncp->user3(), oldfuncp, "Should not be processed yet");
-            UINFO(5, "     Drop empty CFunc " << std::hex << V3Hash(oldfuncp->user4p()) << " "
-                                              << oldfuncp << endl);
+            UINFO(5, "     Drop empty CFunc " << itr.first << " " << oldfuncp << endl);
             oldfuncp->user3SetOnce();  // Mark replaced
             m_call.replaceFunc(oldfuncp, nullptr);
             oldfuncp->unlinkFrBack();
@@ -161,10 +160,8 @@ private:
                     if (!newfuncp->sameTree(oldfuncp)) continue;  // Different functions
 
                     // Replace calls to oldfuncp with calls to newfuncp
-                    UINFO(5, "     Replace CFunc " << std::hex << V3Hash(newfuncp->user4p()) << " "
-                                                   << newfuncp << endl);
-                    UINFO(5, "              with " << std::hex << V3Hash(oldfuncp->user4p()) << " "
-                                                   << oldfuncp << endl);
+                    UINFO(5, "     Replace CFunc " << newIt->first << " " << newfuncp << endl);
+                    UINFO(5, "              with " << oldIt->first << " " << oldfuncp << endl);
                     ++m_cfuncsCombined;
                     oldfuncp->user3SetOnce();  // Mark replaced
                     m_call.replaceFunc(oldfuncp, newfuncp);

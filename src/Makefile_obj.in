@@ -203,6 +203,7 @@ RAW_OBJS = \
 	V3GraphDfa.o \
 	V3GraphPathChecker.o \
 	V3GraphTest.o \
+	V3Hash.o \
 	V3Hasher.o \
 	V3HierBlock.o \
 	V3Inline.o \

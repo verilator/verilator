@@ -1322,56 +1322,6 @@ inline std::ostream& operator<<(std::ostream& os, const AstNRelinker& rhs) {
 }
 
 //######################################################################
-// V3Hash -- Node hashing for V3Combine
-
-class V3Hash final {
-    // A hash of a tree of nodes, consisting of 8 bits with the number of nodes in the hash
-    // and 24 bit value hash of relevant information about the node.
-    // A value of 0 is illegal
-    uint32_t m_both;
-    static const uint32_t M24 = ((1 << 24) - 1);
-    void setBoth(uint32_t depth, uint32_t hshval) {
-        if (depth == 0) depth = 1;
-        if (depth > 255) depth = 255;
-        m_both = (depth << 24) | (hshval & M24);
-    }
-
-public:
-    // METHODS
-    bool isIllegal() const { return m_both == 0; }
-    uint32_t fullValue() const { return m_both; }
-    uint32_t depth() const { return (m_both >> 24) & 255; }
-    uint32_t hshval() const { return m_both & M24; }
-    // OPERATORS
-    bool operator==(const V3Hash& rh) const { return m_both == rh.m_both; }
-    bool operator!=(const V3Hash& rh) const { return m_both != rh.m_both; }
-    bool operator<(const V3Hash& rh) const { return m_both < rh.m_both; }
-    // CONSTRUCTORS
-    class Illegal {};  // for creator type-overload selection
-    class FullValue {};  // for creator type-overload selection
-    explicit V3Hash(Illegal) { m_both = 0; }
-    // Saving and restoring inside a userp
-    explicit V3Hash(const VNUser& u) { m_both = u.toInt(); }
-    V3Hash operator+=(const V3Hash& rh) {
-        setBoth(depth() + rh.depth(), (hshval() * 31 + rh.hshval()));
-        return *this;
-    }
-    // Creating from raw data (sameHash functions)
-    V3Hash() { setBoth(1, 0); }
-    explicit V3Hash(uint32_t val) { setBoth(1, val); }
-    explicit V3Hash(const void* vp) { setBoth(1, cvtToHash(vp)); }
-    explicit V3Hash(const string& name);
-    V3Hash(V3Hash h1, V3Hash h2) { setBoth(1, h1.hshval() * 31 + h2.hshval()); }
-    V3Hash(V3Hash h1, V3Hash h2, V3Hash h3) {
-        setBoth(1, (h1.hshval() * 31 + h2.hshval()) * 31 + h3.hshval());
-    }
-    V3Hash(V3Hash h1, V3Hash h2, V3Hash h3, V3Hash h4) {
-        setBoth(1, ((h1.hshval() * 31 + h2.hshval()) * 31 + h3.hshval()) * 31 + h4.hshval());
-    }
-};
-std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
-
-//######################################################################
 // Callback base class to determine if node matches some formula
 
 class VNodeMatcher VL_NOT_FINAL {
@@ -1832,9 +1782,6 @@ public:
     // statement is unlikely to be taken
     virtual bool isUnlikely() const { return false; }
     virtual int instrCount() const { return 0; }
-    virtual V3Hash sameHash() const {
-        return V3Hash(V3Hash::Illegal());  // Not a node that supports it
-    }
     virtual bool same(const AstNode*) const { return true; }
     // Iff has a data type; dtype() must be non null
     virtual bool hasDType() const { return false; }
@@ -1968,7 +1915,6 @@ public:
     virtual bool signedFlavor() const { return false; }
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
     virtual int instrCount() const override { return widthInstrs(); }
-    virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode*) const override { return true; }
 };
 
@@ -2002,7 +1948,6 @@ public:
     virtual bool signedFlavor() const { return false; }
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
     virtual int instrCount() const override { return widthInstrs(); }
-    virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode*) const override { return true; }
 };
 
@@ -2037,7 +1982,6 @@ public:
     virtual bool sizeMattersRhs() const = 0;  // True if output result depends on rhs size
     virtual bool sizeMattersThs() const = 0;  // True if output result depends on ths size
     virtual int instrCount() const override { return widthInstrs(); }
-    virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode*) const override { return true; }
 };
 
@@ -2076,7 +2020,6 @@ public:
     virtual bool sizeMattersThs() const = 0;  // True if output result depends on ths size
     virtual bool sizeMattersFhs() const = 0;  // True if output result depends on ths size
     virtual int instrCount() const override { return widthInstrs(); }
-    virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode*) const override { return true; }
 };
 
@@ -2180,7 +2123,6 @@ public:
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
     void attrp(AstAttrOf* nodep) { return setOp4p((AstNode*)nodep); }
     // METHODS
-    virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode*) const override { return true; }
 };
 
@@ -2242,7 +2184,6 @@ public:
     virtual bool hasDType() const override { return true; }
     virtual bool cleanRhs() const { return true; }
     virtual int instrCount() const override { return widthInstrs(); }
-    virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode*) const override { return true; }
     virtual string verilogKwd() const override { return "="; }
     virtual bool brokeLhsMustBeLvalue() const = 0;
@@ -2267,7 +2208,6 @@ public:
     AstNode* bodysp() const { return op4p(); }  // op4 = body of loop
     virtual bool isGateOptimizable() const override { return false; }
     virtual int instrCount() const override { return instrCountBranch(); }
-    virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
@@ -2293,7 +2233,6 @@ public:
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isGateDedupable() const override { return true; }
     virtual int instrCount() const override { return instrCountBranch(); }
-    virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
     void branchPred(VBranchPred flag) { m_branchPred = flag; }
     VBranchPred branchPred() const { return m_branchPred; }
@@ -2390,7 +2329,6 @@ protected:
 public:
     ASTNODE_BASE_FUNCS(NodeText)
     virtual void dump(std::ostream& str = std::cout) const override;
-    virtual V3Hash sameHash() const override { return V3Hash(text()); }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeText* asamep = static_cast<const AstNodeText*>(samep);
         return text() == asamep->text();
@@ -2511,10 +2449,12 @@ private:
     bool m_packed;
     bool m_isFourstate;
     MemberNameMap m_members;
+    const int m_uniqueNum;
 
 protected:
     AstNodeUOrStructDType(AstType t, FileLine* fl, VSigning numericUnpack)
-        : AstNodeDType{t, fl} {
+        : AstNodeDType{t, fl}
+        , m_uniqueNum{uniqueNumInc()} {
         // VSigning::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != VSigning::NOSIGN);
         m_isFourstate = false;  // V3Width computes
@@ -2523,6 +2463,7 @@ protected:
 
 public:
     ASTNODE_BASE_FUNCS(NodeUOrStructDType)
+    int uniqueNum() const { return m_uniqueNum; }
     virtual const char* broken() const override;
     virtual void dump(std::ostream& str) const override;
     virtual bool isCompound() const override { return false; }  // Because don't support unpacked
@@ -2600,9 +2541,6 @@ public:
         return (asamep && type() == samep->type() && hi() == asamep->hi()
                 && rangenp()->sameTree(asamep->rangenp())
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
-    }
-    virtual V3Hash sameHash() const override {
-        return V3Hash(V3Hash(m_refDTypep), V3Hash(hi()), V3Hash(lo()));
     }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -2688,7 +2626,6 @@ public:
     virtual void cloneRelink() override;
     virtual const char* broken() const override;
     virtual int instrCount() const override { return instrCountCall(); }
-    virtual V3Hash sameHash() const override { return V3Hash(funcp()); }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeCCall* asamep = static_cast<const AstNodeCCall*>(samep);
         return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());

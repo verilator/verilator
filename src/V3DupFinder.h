@@ -67,10 +67,6 @@ public:
     // Insert node into data structure
     iterator insert(AstNode* nodep) { return emplace(m_hasher(nodep), nodep); }
 
-    // Check if nodes are the same (same as node1p->sameTree(node2p),
-    // but first checks the hashes are equal for speed)
-    bool sameNodes(AstNode* node1p, AstNode* node2p);
-
     // Return duplicate, if one was inserted, with optional user check for sameness
     iterator findDuplicate(AstNode* nodep, V3DupFinderUserSame* checkp = nullptr);
 
