@@ -1719,7 +1719,7 @@ private:
             VL_DO_DANGLING(streamp->deleteTree(), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
-        } else if (replaceAssignMultiSel(nodep)) {
+        } else if (m_doV && replaceAssignMultiSel(nodep)) {
             return true;
         }
         return false;
