@@ -30,11 +30,6 @@
 //######################################################################
 // V3DupFinder class functions
 
-bool V3DupFinder::sameNodes(AstNode* node1p, AstNode* node2p) {
-    return m_hasher(node1p) == m_hasher(node2p)  // Same hash
-           && node1p->sameTree(node2p);  // Same tree
-}
-
 V3DupFinder::iterator V3DupFinder::findDuplicate(AstNode* nodep, V3DupFinderUserSame* checkp) {
     const auto& er = equal_range(m_hasher(nodep));
     for (iterator it = er.first; it != er.second; ++it) {

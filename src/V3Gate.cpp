@@ -919,16 +919,28 @@ private:
 
     VL_DEBUG_FUNC;  // Declare debug()
 
-    bool sameHash(AstNode* node1p, AstNode* node2p) {
-        return node1p  //
-               && node2p  //
-               && !node1p->sameHash().isIllegal()  //
-               && !node2p->sameHash().isIllegal()  //
-               && m_dupFinder.sameNodes(node1p, node2p);
-    }
-
     bool same(AstNode* node1p, AstNode* node2p) {
-        return node1p == node2p || sameHash(node1p, node2p);
+        // Regarding the complexity of this funcition 'same':
+        // Applying this comparison function to a a set of n trees pairwise is O(n^2) in the
+        // number of comparisons (number of pairs). AstNode::sameTree itself, is O(sizeOfTree) in
+        // the worst case, which happens if the operands of sameTree are indeed identical copies,
+        // which means this line is O(n^2*sizeOfTree), iff you are comparing identical copies of
+        // the same tree. In practice the identity comparison over the pointers, and the short
+        // circuiting in sameTree means that for comparing the same tree instance to itself, or
+        // trees of different types/shapes is a lot closer to O(1), so this 'same' function is
+        // Omega(n^2) and O(n^2*sizeOfTree), and in practice as we are mostly comparing the same
+        // instance to itself or different trees, the complexity should be closer to the lower
+        // bound.
+        //
+        // Also if you see where this 'same' function is used within isSame, it's only ever
+        // comparing AstActive nodes, which are very likely not to compare equals (and for the
+        // purposes of V3Gate, we probably only care about them either being identical instances,
+        // or having the same sensitivities anyway, so if this becomes a problem, it can be
+        // improved which should also speed things up), and AstNodeMath for if conditions, which
+        // are hopefully small, and to be safe they should probably be only considered same when
+        // identical instances (otherwise if writing the condition between 2 ifs don't really
+        // merge).
+        return node1p == node2p || (node1p && node1p->sameTree(node2p));
     }
 
 public:

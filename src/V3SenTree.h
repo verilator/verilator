@@ -37,7 +37,7 @@ private:
     // TYPES
     struct HashSenTree {
         size_t operator()(const AstSenTree* kp) const {
-            return V3Hasher::uncachedHash(kp).fullValue();
+            return V3Hasher::uncachedHash(kp).value();
         }
     };
 
