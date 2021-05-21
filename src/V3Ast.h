@@ -1358,12 +1358,9 @@ public:
     }
     // Creating from raw data (sameHash functions)
     V3Hash() { setBoth(1, 0); }
-    // cppcheck-suppress noExplicitConstructor
-    V3Hash(uint32_t val) { setBoth(1, val); }
-    // cppcheck-suppress noExplicitConstructor
-    V3Hash(const void* vp) { setBoth(1, cvtToHash(vp)); }
-    // cppcheck-suppress noExplicitConstructor
-    V3Hash(const string& name);
+    explicit V3Hash(uint32_t val) { setBoth(1, val); }
+    explicit V3Hash(const void* vp) { setBoth(1, cvtToHash(vp)); }
+    explicit V3Hash(const string& name);
     V3Hash(V3Hash h1, V3Hash h2) { setBoth(1, h1.hshval() * 31 + h2.hshval()); }
     V3Hash(V3Hash h1, V3Hash h2, V3Hash h3) {
         setBoth(1, (h1.hshval() * 31 + h2.hshval()) * 31 + h3.hshval());

@@ -342,7 +342,7 @@ private:
 
     AstVarScope* findDuplicateTable(AstVarScope* vsc1p) {
         // See if another table we've created is identical, if so use it for both.
-        // (A more 'modern' way would be to instead use V3Hashed::findDuplicate)
+        // (A more 'modern' way would be to instead use V3DupFinder::findDuplicate)
         AstVar* var1p = vsc1p->varp();
         for (AstVarScope* vsc2p : m_modTableVscs) {
             AstVar* var2p = vsc2p->varp();

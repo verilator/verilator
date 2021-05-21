@@ -23,7 +23,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3Hashed.h"
+#include "V3Hasher.h"
 
 #include <unordered_set>
 
@@ -37,7 +37,7 @@ private:
     // TYPES
     struct HashSenTree {
         size_t operator()(const AstSenTree* kp) const {
-            return V3Hashed::uncachedHash(kp).fullValue();
+            return V3Hasher::uncachedHash(kp).fullValue();
         }
     };
 

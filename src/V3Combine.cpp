@@ -24,7 +24,7 @@
 
 #include "V3Global.h"
 #include "V3Combine.h"
-#include "V3Hashed.h"
+#include "V3DupFinder.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
 
@@ -114,16 +114,16 @@ private:
     // NODE STATE
     // Entire netlist:
     AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
-    //  AstUser4InUse     part of V3Hashed
+    //  AstUser4InUse     part of V3Hasher in V3DupFinder
 
     // STATE
     VDouble0 m_cfuncsCombined;  // Statistic tracking
     CombCallVisitor m_call;  // Tracking of function call users
-    V3Hashed m_hashed;  // Hash for every CFunc in module
+    V3DupFinder m_dupFinder;  // Duplicate finder for CFuncs in module
 
     // METHODS
     void walkEmptyFuncs() {
-        for (const auto& itr : m_hashed) {
+        for (const auto& itr : m_dupFinder) {
             AstCFunc* const oldfuncp = VN_CAST(itr.second, CFunc);
             UASSERT_OBJ(oldfuncp, itr.second, "Not a CFunc in hash");
             if (!oldfuncp->emptyBody()) continue;
@@ -144,14 +144,14 @@ private:
     void walkDupFuncs() {
         // Do non-slow first as then favors naming functions based on fast name
         for (const bool slow : {false, true}) {
-            for (auto newIt = m_hashed.begin(); newIt != m_hashed.end(); ++newIt) {
+            for (auto newIt = m_dupFinder.begin(); newIt != m_dupFinder.end(); ++newIt) {
                 AstCFunc* const newfuncp = VN_CAST(newIt->second, CFunc);
                 UASSERT_OBJ(newfuncp, newIt->second, "Not a CFunc in hash");
                 if (newfuncp->user3()) continue;  // Already replaced
                 if (newfuncp->slow() != slow) continue;
                 auto oldIt = newIt;
                 ++oldIt;  // Skip over current position
-                for (; oldIt != m_hashed.end(); ++oldIt) {
+                for (; oldIt != m_dupFinder.end(); ++oldIt) {
                     AstCFunc* const oldfuncp = VN_CAST(oldIt->second, CFunc);
                     UASSERT_OBJ(oldfuncp, oldIt->second, "Not a CFunc in hash");
                     UASSERT_OBJ(newfuncp != oldfuncp, newfuncp,
@@ -184,10 +184,10 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        m_hashed.clear();
+        m_dupFinder.clear();
         // Compute hash of all CFuncs in the module
         iterateChildren(nodep);
-        if (debug() >= 9) m_hashed.dumpFilePrefixed("combine");
+        if (debug() >= 9) m_dupFinder.dumpFilePrefixed("combine");
         // Walk the hashes removing empty functions
         walkEmptyFuncs();
         // Walk the hashes looking for duplicate functions
@@ -196,7 +196,7 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         if (nodep->dontCombine()) return;
         // Hash the entire function
-        m_hashed.hashAndInsert(nodep);
+        m_dupFinder.insert(nodep);
     }
 
     //--------------------

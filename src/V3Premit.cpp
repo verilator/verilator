@@ -30,7 +30,7 @@
 #include "V3Global.h"
 #include "V3Premit.h"
 #include "V3Ast.h"
-#include "V3Hashed.h"
+#include "V3DupFinder.h"
 #include "V3Stats.h"
 
 #include <algorithm>
@@ -96,7 +96,7 @@ private:
     //  *::user4()              -> See PremitAssignVisitor
     AstUser1InUse m_inuser1;
     AstUser2InUse m_inuser2;
-    // AstUser4InUse     part of V3Hashed
+    // AstUser4InUse     part of V3Hasher via V3DupFinder
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -106,7 +106,7 @@ private:
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
 
-    V3Hashed m_hashed;  // Hash set for static constants that can be reused
+    V3DupFinder m_dupFinder;  // Duplicate finder for static constants that can be reused
 
     VDouble0 m_staticConstantsExtracted;  // Statistic tracking
     VDouble0 m_staticConstantsReused;  // Statistic tracking
@@ -184,9 +184,8 @@ private:
                                && !constp->num().isFourState();
         if (useStatic) {
             // Extract as static constant
-            m_hashed.hash(constp);
-            const auto& it = m_hashed.findDuplicate(constp);
-            if (it == m_hashed.end()) {
+            const auto& it = m_dupFinder.findDuplicate(constp);
+            if (it == m_dupFinder.end()) {
                 const string newvarname = string("__Vconst") + cvtToStr(m_modp->varNumGetInc());
                 varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP, newvarname,
                                   nodep->dtypep());
@@ -194,7 +193,7 @@ private:
                 varp->isStatic(true);
                 varp->valuep(constp);
                 m_modp->addStmtp(varp);
-                m_hashed.hashAndInsert(constp);
+                m_dupFinder.insert(constp);
                 nodep->user2p(varp);
                 ++m_staticConstantsExtracted;
             } else {
@@ -230,12 +229,12 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         UASSERT_OBJ(m_modp == nullptr, nodep, "Nested modules ?");
-        UASSERT_OBJ(m_hashed.mmap().empty(), nodep, "Statements outside module ?");
+        UASSERT_OBJ(m_dupFinder.empty(), nodep, "Statements outside module ?");
         m_modp = nodep;
         m_cfuncp = nullptr;
         iterateChildren(nodep);
         m_modp = nullptr;
-        m_hashed.clear();
+        m_dupFinder.clear();
     }
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
