@@ -875,6 +875,7 @@ void EmitCSyms::emitDpiHdr() {
     puts("// Manually include this file where DPI .c import functions are declared to ensure\n");
     puts("// the C functions match the expectations of the DPI imports.\n");
     puts("\n");
+    puts("#pragma once\n");
     puts("#include \"svdpi.h\"\n");
     puts("\n");
     puts("#ifdef __cplusplus\n");
