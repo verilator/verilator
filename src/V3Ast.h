@@ -1271,6 +1271,8 @@ public:
     virtual ~AstNVisitor() { doDeletes(); }
     /// Call visit()s on nodep
     void iterate(AstNode* nodep);
+    /// Call visit()s on nodep
+    void iterateNull(AstNode* nodep);
     /// Call visit()s on nodep's children
     void iterateChildren(AstNode* nodep);
     /// Call visit()s on nodep's children in backp() order
@@ -2920,6 +2922,9 @@ public:
 // Inline AstNVisitor METHODS
 
 inline void AstNVisitor::iterate(AstNode* nodep) { nodep->accept(*this); }
+inline void AstNVisitor::iterateNull(AstNode* nodep) {
+    if (VL_LIKELY(nodep)) nodep->accept(*this);
+}
 inline void AstNVisitor::iterateChildren(AstNode* nodep) { nodep->iterateChildren(*this); }
 inline void AstNVisitor::iterateChildrenBackwards(AstNode* nodep) {
     nodep->iterateChildrenBackwards(*this);
