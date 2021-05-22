@@ -459,7 +459,7 @@ public:
         iterateChildren(nodep);
     }
     virtual void visit(AstCoverDecl* nodep) override {
-        puts("__vlCoverInsert(");  // As Declared in emitCoverageDecl
+        puts("self->__vlCoverInsert(");  // As Declared in emitCoverageDecl
         puts("&(vlSymsp->__Vcoverage[");
         puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
         puts("])");
@@ -1753,7 +1753,9 @@ class EmitCImp final : EmitCStmts {
     }
 
     void emitVarReset(AstVar* varp) {
-        AstNodeDType* dtypep = varp->dtypep()->skipRefp();
+        AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
+        const string varName
+            = VN_IS(m_modp, Class) ? varp->nameProtect() : "self->" + varp->nameProtect();
         if (varp->isIO() && m_modp->isTop() && optSystemC()) {
             // System C top I/O doesn't need loading, as the lower level subinst code does it.}
         } else if (varp->isParam()) {
@@ -1766,44 +1768,43 @@ class EmitCImp final : EmitCStmts {
                 if (initarp->defaultp()) {
                     puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
                     puts("; ++__Vi) {\n");
-                    emitSetVarConstant(varp->nameProtect() + "[__Vi]",
-                                       VN_CAST(initarp->defaultp(), Const));
+                    emitSetVarConstant(varName + "[__Vi]", VN_CAST(initarp->defaultp(), Const));
                     puts("}\n");
                 }
                 const AstInitArray::KeyItemMap& mapr = initarp->map();
                 for (const auto& itr : mapr) {
                     AstNode* valuep = itr.second->valuep();
-                    emitSetVarConstant(varp->nameProtect() + "[" + cvtToStr(itr.first) + "]",
+                    emitSetVarConstant(varName + "[" + cvtToStr(itr.first) + "]",
                                        VN_CAST(valuep, Const));
                 }
             } else {
                 varp->v3fatalSrc("InitArray under non-arrayed var");
             }
         } else {
-            puts(emitVarResetRecurse(varp, dtypep, 0, ""));
+            puts(emitVarResetRecurse(varp, varName, dtypep, 0, ""));
         }
     }
-    string emitVarResetRecurse(AstVar* varp, AstNodeDType* dtypep, int depth,
-                               const string& suffix) {
+    string emitVarResetRecurse(const AstVar* varp, const string& varName, AstNodeDType* dtypep,
+                               int depth, const string& suffix) {
         dtypep = dtypep->skipRefp();
         AstBasicDType* basicp = dtypep->basicp();
         // Returns string to do resetting, empty to do nothing (which caller should handle)
         if (AstAssocArrayDType* adtypep = VN_CAST(dtypep, AssocArrayDType)) {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
+            return emitVarResetRecurse(varp, varName, adtypep->subDTypep(), depth + 1,
                                        suffix + ".atDefault()" + cvtarray);
         } else if (VN_IS(dtypep, ClassRefDType)) {
             return "";  // Constructor does it
         } else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
+            return emitVarResetRecurse(varp, varName, adtypep->subDTypep(), depth + 1,
                                        suffix + ".atDefault()" + cvtarray);
         } else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
+            return emitVarResetRecurse(varp, varName, adtypep->subDTypep(), depth + 1,
                                        suffix + ".atDefault()" + cvtarray);
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
@@ -1811,7 +1812,7 @@ class EmitCImp final : EmitCStmts {
             string ivar = string("__Vi") + cvtToStr(depth);
             string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
                           + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
-            string below = emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
+            string below = emitVarResetRecurse(varp, varName, adtypep->subDTypep(), depth + 1,
                                                suffix + "[" + ivar + "]");
             string post = "}\n";
             return below.empty() ? "" : pre + below + post;
@@ -1832,17 +1833,17 @@ class EmitCImp final : EmitCStmts {
                     AstConst* const constp = VN_CAST(varp->valuep(), Const);
                     if (!constp) varp->v3fatalSrc("non-const initializer for variable");
                     for (int w = 0; w < varp->widthWords(); ++w) {
-                        out += varp->nameProtect() + suffix + "[" + cvtToStr(w) + "] = ";
+                        out += varName + suffix + "[" + cvtToStr(w) + "] = ";
                         out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                     }
                 } else {
                     out += zeroit ? "VL_ZERO_RESET_W(" : "VL_RAND_RESET_W(";
                     out += cvtToStr(dtypep->widthMin());
-                    out += ", " + varp->nameProtect() + suffix + ");\n";
+                    out += ", " + varName + suffix + ");\n";
                 }
                 return out;
             } else {
-                string out = varp->nameProtect() + suffix;
+                string out = varName + suffix;
                 // If --x-initial-edge is set, we want to force an initial
                 // edge on uninitialized clocks (from 'X' to whatever the
                 // first value is). Since the class is instantiated before
@@ -2481,7 +2482,9 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
         puts("\n");
     }
     putsDecoration("// Reset structure values\n");
-    puts(protect("_ctor_var_reset") + "();\n");
+    for (int n = 0; n < modp->ctorVarResetFuncs(); ++n) {
+        puts(protect("_ctor_var_reset_" + cvtToStr(n)) + "(this);\n");
+    }
     emitTextSection(AstType::atScCtor);
 
     if (modp->isTop() && v3Global.opt.mtasks()) {
@@ -2524,7 +2527,11 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts("if (false && first) {}  // Prevent unused\n");
     puts("this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
     puts("if (false && this->__VlSymsp) {}  // Prevent unused\n");
-    if (v3Global.opt.coverage()) { puts(protect("_configure_coverage") + "(vlSymsp, first);\n"); }
+    if (v3Global.opt.coverage()) {
+        for (int n = 0; n < modp->configureCoverageFuncs(); ++n) {
+            puts(protect("_configure_coverage_" + cvtToStr(n)) + "(this, vlSymsp, first);\n");
+        }
+    }
     if (modp->isTop() && !v3Global.rootp()->timeunit().isNone()) {
         puts("vlSymsp->_vm_contextp__->timeunit("
              + cvtToStr(v3Global.rootp()->timeunit().powerOfTen()) + ");\n");

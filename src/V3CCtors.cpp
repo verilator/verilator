@@ -34,56 +34,77 @@
 #include <algorithm>
 #include <map>
 
+class VCtorType final {
+public:
+    enum en : uint8_t { MODULE, CLASS, COVERAGE };
+
+private:
+    enum en m_e;
+
+public:
+    // cppcheck-suppress noExplicitConstructor
+    inline VCtorType(en _e)
+        : m_e{_e} {}
+    bool isClass() const { return m_e == CLASS; }
+    bool isCoverage() const { return m_e == COVERAGE; }
+};
+
 class V3CCtorsVisitor final {
 private:
-    string m_basename;
-    string m_argsp;
-    string m_callargsp;
-    AstNodeModule* m_modp;  // Current module
-    AstCFunc* m_tlFuncp;  // Top level function being built
-    AstCFunc* m_funcp;  // Current function
+    AstNodeModule* const m_modp;  // Current module/class
+    const string m_basename;
+    const VCtorType m_type;  // What kind of constructor are we creating
+    AstCFunc* m_funcp = nullptr;  // Current function
     int m_numStmts = 0;  // Number of statements output
-    int m_funcNum = 0;  // Function number being built
+
+    void makeNewFunc() {
+        const int funcNum = m_type.isCoverage() ? m_modp->configureCoverageFuncsInc()
+                                                : m_modp->ctorVarResetFuncsInc();
+        const string funcName
+            = m_type.isClass() ? m_basename : m_basename + "_" + cvtToStr(funcNum);
+        m_funcp = new AstCFunc(m_modp->fileline(), funcName, nullptr, "void");
+        m_funcp->isStatic(!m_type.isClass());  // Class constructors are non static
+        m_funcp->declPrivate(true);
+        m_funcp->slow(!m_type.isClass());  // Only classes construct on fast path
+        string preventUnusedStmt;
+        if (m_type.isClass()) {
+            m_funcp->argTypes(EmitCBaseVisitor::symClassVar());
+            preventUnusedStmt = "if (false && vlSymsp) {}";
+        } else if (m_type.isCoverage()) {
+            m_funcp->argTypes(EmitCBaseVisitor::prefixNameProtect(m_modp) + "* self, "
+                              + EmitCBaseVisitor::symClassVar() + ", bool first");
+            preventUnusedStmt = "if (false && self && vlSymsp && first) {}";
+        } else {  // Module
+            m_funcp->argTypes(EmitCBaseVisitor::prefixNameProtect(m_modp) + "* self");
+            preventUnusedStmt = "if (false && self) {}";
+        }
+        preventUnusedStmt += "  // Prevent unused\n";
+        m_funcp->addStmtsp(new AstCStmt(m_modp->fileline(), preventUnusedStmt));
+        m_modp->addStmtp(m_funcp);
+        m_numStmts = 0;
+    }
 
 public:
     void add(AstNode* nodep) {
-        if (v3Global.opt.outputSplitCFuncs() && v3Global.opt.outputSplitCFuncs() < m_numStmts) {
+        // Don't split the function for classes yet, as it is called via a text AstCStmt added in
+        // V3Task, which does not handle split functions. This should not be a problem as we don't
+        // inline classes like we do modules, and hopefully the user didn't write enormous classes.
+        if (!m_type.isClass() &&  // Don't split for classes
+            v3Global.opt.outputSplitCFuncs() && m_numStmts > v3Global.opt.outputSplitCFuncs()) {
             m_funcp = nullptr;
         }
-        if (!m_funcp) {
-            m_funcp = new AstCFunc(m_modp->fileline(), m_basename + "_" + cvtToStr(++m_funcNum),
-                                   nullptr, "void");
-            m_funcp->isStatic(false);
-            m_funcp->declPrivate(true);
-            m_funcp->slow(!VN_IS(m_modp, Class));  // Only classes construct on fast path
-            m_funcp->argTypes(m_argsp);
-            m_modp->addStmtp(m_funcp);
-
-            // Add a top call to it
-            AstCCall* callp = new AstCCall(m_modp->fileline(), m_funcp);
-            callp->argTypes(m_callargsp);
-
-            m_tlFuncp->addStmtsp(callp);
-            m_numStmts = 0;
-        }
+        if (!m_funcp) makeNewFunc();
         m_funcp->addStmtsp(nodep);
         m_numStmts += 1;
     }
 
-    V3CCtorsVisitor(AstNodeModule* nodep, const string& basename, const string& argsp = "",
-                    const string& callargsp = "", const string& stmt = "") {
-        m_basename = basename;
-        m_argsp = argsp;
-        m_callargsp = callargsp;
-        m_modp = nodep;
-        m_tlFuncp = new AstCFunc(nodep->fileline(), basename, nullptr, "void");
-        m_tlFuncp->declPrivate(true);
-        m_tlFuncp->isStatic(false);
-        m_tlFuncp->slow(!VN_IS(m_modp, Class));  // Only classes construct on fast path
-        m_tlFuncp->argTypes(m_argsp);
-        if (stmt != "") m_tlFuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
-        m_funcp = m_tlFuncp;
-        m_modp->addStmtp(m_tlFuncp);
+    V3CCtorsVisitor(AstNodeModule* nodep, const string& basename, VCtorType type)
+        : m_modp(nodep)
+        , m_basename{basename}
+        , m_type(type) {
+        // Note: The constructor for classes is always called, even if empty,
+        // so we must always create at least one.
+        if (m_type.isClass()) makeNewFunc();
     }
     ~V3CCtorsVisitor() = default;
 
@@ -140,32 +161,24 @@ void V3CCtors::cctorsAll() {
          modp = VN_CAST(modp->nextp(), NodeModule)) {
         // Process each module in turn
         {
-            V3CCtorsVisitor var_reset(
-                modp, "_ctor_var_reset",
-                (VN_IS(modp, Class) ? EmitCBaseVisitor::symClassVar() : ""),
-                (VN_IS(modp, Class) ? "vlSymsp" : ""),
-                (VN_IS(modp, Class) ? "if (false && vlSymsp) {}  // Prevent unused\n" : ""));
+            V3CCtorsVisitor var_reset(modp, "_ctor_var_reset",
+                                      VN_IS(modp, Class) ? VCtorType::CLASS : VCtorType::MODULE);
 
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
-                if (AstVar* varp = VN_CAST(np, Var)) {
+                if (AstVar* const varp = VN_CAST(np, Var)) {
                     if (!varp->isIfaceParent() && !varp->isIfaceRef() && !varp->noReset()) {
-                        var_reset.add(
-                            new AstCReset(varp->fileline(),
-                                          new AstVarRef(varp->fileline(), varp, VAccess::WRITE)));
+                        const auto vrefp = new AstVarRef(varp->fileline(), varp, VAccess::WRITE);
+                        var_reset.add(new AstCReset(varp->fileline(), vrefp));
                     }
                 }
             }
         }
         if (v3Global.opt.coverage()) {
-            V3CCtorsVisitor configure_coverage(
-                modp, "_configure_coverage", EmitCBaseVisitor::symClassVar() + ", bool first",
-                "vlSymsp, first", "if (false && vlSymsp && first) {}  // Prevent unused\n");
+            V3CCtorsVisitor configure_coverage(modp, "_configure_coverage", VCtorType::COVERAGE);
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
-                if (AstCoverDecl* coverp = VN_CAST(np, CoverDecl)) {
-                    AstNode* backp = coverp->backp();
-                    coverp->unlinkFrBack();
-                    configure_coverage.add(coverp);
-                    np = backp;
+                if (AstCoverDecl* const coverp = VN_CAST(np, CoverDecl)) {
+                    np = coverp->backp();
+                    configure_coverage.add(coverp->unlinkFrBack());
                 }
             }
         }

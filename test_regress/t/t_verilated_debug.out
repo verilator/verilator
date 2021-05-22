@@ -1,5 +1,5 @@
 -V{t#,#}- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.
--V{t#,#}+    Vt_verilated_debug::_ctor_var_reset
+-V{t#,#}+    Vt_verilated_debug::_ctor_var_reset_0
 internalsDump:
   Version: Verilator ###
   Argv: obj_vlt/t_verilated_debug/Vt_verilated_debug
