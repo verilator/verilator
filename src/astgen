@@ -649,10 +649,13 @@ def write_macros(filename):
                 match = re.search(r"ASTGEN_SUPER_(\w+)", line)
                 if match:
                     if typen != match.group(1):
-                        print(("V3AstNodes.h:{l} ERROR: class Ast{t} calls wrong superclass " +
-                               "constructor macro (should call ASTGEN_SUPER_{t})")
-                              .format(l=lineno, t=typen))
+                        print((
+                            "V3AstNodes.h:{l} ERROR: class Ast{t} calls wrong superclass "
+                            +
+                            "constructor macro (should call ASTGEN_SUPER_{t})"
+                        ).format(l=lineno, t=typen))
                         sys.exit(1)
+
 
 ######################################################################
 # main
