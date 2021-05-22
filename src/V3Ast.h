@@ -2843,8 +2843,6 @@ private:
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
-    int m_ctorVarResetFuncs = 0;  // Number of _ctor_var_reset functions
-    int m_configureCoverageFuncs = 0;  // Number of _configure_coverage functions
 protected:
     AstNodeModule(AstType t, FileLine* fl, const string& name)
         : AstNode{t, fl}
@@ -2903,10 +2901,6 @@ public:
     VTimescale timeunit() const { return m_timeunit; }
     void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
-    int ctorVarResetFuncs() const { return m_ctorVarResetFuncs; }
-    int ctorVarResetFuncsInc() { return m_ctorVarResetFuncs++; }
-    int configureCoverageFuncs() const { return m_configureCoverageFuncs; }
-    int configureCoverageFuncsInc() { return m_configureCoverageFuncs++; }
 };
 
 class AstNodeRange VL_NOT_FINAL : public AstNode {
