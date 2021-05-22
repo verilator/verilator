@@ -809,7 +809,7 @@ List Of Warnings
 
    This is considered bad style, as the consumer of a given signal may be
    unaware of the inconsistent clocking, causing clock domain crossing
-   bugs.
+   or timing bugs.
 
    Faulty example:
 

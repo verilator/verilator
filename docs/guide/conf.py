@@ -1,4 +1,4 @@
-# pylint: disable=E402
+# pylint: disable=C0103,C0114,C0116,E0402,W0622
 #
 # Configuration file for Verilator's Sphinx documentation builder.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -12,11 +12,10 @@
 from datetime import datetime
 import os
 import re
-import shutil
 import sys
 sys.path.insert(0, os.path.abspath('./_ext'))
 
-import sphinx_rtd_theme
+import sphinx_rtd_theme  # pylint: disable=wrong-import-position,
 
 
 def get_vlt_version():
@@ -94,7 +93,7 @@ today_fmt = datetime.now().strftime("%F")
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-# TODO could use this for internals<->guide references
+# Could use this for internals<->guide references
 # intersphinx_mapping = { 'sphinx': ('https://sphinx-doc.org/', None), }
 
 # ----------------------------------------------------------------------
@@ -208,7 +207,7 @@ spelling_ignore_contributor_names = True
 # ----------------------------------------------------------------------
 # -- Options for doxygen
 
-#if shutil.which("doxygen"):
+# if shutil.which("doxygen"):
 #    breathe_projects = {
 #        "verilated": "../_build/doxygen/verilated/xml",
 #    }
