@@ -787,6 +787,10 @@ void V3Options::notify() {
         cmdfl->v3warn(E_UNSUPPORTED,
                       "--main not usable with SystemC. Suggest see examples for sc_main().");
     }
+
+    if (coverage() && savable()) {
+        cmdfl->v3error("--coverage and --savable not supported together");
+    }
 }
 
 //######################################################################
