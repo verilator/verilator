@@ -119,8 +119,15 @@ define_property(TARGET
   FULL_DOCS "Verilator SystemC enabled"
 )
 
+define_property(TARGET
+    PROPERTY VERILATOR_TRACE_STRUCTS
+    BRIEF_DOCS "Verilator trace structs enabled"
+    FULL_DOCS "Verilator trace structs enabled"
+)
+
+
 function(verilate TARGET)
-  cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC"
+  cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC;TRACE_STRUCTS"
                                  "PREFIX;TOP_MODULE;THREADS;TRACE_THREADS;DIRECTORY"
                                  "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST;OPT_GLOBAL"
                                  ${ARGN})
@@ -166,6 +173,10 @@ function(verilate TARGET)
     list(APPEND VERILATOR_ARGS --sc)
   else()
     list(APPEND VERILATOR_ARGS --cc)
+  endif()
+
+  if (VERILATE_TRACE_STRUCTS)
+      list(APPEND VERILATOR_ARGS --trace-structs)
   endif()
 
   foreach(INC ${VERILATE_INCLUDE_DIRS})
@@ -275,6 +286,10 @@ function(verilate TARGET)
   if (${VERILATE_PREFIX}_SC)
     # If any verilate() call specifies SYSTEMC, define VM_SC in the final build
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_SYSTEMC ON)
+  endif()
+
+  if (${VERILATE_PREFIX}_TRACE_STRUCTS)
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_STRUCTS ON)
   endif()
 
     # Add the compile flags only on Verilated sources
