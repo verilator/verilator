@@ -29,6 +29,7 @@
   <map from="PSABAY" to="_eval_initial"/>
   <map from="PSOLeN" to="_eval_initial_loop"/>
   <map from="PSBUJ6" to="_eval_settle"/>
+  <map from="PSAsei" to="_final"/>
   <map from="PSV5uq" to="_sequent__TOP__1"/>
   <map from="PS8sdG" to="_sequent__TOP__t__DOT__secret_inst__1"/>
   <map from="PScyq8" to="clk"/>
@@ -38,6 +39,6 @@
   <map from="PSBSVV" to="t/t_protect_ids.v"/>
   <map from="PSB07q" to="t__DOT__secret_inst2__DOT__secret_cyc"/>
   <map from="this" to="this"/>
+  <map from="vlSelf" to="vlSelf"/>
   <map from="vlSymsp" to="vlSymsp"/>
-  <map from="vlTOPp" to="vlTOPp"/>
 </verilator_id_map>

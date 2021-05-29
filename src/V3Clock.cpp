@@ -164,6 +164,18 @@ private:
         m_lastSenp = nullptr;
         m_lastIfp = nullptr;
     }
+    AstCFunc* makeTopFunction(const string& name, bool slow = false) {
+        AstCFunc* const funcp = new AstCFunc{m_topScopep->fileline(), name, m_topScopep->scopep()};
+        funcp->dontCombine(true);
+        funcp->isStatic(false);
+        funcp->isLoose(true);
+        funcp->entryPoint(true);
+        funcp->slow(slow);
+        funcp->isConst(false);
+        funcp->declPrivate(true);
+        m_topScopep->scopep()->addActivep(funcp);
+        return funcp;
+    }
     void splitCheck(AstCFunc* ofuncp) {
         if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
         if (EmitCBaseCounterVisitor(ofuncp->stmtsp()).count() < v3Global.opt.outputSplitCFuncs())
@@ -184,15 +196,13 @@ private:
                 // Make a new function
                 funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + cvtToStr(++funcnum),
                                      m_topScopep->scopep()};
-                funcp->argTypes(EmitCBaseVisitor::symClassVar());
                 funcp->dontCombine(true);
-                funcp->symProlog(true);
-                funcp->isStatic(true);
+                funcp->isStatic(false);
+                funcp->isLoose(true);
                 funcp->slow(ofuncp->slow());
                 m_topScopep->scopep()->addActivep(funcp);
                 //
                 AstCCall* callp = new AstCCall{funcp->fileline(), funcp};
-                callp->argTypes("vlSymsp");
                 ofuncp->addStmtsp(callp);
                 func_stmts = 0;
             }
@@ -212,55 +222,10 @@ private:
         // VV*****  We reset all user1p()
         AstNode::user1ClearTree();
         // Make top functions
-        {
-            AstCFunc* funcp = new AstCFunc{nodep->fileline(), "_eval", m_topScopep->scopep()};
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
-            funcp->dontCombine(true);
-            funcp->symProlog(true);
-            funcp->isStatic(true);
-            funcp->entryPoint(true);
-            m_topScopep->scopep()->addActivep(funcp);
-            m_evalFuncp = funcp;
-        }
-        {
-            AstCFunc* funcp
-                = new AstCFunc{nodep->fileline(), "_eval_initial", m_topScopep->scopep()};
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
-            funcp->dontCombine(true);
-            funcp->slow(true);
-            funcp->symProlog(true);
-            funcp->isStatic(true);
-            funcp->entryPoint(true);
-            m_topScopep->scopep()->addActivep(funcp);
-            m_initFuncp = funcp;
-        }
-        {
-            AstCFunc* funcp = new AstCFunc{nodep->fileline(), "final", m_topScopep->scopep()};
-            funcp->skipDecl(true);
-            funcp->dontCombine(true);
-            funcp->slow(true);
-            funcp->isStatic(false);
-            funcp->entryPoint(true);
-            funcp->protect(false);
-            funcp->addInitsp(new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symClassVar()
-                                                                 + " = this->__VlSymsp;\n"));
-            funcp->addInitsp(
-                new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symTopAssign() + "\n"));
-            m_topScopep->scopep()->addActivep(funcp);
-            m_finalFuncp = funcp;
-        }
-        {
-            AstCFunc* funcp
-                = new AstCFunc{nodep->fileline(), "_eval_settle", m_topScopep->scopep()};
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
-            funcp->dontCombine(true);
-            funcp->slow(true);
-            funcp->isStatic(true);
-            funcp->symProlog(true);
-            funcp->entryPoint(true);
-            m_topScopep->scopep()->addActivep(funcp);
-            m_settleFuncp = funcp;
-        }
+        m_evalFuncp = makeTopFunction("_eval");
+        m_initFuncp = makeTopFunction("_eval_initial", /* slow: */ true);
+        m_settleFuncp = makeTopFunction("_eval_settle", /* slow: */ true);
+        m_finalFuncp = makeTopFunction("_final", /* slow: */ true);
         // Process the activates
         iterateChildren(nodep);
         UINFO(4, " TOPSCOPE iter done " << nodep << endl);
@@ -324,7 +289,6 @@ private:
         if (nodep->formCallTree()) {
             UINFO(4, "    formCallTree " << nodep << endl);
             AstCCall* callp = new AstCCall(nodep->fileline(), nodep);
-            callp->argTypes("vlSymsp");
             m_finalFuncp->addStmtsp(callp);
         }
     }

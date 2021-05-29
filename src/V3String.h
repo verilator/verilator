@@ -100,6 +100,10 @@ public:
     static bool isWhitespace(const string& str);
     // Return double by parsing string
     static double parseDouble(const string& str, bool* successp);
+    // Replace all occurrences of the word 'from' in 'str' with 'to'. A word is considered
+    // to be a consecutive sequence of the characters [a-zA-Z0-9_]. Sub-words are not replaced.
+    // e.g.: replaceWords("one apple bad_apple", "apple", "banana") -> "one banana bad_apple"
+    static string replaceWord(const string& str, const string& from, const string& to);
 };
 
 //######################################################################

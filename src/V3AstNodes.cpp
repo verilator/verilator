@@ -55,8 +55,23 @@ void AstNodeVarRef::cloneRelink() {
     if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep();
 }
 
-string AstNodeVarRef::hiernameProtect() const {
-    return hiernameToUnprot() + VIdProtect::protectWordsIf(hiernameToProt(), protect());
+string AstNodeVarRef::selfPointerProtect(bool useSelfForThis) const {
+    const string& sp
+        = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
+    return VIdProtect::protectWordsIf(sp, protect());
+}
+
+string AstNodeVarRef::classPrefixProtect() const {
+    return v3Global.opt.modPrefix() + "_" + VIdProtect::protectWordsIf(classPrefix(), protect());
+}
+
+void AstAddrOfCFunc::cloneRelink() {
+    if (m_funcp && m_funcp->clonep()) m_funcp = m_funcp->clonep();
+}
+
+const char* AstAddrOfCFunc::broken() const {
+    BROKEN_RTN(m_funcp && !m_funcp->brokeExists());
+    return nullptr;
 }
 
 int AstNodeSel::bitConst() const {
@@ -108,8 +123,13 @@ const char* AstNodeCCall::broken() const {
     return nullptr;
 }
 bool AstNodeCCall::isPure() const { return funcp()->pure(); }
-string AstNodeCCall::hiernameProtect() const {
-    return hiernameToUnprot() + VIdProtect::protectWordsIf(hiernameToProt(), protect());
+string AstNodeCCall::selfPointerProtect(bool useSelfForThis) const {
+    const string& sp
+        = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
+    return VIdProtect::protectWordsIf(sp, protect());
+}
+string AstNodeCCall::classPrefixProtect() const {
+    return v3Global.opt.modPrefix() + "_" + VIdProtect::protectWordsIf(classPrefix(), protect());
 }
 
 void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
@@ -220,6 +240,21 @@ AstExecGraph::AstExecGraph(FileLine* fileline)
     m_depGraphp = new V3Graph;
 }
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
+
+std::vector<const ExecMTask*> AstExecGraph::rootMTasks() {
+    // Build the list of initial mtasks to start
+    std::vector<const ExecMTask*> execMTasks;
+
+    for (const V3GraphVertex* vxp = depGraphp()->verticesBeginp(); vxp;
+         vxp = vxp->verticesNextp()) {
+        const ExecMTask* etp = dynamic_cast<const ExecMTask*>(vxp);
+        if (etp->threadRoot()) execMTasks.push_back(etp);
+    }
+    UASSERT_OBJ(execMTasks.size() <= static_cast<unsigned>(v3Global.opt.threads()), this,
+                "More root mtasks than available threads");
+
+    return execMTasks;
+}
 
 AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp) {
     AstNode* ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);

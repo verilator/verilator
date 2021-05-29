@@ -199,7 +199,7 @@ private:
                 iterateNull(nodep->varScopep());
             } else {
                 iterateNull(nodep->varp());
-                m_hash += nodep->hiernameToProt();
+                m_hash += nodep->selfPointer();
             }
         });
     }
@@ -227,6 +227,11 @@ private:
     virtual void visit(AstTestPlusArgs* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->text();
+        });
+    }
+    virtual void visit(AstAddrOfCFunc* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
+            iterateNull(nodep->funcp());
         });
     }
 
@@ -364,7 +369,9 @@ private:
         });
     }
     virtual void visit(AstCFunc* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
+            m_hash += nodep->isLoose();
+        });
     }
     virtual void visit(AstVar* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
