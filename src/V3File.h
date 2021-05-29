@@ -121,6 +121,7 @@ private:
     int m_column = 0;
     int m_nobreak = false;  // Basic operator or begin paren, don't break next
     bool m_prependIndent = true;
+    bool m_inStringLiteral = false;
     int m_indentLevel = 0;  // Current {} indentation
     std::stack<int> m_parenVec;  // Stack of columns where last ( was
     int m_bracketLevel = 0;  // Intenting = { block, indicates number of {'s seen.

@@ -715,9 +715,13 @@ void V3OutFormatter::puts(const char* strg) {
             break;
         case ' ': wordstart = true; break;
         case '\t': wordstart = true; break;
+        case '"':
+            wordstart = false;
+            m_inStringLiteral = !m_inStringLiteral;
+            break;
         case '/':
             if (m_lang == LA_C || m_lang == LA_VERILOG) {
-                if (cp > strg && cp[-1] == '/') {
+                if (cp > strg && cp[-1] == '/' && !m_inStringLiteral) {
                     // Output ignoring contents to EOL
                     cp++;
                     while (*cp && cp[1] && cp[1] != '\n') putcNoTracking(*cp++);
