@@ -2503,10 +2503,8 @@ static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs, WDataInP
     // Above checks rwp[1]==0 so not needed in below shift
     return VL_CLEAN_QQ(obits, obits, lhs << (static_cast<QData>(rwp[0])));
 }
-static inline QData VL_SHIFTL_QQQ(int obits, int lbits, int rbits, QData lhs,
+static inline QData VL_SHIFTL_QQQ(int obits, int, int, QData lhs,
                                   QData rhs) VL_MT_SAFE {
-    (void)lbits;
-    (void)rbits;
     if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
     return VL_CLEAN_QQ(obits, obits, lhs << rhs);
 }
