@@ -2491,6 +2491,8 @@ static inline IData VL_SHIFTL_IIW(int obits, int, int rbits, IData lhs, WDataInP
 }
 static inline IData VL_SHIFTL_IIQ(int obits, int lbits, int rbits, IData lhs,
                                   QData rhs) VL_MT_SAFE {
+    (void)lbits;
+    (void)rbits;
     if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
     return VL_CLEAN_II(obits, obits, lhs << rhs);
 }
@@ -2505,6 +2507,8 @@ static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs, WDataInP
 }
 static inline QData VL_SHIFTL_QQQ(int obits, int lbits, int rbits, QData lhs,
                                   QData rhs) VL_MT_SAFE {
+    (void)lbits;
+    (void)rbits;
     if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
     return VL_CLEAN_QQ(obits, obits, lhs << rhs);
 }
@@ -2570,10 +2574,12 @@ static inline QData VL_SHIFTR_QQW(int obits, int, int rbits, QData lhs, WDataInP
     return VL_CLEAN_QQ(obits, obits, lhs >> (static_cast<QData>(rwp[0])));
 }
 static inline IData VL_SHIFTR_IIQ(int obits, int, int rbits, IData lhs, QData rhs) VL_MT_SAFE {
+    (void)rbits;
     if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
     return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
 }
 static inline QData VL_SHIFTR_QQQ(int obits, int, int rbits, QData lhs, QData rhs) VL_MT_SAFE {
+    (void)rbits;
     if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
     return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
 }
