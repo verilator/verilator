@@ -2489,10 +2489,8 @@ static inline IData VL_SHIFTL_IIW(int obits, int, int rbits, IData lhs, WDataInP
     }
     return VL_CLEAN_II(obits, obits, lhs << rwp[0]);
 }
-static inline IData VL_SHIFTL_IIQ(int obits, int lbits, int rbits, IData lhs,
+static inline IData VL_SHIFTL_IIQ(int obits, int, int, IData lhs,
                                   QData rhs) VL_MT_SAFE {
-    (void)lbits;
-    (void)rbits;
     if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
     return VL_CLEAN_II(obits, obits, lhs << rhs);
 }
