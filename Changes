@@ -18,7 +18,7 @@ Verilator 4.203 devel
 * Split always blocks to better respect --output-split-cfuncs. [Geza Lore]
 * Fix initialization of assoc in assoc array (#2914). [myftptoyman]
 * Fix merging of assignments in C++ code (#2970). [Ruper Swarbrick]
-* Fix --protect-ids when using SV classes. [Geza Lore]
+* Fix --protect-ids when using SV classes (#2994). [Geza Lore]
 
 
 Verilator 4.202 2021-04-24
