@@ -43,6 +43,12 @@
 # define VL_ATTR_COLD __attribute__((cold))
 # define VL_ATTR_HOT __attribute__((hot))
 # define VL_ATTR_NORETURN __attribute__((noreturn))
+// clang and gcc-8.0+ support no_sanitize("string") style attribute
+# if defined(__clang__) || (__GNUC__ >= 8)
+#  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize("alignment")))
+#else  // The entire undefined sanitizer has to be disabled for older gcc
+#  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize_undefined))
+#endif
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
@@ -84,6 +90,9 @@
 #endif
 #ifndef VL_ATTR_NORETURN
 # define VL_ATTR_NORETURN  ///< Attribute that function does not ever return
+#endif
+#ifndef VL_ATTR_NO_SANITIZE_ALIGN
+# define VL_ATTR_NO_SANITIZE_ALIGN ///< Attribute that the function contains intended unaligned access
 #endif
 #ifndef VL_ATTR_PRINTF
 # define VL_ATTR_PRINTF(fmtArgNum)  ///< Attribute for function with printf format checking
@@ -428,6 +437,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
     (((nbits) & VL_SIZEBITS_Q) ? ((1ULL << ((nbits) & VL_SIZEBITS_Q)) - 1ULL) : ~0ULL)
 /// Return mask for EData with 1's where relevant bits are (0=all bits)
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
+
 #define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
 
 #define VL_BITWORD_I(bit) ((bit) / VL_IDATASIZE)  ///< Word number for sv DPI vectors

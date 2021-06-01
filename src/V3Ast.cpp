@@ -971,20 +971,6 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 }
 
 //======================================================================
-// Static utilities
-
-std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) {
-    return os << std::hex << std::setw(2) << std::setfill('0') << rhs.depth() << "_"
-              << std::setw(6) << std::setfill('0') << rhs.hshval();
-}
-
-V3Hash::V3Hash(const string& name) {
-    uint32_t val = 0;
-    for (const auto& c : name) val = val * 31 + c;
-    setBoth(1, val);
-}
-
-//======================================================================
 // Debugging
 
 void AstNode::checkTreeIter(AstNode* backp) {

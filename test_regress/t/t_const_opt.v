@@ -57,7 +57,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hfab547b426149442
+`define EXPECTED_SUM 64'he78be35df15ae0ab
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -80,7 +80,7 @@ module Test(/*AUTOARG*/
 
    output logic o;
 
-   logic [3:0] tmp;
+   logic [4:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -100,6 +100,7 @@ module Test(/*AUTOARG*/
       tmp[1] <= ((32'd2 ** i) & 32'h10) == 32'b0;  // replacePowShift
       tmp[2] <= ((d0 & d1) | (d0 & d2))^ ((d3 & d4) | (d5 & d4));  // replaceAndOr()
       tmp[3] <= d0 <-> d1; // replaceLogEq()
+      tmp[4] <= i[0] & (i[1] & (i[2] & (i[3] | d[4])));  // ConstBitOpTreeVisitor::m_frozenNodes
    end
 
 endmodule

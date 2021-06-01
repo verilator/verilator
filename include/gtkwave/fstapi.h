@@ -35,7 +35,11 @@ extern "C" {
 #include <ctype.h>
 #include <zlib.h>
 #include <inttypes.h>
-#include <unistd.h>
+#if defined(_MSC_VER)
+    #include "fst_win_unistd.h"
+#else
+    #include <unistd.h>
+#endif
 #include <time.h>
 
 #define FST_RDLOAD "FSTLOAD | "

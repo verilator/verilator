@@ -908,7 +908,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim;
-    unshift @verilator_flags, "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address" if $param{sanitize};
+    unshift @verilator_flags, "-CFLAGS -fsanitize=address,undefined -LDFLAGS -fsanitize=address,undefined" if $param{sanitize};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
     unshift @verilator_flags, "--exe" if
@@ -2449,10 +2449,12 @@ sub _lineno_match {
     my $lineno = shift;
     my $lines = shift;
     return 1 if !defined $lines;
-    if ($lines =~ /^(\d+)$/) {
-        return $1 == $lineno;
-    } elsif ($lines =~ /^(\d+)-(\d+)$/) {
-        return $1 <= $lineno && $2 >= $lineno;
+    foreach my $lc (split /,/, $lines) {
+        if ($lc =~ /^(\d+)$/) {
+            return 1 if $1 == $lineno;
+        } elsif ($lc =~ /^(\d+)-(\d+)$/) {
+            return 1 if $1 <= $lineno && $2 >= $lineno;
+        }
     }
     return 0;
 }

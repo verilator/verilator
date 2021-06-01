@@ -62,7 +62,7 @@ module t (/*AUTOARG*/
 			 ^ bytehash(w17));
    // verilator lint_on WIDTH
 
-`define EXPECTED_SUM 64'hb6fdb64085fc17f5
+`define EXPECTED_SUM 64'h2bc7c2a98a302891
 
    // Test loop
    always @ (posedge clk) begin

@@ -27,6 +27,8 @@
 #define V3ERROR_NO_GLOBAL_
 #include "V3Error.cpp"
 #include "V3String.cpp"
+#define V3OPTION_PARSER_NO_VOPTION_BOOL
+#include "V3OptionParser.cpp"
 #include "V3Os.cpp"
 #include "VlcTop.cpp"
 
@@ -47,74 +49,43 @@ string VlcOptions::version() {
     return ver;
 }
 
-bool VlcOptions::onoff(const char* sw, const char* arg, bool& flag) {
-    // if sw==arg, then return true (found it), and flag=true
-    // if sw=="-no-arg", then return true (found it), and flag=false
-    // if sw=="-noarg", then return true (found it), and flag=false
-    // else return false
-    if (arg[0] != '-') v3fatalSrc("OnOff switches must have leading dash.");
-    if (0 == strcmp(sw, arg)) {
-        flag = true;
-        return true;
-    } else if (0 == strncmp(sw, "-no", 3) && (0 == strcmp(sw + 3, arg + 1))) {
-        flag = false;
-        return true;
-    } else if (0 == strncmp(sw, "-no-", 4) && (0 == strcmp(sw + 4, arg + 1))) {
-        flag = false;
-        return true;
-    }
-    return false;
-}
-
 void VlcOptions::parseOptsList(int argc, char** argv) {
+    V3OptionParser parser;
+    V3OptionParser::AppendHelper DECL_OPTION{parser};
+    V3OPTION_PARSER_DECL_TAGS;
+
+    DECL_OPTION("-annotate-all", OnOff, &m_annotateAll);
+    DECL_OPTION("-rank", OnOff, &m_rank);
+    DECL_OPTION("-unlink", OnOff, &m_unlink);
+    DECL_OPTION("-annotate-min", Set, &m_annotateMin);
+    DECL_OPTION("-annotate", Set, &m_annotateOut);
+    DECL_OPTION("-debug", CbCall, []() { V3Error::debugDefault(3); });
+    DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
+    DECL_OPTION("-V", CbCall, []() {
+        showVersion(true);
+        std::exit(0);
+    });
+    DECL_OPTION("-version", CbCall, []() {
+        showVersion(false);
+        std::exit(0);
+    });
+    DECL_OPTION("-write", Set, &m_writeFile);
+    DECL_OPTION("-write-info", Set, &m_writeInfoFile);
+    parser.finalize();
+
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
         if (argv[i][0] == '-') {
-            const char* sw = argv[i];
-            bool flag = true;
-            // Allow gnu -- switches
-            if (sw[0] == '-' && sw[1] == '-') ++sw;
-            // Single switches
-            if (onoff(sw, "-annotate-all", flag /*ref*/)) {
-                m_annotateAll = flag;
-            } else if (onoff(sw, "-rank", flag /*ref*/)) {
-                m_rank = flag;
-            } else if (onoff(sw, "-unlink", flag /*ref*/)) {
-                m_unlink = flag;
-            }
-            // Parameterized switches
-            else if (!strcmp(sw, "-annotate-min") && (i + 1) < argc) {
-                ++i;
-                m_annotateMin = atoi(argv[i]);
-            } else if (!strcmp(sw, "-annotate") && (i + 1) < argc) {
-                ++i;
-                m_annotateOut = argv[i];
-            } else if (!strcmp(sw, "-debug")) {
-                V3Error::debugDefault(3);
-            } else if (!strcmp(sw, "-debugi") && (i + 1) < argc) {
-                ++i;
-                V3Error::debugDefault(atoi(argv[i]));
-            } else if (!strcmp(sw, "-V")) {
-                showVersion(true);
-                std::exit(0);
-            } else if (!strcmp(sw, "-version")) {
-                showVersion(false);
-                std::exit(0);
-            } else if (!strcmp(sw, "-write") && (i + 1) < argc) {
-                ++i;
-                m_writeFile = argv[i];
-            } else if (!strcmp(sw, "-write-info") && (i + 1) < argc) {
-                ++i;
-                m_writeInfoFile = argv[i];
+            if (int consumed = parser.parse(i, argc, argv)) {
+                i += consumed;
             } else {
-                v3fatal("Invalid option: " << argv[i]);
+                v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
+                ++i;
             }
-            ++i;
-        }  // - options
-        else {
+        } else {
             addReadFile(argv[i]);
             ++i;
         }

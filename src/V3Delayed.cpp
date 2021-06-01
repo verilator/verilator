@@ -351,7 +351,7 @@ private:
                                    new AstVarRef(nodep->fileline(), setvscp, VAccess::READ),
                                    nullptr, nullptr);
             UINFO(9, "     Created " << postLogicp << endl);
-            finalp->addBodysp(postLogicp);
+            finalp->addStmtp(postLogicp);
             finalp->user3p(setvscp);  // Remember IF's vset variable
             finalp->user4p(postLogicp);  // and the associated IF, as we may be able to reuse it
         }

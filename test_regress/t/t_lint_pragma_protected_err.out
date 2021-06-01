@@ -1,0 +1,17 @@
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_err.v:8:17: Unknown '`pragma protect' error
+    8 | `pragma protect encrypt_agent=123
+      |                 ^~~~~~~~~~~~~~~~~
+                     ... For error description see https://verilator.org/warn/BADSTDPRAGMA?v=latest
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_err.v:10:17: Unknown '`pragma protect' error
+   10 | `pragma protect encrypt_agent_info
+      |                 ^~~~~~~~~~~~~~~~~~
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_err.v:23:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_err.v:27:17: multiple `pragma protected encoding sections
+   27 | `pragma protect encoding = (enctype = "BASE64", line_length = 76, bytes = 128)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-PROTECTED: t/t_lint_pragma_protected_err.v:44:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+                    ... Use "/* verilator lint_off PROTECTED */" and lint_on around source to disable this message.
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_err.v:58:1: `pragma is missing a pragma_expression.
+   58 | `pragma
+      | ^~~~~~~
+%Error: Exiting due to

@@ -162,7 +162,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'he9b854d521ebb8b6
+`define EXPECTED_SUM 64'h727fb78d09c1981e
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -190,7 +190,9 @@ module Test(/*AUTOARG*/
    output logic z1, z2, z3, z4, z5, z6, z7;
 
    logic [127:0] d;
+   logic [17:0] e;
    always_ff @(posedge clk) d <= {i, ~i, ~i, i};
+   always_ff @(posedge clk) e <= i[17:00];
 
    always_ff @(posedge clk) begin
       a1 <= (i[5] & ~i[3] & i[1]);
@@ -203,7 +205,7 @@ module Test(/*AUTOARG*/
       a8 <= &(~i[5:3]);
       a9 <= ~i[5] & !i[4] & !i[3] && ~i[5] && !i[4];
       a10 <= ~(i[5] & ~d[3]) & (!i[5] & d[1]);  // cannot be optimized
-      a11 <= d[0] & d[33] & d[66] & d[99] & !d[31] & !d[62] & !d[93] & !d[124];
+      a11 <= d[0] & d[33] & d[66] & d[99] & !d[31] & !d[62] & !d[93] & !d[124] & e[0] & !e[1] & e[2];
       //
       o1 <= (~i[5] | i[3] | ~i[1]);
       o2 <= (i[5]!=1 | i[3]!=0 | i[1]!=1);
@@ -215,7 +217,7 @@ module Test(/*AUTOARG*/
       o8 <= |(~i[5:3]);
       o9 <= ~i[5] | !i[4] | ~i[3] || !i[5] || ~i[4];
       o10 <= ~(~i[5] | d[3]) | (i[5] | ~d[1]);  // cannot be optimized
-      o11 <= d[0] | d[33] | d[66] | d[99] | !d[31] | !d[62] | !d[93] | !d[124];
+      o11 <= d[0] | d[33] | d[66] | d[99] | !d[31] | !d[62] | !d[93] | !d[124] | e[0] | !e[1] | e[2];
       //
       x1 <= (i[5] ^ ~i[3] ^ i[1]);
       x2 <= (i[5]==1 ^ i[3]==0 ^ i[1]==1);
@@ -225,7 +227,7 @@ module Test(/*AUTOARG*/
       x6 <= i[5] ^ ~i[3] ^ i[1] ^ i[3] ^ !i[1] ^ i[3] ^ ~i[1];
       x7 <= i[5] ^ (^((i & 32'b001010) ^ 32'b001000));
       x8 <= ~(~i[5] ^ d[3]) ^ (i[5] ^ ~d[1]);
-      x9 <= d[0] ^ d[33] ^ d[66] ^ d[99] ^ !d[31] ^ !d[62] ^ !d[93] ^ !d[124];
+      x9 <= d[0] ^ d[33] ^ d[66] ^ d[99] ^ !d[31] ^ !d[62] ^ !d[93] ^ !d[124] ^ e[0] ^ !e[1] ^ e[2];
       //
       // All zero/all one cases
       z1 <= (i[5] & ~i[3] & ~i[5]);

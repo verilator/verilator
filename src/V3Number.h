@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
+#include "V3Hash.h"
 
 #include <cmath>
 #include <limits>
@@ -298,7 +299,7 @@ public:
     string toDecimalS() const;  // return ASCII signed decimal number
     string toDecimalU() const;  // return ASCII unsigned decimal number
     double toDouble() const;
-    uint32_t toHash() const;
+    V3Hash toHash() const;
     uint32_t edataWord(int eword) const;
     uint8_t dataByte(int byte) const;
     uint32_t countBits(const V3Number& ctrl) const;

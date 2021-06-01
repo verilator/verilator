@@ -245,7 +245,7 @@ public:  // But only for verilated*.cpp
     static vluint32_t randSeedEpoch() VL_MT_SAFE { return s().s_randSeedEpoch; }
 
     // METHODS - timeformat
-    int timeFormatUnits() VL_MT_SAFE {
+    int timeFormatUnits() const VL_MT_SAFE {
         if (m_s.m_timeFormatUnits == VerilatedContext::Serialized::UNITS_NONE)
             return timeprecision();
         return m_s.m_timeFormatUnits;
@@ -255,7 +255,7 @@ public:  // But only for verilated*.cpp
     void timeFormatPrecision(int value) VL_MT_SAFE { m_s.m_timeFormatPrecision = value; }
     int timeFormatWidth() const VL_MT_SAFE { return m_s.m_timeFormatWidth; }
     void timeFormatWidth(int value) VL_MT_SAFE { m_s.m_timeFormatWidth = value; }
-    std::string timeFormatSuffix() VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
+    std::string timeFormatSuffix() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
         const VerilatedLockGuard lock(m_timeDumpMutex);
         return m_timeFormatSuffix;
     }

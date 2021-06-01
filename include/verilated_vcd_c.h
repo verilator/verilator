@@ -80,7 +80,6 @@ private:
     vluint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
     std::vector<char> m_suffixes;  // VCD line end string codes + metadata
-    const char* m_suffixesp;  // Pointer to first element of above
 
     using NameMap = std::map<const std::string, const std::string>;
     NameMap* m_namemapp = nullptr;  // List of names for the header
@@ -369,6 +368,8 @@ public:
     /// Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
     /// Write one cycle of dump data
+    /// Call with the current context's time just after eval'ed,
+    /// e.g. ->dump(contextp->time())
     void dump(vluint64_t timeui) VL_MT_SAFE { m_sptrace.dump(timeui); }
     /// Write one cycle of dump data - backward compatible and to reduce
     /// conversion warnings.  It's better to use a vluint64_t time instead.

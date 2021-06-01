@@ -56,7 +56,7 @@
 #include "V3Parse.h"
 #include "V3Width.h"
 #include "V3Unroll.h"
-#include "V3Hashed.h"
+#include "V3Hasher.h"
 
 #include <deque>
 #include <map>
@@ -314,7 +314,7 @@ class ParamProcessor final {
                 key += "[" + cvtToStr(bdtp->left()) + ":" + cvtToStr(bdtp->right()) + "]";
             }
         }
-        V3Hash hash = V3Hashed::uncachedHash(nodep);
+        V3Hash hash = V3Hasher::uncachedHash(nodep);
         // Force hash collisions -- for testing only
         if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash();
         int num;

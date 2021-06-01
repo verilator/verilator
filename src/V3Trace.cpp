@@ -42,7 +42,7 @@
 #include "V3Trace.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
-#include "V3Hashed.h"
+#include "V3DupFinder.h"
 #include "V3Stats.h"
 
 #include <map>
@@ -154,8 +154,8 @@ public:
 class TraceVisitor final : public EmitCBaseVisitor {
 private:
     // NODE STATE
-    // V3Hashed
-    //  Ast*::user4()                   // V3Hashed calculation
+    // V3Hasher in V3DupFinder
+    //  Ast*::user4()                   // V3Hasher calculation
     // Cleared entire netlist
     //  AstCFunc::user1()               // V3GraphVertex* for this node
     //  AstTraceDecl::user1()           // V3GraphVertex* for this node
@@ -165,7 +165,7 @@ private:
     AstUser1InUse m_inuser1;
     AstUser2InUse m_inuser2;
     AstUser3InUse m_inuser3;
-    // AstUser4InUse     In V3Hashed
+    // AstUser4InUse     In V3Hasher via V3DupFinder
 
     // STATE
     AstNodeModule* m_topModp = nullptr;  // Module to add variables to
@@ -194,7 +194,7 @@ private:
     void detectDuplicates() {
         UINFO(9, "Finding duplicates\n");
         // Note uses user4
-        V3Hashed hashed;  // Duplicate code detection
+        V3DupFinder dupFinder;  // Duplicate code detection
         // Hash all of the values the traceIncs need
         for (const V3GraphVertex* itp = m_graph.verticesBeginp(); itp;
              itp = itp->verticesNextp()) {
@@ -205,13 +205,9 @@ private:
                     UASSERT_OBJ(nodep->valuep()->backp() == nodep, nodep,
                                 "Trace duplicate back needs consistency,"
                                 " so we can map duplicates back to TRACEINCs");
-                    hashed.hash(nodep->valuep());
-                    UINFO(8, "  Hashed " << std::hex << hashed.nodeHash(nodep->valuep()) << " "
-                                         << nodep << endl);
-
                     // Just keep one node in the map and point all duplicates to this node
-                    if (hashed.findDuplicate(nodep->valuep()) == hashed.end()) {
-                        hashed.hashAndInsert(nodep->valuep());
+                    if (dupFinder.findDuplicate(nodep->valuep()) == dupFinder.end()) {
+                        dupFinder.insert(nodep->valuep());
                     }
                 }
             }
@@ -221,10 +217,10 @@ private:
             if (TraceTraceVertex* const vvertexp = dynamic_cast<TraceTraceVertex*>(itp)) {
                 AstTraceDecl* const nodep = vvertexp->nodep();
                 if (nodep->valuep() && !vvertexp->duplicatep()) {
-                    const auto dupit = hashed.findDuplicate(nodep->valuep());
-                    if (dupit != hashed.end()) {
+                    const auto dupit = dupFinder.findDuplicate(nodep->valuep());
+                    if (dupit != dupFinder.end()) {
                         const AstTraceDecl* const dupDeclp
-                            = VN_CAST_CONST(hashed.iteratorNodep(dupit)->backp(), TraceDecl);
+                            = VN_CAST_CONST(dupit->second->backp(), TraceDecl);
                         UASSERT_OBJ(dupDeclp, nodep, "Trace duplicate of wrong type");
                         TraceTraceVertex* const dupvertexp
                             = dynamic_cast<TraceTraceVertex*>(dupDeclp->user1u().toGraphVertex());
@@ -237,7 +233,6 @@ private:
                 }
             }
         }
-        hashed.clear();
     }
 
     void graphSimplify(bool initial) {
