@@ -309,15 +309,14 @@ private:
         }
     }
     virtual void visit(AstNodeIf* nodep) {
-        if (!nodep->isBoundsCheck())
-        {
-	        LatchDetectGraphVertex* parentp = m_graph.currentp();
-	        LatchDetectGraphVertex* branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
-	        m_graph.addPathVertex(branchp, "IF");
-	        iterateAndNextNull(nodep->ifsp());
-	        m_graph.addPathVertex(branchp, "ELSE");
-	        iterateAndNextNull(nodep->elsesp());
-	        m_graph.currentp(parentp);
+        if (!nodep->isBoundsCheck()) {
+            LatchDetectGraphVertex* parentp = m_graph.currentp();
+            LatchDetectGraphVertex* branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
+            m_graph.addPathVertex(branchp, "IF");
+            iterateAndNextNull(nodep->ifsp());
+            m_graph.addPathVertex(branchp, "ELSE");
+            iterateAndNextNull(nodep->elsesp());
+            m_graph.currentp(parentp);
         }
     }
     //--------------------
