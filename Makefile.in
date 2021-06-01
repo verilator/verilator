@@ -479,9 +479,8 @@ PY_PROGRAMS = \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
 	docs/guide/conf.py \
-	docs/guide/vl_sphinx_extract \
-	docs/guide/vl_sphinx_extract \
-	docs/guide/vl_doxygen_filter \
+	docs/bin/vl_sphinx_extract \
+	docs/bin/vl_sphinx_fix \
 	src/astgen \
 	src/bisonpre \
 	src/config_rev \

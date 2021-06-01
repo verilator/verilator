@@ -8,6 +8,20 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 4.203 devel
+==========================
+
+**Minor:**
+
+* Add --reloop-limit argument (#2943). [Geza Lore]
+* Optimize large lookup tables to static data (#2925). [Geza Lore]
+* Split always blocks to better respect --output-split-cfuncs. [Geza Lore]
+* Fix initialization of assoc in assoc array (#2914). [myftptoyman]
+* Fix merging of assignments in C++ code (#2970). [Ruper Swarbrick]
+* Fix --protect-ids when using SV classes (#2994). [Geza Lore]
+* Fix constant function calls with uninit value (#2995). [yanx21]
+
+
 Verilator 4.202 2021-04-24
 ==========================
 

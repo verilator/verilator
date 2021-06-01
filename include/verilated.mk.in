@@ -202,16 +202,19 @@ else
 endif
 
 # When archiving just objects (.o), use single $(AR) run
-#   1. Make .tmp file with list of objects so don't exceed commend line
+#   1. Make .verilator_deplist.tmp file with list of objects so don't exceed
+#      the command line limits when calling $(AR).
+#      The approach to write the dependency file is compatible with GNU Make 3,
+#      and can be simplified using the file function once GNU Make 4.x becomes
+#      the minimum supported version.
 # When merging objects (.o) and archives (.a) additionally:
 #   1. Extract object files from .a
 #   2. Create a new archive from extracted .o and given .o
-%.a:
+%.a: | %.verilator_deplist.tmp
 	$(info Archive $(AR) -rcs $@ $^)
-	$(file >$@.tmp)
-	$(foreach L, $(filter-out %.a,$^), $(file >>$@.tmp, $L))
+	$(foreach L, $(filter-out %.a,$^), $(shell echo $L >>$@.verilator_deplist.tmp))
 	@if test $(words $(filter %.a,$^)) -eq 0; then \
-		$(AR) -rcs $@ @$@.tmp; \
+		$(AR) -rcs $@ @$@.verilator_deplist.tmp; \
 	else \
 		$(RM) -rf $@.tmpdir; \
 		for archive in $(filter %.a,$^); do \
@@ -220,9 +223,13 @@ endif
 			$(AR) -x ../../$${archive}; \
 			cd ../..; \
 		done; \
-		$(AR) -rcs $@ @$@.tmp $@.tmpdir/*/*.o; \
+		$(AR) -rcs $@ @$@.verilator_deplist.tmp $@.tmpdir/*/*.o; \
 	fi \
-	; $(RM) -rf $@.tmp $@.tmpdir
+	; $(RM) -rf $@.verilator_deplist.tmp $@.tmpdir
+
+# Truncate the dependency list file used in the %.a target above.
+%.verilator_deplist.tmp:
+	echo "" > $@
 
 $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 

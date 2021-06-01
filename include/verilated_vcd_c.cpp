@@ -99,7 +99,6 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep) {
     m_wrBufp = new char[m_wrChunkSize * 8];
     m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
     m_writep = m_wrBufp;
-    m_suffixesp = nullptr;
 }
 
 void VerilatedVcd::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -113,9 +112,6 @@ void VerilatedVcd::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     if (!isOpen()) return;
 
     dumpHeader();
-
-    // Get the direct access pointer to the code strings
-    m_suffixesp = &m_suffixes[0];  // Note: C++11 m_suffixes.data();
 
     // When using rollover, the first chunk contains the header only.
     if (m_rolloverMB) openNextImp(true);
@@ -586,8 +582,10 @@ void VerilatedVcd::declTriArray(vluint32_t code, const char* name, bool array, i
 //=============================================================================
 // Trace rendering prinitives
 
-void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
-    const char* const suffixp = m_suffixesp + code * VL_TRACE_SUFFIX_ENTRY_SIZE;
+static inline void
+VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* suffixp) VL_ATTR_NO_SANITIZE_ALIGN;
+
+static inline void VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* suffixp) {
     // Copy the whole suffix (this avoid having hard to predict branches which
     // helps a lot). Note: The maximum length of the suffix is
     // VL_TRACE_MAX_VCD_CODE_SIZE + 2 == 7, but we unroll this here for speed.
@@ -605,6 +603,12 @@ void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
     writep[5] = suffixp[5];
     writep[6] = '\n';  // The 6th index is always '\n' if it's relevant, no need to fetch it.
 #endif
+}
+
+void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
+    const char* const suffixp = m_suffixes.data() + code * VL_TRACE_SUFFIX_ENTRY_SIZE;
+    VerilatedVcdCCopyAndAppendNewLine(writep, suffixp);
+
     // Now write back the write pointer incremented by the actual size of the
     // suffix, which was stored in the last byte of the suffix buffer entry.
     m_writep = writep + suffixp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1];

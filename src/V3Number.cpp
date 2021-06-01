@@ -883,7 +883,7 @@ string V3Number::toString() const {
     return str;
 }
 
-uint32_t V3Number::toHash() const { return m_value[0]; }
+V3Hash V3Number::toHash() const { return V3Hash(m_width * (m_value[0] | 1)); }
 
 uint32_t V3Number::edataWord(int eword) const {
     UASSERT(!isFourState(), "edataWord with 4-state " << *this);
@@ -1526,11 +1526,8 @@ bool V3Number::isCaseEq(const V3Number& rhs) const {
     if (isString()) return toString() == rhs.toString();
     if (isDouble()) return toDouble() == rhs.toDouble();
     if (this->width() != rhs.width()) return false;
-
-    for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs(bit) != rhs.bitIs(bit)) return false;
-    }
-    return true;
+    if (m_value != rhs.m_value) return false;
+    return m_valueX == rhs.m_valueX;
 }
 
 V3Number& V3Number::opCaseEq(const V3Number& lhs, const V3Number& rhs) {
@@ -1759,13 +1756,17 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
         opCleanThis();  // Mult produces extra bits in result
     } else {
         for (int lword = 0; lword < lhs.words(); lword++) {
+            const vluint64_t lwordval = static_cast<vluint64_t>(lhs.m_value[lword]);
+            if (lwordval == 0) continue;
             for (int rword = 0; rword < rhs.words(); rword++) {
-                vluint64_t mul = static_cast<vluint64_t>(lhs.m_value[lword])
-                                 * static_cast<vluint64_t>(rhs.m_value[rword]);
+                const vluint64_t rwordval = static_cast<vluint64_t>(rhs.m_value[rword]);
+                if (rwordval == 0) continue;
+                vluint64_t mul = lwordval * rwordval;
                 for (int qword = lword + rword; qword < this->words(); qword++) {
                     mul += static_cast<vluint64_t>(m_value[qword]);
                     m_value[qword] = (mul & 0xffffffffULL);
                     mul = (mul >> 32ULL) & 0xffffffffULL;
+                    if (mul == 0) break;
                 }
             }
         }

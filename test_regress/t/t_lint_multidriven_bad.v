@@ -21,18 +21,18 @@ module t (/*AUTOARG*/
    reg [7:0]         mem [4];
 
    always @(posedge clk) begin
-      mem[a0] <= d0;
+      mem[a0] <= d0;  // <--- Warning
    end
    always @(negedge clk) begin
-      mem[a0] <= d1;
+      mem[a0] <= d1;  // <--- Warning
    end
    assign out = {mem[3],mem[2],mem[1],mem[0]};
 
    always @(posedge clk) begin
-      out2[7:0] <= d0;
+      out2[7:0] <= d0;  // <--- Warning
    end
    always @(negedge clk) begin
-      out2[15:8] <= d0;
+      out2[15:8] <= d0;  // <--- Warning
    end
 
 endmodule

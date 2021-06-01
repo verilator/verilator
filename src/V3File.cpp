@@ -715,9 +715,13 @@ void V3OutFormatter::puts(const char* strg) {
             break;
         case ' ': wordstart = true; break;
         case '\t': wordstart = true; break;
+        case '"':
+            wordstart = false;
+            m_inStringLiteral = !m_inStringLiteral;
+            break;
         case '/':
             if (m_lang == LA_C || m_lang == LA_VERILOG) {
-                if (cp > strg && cp[-1] == '/') {
+                if (cp > strg && cp[-1] == '/' && !m_inStringLiteral) {
                     // Output ignoring contents to EOL
                     cp++;
                     while (*cp && cp[1] && cp[1] != '\n') putcNoTracking(*cp++);
@@ -1012,7 +1016,8 @@ public:
         }
     }
     string protectWordsIf(const string& old, bool doIt) {
-        // Split at " " (for traces), "." (for scopes), or "->" (for scopes)
+        // Split at " " (for traces), "." (for scopes), "->" (for scopes), "::" (for superclass
+        // reference)
         if (!(doIt && v3Global.opt.protectIds())) return old;
         string out;
         string::size_type start = 0;
@@ -1024,6 +1029,7 @@ public:
             trySep(old, start, " ", pos /*ref*/, separator /*ref*/);
             trySep(old, start, ".", pos /*ref*/, separator /*ref*/);
             trySep(old, start, "->", pos /*ref*/, separator /*ref*/);
+            trySep(old, start, "::", pos /*ref*/, separator /*ref*/);
             if (pos == string::npos) break;
             out += protectIf(old.substr(start, pos - start), true) + separator;
             start = pos + separator.length();
