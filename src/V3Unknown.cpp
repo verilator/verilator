@@ -127,6 +127,7 @@ private:
                              new AstAssign(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))),
                 nullptr);
             newp->branchPred(VBranchPred::BP_LIKELY);
+            newp->isBoundsCheck(true);
             if (debug() >= 9) newp->dumpTree(cout, "     _new: ");
             abovep->addNextStmt(newp, abovep);
             prep->user2p(newp);  // Save so we may LogAnd it next time

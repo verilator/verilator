@@ -2246,12 +2246,14 @@ public:
 class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
 private:
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
+    bool m_isBoundsCheck;  // True if this if node was inserted for array bounds checking
 public:
     AstNodeIf(AstType t, FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
         : AstNodeStmt{t, fl} {
         setOp1p(condp);
         addNOp2p(ifsp);
         addNOp3p(elsesp);
+        isBoundsCheck(false);
     }
     ASTNODE_BASE_FUNCS(NodeIf)
     AstNode* condp() const { return op1p(); }  // op1 = condition
@@ -2267,6 +2269,8 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
     void branchPred(VBranchPred flag) { m_branchPred = flag; }
     VBranchPred branchPred() const { return m_branchPred; }
+    void isBoundsCheck(bool flag) { m_isBoundsCheck = flag; }
+    bool isBoundsCheck() const { return m_isBoundsCheck; }
 };
 
 class AstNodeCase VL_NOT_FINAL : public AstNodeStmt {
