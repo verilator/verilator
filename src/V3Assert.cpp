@@ -108,6 +108,7 @@ private:
         // Like newFireAssert() but omits the asserts-on check
         AstDisplay* dispp = new AstDisplay(nodep->fileline(), AstDisplayType::DT_ERROR, message,
                                            nullptr, nullptr);
+        dispp->fmtp()->timeunit(m_modp->timeunit());
         AstNode* bodysp = dispp;
         replaceDisplay(dispp, "%%Error");  // Convert to standard DISPLAY format
         bodysp->addNext(new AstStop(nodep->fileline(), true));

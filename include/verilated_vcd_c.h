@@ -368,6 +368,8 @@ public:
     /// Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
     /// Write one cycle of dump data
+    /// Call with the current context's time just after eval'ed,
+    /// e.g. ->dump(contextp->time())
     void dump(vluint64_t timeui) VL_MT_SAFE { m_sptrace.dump(timeui); }
     /// Write one cycle of dump data - backward compatible and to reduce
     /// conversion warnings.  It's better to use a vluint64_t time instead.

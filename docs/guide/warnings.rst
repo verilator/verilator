@@ -803,15 +803,25 @@ List Of Warnings
 
 .. option:: MULTIDRIVEN
 
-   .. TODO better example
+   Warns that the specified signal comes from multiple always blocks each
+   with different clocking. This warning does not look at individual bits
+   (see example below).
 
-   Warns that the specified signal comes from multiple always blocks.  This
-   is often unsupported by synthesis tools, and is considered bad style.
-   It will also cause longer simulation runtimes due to reduced
-   optimizations.
+   This is considered bad style, as the consumer of a given signal may be
+   unaware of the inconsistent clocking, causing clock domain crossing
+   or timing bugs.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVEN_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVEN_msg.rst
 
    Ignoring this warning will only slow simulations, it will simulate
-   correctly.
+   correctly.  It may however cause longer simulation runtimes due to
+   reduced optimizations.
 
 
 .. option:: MULTITOP

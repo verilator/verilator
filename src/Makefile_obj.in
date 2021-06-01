@@ -181,6 +181,7 @@ RAW_OBJS = \
 	V3Depth.o \
 	V3DepthBlock.o \
 	V3Descope.o \
+	V3DupFinder.o \
 	V3EmitC.o \
 	V3EmitCInlines.o \
 	V3EmitCSyms.o \
@@ -202,7 +203,8 @@ RAW_OBJS = \
 	V3GraphDfa.o \
 	V3GraphPathChecker.o \
 	V3GraphTest.o \
-	V3Hashed.o \
+	V3Hash.o \
+	V3Hasher.o \
 	V3HierBlock.o \
 	V3Inline.o \
 	V3Inst.o \

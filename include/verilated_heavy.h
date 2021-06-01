@@ -27,6 +27,7 @@
 #include "verilated.h"
 
 #include <algorithm>
+#include <array>
 #include <deque>
 #include <map>
 #include <memory>

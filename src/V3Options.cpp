@@ -787,6 +787,10 @@ void V3Options::notify() {
         cmdfl->v3warn(E_UNSUPPORTED,
                       "--main not usable with SystemC. Suggest see examples for sc_main().");
     }
+
+    if (coverage() && savable()) {
+        cmdfl->v3error("--coverage and --savable not supported together");
+    }
 }
 
 //######################################################################
@@ -1242,6 +1246,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             fl->v3warn(DEPRECATED, "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
     });
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
+    DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
+        m_reloopLimit = std::atoi(valp);
+        if (m_reloopLimit < 2) { fl->v3error("--reloop-limit must be >= 2: " << valp); }
+    });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
 

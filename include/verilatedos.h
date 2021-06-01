@@ -437,6 +437,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
     (((nbits) & VL_SIZEBITS_Q) ? ((1ULL << ((nbits) & VL_SIZEBITS_Q)) - 1ULL) : ~0ULL)
 /// Return mask for EData with 1's where relevant bits are (0=all bits)
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
+
 #define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
 
 #define VL_BITWORD_I(bit) ((bit) / VL_IDATASIZE)  ///< Word number for sv DPI vectors

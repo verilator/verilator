@@ -883,7 +883,7 @@ string V3Number::toString() const {
     return str;
 }
 
-uint32_t V3Number::toHash() const { return m_value[0]; }
+V3Hash V3Number::toHash() const { return V3Hash(m_width * (m_value[0] | 1)); }
 
 uint32_t V3Number::edataWord(int eword) const {
     UASSERT(!isFourState(), "edataWord with 4-state " << *this);

@@ -2449,10 +2449,12 @@ sub _lineno_match {
     my $lineno = shift;
     my $lines = shift;
     return 1 if !defined $lines;
-    if ($lines =~ /^(\d+)$/) {
-        return $1 == $lineno;
-    } elsif ($lines =~ /^(\d+)-(\d+)$/) {
-        return $1 <= $lineno && $2 >= $lineno;
+    foreach my $lc (split /,/, $lines) {
+        if ($lc =~ /^(\d+)$/) {
+            return 1 if $1 == $lineno;
+        } elsif ($lc =~ /^(\d+)-(\d+)$/) {
+            return 1 if $1 <= $lineno && $2 >= $lineno;
+        }
     }
     return 0;
 }

@@ -13,7 +13,13 @@ Verilator 4.203 devel
 
 **Minor:**
 
+* Add --reloop-limit argument (#2943). [Geza Lore]
+* Optimize large lookup tables to static data (#2925). [Geza Lore]
+* Split always blocks to better respect --output-split-cfuncs. [Geza Lore]
 * Fix initialization of assoc in assoc array (#2914). [myftptoyman]
+* Fix merging of assignments in C++ code (#2970). [Ruper Swarbrick]
+* Fix --protect-ids when using SV classes (#2994). [Geza Lore]
+* Fix constant function calls with uninit value (#2995). [yanx21]
 
 
 Verilator 4.202 2021-04-24
@@ -36,7 +42,6 @@ Verilator 4.202 2021-04-24
 * Add PINNOTFOUND warning in place of error (#2868). [Udi Finkelstein]
 * Support overlaps in priority case statements (#2864). [Rupert Swarbrick]
 * Support for null ports (#2875). [Udi Finkelstein]
-* Optimize large lookup tables to static data (#2925). [Geza Lore]
 * Fix class unpacked-array compile error (#2774). [Iru Cai]
 * Fix scope types in FST and VCD traces (#2805). [Alex Torregrosa]
 * Fix exceeding command-line ar limit (#2834). [Yinan Xu]

@@ -1157,7 +1157,8 @@ private:
                 cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
                 if (cfuncp->name() == "new") {
                     cfuncp->addInitsp(
-                        new AstCStmt(nodep->fileline(), "_ctor_var_reset(vlSymsp);\n"));
+                        new AstCStmt(nodep->fileline(),
+                                     VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n"));
                 }
             }
         }
