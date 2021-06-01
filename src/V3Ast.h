@@ -2255,6 +2255,7 @@ protected:
         addNOp3p(elsesp);
         isBoundsCheck(false);
     }
+
 public:
     ASTNODE_BASE_FUNCS(NodeIf)
     AstNode* condp() const { return op1p(); }  // op1 = condition
