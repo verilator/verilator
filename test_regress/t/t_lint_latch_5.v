@@ -17,4 +17,3 @@ module test
        z[1] <= a[1];
 
 endmodule
-
