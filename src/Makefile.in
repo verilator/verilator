@@ -47,25 +47,25 @@ obj_dbg:
 
 .SUFFIXES:
 
-.PHONY: ../bin/verilator_bin ../bin/verilator_bin_dbg ../bin/verilator_coverage_bin_dbg
+.PHONY: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
 
-opt: ../bin/verilator_bin
+opt: ../bin/verilator_bin$(EXEEXT)
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
-../bin/verilator_bin: ../bin/verilator_bin_dbg
-	-cp -p $<$(EXEEXT) $@$(EXEEXT).tmp
-	-mv -f $@$(EXEEXT).tmp $@$(EXEEXT)
+../bin/verilator_bin$(EXEEXT): ../bin/verilator_bin_dbg$(EXEEXT)
+	-cp -p $< $@.tmp
+	-mv -f $@.tmp $@
 else
-../bin/verilator_bin: obj_opt ../bin prefiles
+../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles
 	$(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
 	$(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
 endif
 
-dbg: ../bin/verilator_bin_dbg ../bin/verilator_coverage_bin_dbg
-../bin/verilator_bin_dbg: obj_dbg ../bin prefiles
+dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
+../bin/verilator_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
 	$(MAKE) -C obj_dbg -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
-../bin/verilator_coverage_bin_dbg: obj_dbg ../bin prefiles
+../bin/verilator_coverage_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
 

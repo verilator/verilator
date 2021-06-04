@@ -72,7 +72,7 @@ CFG_LIBS = @CFG_LIBS@
 #### End of system configuration section. ####
 
 VPATH += . $(bldsrc) $(srcdir)
-TGT = ../../verilator_bin
+TGT = ../../verilator_bin$(EXEEXT)
 
 #################
 ifeq ($(VL_DEBUG),)
