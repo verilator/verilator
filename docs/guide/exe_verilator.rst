@@ -418,8 +418,11 @@ Summary:
    fairly standard across Verilog tools.
 
    The file may contain :code:`//` comments which are ignored to the end of
-   the line.  Any :code:`$VAR`, :code:`$(VAR)`, or :code:`${VAR}` will be
-   replaced with the specified environment variable.
+   the line.  It may also contain :code:`/* .. */` comments which are
+   ignored, be cautious that wildcards are not handled in -f files, and
+   that :code:`directory/*` is the beginning of a comment, not a wildcard.
+   Any :code:`$VAR`, :code:`$(VAR)`, or :code:`${VAR}` will be replaced
+   with the specified environment variable.
 
 .. option:: -FI <file>
 
