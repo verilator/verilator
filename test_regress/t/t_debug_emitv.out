@@ -45,7 +45,7 @@ module Vt_debug_emitv;
         $display("stmt");
         $display("stmt");
     end
-    
+
     ???? // CFUNC '_final_TOP'
     $_CSTMT(Vt_debug_emitv* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     );
