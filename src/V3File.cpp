@@ -692,7 +692,7 @@ int V3OutFormatter::endLevels(const char* strg) {
 }
 
 void V3OutFormatter::puts(const char* strg) {
-    if (m_prependIndent) {
+    if (m_prependIndent && strg[0] != '\n') {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
     }
