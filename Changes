@@ -13,11 +13,26 @@ Verilator 4.203 devel
 
 **Minor:**
 
-* Add --reloop-limit argument (#2943). [Geza Lore]
+* Add --reloop-limit argument (#2943) (#2960). [Geza Lore]
+* Add TRACE_THREADS to CMake (#2934). [Jonathan Drolet]
 * Optimize large lookup tables to static data (#2925). [Geza Lore]
+* Optimize reloop to accept constant index offsets (#2939). [Geza Lore]
 * Split always blocks to better respect --output-split-cfuncs. [Geza Lore]
+* Support ignoring "`pragma protect ..." (#2886). [Udi Finkelstein]
+* Support --trace-fst for SystemC with CMake (#2927). [Jonathan Drolet]
+* Update cmake latest C++ Standard Compilation flag (#2951). [Ameya Vikram Singh]
+* Fix assertion failure in bitOpTree optimization (#2891) (#2899). [Raynard Qiao]
+* Fix DPI functions not seen as vpiModule (#2893). [Todd Strader]
+* Fix bounds check in VL_SEL_IWII (#2910). [Krzysztof Bieganski]
 * Fix initialization of assoc in assoc array (#2914). [myftptoyman]
+* Fix make support for gmake 3.x (#2920) (#2921). [Philipp Wagner]
+* Fix VPI memory access for packed arrays (#2922). [Todd Strader]
+* Fix split procedures to better respect --output-split-cfuncs (#2942). [Geza Lore]
+* Fix to emit 'else if' without nesting (#2944). [Geza Lore]
+* Fix part select issues in LATCH warning (#2948) (#2938). [Julien Margetts]
+* Fix to not emit empty files with low split limits (#2961). [Geza Lore]
 * Fix merging of assignments in C++ code (#2970). [Ruper Swarbrick]
+* Fix unused variable warnings (#2991). [Pieter Kapsenberg]
 * Fix --protect-ids when using SV classes (#2994). [Geza Lore]
 * Fix constant function calls with uninit value (#2995). [yanx21]
 
