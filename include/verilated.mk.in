@@ -10,6 +10,7 @@
 ######################################################################
 
 PERL = @PERL@
+PYTHON3 = @PYTHON3@
 CXX = @CXX@
 LINK = @CXX@
 AR = ar
@@ -35,7 +36,7 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
-VERILATOR_CCREPORT = $(VERILATOR_ROOT)/bin/verilator_ccache_report
+VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 ######################################################################
 # Make checks
@@ -264,7 +265,7 @@ ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
   endif
   VK_OTHER_GOALS := $(strip $(subst ccache-report,,$(MAKECMDGOALS)))
   ifeq ($(VK_OTHER_GOALS),)
-    $(error ccache-reprot must be used with at least one other explicit target)
+    $(error ccache-report must be used with at least one other explicit target)
   endif
 
   # Report ccache behaviour for this invocation of make
@@ -276,7 +277,7 @@ ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
   $(shell rm -f $(VK_CCACHE_REPORT))
 
 $(VK_CCACHE_REPORT): $(VK_OBJS)
-	$(VERILATOR_CCREPORT) -o $@ $(CCACHE_LOGFILE)
+	$(VERILATOR_CCACHE_REPORT) -o $@ $(CCACHE_LOGFILE)
 
 .PHONY: ccache-report
 ccache-report: $(VK_CCACHE_REPORT)

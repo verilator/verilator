@@ -2305,7 +2305,7 @@ sub cfg_with_threaded {
 }
 
 sub cfg_with_ccache {
-    return `grep "OBJCACHE \?= ccache" "../include/verilated.mk"` ne "";
+    return `grep "OBJCACHE \?= ccache" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
 }
 
 sub tries {
