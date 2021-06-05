@@ -55,3 +55,5 @@ else:
     for k in sorted(counts.keys()):
         c = counts[k]
         args.o.write("{:{width}}| {} ({:.2%})\n".format(k, c, c / total, width=width))
+
+args.o.write("#" * 80 + "\n")
