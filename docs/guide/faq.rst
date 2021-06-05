@@ -387,7 +387,7 @@ How do I get faster build times?
   identical source builds, even across different users.  If ccache was
   installed when Verilator was built it is used, or see OBJCACHE
   environment variable to override this. Also see the
-  :vlopt:`--output-split` option.
+  :vlopt:`--output-split` option and :ref: `Profiling ccache efficiency`
 
 * To reduce the compile time of classes that use a Verilated module (e.g. a
   top CPP file) you may wish to add a
