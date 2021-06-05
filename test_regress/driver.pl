@@ -2304,6 +2304,10 @@ sub cfg_with_threaded {
     return 1;  # C++11 now always required
 }
 
+sub cfg_with_ccache {
+    return `grep "OBJCACHE \?= ccache" "../include/verilated.mk"` ne "";
+}
+
 sub tries {
     # Number of retries when reading logfiles, generally only need many
     # retries when system is busy running a lot of tests

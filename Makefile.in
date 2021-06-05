@@ -131,6 +131,7 @@ DISTFILES1 = $(INFOS) .gitignore \
 	verilator-config.cmake.in \
 	verilator-config-version.cmake.in \
 	bin/verilator \
+	bin/verilator_ccache_report \
 	bin/verilator_coverage \
 	bin/verilator_difftree \
 	bin/verilator_gantt \
@@ -194,6 +195,7 @@ DISTFILES2 = \
 
 INST_PROJ_FILES = \
 	bin/verilator \
+	bin/verilator_ccache_report \
 	bin/verilator_coverage \
 	bin/verilator_gantt \
 	bin/verilator_includer \
@@ -282,7 +284,7 @@ verilator.pdf: Makefile
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_BIN_FILES = verilator verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT) \
-	verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
+	verilator_ccache_report verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
 # Some scripts go into both the search path and pkgdatadir,
 # so they can be found by the user, and under $VERILATOR_ROOT.
 
@@ -311,6 +313,7 @@ installbin:
 	( cd bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg$(EXEEXT) $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg$(EXEEXT) )
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_ccache_report $(DESTDIR)$(pkgdatadir)/bin/verilator_ccache_report )
 
 # Man files can either be part of the original kit, or built in current directory
 # So important we use $^ so VPATH is searched
@@ -477,6 +480,7 @@ clang-format:
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 PY_PROGRAMS = \
+	bin/verilator_ccache_report \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
 	docs/guide/conf.py \
