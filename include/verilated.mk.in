@@ -10,6 +10,7 @@
 ######################################################################
 
 PERL = @PERL@
+PYTHON3 = @PYTHON3@
 CXX = @CXX@
 LINK = @CXX@
 AR = ar
@@ -35,6 +36,7 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
+VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 ######################################################################
 # Make checks
@@ -253,6 +255,37 @@ endif
 #Default rule embedded in make:
 #.cpp.o:
 #	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+######################################################################
+### ccache report
+
+ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
+  ifneq ($(OBJCACHE),ccache)
+    $(error ccache-report requires OBJCACHE to equal 'ccache')
+  endif
+  VK_OTHER_GOALS := $(strip $(subst ccache-report,,$(MAKECMDGOALS)))
+  ifeq ($(VK_OTHER_GOALS),)
+    $(error ccache-report must be used with at least one other explicit target)
+  endif
+
+  # Report ccache behaviour for this invocation of make
+  export CCACHE_LOGFILE := $(VM_PREFIX).ccache-log
+  VK_CCACHE_REPORT := $(VM_PREFIX)__ccache_report.txt
+  # Truncate logfile
+  $(shell echo "" > $(CCACHE_LOGFILE))
+  # Remove previous report
+  $(shell rm -f $(VK_CCACHE_REPORT))
+
+$(VK_CCACHE_REPORT): $(VK_OBJS)
+	$(VERILATOR_CCACHE_REPORT) -o $@ $(CCACHE_LOGFILE)
+
+.PHONY: ccache-report
+ccache-report: $(VK_CCACHE_REPORT)
+	@cat $<
+
+# ccache-report runs last
+ccache-report: $(VK_OTHER_GOALS)
+endif
 
 ######################################################################
 ### Debugging

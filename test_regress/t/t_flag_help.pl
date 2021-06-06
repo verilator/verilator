@@ -10,23 +10,33 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 
+# See also t_flag_version.pl
+
+sub check {
+    my $interpreter = shift;
+    my $prog = shift;
+
+    run(fails => 0,
+        cmd => [$interpreter, $prog, "--help"],
+        logfile => "$Self->{obj_dir}/t_help.log",
+        tee => 0,
+        verilator_run => 1,
+        );
+
+    file_grep("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
+}
+
 foreach my $prog (
-    # See also t_flag_version.pl
     "../bin/verilator",
     "../bin/verilator_coverage",
     "../bin/verilator_difftree",
     "../bin/verilator_gantt",
     "../bin/verilator_profcfunc",
     ) {
-    run(fails => 0,
-        cmd => ["perl", $prog,
-                "--help"],
-        logfile => "$Self->{obj_dir}/t_help.log",
-        tee => 0,
-        verilator_run => 1,
-        );
-    file_grep("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
+    check("perl", $prog);
 }
+
+check("python3", "../bin/verilator_ccache_report");
 
 ok(1);
 1;
