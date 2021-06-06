@@ -30,6 +30,7 @@
 
 #include "V3Global.h"
 #include "V3Expand.h"
+#include "V3Stats.h"
 #include "V3Ast.h"
 
 #include <algorithm>
@@ -45,9 +46,23 @@ private:
 
     // STATE
     AstNode* m_stmtp = nullptr;  // Current statement
+    VDouble0 m_statWides;  // Statistic tracking
+    VDouble0 m_statWideWords;  // Statistic tracking
+    VDouble0 m_statWideLimited;  // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
+
+    bool doExpand(AstNode* nodep) {
+        ++m_statWides;
+        if (nodep->widthWords() <= v3Global.opt.expandLimit()) {
+            m_statWideWords += nodep->widthWords();
+            return true;
+        } else {
+            ++m_statWideLimited;
+            return false;
+        }
+    }
 
     int longOrQuadWidth(AstNode* nodep) {
         return (nodep->width() + (VL_EDATASIZE - 1)) & ~(VL_EDATASIZE - 1);
@@ -204,6 +219,7 @@ private:
 
     bool expandWide(AstNodeAssign* nodep, AstConst* rhsp) {
         UINFO(8, "    Wordize ASSIGN(CONST) " << nodep << endl);
+        if (!doExpand(nodep)) return false;
         // -> {for each_word{ ASSIGN(WORDSEL(wide,#),WORDSEL(CONST,#))}}
         if (rhsp->num().isFourState()) {
             rhsp->v3warn(E_UNSUPPORTED,  // LCOV_EXCL_LINE  // impossible?
@@ -219,6 +235,7 @@ private:
     //-------- Uniops
     bool expandWide(AstNodeAssign* nodep, AstVarRef* rhsp) {
         UINFO(8, "    Wordize ASSIGN(VARREF) " << nodep << endl);
+        if (!doExpand(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); w++) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
         }
@@ -228,6 +245,7 @@ private:
         UINFO(8, "    Wordize ASSIGN(ARRAYSEL) " << nodep << endl);
         UASSERT_OBJ(!VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType), nodep,
                     "ArraySel with unpacked arrays should have been removed in V3Slice");
+        if (!doExpand(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); w++) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
         }
@@ -236,6 +254,7 @@ private:
     bool expandWide(AstNodeAssign* nodep, AstNot* rhsp) {
         UINFO(8, "    Wordize ASSIGN(NOT) " << nodep << endl);
         // -> {for each_word{ ASSIGN(WORDSEL(wide,#),NOT(WORDSEL(lhs,#))) }}
+        if (!doExpand(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); w++) {
             addWordAssign(nodep, w,
                           new AstNot(rhsp->fileline(), newAstWordSelClone(rhsp->lhsp(), w)));
@@ -245,6 +264,7 @@ private:
     //-------- Biops
     bool expandWide(AstNodeAssign* nodep, AstAnd* rhsp) {
         UINFO(8, "    Wordize ASSIGN(AND) " << nodep << endl);
+        if (!doExpand(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); w++) {
             addWordAssign(nodep, w,
                           new AstAnd(nodep->fileline(), newAstWordSelClone(rhsp->lhsp(), w),
@@ -254,6 +274,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstOr* rhsp) {
         UINFO(8, "    Wordize ASSIGN(OR) " << nodep << endl);
+        if (!doExpand(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); w++) {
             addWordAssign(nodep, w,
                           new AstOr(nodep->fileline(), newAstWordSelClone(rhsp->lhsp(), w),
@@ -263,6 +284,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstXor* rhsp) {
         UINFO(8, "    Wordize ASSIGN(XOR) " << nodep << endl);
+        if (!doExpand(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); w++) {
             addWordAssign(nodep, w,
                           new AstXor(nodep->fileline(), newAstWordSelClone(rhsp->lhsp(), w),
@@ -273,6 +295,7 @@ private:
     //-------- Triops
     bool expandWide(AstNodeAssign* nodep, AstNodeCond* rhsp) {
         UINFO(8, "    Wordize ASSIGN(COND) " << nodep << endl);
+        if (!doExpand(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); w++) {
             addWordAssign(nodep, w,
                           new AstCond(nodep->fileline(), rhsp->condp()->cloneTree(true),
@@ -417,6 +440,7 @@ private:
 
     bool expandWide(AstNodeAssign* nodep, AstSel* rhsp) {
         UASSERT_OBJ(nodep->widthMin() == rhsp->widthConst(), nodep, "Width mismatch");
+        if (!doExpand(nodep)) return false;
         if (VN_IS(rhsp->lsbp(), Const) && VL_BITBIT_E(rhsp->lsbConst()) == 0) {
             int lsb = rhsp->lsbConst();
             UINFO(8, "    Wordize ASSIGN(SEL,align) " << nodep << endl);
@@ -647,6 +671,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstConcat* rhsp) {
         UINFO(8, "    Wordize ASSIGN(CONCAT) " << nodep << endl);
+        if (!doExpand(rhsp)) return false;
         // Lhs or Rhs may be word, long, or quad.
         // newAstWordSelClone nicely abstracts the difference.
         int rhsshift = rhsp->rhsp()->widthMin();
@@ -701,6 +726,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstReplicate* rhsp) {
         UINFO(8, "    Wordize ASSIGN(REPLICATE) " << nodep << endl);
+        if (!doExpand(rhsp)) return false;
         AstNode* lhsp = rhsp->lhsp();
         int lhswidth = lhsp->widthMin();
         const AstConst* constp = VN_CAST(rhsp->rhsp(), Const);
@@ -857,6 +883,7 @@ private:
         iterateChildren(nodep);
         bool did = false;
         if (nodep->isWide() && ((VN_IS(nodep->lhsp(), VarRef) || VN_IS(nodep->lhsp(), ArraySel)))
+            && ((VN_IS(nodep->lhsp(), VarRef) || VN_IS(nodep->lhsp(), ArraySel)))
             && !AstVar::scVarRecurse(nodep->lhsp())  // Need special function for SC
             && !AstVar::scVarRecurse(nodep->rhsp())) {
             if (AstConst* rhsp = VN_CAST(nodep->rhsp(), Const)) {
@@ -897,7 +924,11 @@ private:
 public:
     // CONSTRUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ExpandVisitor() override = default;
+    virtual ~ExpandVisitor() override {
+        V3Stats::addStat("Optimizations, expand wides", m_statWides);
+        V3Stats::addStat("Optimizations, expand wide words", m_statWideWords);
+        V3Stats::addStat("Optimizations, expand limited", m_statWideLimited);
+    }
 };
 
 //----------------------------------------------------------------------

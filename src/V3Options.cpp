@@ -1060,6 +1060,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-E", Set, &m_preprocOnly);
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
+    DECL_OPTION("-expand-limit", CbVal,
+                [this, fl](const char* valp) { m_expandLimit = std::atoi(valp); });
 
     DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) {
         parseOptsFile(fl, parseFileArg(optdir, valp), true);
