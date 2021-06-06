@@ -1,0 +1,9 @@
+################################################################################
+ccache report (from verilator_ccache_report) :
+
+Compiled object files:
+Vt_ccache_report__ALL.o   : IGNORED
+Vt_ccache_report__main.o  : IGNORED
+verilated.o               : IGNORED
+verilated_vcd_c.o         : IGNORED
+
