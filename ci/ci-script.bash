@@ -85,24 +85,16 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   # Run the specified test
   case $TESTS in
     dist-vlt-0)
-      if [[ "$CI_RUNS_ON" != "ubuntu-18.04" || "$CXX" != "clang++" ]]; then  # issue #2963
       "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/2
-      fi
       ;;
     dist-vlt-1)
-      if [[ "$CI_RUNS_ON" != "ubuntu-18.04" || "$CXX" != "clang++" ]]; then  # issue #2963
       "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/2
-      fi
       ;;
     vltmt-0)
-      if [[ "$CI_RUNS_ON" != "ubuntu-18.04" || "$CXX" != "clang++" ]]; then  # issue #2963
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
-      fi
       ;;
     vltmt-1)
-      if [[ "$CI_RUNS_ON" != "ubuntu-18.04" || "$CXX" != "clang++" ]]; then  # issue #2963
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
-      fi
       ;;
     coverage-all)
       nodist/code_coverage --stages 1-
