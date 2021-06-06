@@ -115,6 +115,8 @@ class CMakeEmitter final {
         cmake_set_raw(*of, name + "_THREADS", cvtToStr(v3Global.opt.threads()));
         *of << "# Threaded tracing output mode?  0/1/N threads (from --trace-threads)\n";
         cmake_set_raw(*of, name + "_TRACE_THREADS", cvtToStr(v3Global.opt.traceThreads()));
+        *of << "# Struct output mode?  0/1 (from --trace-structs)\n";
+        cmake_set_raw(*of, name + "_TRACE_STRUCTS", cvtToStr(v3Global.opt.traceStructs()));
         *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
         cmake_set_raw(*of, name + "_TRACE_VCD",
                       (v3Global.opt.trace() && (v3Global.opt.traceFormat() == TraceFormat::VCD))
