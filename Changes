@@ -14,6 +14,7 @@ Verilator 4.203 devel
 **Minor:**
 
 * Add --reloop-limit argument (#2943) (#2960). [Geza Lore]
+* Add --expand-limit argument (#3005). [Julien Margetts]
 * Add TRACE_THREADS to CMake (#2934). [Jonathan Drolet]
 * Optimize large lookup tables to static data (#2925). [Geza Lore]
 * Optimize reloop to accept constant index offsets (#2939). [Geza Lore]

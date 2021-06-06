@@ -315,6 +315,7 @@ detailed descriptions of these arguments.
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
+    --expand-limit <value>      Set expand optimization limit
      -F <file>                  Parse arguments from a file, relatively
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file

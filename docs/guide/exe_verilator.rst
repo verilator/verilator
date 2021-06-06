@@ -403,6 +403,12 @@ Summary:
    files on the command line that implement the main loop for your
    simulation.
 
+.. option:: --expand-limit <value>
+
+   Rarely needed.  Fine-tune optimizations to set the maximum size of an
+   expression in 32-bit words to expand into separate word-based
+   statements.
+
 .. option:: -F <file>
 
    Read the specified file, and act as if all text inside it was specified
