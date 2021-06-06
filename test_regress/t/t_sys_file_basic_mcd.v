@@ -30,7 +30,7 @@ module t;
     if (fd_fail != 0)
       fail("Able to allocate MCD descriptor when fully utilized.");
     // Return descriptor back to pool
-    fd_close  = fd[0];
+    fd_close = fd[0];
     $fclose(fd_close);
     // Re-attempt MCD allocation; should pass at this point.
     fd_success = $fopen($sformatf("%s/yet_another_file.dat", `STR(`TEST_OBJ_DIR)));
@@ -76,10 +76,19 @@ module t;
     int fd;
     // Wide filename
     fd = $fopen({`STR(`TEST_OBJ_DIR),
-                 "some_very_large_filename_that_no_one_would_ever_use_",
+                 "/some_very_large_filename_that_no_one_would_ever_use_",
                  "except_to_purposefully_break_my_beautiful_code.dat"});
     if (fd == 0) fail("Long filename could not be opened.");
     $fclose(fd);
+  end endtask
+
+  task automatic test5; begin
+    int fd_all;
+    fd_all = $fopen({`STR(`TEST_OBJ_DIR), "/t_sys_file_basic_mcd_test5.dat"});
+    if (fd_all == 0) fail("could not be opened.");
+    fd_all |= 1;
+    $fdisplay(fd_all, "To file and to stdout");
+    $fclose(fd_all);
   end endtask
 
   initial begin
@@ -95,6 +104,9 @@ module t;
 
     // Test4: Validate filename lengths
     test4;
+
+    // Test5: OR with stdout
+    test5;
 
     $write("*-* All Finished *-*\n");
     $finish(0);  // Test arguments to finish
