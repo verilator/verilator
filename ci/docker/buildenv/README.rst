@@ -1,4 +1,3 @@
-================================
 Verilator Build Docker Container
 ================================
 
@@ -52,7 +51,7 @@ top of a repository:
 
 
 Rebuilding
-==========
+----------
 
 To rebuild the Verilator-buildenv docker image, run:
 

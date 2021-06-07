@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,12 +12,16 @@
 //=========================================================================
 ///
 /// \file
-/// \brief Verilator: DPI implementation code
+/// \brief Verilated DPI implementation code
 ///
-///     This file must be compiled and linked against all objects
-///     created from Verilator or called by Verilator that use the DPI.
+/// This file must be compiled and linked against all Verilated objects
+/// that use the DPI.
 ///
-/// Code available from: https://verilator.org
+/// Declare any DPI routine inside Verilog to add this to the Makefile for
+/// the linker.
+///
+/// For documentation on the exported functions (named sv*) that are
+/// implemented here, refer to the IEEE DPI chapter.
 ///
 //=========================================================================
 
@@ -197,13 +203,13 @@ int svIncrement(const svOpenArrayHandle h, int d) { return _vl_openhandle_varp(h
 int svSize(const svOpenArrayHandle h, int d) { return _vl_openhandle_varp(h)->elements(d); }
 int svDimensions(const svOpenArrayHandle h) { return _vl_openhandle_varp(h)->udims(); }
 
-/// Return pointer to open array data, or nullptr if not in IEEE standard C layout
+// Return pointer to open array data, or nullptr if not in IEEE standard C layout
 void* svGetArrayPtr(const svOpenArrayHandle h) {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
     if (VL_UNLIKELY(!varp->isDpiStdLayout())) return nullptr;
     return varp->datap();
 }
-/// Return size of open array, or 0 if not in IEEE standard C layout
+// Return size of open array, or 0 if not in IEEE standard C layout
 int svSizeOfArray(const svOpenArrayHandle h) {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
     if (VL_UNLIKELY(!varp->isDpiStdLayout())) return 0;
@@ -253,7 +259,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
     return datap;
 }
 
-/// Return pointer to simulator open array element, or nullptr if outside range
+// Return pointer to simulator open array element, or nullptr if outside range
 static void* _vl_svGetArrElemPtr(const svOpenArrayHandle h, int nargs, int indx1, int indx2,
                                  int indx3) VL_MT_SAFE {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
@@ -262,7 +268,7 @@ static void* _vl_svGetArrElemPtr(const svOpenArrayHandle h, int nargs, int indx1
     return datap;
 }
 
-/// Copy to user bit array from simulator open array
+// Copy to user bit array from simulator open array
 static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s, int nargs,
                                       int indx1, int indx2, int indx3) VL_MT_SAFE {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
@@ -290,7 +296,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
         return;  // LCOV_EXCL_STOP
     }
 }
-/// Copy to user logic array from simulator open array
+// Copy to user logic array from simulator open array
 static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s, int nargs,
                                         int indx1, int indx2, int indx3) VL_MT_SAFE {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
@@ -333,7 +339,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
     }
 }
 
-/// Copy to simulator open array from from user bit array
+// Copy to simulator open array from from user bit array
 static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s, int nargs,
                                       int indx1, int indx2, int indx3) VL_MT_SAFE {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
@@ -355,7 +361,7 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
         return;  // LCOV_EXCL_STOP
     }
 }
-/// Copy to simulator open array from from user logic array
+// Copy to simulator open array from from user logic array
 static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s,
                                         int nargs, int indx1, int indx2, int indx3) VL_MT_SAFE {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
@@ -378,7 +384,7 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
     }
 }
 
-/// Return bit from simulator open array
+// Return bit from simulator open array
 static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1, int indx2,
                                  int indx3, int indx4) VL_MT_SAFE {
     // One extra index supported, as need bit number
@@ -393,7 +399,7 @@ static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1
         return 0;  // LCOV_EXCL_STOP
     }
 }
-/// Update simulator open array from bit
+// Update simulator open array from bit
 static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int nargs, int indx1,
                                 int indx2, int indx3, int indx4) VL_MT_SAFE {
     // One extra index supported, as need bit number

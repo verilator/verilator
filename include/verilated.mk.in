@@ -10,6 +10,7 @@
 ######################################################################
 
 PERL = @PERL@
+PYTHON3 = @PYTHON3@
 CXX = @CXX@
 LINK = @CXX@
 AR = ar
@@ -35,6 +36,7 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
+VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 ######################################################################
 # Make checks
@@ -201,26 +203,35 @@ else
   VK_OBJS += $(VK_FAST_OBJS) $(VK_SLOW_OBJS)
 endif
 
-# When archiving just objects (.o), single $(AR) run is enough.
-# When merging objects (.o) and archives (.a), the following steps are taken.
+# When archiving just objects (.o), use single $(AR) run
+#   1. Make .verilator_deplist.tmp file with list of objects so don't exceed
+#      the command line limits when calling $(AR).
+#      The approach to write the dependency file is compatible with GNU Make 3,
+#      and can be simplified using the file function once GNU Make 4.x becomes
+#      the minimum supported version.
+# When merging objects (.o) and archives (.a) additionally:
 #   1. Extract object files from .a
 #   2. Create a new archive from extracted .o and given .o
-%.a:
-	@echo "Archive $(AR) -cr $@ $^"
+%.a: | %.verilator_deplist.tmp
+	$(info Archive $(AR) -rcs $@ $^)
+	$(foreach L, $(filter-out %.a,$^), $(shell echo $L >>$@.verilator_deplist.tmp))
 	@if test $(words $(filter %.a,$^)) -eq 0; then \
-		$(AR) -cr $@ $^; \
-		$(RANLIB) $@; \
+		$(AR) -rcs $@ @$@.verilator_deplist.tmp; \
 	else \
-		$(RM) -rf $*__tmpdir; \
+		$(RM) -rf $@.tmpdir; \
 		for archive in $(filter %.a,$^); do \
-			mkdir -p $*__tmpdir/$$(basename $${archive}); \
-			cd $*__tmpdir/$$(basename $${archive}); \
+			mkdir -p $@.tmpdir/$$(basename $${archive}); \
+			cd $@.tmpdir/$$(basename $${archive}); \
 			$(AR) -x ../../$${archive}; \
 			cd ../..; \
 		done; \
-		$(AR) -cr $@ $(filter %.o,$^) $*__tmpdir/*/*.o; \
-		$(RM) -rf $*__tmpdir; \
-	fi
+		$(AR) -rcs $@ @$@.verilator_deplist.tmp $@.tmpdir/*/*.o; \
+	fi \
+	; $(RM) -rf $@.verilator_deplist.tmp $@.tmpdir
+
+# Truncate the dependency list file used in the %.a target above.
+%.verilator_deplist.tmp:
+	echo "" > $@
 
 $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 
@@ -244,6 +255,37 @@ endif
 #Default rule embedded in make:
 #.cpp.o:
 #	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+######################################################################
+### ccache report
+
+ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
+  ifneq ($(OBJCACHE),ccache)
+    $(error ccache-report requires OBJCACHE to equal 'ccache')
+  endif
+  VK_OTHER_GOALS := $(strip $(subst ccache-report,,$(MAKECMDGOALS)))
+  ifeq ($(VK_OTHER_GOALS),)
+    $(error ccache-report must be used with at least one other explicit target)
+  endif
+
+  # Report ccache behaviour for this invocation of make
+  export CCACHE_LOGFILE := $(VM_PREFIX).ccache-log
+  VK_CCACHE_REPORT := $(VM_PREFIX)__ccache_report.txt
+  # Truncate logfile
+  $(shell echo "" > $(CCACHE_LOGFILE))
+  # Remove previous report
+  $(shell rm -f $(VK_CCACHE_REPORT))
+
+$(VK_CCACHE_REPORT): $(VK_OBJS)
+	$(VERILATOR_CCACHE_REPORT) -o $@ $(CCACHE_LOGFILE)
+
+.PHONY: ccache-report
+ccache-report: $(VK_CCACHE_REPORT)
+	@cat $<
+
+# ccache-report runs last
+ccache-report: $(VK_OTHER_GOALS)
+endif
 
 ######################################################################
 ### Debugging

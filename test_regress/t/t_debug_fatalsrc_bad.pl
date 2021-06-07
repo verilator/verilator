@@ -15,7 +15,7 @@ lint(
     fails => $Self->{vlt_all},
     expect =>
 '%Error: Internal Error: .*: --debug-fatal-src
-.* See the manual and .*',
+.* See the manual .*',
     );
 
 ok(1);

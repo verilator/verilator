@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2000-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,10 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Save-restore serialization of verilated modules
+/// \brief Verilated save-restore serialization header
+///
+/// This must be included in user wrapper code that wants to use
+/// save/restore.
 ///
 //=============================================================================
 
@@ -25,18 +28,23 @@
 #include <string>
 
 //=============================================================================
-// VerilatedSerialize - convert structures to a stream representation
-// This class is not thread safe, it must be called by a single thread
+// VerilatedSerialize
+/// Class for writing serialization of structures to a stream representation.
+///
+/// User wrapper code will more typically use VerilatedSave which uses this
+/// as a subclass to write a file.
+///
+/// This class is not thread safe, it must be called by a single thread
 
 class VerilatedSerialize VL_NOT_FINAL {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
-    vluint8_t* m_cp;  ///< Current pointer into m_bufp buffer
-    vluint8_t* m_bufp;  ///< Output buffer
-    bool m_isOpen = false;  ///< True indicates open file/stream
-    std::string m_filename;  ///< Filename, for error messages
-    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
+    vluint8_t* m_cp;  // Current pointer into m_bufp buffer
+    vluint8_t* m_bufp;  // Output buffer
+    bool m_isOpen = false;  // True indicates open file/stream
+    std::string m_filename;  // Filename, for error messages
+    VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
 
     static constexpr size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
     static constexpr size_t bufferInsertSize() { return 16 * 1024; }
@@ -48,19 +56,26 @@ protected:
     VL_UNCOPYABLE(VerilatedSerialize);
 
 public:
+    /// Construct
     VerilatedSerialize() {
         m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
     }
+    /// Flish, close, and destruct
     virtual ~VerilatedSerialize() {
         close();
         if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = nullptr);
     }
     // METHODS
+    /// Return true if file is open
     bool isOpen() const { return m_isOpen; }
+    /// Return current filename
     std::string filename() const { return m_filename; }
+    /// Close the stream
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
+    /// Flush pending data to stream
     virtual void flush() VL_MT_UNSAFE_ONE {}
+    /// Write data to stream
     VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
         const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
         while (size) {
@@ -84,19 +99,24 @@ private:
 };
 
 //=============================================================================
-// VerilatedDeserial - load structures from a stream representation
-// This class is not thread safe, it must be called by a single thread
+// VerilatedDeserialize
+/// Class for loading structures from a stream representation.
+///
+/// User wrapper code will more typically use VerilatedRestore which uses
+/// this as a subclass to a read from a file.
+///
+/// This class is not thread safe, it must be called by a single thread
 
 class VerilatedDeserialize VL_NOT_FINAL {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
-    vluint8_t* m_cp;  ///< Current pointer into m_bufp buffer
-    vluint8_t* m_bufp;  ///< Output buffer
-    vluint8_t* m_endp = nullptr;  ///< Last valid byte in m_bufp buffer
-    bool m_isOpen = false;  ///< True indicates open file/stream
-    std::string m_filename;  ///< Filename, for error messages
-    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
+    vluint8_t* m_cp;  // Current pointer into m_bufp buffer
+    vluint8_t* m_bufp;  // Output buffer
+    vluint8_t* m_endp = nullptr;  // Last valid byte in m_bufp buffer
+    bool m_isOpen = false;  // True indicates open file/stream
+    std::string m_filename;  // Filename, for error messages
+    VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
 
     static constexpr size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
     static constexpr size_t bufferInsertSize() { return 16 * 1024; }
@@ -109,19 +129,26 @@ protected:
     VL_UNCOPYABLE(VerilatedDeserialize);
 
 public:
+    /// Construct
     VerilatedDeserialize() {
         m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
     }
+    /// Destruct
     virtual ~VerilatedDeserialize() {
         close();
         if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = nullptr);
     }
     // METHODS
+    /// Return true if file is open
     bool isOpen() const { return m_isOpen; }
+    /// Return current filename
     std::string filename() const { return m_filename; }
+    /// Close the stream
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
+    /// Flush pending data to stream
     virtual void flush() VL_MT_UNSAFE_ONE {}
+    /// Read data from stream
     VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
         vluint8_t* __restrict dp = static_cast<vluint8_t* __restrict>(datap);
         while (size) {
@@ -134,6 +161,8 @@ public:
         }
         return *this;  // For function chaining
     }
+
+    // Internal use:
     // Read a datum and compare with expected value
     VerilatedDeserialize& readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
     VerilatedDeserialize& readAssert(vluint64_t data) VL_MT_UNSAFE_ONE {
@@ -151,42 +180,55 @@ private:
 };
 
 //=============================================================================
-// VerilatedSave - serialize to a file
-// This class is not thread safe, it must be called by a single thread
+// VerilatedSave
+/// Stream-like object that serializes Verilated model to a file.
+///
+/// This class is not thread safe, it must be called by a single thread
 
 class VerilatedSave final : public VerilatedSerialize {
 private:
-    int m_fd = -1;  ///< File descriptor we're writing to
+    int m_fd = -1;  // File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
+    /// Construct new object
     VerilatedSave() = default;
+    /// Flush, close and destruct
     virtual ~VerilatedSave() override { close(); }
     // METHODS
     /// Open the file; call isOpen() to see if errors
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;
+    /// Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
+    /// Flush and close the file
     virtual void close() override VL_MT_UNSAFE_ONE;
+    /// Flush data to file
     virtual void flush() override VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================
-// VerilatedRestore - deserialize from a file
-// This class is not thread safe, it must be called by a single thread
+// VerilatedRestore
+/// Stream-like object that serializes Verilated model from a file.
+///
+/// This class is not thread safe, it must be called by a single thread
 
 class VerilatedRestore final : public VerilatedDeserialize {
 private:
-    int m_fd = -1;  ///< File descriptor we're writing to
+    int m_fd = -1;  // File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
+    /// Construct new object
     VerilatedRestore() = default;
+    /// Flush, close and destruct
     virtual ~VerilatedRestore() override { close(); }
 
     // METHODS
     /// Open the file; call isOpen() to see if errors
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;
+    /// Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
+    /// Close the file
     virtual void close() override VL_MT_UNSAFE_ONE;
     virtual void flush() override VL_MT_UNSAFE_ONE {}
     virtual void fill() override VL_MT_UNSAFE_ONE;

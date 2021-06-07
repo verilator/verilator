@@ -602,7 +602,8 @@ def write_type_enum(fh, typen, idx, processed, kind, indent):
 def write_types(filename):
     with open_file(filename) as fh:
         fh.write("    enum en : uint16_t {\n")
-        (final, last) = write_type_enum(fh, "Node", 0, {}, "concrete-enum", 2)
+        (final, ignored) = write_type_enum(  # pylint: disable=W0612
+            fh, "Node", 0, {}, "concrete-enum", 2)
         fh.write("        _ENUM_END = " + str(final) + "\n")
         fh.write("    };\n")
 
@@ -620,7 +621,7 @@ def write_types(filename):
         fh.write("    }\n")
 
 
-def write_header(filename):
+def write_macros(filename):
     with open_file(filename) as fh:
         typen = "None"
         base = "None"
@@ -628,10 +629,7 @@ def write_header(filename):
         in_filename = "V3AstNodes.h"
         ifile = Args.I + "/" + in_filename
         with open(ifile) as ifh:
-
-            fh.write("#line 1 \"../" + in_filename + "\"\n")
-
-            for line in ifh:
+            for (lineno, line) in enumerate(ifh, 1):
                 # Drop expanded macro definitions - but keep empty line so compiler
                 # message locations are accurate
                 line = re.sub(r'^\s*#(define|undef)\s+ASTGEN_.*$', '', line)
@@ -643,13 +641,20 @@ def write_header(filename):
                 if match:
                     typen = match.group(1)
                     base = match.group(4)
+                    if not typen.startswith("Node"):
+                        macro = "#define ASTGEN_SUPER_{t}(...) {b}(AstType::at{t}, __VA_ARGS__)\n" \
+                                .format(b=base, t=typen)
+                        fh.write(macro)
 
-                # Substitute macros
-                line = re.sub(r'\bASTGEN_SUPER\s*\(',
-                              base + "(AstType::at" + typen + ", ", line)
-
-                # Emit the line
-                fh.write(line)
+                match = re.search(r"ASTGEN_SUPER_(\w+)", line)
+                if match:
+                    if typen != match.group(1):
+                        print((
+                            "V3AstNodes.h:{l} ERROR: class Ast{t} calls wrong superclass "
+                            +
+                            "constructor macro (should call ASTGEN_SUPER_{t})"
+                        ).format(l=lineno, t=typen))
+                        sys.exit(1)
 
 
 ######################################################################
@@ -707,7 +712,7 @@ if Args.classes:
     write_visitor("V3Ast__gen_visitor.h")
     write_impl("V3Ast__gen_impl.h")
     write_types("V3Ast__gen_types.h")
-    write_header("V3AstNodes__gen.h")
+    write_macros("V3AstNodes__gen_macros.h")
 
 for cpt in Args.infiles:
     if not re.search(r'.cpp$', cpt):

@@ -515,7 +515,7 @@ public:
         unsigned yabs;
         xabs = diff(otherp->m_xpos, m_xpos);
         yabs = diff(otherp->m_ypos, m_ypos);
-        return lround(sqrt(xabs * xabs + yabs * yabs));
+        return std::lround(std::sqrt(xabs * xabs + yabs * yabs));
     }
     unsigned xpos() const { return m_xpos; }
     unsigned ypos() const { return m_ypos; }

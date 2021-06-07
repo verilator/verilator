@@ -22,6 +22,8 @@
 // Autoconf substitutes this with the strings from AC_INIT.
 #define PACKAGE_STRING ""
 
+#define PACKAGE_VERSION_NUMBER_STRING "0.000"
+
 #define DTVERSION PACKAGE_STRING
 
 //**********************************************************************

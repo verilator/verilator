@@ -101,12 +101,16 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
     v3Global.rootp()->timeunit(unit);
 
     for (AstNodeModule* nodep : mods) {
+        if (!v3Global.opt.timeOverrideUnit().isNone()) nodep->timeunit(unit);
         if (nodep->timeunit().isNone()) {
-            if (modTimedp && !VN_IS(nodep, Iface) && !VN_IS(nodep, Primitive)
-                && !(VN_IS(nodep, Package) && VN_CAST(nodep, Package)->isDollarUnit())) {
+            if (modTimedp  // Got previous
+                && (  // unit doesn't already include an override
+                    v3Global.opt.timeOverrideUnit().isNone()
+                    && v3Global.opt.timeDefaultUnit().isNone())
+                && nodep->timescaleMatters()) {
                 nodep->v3warn(TIMESCALEMOD,
                               "Timescale missing on this module as other modules have "
-                              "it (IEEE 1800-2017 3.14.2.2)\n"
+                              "it (IEEE 1800-2017 3.14.2.3)\n"
                                   << nodep->warnContextPrimary() << '\n'
                                   << modTimedp->warnOther()
                                   << "... Location of module with timescale\n"

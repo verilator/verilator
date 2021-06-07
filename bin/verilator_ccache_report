@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,C0123,C0301,R0902,R0913,R0914,R0912,R0915,W0621
+######################################################################
+
+import argparse
+import collections
+import re
+
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""Report ccache behavior of a Verilated model build.""",
+    epilog=
+    """Copyright 2002-2021 by Wilson Snyder. This program is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+
+parser.add_argument('-o',
+                    type=argparse.FileType('w'),
+                    metavar="OUTFILE",
+                    required=True,
+                    help='output file')
+parser.add_argument('logfile',
+                    type=argparse.FileType('r'),
+                    help='ccache log file')
+
+args = parser.parse_args()
+
+results = {}
+
+for line in args.logfile:
+    line = line.strip()
+    match = re.match(r'.*Object file: (.*)$', line)
+    if match:
+        obj = match.group(1)
+    match = re.match(r'.*Result: (.*)$', line)
+    if match:
+        results[obj] = match.group(1)
+
+args.o.write("#" * 80 + "\n")
+args.o.write("ccache report (from verilator_ccache_report) :\n")
+
+if not results:
+    args.o.write("\nAll object files up to date\n")
+else:
+    args.o.write("\nCompiled object files:\n")
+    width = max(len(_) for _ in results) + 1
+    for k in sorted(results.keys()):
+        args.o.write("{:{width}} : {}\n".format(k, results[k], width=width))
+
+    args.o.write("\nSummary:\n")
+    counts = collections.Counter(_ for _ in results.values())
+    total = sum(counts.values())
+    width = max(len(_) for _ in results.values()) + 1
+    for k in sorted(counts.keys()):
+        c = counts[k]
+        args.o.write("{:{width}}| {} ({:.2%})\n".format(k,
+                                                        c,
+                                                        c / total,
+                                                        width=width))
+
+args.o.write("#" * 80 + "\n")

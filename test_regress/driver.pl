@@ -716,6 +716,14 @@ sub error {
     $self->{errors} ||= $msg;
 }
 
+sub error_keep_going {
+    my $self = (ref $_[0] ? shift : $Self);
+    my $msg = join('',@_);
+    # Called from tests as: error_keep_going("Reason message"[, ...]);
+    warn "%Warning: $self->{scenario}/$self->{name}: ".$msg."\n";
+    $self->{errors_keep_going} ||= $msg;
+}
+
 sub skip {
     my $self = (ref $_[0] ? shift : $Self);
     my $msg = join('',@_);
@@ -880,7 +888,8 @@ sub compile_vlt_flags {
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
                       || $checkflags =~ /-trace-fst\b/);
-    $self->{trace_format} = (($checkflags =~ /-trace-fst/ && 'fst-c')
+    $self->{trace_format} = (($checkflags =~ /-trace-fst/ && $self->{sc} && 'fst-sc')
+                             || ($checkflags =~ /-trace-fst/ && !$self->{sc} && 'fst-c')
                              || ($self->{sc} && 'vcd-sc')
                              || (!$self->{sc} && 'vcd-c'));
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
@@ -899,7 +908,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim;
-    unshift @verilator_flags, "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address" if $param{sanitize};
+    unshift @verilator_flags, "-CFLAGS -fsanitize=address,undefined -LDFLAGS -fsanitize=address,undefined" if $param{sanitize};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
     unshift @verilator_flags, "--exe" if
@@ -961,9 +970,9 @@ sub compile {
 
     compile_vlt_cmd(%param);
 
-    if (!$self->{make_top_shell}) {
+    if (!$param{make_top_shell}) {
         $param{top_shell_filename}
-        = $self->{top_shell_filename} = $self->{top_filename};
+        = $self->{top_shell_filename} = "";
     } else {
         $param{top_shell_filename}
         = $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.".$self->v_suffix;
@@ -971,7 +980,7 @@ sub compile {
 
     if ($param{atsim}) {
         $param{tool_define} ||= $param{atsim_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/atsim_compile.log",
                     fails=>$param{fails},
                     cmd=>[($ENV{VERILATOR_ATSIM}||"atsim"),
@@ -987,7 +996,7 @@ sub compile {
     elsif ($param{ghdl}) {
         $param{tool_define} ||= $param{ghdl_define};
         mkdir $self->{ghdl_work_dir};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/ghdl_compile.log",
                     fails=>$param{fails},
                     cmd=>[($ENV{VERILATOR_GHDL}||"ghdl"),
@@ -1005,7 +1014,7 @@ sub compile {
     }
     elsif ($param{vcs}) {
         $param{tool_define} ||= $param{vcs_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/vcs_compile.log",
                     fails=>$param{fails},
                     cmd=>[($ENV{VERILATOR_VCS}||"vcs"),
@@ -1021,7 +1030,7 @@ sub compile {
     }
     elsif ($param{nc}) {
         $param{tool_define} ||= $param{nc_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         my @more_args;
         if ($self->vhdl) {
             ((my $ts = $param{top_shell_filename}) =~ s!\.v!!);
@@ -1043,7 +1052,7 @@ sub compile {
     }
     elsif ($param{ms}) {
         $param{tool_define} ||= $param{ms_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/ms_compile.log",
                     fails=>$param{fails},
                     cmd=>[("vlib $self->{obj_dir}/work && "),
@@ -1059,7 +1068,7 @@ sub compile {
     }
     elsif ($param{iv}) {
         $param{tool_define} ||= $param{iv_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         my @cmd = (($ENV{VERILATOR_IVERILOG}||"iverilog"),
                    @{$param{iv_flags}},
                    @{$param{iv_flags2}},
@@ -1076,7 +1085,7 @@ sub compile {
     }
     elsif ($param{xsim}) {
         $param{tool_define} ||= $param{xsim_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/xsim_compile.log",
                     fails=>$param{fails},
                     cmd=>[($ENV{VERILATOR_XVLOG}||"xvlog"),
@@ -1396,7 +1405,7 @@ sub inline_checks {
 sub ok {
     my $self = (ref $_[0]? shift : $Self);
     $self->{ok} = $_[0] if defined $_[0];
-    $self->{ok} = 0 if $self->{errors} || $self->{skips} || $self->unsupporteds;
+    $self->{ok} = 0 if $self->{errors} || $self->{errors_keep_going} || $self->{skips} || $self->unsupporteds;
     return $self->{ok};
 }
 
@@ -1739,6 +1748,7 @@ sub _make_main {
     print $fh "#include \"verilated.h\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;
     print $fh "#include \"verilated_fst_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'fst-c';
+    print $fh "#include \"verilated_fst_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'fst-sc';
     print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-c';
     print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
@@ -1800,6 +1810,7 @@ sub _make_main {
         $fh->print("#if VM_TRACE\n");
         $fh->print("    contextp->traceEverOn(true);\n");
         $fh->print("    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};\n") if $self->{trace_format} eq 'fst-c';
+        $fh->print("    std::unique_ptr<VerilatedFstSc> tfp{new VerilatedFstSc};\n") if $self->{trace_format} eq 'fst-sc';
         $fh->print("    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};\n") if $self->{trace_format} eq 'vcd-c';
         $fh->print("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n") if $self->{trace_format} eq 'vcd-sc';
         $fh->print("    topp->trace(tfp.get(), 99);\n");
@@ -2133,6 +2144,7 @@ sub files_identical {
                 $l1[$l] =~ s/Command Failed[^\n]+/Command Failed/mig;
                 $l1[$l] =~ s/Version: Verilator[^\n]+/Version: Verilator ###/mig;
                 $l1[$l] =~ s/CPU Time: +[0-9.]+ seconds[^\n]+/CPU Time: ###/mig;
+                $l1[$l] =~ s/\?v=[0-9.]+/?v=latest/mig;  # warning URL
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest
                     last;
@@ -2143,7 +2155,7 @@ sub files_identical {
         for (my $l=0; $l<=$nl; ++$l) {
             if (($l1[$l]||"") ne ($l2[$l]||"")) {
                 next try if $moretry;
-                $self->error("Line ".($l+1)." miscompares; $fn1 != $fn2");
+                $self->error_keep_going("Line ".($l+1)." miscompares; $fn1 != $fn2");
                 warn("F1: ".($l1[$l]||"*EOF*\n")
                      ."F2: ".($l2[$l]||"*EOF*\n"));
                 if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
@@ -2262,7 +2274,7 @@ sub _vcd_read {
     my @hier = ($data);
     my $lasthier;
     while (defined(my $line = $fh->getline)) {
-        if ($line =~ /\$scope (module|struct)\s+(\S+)/) {
+        if ($line =~ /\$scope (module|struct|interface)\s+(\S+)/) {
             $hier[$#hier]->{$1} ||= {};
             push @hier, $hier[$#hier]->{$1};
             $lasthier = $hier[$#hier];
@@ -2290,6 +2302,10 @@ sub cxx_version {
 
 sub cfg_with_threaded {
     return 1;  # C++11 now always required
+}
+
+sub cfg_with_ccache {
+    return `grep "OBJCACHE \?= ccache" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
 }
 
 sub tries {
@@ -2375,6 +2391,76 @@ sub file_sed {
         $contents = $_;
     }
     $self->write_wholefile($outfilename, $contents);
+}
+
+sub extract {
+    my $self = (ref $_[0]? shift : $Self);
+    my %param = (#in =>,
+        #out =>
+        regexp => qr/.*/,
+        lineno_adjust => -9999,
+        lines => undef,  #'#, #-#',
+        @_);
+
+    my $temp_fn = $param{out};
+    $temp_fn =~ s!.*/!!g;
+    $temp_fn = $self->{obj_dir} . "/" . $temp_fn;
+
+    my @out;
+    my $emph = "";
+    my $lineno = 0;
+    my $lineno_out = 0;
+    {
+        my $fh = IO::File->new("<$param{in}") or die "%Error: $! $param{in},";
+        while (defined(my $line = $fh->getline)) {
+            ++$lineno;
+            if ($line =~ /$param{regexp}/
+                && _lineno_match($lineno, $param{lines})) {
+                if ($line =~ m!t/[A-Za-z0-9_]+.v:(\d+):(\d+):!) {
+                    my $lineno = $1;
+                    my $col = $2;
+                    $lineno += $param{lineno_adjust};
+                    $lineno = 1 if $lineno < 1;
+                    $line =~ s!t/[A-Za-z0-9_]+.v:(\d+):(\d+):!example.v:${lineno}:${col}!;
+                }
+                push @out, "   " . $line;
+                ++$lineno_out;
+                if ($line =~ /<--/) {
+                    $emph .= "," if $emph;
+                    $emph .= $lineno_out;
+                }
+            }
+        }
+    }
+    {
+        my $fhw = IO::File->new(">$temp_fn") or die "%Error: $! $temp_fn,";
+        my $lang = "";
+        $lang = " sv" if $param{in} =~ /\.s?vh?$/;
+        $fhw->print(".. comment: generated by " . $self->{name} . "\n");
+        $fhw->print(".. code-block::${lang}\n");
+        $fhw->print("   :linenos:\n") if $lang && $#out > 0;
+        $fhw->print("   :emphasize-lines: ${emph}\n") if $emph;
+        $fhw->print("\n");
+        foreach my $line (@out) {
+            $fhw->print($line);
+        }
+    }
+
+    $self->files_identical($temp_fn, $param{out});
+}
+
+sub _lineno_match {
+    my $lineno = shift;
+    my $lines = shift;
+    return 1 if !defined $lines;
+    foreach my $lc (split /,/, $lines) {
+        if ($lc =~ /^(\d+)$/) {
+            return 1 if $1 == $lineno;
+        } elsif ($lc =~ /^(\d+)-(\d+)$/) {
+            return 1 if $1 <= $lineno && $2 >= $lineno;
+        }
+    }
+    return 0;
 }
 
 #######################################################################

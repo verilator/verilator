@@ -20,7 +20,7 @@
 # cmake --build .
 
 cmake_minimum_required(VERSION 3.8)
-project(cmake_hello_sc)
+project(cmake_hello_sc CXX)
 
 find_package(verilator HINTS $ENV{VERILATOR_ROOT} ${VERILATOR_ROOT})
 if (NOT verilator_FOUND)
@@ -36,6 +36,11 @@ find_package(SystemCLanguage QUIET)
 
 # Create a new executable target that will contain all your sources
 add_executable(example ../make_hello_sc/sc_main.cpp)
+
+set_property(
+	TARGET example
+	PROPERTY CXX_STANDARD ${SystemC_CXX_STANDARD}
+	)
 
 # Add the Verilated circuit to the target
 verilate(example SYSTEMC

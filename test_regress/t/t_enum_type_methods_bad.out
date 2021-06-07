@@ -2,4 +2,4 @@
                                                          : ... In instance t
    24 |       e.next(increment);
       |              ^~~~~~~~~
-                        ... See the manual and https://verilator.org for more assistance.
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

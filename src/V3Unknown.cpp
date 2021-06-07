@@ -127,6 +127,7 @@ private:
                              new AstAssign(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))),
                 nullptr);
             newp->branchPred(VBranchPred::BP_LIKELY);
+            newp->isBoundsCheck(true);
             if (debug() >= 9) newp->dumpTree(cout, "     _new: ");
             abovep->addNextStmt(newp, abovep);
             prep->user2p(newp);  // Save so we may LogAnd it next time
@@ -357,7 +358,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
-            AstNode* basefromp = AstArraySel::baseFromp(nodep);
+            AstNode* basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();
@@ -405,7 +406,7 @@ private:
         if (!nodep->user1SetOnce()) {
             if (debug() == 9) nodep->dumpTree(cout, "-in: ");
             // Guard against reading/writing past end of arrays
-            AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
+            AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp(), true);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();

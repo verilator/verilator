@@ -84,6 +84,12 @@ define_property(TARGET
 )
 
 define_property(TARGET
+  PROPERTY VERILATOR_TRACE_THREADED
+  BRIEF_DOCS "Verilator multithread tracing enabled"
+  FULL_DOCS "Verilator multithread tracing enabled"
+)
+
+define_property(TARGET
   PROPERTY VERILATOR_COVERAGE
   BRIEF_DOCS "Verilator coverage enabled"
   FULL_DOCS "Verilator coverage enabled"
@@ -113,9 +119,16 @@ define_property(TARGET
   FULL_DOCS "Verilator SystemC enabled"
 )
 
+define_property(TARGET
+    PROPERTY VERILATOR_TRACE_STRUCTS
+    BRIEF_DOCS "Verilator trace structs enabled"
+    FULL_DOCS "Verilator trace structs enabled"
+)
+
+
 function(verilate TARGET)
-  cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC"
-                                 "PREFIX;TOP_MODULE;THREADS;DIRECTORY"
+  cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC;TRACE_STRUCTS"
+                                 "PREFIX;TOP_MODULE;THREADS;TRACE_THREADS;DIRECTORY"
                                  "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST;OPT_GLOBAL"
                                  ${ARGN})
   if (NOT VERILATE_SOURCES)
@@ -134,6 +147,10 @@ function(verilate TARGET)
 
   if (VERILATE_THREADS)
     list(APPEND VERILATOR_ARGS --threads ${VERILATE_THREADS})
+  endif()
+
+  if (VERILATE_TRACE_THREADS)
+    list(APPEND VERILATOR_ARGS --trace-threads ${VERILATE_TRACE_THREADS})
   endif()
 
   if (VERILATE_COVERAGE)
@@ -156,6 +173,10 @@ function(verilate TARGET)
     list(APPEND VERILATOR_ARGS --sc)
   else()
     list(APPEND VERILATOR_ARGS --cc)
+  endif()
+
+  if (VERILATE_TRACE_STRUCTS)
+      list(APPEND VERILATOR_ARGS --trace-structs)
   endif()
 
   foreach(INC ${VERILATE_INCLUDE_DIRS})
@@ -240,6 +261,11 @@ function(verilate TARGET)
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_THREADED ON)
   endif()
 
+  if (${VERILATE_PREFIX}_TRACE_THREADS)
+    # If any verilate() call specifies TRACE_THREADS, define VL_TRACE_THREADED in the final build
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_THREADED ON)
+  endif()
+
   if (${VERILATE_PREFIX}_COVERAGE)
     # If any verilate() call specifies COVERAGE, define VM_COVERAGE in the final build
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_COVERAGE ON)
@@ -260,6 +286,10 @@ function(verilate TARGET)
   if (${VERILATE_PREFIX}_SC)
     # If any verilate() call specifies SYSTEMC, define VM_SC in the final build
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_SYSTEMC ON)
+  endif()
+
+  if (${VERILATE_PREFIX}_TRACE_STRUCTS)
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_STRUCTS ON)
   endif()
 
     # Add the compile flags only on Verilated sources
@@ -296,6 +326,7 @@ function(verilate TARGET)
     VM_COVERAGE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_COVERAGE>>
     VM_SC=$<BOOL:$<TARGET_PROPERTY:VERILATOR_SYSTEMC>>
     $<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:VL_THREADED>
+    $<$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_THREADED>>:VL_TRACE_THREADED>
     VM_TRACE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE>>
     VM_TRACE_VCD=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_VCD>>
     VM_TRACE_FST=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_FST>>

@@ -47,7 +47,7 @@ def test():
             #  to uncovered (in G++ 9.3.0) even with all inlining turned off.
             #  Having false negative coverage is more effort then missing negatives.
             #  Also this seems to explode the runtime (since a lot more data).
-            #+ " -fkeep-inline-functions"
+            #  + " -fkeep-inline-functions"
             # Otherwise static may not show as uncovered
             + " -fkeep-static-functions"
             # Exceptions can pollute the branch coverage data
@@ -194,7 +194,7 @@ def test():
     if Args.stage_enabled[18]:
         ci_fold_start("upload")
         print("Stage 18: Upload")
-        cmd = "bash <(curl -s https://codecov.io/bash) -f " + cc_dir + "/app_total.info"
+        cmd = "bash <(cat ci/coverage-upload.sh) -f " + cc_dir + "/app_total.info"
         print("print: Not running: export CODECOV_TOKEN=<hidden>")
         print("print: Not running: " + cmd)
         ci_fold_end()

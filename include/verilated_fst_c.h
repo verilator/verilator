@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,10 +12,11 @@
 //=============================================================================
 ///
 /// \file
-/// \brief C++ Tracing in FST Format
+/// \brief Verilated tracing in FST format header
+///
+/// User wrapper code should use this header when creating FST traces.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef VERILATOR_VERILATED_FST_C_H_
 #define VERILATOR_VERILATED_FST_C_H_
@@ -47,8 +48,8 @@ private:
     std::map<vluint32_t, fstHandle> m_code2symbol;
     std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;
-    fstHandle* m_symbolp = nullptr;  ///< same as m_code2symbol, but as an array
-    char* m_strbuf = nullptr;  ///< String buffer long enough to hold maxBits() chars
+    fstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
+    char* m_strbuf = nullptr;  // String buffer long enough to hold maxBits() chars
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
@@ -113,20 +114,22 @@ public:
                     fstVarType vartype, bool array, int arraynum);
 };
 
+#ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
 template <> void VerilatedTrace<VerilatedFst>::dump(vluint64_t timeui);
 template <> void VerilatedTrace<VerilatedFst>::set_time_unit(const char* unitp);
 template <> void VerilatedTrace<VerilatedFst>::set_time_unit(const std::string& unit);
 template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const char* unitp);
 template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const std::string& unit);
+#endif
 
 //=============================================================================
 // VerilatedFstC
 /// Create a FST dump file in C standalone (no SystemC) simulations.
 /// Also derived for use in SystemC simulations.
 
-class VerilatedFstC final {
-    VerilatedFst m_sptrace;  ///< Trace file being created
+class VerilatedFstC VL_NOT_FINAL {
+    VerilatedFst m_sptrace;  // Trace file being created
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFstC);
@@ -149,6 +152,8 @@ public:
     /// Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
     /// Write one cycle of dump data
+    /// Call with the current context's time just after eval'ed,
+    /// e.g. ->dump(contextp->time())
     void dump(vluint64_t timeui) { m_sptrace.dump(timeui); }
     /// Write one cycle of dump data - backward compatible and to reduce
     /// conversion warnings.  It's better to use a vluint64_t time instead.

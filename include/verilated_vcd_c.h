@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,10 +12,11 @@
 //=============================================================================
 ///
 /// \file
-/// \brief C++ Tracing in VCD Format
+/// \brief Verilated tracing in VCD format header
+///
+/// User wrapper code should use this header when creating VCD traces.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef VERILATOR_VERILATED_VCD_C_H_
 #define VERILATOR_VERILATED_VCD_C_H_
@@ -29,20 +30,25 @@
 
 class VerilatedVcd;
 
-// SPDIFF_ON
 //=============================================================================
 // VerilatedFile
-/// File handling routines, which can be overrode for e.g. socket I/O
+/// Class representing a file to write to. These virtual methods can be
+/// overrode for e.g. socket I/O.
 
 class VerilatedVcdFile VL_NOT_FINAL {
 private:
-    int m_fd = 0;  ///< File descriptor we're writing to
+    int m_fd = 0;  // File descriptor we're writing to
 public:
     // METHODS
+    /// Construct a (as yet) closed file
     VerilatedVcdFile() = default;
+    /// Close and destruct
     virtual ~VerilatedVcdFile() = default;
+    /// Open a file with given filename
     virtual bool open(const std::string& name) VL_MT_UNSAFE;
+    /// Close object's file
     virtual void close() VL_MT_UNSAFE;
+    /// Write data to file (if it is open)
     virtual ssize_t write(const char* bufp, ssize_t len) VL_MT_UNSAFE;
 };
 
@@ -59,25 +65,24 @@ private:
     //=========================================================================
     // VCD specific internals
 
-    VerilatedVcdFile* m_filep;  ///< File we're writing to
-    bool m_fileNewed;  ///< m_filep needs destruction
-    bool m_isOpen = false;  ///< True indicates open file
-    bool m_evcd = false;  ///< True for evcd format
-    std::string m_filename;  ///< Filename we're writing to (if open)
-    vluint64_t m_rolloverMB = 0;  ///< MB of file size to rollover at
-    int m_modDepth = 0;  ///< Depth of module hierarchy
+    VerilatedVcdFile* m_filep;  // File we're writing to
+    bool m_fileNewed;  // m_filep needs destruction
+    bool m_isOpen = false;  // True indicates open file
+    bool m_evcd = false;  // True for evcd format
+    std::string m_filename;  // Filename we're writing to (if open)
+    vluint64_t m_rolloverMB = 0;  // MB of file size to rollover at
+    int m_modDepth = 0;  // Depth of module hierarchy
 
-    char* m_wrBufp;  ///< Output buffer
-    char* m_wrFlushp;  ///< Output buffer flush trigger location
-    char* m_writep;  ///< Write pointer into output buffer
-    vluint64_t m_wrChunkSize;  ///< Output buffer size
-    vluint64_t m_wroteBytes = 0;  ///< Number of bytes written to this file
+    char* m_wrBufp;  // Output buffer
+    char* m_wrFlushp;  // Output buffer flush trigger location
+    char* m_writep;  // Write pointer into output buffer
+    vluint64_t m_wrChunkSize;  // Output buffer size
+    vluint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
-    std::vector<char> m_suffixes;  ///< VCD line end string codes + metadata
-    const char* m_suffixesp;  ///< Pointer to first element of above
+    std::vector<char> m_suffixes;  // VCD line end string codes + metadata
 
     using NameMap = std::map<const std::string, const std::string>;
-    NameMap* m_namemapp = nullptr;  ///< List of names for the header
+    NameMap* m_namemapp = nullptr;  // List of names for the header
 
     void bufferResize(vluint64_t minsize);
     void bufferFlush() VL_MT_UNSAFE_ONE;
@@ -316,20 +321,22 @@ public:
 #endif  // VL_TRACE_VCD_OLD_API
 };
 
+#ifndef DOXYGEN
 // Declare specializations here they are used in VerilatedVcdC just below
 template <> void VerilatedTrace<VerilatedVcd>::dump(vluint64_t timeui);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const char* unitp);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const std::string& unit);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const char* unitp);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const std::string& unit);
+#endif  // DOXYGEN
 
 //=============================================================================
 // VerilatedVcdC
-/// Create a VCD dump file in C standalone (no SystemC) simulations.
-/// Also derived for use in SystemC simulations.
+/// Class representing a VCD dump file in C standalone (no SystemC)
+/// simulations.  Also derived for use in SystemC simulations.
 
 class VerilatedVcdC VL_NOT_FINAL {
-    VerilatedVcd m_sptrace;  ///< Trace file being created
+    VerilatedVcd m_sptrace;  // Trace file being created
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcdC);
@@ -361,6 +368,8 @@ public:
     /// Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
     /// Write one cycle of dump data
+    /// Call with the current context's time just after eval'ed,
+    /// e.g. ->dump(contextp->time())
     void dump(vluint64_t timeui) VL_MT_SAFE { m_sptrace.dump(timeui); }
     /// Write one cycle of dump data - backward compatible and to reduce
     /// conversion warnings.  It's better to use a vluint64_t time instead.

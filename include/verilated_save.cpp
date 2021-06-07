@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,12 @@
 //=============================================================================
 ///
 /// \file
-/// \brief C++ Tracing in VCD Format
+/// \brief Verilated save/restore implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --savable.
+///
+/// Use "verilator --savable" to add this to the Makefile for the linker.
 ///
 //=============================================================================
 
@@ -45,9 +50,9 @@
 // clang-format on
 
 // CONSTANTS
-/// Value of first bytes of each file (must be multiple of 8 bytes)
+// Value of first bytes of each file (must be multiple of 8 bytes)
 static const char* const VLTSAVE_HEADER_STR = "verilatorsave02\n";
-/// Value of last bytes of each file (must be multiple of 8 bytes)
+// Value of last bytes of each file (must be multiple of 8 bytes)
 static const char* const VLTSAVE_TRAILER_STR = "vltsaved";
 
 //=============================================================================
@@ -78,13 +83,13 @@ VerilatedDeserialize& VerilatedDeserialize::readAssert(const void* __restrict da
 
 void VerilatedSerialize::header() VL_MT_UNSAFE_ONE {
     VerilatedSerialize& os = *this;  // So can cut and paste standard << code below
-    assert((strlen(VLTSAVE_HEADER_STR) & 7) == 0);  // Keep aligned
-    os.write(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR));
+    assert((std::strlen(VLTSAVE_HEADER_STR) & 7) == 0);  // Keep aligned
+    os.write(VLTSAVE_HEADER_STR, std::strlen(VLTSAVE_HEADER_STR));
 }
 
 void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
-    if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
+    if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, std::strlen(VLTSAVE_HEADER_STR)))) {
         std::string fn = filename();
         std::string msg
             = std::string(
@@ -97,13 +102,13 @@ void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
 
 void VerilatedSerialize::trailer() VL_MT_UNSAFE_ONE {
     VerilatedSerialize& os = *this;  // So can cut and paste standard << code below
-    assert((strlen(VLTSAVE_TRAILER_STR) & 7) == 0);  // Keep aligned
-    os.write(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR));
+    assert((std::strlen(VLTSAVE_TRAILER_STR) & 7) == 0);  // Keep aligned
+    os.write(VLTSAVE_TRAILER_STR, std::strlen(VLTSAVE_TRAILER_STR));
 }
 
 void VerilatedDeserialize::trailer() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
-    if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR)))) {
+    if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, std::strlen(VLTSAVE_TRAILER_STR)))) {
         std::string fn = filename();
         std::string msg = std::string("Can't deserialize; file has wrong end-of-file signature: ")
                           + filename();
@@ -197,7 +202,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
+                std::string msg = std::string(__FUNCTION__) + ": " + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
@@ -228,7 +233,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
+                std::string msg = std::string(__FUNCTION__) + ": " + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;

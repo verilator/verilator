@@ -191,8 +191,9 @@ public:
                     AstVar* portp = conIt->first;
                     AstNode* pinp = conIt->second->exprp();
                     AstNodeDType* dtypep = pinp->dtypep();
-                    stack << "\n           " << portp->prettyName() << " = "
-                          << prettyNumber(&fetchConst(pinp)->num(), dtypep);
+                    if (AstConst* valp = fetchConstNull(pinp))
+                        stack << "\n           " << portp->prettyName() << " = "
+                              << prettyNumber(&valp->num(), dtypep);
                 }
             }
             m_whyNotOptimizable += stack.str();
@@ -978,6 +979,17 @@ private:
         }
         SimStackNode stackNode(nodep, &tconnects);
         m_callStack.push_front(&stackNode);
+        // Clear output variable
+        if (auto* const basicp = VN_CAST(funcp->fvarp(), Var)->basicp()) {
+            AstConst cnst(funcp->fvarp()->fileline(), AstConst::WidthedValue(), basicp->widthMin(),
+                          0);
+            if (basicp->isZeroInit()) {
+                cnst.num().setAllBits0();
+            } else {
+                cnst.num().setAllBitsX();
+            }
+            newValue(funcp->fvarp(), &cnst);
+        }
         // Evaluate the function
         iterate(funcp);
         m_callStack.pop_front();

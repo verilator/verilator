@@ -66,7 +66,6 @@ public:
     AstNodeFTask* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
     virtual string dotColor() const override { return pure() ? "black" : "red"; }
-    virtual FileLine* fileline() const override { return nodep()->fileline(); }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
 };
@@ -1158,7 +1157,8 @@ private:
                 cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
                 if (cfuncp->name() == "new") {
                     cfuncp->addInitsp(
-                        new AstCStmt(nodep->fileline(), "_ctor_var_reset(vlSymsp);\n"));
+                        new AstCStmt(nodep->fileline(),
+                                     VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n"));
                 }
             }
         }

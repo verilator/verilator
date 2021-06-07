@@ -492,7 +492,7 @@ private:
         //   signed: Unsigned  (11.8.1)
         //   width: LHS + RHS
         AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
-        userIterateAndNext(vdtypep, WidthVP(SELF, BOTH).p());
+        userIterate(vdtypep, WidthVP(SELF, BOTH).p());
         if (VN_IS(vdtypep, QueueDType)) {
             // Queue "element 0" is lhsp, so we need to swap arguments
             auto* newp = new AstConsQueue(nodep->fileline(), nodep->rhsp()->unlinkFrBack(),
@@ -1096,7 +1096,7 @@ private:
                 iterateCheckSizedSelf(nodep, "Ticks", nodep->ticksp(), SELF, BOTH);
                 V3Const::constifyParamsEdit(nodep->ticksp());  // ticksp may change
                 const AstConst* constp = VN_CAST(nodep->ticksp(), Const);
-                if (!constp || constp->toSInt() < 1) {
+                if (!constp) {
                     nodep->v3error("$past tick value must be constant (IEEE 1800-2017 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
                 } else if (constp->toSInt() < 1) {
@@ -1826,6 +1826,7 @@ private:
         if (m_vup->final()) {
             // CastSize not needed once sizes determined
             AstNode* underp = nodep->lhsp()->unlinkFrBack();
+            underp->dtypeFrom(nodep);
             nodep->replaceWith(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
@@ -2461,7 +2462,7 @@ private:
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         AstBasicDType* basicp = fromDtp ? fromDtp->basicp() : nullptr;
         UINFO(9, "     from dt " << fromDtp << endl);
-        userIterateAndNext(fromDtp, WidthVP(SELF, BOTH).p());
+        userIterate(fromDtp, WidthVP(SELF, BOTH).p());
         if (AstEnumDType* adtypep = VN_CAST(fromDtp, EnumDType)) {
             methodCallEnum(nodep, adtypep);
         } else if (AstAssocArrayDType* adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
@@ -3314,7 +3315,9 @@ private:
             while (const AstConstDType* vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
             }
-            userIterateAndNext(dtypep, WidthVP(SELF, BOTH).p());
+
+            userIterate(dtypep, WidthVP(SELF, BOTH).p());
+
             if (auto* vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
                 VL_DO_DANGLING(patternUOrStruct(nodep, vdtypep, defaultp), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
@@ -3868,27 +3871,6 @@ private:
                         if (nodep->timeunit().isNone()) {
                             nodep->v3fatalSrc("display %t has no time units");
                         }
-                        double scale = nodep->timeunit().multiplier()
-                                       / v3Global.rootp()->timeprecision().multiplier();
-                        if (scale != 1.0) {
-                            AstNode* newp;
-                            AstNRelinker relinkHandle;
-                            argp->unlinkFrBack(&relinkHandle);
-                            if (argp->isDouble()) {  // Convert it
-                                ch = '^';
-                                newp = new AstMulD(
-                                    argp->fileline(),
-                                    new AstConst(argp->fileline(), AstConst::RealDouble(), scale),
-                                    argp);
-                            } else {
-                                newp = new AstMul(argp->fileline(),
-                                                  new AstConst(argp->fileline(),
-                                                               AstConst::Unsized64(),
-                                                               llround(scale)),
-                                                  argp);
-                            }
-                            relinkHandle.relink(newp);
-                        }
                         argp = nextp;
                     }
                     break;
@@ -3943,11 +3925,13 @@ private:
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         if (!m_paramsOnly) {
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
+            string text = nodep->fmtp()->text();
+            if (text.empty()) text = "Elaboration system task message (IEEE 1800-2017 20.11)";
             switch (nodep->displayType()) {
-            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, nodep->fmtp()->text()); break;
+            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, text); break;
+            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, text); break;
+            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, text); break;
+            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, text); break;
             default: UASSERT_OBJ(false, nodep, "Unexpected elaboration display type");
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -6028,8 +6012,15 @@ private:
         toDtp = toDtp->skipRefToEnump();
         fromDtp = fromDtp->skipRefToEnump();
         if (toDtp == fromDtp) return COMPATIBLE;
-        bool fromNumericable = VN_IS(fromDtp, BasicDType) || VN_IS(fromDtp, EnumDType)
-                               || VN_IS(fromDtp, NodeUOrStructDType);
+        AstNodeDType* fromBaseDtp = fromDtp;
+        while (AstPackArrayDType* packp = VN_CAST(fromBaseDtp, PackArrayDType)) {
+            fromBaseDtp = packp->subDTypep();
+            while (AstRefDType* refp = VN_CAST(fromBaseDtp, RefDType)) {
+                fromBaseDtp = refp->refDTypep();
+            }
+        }
+        bool fromNumericable = VN_IS(fromBaseDtp, BasicDType) || VN_IS(fromBaseDtp, EnumDType)
+                               || VN_IS(fromBaseDtp, NodeUOrStructDType);
         // UNSUP unpacked struct/unions (treated like BasicDType)
         if (VN_IS(toDtp, BasicDType) || VN_IS(toDtp, NodeUOrStructDType)) {
             if (fromNumericable) return COMPATIBLE;
@@ -6120,6 +6111,7 @@ private:
     }
     void userIterateAndNext(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
+        if (nodep->didWidth()) return;  // Avoid iterating list we have already iterated
         {
             VL_RESTORER(m_vup);
             m_vup = vup;

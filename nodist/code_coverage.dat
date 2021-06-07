@@ -56,7 +56,8 @@ exclude_line_regexp(r'\bUINFO\b')
 # Exclude for branch coverage only
 exclude_branch_regexp(r'\bdebug\(\)')
 exclude_branch_regexp(r'\bassert\(')
-exclude_branch_regexp(r'\bBROKEN_RTK\(')
+exclude_branch_regexp(r'\bBROKEN_BASE_RTN\(')
+exclude_branch_regexp(r'\bBROKEN_RTN\(')
 exclude_branch_regexp(r'\bSELF_CHECK')
 
 True

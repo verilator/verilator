@@ -116,7 +116,7 @@ private:
         // Calc data storage in bytes
         size_t chgWidth = m_outVarps.size();  // Width of one change-it-vector
         if (chgWidth < 8) chgWidth = 8;
-        double space = (pow(static_cast<double>(2.0), static_cast<double>(m_inWidth))
+        double space = (std::pow(static_cast<double>(2.0), static_cast<double>(m_inWidth))
                         * static_cast<double>(m_outWidth + chgWidth));
         // Instruction count bytes (ok, it's space also not time :)
         double bytesPerInst = 4;
@@ -342,7 +342,7 @@ private:
 
     AstVarScope* findDuplicateTable(AstVarScope* vsc1p) {
         // See if another table we've created is identical, if so use it for both.
-        // (A more 'modern' way would be to instead use V3Hashed::findDuplicate)
+        // (A more 'modern' way would be to instead use V3DupFinder::findDuplicate)
         AstVar* var1p = vsc1p->varp();
         for (AstVarScope* vsc2p : m_modTableVscs) {
             AstVar* var2p = vsc2p->varp();

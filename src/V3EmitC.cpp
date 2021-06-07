@@ -104,6 +104,12 @@ public:
              : (nodep->isScQuad() ? "SQ" : "SI"));
         // clang-format on
     }
+    void emitDatap(AstNode* nodep) {
+        // When passing to a function with va_args the compiler doesn't
+        // know need a pointer so when wide, need to look inside VlWide
+        if (nodep->isWide()) puts(".data()");
+    }
+
     void emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, AstNode* rhsp,
                     AstNode* thsp);
     void emitDeclArrayBrackets(const AstVar* nodep) {
@@ -376,9 +382,6 @@ public:
             iterateAndNextNull(nodep->bitp());
         }
         puts(")");
-        if (nodep->dtypep()->isWide()) {
-            puts(".data()");  // Access returned std::array as C array
-        }
     }
     virtual void visit(AstNodeCCall* nodep) override {
         if (AstCMethodCall* ccallp = VN_CAST(nodep, CMethodCall)) {
@@ -415,12 +418,6 @@ public:
             comma = true;
         }
         puts(")");
-        // if there is a return value that is wide convert to array
-        if (nodep->dtypep()->isWide()
-            && (VN_IS(nodep->fromp()->dtypep(), QueueDType)
-                || VN_IS(nodep->fromp()->dtypep(), DynArrayDType))) {
-            puts(".data()");  // Access returned std::array as C array
-        }
         // Some are statements some are math.
         if (nodep->isStatement()) puts(";\n");
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
@@ -462,7 +459,7 @@ public:
         iterateChildren(nodep);
     }
     virtual void visit(AstCoverDecl* nodep) override {
-        puts("__vlCoverInsert(");  // As Declared in emitCoverageDecl
+        puts("self->__vlCoverInsert(");  // As Declared in emitCoverageDecl
         puts("&(vlSymsp->__Vcoverage[");
         puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
         puts("])");
@@ -653,7 +650,12 @@ public:
         putbs(", ");
         emitCvtPackStr(nodep->filenamep());
         putbs(", ");
-        iterateAndNextNull(nodep->memp());
+        {
+            const bool need_ptr = !VN_IS(nodep->memp()->dtypep(), AssocArrayDType);
+            if (need_ptr) puts(" &(");
+            iterateAndNextNull(nodep->memp());
+            if (need_ptr) puts(")");
+        }
         putbs(", ");
         if (nodep->lsbp()) {
             iterateAndNextNull(nodep->lsbp());
@@ -709,7 +711,6 @@ public:
         puts("VL_FREAD_I(");
         puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
         putbs(",");
-        bool memory = false;
         uint32_t array_lo = 0;
         uint32_t array_size = 0;
         {
@@ -719,7 +720,6 @@ public:
             } else if (VN_CAST(varrefp->varp()->dtypeSkipRefp(), BasicDType)) {
             } else if (const AstUnpackArrayDType* adtypep
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
-                memory = true;
                 array_lo = adtypep->lo();
                 array_size = adtypep->elementsConst();
             } else {
@@ -731,9 +731,9 @@ public:
         putbs(",");
         puts(cvtToStr(array_size));
         putbs(", ");
-        if (!memory) puts("&(");
+        puts("&(");
         iterateAndNextNull(nodep->memp());
-        if (!memory) puts(")");
+        puts(")");
         putbs(", ");
         iterateAndNextNull(nodep->filep());
         putbs(", ");
@@ -812,11 +812,19 @@ public:
         if (!nodep->branchPred().unknown()) puts(")");
         puts(") {\n");
         iterateAndNextNull(nodep->ifsp());
-        if (nodep->elsesp()) {
-            puts("} else {\n");
-            iterateAndNextNull(nodep->elsesp());
+        puts("}");
+        if (!nodep->elsesp()) {
+            puts("\n");
+        } else {
+            if (VN_IS(nodep->elsesp(), NodeIf) && !nodep->elsesp()->nextp()) {
+                puts(" else ");
+                iterateAndNextNull(nodep->elsesp());
+            } else {
+                puts(" else {\n");
+                iterateAndNextNull(nodep->elsesp());
+                puts("}\n");
+            }
         }
-        puts("}\n");
     }
     virtual void visit(AstExprStmt* nodep) override {
         // GCC allows compound statements in expressions, but this is not standard.
@@ -1104,6 +1112,7 @@ public:
         iterateAndNextNull(nodep->fhsp());
         puts(")");
     }
+    virtual void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
     // Terminals
     virtual void visit(AstVarRef* nodep) override {
         puts(nodep->hiernameProtect());
@@ -1272,7 +1281,9 @@ public:
     virtual void visit(AstNode* nodep) override {
         puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
         iterateChildren(nodep);
-        nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+        if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
+            nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+        }
     }
 
     EmitCStmts() {
@@ -1339,6 +1350,7 @@ unsigned EmitVarTspSorter::s_serialNext = 0;
 class EmitCImp final : EmitCStmts {
     // MEMBERS
     AstNodeModule* m_modp = nullptr;
+    AstNodeModule* m_fileModp = nullptr;  // Files (names, headers) constructed using this module
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
     bool m_slow = false;  // Creating __Slow file
     bool m_fast = false;  // Creating non __Slow file (or both)
@@ -1387,8 +1399,8 @@ class EmitCImp final : EmitCStmts {
         }
     }
 
-    V3OutCFile* newOutCFile(AstNodeModule* modp, bool slow, bool source, int filenum = 0) {
-        string filenameNoExt = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp);
+    V3OutCFile* newOutCFile(bool slow, bool source, int filenum = 0) {
+        string filenameNoExt = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
         if (filenum) filenameNoExt += "__" + cvtToStr(filenum);
         filenameNoExt += (slow ? "__Slow" : "");
         V3OutCFile* ofp = nullptr;
@@ -1409,7 +1421,7 @@ class EmitCImp final : EmitCStmts {
         }
 
         ofp->putsHeader();
-        if (modp->isTop() && !source) {
+        if (m_fileModp->isTop() && !source) {
             ofp->puts("// DESCR"
                       "IPTION: Verilator output: Primary design header\n");
             ofp->puts("//\n");
@@ -1497,7 +1509,10 @@ class EmitCImp final : EmitCStmts {
     }
 
     virtual void visit(AstMTaskBody* nodep) override {
-        ExecMTask* mtp = nodep->execMTaskp();
+        maybeSplit();
+        splitSizeInc(10);
+
+        const ExecMTask* const mtp = nodep->execMTaskp();
         puts("\n");
         puts("void ");
         puts(prefixNameProtect(m_modp) + "::" + protect(mtp->cFuncName()));
@@ -1520,6 +1535,8 @@ class EmitCImp final : EmitCStmts {
         if (nodep->funcType().isTrace()) return;
         if (nodep->dpiImport()) return;
         if (!(nodep->slow() ? m_slow : m_fast)) return;
+
+        maybeSplit();
 
         m_blkChangeDetVec.clear();
 
@@ -1743,7 +1760,9 @@ class EmitCImp final : EmitCStmts {
     }
 
     void emitVarReset(AstVar* varp) {
-        AstNodeDType* dtypep = varp->dtypep()->skipRefp();
+        AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
+        const string varNameProtected
+            = VN_IS(m_modp, Class) ? varp->nameProtect() : "self->" + varp->nameProtect();
         if (varp->isIO() && m_modp->isTop() && optSystemC()) {
             // System C top I/O doesn't need loading, as the lower level subinst code does it.}
         } else if (varp->isParam()) {
@@ -1756,53 +1775,53 @@ class EmitCImp final : EmitCStmts {
                 if (initarp->defaultp()) {
                     puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
                     puts("; ++__Vi) {\n");
-                    emitSetVarConstant(varp->nameProtect() + "[__Vi]",
+                    emitSetVarConstant(varNameProtected + "[__Vi]",
                                        VN_CAST(initarp->defaultp(), Const));
                     puts("}\n");
                 }
                 const AstInitArray::KeyItemMap& mapr = initarp->map();
                 for (const auto& itr : mapr) {
                     AstNode* valuep = itr.second->valuep();
-                    emitSetVarConstant(varp->nameProtect() + "[" + cvtToStr(itr.first) + "]",
+                    emitSetVarConstant(varNameProtected + "[" + cvtToStr(itr.first) + "]",
                                        VN_CAST(valuep, Const));
                 }
             } else {
                 varp->v3fatalSrc("InitArray under non-arrayed var");
             }
         } else {
-            puts(emitVarResetRecurse(varp, dtypep, 0, ""));
+            puts(emitVarResetRecurse(varp, varNameProtected, dtypep, 0, ""));
         }
     }
-    string emitVarResetRecurse(AstVar* varp, AstNodeDType* dtypep, int depth,
-                               const string& suffix) {
+    string emitVarResetRecurse(const AstVar* varp, const string& varNameProtected,
+                               AstNodeDType* dtypep, int depth, const string& suffix) {
         dtypep = dtypep->skipRefp();
         AstBasicDType* basicp = dtypep->basicp();
         // Returns string to do resetting, empty to do nothing (which caller should handle)
         if (AstAssocArrayDType* adtypep = VN_CAST(dtypep, AssocArrayDType)) {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
-                                       ".atDefault()" + cvtarray);
+            return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
+                                       suffix + ".atDefault()" + cvtarray);
         } else if (VN_IS(dtypep, ClassRefDType)) {
             return "";  // Constructor does it
         } else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
-                                       ".atDefault()" + cvtarray);
+            return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
+                                       suffix + ".atDefault()" + cvtarray);
         } else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
             // Access std::array as C array
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
-                                       ".atDefault()" + cvtarray);
+            return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
+                                       suffix + ".atDefault()" + cvtarray);
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                         "Should have swapped msb & lsb earlier.");
             string ivar = string("__Vi") + cvtToStr(depth);
             string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
                           + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
-            string below = emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
-                                               suffix + "[" + ivar + "]");
+            string below = emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(),
+                                               depth + 1, suffix + "[" + ivar + "]");
             string post = "}\n";
             return below.empty() ? "" : pre + below + post;
         } else if (basicp && basicp->keyword() == AstBasicDTypeKwd::STRING) {
@@ -1818,16 +1837,21 @@ class EmitCImp final : EmitCStmts {
             splitSizeInc(1);
             if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
                 string out;
-                if (zeroit) {
-                    out += "VL_ZERO_RESET_W(";
+                if (varp->valuep()) {
+                    AstConst* const constp = VN_CAST(varp->valuep(), Const);
+                    if (!constp) varp->v3fatalSrc("non-const initializer for variable");
+                    for (int w = 0; w < varp->widthWords(); ++w) {
+                        out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
+                        out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
+                    }
                 } else {
-                    out += "VL_RAND_RESET_W(";
+                    out += zeroit ? "VL_ZERO_RESET_W(" : "VL_RAND_RESET_W(";
+                    out += cvtToStr(dtypep->widthMin());
+                    out += ", " + varNameProtected + suffix + ");\n";
                 }
-                out += cvtToStr(dtypep->widthMin());
-                out += ", " + varp->nameProtect() + suffix + ");\n";
                 return out;
             } else {
-                string out = varp->nameProtect() + suffix;
+                string out = varNameProtected + suffix;
                 // If --x-initial-edge is set, we want to force an initial
                 // edge on uninitialized clocks (from 'X' to whatever the
                 // first value is). Since the class is instantiated before
@@ -1859,7 +1883,7 @@ class EmitCImp final : EmitCStmts {
     void emitSavableImp(AstNodeModule* modp);
     void emitTextSection(AstType type);
     // High level
-    void emitImpTop(AstNodeModule* modp);
+    void emitImpTop();
     void emitImp(AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
@@ -1868,7 +1892,7 @@ class EmitCImp final : EmitCStmts {
     void emitMTaskVertexCtors(bool* firstp);
     void emitIntTop(AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
-    void maybeSplit(AstNodeModule* modp);
+    void maybeSplit();
 
 public:
     EmitCImp() = default;
@@ -2200,17 +2224,11 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
                 if (func != "") {
                     puts(func);
                 } else if (argp) {
-                    if (isScan) {
-                        puts("&(");
-                    } else if (fmt == '@') {
-                        puts("&(");
-                    }
+                    bool addrof = isScan || (fmt == '@');
+                    if (addrof) puts("&(");
                     iterate(argp);
-                    if (isScan) {
-                        puts(")");
-                    } else if (fmt == '@') {
-                        puts(")");
-                    }
+                    if (!addrof) emitDatap(argp);
+                    if (addrof) puts(")");
                 }
                 ofp()->indentDec();
             }
@@ -2273,6 +2291,19 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
             emitDispState.pushArg(' ', nullptr, cvtToStr(argp->widthMin()));
         }
         emitDispState.pushArg(fmtLetter, argp, "");
+        if (fmtLetter == 't' || fmtLetter == '^') {
+            AstSFormatF* fmtp = nullptr;
+            if (AstDisplay* nodep = VN_CAST(dispp, Display))
+                fmtp = nodep->fmtp();
+            else if (AstSFormat* nodep = VN_CAST(dispp, SFormat))
+                fmtp = nodep->fmtp();
+            else
+                fmtp = VN_CAST(dispp, SFormatF);
+            UASSERT_OBJ(fmtp, dispp,
+                        "Use of %t must be under AstDisplay, AstSFormat, or AstSFormatF");
+            UASSERT_OBJ(!fmtp->timeunit().isNone(), fmtp, "timenunit must be set");
+            emitDispState.pushArg(' ', nullptr, cvtToStr((int)fmtp->timeunit().powerOfTen()));
+        }
     } else {
         emitDispState.pushArg(fmtLetter, nullptr, "");
     }
@@ -2459,7 +2490,7 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
         puts("\n");
     }
     putsDecoration("// Reset structure values\n");
-    puts(protect("_ctor_var_reset") + "();\n");
+    puts(protect("_ctor_var_reset") + "(this);\n");
     emitTextSection(AstType::atScCtor);
 
     if (modp->isTop() && v3Global.opt.mtasks()) {
@@ -2502,7 +2533,9 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts("if (false && first) {}  // Prevent unused\n");
     puts("this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
     puts("if (false && this->__VlSymsp) {}  // Prevent unused\n");
-    if (v3Global.opt.coverage()) { puts(protect("_configure_coverage") + "(vlSymsp, first);\n"); }
+    if (v3Global.opt.coverage()) {
+        puts(protect("_configure_coverage") + "(this, vlSymsp, first);\n");
+    }
     if (modp->isTop() && !v3Global.rootp()->timeunit().isNone()) {
         puts("vlSymsp->_vm_contextp__->timeunit("
              + cvtToStr(v3Global.rootp()->timeunit().powerOfTen()) + ");\n");
@@ -2747,7 +2780,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     puts("\"Verilated model didn't ");
     if (initial) puts("DC ");
     puts("converge\\n\"\n");
-    puts("\"- See DIDNOTCONVERGE in the Verilator manual\");\n");
+    puts("\"- See https://verilator.org/warn/DIDNOTCONVERGE\");\n");
     puts("} else {\n");
     puts("__Vchange = " + protect("_change_request") + "(vlSymsp);\n");
     puts("}\n");
@@ -3110,10 +3143,7 @@ void EmitCImp::emitIntTop(AstNodeModule*) {
     }
     if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
     if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
-    if (v3Global.opt.coverage()) {
-        puts("#include \"verilated_cov.h\"\n");
-        if (v3Global.opt.savable()) v3error("--coverage and --savable not supported together");
-    }
+    if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
     if (v3Global.dpi()) {
         // do this before including our main .h file so that any references to
         // types defined in svdpi.h are available
@@ -3367,9 +3397,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
 //----------------------------------------------------------------------
 
-void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
+void EmitCImp::emitImpTop() {
     puts("\n");
-    puts("#include \"" + prefixNameProtect(fileModp) + ".h\"\n");
+    puts("#include \"" + prefixNameProtect(m_fileModp) + ".h\"\n");
     puts("#include \"" + symClassName() + ".h\"\n");
 
     if (v3Global.dpi()) {
@@ -3377,8 +3407,8 @@ void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
         puts("#include \"verilated_dpi.h\"\n");
     }
 
-    emitModCUse(fileModp, VUseType::IMP_INCLUDE);
-    emitModCUse(fileModp, VUseType::IMP_FWD_CLASS);
+    emitModCUse(m_fileModp, VUseType::IMP_INCLUDE);
+    emitModCUse(m_fileModp, VUseType::IMP_FWD_CLASS);
 
     emitTextSection(AstType::atScImpHdr);
 }
@@ -3405,37 +3435,33 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     // Blocks
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-            maybeSplit(modp);
-            mainDoFunc(funcp);
-        }
+        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) { mainDoFunc(funcp); }
     }
 }
 
 //######################################################################
 
-void EmitCImp::maybeSplit(AstNodeModule* fileModp) {
-    if (splitNeeded()) {
-        // Splitting file, so using parallel build.
-        v3Global.useParallelBuild(true);
-        // Close old file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
-        // Open a new file
-        m_ofp = newOutCFile(fileModp, !m_fast, true /*source*/, splitFilenumInc());
-        emitImpTop(fileModp);
-    }
-    splitSizeInc(10);  // Even blank functions get a file with a low csplit
+void EmitCImp::maybeSplit() {
+    if (!splitNeeded()) return;
+
+    // Splitting file, so using parallel build.
+    v3Global.useParallelBuild(true);
+    // Close old file
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    // Open a new file
+    m_ofp = newOutCFile(!m_fast, true /*source*/, splitFilenumInc());
+    emitImpTop();
 }
 
 void EmitCImp::mainInt(AstNodeModule* modp) {
-    AstNodeModule* fileModp = modp;  // Filename constructed using this module
     m_modp = modp;
+    m_fileModp = modp;
     m_slow = true;
     m_fast = true;
 
     UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
 
-    m_ofp = newOutCFile(fileModp, false /*slow*/, false /*source*/);
+    m_ofp = newOutCFile(false /*slow*/, false /*source*/);
     emitIntTop(modp);
     emitInt(modp);
     if (AstClassPackage* packagep = VN_CAST(modp, ClassPackage)) {
@@ -3450,15 +3476,15 @@ void EmitCImp::mainInt(AstNodeModule* modp) {
 
 void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
     // Output a module
-    AstNodeModule* fileModp = modp;  // Filename constructed using this module
     m_modp = modp;
+    m_fileModp = modp;
     m_slow = slow;
     m_fast = !slow;
 
     UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
 
-    m_ofp = newOutCFile(fileModp, !m_fast, true /*source*/);
-    emitImpTop(fileModp);
+    m_ofp = newOutCFile(!m_fast, true /*source*/);
+    emitImpTop();
     emitImp(modp);
 
     if (AstClassPackage* packagep = VN_CAST(modp, ClassPackage)) {
@@ -3479,7 +3505,6 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
              vxp = vxp->verticesNextp()) {
             const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp);
             if (mtaskp->threadRoot()) {
-                maybeSplit(modp);
                 // Only define one function for all the mtasks packed on
                 // a given thread. We'll name this function after the
                 // root mtask though it contains multiple mtasks' worth
@@ -3555,7 +3580,7 @@ class EmitCTrace final : EmitCStmts {
             puts("if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
             puts("__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
             puts("trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
-            puts("std::string dumpfile = __VlSymsp->_vm_contextp__->dumpfile();\n");
+            puts("std::string dumpfile = __VlSymsp->_vm_contextp__->dumpfileCheck();\n");
             puts("__VlSymsp->__Vm_dumperp->open(dumpfile.c_str());\n");
             puts("__VlSymsp->__Vm_dumping = true;\n");
             puts("}\n");
@@ -3638,7 +3663,7 @@ class EmitCTrace final : EmitCStmts {
         puts(",");
         if (nodep->isScoped()) puts("Verilated::catName(scopep,");
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
-        if (nodep->isScoped()) puts(",\" \")");
+        if (nodep->isScoped()) puts(",(int)scopet,\" \")");
         // Direction
         if (v3Global.opt.traceFormat().fst()) {
             puts("," + cvtToStr(enumNum));
@@ -3954,21 +3979,29 @@ void V3EmitC::emitc() {
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
-        // clang-format off
-        EmitCImp cint; cint.mainInt(nodep);
-        cint.mainImp(nodep, true);
-        { EmitCImp fast; fast.mainImp(nodep, false); }
-        // clang-format on
+        {
+            EmitCImp cint;
+            cint.mainInt(nodep);
+            cint.mainImp(nodep, true);
+        }
+        {
+            EmitCImp fast;
+            fast.mainImp(nodep, false);
+        }
     }
 }
 
 void V3EmitC::emitcTrace() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (v3Global.opt.trace()) {
-        // clang-format off
-        { EmitCTrace slow(true); slow.main(); }
-        { EmitCTrace fast(false); fast.main(); }
-        // clang-format on
+        {
+            EmitCTrace slow(true);
+            slow.main();
+        }
+        {
+            EmitCTrace fast(false);
+            fast.main();
+        }
     }
 }
 

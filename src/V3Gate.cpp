@@ -30,7 +30,7 @@
 #include "V3Graph.h"
 #include "V3Const.h"
 #include "V3Stats.h"
-#include "V3Hashed.h"
+#include "V3DupFinder.h"
 
 #include <algorithm>
 #include <list>
@@ -900,7 +900,7 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 //######################################################################
 // Auxiliary hash class for GateDedupeVarVisitor
 
-class GateDedupeHash final : public V3HashedUserSame {
+class GateDedupeHash final : public V3DupFinderUserSame {
 private:
     // NODE STATE
     // Ast*::user2p     -> parent AstNodeAssign* for this rhsp
@@ -911,24 +911,36 @@ private:
     // AstUser1InUse    m_inuser1;      (Allocated for use in GateVisitor)
     // AstUser2InUse    m_inuser2;      (Allocated for use in GateVisitor)
     AstUser3InUse m_inuser3;
-    // AstUser4InUse    m_inuser4;      (Allocated for use in V3Hashed)
+    // AstUser4InUse    m_inuser4;      (Allocated for use in V3Hasher via V3DupFinder)
     AstUser5InUse m_inuser5;
 
-    V3Hashed m_hashed;  // Hash, contains rhs of assigns
+    V3DupFinder m_dupFinder;  // Duplicate finder for rhs of assigns
     std::unordered_set<AstNode*> m_nodeDeleteds;  // Any node in this hash was deleted
 
     VL_DEBUG_FUNC;  // Declare debug()
 
-    void hash(AstNode* nodep) {
-        // !nullptr && the object is hashable
-        if (nodep && !nodep->sameHash().isIllegal()) m_hashed.hash(nodep);
-    }
-    bool sameHash(AstNode* node1p, AstNode* node2p) {
-        return (node1p && node2p && !node1p->sameHash().isIllegal()
-                && !node2p->sameHash().isIllegal() && m_hashed.sameNodes(node1p, node2p));
-    }
     bool same(AstNode* node1p, AstNode* node2p) {
-        return node1p == node2p || sameHash(node1p, node2p);
+        // Regarding the complexity of this funcition 'same':
+        // Applying this comparison function to a a set of n trees pairwise is O(n^2) in the
+        // number of comparisons (number of pairs). AstNode::sameTree itself, is O(sizeOfTree) in
+        // the worst case, which happens if the operands of sameTree are indeed identical copies,
+        // which means this line is O(n^2*sizeOfTree), iff you are comparing identical copies of
+        // the same tree. In practice the identity comparison over the pointers, and the short
+        // circuiting in sameTree means that for comparing the same tree instance to itself, or
+        // trees of different types/shapes is a lot closer to O(1), so this 'same' function is
+        // Omega(n^2) and O(n^2*sizeOfTree), and in practice as we are mostly comparing the same
+        // instance to itself or different trees, the complexity should be closer to the lower
+        // bound.
+        //
+        // Also if you see where this 'same' function is used within isSame, it's only ever
+        // comparing AstActive nodes, which are very likely not to compare equals (and for the
+        // purposes of V3Gate, we probably only care about them either being identical instances,
+        // or having the same sensitivities anyway, so if this becomes a problem, it can be
+        // improved which should also speed things up), and AstNodeMath for if conditions, which
+        // are hopefully small, and to be safe they should probably be only considered same when
+        // identical instances (otherwise if writing the condition between 2 ifs don't really
+        // merge).
+        return node1p == node2p || (node1p && node1p->sameTree(node2p));
     }
 
 public:
@@ -958,7 +970,7 @@ public:
                 || (extra2p && m_nodeDeleteds.find(extra2p) != m_nodeDeleteds.end()));
     }
 
-    // Callback from V3Hashed::findDuplicate
+    // Callback from V3DupFinder::findDuplicate
     virtual bool isSame(AstNode* node1p, AstNode* node2p) override {
         // Assignment may have been hashReplaced, if so consider non-match (effectively removed)
         if (isReplaced(node1p) || isReplaced(node2p)) {
@@ -977,25 +989,21 @@ public:
         rhsp->user3p(extra1p);
         rhsp->user5p(extra2p);
 
-        hash(extra1p);
-        hash(extra2p);
-
-        const auto inserted = m_hashed.hashAndInsert(rhsp);
-        const auto dupit = m_hashed.findDuplicate(rhsp, this);
-        // Even though rhsp was just inserted, V3Hashed::findDuplicate doesn't
-        // return anything in the hash that has the same pointer (V3Hashed.cpp::findDuplicate)
+        const auto inserted = m_dupFinder.insert(rhsp);
+        const auto dupit = m_dupFinder.findDuplicate(rhsp, this);
+        // Even though rhsp was just inserted, V3DupFinder::findDuplicate doesn't
+        // return anything in the hash that has the same pointer (V3DupFinder::findDuplicate)
         // So dupit is either a different, duplicate rhsp, or the end of the hash.
-        if (dupit != m_hashed.end()) {
-            m_hashed.erase(inserted);
-            return VN_CAST(m_hashed.iteratorNodep(dupit)->user2p(), NodeAssign);
+        if (dupit != m_dupFinder.end()) {
+            m_dupFinder.erase(inserted);
+            return VN_CAST(dupit->second->user2p(), NodeAssign);
         }
         // Retain new inserted information
         return nullptr;
     }
 
     void check() {
-        m_hashed.check();
-        for (const auto& itr : m_hashed) {
+        for (const auto& itr : m_dupFinder) {
             AstNode* nodep = itr.second;
             AstNode* activep = nodep->user3p();
             AstNode* condVarp = nodep->user5p();
@@ -1003,9 +1011,9 @@ public:
                 // This class won't break if activep isn't an active, or
                 // ifVar isn't a var, but this is checking the caller's construction.
                 UASSERT_OBJ(!activep || (!VN_DELETED(activep) && VN_IS(activep, Active)), nodep,
-                            "V3Hashed check failed, lost active pointer");
+                            "V3DupFinder check failed, lost active pointer");
                 UASSERT_OBJ(!condVarp || !VN_DELETED(condVarp), nodep,
-                            "V3Hashed check failed, lost if pointer");
+                            "V3DupFinder check failed, lost if pointer");
             }
         }
     }

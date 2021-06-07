@@ -148,10 +148,18 @@ public:
 #endif
     // METHODS
     void newContent();
+    void contentLineno(int num) {
+        lineno(num);
+        m_contentLineno = num;
+    }
     void lineno(int num) {
         m_firstLineno = num;
         m_lastLineno = num;
         m_firstColumn = m_lastColumn = 1;
+    }
+    void column(int firstColumn, int lastColumn) {
+        m_firstColumn = firstColumn;
+        m_lastColumn = lastColumn;
     }
     void language(V3LangCode lang) { singleton().numberToLang(filenameno(), lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }

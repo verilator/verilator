@@ -44,6 +44,7 @@
 srcdir = @srcdir@
 VPATH = @srcdir@
 HOST = @HOST@
+EXEEXT = @EXEEXT@
 
 DOXYGEN = doxygen
 INSTALL = @INSTALL@
@@ -51,9 +52,11 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 POD2TEXT = pod2text
-POD2LATEXFIX = $(srcdir)/src/pod2latexfix
 MKINSTALLDIRS = $(SHELL) $(srcdir)/src/mkinstalldirs
 PERL = @PERL@
+
+# Version (for docs/guide/conf.py)
+PACKAGE_VERSION_NUMBER = @PACKAGE_VERSION_NUMBER@
 
 # Destination prefix for RPMs
 DESTDIR =
@@ -111,14 +114,14 @@ SUBDIRS = docs src test_regress \
 	examples/make_protect_lib \
 	examples/xml_py \
 
-INFOS = verilator.txt verilator.html verilator.pdf
+INFOS = verilator.html verilator.pdf
 
 INFOS_OLD = README README.html README.pdf
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
 
-DISTFILES_INC = $(INFOS) .gitignore \
+DISTFILES1 = $(INFOS) .gitignore \
 	*.in *.ac \
 	Artistic \
 	Changes \
@@ -128,6 +131,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	verilator-config.cmake.in \
 	verilator-config-version.cmake.in \
 	bin/verilator \
+	bin/verilator_ccache_report \
 	bin/verilator_coverage \
 	bin/verilator_difftree \
 	bin/verilator_gantt \
@@ -136,13 +140,18 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	docs/.gitignore \
 	docs/CONTRIBUTING.rst \
 	docs/CONTRIBUTORS \
-	docs/Makefile.in \
-	docs/TODO \
-	docs/doxygen-mainpage \
-	docs/doxygen.config \
+	docs/Makefile \
+	docs/_static/*.png \
+	docs/_static/css/* \
+	docs/bin/* \
+	docs/gen/* \
+	docs/guide/*.py \
+	docs/guide/*.rst \
+	docs/guide/figures/* \
 	docs/install.rst \
 	docs/internals.rst \
-	docs/verilator_logo.png \
+	docs/internals.rst \
+	docs/verilated.dox \
 	docs/xml.rst \
 	install-sh configure *.pod \
 	include/*.[chv]* \
@@ -160,6 +169,8 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	examples/*/.*ignore examples/*/Makefile* \
 	examples/*/*.[chv]* examples/*/vl_* \
 	examples/*/CMakeLists.txt \
+
+DISTFILES2 = \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
 	test_*/*.pl test_*/*.v test_*/*.vc test_*/*.vh \
 	test_regress/*.pl \
@@ -184,6 +195,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 
 INST_PROJ_FILES = \
 	bin/verilator \
+	bin/verilator_ccache_report \
 	bin/verilator_coverage \
 	bin/verilator_gantt \
 	bin/verilator_includer \
@@ -194,11 +206,9 @@ INST_PROJ_FILES = \
 	include/vltstd/*.[chv]* \
 
 INST_PROJ_BIN_FILES = \
-	bin/verilator_bin \
-	bin/verilator_bin_dbg \
-	bin/verilator_coverage_bin_dbg \
-
-DISTFILES := $(DISTFILES_INC)
+	bin/verilator_bin$(EXEEXT) \
+	bin/verilator_bin_dbg$(EXEEXT) \
+	bin/verilator_coverage_bin_dbg$(EXEEXT) \
 
 EXAMPLES_FIRST = \
 	examples/make_hello_c \
@@ -214,10 +224,10 @@ all: all_nomsg msg_test
 all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 
 .PHONY:verilator_exe
-.PHONY:verilator_bin
-.PHONY:verilator_bin_dbg
-.PHONY:verilator_coverage_bin_dbg
-verilator_exe verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg:
+.PHONY:verilator_bin$(EXEEXT)
+.PHONY:verilator_bin_dbg$(EXEEXT)
+.PHONY:verilator_coverage_bin_dbg$(EXEEXT)
+verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT):
 	@echo ------------------------------------------------------------
 	@echo "making verilator in src"
 	$(MAKE) -C src $(OBJCACHE_JOBS) $(CI_MAKE_SRC_TARGET)
@@ -263,24 +273,18 @@ info: $(INFOS)
 %.1: ${srcdir}/bin/%
 	pod2man $< $@
 
-verilator.txt: ${srcdir}/bin/verilator
-	$(POD2TEXT) $< $@
-
-verilator.html: ${srcdir}/bin/verilator
-	pod2html $< >$@
+.PHONY: verilator.html
+verilator.html:
+	$(MAKE) -C docs html
 
 # PDF needs DIST variables; but having configure.ac as dependency isn't detected
-verilator.pdf: ${srcdir}/bin/verilator Makefile $(POD2LATEXFIX)
-	pod2latex --full --out verilator.tex $<
-	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE)" "${DISTDATE}" < verilator.tex > verilator2.tex
-	mv verilator2.tex verilator.tex
-	pdflatex verilator.tex
-	pdflatex verilator.tex
-	-rm -f verilator.toc verilator.aux verilator.idx verilator.out
+.PHONY: verilator.pdf
+verilator.pdf: Makefile
+	$(MAKE) -C docs verilator.pdf
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg \
-	verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
+VL_INST_BIN_FILES = verilator verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT) \
+	verilator_ccache_report verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
 # Some scripts go into both the search path and pkgdatadir,
 # so they can be found by the user, and under $VERILATOR_ROOT.
 
@@ -304,11 +308,12 @@ installbin:
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage $(DESTDIR)$(bindir)/verilator_coverage )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_gantt $(DESTDIR)$(bindir)/verilator_gantt )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_bin$(EXEEXT) $(DESTDIR)$(bindir)/verilator_bin$(EXEEXT) )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_bin_dbg$(EXEEXT) $(DESTDIR)$(bindir)/verilator_bin_dbg$(EXEEXT) )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg$(EXEEXT) $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg$(EXEEXT) )
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_ccache_report $(DESTDIR)$(pkgdatadir)/bin/verilator_ccache_report )
 
 # Man files can either be part of the original kit, or built in current directory
 # So important we use $^ so VPATH is searched
@@ -457,7 +462,7 @@ clang-tidy: $(CLANGTIDY_DEP)
 
 analyzer-src:
 	-rm -rf src/obj_dbg
-	scan-build $(MAKE) -k verilator_coverage_bin_dbg verilator_bin_dbg
+	scan-build $(MAKE) -k verilator_coverage_bin_dbg$(EXEEXT) verilator_bin_dbg$(EXEEXT)
 
 analyzer-include:
 	-rm -rf examples/*/obj*
@@ -475,8 +480,12 @@ clang-format:
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 PY_PROGRAMS = \
+	bin/verilator_ccache_report \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
+	docs/guide/conf.py \
+	docs/bin/vl_sphinx_extract \
+	docs/bin/vl_sphinx_fix \
 	src/astgen \
 	src/bisonpre \
 	src/config_rev \
@@ -508,8 +517,8 @@ PYLINT = pylint
 PYLINT_FLAGS = --disable=R0801
 
 lint-py:
-	$(FLAKE8) $(FLAKE8_FLAGS) $(PY_PROGRAMS)
-	$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
+	-$(FLAKE8) $(FLAKE8_FLAGS) $(PY_PROGRAMS)
+	-$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
 
 format-pl-exec:
 	-chmod a+x test_regress/t/*.pl
@@ -567,6 +576,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -rf test_*/obj_dir
 	rm -rf nodist/fuzzer/dictionary
 	rm -rf nodist/obj_dir
+	rm -rf verilator.txt
 
 distclean maintainer-clean::
 	rm -f *.info* *.1 $(INFOS) $(INFOS_OLD) $(VL_INST_MAN_FILES)
@@ -591,7 +601,8 @@ doxygen:
 
 dist-file-list:
 	@echo "begin-dist-file-list:";  # Scripts look for this
-	@echo $(wildcard $(DISTFILES))
+	@echo $(wildcard $(DISTFILES1))
+	@echo $(wildcard $(DISTFILES2))
 	@echo "end-dist-file-list:";  # Scripts look for this
 
 ######################################################################
@@ -610,7 +621,12 @@ tag:
 # Don't depend on DISTFILES because there's no rule for "standards.info*".
 dist: $(DISTDEP) maintainer-copy
 	-rm -fr $(DISTNAME)
-	for file in $(DISTFILES); do \
+	for file in $(DISTFILES1); do \
+	  mkdir -p `dirname $(DISTNAME)/$$file` >/dev/null ; \
+	  ln $$file $(DISTNAME)/$$file \
+	  || { echo copying $$file instead; cp -p $$file $(DISTNAME)/$$file;}; \
+	done; true;
+	for file in $(DISTFILES2); do \
 	  mkdir -p `dirname $(DISTNAME)/$$file` >/dev/null ; \
 	  ln $$file $(DISTNAME)/$$file \
 	  || { echo copying $$file instead; cp -p $$file $(DISTNAME)/$$file;}; \

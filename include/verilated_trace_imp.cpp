@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,12 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Implementation of tracing functionality common to all trace formats
+/// \brief Verilated common-format tracing implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --trace.
+///
+/// Use "verilator --trace" to add this to the Makefile for the linker.
 ///
 //=============================================================================
 
@@ -40,11 +45,11 @@
 
 static double timescaleToDouble(const char* unitp) {
     char* endp = nullptr;
-    double value = strtod(unitp, &endp);
+    double value = std::strtod(unitp, &endp);
     // On error so we allow just "ns" to return 1e-9.
     if (value == 0.0 && endp == unitp) value = 1;
     unitp = endp;
-    for (; *unitp && isspace(*unitp); unitp++) {}
+    for (; *unitp && std::isspace(*unitp); unitp++) {}
     switch (*unitp) {
     case 's': value *= 1e0; break;
     case 'm': value *= 1e-3; break;

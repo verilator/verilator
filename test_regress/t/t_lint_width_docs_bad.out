@@ -1,0 +1,7 @@
+%Warning-WIDTH: t/t_lint_width_docs_bad.v:10:29: Bit extraction of array[4:0] requires 3 bit index, not 2 bits.
+                                               : ... In instance t
+   10 |    wire int rd_value = array[rd_addr];   
+      |                             ^
+                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
+                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+%Error: Exiting due to

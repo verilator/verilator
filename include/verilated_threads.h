@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2012-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,11 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Thread pool and profiling for Verilated modules
+/// \brief Verilated thread pool and profiling header
+///
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use by Verilated library multithreaded
+/// routines.
 ///
 //=============================================================================
 
@@ -51,7 +55,7 @@ using VlThrSymTab = void*;
 
 using VlExecFnp = void (*)(bool, VlThrSymTab);
 
-/// Track dependencies for a single MTask.
+// Track dependencies for a single MTask.
 class VlMTaskVertex final {
     // MEMBERS
     static std::atomic<vluint64_t> s_yields;  // Statistics

@@ -56,7 +56,7 @@
 #include "V3Parse.h"
 #include "V3Width.h"
 #include "V3Unroll.h"
-#include "V3Hashed.h"
+#include "V3Hasher.h"
 
 #include <deque>
 #include <map>
@@ -276,7 +276,7 @@ class ParamProcessor final {
             if (AstVar* varp = VN_CAST(stmtp, Var)) {
                 if (varp->isGParam() || varp->isIfaceRef()) {
                     char ch = varp->name()[0];
-                    ch = toupper(ch);
+                    ch = std::toupper(ch);
                     if (ch < 'A' || ch > 'Z') ch = 'Z';
                     varp->user4(usedLetter[static_cast<int>(ch)] * 256 + ch);
                     usedLetter[static_cast<int>(ch)]++;
@@ -314,7 +314,7 @@ class ParamProcessor final {
                 key += "[" + cvtToStr(bdtp->left()) + ":" + cvtToStr(bdtp->right()) + "]";
             }
         }
-        V3Hash hash = V3Hashed::uncachedHash(nodep);
+        V3Hash hash = V3Hasher::uncachedHash(nodep);
         // Force hash collisions -- for testing only
         if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash();
         int num;

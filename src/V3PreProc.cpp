@@ -335,12 +335,15 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
             if (!(defValue(name) == value
                   && defParams(name) == params)) {  // Duplicate defs are OK
                 fl->v3warn(REDEFMACRO, "Redefining existing define: '"
-                                           << name << "', with different value: " << value
-                                           << (params == "" ? "" : " ") << params);
-                defFileline(name)->v3warn(REDEFMACRO, "Previous definition is here, with value: "
-                                                          << defValue(name)
-                                                          << (defParams(name).empty() ? "" : " ")
-                                                          << defParams(name));
+                                           << name << "', with different value: '" << value
+                                           << (params == "" ? "" : " ") << params << "'\n"
+                                           << fl->warnContextPrimary() << '\n'
+                                           << defFileline(name)->warnOther()
+                                           << "... Location of previous definition, with value: '"
+                                           << defValue(name)
+                                           << (defParams(name).empty() ? "" : " ")
+                                           << defParams(name) << "'\n"
+                                           << defFileline(name)->warnContextSecondary());
             }
             undef(name);
         }
@@ -810,6 +813,8 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
     // This will also strip them from strings, but strings aren't supposed
     // to be multi-line without a "\"
+    int eof_newline = 0;  // Number of characters following last newline
+    int eof_lineno = 1;
     for (StrList::iterator it = wholefile.begin(); it != wholefile.end(); ++it) {
         // We don't end-loop at \0 as we allow and strip mid-string '\0's (for now).
         bool strip = false;
@@ -820,6 +825,12 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
             if (VL_UNLIKELY(*cp == '\r' || *cp == '\0')) {
                 strip = true;
                 break;
+            }
+            if (VL_UNLIKELY(*cp == '\n')) {
+                eof_newline = 0;
+                ++eof_lineno;
+            } else {
+                ++eof_newline;
             }
         }
         if (strip) {
@@ -835,6 +846,15 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
         m_lexp->scanBytesBack(*it);
         // Reclaim memory; the push saved the string contents for us
         *it = "";
+    }
+
+    // Warning check
+    if (eof_newline) {
+        FileLine* fl = new FileLine{flsp};
+        fl->contentLineno(eof_lineno);
+        fl->column(eof_newline + 1, eof_newline + 1);
+        fl->v3warn(EOFNEWLINE, "Missing newline at end of file (POSIX 3.206)."
+                                   << fl->warnMore() << "... Suggest add newline.");
     }
 }
 

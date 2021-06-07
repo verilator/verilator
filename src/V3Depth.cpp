@@ -53,14 +53,8 @@ private:
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
 
         string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
-        AstVar* varp = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname,
-                                  // Width, not widthMin, as we may be in
-                                  // middle of BITSEL expression which though
-                                  // it's one bit wide, needs the mask in the
-                                  // upper bits.  (Someday we'll have a valid
-                                  // bitmask instead of widths....)
-                                  // See t_func_crc for an example test that requires this
-                                  VFlagLogicPacked(), nodep->width());
+        AstVar* varp
+            = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep());
         UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
         m_cfuncp->addInitsp(varp);
         // Replace node tree with reference to var

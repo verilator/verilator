@@ -170,7 +170,12 @@ class EmitCSyms final : EmitCBaseVisitor {
             const auto scpit = m_vpiScopeCandidates.find(scp);
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
-                m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
+                auto scopeNameit = m_scopeNames.find(scpit->second.m_symName);
+                if (scopeNameit == m_scopeNames.end()) {
+                    m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
+                } else {
+                    scopeNameit->second.m_type = scpit->second.m_type;
+                }
             }
             string::size_type pos = scp.rfind("__DOT__");
             if (pos == string::npos) {
@@ -233,20 +238,20 @@ class EmitCSyms final : EmitCBaseVisitor {
              ++it) {
             if (it->second.m_type != "SCOPE_MODULE") continue;
 
-            string name = it->second.m_prettyName;
-            if (name.substr(0, 4) == "TOP.") name.replace(0, 4, "");
+            string symName = it->second.m_symName;
+            string above = symName;
+            if (above.substr(0, 4) == "TOP.") above.replace(0, 4, "");
 
-            string above = name;
             while (!above.empty()) {
-                string::size_type pos = above.rfind('.');
+                string::size_type pos = above.rfind("__");
                 if (pos == string::npos) break;
                 above.resize(pos);
                 if (m_vpiScopeHierarchy.find(above) != m_vpiScopeHierarchy.end()) {
-                    m_vpiScopeHierarchy[above].push_back(name);
+                    m_vpiScopeHierarchy[above].push_back(symName);
                     break;
                 }
             }
-            m_vpiScopeHierarchy[name] = std::vector<string>();
+            m_vpiScopeHierarchy[symName] = std::vector<string>();
         }
     }
 
@@ -298,11 +303,12 @@ class EmitCSyms final : EmitCBaseVisitor {
         m_scopes.emplace_back(std::make_pair(nodep, m_modp));
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
+            string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
             string name_dedot = AstNode::dedotName(nodep->shortName());
             int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
-                                                        timeunit, "SCOPE_MODULE")));
+                                                        timeunit, type)));
         }
     }
     virtual void visit(AstScopeName* nodep) override {
@@ -330,7 +336,8 @@ class EmitCSyms final : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()) m_modVars.emplace_back(std::make_pair(m_modp, nodep));
+        if (nodep->isSigUserRdPublic() && !m_cfuncp)
+            m_modVars.emplace_back(std::make_pair(m_modp, nodep));
     }
     virtual void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
@@ -755,6 +762,7 @@ void EmitCSyms::emitSymImp() {
             AstScope* scopep = it->second.m_scopep;
             AstVar* varp = it->second.m_varp;
             //
+            int pwidth = 1;
             int pdim = 0;
             int udim = 0;
             string bounds;
@@ -766,6 +774,7 @@ void EmitCSyms::emitSymImp() {
                     bounds += ",";
                     bounds += cvtToStr(basicp->lo());
                     pdim++;
+                    pwidth *= basicp->elements();
                 }
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
                     dtypep
@@ -777,6 +786,7 @@ void EmitCSyms::emitSymImp() {
                         bounds += cvtToStr(adtypep->right());
                         if (VN_IS(dtypep, PackArrayDType)) {
                             pdim++;
+                            pwidth *= adtypep->elementsConst();
                         } else {
                             udim++;
                         }
@@ -786,7 +796,13 @@ void EmitCSyms::emitSymImp() {
                     }
                 }
             }
-            //
+            // TODO: actually expose packed arrays as vpiRegArray
+            if (pdim > 1 && udim == 0) {
+                bounds = ", ";
+                bounds += cvtToStr(pwidth - 1);
+                bounds += ",0";
+                pdim = 1;
+            }
             if (pdim > 1 || udim > 1) {
                 puts("//UNSUP ");  // VerilatedImp can't deal with >2d or packed arrays
             }
