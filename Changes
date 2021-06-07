@@ -25,6 +25,7 @@ Verilator 4.203 devel
 * Fix assertion failure in bitOpTree optimization (#2891) (#2899). [Raynard Qiao]
 * Fix DPI functions not seen as vpiModule (#2893). [Todd Strader]
 * Fix bounds check in VL_SEL_IWII (#2910). [Krzysztof Bieganski]
+* Fix slowdown in elaboration (#2911). [Nathan Graybeal]
 * Fix initialization of assoc in assoc array (#2914). [myftptoyman]
 * Fix make support for gmake 3.x (#2920) (#2921). [Philipp Wagner]
 * Fix VPI memory access for packed arrays (#2922). [Todd Strader]
