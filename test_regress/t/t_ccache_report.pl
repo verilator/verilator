@@ -31,8 +31,7 @@ my $report = "$Self->{obj_dir}/$Self->{VM_PREFIX}__ccache_report.txt";
 
 # We do not actually want to make this test depend on whether the file was
 # cached or not, so trim the report to ignore actual caching behaviour
-run(cmd => ["sed", "-i", "-e", "'s/ : .*/ : IGNORED/; /^Summary/,\$d;'", $report]);
-
+run(cmd => ["sed", "-i", "-e", "'s/ : .*/ : IGNORED/; /|/s/.*/IGNORED/;'", $report]);
 files_identical($report, "t/$Self->{name}__ccache_report_initial.out");
 
 # Now rebuild again (should be all up to date)
