@@ -9082,10 +9082,7 @@ class AstTypeTable final : public AstNode {
     DetailedMap m_detailedMap;
 
 public:
-    explicit AstTypeTable(FileLine* fl)
-        : ASTGEN_SUPER_TypeTable(fl) {
-        for (int i = 0; i < AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = nullptr;
-    }
+    explicit AstTypeTable(FileLine* fl);
     ASTNODE_NODE_FUNCS(TypeTable)
     AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
@@ -9102,6 +9099,34 @@ public:
     virtual void dump(std::ostream& str = std::cout) const override;
 };
 
+class AstConstPool final : public AstNode {
+    // Container for const static data
+    std::unordered_multimap<uint32_t, AstVarScope*> m_tables;  // Constant tables (unpacked arrays)
+    std::unordered_multimap<uint32_t, AstVarScope*> m_consts;  // Constant tables (scalars)
+    AstModule* const m_modp;  // The Module holding the Scope below ...
+    AstScope* const m_scopep;  // Scope holding the constant variables
+
+    AstVarScope* createNewEntry(const string& name, AstNode* initp);
+
+public:
+    explicit AstConstPool(FileLine* fl);
+    ASTNODE_NODE_FUNCS(ConstPool)
+    AstModule* modp() const { return m_modp; }
+
+    // Find a table (unpacked array) within the constant pool which is initialized with the
+    // given value, or create one if one does not already exists. The returned VarScope *might*
+    // have a different dtype than the given initp->dtypep(), including a different element type,
+    // but it will always have the same size and element width. In contexts where this matters,
+    // the caller must handle the dtype difference as appropriate.
+    AstVarScope* findTable(AstInitArray* initp);
+    // Find a constant within the constant pool which is initialized with the given value, or
+    // create one if one does not already exists. If 'mergeDType' is true, then the returned
+    // VarScope *might* have a different type than the given initp->dtypep(). In contexts where
+    // this matters, the caller must handle the dtype difference as appropriate. If 'mergeDType' is
+    // false, the returned VarScope will have _->dtypep()->sameTree(initp->dtypep()) return true.
+    AstVarScope* findConst(AstConst* initp, bool mergeDType);
+};
+
 //######################################################################
 // Top
 
@@ -9110,7 +9135,8 @@ class AstNetlist final : public AstNode {
     // Parents:   none
     // Children:  MODULEs & CFILEs
 private:
-    AstTypeTable* m_typeTablep = nullptr;  // Reference to top type table, for faster lookup
+    AstTypeTable* const m_typeTablep;  // Reference to top type table, for faster lookup
+    AstConstPool* const m_constPoolp;  // Reference to constant pool, for faster lookup
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
@@ -9118,8 +9144,7 @@ private:
     VTimescale m_timeprecision;  // Global time precision
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
 public:
-    AstNetlist()
-        : ASTGEN_SUPER_Netlist(new FileLine(FileLine::builtInFilename())) {}
+    AstNetlist();
     ASTNODE_NODE_FUNCS(Netlist)
     virtual const char* broken() const override {
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
@@ -9140,10 +9165,7 @@ public:
     AstNode* miscsp() const { return op3p(); }  // op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
-    void addTypeTablep(AstTypeTable* nodep) {
-        m_typeTablep = nodep;
-        addMiscsp(nodep);
-    }
+    AstConstPool* constPoolp() { return m_constPoolp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp() {
         if (!m_dollarUnitPkgp) {

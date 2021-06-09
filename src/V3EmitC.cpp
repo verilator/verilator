@@ -1131,7 +1131,10 @@ public:
     // Terminals
     virtual void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
-        if (varp->isStatic()) {
+        if (isConstPoolMod(varp->user4p())) {
+            // Reference to constant pool variable
+            puts(topClassName() + "__ConstPool__");
+        } else if (varp->isStatic()) {
             // Access static variable via the containing class
             puts(prefixNameProtect(varp->user4p()) + "::");
         } else if (!nodep->classPrefix().empty()) {
@@ -1399,6 +1402,16 @@ class EmitCLazyDecls final : public AstNVisitor {
         m_needsBlankLine = true;
     }
 
+    void lazyDeclareConstPoolVar(AstVar* varp) {
+        if (varp->user2SetOnce()) return;  // Already declared
+        const string nameProtect
+            = m_emitter.topClassName() + "__ConstPool__" + varp->nameProtect();
+        m_emitter.puts("extern const ");
+        m_emitter.puts(varp->dtypep()->cType(nameProtect, false, false));
+        m_emitter.puts(";\n");
+        m_needsBlankLine = true;
+    }
+
     virtual void visit(AstNodeCCall* nodep) override {
         lazyDeclare(nodep->funcp());
         iterateChildren(nodep);
@@ -1418,6 +1431,12 @@ class EmitCLazyDecls final : public AstNVisitor {
             m_emitter.puts("(void* voidSelf, bool even_cycle);\n");
             m_needsBlankLine = true;
         }
+    }
+
+    virtual void visit(AstVarRef* nodep) override {
+        AstVar* const varp = nodep->varp();
+        // Only constant pool symbols are lazy declared for now ...
+        if (EmitCBaseVisitor::isConstPoolMod(varp->user4p())) { lazyDeclareConstPoolVar(varp); }
     }
 
     virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -4108,11 +4127,15 @@ public:
 
 static void setParentClassPointers() {
     // Set user4p in all CFunc and Var to point to the containing AstNodeModule
-    for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
+    auto setAll = [](AstNodeModule* modp) -> void {
         for (AstNode* nodep = VN_CAST(modp, NodeModule)->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var)) nodep->user4p(modp);
         }
+    };
+    for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
+        setAll(VN_CAST(modp, NodeModule));
     }
+    setAll(v3Global.rootp()->constPoolp()->modp());
 }
 
 void V3EmitC::emitc() {
