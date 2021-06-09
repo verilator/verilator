@@ -91,7 +91,6 @@ jobs:
     needs: [ Matrix, Build ]
     strategy:
       fail-fast: false
-      max-parallel: 8
       matrix:
         os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
         compiler:
