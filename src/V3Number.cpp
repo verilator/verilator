@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
+#include <functional>
 
 constexpr int MAX_SPRINTF_DOUBLE_SIZE
     = 1100;  // Maximum characters with a sprintf %e/%f/%g (really 1079)
@@ -883,7 +884,11 @@ string V3Number::toString() const {
     return str;
 }
 
-V3Hash V3Number::toHash() const { return V3Hash(m_width * (m_value[0] | 1)); }
+V3Hash V3Number::toHash() const {
+    V3Hash hash(m_width);
+    for (int i = 0; i < words(); ++i) { hash += m_value[i]; }
+    return hash;
+}
 
 uint32_t V3Number::edataWord(int eword) const {
     UASSERT(!isFourState(), "edataWord with 4-state " << *this);
