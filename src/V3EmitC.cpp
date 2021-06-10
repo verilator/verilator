@@ -235,7 +235,7 @@ public:
 
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-                if (funcp->dpiImport())  // DPI import functions are declared in __Dpi.h
+                if (funcp->dpiImportPrototype())  // DPI import prototypes are declared in __Dpi.h
                     continue;
                 if (funcp->isMethod() != inClassBody)  // Only methods go inside class
                     continue;
@@ -388,6 +388,9 @@ public:
             iterate(ccallp->fromp());
             putbs("->");
             puts(funcp->nameProtect());
+        } else if (funcp->dpiImportPrototype()) {
+            // Calling DPI import
+            puts(funcp->name());
         } else if (funcp->isProperMethod() && funcp->isStatic().trueUnknown()) {
             // Call static method via the containing class
             AstNodeModule* modp = VN_CAST(funcp->user4p(), NodeModule);
@@ -1395,10 +1398,15 @@ class EmitCLazyDecls final : public AstNVisitor {
     bool m_needsBlankLine = false;  // Emit blank line if any declarations were emitted (cosmetic)
 
     void lazyDeclare(AstCFunc* funcp) {
-        if (funcp->user2SetOnce()) return;  // Already declared
-        if (!funcp->isMethod() || !funcp->isLoose()) return;  // Not lazily declared
-        if (m_emittedManually.count(funcp->nameProtect())) return;  // Already declared manually
-        m_emitter.emitCFuncDecl(funcp, VN_CAST_CONST(funcp->user4p(), NodeModule));
+        // Already declared in this compilation unit
+        if (funcp->user2SetOnce()) return;
+        // Check if this kind of function is lazily declared
+        if (!(funcp->isMethod() && funcp->isLoose()) && !funcp->dpiImportPrototype()) return;
+        // Already declared manually
+        if (m_emittedManually.count(funcp->nameProtect())) return;
+        // Needs lazy declaration, emit one
+        m_emitter.emitCFuncDecl(funcp, VN_CAST_CONST(funcp->user4p(), NodeModule),
+                                funcp->dpiImportPrototype());
         m_needsBlankLine = true;
     }
 
@@ -1659,7 +1667,7 @@ class EmitCImp final : EmitCStmts {
     virtual void visit(AstCFunc* nodep) override {
         // TRACE_* and DPI handled elsewhere
         if (nodep->funcType().isTrace()) return;
-        if (nodep->dpiImport()) return;
+        if (nodep->dpiImportPrototype()) return;
         if (!(nodep->slow() ? m_slow : m_fast)) return;
 
         VL_RESTORER(m_useSelfForThis);
@@ -2009,7 +2017,7 @@ class EmitCImp final : EmitCStmts {
     void emitWrapFast();
     void emitMTaskState();
     void emitMTaskVertexCtors(bool* firstp);
-    void emitIntTop(AstNodeModule* modp);
+    void emitIntTop(const AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
     void maybeSplit();
 
@@ -3274,7 +3282,7 @@ void EmitCImp::emitMTaskState() {
     puts("bool __Vm_even_cycle;\n");
 }
 
-void EmitCImp::emitIntTop(AstNodeModule*) {
+void EmitCImp::emitIntTop(const AstNodeModule* modp) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
     ofp()->putsGuard();
     puts("\n");
@@ -3288,10 +3296,10 @@ void EmitCImp::emitIntTop(AstNodeModule*) {
     if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
     if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
     if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
-    if (v3Global.dpi()) {
+    if (v3Global.dpi() && modp->isTop()) {
         // do this before including our main .h file so that any references to
         // types defined in svdpi.h are available
-        puts("#include \"" + topClassName() + "__Dpi.h\"\n");
+        puts("#include \"svdpi.h\"\n");
     }
 }
 

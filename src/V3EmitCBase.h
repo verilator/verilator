@@ -58,8 +58,8 @@ public:
     static string symClassAssign() {
         return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
     }
-    static string funcNameProtect(const AstCFunc* nodep) {
-        AstNodeModule* modp = VN_CAST(nodep->user4p(), NodeModule);
+    static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr) {
+        modp = modp ? modp : VN_CAST(nodep->user4p(), NodeModule);
         string name;
         if (nodep->isConstructor()) {
             name += prefixNameProtect(modp);
@@ -116,7 +116,7 @@ public:
             if (const AstVar* portp = VN_CAST_CONST(stmtp, Var)) {
                 if (portp->isIO() && !portp->isFuncReturn()) {
                     if (args != "") args += ", ";
-                    if (nodep->dpiImport() || nodep->dpiExportWrapper()) {
+                    if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
                         args += portp->dpiArgType(true, false);
                     } else if (nodep->funcPublic()) {
                         args += portp->cPubArgType(true, false);
@@ -135,14 +135,15 @@ public:
             puts(" ");
         }
         if (withScope && funcp->isProperMethod()) puts(prefixNameProtect(modp) + "::");
-        puts(funcNameProtect(funcp));
+        puts(funcNameProtect(funcp, modp));
         puts("(" + cFuncArgs(funcp) + ")");
         if (funcp->isConst().trueKnown() && funcp->isProperMethod()) puts(" const");
     }
 
-    void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp) {
+    void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false) {
         ensureNewLine();
         if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
+        if (cLinkage) puts("extern \"C\" ");
         if (funcp->isStatic().trueUnknown() && funcp->isProperMethod()) puts("static ");
         if (funcp->isVirtual()) {
             UASSERT_OBJ(funcp->isProperMethod(), funcp, "Virtual function is not a proper method");

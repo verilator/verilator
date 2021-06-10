@@ -83,9 +83,9 @@ class EmitCSyms final : EmitCBaseVisitor {
     };
     struct CmpDpi {
         bool operator()(const AstCFunc* lhsp, const AstCFunc* rhsp) const {
-            if (lhsp->dpiImport() != rhsp->dpiImport()) {
+            if (lhsp->dpiImportPrototype() != rhsp->dpiImportPrototype()) {
                 // cppcheck-suppress comparisonOfFuncReturningBoolError
-                return lhsp->dpiImport() < rhsp->dpiImport();
+                return lhsp->dpiImportPrototype() < rhsp->dpiImportPrototype();
             }
             return lhsp->name() < rhsp->name();
         }
@@ -348,7 +348,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     }
     virtual void visit(AstCFunc* nodep) override {
         nameCheck(nodep);
-        if (nodep->dpiImport() || nodep->dpiExportWrapper()) m_dpis.push_back(nodep);
+        if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) m_dpis.push_back(nodep);
         VL_RESTORER(m_cfuncp);
         {
             m_cfuncp = nodep;
@@ -407,7 +407,7 @@ void EmitCSyms::emitSymHdr() {
         std::map<const string, int> types;  // Remove duplicates and sort
         for (const auto& itr : m_scopeFuncs) {
             AstCFunc* funcp = itr.second.m_cfuncp;
-            if (funcp->dpiExport()) {
+            if (funcp->dpiExportImpl()) {
                 string cbtype = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
                 types["using " + cbtype + " = void (*) (" + cFuncArgs(funcp) + ");\n"] = 1;
             }
@@ -561,6 +561,16 @@ void EmitCSyms::emitSymImpPreamble() {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
         puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
+    puts("\n");
+    // Declarations for DPI Export implementation functions
+    bool needsNewLine = false;
+    for (const auto& pair : m_scopeFuncs) {
+        const AstCFunc* const funcp = pair.second.m_cfuncp;
+        if (!funcp->dpiExportImpl()) continue;
+        emitCFuncDecl(funcp, pair.second.m_modp);
+        needsNewLine = true;
+    }
+    if (needsNewLine) puts("\n");
 }
 
 void EmitCSyms::emitScopeHier(bool destroy) {
@@ -611,12 +621,7 @@ void EmitCSyms::emitSymImp() {
     m_ofpBase = m_ofp;
     emitSymImpPreamble();
 
-    // puts("\n// GLOBALS\n");
-
-    puts("\n");
-
     if (v3Global.opt.savable()) {
-        puts("\n");
         for (int de = 0; de < 2; ++de) {
             string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
             string funcname = de ? "__Vdeserialize" : "__Vserialize";
@@ -640,11 +645,10 @@ void EmitCSyms::emitSymImp() {
             }
             puts("}\n");
         }
+        puts("\n");
     }
 
-    puts("\n");
-
-    puts("\n// FUNCTIONS\n");
+    puts("// FUNCTIONS\n");
     puts(symClassName() + "::~" + symClassName() + "()\n");
     puts("{\n");
     emitScopeHier(true);
@@ -743,13 +747,13 @@ void EmitCSyms::emitSymImp() {
             AstScopeName* scopep = it->second.m_scopep;
             AstCFunc* funcp = it->second.m_cfuncp;
             AstNodeModule* modp = it->second.m_modp;
-            if (funcp->dpiExport()) {
+            if (funcp->dpiExportImpl()) {
                 checkSplit(true);
                 puts(protect("__Vscope_" + scopep->scopeSymName()) + ".exportInsert(__Vfinal, ");
                 putsQuoted(funcp->cname());  // Not protected - user asked for import/export
                 puts(", (void*)(&");
                 puts(prefixNameProtect(modp));
-                puts("::");
+                puts("__");
                 puts(funcp->nameProtect());
                 puts("));\n");
                 ++m_numStmts;
@@ -886,13 +890,13 @@ void EmitCSyms::emitDpiHdr() {
     int firstExp = 0;
     int firstImp = 0;
     for (AstCFunc* nodep : m_dpis) {
-        if (nodep->dpiExportWrapper()) {
+        if (nodep->dpiExportDispatcher()) {
             if (!firstExp++) puts("\n// DPI EXPORTS\n");
             putsDecoration("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii())
                            + "\n");
             puts("extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
                  + cFuncArgs(nodep) + ");\n");
-        } else if (nodep->dpiImport()) {
+        } else if (nodep->dpiImportPrototype()) {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
             putsDecoration("// DPI import" + ifNoProtect(" at " + nodep->fileline()->ascii())
                            + "\n");
@@ -937,7 +941,7 @@ void EmitCSyms::emitDpiImp() {
     puts("\n");
 
     for (AstCFunc* nodep : m_dpis) {
-        if (nodep->dpiExportWrapper()) {
+        if (nodep->dpiExportDispatcher()) {
             // Prevent multi-definition if used by multiple models
             puts("#ifndef VL_DPIDECL_" + nodep->name() + "_\n");
             puts("#define VL_DPIDECL_" + nodep->name() + "_\n");
