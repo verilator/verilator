@@ -13,7 +13,6 @@ env:
   CI_COMMIT: ${{ github.sha }}
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
   COVERAGE: 1
 
 jobs:
@@ -24,7 +23,8 @@ jobs:
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ubuntu-20.04
-      CACHE_KEY: ubuntu-20.04-${{ matrix.compiler.cc }}-coverage
+      CACHE_KEY: coverage-build
+      CCACHE_MAXSIZE: 512Mi
     steps:
 
     - name: Checkout
@@ -37,7 +37,7 @@ jobs:
       with:
         path: ${{ github.workspace }}/.ccache
         key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: coverage-${{ env.cache-name }}
+        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
 
     - name: Install packages for build
       env:
@@ -46,7 +46,9 @@ jobs:
 
     - name: Build
       run: |
+        ccache -z
         ./ci/ci-script.bash
+        ccache -s
         tar cvzf verilator-${CI_COMMIT}-coverage.tgz bin src/obj*/*.o src/obj*/*.gcno
 
     - uses: actions/upload-artifact@v2
@@ -80,7 +82,8 @@ jobs:
     env:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ubuntu-20.04
-      CACHE_KEY: ubuntu-20.04-${{ matrix.compiler.cc }}-coverage
+      CACHE_KEY: coverage-test-${{ matrix.test }}${{ matrix.num }}
+      CCACHE_MAXSIZE: 512Mi # Per build matrix entry
     steps:
 
     - name: Checkout
@@ -93,7 +96,7 @@ jobs:
       with:
         path: ${{ github.workspace }}/.ccache
         key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: coverage-${{ env.cache-name }}
+        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
 
     - uses: actions/download-artifact@v2
 
@@ -106,4 +109,7 @@ jobs:
     - name: Test
       env:
         TESTS: coverage-${{ matrix.test }}${{ matrix.num }}
-      run: ./ci/ci-script.bash
+      run: |
+        ccache -z
+        ./ci/ci-script.bash
+        ccache -s
