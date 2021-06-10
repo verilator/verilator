@@ -8749,10 +8749,10 @@ private:
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
     bool m_pure : 1;  // Pure function
-    bool m_dpiExport : 1;  // From dpi export
-    bool m_dpiExportWrapper : 1;  // From dpi export; static function with dispatch table
-    bool m_dpiImport : 1;  // From dpi import
-    bool m_dpiImportWrapper : 1;  // Wrapper from dpi import
+    bool m_dpiExportDispatcher : 1;  // This is the DPI export entry point (i.e.: called by user)
+    bool m_dpiExportImpl : 1;  // DPI export implementation (called from DPI dispatcher via lookup)
+    bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
+    bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -8775,9 +8775,9 @@ public:
         m_isVirtual = false;
         m_entryPoint = false;
         m_pure = false;
-        m_dpiExport = false;
-        m_dpiExportWrapper = false;
-        m_dpiImport = false;
+        m_dpiExportDispatcher = false;
+        m_dpiExportImpl = false;
+        m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
     }
     ASTNODE_NODE_FUNCS(CFunc)
@@ -8793,11 +8793,11 @@ public:
         return ((funcType() == asamep->funcType()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && (ctorInits() == asamep->ctorInits())
                 && isLoose() == asamep->isLoose()
-                && (!(dpiImport() || dpiExport()) || name() == asamep->name()));
+                && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
     //
     virtual void name(const string& name) override { m_name = name; }
-    virtual int instrCount() const override { return dpiImport() ? instrCountDpi() : 0; }
+    virtual int instrCount() const override { return dpiImportPrototype() ? instrCountDpi() : 0; }
     VBoolOrUnknown isConst() const { return m_isConst; }
     void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
@@ -8845,12 +8845,12 @@ public:
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool pure() const { return m_pure; }
     void pure(bool flag) { m_pure = flag; }
-    bool dpiExport() const { return m_dpiExport; }
-    void dpiExport(bool flag) { m_dpiExport = flag; }
-    bool dpiExportWrapper() const { return m_dpiExportWrapper; }
-    void dpiExportWrapper(bool flag) { m_dpiExportWrapper = flag; }
-    bool dpiImport() const { return m_dpiImport; }
-    void dpiImport(bool flag) { m_dpiImport = flag; }
+    bool dpiExportDispatcher() const { return m_dpiExportDispatcher; }
+    void dpiExportDispatcher(bool flag) { m_dpiExportDispatcher = flag; }
+    bool dpiExportImpl() const { return m_dpiExportImpl; }
+    void dpiExportImpl(bool flag) { m_dpiExportImpl = flag; }
+    bool dpiImportPrototype() const { return m_dpiImportPrototype; }
+    void dpiImportPrototype(bool flag) { m_dpiImportPrototype = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
     //

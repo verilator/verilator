@@ -35,6 +35,7 @@
 #include "V3LinkLValue.h"
 
 #include <map>
+#include <tuple>
 
 //######################################################################
 // Graph subclasses
@@ -384,7 +385,7 @@ private:
         IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end
     };
-    using DpiNames = std::map<const string, std::pair<AstNodeFTask*, std::string>>;
+    using DpiCFuncs = std::map<const string, std::tuple<AstNodeFTask*, std::string, AstCFunc*>>;
 
     // STATE
     TaskStateVisitor* m_statep;  // Common state between visitors
@@ -394,7 +395,7 @@ private:
     InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     int m_modNCalls = 0;  // Incrementing func # for making symbols
-    DpiNames m_dpiNames;  // Map of all created DPI functions
+    DpiCFuncs m_dpiNames;  // Map of all created DPI functions
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -658,9 +659,9 @@ private:
         return beginp;
     }
 
-    string dpiprotoName(AstNodeFTask* nodep, AstVar* rtnvarp) const {
-        // Return fancy export-ish name for DPI function
-        // Variable names are NOT included so differences in only IO names won't matter
+    string dpiSignature(AstNodeFTask* nodep, AstVar* rtnvarp) const {
+        // Return fancy signature for DPI function. Variable names are not included so differences
+        // in only argument names will not matter (as required by the standard).
         string dpiproto;
         if (nodep->pure()) dpiproto += "pure ";
         if (nodep->dpiContext()) dpiproto += "context ";
@@ -757,18 +758,18 @@ private:
         return newp;
     }
 
-    void makeDpiExportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
+    AstCFunc* makeDpiExportDispatcher(AstNodeFTask* nodep, AstVar* rtnvarp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
-        AstCFunc* dpip = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep,
-                                      (rtnvarp ? rtnvarp->dpiArgType(true, true) : ""));
-        dpip->dontCombine(true);
-        dpip->entryPoint(true);
-        dpip->isStatic(true);
-        dpip->dpiExportWrapper(true);
-        dpip->protect(false);
-        dpip->cname(nodep->cname());
-        // Add DPI reference to top, since it's a global function
-        m_topScopep->scopep()->addActivep(dpip);
+        AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep,
+                                             (rtnvarp ? rtnvarp->dpiArgType(true, true) : ""));
+        funcp->dpiExportDispatcher(true);
+        funcp->dontCombine(true);
+        funcp->entryPoint(true);
+        funcp->isStatic(true);
+        funcp->protect(false);
+        funcp->cname(nodep->cname());
+        // Add DPI Export to top, since it's a global function
+        m_topScopep->scopep()->addActivep(funcp);
 
         {  // Create dispatch wrapper
             // Note this function may dispatch to myfunc on a different class.
@@ -795,7 +796,7 @@ private:
                     + ")(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));\n";  // Can't use
                                                                                   // static_cast
             // If __Vcb is null the exportFind function throws and error
-            dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+            funcp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
         }
 
         // Convert input/inout DPI arguments to Internal types
@@ -813,7 +814,7 @@ private:
                         argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true));
                         args = "";
                     }
-                    AstVarScope* outvscp = createFuncVar(dpip, portp->name() + tmpSuffixp, portp);
+                    AstVarScope* outvscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
                     // No information exposure; is already visible in import/export func template
                     outvscp->varp()->protect(false);
                     portp->protect(false);
@@ -829,7 +830,7 @@ private:
                                   ? "*"
                                   : "";
                         frName += portp->name();
-                        dpip->addStmtsp(createAssignDpiToInternal(outvscp, frName));
+                        funcp->addStmtsp(createAssignDpiToInternal(outvscp, frName));
                     }
                 }
             }
@@ -843,7 +844,7 @@ private:
                 argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true));
                 args = "";
             }
-            AstVarScope* outvscp = createFuncVar(dpip, portp->name() + tmpSuffixp, portp);
+            AstVarScope* outvscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
             // No information exposure; is already visible in import/export func template
             outvscp->varp()->protect(false);
             AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp,
@@ -859,69 +860,85 @@ private:
             newp->addBodysp(argnodesp);
             VL_DANGLING(argnodesp);
             newp->addBodysp(new AstText(nodep->fileline(), args, true));
-            dpip->addStmtsp(newp);
+            funcp->addStmtsp(newp);
         }
 
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && portp->isWritable() && !portp->isFuncReturn()) {
-                    dpip->addStmtsp(createAssignInternalToDpi(portp, true, tmpSuffixp, ""));
+                    funcp->addStmtsp(createAssignInternalToDpi(portp, true, tmpSuffixp, ""));
                 }
             }
         }
 
         if (rtnvarp) {
-            dpip->addStmtsp(createDpiTemp(rtnvarp, ""));
-            dpip->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
+            funcp->addStmtsp(createDpiTemp(rtnvarp, ""));
+            funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
             string stmt = "return " + rtnvarp->name();
             stmt += rtnvarp->basicp()->isDpiPrimitive() ? ";\n" : "[0];\n";
-            dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+            funcp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
         }
-        makePortList(nodep, dpip);
+        makePortList(nodep, funcp);
+        return funcp;
     }
 
-    void makeDpiImportProto(AstNodeFTask* nodep, AstVar* rtnvarp) {
+    AstCFunc* makeDpiImportPrototype(AstNodeFTask* nodep, AstVar* rtnvarp) {
         if (nodep->cname() != AstNode::prettyName(nodep->cname())) {
             nodep->v3error("DPI function has illegal characters in C identifier name: "
                            << AstNode::prettyNameQ(nodep->cname()));
         }
-        AstCFunc* dpip = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep,
-                                      (rtnvarp ? rtnvarp->dpiArgType(true, true)
-                                               // Tasks (but not void functions)
-                                               // return bool indicating disabled
-                                               : nodep->dpiTask() ? "int" : ""));
-        dpip->dontCombine(true);
-        dpip->entryPoint(false);
-        dpip->funcPublic(true);
-        dpip->isStatic(false);
-        dpip->protect(false);
-        dpip->pure(nodep->pure());
-        dpip->dpiImport(true);
-        // Add DPI reference to top, since it's a global function
-        m_topScopep->scopep()->addActivep(dpip);
-        makePortList(nodep, dpip);
+        // Tasks (but not void functions) return a boolean 'int' indicating disabled
+        const string rtnType
+            = rtnvarp ? rtnvarp->dpiArgType(true, true) : nodep->dpiTask() ? "int" : "";
+        AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep, rtnType);
+        funcp->dpiImportPrototype(true);
+        funcp->dontCombine(true);
+        funcp->entryPoint(false);
+        funcp->isMethod(false);
+        funcp->protect(false);
+        funcp->pure(nodep->pure());
+        // Add DPI Import to top, since it's a global function
+        m_topScopep->scopep()->addActivep(funcp);
+        makePortList(nodep, funcp);
+        return funcp;
     }
 
-    bool duplicatedDpiProto(AstNodeFTask* nodep, const string& dpiproto) {
-        // Only create one DPI extern prototype for each specified cname
-        // as it's legal for the user to attach multiple tasks to one dpi cname
-        const auto iter = m_dpiNames.find(nodep->cname());
-        if (iter == m_dpiNames.end()) {
-            m_dpiNames.emplace(nodep->cname(), std::make_pair(nodep, dpiproto));
-            return false;
-        } else if (iter->second.second != dpiproto) {
-            nodep->v3error(
-                "Duplicate declaration of DPI function with different formal arguments: "
-                << nodep->prettyNameQ() << '\n'
-                << nodep->warnContextPrimary() << '\n'
-                << nodep->warnMore() << "... New prototype:      " << dpiproto << '\n'
-                << iter->second.first->warnOther()
-                << "... Original prototype: " << iter->second.second << '\n'
-                << iter->second.first->warnContextSecondary());
-            return true;
+    AstCFunc* getDpiFunc(AstNodeFTask* nodep, AstVar* rtnvarp) {
+        UASSERT_OBJ(nodep->dpiImport() || nodep->dpiExport(), nodep, "Not a DPI function");
+        // Compute unique signature of this DPI function
+        const string signature = dpiSignature(nodep, rtnvarp);
+        // Only create one DPI Import prototype or DPI Export entry point for each unique cname as
+        // it is illegal for the user to attach multiple tasks with different signatures to one DPI
+        // cname.
+        const auto it = m_dpiNames.find(nodep->cname());
+        if (it == m_dpiNames.end()) {
+            // First time encountering this cname. Create Import prototype / Export entry point
+            AstCFunc* const funcp = nodep->dpiExport() ? makeDpiExportDispatcher(nodep, rtnvarp)
+                                                       : makeDpiImportPrototype(nodep, rtnvarp);
+            m_dpiNames.emplace(nodep->cname(), std::make_tuple(nodep, signature, funcp));
+            return funcp;
         } else {
-            return true;
+            // Seen this cname before. Check if it's the same prototype.
+            const AstNodeFTask* firstNodep;
+            string firstSignature;
+            AstCFunc* firstFuncp;
+            std::tie(firstNodep, firstSignature, firstFuncp) = it->second;
+            if (signature != firstSignature) {
+                // Different signature, so error.
+                nodep->v3error("Duplicate declaration of DPI function with different signature: "
+                               << nodep->prettyNameQ() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
+                               << nodep->warnMore()  //
+                               << "... New signature:      " << signature << '\n'  //
+                               << firstNodep->warnOther()
+                               << "... Original signature: " << firstSignature << '\n'  //
+                               << firstNodep->warnContextSecondary());
+                return nullptr;
+            } else {
+                // Same signature, return the previously created CFunc
+                return firstFuncp;
+            }
         }
     }
 
@@ -949,7 +966,8 @@ private:
         }
     }
 
-    void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp) {
+    void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp,
+                           AstCFunc* dpiFuncp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
         // Convert input/inout arguments to DPI types
         string args;
@@ -1010,15 +1028,17 @@ private:
             cfuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
         }
 
-        {  // Call the user function
-            string stmt;
+        {  // Call the imported function
             if (rtnvscp) {  // isFunction will no longer work as we unlinked the return var
                 cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
-                stmt = rtnvscp->varp()->name() + tmpSuffixp;
+                string stmt = rtnvscp->varp()->name();
+                stmt += tmpSuffixp;
                 stmt += rtnvscp->varp()->basicp()->isDpiPrimitive() ? " = " : "[0] = ";
+                cfuncp->addStmtsp(new AstText(nodep->fileline(), stmt, /* tracking: */ true));
             }
-            stmt += nodep->cname() + "(" + args + ");\n";
-            cfuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+            AstCCall* const callp = new AstCCall(nodep->fileline(), dpiFuncp);
+            callp->argTypes(args);
+            cfuncp->addStmtsp(callp);
         }
 
         // Convert output/inout arguments back to internal type
@@ -1080,23 +1100,19 @@ private:
             if (nodep->dpiImport() || nodep->dpiExport()) rtnvarp->protect(false);
         }
 
-        if (nodep->dpiImport()) {
-            if (nodep->dpiOpenChild()) {  // The parent will make the dpi proto
-                UASSERT_OBJ(!nodep->dpiOpenParent(), nodep,
-                            "DPI task should be parent or wrapper, not both");
-            } else {  // Parent or not open child, make wrapper
-                string dpiproto = dpiprotoName(nodep, rtnvarp);
-                if (!duplicatedDpiProto(nodep, dpiproto)) makeDpiImportProto(nodep, rtnvarp);
-                if (nodep->dpiOpenParent()) {
-                    // No need to make more than just the c prototype, children will
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return nullptr;
-                }
+        // Create/pick up the DPI CFunc for DPI Import/ DPI Export.
+        AstCFunc* dpiFuncp = nullptr;
+        if (nodep->dpiImport() || nodep->dpiExport()) {
+            UASSERT_OBJ(!(nodep->dpiOpenParent() && nodep->dpiOpenChild()), nodep,
+                        "DPI task should not be both parent and child");
+            dpiFuncp = getDpiFunc(nodep, rtnvarp);
+            if (!dpiFuncp) return nullptr;  // There was an error, so bail
+            if (nodep->dpiImport() && nodep->dpiOpenParent()) {
+                // No need to make more than just the DPI Import prototype, the children will
+                // create the wrapper implementations.
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return nullptr;
             }
-
-        } else if (nodep->dpiExport()) {
-            string dpiproto = dpiprotoName(nodep, rtnvarp);
-            if (!duplicatedDpiProto(nodep, dpiproto)) makeDpiExportWrapper(nodep, rtnvarp);
         }
 
         AstVarScope* rtnvscp = nullptr;
@@ -1127,9 +1143,14 @@ private:
         cfuncp->dontCombine(!nodep->dpiImport());
         cfuncp->entryPoint(!nodep->dpiImport());
         cfuncp->funcPublic(nodep->taskPublic());
-        cfuncp->dpiExport(nodep->dpiExport());
+        cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
-        cfuncp->isStatic(nodep->dpiExport());
+        if (nodep->dpiImport() || nodep->dpiExport()) {
+            cfuncp->isStatic(true);
+            cfuncp->isLoose(true);
+        } else {
+            cfuncp->isStatic(false);
+        }
         cfuncp->isVirtual(nodep->isVirtual());
         cfuncp->pure(nodep->pure());
         if (nodep->name() == "new") {
@@ -1140,8 +1161,7 @@ private:
                                   + "(vlSymsp)");
             }
         }
-        // cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
-        if (cfuncp->dpiExport()) cfuncp->cname(nodep->cname());
+        if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
@@ -1198,7 +1218,7 @@ private:
             bodysp->unlinkFrBackWithNext();
             cfuncp->addStmtsp(bodysp);
         }
-        if (nodep->dpiImport()) bodyDpiImportFunc(nodep, rtnvscp, cfuncp);
+        if (nodep->dpiImport()) bodyDpiImportFunc(nodep, rtnvscp, cfuncp, dpiFuncp);
 
         // Return statement
         if (rtnvscp && nodep->taskPublic()) {
