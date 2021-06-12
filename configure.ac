@@ -322,6 +322,16 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-parentheses-equality)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
 AC_SUBST(CFG_CXXFLAGS_PARSER)
 
+# Flags for compiling the debug version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-Og)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-ggdb)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-gz)
+AC_SUBST(CFG_CXXFLAGS_DEBUG)
+
+# Flags for linking the debug version of Verilator (in addition to above CFG_LDFLAGS_SRC)
+_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DEBUG,-gz)
+AC_SUBST(CFG_LDFLAGS_DEBUG)
+
 # Flags for Verilated makefile
 # For example, -Wno-div-by-zero isn't in 4.1.2
 # Random code often does / 0.  Unfortunately VL_DIV_I(0,0) will warn
