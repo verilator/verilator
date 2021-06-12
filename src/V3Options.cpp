@@ -815,7 +815,7 @@ string V3Options::protectKeyDefaulted() {
 void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     // clang-format off
-    { char* zp = nullptr; *zp = 0; }  // Intentional core dump, ignore warnings here
+    *static_cast<volatile char*>(nullptr) = 0;  // Intentional core dump, ignore warnings here
     // clang-format on
 #endif
 }  // LCOV_EXCL_STOP

@@ -176,7 +176,7 @@ private:
     void prepost_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
 
-        AstNodeVarRef* varrefp;
+        AstNodeVarRef* varrefp = nullptr;
         if (m_unsupportedHere || !(varrefp = VN_CAST(nodep->rhsp(), VarRef))) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Incrementation in this context.");
             return;
