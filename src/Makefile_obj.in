@@ -77,13 +77,11 @@ TGT = ../../verilator_bin$(EXEEXT)
 #################
 ifeq ($(VL_DEBUG),)
 # Optimize
-COPT = -O2
+CPPFLAGS += -O2
 else
 # Debug
-COPT = -ggdb -DVL_DEBUG -D_GLIBCXX_DEBUG
-# Debug & Profile:
-#LDFLAGS += -pg -g
-#COPT = -ggdb -pg -g
+CPPFLAGS += @CFG_CXXFLAGS_DEBUG@ -DVL_DEBUG -D_GLIBCXX_DEBUG
+LDFLAGS += @CFG_LDFLAGS_DEBUG@
 endif
 #################
 
@@ -96,7 +94,6 @@ LIBS = $(CFG_LIBS) -lm
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
 #CPPFLAGS += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
-CPPFLAGS += $(COPT)
 CPPFLAGS += -MP # Only works on recent GCC versions
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
 CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) $(CFG_CXXFLAGS_SRC) -Werror
