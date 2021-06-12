@@ -56,21 +56,22 @@ jobs:
       CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}
-      CCACHE_MAXSIZE: 256Mi # Per build matrix entry
+      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}
+      CCACHE_MAXSIZE: 128Mi # Per build matrix entry (1Gi in total)
     steps:
 
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Cache
+    - name: Cache $CCACHE_DIR
       uses: actions/cache@v2
       env:
-        cache-name: ccache
+        CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
       with:
-        path: ${{ github.workspace }}/.ccache
-        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+        restore-keys: |
+          ${{ env.CACHE_KEY }}-
 
     - name: Install packages for build
       run: ./ci/ci-install.bash
@@ -109,21 +110,22 @@ jobs:
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
-      CCACHE_MAXSIZE: 256Mi # Per build matrix entry
+      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
+      CCACHE_MAXSIZE: 32Mi # Per build matrix entry (960Mi in total)
     steps:
 
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Cache
+    - name: Cache $CCACHE_DIR
       uses: actions/cache@v2
       env:
-        cache-name: ccache
+        CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
       with:
-        path: ${{ github.workspace }}/.ccache
-        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+        restore-keys: |
+          ${{ env.CACHE_KEY }}-
 
     - uses: actions/download-artifact@v2
 
