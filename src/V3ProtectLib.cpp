@@ -20,7 +20,7 @@
 #include "V3Global.h"
 #include "V3String.h"
 #include "V3ProtectLib.h"
-#include "V3Hashed.h"
+#include "V3Hasher.h"
 #include "V3Task.h"
 
 #include <list>
@@ -87,9 +87,9 @@ private:
 
         iterateChildren(nodep);
 
-        V3Hash hash = V3Hashed::uncachedHash(m_cfilep);
-        m_hashValuep->addText(fl, cvtToStr(hash.fullValue()) + ";\n");
-        m_cHashValuep->addText(fl, cvtToStr(hash.fullValue()) + "U;\n");
+        V3Hash hash = V3Hasher::uncachedHash(m_cfilep);
+        m_hashValuep->addText(fl, cvtToStr(hash.value()) + ";\n");
+        m_cHashValuep->addText(fl, cvtToStr(hash.value()) + "U;\n");
         m_foundTop = true;
     }
 

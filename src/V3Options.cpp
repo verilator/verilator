@@ -19,9 +19,9 @@
 
 #include "V3Global.h"
 #include "V3Ast.h"
-#include "V3String.h"
 #include "V3Os.h"
 #include "V3Options.h"
+#include "V3OptionParser.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3PreShell.h"
@@ -37,7 +37,6 @@
 #include <cctype>
 #include <dirent.h>
 #include <fcntl.h>
-#include <functional>
 #include <list>
 #include <map>
 #include <memory>
@@ -104,226 +103,6 @@ public:
     }
     V3OptionsImp() = default;
     ~V3OptionsImp() = default;
-};
-
-//######################################################################
-// V3 OptionParser
-
-class V3OptionsParser final {
-public:
-    // TYPES
-    class ActionIfs VL_NOT_FINAL {
-    public:
-        virtual ~ActionIfs() = default;
-        virtual bool isValueNeeded() const = 0;  // Need val of "-opt val"
-        virtual bool isOnOffAllowed() const = 0;  // true if "-no-opt" is allowd
-        virtual bool isPartialMatchAllowed() const = 0;  // true if "-Wno-" matches "-Wno-fatal"
-        virtual bool isUndocumented() const = 0;  // Will not be suggested in typo
-        // Set a value or run callback
-        virtual void exec(const char* optp, const char* valp) = 0;
-        virtual void undocumented() = 0;
-    };
-    enum class en {  // Setting for isOnOffAllowed() and isPartialMatchAllowed()
-        NONE,  // "-opt"
-        ONOFF,  // "-opt" and "-no-opt"
-        VALUE  // "-opt val"
-    };
-    // Base class of actual action classes
-    template <en MODE, bool ALLOW_PARTIAL_MATCH = false>
-    class ActionBase VL_NOT_FINAL : public ActionIfs {
-        bool m_undocumented = false;  // This option is not documented
-    public:
-        virtual bool isValueNeeded() const override final { return MODE == en::VALUE; }
-        virtual bool isOnOffAllowed() const override final { return MODE == en::ONOFF; }
-        virtual bool isPartialMatchAllowed() const override final { return ALLOW_PARTIAL_MATCH; }
-        virtual bool isUndocumented() const override { return m_undocumented; }
-        virtual void undocumented() override { m_undocumented = true; }
-    };
-    // Actual action classes
-    template <typename T> class ActionSet;  // "-opt" for bool-ish, "-opt val" for int and string
-    template <typename BOOL> class ActionOnOff;  // "-opt" and "-no-opt" for bool-ish
-    class ActionCbCall;  // Callback without argument for "-opt"
-    class ActionCbOnOff;  // Callback for "-opt" and "-no-opt"
-    template <class T> class ActionCbVal;  // Callback for "-opt val"
-    class ActionCbPartialMatch;  // Callback "-O3" for "-O"
-    class ActionCbPartialMatchVal;  // Callback "-debugi-V3Options 3" for "-debugi-"
-
-    // Functor to register options to V3OptionsParser
-    struct AppendHelper;
-
-private:
-    // MEMBERS
-    std::map<const string, std::unique_ptr<ActionIfs>> m_options;  // All actions for option
-    bool m_isFinalized{false};  // Becomes after finalize() is called
-    VSpellCheck m_spellCheck;  // Suggests closest option when not found
-
-    // METHODS
-    ActionIfs* find(const char* optp) {
-        auto it = m_options.find(optp);
-        if (it != m_options.end()) return it->second.get();
-        for (auto&& act : m_options) {
-            if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
-                const char* const nop = std::strncmp(optp, "-no", 3) ? nullptr : (optp + 3);
-                if (nop && (act.first == nop || act.first == (string{"-"} + nop))) {
-                    return act.second.get();
-                }
-            } else if (act.second->isPartialMatchAllowed()) {
-                if (!std::strncmp(optp, act.first.c_str(), act.first.length())) {
-                    return act.second.get();
-                }
-            }
-        }
-        return nullptr;
-    }
-    template <class ACT, class ARG> ActionIfs& add(const std::string& opt, ARG arg) {
-        UASSERT(!m_isFinalized, "Cannot add after finalize() is called");
-        std::unique_ptr<ACT> act{new ACT{std::move(arg)}};
-        UASSERT(opt.size() >= 2, opt << " is too short");
-        UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' or '+'");
-        UASSERT(!(opt[0] == '-' && opt[1] == '-'), "Option must have single '-', but " << opt);
-        const auto insertedResult = m_options.emplace(opt, std::move(act));
-        UASSERT(insertedResult.second, opt << " is already registered");
-        return *insertedResult.first->second;
-    }
-    static bool hasPrefixNo(const char* strp) {  // Returns true if strp starts with "-no"
-        UASSERT(strp[0] == '-', strp << " does not start with '-'");
-        if (strp[1] == '-') ++strp;
-        return std::strncmp(strp, "-no", 3) == 0;
-    }
-
-public:
-    // METHODS
-    // Returns how many args are consumed. 0 means not match
-    int parse(int idx, int argc, char* argv[]) {
-        UASSERT(m_isFinalized, "finalize() must be called before parse()");
-        const char* optp = argv[idx];
-        if (optp[0] == '-' && optp[1] == '-') ++optp;
-        ActionIfs* actp = find(optp);
-        if (!actp) return 0;
-        if (!actp->isValueNeeded()) {
-            actp->exec(optp, nullptr);
-            return 1;
-        } else if (idx + 1 < argc) {
-            actp->exec(optp, argv[idx + 1]);
-            return 2;
-        }
-        return 0;
-    }
-    // Find the most similar option
-    string getSuggestion(const char* str) const { return m_spellCheck.bestCandidateMsg(str); }
-    void addSuggestionCandidate(const string& s) { m_spellCheck.pushCandidate(s); }
-    void finalize() {
-        UASSERT(!m_isFinalized, "finalize() must not be called twice");
-        for (auto&& opt : m_options) {
-            if (opt.second->isUndocumented()) continue;
-            m_spellCheck.pushCandidate(opt.first);
-            if (opt.second->isOnOffAllowed()) m_spellCheck.pushCandidate("-no" + opt.first);
-        }
-        m_isFinalized = true;
-    }
-};
-
-#define V3OPTIONS_DEF_ACT_CLASS(className, type, body, enType) \
-    template <> class V3OptionsParser::className<type> final : public ActionBase<enType> { \
-        type* m_valp; /* Pointer to a option variable*/ \
-\
-    public: \
-        explicit className(type* valp) \
-            : m_valp(valp) {} \
-        virtual void exec(const char* optp, const char* argp) override { body; } \
-    }
-
-V3OPTIONS_DEF_ACT_CLASS(ActionSet, bool, *m_valp = true, en::NONE);
-V3OPTIONS_DEF_ACT_CLASS(ActionSet, VOptionBool, m_valp->setTrueOrFalse(true), en::NONE);
-V3OPTIONS_DEF_ACT_CLASS(ActionSet, int, *m_valp = std::atoi(argp), en::VALUE);
-V3OPTIONS_DEF_ACT_CLASS(ActionSet, string, *m_valp = argp, en::VALUE);
-
-V3OPTIONS_DEF_ACT_CLASS(ActionOnOff, bool, *m_valp = !hasPrefixNo(optp), en::ONOFF);
-V3OPTIONS_DEF_ACT_CLASS(ActionOnOff, VOptionBool, m_valp->setTrueOrFalse(!hasPrefixNo(optp)),
-                        en::ONOFF);
-
-#undef V3OPTIONS_DEF_ACT_CLASS
-
-#define V3OPTIONS_DEF_ACT_CB_CLASS(className, funcType, body, ...) \
-    class V3OptionsParser::className final : public ActionBase<__VA_ARGS__> { \
-        std::function<funcType> m_cb; /* Callback function */ \
-\
-    public: \
-        using CbType = std::function<funcType>; \
-        explicit className(CbType cb) \
-            : m_cb(std::move(cb)) {} \
-        virtual void exec(const char* optp, const char* argp) override { body; } \
-    }
-
-V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbCall, void(void), m_cb(), en::NONE);
-V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbOnOff, void(bool), m_cb(!hasPrefixNo(optp)), en::ONOFF);
-template <>
-V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbVal<int>, void(int), m_cb(std::atoi(argp)), en::VALUE);
-template <>
-V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbVal<const char*>, void(const char*), m_cb(argp), en::VALUE);
-V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbPartialMatch, void(const char*), m_cb(optp), en::NONE, true);
-V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbPartialMatchVal, void(const char*, const char*),
-                           m_cb(optp, argp), en::VALUE, true);
-
-#undef V3OPTIONS_DEF_ACT_CB_CLASS
-
-// A helper class to register options
-struct V3OptionsParser::AppendHelper final {
-    V3OptionsParser& m_parser;  // The actual option registory
-
-    // TYPES
-    // Tag to specify which operator() to call
-    struct Set {};  // For ActionSet
-    struct OnOff {};  // For ActionOnOff
-    struct CbCall {};  // For ActionCbCall
-    struct CbOnOff {};  // For ActionOnOff
-    struct CbVal {};  // For ActionCbVal
-    struct CbPartialMatch {};  // For ActionCbPartialMatch
-    struct CbPartialMatchVal {};  // For ActionCbPartialMatchVal
-
-    // METHODS
-
-#define V3OPTIONS_DEF_OP(actKind, argType, actType) \
-    ActionIfs& operator()(const char* optp, actKind, argType arg) const { \
-        return m_parser.add<actType>(optp, arg); \
-    }
-    V3OPTIONS_DEF_OP(Set, bool*, ActionSet<bool>)
-    V3OPTIONS_DEF_OP(Set, VOptionBool*, ActionSet<VOptionBool>)
-    V3OPTIONS_DEF_OP(Set, int*, ActionSet<int>)
-    V3OPTIONS_DEF_OP(Set, string*, ActionSet<string>)
-    V3OPTIONS_DEF_OP(OnOff, bool*, ActionOnOff<bool>)
-    V3OPTIONS_DEF_OP(OnOff, VOptionBool*, ActionOnOff<VOptionBool>)
-    V3OPTIONS_DEF_OP(CbCall, ActionCbCall::CbType, ActionCbCall)
-    V3OPTIONS_DEF_OP(CbOnOff, ActionCbOnOff::CbType, ActionCbOnOff)
-    V3OPTIONS_DEF_OP(CbVal, ActionCbVal<int>::CbType, ActionCbVal<int>)
-    V3OPTIONS_DEF_OP(CbVal, ActionCbVal<const char*>::CbType, ActionCbVal<const char*>)
-#undef V3OPTIONS_DEF_OP
-
-    // Syntax sugar to register a member function of V3Options directry
-    ActionIfs& operator()(const char* optp, CbVal,
-                          std::pair<V3Options*, void (V3Options::*)(int)> arg) const {
-        auto cb = [arg](int v) { (arg.first->*arg.second)(v); };
-        return m_parser.add<ActionCbVal<int>>(optp, cb);
-    }
-    ActionIfs& operator()(const char* optp, CbVal,
-                          std::pair<V3Options*, void (V3Options::*)(const string&)> arg) const {
-        auto cb = [arg](const string& v) { (arg.first->*arg.second)(v); };
-        return m_parser.add<ActionCbVal<const char*>>(optp, cb);
-    }
-    // Callback of partial match expects prefix to be removed, so wrap the given callback
-    ActionIfs& operator()(const char* optp, CbPartialMatch,
-                          ActionCbPartialMatch::CbType cb) const {
-        const size_t prefixLen = std::strlen(optp);
-        auto wrap = [prefixLen, cb](const char* optp) { cb(optp + prefixLen); };
-        return m_parser.add<ActionCbPartialMatch>(optp, std::move(wrap));
-    }
-    ActionIfs& operator()(const char* optp, CbPartialMatchVal,
-                          ActionCbPartialMatchVal::CbType cb) const {
-        const size_t prefixLen = std::strlen(optp);
-        auto wrap
-            = [prefixLen, cb](const char* optp, const char* argp) { cb(optp + prefixLen, argp); };
-        return m_parser.add<ActionCbPartialMatchVal>(optp, std::move(wrap));
-    }
 };
 
 //######################################################################
@@ -1008,6 +787,10 @@ void V3Options::notify() {
         cmdfl->v3warn(E_UNSUPPORTED,
                       "--main not usable with SystemC. Suggest see examples for sc_main().");
     }
+
+    if (coverage() && savable()) {
+        cmdfl->v3error("--coverage and --savable not supported together");
+    }
 }
 
 //######################################################################
@@ -1112,20 +895,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         addArg(argv[i]);  // -f's really should be inserted in the middle, but this is for debug
     }
 
-    V3OptionsParser parser;
-    const auto Set = V3OptionsParser::AppendHelper::Set{};
-    const auto OnOff = V3OptionsParser::AppendHelper::OnOff{};
-    const auto CbCall = V3OptionsParser::AppendHelper::CbCall{};
-    const auto CbOnOff = V3OptionsParser::AppendHelper::CbOnOff{};
-    const auto CbVal = V3OptionsParser::AppendHelper::CbVal{};
-    const auto CbPartialMatch = V3OptionsParser::AppendHelper::CbPartialMatch{};
-    const auto CbPartialMatchVal = V3OptionsParser::AppendHelper::CbPartialMatchVal{};
-    V3OptionsParser::AppendHelper DECL_OPTION{parser};
+    V3OptionParser parser;
+    V3OptionParser::AppendHelper DECL_OPTION{parser};
+    V3OPTION_PARSER_DECL_TAGS;
+
+    auto callStrSetter = [this](void (V3Options::*cbStr)(const string&)) {
+        return [this, cbStr](const string& v) { (this->*cbStr)(v); };
+    };
     // Usage
     // DECL_OPTION("-option", action, pointer_or_lambda);
     // action: one of Set, OnOff, CbCall, CbOnOff, CbVal, CbPartialMatch, and CbPartialMatchVal
     //   Set              : Set value to a variable, pointer_or_lambda must be a pointer to the
-    //   variable.
+    //                      variable.
     //                      true is set to bool-ish variable when '-opt' is passed to verilator.
     //                      val is set to int and string variable when '-opt val' is passed.
     //   OnOff            : Set value to a bool-ish variable, pointer_or_lambda must be a pointer
@@ -1138,7 +919,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     //   CbVal            : Call lambda or function that takes int or const char*.
     //                      "-opt val" is passed to verilator, val is passed to the lambda.
     //                      If a function to be called is a member of V3Options that only takes
-    //                      bool/const string&, {this, &V3Options::memberFunc} can be passed
+    //                      const string&, callStrSetter(&V3Options::memberFunc) can be passed
     //                      instead of lambda as a syntax sugar.
     //   CbPartialMatch   : Call lambda or function that takes remaining string.
     //                      e.g. DECL_OPTION("-opt-", CbPartialMatch, [](const char*optp) { cout <<
@@ -1201,14 +982,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-bin", Set, &m_bin);
     DECL_OPTION("-build", Set, &m_build);
 
-    DECL_OPTION("-CFLAGS", CbVal, {this, &V3Options::addCFlags});
+    DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
     DECL_OPTION("-cc", CbCall, [this]() {
         m_outFormatOk = true;
         m_systemC = false;
     });
     DECL_OPTION("-cdc", OnOff, &m_cdc);
-    DECL_OPTION("-clk", CbVal, {this, &V3Options::addClocker});
-    DECL_OPTION("-no-clk", CbVal, {this, &V3Options::addNoClocker});
+    DECL_OPTION("-clk", CbVal, callStrSetter(&V3Options::addClocker));
+    DECL_OPTION("-no-clk", CbVal, callStrSetter(&V3Options::addNoClocker));
     DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();
     DECL_OPTION("-comp-limit-members", Set,
                 &m_compLimitMembers)
@@ -1244,7 +1025,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) { addDefine(valp, false); });
     DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
-    DECL_OPTION("-debugi", CbVal, {this, &V3Options::setDebugMode});
+    DECL_OPTION("-debugi", CbVal, [this](int v) { setDebugMode(v); });
     DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         setDebugSrcLevel(optp, std::atoi(valp));
     });
@@ -1279,6 +1060,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-E", Set, &m_preprocOnly);
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
+    DECL_OPTION("-expand-limit", CbVal,
+                [this](const char* valp) { m_expandLimit = std::atoi(valp); });
 
     DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) {
         parseOptsFile(fl, parseFileArg(optdir, valp), true);
@@ -1320,7 +1103,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
 
-    DECL_OPTION("-LDFLAGS", CbVal, {this, &V3Options::addLdLibs});
+    DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
     auto setLang = [this, fl](const char* valp) {
         V3LangCode optval = V3LangCode(valp);
         if (optval.legal()) {
@@ -1340,7 +1123,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
     DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
 
-    DECL_OPTION("-MAKEFLAGS", CbVal, {this, &V3Options::addMakeFlags});
+    DECL_OPTION("-MAKEFLAGS", CbVal, callStrSetter(&V3Options::addMakeFlags));
     DECL_OPTION("-MMD", OnOff, &m_makeDepend);
     DECL_OPTION("-MP", OnOff, &m_makePhony);
     DECL_OPTION("-Mdir", CbVal, [this](const char* valp) {
@@ -1465,6 +1248,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             fl->v3warn(DEPRECATED, "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
     });
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
+    DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
+        m_reloopLimit = std::atoi(valp);
+        if (m_reloopLimit < 2) { fl->v3error("--reloop-limit must be >= 2: " << valp); }
+    });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
 

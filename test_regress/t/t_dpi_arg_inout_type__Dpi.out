@@ -10,8 +10,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
- 
- 
+
+
  // DPI EXPORTS
  extern void e_array_2_state_1(svBitVecVal* x);
  extern void e_array_2_state_128(svBitVecVal* x);
@@ -79,7 +79,7 @@ extern "C" {
  extern void e_union_4_state_33(svLogicVecVal* x);
  extern void e_union_4_state_64(svLogicVecVal* x);
  extern void e_union_4_state_65(svLogicVecVal* x);
- 
+
  // DPI IMPORTS
  extern void check_exports();
  extern void i_array_2_state_1(svBitVecVal* x);
@@ -148,7 +148,7 @@ extern "C" {
  extern void i_union_4_state_33(svLogicVecVal* x);
  extern void i_union_4_state_64(svLogicVecVal* x);
  extern void i_union_4_state_65(svLogicVecVal* x);
- 
+
 #ifdef __cplusplus
 }
 #endif

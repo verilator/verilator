@@ -22,7 +22,7 @@
 
 #include "V3Global.h"
 #include "V3CoverageJoin.h"
-#include "V3Hashed.h"
+#include "V3DupFinder.h"
 #include "V3Stats.h"
 
 #include <vector>
@@ -33,10 +33,7 @@
 class CoverageJoinVisitor final : public AstNVisitor {
 private:
     // NODE STATE
-    // V3Hashed
-    //  AstCoverToggle->VarRef::user4() // V3Hashed calculation
-
-    // AstUser4InUse     In V3Hashed
+    // AstUser4InUse     In V3Hasher via V3DupFinder
 
     // STATE
     std::vector<AstCoverToggle*> m_toggleps;  // List of of all AstCoverToggle's
@@ -49,9 +46,9 @@ private:
     void detectDuplicates() {
         UINFO(9, "Finding duplicates\n");
         // Note uses user4
-        V3Hashed hashed;  // Duplicate code detection
+        V3DupFinder dupFinder;  // Duplicate code detection
         // Hash all of the original signals we toggle cover
-        for (AstCoverToggle* nodep : m_toggleps) hashed.hashAndInsert(nodep->origp());
+        for (AstCoverToggle* nodep : m_toggleps) dupFinder.insert(nodep->origp());
         // Find if there are any duplicates
         for (AstCoverToggle* nodep : m_toggleps) {
             // nodep->backp() is null if we already detected it's a duplicate and unlinked it.
@@ -60,10 +57,10 @@ private:
                 // This prevents making chains where a->b, then c->d, then b->c, as we'll
                 // find a->b, a->c, a->d directly.
                 while (true) {
-                    const auto dupit = hashed.findDuplicate(nodep->origp());
-                    if (dupit == hashed.end()) break;
+                    const auto dupit = dupFinder.findDuplicate(nodep->origp());
+                    if (dupit == dupFinder.end()) break;
                     //
-                    AstNode* duporigp = hashed.iteratorNodep(dupit);
+                    AstNode* duporigp = dupit->second;
                     // Note hashed will point to the original variable (what's
                     // duplicated), not the covertoggle, but we need to get back to the
                     // covertoggle which is immediately above, so:
@@ -82,7 +79,7 @@ private:
                     removep->unlinkFrBack();
                     VL_DO_DANGLING(pushDeletep(removep), removep);
                     // Remove node from comparison so don't hit it again
-                    hashed.erase(dupit);
+                    dupFinder.erase(dupit);
                     ++m_statToggleJoins;
                 }
             }

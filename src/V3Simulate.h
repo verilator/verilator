@@ -979,6 +979,17 @@ private:
         }
         SimStackNode stackNode(nodep, &tconnects);
         m_callStack.push_front(&stackNode);
+        // Clear output variable
+        if (auto* const basicp = VN_CAST(funcp->fvarp(), Var)->basicp()) {
+            AstConst cnst(funcp->fvarp()->fileline(), AstConst::WidthedValue(), basicp->widthMin(),
+                          0);
+            if (basicp->isZeroInit()) {
+                cnst.num().setAllBits0();
+            } else {
+                cnst.num().setAllBitsX();
+            }
+            newValue(funcp->fvarp(), &cnst);
+        }
         // Evaluate the function
         iterate(funcp);
         m_callStack.pop_front();

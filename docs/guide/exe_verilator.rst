@@ -403,6 +403,12 @@ Summary:
    files on the command line that implement the main loop for your
    simulation.
 
+.. option:: --expand-limit <value>
+
+   Rarely needed.  Fine-tune optimizations to set the maximum size of an
+   expression in 32-bit words to expand into separate word-based
+   statements.
+
 .. option:: -F <file>
 
    Read the specified file, and act as if all text inside it was specified
@@ -418,8 +424,11 @@ Summary:
    fairly standard across Verilog tools.
 
    The file may contain :code:`//` comments which are ignored to the end of
-   the line.  Any :code:`$VAR`, :code:`$(VAR)`, or :code:`${VAR}` will be
-   replaced with the specified environment variable.
+   the line.  It may also contain :code:`/* .. */` comments which are
+   ignored, be cautious that wildcards are not handled in -f files, and
+   that :code:`directory/*` is the beginning of a comment, not a wildcard.
+   Any :code:`$VAR`, :code:`$(VAR)`, or :code:`${VAR}` will be replaced
+   with the specified environment variable.
 
 .. option:: -FI <file>
 
@@ -914,6 +923,15 @@ Summary:
    When a file references an include file, resolve the filename relative to
    the path of the referencing file, instead of relative to the current
    directory.
+
+.. option:: --reloop-limit
+
+   Rarely needed. Verilator attempts to turn some common sequences of
+   statements into loops in the output. This argument specifies the minimum
+   number of iterations the resulting loop needs to have in order to perform
+   this transformation. Default limit is 40. A smaller number may slightly
+   improve C++ compilation time on designs where these sequences are common,
+   however effect on model performance requires benchmarking.
 
 .. option:: --report-unoptflat
 

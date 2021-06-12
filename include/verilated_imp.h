@@ -245,7 +245,7 @@ public:  // But only for verilated*.cpp
     static vluint32_t randSeedEpoch() VL_MT_SAFE { return s().s_randSeedEpoch; }
 
     // METHODS - timeformat
-    int timeFormatUnits() VL_MT_SAFE {
+    int timeFormatUnits() const VL_MT_SAFE {
         if (m_s.m_timeFormatUnits == VerilatedContext::Serialized::UNITS_NONE)
             return timeprecision();
         return m_s.m_timeFormatUnits;
@@ -255,7 +255,7 @@ public:  // But only for verilated*.cpp
     void timeFormatPrecision(int value) VL_MT_SAFE { m_s.m_timeFormatPrecision = value; }
     int timeFormatWidth() const VL_MT_SAFE { return m_s.m_timeFormatWidth; }
     void timeFormatWidth(int value) VL_MT_SAFE { m_s.m_timeFormatWidth = value; }
-    std::string timeFormatSuffix() VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
+    std::string timeFormatSuffix() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
         const VerilatedLockGuard lock(m_timeDumpMutex);
         return m_timeFormatSuffix;
     }
@@ -333,17 +333,20 @@ public:  // But only for verilated*.cpp
     }
     void fdClose(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
-        if ((fdi & (1 << 31)) != 0) {
+        if (VL_BITISSET_I(fdi, 31)) {
             // Non-MCD case
             IData idx = VL_MASK_I(31) & fdi;
             if (VL_UNLIKELY(idx >= m_fdps.size())) return;
+            if (VL_UNLIKELY(idx <= 2)) return;  // stdout/stdin/stderr
             if (VL_UNLIKELY(!m_fdps[idx])) return;  // Already free
             std::fclose(m_fdps[idx]);
             m_fdps[idx] = (FILE*)0;
             m_fdFree.push_back(idx);
         } else {
             // MCD case
-            for (int i = 0; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
+            // Starts at 1 to skip stdout
+            fdi >>= 1;
+            for (int i = 1; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) {
                     std::fclose(m_fdps[i]);
                     m_fdps[i] = nullptr;
@@ -375,7 +378,9 @@ private:
             }
         } else {
             // MCD Case
-            for (size_t i = 0; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
+            if (fdi & 1) fp.push_back(stdout);
+            fdi >>= 1;
+            for (size_t i = 1; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) fp.push_back(m_fdps[i]);
             }
         }
