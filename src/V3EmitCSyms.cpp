@@ -278,6 +278,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
+    virtual void visit(AstConstPool* nodep) override {}  // Ignore
     virtual void visit(AstNodeModule* nodep) override {
         nameCheck(nodep);
         VL_RESTORER(m_modp);

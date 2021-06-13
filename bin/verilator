@@ -344,6 +344,7 @@ detailed descriptions of these arguments.
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
+    --no-merge-const-pool       Disable merging of different types in const pool
     --mod-prefix <topname>      Name to prepend to lower classes
     --no-clk <signal-name>      Prevent marking specified signal as clock
     --no-decoration             Disable comments and symbol decorations

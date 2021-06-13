@@ -22,9 +22,11 @@
 
 // No V3 headers here - this is a base class for Vlc etc
 
+#include <iomanip>
 #include <map>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -36,9 +38,16 @@ template <class T> std::string cvtToStr(const T& t) {
     os << t;
     return os.str();
 }
-template <class T> std::string cvtToHex(const T* tp) {
+template <class T>
+typename std::enable_if<std::is_pointer<T>::value, std::string>::type cvtToHex(const T tp) {
     std::ostringstream os;
     os << static_cast<const void*>(tp);
+    return os.str();
+}
+template <class T>
+typename std::enable_if<std::is_integral<T>::value, std::string>::type cvtToHex(const T t) {
+    std::ostringstream os;
+    os << std::hex << std::setw(sizeof(T) * 8 / 4) << std::setfill('0') << t;
     return os.str();
 }
 

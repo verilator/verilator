@@ -117,6 +117,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         iterateChildren(nodep);
         puts("</netlist>\n");
     }
+    virtual void visit(AstConstPool*) override {}
     virtual void visit(AstNodeModule* nodep) override {
         outputTag(nodep, "");
         puts(" origName=");
@@ -316,6 +317,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
+    virtual void visit(AstConstPool*) override {}
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->level() >= 0
             && nodep->level() <= 2) {  // ==2 because we don't add wrapper when in XML mode

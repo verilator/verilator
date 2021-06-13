@@ -31,7 +31,7 @@ public:
     V3Hash()
         : m_value{0} {}
     explicit V3Hash(uint32_t val)
-        : m_value{val + 0x9e3779b9} {}  // This is the same as 'V3Hash() + val'
+        : m_value{val} {}
     explicit V3Hash(int32_t val)
         : m_value{static_cast<uint32_t>(val)} {}
     explicit V3Hash(size_t val)

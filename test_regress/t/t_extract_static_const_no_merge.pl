@@ -10,8 +10,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
+top_filename("t/t_extract_static_const.v");
+golden_filename("t/t_extract_static_const.out");
+
 compile(
-    verilator_flags2 => ["--stats"],
+    verilator_flags2 => ["--stats", "--no-merge-const-pool"],
     );
 
 execute(
@@ -23,7 +26,7 @@ if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, Prelim extracted value to ConstPool\s+(\d+)/i,
               8);
     file_grep($Self->{stats}, qr/ConstPool, Constants emitted\s+(\d+)/i,
-              1);
+              2);
 }
 
 ok(1);
