@@ -16,6 +16,7 @@ env:
   CI_COMMIT: ${{ github.sha }}
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_LIMIT_MULTIPLE: 0.95
 
 jobs:
 
@@ -44,21 +45,23 @@ jobs:
       fail-fast: false
       matrix:
         os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
-        debug: [ opt, dbg ]
+        target:
+          - { name: opt, ccache_size: 48M  }
+          - { name: dbg, ccache_size: 208M }
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
     runs-on: ${{ matrix.os }}
-    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }}
+    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.target.name }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
-      CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
+      CI_MAKE_SRC_TARGET: ${{ matrix.target.name }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}
-      CCACHE_MAXSIZE: 128Mi # Per build matrix entry (1Gi in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tar.gz
+      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.target.name }}
+      CCACHE_MAXSIZE: ${{ matrix.target.ccache_size }} # Per build matrix entry (1G in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.target.name }}.tar.gz
     steps:
 
     - name: Checkout
@@ -114,7 +117,7 @@ jobs:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
-      CCACHE_MAXSIZE: 32Mi # Per build matrix entry (960Mi in total)
+      CCACHE_MAXSIZE: 64M # Per build matrix entry (1920M in total)
       VERILATOR_ARCHIVE_BASE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}
     steps:
 
