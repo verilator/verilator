@@ -96,6 +96,7 @@ sub check_cpp {
                 && $func !~ /::trace$/
                 && $func !~ /::traceInit$/
                 && $func !~ /::traceFull$/
+                && $func !~ /::final$/
                 ) {
                 push @funcs, $func;
             }

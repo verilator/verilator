@@ -854,10 +854,8 @@ private:
         {  // Call the user function
             // Add the variables referenced as VarRef's so that lifetime analysis
             // doesn't rip up the variables on us
-            string stmt;
-            stmt += "(*__Vcb)(";
             args += ");\n";
-            AstCStmt* newp = new AstCStmt(nodep->fileline(), stmt);
+            AstCStmt* newp = new AstCStmt(nodep->fileline(), "(*__Vcb)(");
             newp->addBodysp(argnodesp);
             VL_DANGLING(argnodesp);
             newp->addBodysp(new AstText(nodep->fileline(), args, true));
@@ -1131,7 +1129,7 @@ private:
         cfuncp->funcPublic(nodep->taskPublic());
         cfuncp->dpiExport(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
-        cfuncp->isStatic(!(nodep->dpiImport() || nodep->taskPublic() || nodep->classMethod()));
+        cfuncp->isStatic(nodep->dpiExport());
         cfuncp->isVirtual(nodep->isVirtual());
         cfuncp->pure(nodep->pure());
         if (nodep->name() == "new") {
@@ -1145,21 +1143,12 @@ private:
         // cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
         if (cfuncp->dpiExport()) cfuncp->cname(nodep->cname());
 
-        bool needSyms = !nodep->dpiImport();
-        if (needSyms) {
-            if (nodep->taskPublic()) {
-                // We need to get a pointer to all of our variables (may
-                // have eval'ed something else earlier)
-                cfuncp->addInitsp(new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symClassVar()
-                                                                      + " = this->__VlSymsp;\n"));
-            } else {
-                // Need symbol table
-                cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
-                if (cfuncp->name() == "new") {
-                    cfuncp->addInitsp(
-                        new AstCStmt(nodep->fileline(),
-                                     VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n"));
-                }
+        if (!nodep->dpiImport() && !nodep->taskPublic()) {
+            // Need symbol table
+            cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
+            if (cfuncp->name() == "new") {
+                const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n";
+                cfuncp->addInitsp(new AstCStmt(nodep->fileline(), stmt));
             }
         }
         if (nodep->dpiContext()) {
@@ -1167,11 +1156,6 @@ private:
             createInputVar(cfuncp, "__Vscopep", AstBasicDTypeKwd::SCOPEPTR);
             createInputVar(cfuncp, "__Vfilenamep", AstBasicDTypeKwd::CHARPTR);
             createInputVar(cfuncp, "__Vlineno", AstBasicDTypeKwd::INT);
-        }
-
-        if (!nodep->dpiImport()) {
-            cfuncp->addInitsp(
-                new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symTopAssign() + "\n"));
         }
 
         if (nodep->dpiExport()) {

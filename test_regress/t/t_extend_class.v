@@ -43,7 +43,7 @@ module t_extend_class_v (/*AUTOARG*/
 
    always @* begin
       // When "in" changes, call my method
-      out = $c("m_myobjp->my_math(",in,")");
+      out = $c("this->m_myobjp->my_math(",in,")");
    end
 
  `systemc_header

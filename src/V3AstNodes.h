@@ -2388,8 +2388,7 @@ public:
         if (varScopep()) {
             return (varScopep() == samep->varScopep() && access() == samep->access());
         } else {
-            return (hiernameToProt() == samep->hiernameToProt()
-                    && hiernameToUnprot() == samep->hiernameToUnprot()
+            return (selfPointer() == samep->selfPointer()
                     && varp()->name() == samep->varp()->name() && access() == samep->access());
         }
     }
@@ -2397,9 +2396,8 @@ public:
         if (varScopep()) {
             return (varScopep() == samep->varScopep());
         } else {
-            return (hiernameToProt() == samep->hiernameToProt()
-                    && hiernameToUnprot() == samep->hiernameToUnprot()
-                    && (!hiernameToProt().empty() || !samep->hiernameToProt().empty())
+            return (selfPointer() == samep->selfPointer()
+                    && (!selfPointer().empty() || !samep->selfPointer().empty())
                     && varp()->name() == samep->varp()->name());
         }
     }
@@ -2439,10 +2437,31 @@ public:
     virtual int instrCount() const override { return widthInstrs(); }
     virtual bool same(const AstNode* samep) const override {
         const AstVarXRef* asamep = static_cast<const AstVarXRef*>(samep);
-        return (hiernameToProt() == asamep->hiernameToProt()
-                && hiernameToUnprot() == asamep->hiernameToUnprot() && varp() == asamep->varp()
+        return (selfPointer() == asamep->selfPointer() && varp() == asamep->varp()
                 && name() == asamep->name() && dotted() == asamep->dotted());
     }
+};
+
+class AstAddrOfCFunc final : public AstNodeMath {
+    // Get address of CFunc
+private:
+    AstCFunc* m_funcp;  // Pointer to function itself
+
+public:
+    AstAddrOfCFunc(FileLine* fl, AstCFunc* funcp)
+        : ASTGEN_SUPER_AddrOfCFunc(fl)
+        , m_funcp{funcp} {
+        dtypep(findCHandleDType());
+    }
+
+public:
+    ASTNODE_NODE_FUNCS(AddrOfCFunc)
+    virtual void cloneRelink() override;
+    virtual const char* broken() const override;
+    virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    AstCFunc* funcp() const { return m_funcp; }
 };
 
 class AstPin final : public AstNode {
@@ -8717,7 +8736,6 @@ private:
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     VBoolOrUnknown m_isStatic;  // Function is declared static (no this)
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
-    bool m_skipDecl : 1;  // Don't declare it
     bool m_declPrivate : 1;  // Declare it private
     bool m_formCallTree : 1;  // Make a global function to call entire tree of functions
     bool m_slow : 1;  // Slow routine, called once or just at init time
@@ -8725,9 +8743,10 @@ private:
     bool m_isConstructor : 1;  // Is C class constructor
     bool m_isDestructor : 1;  // Is C class destructor
     bool m_isMethod : 1;  // Is inside a class definition
+    bool m_isLoose : 1;  // Semantically this is a method, but is implemented as a function
+                         // with an explicitly passed 'self' pointer as the first argument
     bool m_isInline : 1;  // Inline function
     bool m_isVirtual : 1;  // Virtual function
-    bool m_symProlog : 1;  // Setup symbol table for later instructions
     bool m_entryPoint : 1;  // User may call into this top level function
     bool m_pure : 1;  // Pure function
     bool m_dpiExport : 1;  // From dpi export
@@ -8744,7 +8763,6 @@ public:
         m_name = name;
         m_rtnType = rtnType;
         m_dontCombine = false;
-        m_skipDecl = false;
         m_declPrivate = false;
         m_formCallTree = false;
         m_slow = false;
@@ -8752,9 +8770,9 @@ public:
         m_isConstructor = false;
         m_isDestructor = false;
         m_isMethod = true;
+        m_isLoose = false;
         m_isInline = false;
         m_isVirtual = false;
-        m_symProlog = false;
         m_entryPoint = false;
         m_pure = false;
         m_dpiExport = false;
@@ -8774,6 +8792,7 @@ public:
         const AstCFunc* asamep = static_cast<const AstCFunc*>(samep);
         return ((funcType() == asamep->funcType()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && (ctorInits() == asamep->ctorInits())
+                && isLoose() == asamep->isLoose()
                 && (!(dpiImport() || dpiExport()) || name() == asamep->name()));
     }
     //
@@ -8792,9 +8811,7 @@ public:
     string rtnTypeVoid() const { return ((m_rtnType == "") ? "void" : m_rtnType); }
     bool dontCombine() const { return m_dontCombine || funcType() != AstCFuncType::FT_NORMAL; }
     void dontCombine(bool flag) { m_dontCombine = flag; }
-    bool dontInline() const { return dontCombine() || slow() || skipDecl() || funcPublic(); }
-    bool skipDecl() const { return m_skipDecl; }
-    void skipDecl(bool flag) { m_skipDecl = flag; }
+    bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
     void declPrivate(bool flag) { m_declPrivate = flag; }
     bool formCallTree() const { return m_formCallTree; }
@@ -8817,12 +8834,13 @@ public:
     void isDestructor(bool flag) { m_isDestructor = flag; }
     bool isMethod() const { return m_isMethod; }
     void isMethod(bool flag) { m_isMethod = flag; }
+    bool isLoose() const { return m_isLoose; }
+    void isLoose(bool flag) { m_isLoose = flag; }
+    bool isProperMethod() const { return isMethod() && !isLoose(); }
     bool isInline() const { return m_isInline; }
     void isInline(bool flag) { m_isInline = flag; }
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
-    bool symProlog() const { return m_symProlog; }
-    void symProlog(bool flag) { m_symProlog = flag; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool pure() const { return m_pure; }
@@ -9039,6 +9057,7 @@ public:
     const V3Graph* depGraphp() const { return m_depGraphp; }
     V3Graph* mutableDepGraphp() { return m_depGraphp; }
     void addMTaskBody(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+    std::vector<const ExecMTask*> rootMTasks();
 };
 
 class AstSplitPlaceholder final : public AstNode {

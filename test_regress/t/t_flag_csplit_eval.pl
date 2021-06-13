@@ -15,7 +15,7 @@ sub check_evals {
         local $/; undef $/;
         my $wholefile = <$fh>;
 
-        if ($wholefile =~ /::_eval[0-9]+/) {
+        if ($wholefile =~ /___eval[0-9]+/) {
             ++$got;
         }
     }
