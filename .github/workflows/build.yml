@@ -25,43 +25,34 @@ defaults:
 
 jobs:
 
-
-  Matrix:
-    runs-on: ubuntu-latest
-    name: Generate Build matrix
-    outputs:
-      matrix: ${{ steps.generate.outputs.matrix }}
-    steps:
-    - id: generate
-      working-directory: ${{ github.workspace }}
-      run: |
-        if [ '${{ github.event_name }}' = 'pull_request' ]; then
-          matrix='[ "ubuntu-20.04" ]'
-        else
-          matrix='[ "ubuntu-20.04", "ubuntu-18.04", "ubuntu-16.04" ]'
-        fi
-        echo "::set-output name=matrix::$matrix"
-
-
-  Build:
-    needs: Matrix
+  build:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
+        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
+        m32: [0, 1]
+        exclude:
+          # Build pull requests only with ubuntu-20.04 and without m32
+          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
+          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-16.04' || 'do-not-exclude' }}
+          - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
+          # Build -m32 only on ubuntu-20.04
+          - {os: ubuntu-18.04, m32: 1}
+          - {os: ubuntu-16.04, m32: 1}
     runs-on: ${{ matrix.os }}
-    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
+    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} ${{ matrix.m32 && '| -m32' || '' }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
+      CI_M32: ${{ matrix.m32 }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}
-      CCACHE_MAXSIZE: 250M # Per build matrix entry (1500M in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}
+      CCACHE_MAXSIZE: 250M # Per build matrix entry (2000M in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
     steps:
 
     - name: Checkout
@@ -96,31 +87,36 @@ jobs:
         name: ${{ env.VERILATOR_ARCHIVE }}
 
 
-  Test:
-    needs: [ Matrix, Build ]
+  test:
+    needs: build
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
+        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-        suite:
-          - dist-vlt-0
-          - dist-vlt-1
-          - dist-vlt-2
-          - vltmt-0
-          - vltmt-1
+        m32: [0, 1]
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, vltmt-0, vltmt-1]
+        exclude:
+          # Build pull requests only with ubuntu-20.04 and without m32
+          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
+          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-16.04' || 'do-not-exclude' }}
+          - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
+          # Build -m32 only on ubuntu-20.04
+          - {os: ubuntu-18.04, m32: 1}
+          - {os: ubuntu-16.04, m32: 1}
     runs-on: ${{ matrix.os }}
-    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }} ${{ matrix.m32 && '| -m32' || '' }}
     env:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ${{ matrix.os }}
+      CI_M32: ${{ matrix.m32 }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
-      CCACHE_MAXSIZE: 64M # Per build matrix entry (1920M in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}-${ matrix.suite }}
+      CCACHE_MAXSIZE: 64M # Per build matrix entry (2160M in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
     steps:
 
     - name: Download tar archive

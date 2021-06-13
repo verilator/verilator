@@ -21,6 +21,12 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
+if [ "$CI_M32" = "0" ]; then
+  unset CI_M32
+elif [ "$CI_M32" != "1" ]; then
+  fatal "\$CI_M32 must be '0' or '1'";
+fi
+
 if [ "$CI_OS_NAME" = "linux" ]; then
   export MAKE=make
   NPROC=$(nproc)
@@ -40,7 +46,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$COVERAGE" != 1 ]; then
     autoconf
-    ./configure --enable-longtests --enable-ccwarn
+    ./configure --enable-longtests --enable-ccwarn ${CI_M32:+--enable-m32}
     ccache -z
     "$MAKE" -j "$NPROC" -k
     ccache -s
@@ -82,7 +88,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   fi
 
   # Run sanitize on Ubuntu 20.04 only
-  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && sanitize='--sanitize' || sanitize=''
+  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && [ "$CI_M32" = "" ] && sanitize='--sanitize' || sanitize=''
 
   # Run the specified test
   ccache -z
