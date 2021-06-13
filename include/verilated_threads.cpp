@@ -74,7 +74,7 @@ void VlWorkerThread::workerLoop() {
         if (VL_UNLIKELY(m_exiting.load(std::memory_order_acquire))) break;
 
         if (VL_LIKELY(work.m_fnp)) {
-            work.m_fnp(work.m_evenCycle, work.m_sym);
+            work.m_fnp(work.m_selfp, work.m_evenCycle);
             work.m_fnp = nullptr;
         }
     }

@@ -88,7 +88,7 @@ module sub (/*AUTOARG*/
 
    initial begin
       // Test the naming
-      $c("mon_class_name(name());");
+      $c("mon_class_name(this->name());");
       mon_scope_name("%m");
       // Scheme A - pass pointer directly
       $c("mon_register_a(\"in\",&",in,",false);");

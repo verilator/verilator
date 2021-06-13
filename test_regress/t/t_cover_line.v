@@ -104,7 +104,7 @@ module t (/*AUTOARG*/
          end
          else if (cyc==5) begin
 `ifdef VERILATOR
-            $c("call_task();");
+            $c("this->call_task();");
 `else
             call_task();
 `endif

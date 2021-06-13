@@ -24,13 +24,18 @@ if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i,
               ($Self->{vltmt} ? 0 : 31));
 
-    # Should not find any 'this->' except some 'this->__VlSymsp'
+    # Should not find any 'this->' or 'vlSelf->' except some specific cases
     my @files = `ls $Self->{obj_dir}/*.cpp`;
     foreach my $file (@files) {
         chomp $file;
         my $text = file_contents($file);
-        $text =~ s/this->__VlSymsp//g;
-        if ($text =~ m/this->/) {
+        $text =~ s/(vlSelf|this)->vlSymsp//g;
+        $text =~ s/vlSelf->.* = VL_RAND_RESET.*;//g;
+        $text =~ s/vlSelf->__Vm_even_cycle//g;
+        $text =~ s/vlSelf->__Vm_even_cycle//g;
+        $text =~ s/vlSelf->__Vm_mt_(final|\d+)//g;
+        $text =~ s/vlSelf->__Vm_threadPoolp//g;
+        if ($text =~ m/this->/ || $text =~ m/vlSelf->/) {
             error("$file has unexpected this-> refs when --norelative-cfuncs");
         }
     }

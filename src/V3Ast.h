@@ -1687,6 +1687,7 @@ public:
     AstNodeDType* findSigned32DType() { return findBasicDType(AstBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
+    AstNodeDType* findCHandleDType() { return findBasicDType(AstBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
@@ -2272,9 +2273,9 @@ private:
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
-    string m_hiernameToProt;  // Scope converted into name-> for emitting
-    string m_hiernameToUnprot;  // Scope converted into name-> for emitting
-    bool m_hierThis = false;  // Hiername points to "this" function
+    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
+    string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
+    bool m_hierThis = false;  // m_selfPointer points to "this" function
 
 protected:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
@@ -2306,13 +2307,14 @@ public:
     void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
-    string hiernameToProt() const { return m_hiernameToProt; }
-    void hiernameToProt(const string& hn) { m_hiernameToProt = hn; }
-    string hiernameToUnprot() const { return m_hiernameToUnprot; }
-    void hiernameToUnprot(const string& hn) { m_hiernameToUnprot = hn; }
-    string hiernameProtect() const;
     bool hierThis() const { return m_hierThis; }
     void hierThis(bool flag) { m_hierThis = flag; }
+    string selfPointer() const { return m_selfPointer; }
+    void selfPointer(const string& value) { m_selfPointer = value; }
+    string selfPointerProtect(bool useSelfForThis) const;
+    string classPrefix() const { return m_classPrefix; }
+    void classPrefix(const string& value) { m_classPrefix = value; }
+    string classPrefixProtect() const;
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
@@ -2615,8 +2617,8 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
-    string m_hiernameToProt;
-    string m_hiernameToUnprot;
+    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
+    string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
     string m_argTypes;
 
 protected:
@@ -2642,11 +2644,12 @@ public:
     virtual bool isPure() const override;
     virtual bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
-    string hiernameToProt() const { return m_hiernameToProt; }
-    void hiernameToProt(const string& hn) { m_hiernameToProt = hn; }
-    string hiernameToUnprot() const { return m_hiernameToUnprot; }
-    void hiernameToUnprot(const string& hn) { m_hiernameToUnprot = hn; }
-    string hiernameProtect() const;
+    string selfPointer() const { return m_selfPointer; }
+    void selfPointer(const string& value) { m_selfPointer = value; }
+    string selfPointerProtect(bool useSelfForThis) const;
+    string classPrefix() const { return m_classPrefix; }
+    void classPrefix(const string& value) { m_classPrefix = value; }
+    string classPrefixProtect() const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall

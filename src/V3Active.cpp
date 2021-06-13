@@ -474,11 +474,10 @@ private:
         if (!m_scopeFinalp) {
             m_scopeFinalp = new AstCFunc(
                 nodep->fileline(), "_final_" + m_namer.scopep()->nameDotless(), m_namer.scopep());
-            m_scopeFinalp->argTypes(EmitCBaseVisitor::symClassVar());
-            m_scopeFinalp->addInitsp(
-                new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symTopAssign() + "\n"));
             m_scopeFinalp->dontCombine(true);
             m_scopeFinalp->formCallTree(true);
+            m_scopeFinalp->isStatic(false);
+            m_scopeFinalp->isLoose(true);
             m_scopeFinalp->slow(true);
             m_namer.scopep()->addActivep(m_scopeFinalp);
         }

@@ -125,7 +125,7 @@
 	         end
 %000002	         else if (cyc==5) begin
 	`ifdef VERILATOR
-%000001	            $c("call_task();");
+%000001	            $c("this->call_task();");
 	`else
 	            call_task();
 	`endif
