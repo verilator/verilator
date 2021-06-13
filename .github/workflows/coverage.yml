@@ -39,9 +39,9 @@ jobs:
 
     - name: Upload Verilator artifact
       uses: actions/upload-artifact@v2
-        with:
-          name: ${{ env.VERILATOR_ARCHIVE }}
-          path: ${{ env.VERILATOR_ARCHIVE }}
+      with:
+        name: ${{ env.VERILATOR_ARCHIVE }}
+        path: ${{ env.VERILATOR_ARCHIVE }}
 
 
   Test:
