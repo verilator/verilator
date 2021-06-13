@@ -351,7 +351,17 @@ private:
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
     virtual void visit(AstInitArray* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
+        // Hash unpacked array initializers by value, as the order of initializer nodes does not
+        // matter, and we want semantically equivalent initializers to map to the same hash.
+        AstUnpackArrayDType* const dtypep = VN_CAST(nodep->dtypep(), UnpackArrayDType);
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, /* hashChildren: */ !dtypep, [=]() {
+            if (dtypep) {
+                const uint32_t size = dtypep->elementsConst();
+                for (uint32_t n = 0; n < size; ++n) {  //
+                    iterateNull(nodep->getIndexDefaultedValuep(n));
+                }
+            }
+        });
     }
     virtual void visit(AstPragma* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //

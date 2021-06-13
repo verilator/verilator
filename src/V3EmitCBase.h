@@ -86,6 +86,11 @@ public:
     static string topClassName() {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
+
+    static bool isConstPoolMod(AstNode* modp) {
+        return modp == v3Global.rootp()->constPoolp()->modp();
+    }
+
     static AstCFile* newCFile(const string& filename, bool slow, bool source) {
         AstCFile* cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
         cfilep->slow(slow);

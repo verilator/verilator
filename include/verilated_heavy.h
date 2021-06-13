@@ -89,19 +89,24 @@ public:
 };
 
 //===================================================================
-/// Verilog wide unpacked bit container.
+/// Verilog wide packed bit container.
 /// Similar to std::array<WData, N>, but lighter weight, only methods needed
 /// by Verilator, to help compile time.
+///
+/// A 'struct' as we want this to be an aggregate type that allows
+/// static aggregate initialization. Consider data members private.
 ///
 /// For example a Verilog "bit [94:0]" will become a VlWide<3> because 3*32
 /// bits are needed to hold the 95 bits. The MSB (bit 96) must always be
 /// zero in memory, but during intermediate operations in the Verilated
 /// internals is unpredictable.
 
-template <std::size_t T_Words> class VlWide final {
-    EData m_storage[T_Words];
+template <std::size_t T_Words> struct VlWide final {
+    // MEMBERS
+    // This should be the only data member, otherwise generated static initializers need updating
+    EData m_storage[T_Words];  // Contents of the packed array
 
-public:
+    // CONSTRUCTORS
     // cppcheck-suppress uninitVar
     VlWide() = default;
     ~VlWide() = default;
@@ -798,26 +803,21 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 }
 
 //===================================================================
-/// Verilog packed array container
+/// Verilog unpacked array container
 /// For when a standard C++[] array is not sufficient, e.g. an
 /// array under a queue, or methods operating on the array.
+///
+/// A 'struct' as we want this to be an aggregate type that allows
+/// static aggregate initialization. Consider data members private.
 ///
 /// This class may get exposed to a Verilated Model's top I/O, if the top
 /// IO has an unpacked array.
 
-template <class T_Value, std::size_t T_Depth> class VlUnpacked final {
-private:
-    // TYPES
-    using Array = std::array<T_Value, T_Depth>;
-
-public:
-    using const_iterator = typename Array::const_iterator;
-
-private:
+template <class T_Value, std::size_t T_Depth> struct VlUnpacked final {
     // MEMBERS
-    Array m_array;  // Contents of the packed array
+    // This should be the only data member, otherwise generated static initializers need updating
+    T_Value m_storage[T_Depth];  // Contents of the unpacked array
 
-public:
     // CONSTRUCTORS
     VlUnpacked() = default;
     ~VlUnpacked() = default;
@@ -828,18 +828,18 @@ public:
 
     // METHODS
     // Raw access
-    WData* data() { return &m_array[0]; }
-    const WData* data() const { return &m_array[0]; }
+    WData* data() { return &m_storage[0]; }
+    const WData* data() const { return &m_storage[0]; }
 
-    T_Value& operator[](size_t index) { return m_array[index]; };
-    const T_Value& operator[](size_t index) const { return m_array[index]; };
+    T_Value& operator[](size_t index) { return m_storage[index]; };
+    const T_Value& operator[](size_t index) const { return m_storage[index]; };
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {
         std::string out = "'{";
         std::string comma;
         for (int i = 0; i < T_Depth; ++i) {
-            out += comma + VL_TO_STRING(m_array[i]);
+            out += comma + VL_TO_STRING(m_storage[i]);
             comma = ", ";
         }
         return out + "} ";

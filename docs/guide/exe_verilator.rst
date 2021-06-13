@@ -633,6 +633,13 @@ Summary:
    The directory is created if it does not exist and the parent directories
    exist; otherwise manually create the Mdir before calling Verilator.
 
+.. option:: --no-merge-const-pool
+
+   Rarely needed.  In order to minimize cache footprint, values of different
+   data type, that are yet emitted identically in C++ are merged in the
+   constant pool.  This option disables this and causes every constant pool
+   entry with a distinct data type to be emitted separately.
+
 .. option:: --mod-prefix <topname>
 
    Specifies the name to prepend to all lower level classes.  Defaults to

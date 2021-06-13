@@ -439,7 +439,7 @@ static void process() {
         // Make all math operations either 8, 16, 32 or 64 bits
         V3Clean::cleanAll(v3Global.rootp());
 
-        // Move wide constants to BLOCK temps.
+        // Move wide constants to BLOCK temps / ConstPool.
         V3Premit::premitAll(v3Global.rootp());
     }
 
@@ -499,6 +499,7 @@ static void process() {
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();
         V3EmitC::emitcSyms();
+        V3EmitC::emitcConstPool();
         V3EmitC::emitcTrace();
     } else if (v3Global.opt.dpiHdrOnly()) {
         V3EmitC::emitcSyms(true);

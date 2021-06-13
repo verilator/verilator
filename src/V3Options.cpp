@@ -1141,6 +1141,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         }
     });
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
+    DECL_OPTION("-merge-const-pool", OnOff, &m_mergeConstPool);
     DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
 
     DECL_OPTION("-O", CbPartialMatch, [this](const char* optp) {
