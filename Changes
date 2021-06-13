@@ -19,7 +19,7 @@ Verilator 4.205 devel
 **Minor:**
 
 * Merge const static data globally into a new constant pool (#3013). [Geza Lore]
-
+* Fix error on unsupported recursive functions (#2957). [Trefor Southwell]
 
 
 Verilator 4.204 2021-06-12
