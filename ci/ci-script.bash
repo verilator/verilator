@@ -41,7 +41,9 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   if [ "$COVERAGE" != 1 ]; then
     autoconf
     ./configure --enable-longtests --enable-ccwarn
+    ccache -z
     "$MAKE" -j "$NPROC" -k
+    ccache -s
     if [ "$CI_OS_NAME" = "osx" ]; then
       file bin/verilator_bin
       file bin/verilator_bin_dbg
@@ -83,6 +85,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && sanitize='--sanitize' || sanitize=''
 
   # Run the specified test
+  ccache -z
   case $TESTS in
     dist-vlt-0)
       "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/3
@@ -169,6 +172,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       fatal "Unknown test: $TESTS"
       ;;
   esac
+  ccache -s
+
   # Upload coverage data
   if [[ $TESTS == coverage-* ]]; then
     bash <(cat ci/coverage-upload.sh) -f nodist/obj_dir/coverage/app_total.info
