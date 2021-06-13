@@ -14,6 +14,11 @@ env:
   COVERAGE: 1
   VERILATOR_ARCHIVE: verilator-coverage-${{ github.sha }}.tar.gz
 
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
+
 jobs:
 
 
@@ -26,22 +31,24 @@ jobs:
 
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        path: repo
 
     - name: Install packages for build
-      env:
-        CI_BUILD_STAGE_NAME: build
       run: ./ci/ci-install.bash
 
     - name: Build
-      run: |
-        ./ci/ci-script.bash
-        tar cvzf ${{ env.VERILATOR_ARCHIVE }} bin src/obj*/*.o src/obj*/*.gcno
+      run: ./ci/ci-script.bash
 
-    - name: Upload Verilator artifact
+    - name: Tar up repository
+      working-directory: ${{ github.workspace }}
+      run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
+
+    - name: Upload tar archive
       uses: actions/upload-artifact@v2
       with:
+        path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
         name: ${{ env.VERILATOR_ARCHIVE }}
-        path: ${{ env.VERILATOR_ARCHIVE }}
 
 
   Test:
@@ -72,25 +79,20 @@ jobs:
       CI_RUNS_ON: ubuntu-20.04
     steps:
 
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Download Verilator artifact
+    - name: Download tar archive
       uses: actions/download-artifact@v2
       with:
         name: ${{ env.VERILATOR_ARCHIVE }}
+        path: ${{ github.workspace }}
 
-    - name: Unapack Verilator artifact
-      run: |
-        tar xvzf ${{ env.VERILATOR_ARCHIVE }}
-        touch src/obj*/*.o src/obj*/*.gcno
+    - name: Unpack tar archive
+      working-directory: ${{ github.workspace }}
+      run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
 
     - name: Install test dependencies
-      run: |
-        ./ci/ci-install.bash
+      run: ./ci/ci-install.bash
 
     - name: Test
       env:
         TESTS: coverage-${{ matrix.test }}${{ matrix.num }}
-      run: |
-        ./ci/ci-script.bash
+      run: ./ci/ci-script.bash

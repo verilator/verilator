@@ -101,9 +101,6 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   fi
   yes yes | sudo cpan -M $CI_CPAN_REPO -fi Parallel::Forker
   install-vcddiff
-
-  autoconf
-  ./configure --enable-longtests --enable-ccwarn
 else
   ##############################################################################
   # Unknown build stage
