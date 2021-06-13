@@ -20,7 +20,7 @@ execute(
 
 #if ($Self->{nc}) ... # See t_assert_cover.pl for NC version
 
-# Allow old Perl format dump, or new binary dump
+# Allow old SystemC::Coverage format dump, or new binary dump
 # Check that the hierarchy doesn't include __PVT__
 # Otherwise our coverage reports would look really ugly
 if ($Self->{vlt_all}) {
