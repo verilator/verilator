@@ -34,7 +34,7 @@ jobs:
         if [ '${{ github.event_name }}' = 'pull_request' ]; then
           matrix='[ "ubuntu-20.04" ]'
         else
-          matrix='[ "ubuntu-16.04", "ubuntu-18.04", "ubuntu-20.04" ]'
+          matrix='[ "ubuntu-20.04", "ubuntu-18.04", "ubuntu-16.04" ]'
         fi
         echo "::set-output name=matrix::$matrix"
 
