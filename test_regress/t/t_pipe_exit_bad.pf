@@ -1,5 +1,6 @@
-#!/usr/bin/env perl
-use warnings;
+#!/usr/bin/env python3
+# pylint: disable=C0114
+#
 # DESCRIPTION: Verilator: Verilog Test example --pipe-filter script
 #
 # Copyright 2010 by Wilson Snyder. This program is free software; you
@@ -8,4 +9,6 @@ use warnings;
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-die "%Error: t_pipe_exit_bad.pf: Intentional bad exit status...\n";
+import sys
+
+sys.exit("%Error: t_pipe_exit_bad.pf: Intentional bad exit status...")
