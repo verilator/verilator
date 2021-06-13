@@ -16,7 +16,7 @@ compile(
     sim_time => 2100,
     v_flags2 => ["t/t_vpi_time_cb_c.cpp"],
     iv_flags2 => ["-g2005-sv -DWAVES -DIVERILOG"],
-    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi --no-l2name $Self->{t_dir}/t_vpi_time_cb.cpp"],
+    verilator_flags2 => ["--exe --vpi --no-l2name $Self->{t_dir}/t_vpi_time_cb.cpp"],
     );
 
 execute(

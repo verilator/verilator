@@ -16,7 +16,7 @@ compile(
     sim_time => 2100,
     iv_flags2 => ["-g2005-sv -D USE_VPI_NOT_DPI -DWAVES -DIVERILOG"],
     v_flags2 => ["+define+USE_VPI_NOT_DPI"],
-    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi --no-l2name $Self->{t_dir}/t_vpi_zero_time_cb.cpp -LDFLAGS '-ldl -rdynamic'"],
+    verilator_flags2 => ["--exe --vpi --no-l2name $Self->{t_dir}/t_vpi_zero_time_cb.cpp -LDFLAGS '-ldl -rdynamic'"],
     );
 
 execute(
