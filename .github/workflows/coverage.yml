@@ -12,6 +12,7 @@ env:
   CI_OS_NAME: linux
   CI_COMMIT: ${{ github.sha }}
   COVERAGE: 1
+  VERILATOR_ARCHIVE: verilator-coverage-${{ github.sha }}.tar.gz
 
 jobs:
 
@@ -34,11 +35,13 @@ jobs:
     - name: Build
       run: |
         ./ci/ci-script.bash
-        tar cvzf verilator-${CI_COMMIT}-coverage.tgz bin src/obj*/*.o src/obj*/*.gcno
+        tar cvzf ${{ env.VERILATOR_ARCHIVE }} bin src/obj*/*.o src/obj*/*.gcno
 
-    - uses: actions/upload-artifact@v2
-      with:
-        path: verilator-${{ env.CI_COMMIT }}-coverage.tgz
+    - name: Upload Verilator artifact
+      uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.VERILATOR_ARCHIVE }}
+          path: ${{ env.VERILATOR_ARCHIVE }}
 
 
   Test:
@@ -72,12 +75,18 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - uses: actions/download-artifact@v2
+    - name: Download Verilator artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.VERILATOR_ARCHIVE }}
 
-    - name: Install Verilator and test dependencies
+    - name: Unapack Verilator artifact
       run: |
-        tar xvzf artifact/verilator-${CI_COMMIT}-coverage.tgz
+        tar xvzf ${{ env.VERILATOR_ARCHIVE }}
         touch src/obj*/*.o src/obj*/*.gcno
+
+    - name: Install test dependencies
+      run: |
         ./ci/ci-install.bash
 
     - name: Test
