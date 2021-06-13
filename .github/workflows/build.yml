@@ -58,6 +58,7 @@ jobs:
       CXX: ${{ matrix.compiler.cxx }}
       CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}
       CCACHE_MAXSIZE: 128Mi # Per build matrix entry (1Gi in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tar.gz
     steps:
 
     - name: Checkout
@@ -81,11 +82,13 @@ jobs:
         ccache -z
         ./ci/ci-script.bash
         ccache -s
-        tar cvzf verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz ./bin
+        tar cvzf ${{ env.VERILATOR_ARCHIVE }} bin
 
-    - uses: actions/upload-artifact@v2
+    - name: Upload Verilator artifact
+      uses: actions/upload-artifact@v2
       with:
-        path: verilator-${{ matrix.os}}-${{ env.CI_COMMIT }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
+        name: ${{ env.VERILATOR_ARCHIVE }}
+        path: ${{ env.VERILATOR_ARCHIVE }}
 
 
   Test:
@@ -112,6 +115,7 @@ jobs:
       CXX: ${{ matrix.compiler.cxx }}
       CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
       CCACHE_MAXSIZE: 32Mi # Per build matrix entry (960Mi in total)
+      VERILATOR_ARCHIVE_BASE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}
     steps:
 
     - name: Checkout
@@ -127,13 +131,23 @@ jobs:
         restore-keys: |
           ${{ env.CACHE_KEY }}-
 
-    - uses: actions/download-artifact@v2
+    - name: Download Verilator artifact (opt)
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.VERILATOR_ARCHIVE_BASE }}-opt.tar.gz
 
-    - name: Install Verilator and test dependencies
+    - name: Download Verilator artifact (dbg)
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.VERILATOR_ARCHIVE_BASE }}-dbg.tar.gz
+
+    - name: Unpack Verilator artifacts
       run: |
-        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-opt.tgz
-        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-dbg.tgz
-        rm -rf artifact
+        tar xvzf ${{ env.VERILATOR_ARCHIVE_BASE }}-opt.tar.gz
+        tar xvzf ${{ env.VERILATOR_ARCHIVE_BASE }}-dbg.tar.gz
+
+    - name: Install test dependencies
+      run: |
         ./ci/ci-install.bash
 
     - name: Test
