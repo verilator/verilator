@@ -2666,11 +2666,17 @@ private:
                 UINFO(7, "   ErrFtask curSymp=se" << cvtToHex(m_curSymp) << " dotSymp=se"
                                                   << cvtToHex(dotSymp) << endl);
                 if (foundp) {
-                    nodep->v3error("Found definition of '"
-                                   << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
-                                   << nodep->prettyName() << "'"
-                                   << " as a " << foundp->nodep()->typeName()
-                                   << " but expected a task/function");
+                    if (VN_IS(foundp->nodep(), Var) && m_ds.m_dotText == "" && m_ftaskp
+                        && m_ftaskp->name() == foundp->nodep()->name()) {
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function call "
+                                                         << nodep->prettyNameQ());
+                    } else {
+                        nodep->v3error("Found definition of '"
+                                       << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
+                                       << nodep->prettyName() << "'"
+                                       << " as a " << foundp->nodep()->typeName()
+                                       << " but expected a task/function");
+                    }
                 } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {
                     // Resolved in V3Width
                 } else if (nodep->dotted() == "") {
