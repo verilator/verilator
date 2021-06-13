@@ -2532,9 +2532,9 @@ with many cores.  See the -j option and OBJCACHE environment variable.
 
 =head1 TEST CONFIGURATION
 
-The Perl script (e.g. C<test_regres/t/t_EXAMPLE.pl>) controls how the test
-will run by driver.pl. In general it includes a call to the C<compile>
-subroutine to compile the test with Verilator (or an alternative
+The test configuration script (e.g. C<test_regres/t/t_EXAMPLE.pl>) controls
+how the test will run by driver.pl. In general it includes a call to the
+C<compile> subroutine to compile the test with Verilator (or an alternative
 simulator), followed by a call to the C<execute> subroutine to run the
 test. Compile-only tests omit the call to C<execute>.
 

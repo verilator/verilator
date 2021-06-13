@@ -160,7 +160,7 @@ V3PreProc* V3PreShellImp::s_preprocp = nullptr;
 VInFilter* V3PreShellImp::s_filterp = nullptr;
 
 //######################################################################
-// Perl class functions
+// V3PreShell
 
 void V3PreShell::boot(char** env) { V3PreShellImp::s_preImp.boot(env); }
 bool V3PreShell::preproc(FileLine* fl, const string& modname, VInFilter* filterp,
