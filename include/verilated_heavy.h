@@ -116,10 +116,8 @@ template <std::size_t T_Words> struct VlWide final {
     // OPERATOR METHODS
     VlWide& operator=(const VlWide&) = default;
     VlWide& operator=(VlWide&&) = default;
-    const EData& operator[](size_t index) const { return m_storage[index]; };
-    EData& operator[](size_t index) { return m_storage[index]; };
-    operator WDataOutP() { return &m_storage[0]; }
-    operator WDataInP() const { return &m_storage[0]; }
+    operator WDataOutP() { return &m_storage[0]; }  // This also allows []
+    operator WDataInP() const { return &m_storage[0]; }  // This also allows []
 
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
