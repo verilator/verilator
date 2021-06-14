@@ -457,6 +457,7 @@ public:
         // Internal types for mid-steps
         SCOPEPTR,
         CHARPTR,
+        MTASKSTATE,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -467,18 +468,19 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {
-            "%E-unk", "bit",     "byte",  "chandle",        "event", "int",    "integer",
-            "logic",  "longint", "real",  "shortint",       "time",  "string", "VerilatedScope*",
-            "char*",  "IData",   "QData", "LOGIC_IMPLICIT", " MAX"};
+        static const char* const names[]
+            = {"%E-unk",       "bit",     "byte",   "chandle",         "event",
+               "int",          "integer", "logic",  "longint",         "real",
+               "shortint",     "time",    "string", "VerilatedScope*", "char*",
+               "VlMTaskState", "IData",   "QData",  "LOGIC_IMPLICIT",  " MAX"};
         return names[m_e];
     }
     const char* dpiType() const {
         static const char* const names[]
-            = {"%E-unk",      "svBit",    "char",        "void*",  "char",  "int",
-               "%E-integer",  "svLogic",  "long long",   "double", "short", "%E-time",
-               "const char*", "dpiScope", "const char*", "IData",  "QData", "%E-logic-implicit",
-               " MAX"};
+            = {"%E-unk",        "svBit",      "char",        "void*",           "char",
+               "int",           "%E-integer", "svLogic",     "long long",       "double",
+               "short",         "%E-time",    "const char*", "dpiScope",        "const char*",
+               "%E-mtaskstate", "IData",      "QData",       "%E-logic-implct", " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -511,6 +513,7 @@ public:
         case STRING: return 64;  // opaque  // Just the pointer, for today
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque
+        case MTASKSTATE: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -549,11 +552,13 @@ public:
                 || m_e == DOUBLE || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
     }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
-        return (m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR || m_e == DOUBLE);
+        return (m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR || m_e == MTASKSTATE
+                || m_e == DOUBLE);
     }
     bool isDouble() const { return m_e == DOUBLE; }
     bool isEventValue() const { return m_e == EVENTVALUE; }
     bool isString() const { return m_e == STRING; }
+    bool isMTaskState() const { return m_e == MTASKSTATE; }
 };
 inline bool operator==(const AstBasicDTypeKwd& lhs, const AstBasicDTypeKwd& rhs) {
     return lhs.m_e == rhs.m_e;
