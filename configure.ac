@@ -75,6 +75,20 @@ AC_ARG_ENABLE([m32],
                CFG_ENABLE_M32=no)
 AC_MSG_RESULT($CFG_ENABLE_M32)
 
+# Flag to enable coverage build
+AC_MSG_CHECKING(whether to build for coverage collection)
+AC_ARG_ENABLE([coverage],
+              [AS_HELP_STRING([--enable-coverage],
+                              [Build Verilator for code coverage collection.
+                               For developers only.])],
+              [case "${enableval}" in
+                yes) CFG_ENABLE_COVERAGE=yes ;;
+                no)  CFG_ENABLE_COVERAGE=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-coverage]) ;;
+               esac],
+               CFG_ENABLE_COVERAGE=no)
+AC_MSG_RESULT($CFG_ENABLE_COVERAGE)
+
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
 AC_ARG_ENABLE([defenv],
@@ -302,6 +316,25 @@ if test "$CFG_ENABLE_M32" = "yes"; then
     [AC_MSG_ERROR([--enable-m32 was given but compiler does not support -m32])])
 fi
 
+# Similarly, add the coverage flags early as they influence later checks.
+if test "$CFG_ENABLE_COVERAGE" = "yes"; then
+  _MY_CXX_CHECK_OPT(CXX,--coverage)
+  # Otherwise inline may not show as uncovered
+  #  If we use this then e.g. verilated.h functions properly show up
+  #  if unused.
+  #  However, VerilatedSerialize::write then changes from covered
+  #  to uncovered (in G++ 9.3.0) even with all inlining turned off.
+  #  Having false negative coverage is more effort then missing negatives.
+  #  Also this seems to explode the runtime (since a lot more data).
+  #  _MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
+  # Otherwise static may not show as uncovered
+  _MY_CXX_CHECK_OPT(CXX,-fkeep-static-functions)
+  # Exceptions can pollute the branch coverage data
+  _MY_CXX_CHECK_OPT(CXX,-fno-exceptions)
+  # Define-out some impossible stuff
+  _MY_CXX_CHECK_OPT(CXX,-DVL_GCOV)
+fi
+
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
 # Currently enabled gnu++14/c++14 due to packaged SystemC dependency
@@ -355,7 +388,9 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
 AC_SUBST(CFG_CXXFLAGS_PARSER)
 
 # Flags for compiling the debug version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
+if test "$CFG_ENABLE_COVERAGE" = "no"; then # Do not optimize for the coverage build
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-Og)
+fi
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-ggdb)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-gz)
 AC_SUBST(CFG_CXXFLAGS_DEBUG)
