@@ -118,13 +118,11 @@ private:
             if (nodep->aboveCellp()) iterate(nodep->aboveCellp());
             // Always recompute name (as many levels above scope may have changed)
             // Same formula as V3Scope
-            nodep->name(nodep->isTop()
-                            ? "TOP"
-                            : VN_IS(m_modp, Class) ? ("TOP." + m_modp->name())
-                                                   : VN_IS(m_modp, ClassPackage)
-                                                         ? ("TOP." + m_modp->name())
-                                                         : (nodep->aboveScopep()->name() + "."
-                                                            + nodep->aboveCellp()->name()));
+            nodep->name(nodep->isTop()         ? "TOP"
+                        : VN_IS(m_modp, Class) ? ("TOP." + m_modp->name())
+                        : VN_IS(m_modp, ClassPackage)
+                            ? ("TOP." + m_modp->name())
+                            : (nodep->aboveScopep()->name() + "." + nodep->aboveCellp()->name()));
             nodep->editCountInc();
             iterateChildren(nodep);
         }
