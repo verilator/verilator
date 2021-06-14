@@ -134,10 +134,10 @@ public:
         return (na() ? "yellow" : epsilon() ? "green" : "black");
     }
     virtual string dotLabel() const override {
-        return (na() ? ""
-                     : epsilon() ? "e"
-                                 : complement() ? ("not " + cvtToStr(input().toInt()))
-                                                : cvtToStr(input().toInt()));
+        return (na()           ? ""
+                : epsilon()    ? "e"
+                : complement() ? ("not " + cvtToStr(input().toInt()))
+                               : cvtToStr(input().toInt()));
     }
     virtual string dotStyle() const override { return (na() || cutable()) ? "dashed" : ""; }
     bool epsilon() const { return input().toInt() == EPSILON().toInt(); }

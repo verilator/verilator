@@ -116,7 +116,7 @@ Those developing Verilator itself may also want these (see internals.rst):
 
 ::
 
-   sudo apt-get install gdb graphviz cmake clang clang-format gprof lcov
+   sudo apt-get install gdb graphviz cmake clang clang-format-11 gprof lcov
    sudo pip3 install sphinx sphinx_rtd_theme breathe
    cpan install Pod::Perldoc
    cpan install Parallel::Forker

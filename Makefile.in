@@ -470,13 +470,13 @@ analyzer-include:
 
 format: clang-format yapf format-pl-exec
 
-CLANGFORMAT = clang-format
+CLANGFORMAT = clang-format-11
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 clang-format:
-	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
-		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
+	@$(CLANGFORMAT) --version | egrep 11.0 > /dev/null \
+		|| echo "*** You are not using clang-format 11.0, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 PY_PROGRAMS = \

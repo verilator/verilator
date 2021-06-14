@@ -172,8 +172,9 @@ public:
                 allD = allU = true;
             if (allU) m_wholeFlags[FLAG_USED] = true;
             if (allD) m_wholeFlags[FLAG_DRIVEN] = true;
-            const char* const what
-                = nodep->isParam() ? "parameter" : nodep->isGenVar() ? "genvar" : "signal";
+            const char* const what = nodep->isParam()    ? "parameter"
+                                     : nodep->isGenVar() ? "genvar"
+                                                         : "signal";
             // Test results
             if (nodep->isIfaceRef()) {
                 // For interface top level we don't do any tracking
