@@ -889,8 +889,9 @@ private:
                            << AstNode::prettyNameQ(nodep->cname()));
         }
         // Tasks (but not void functions) return a boolean 'int' indicating disabled
-        const string rtnType
-            = rtnvarp ? rtnvarp->dpiArgType(true, true) : nodep->dpiTask() ? "int" : "";
+        const string rtnType = rtnvarp            ? rtnvarp->dpiArgType(true, true)
+                               : nodep->dpiTask() ? "int"
+                                                  : "";
         AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep, rtnType);
         funcp->dpiImportPrototype(true);
         funcp->dontCombine(true);

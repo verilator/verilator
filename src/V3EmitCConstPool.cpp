@@ -110,13 +110,11 @@ class EmitCConstPool final : EmitCBaseVisitor {
         UASSERT_OBJ(dtypep, nodep, "Array initializer has non-array dtype");
         const uint32_t size = dtypep->elementsConst();
         const uint32_t elemBytes = dtypep->subDTypep()->widthTotalBytes();
-        const uint32_t tabMod = dtypep->subDTypep()->isString()
-                                    ? 1  // String
-                                    : elemBytes <= 2
-                                          ? 8  // CData, SData
-                                          : elemBytes <= 4 ? 4  // IData
-                                                           : elemBytes <= 8 ? 2  // QData
-                                                                            : 1;
+        const uint32_t tabMod = dtypep->subDTypep()->isString() ? 1  // String
+                                : elemBytes <= 2                ? 8  // CData, SData
+                                : elemBytes <= 4                ? 4  // IData
+                                : elemBytes <= 8                ? 2  // QData
+                                                                : 1;
         VL_RESTORER(m_inUnpacked);
         VL_RESTORER(m_unpackedWord);
         m_inUnpacked = true;
