@@ -2227,7 +2227,6 @@ public:
     void addProducingMTaskId(int id) { m_mtaskIds.insert(id); }
     void addConsumingMTaskId(int id) { m_mtaskIds.insert(id); }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
-    string mtasksString() const;
 };
 
 class AstDefParam final : public AstNode {

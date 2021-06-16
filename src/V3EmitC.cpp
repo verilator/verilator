@@ -124,13 +124,6 @@ public:
             puts("[" + cvtToStr(arrayp->elementsConst()) + "]");
         }
     }
-    void emitVarCmtChg(const AstVar* varp, string* curVarCmtp) {
-        string newVarCmt = varp->mtasksString();
-        if (*curVarCmtp != newVarCmt) {
-            *curVarCmtp = newVarCmt;
-            if (v3Global.opt.threads()) puts("// Begin mtask footprint " + *curVarCmtp + "\n");
-        }
-    }
     void emitTypedefs(AstNode* firstp) {
         bool first = true;
         for (AstNode* loopp = firstp; loopp; loopp = loopp->nextp()) {
@@ -3097,7 +3090,6 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
                     if (anonL1s != 1) puts("struct {\n");
                     for (int l0 = 0; l0 < lim && it != anons.cend(); ++l0) {
                         const AstVar* varp = *it;
-                        emitVarCmtChg(varp, &curVarCmt);
                         emitVarDecl(varp, prefixIfImp);
                         ++it;
                     }
@@ -3110,15 +3102,11 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
         // Leftovers, just in case off by one error somewhere above
         for (; it != anons.end(); ++it) {
             const AstVar* varp = *it;
-            emitVarCmtChg(varp, &curVarCmt);
             emitVarDecl(varp, prefixIfImp);
         }
     }
     // Output nonanons
-    for (const AstVar* varp : nonanons) {
-        emitVarCmtChg(varp, &curVarCmt);
-        emitVarDecl(varp, prefixIfImp);
-    }
+    for (const AstVar* varp : nonanons) { emitVarDecl(varp, prefixIfImp); }
 }
 
 void EmitCImp::emitThreadingState() {

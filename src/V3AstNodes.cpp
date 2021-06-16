@@ -640,13 +640,6 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
     return nullptr;
 }
 
-string AstVar::mtasksString() const {
-    std::ostringstream os;
-    os << "all: ";
-    for (const auto& id : m_mtaskIds) os << id << " ";
-    return os.str();
-}
-
 class AstNodeDType::CTypeRecursed final {
 public:
     string m_type;  // The base type, e.g.: "Foo_t"s
