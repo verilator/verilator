@@ -219,15 +219,17 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
+        if (!nodep->varScopep()) {
+            UASSERT_OBJ(nodep->varp()->isFuncLocal(), nodep,
+                        "unscoped reference can only appear to function locals at this point");
+            return;
+        }
         // Convert the hierch name
         UINFO(9, "  ref-in " << nodep << endl);
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         const AstVar* const varp = nodep->varScopep()->varp();
         const AstScope* const scopep = nodep->varScopep()->scopep();
-        if (varp->isFuncLocal()) {
-            nodep->hierThis(true);
-        } else {
-            nodep->hierThis(scopep == m_scopep);
+        if (!varp->isFuncLocal()) {
             nodep->selfPointer(descopedSelfPointer(scopep));
             nodep->classPrefix(descopedClassPrefix(scopep));
         }
@@ -282,7 +284,6 @@ public:
 
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    v3Global.assertScoped(false);
     { DescopeVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
