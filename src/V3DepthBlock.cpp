@@ -61,7 +61,7 @@ private:
         if (VN_IS(m_modp, Class)) {
             funcp->argTypes(EmitCBaseVisitor::symClassVar());
             callp->argTypes("vlSymsp");
-        } else if (funcp->isStatic().falseUnknown()) {
+        } else if (!funcp->isStatic()) {
             callp->selfPointer("this");
         }
         UINFO(6, "      New " << callp << endl);

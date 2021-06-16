@@ -49,7 +49,6 @@ private:
     AstScope* m_scopep = nullptr;  // Current scope
     bool m_modSingleton = false;  // m_modp is only instanced once
     bool m_allowThis = false;  // Allow function non-static
-    bool m_needThis = false;  // Make function non-static
     FuncMmap m_modFuncs;  // Name of public functions added
 
     // METHODS
@@ -92,7 +91,6 @@ private:
         UINFO(8, "             aboveScope " << scopep->aboveScopep() << endl);
 
         if (relativeRefOk && scopep == m_scopep) {
-            m_needThis = true;
             return "this";
         } else if (VN_IS(scopep->modp(), Class)) {
             return "";
@@ -105,7 +103,6 @@ private:
             string name = scopep->name();
             string::size_type pos;
             if ((pos = name.rfind('.')) != string::npos) name.erase(0, pos + 1);
-            m_needThis = true;
             return "this->" + name;
         } else {
             // Reference to something elsewhere, or relative references are disabled. Use global
@@ -258,14 +255,11 @@ private:
         // nodep->funcp()->scopep(nullptr);
     }
     virtual void visit(AstCFunc* nodep) override {
-        VL_RESTORER(m_needThis);
         VL_RESTORER(m_allowThis);
         if (!nodep->user1()) {
-            m_needThis = false;
-            m_allowThis = nodep->isStatic().falseUnknown();  // Non-static or unknown if static
+            m_allowThis = !nodep->isStatic();
             iterateChildren(nodep);
             nodep->user1(true);
-            if (m_needThis) nodep->isStatic(false);
             // If it's under a scope, move it up to the top
             if (m_scopep) {
                 nodep->unlinkFrBack();
