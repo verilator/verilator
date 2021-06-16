@@ -53,6 +53,10 @@ public:
         return VIdProtect::protectWordsIf(name, doIt);
     }
     static string ifNoProtect(const string& in) { return v3Global.opt.protectIds() ? "" : in; }
+    static string voidSelfAssign() {
+        return topClassName() + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<"
+               + topClassName() + "*>(voidSelf);\n";
+    }
     static string symClassName() { return v3Global.opt.prefix() + "_" + protect("_Syms"); }
     static string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
     static string symClassAssign() {
