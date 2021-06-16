@@ -2280,7 +2280,6 @@ private:
     string m_name;  // Name of variable
     string m_selfPointer;  // Output code object pointer (e.g.: 'this')
     string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
-    bool m_hierThis = false;  // m_selfPointer points to "this" function
 
 protected:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
@@ -2312,8 +2311,6 @@ public:
     void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
-    bool hierThis() const { return m_hierThis; }
-    void hierThis(bool flag) { m_hierThis = flag; }
     string selfPointer() const { return m_selfPointer; }
     void selfPointer(const string& value) { m_selfPointer = value; }
     string selfPointerProtect(bool useSelfForThis) const;
