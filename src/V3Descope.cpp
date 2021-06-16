@@ -46,9 +46,9 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstScope* m_scopep = nullptr;  // Current scope
-    bool m_modSingleton = false;  // m_modp is only instanced once
-    bool m_allowThis = false;  // Allow function non-static
+    const AstScope* m_scopep = nullptr;  // Current scope
+    const AstCFunc* m_funcp = nullptr;  // Current function
+    bool m_modSingleton = false;  // m_modp is only instantiated once
     FuncMmap m_modFuncs;  // Name of public functions added
 
     // METHODS
@@ -74,12 +74,8 @@ private:
     string descopedSelfPointer(const AstScope* scopep) {
         UASSERT(scopep, "Var/Func not scoped");
 
-        // Whether to use relative references via 'this->'
-        bool relativeRefOk = true;
-        // Static functions can't use this
-        if (!m_allowThis) relativeRefOk = false;
-        // Class methods need relative
-        if (m_modp && VN_IS(m_modp, Class)) relativeRefOk = true;
+        // Static functions can't use relative references via 'this->'
+        const bool relativeRefOk = !m_funcp->isStatic();
 
         UINFO(8, "      Descope ref under " << m_scopep << endl);
         UINFO(8, "              ref to    " << scopep << endl);
@@ -88,7 +84,7 @@ private:
         if (relativeRefOk && scopep == m_scopep) {
             return "this";
         } else if (VN_IS(scopep->modp(), Class)) {
-            return "";
+            return "this";
         } else if (!m_modSingleton && relativeRefOk && scopep->aboveScopep() == m_scopep
                    && VN_IS(scopep->modp(), Module)) {
             // Reference to scope of instance directly under this module, can just "this->cell",
@@ -250,9 +246,12 @@ private:
         // nodep->funcp()->scopep(nullptr);
     }
     virtual void visit(AstCFunc* nodep) override {
-        VL_RESTORER(m_allowThis);
+        VL_RESTORER(m_funcp);
         if (!nodep->user1()) {
-            m_allowThis = !nodep->isStatic();
+            // Static functions should have been moved under the corresponding AstClassPackage
+            UASSERT(!(nodep->isStatic() && VN_IS(m_modp, Class)),
+                    "Static function under AstClass");
+            m_funcp = nodep;
             iterateChildren(nodep);
             nodep->user1(true);
             // If it's under a scope, move it up to the top
