@@ -105,7 +105,7 @@ public:
     string cFuncArgs(const AstCFunc* nodep) {
         // Return argument list for given C function
         string args;
-        if (nodep->isLoose() && nodep->isStatic().falseUnknown()) {
+        if (nodep->isLoose() && !nodep->isStatic()) {
             if (nodep->isConst().trueKnown()) args += "const ";
             AstNodeModule* modp = VN_CAST(nodep->user4p(), NodeModule);
             args += prefixNameProtect(modp);
@@ -148,7 +148,7 @@ public:
         ensureNewLine();
         if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
         if (cLinkage) puts("extern \"C\" ");
-        if (funcp->isStatic().trueUnknown() && funcp->isProperMethod()) puts("static ");
+        if (funcp->isStatic() && funcp->isProperMethod()) puts("static ");
         if (funcp->isVirtual()) {
             UASSERT_OBJ(funcp->isProperMethod(), funcp, "Virtual function is not a proper method");
             puts("virtual ");

@@ -8734,7 +8734,7 @@ private:
     string m_ctorInits;  // Constructor sub-class inits
     string m_ifdef;  // #ifdef symbol around this function
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
-    VBoolOrUnknown m_isStatic;  // Function is declared static (no this)
+    bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
     bool m_declPrivate : 1;  // Declare it private
     bool m_formCallTree : 1;  // Make a global function to call entire tree of functions
@@ -8758,10 +8758,10 @@ public:
         : ASTGEN_SUPER_CFunc(fl) {
         m_funcType = AstCFuncType::FT_NORMAL;
         m_isConst = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until analyzed
-        m_isStatic = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until see where thisp needed
         m_scopep = scopep;
         m_name = name;
         m_rtnType = rtnType;
+        m_isStatic = false;
         m_dontCombine = false;
         m_declPrivate = false;
         m_formCallTree = false;
@@ -8801,9 +8801,8 @@ public:
     VBoolOrUnknown isConst() const { return m_isConst; }
     void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
-    VBoolOrUnknown isStatic() const { return m_isStatic; }
-    void isStatic(bool flag) { m_isStatic.setTrueOrFalse(flag); }
-    void isStatic(VBoolOrUnknown flag) { m_isStatic = flag; }
+    bool isStatic() const { return m_isStatic; }
+    void isStatic(bool flag) { m_isStatic = flag; }
     void cname(const string& name) { m_cname = name; }
     string cname() const { return m_cname; }
     AstScope* scopep() const { return m_scopep; }

@@ -247,7 +247,7 @@ public:
     }
     void ccallIterateArgs(AstNodeCCall* nodep) {
         bool comma = false;
-        if (nodep->funcp()->isLoose() && nodep->funcp()->isStatic().falseUnknown()) {
+        if (nodep->funcp()->isLoose() && !nodep->funcp()->isStatic()) {
             UASSERT_OBJ(!nodep->selfPointer().empty(), nodep,
                         "Call to loose method without self pointer");
             puts(nodep->selfPointerProtect(m_useSelfForThis));
@@ -384,7 +384,7 @@ public:
         } else if (funcp->dpiImportPrototype()) {
             // Calling DPI import
             puts(funcp->name());
-        } else if (funcp->isProperMethod() && funcp->isStatic().trueUnknown()) {
+        } else if (funcp->isProperMethod() && funcp->isStatic()) {
             // Call static method via the containing class
             AstNodeModule* modp = VN_CAST(funcp->user4p(), NodeModule);
             puts(prefixNameProtect(modp) + "::");
@@ -1588,7 +1588,7 @@ class EmitCImp final : EmitCStmts {
 
         if (nodep->isLoose()) {
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
-            if (nodep->isStatic().falseUnknown()) {  // Standard prologue
+            if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
                 puts("if (false && vlSelf) {}  // Prevent unused\n");
                 if (!VN_IS(m_modp, Class)) puts(symClassAssign());
@@ -3864,7 +3864,7 @@ class EmitCTrace final : EmitCStmts {
 
             if (nodep->isLoose()) {
                 m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
-                if (nodep->isStatic().falseUnknown()) {  // Standard prologue
+                if (!nodep->isStatic()) {  // Standard prologue
                     puts("if (false && vlSelf) {}  // Prevent unused\n");
                     m_useSelfForThis = true;
                     puts(symClassAssign());

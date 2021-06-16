@@ -1818,11 +1818,7 @@ void AstCFunc::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (slow()) str << " [SLOW]";
     if (pure()) str << " [PURE]";
-    if (isStatic().unknown()) {
-        str << " [STATICU]";
-    } else if (isStatic().trueUnknown()) {
-        str << " [STATIC]";
-    }
+    if (isStatic()) str << " [STATIC]";
     if (dpiExportDispatcher()) str << " [DPIED]";
     if (dpiExportImpl()) str << " [DPIEI]";
     if (dpiImportPrototype()) str << " [DPIIP]";
