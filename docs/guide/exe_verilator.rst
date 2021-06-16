@@ -661,10 +661,6 @@ Summary:
 
    Backward compatible alias for :vlopt:`--pins-bv 33 <--pins-bv>`.
 
-.. option:: --no-relative-cfuncs
-
-   Deprecated.
-
 .. option:: --no-skip-identical =item --skip-identical
 
    Rarely needed.  Disables or enables skipping execution of Verilator if

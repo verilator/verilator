@@ -260,7 +260,6 @@ private:
     bool m_public = false;          // main switch: --public
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
     bool m_quietExit = false;       // main switch: --quiet-exit
-    bool m_relativeCFuncs = true;   // main switch: --relative-cfuncs
     bool m_relativeIncludes = false; // main switch: --relative-includes
     bool m_reportUnoptflat = false; // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
@@ -473,7 +472,6 @@ public:
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
     bool quietExit() const { return m_quietExit; }
-    bool relativeCFuncs() const { return m_relativeCFuncs; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
