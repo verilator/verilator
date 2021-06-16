@@ -2150,7 +2150,6 @@ public:
     }
     bool isClassMember() const { return varType() == AstVarType::MEMBER; }
     bool isStatementTemp() const { return (varType() == AstVarType::STMTTEMP); }
-    bool isMovableToBlock() const { return (varType() == AstVarType::BLOCKTEMP || isFuncLocal()); }
     bool isXTemp() const { return (varType() == AstVarType::XTEMP); }
     bool isParam() const {
         return (varType() == AstVarType::LPARAM || varType() == AstVarType::GPARAM);

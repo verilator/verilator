@@ -48,25 +48,24 @@ private:
     AstCFunc* createDeepFunc(AstNode* nodep) {
         AstNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
-        // Create function
-        string name = m_cfuncp->name() + "__deep" + cvtToStr(++m_deepNum);
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, nullptr);
+        // Create sub function
+        AstScope* const scopep = m_cfuncp->scopep();
+        const string name = m_cfuncp->name() + "__deep" + cvtToStr(++m_deepNum);
+        AstCFunc* const funcp = new AstCFunc(nodep->fileline(), name, scopep);
         funcp->slow(m_cfuncp->slow());
         funcp->isStatic(m_cfuncp->isStatic());
         funcp->isLoose(m_cfuncp->isLoose());
         funcp->addStmtsp(nodep);
-        m_modp->addStmtp(funcp);
-        // Call it at the point where the body was removed from
-        AstCCall* callp = new AstCCall(nodep->fileline(), funcp);
+        scopep->addActivep(funcp);
+        // Call sub function at the point where the body was removed from
+        AstCCall* const callp = new AstCCall(nodep->fileline(), funcp);
         if (VN_IS(m_modp, Class)) {
             funcp->argTypes(EmitCBaseVisitor::symClassVar());
             callp->argTypes("vlSymsp");
-        } else if (!funcp->isStatic()) {
-            callp->selfPointer("this");
         }
         UINFO(6, "      New " << callp << endl);
-        //
         relinkHandle.relink(callp);
+        // Done
         return funcp;
     }
 
