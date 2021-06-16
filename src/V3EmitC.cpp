@@ -1429,18 +1429,6 @@ class EmitCLazyDecls final : public AstNVisitor {
         lazyDeclare(nodep->funcp());
     }
 
-    virtual void visit(AstExecGraph* nodep) override {
-        if (nodep->user2SetOnce()) return;  // Already declared
-        // Build the list of initial mtasks to start
-        for (const ExecMTask* mtp : nodep->rootMTasks()) {
-            m_emitter.puts("void ");
-            m_emitter.puts(EmitCBaseVisitor::topClassName() + "__"
-                           + EmitCBaseVisitor::protect(mtp->cFuncName()));
-            m_emitter.puts("(void* voidSelf, bool even_cycle);\n");
-            m_needsBlankLine = true;
-        }
-    }
-
     virtual void visit(AstVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
         // Only constant pool symbols are lazy declared for now ...
@@ -1574,93 +1562,6 @@ class EmitCImp final : EmitCStmts {
         return ofp;
     }
 
-    // Returns the number of cross-thread dependencies into mtaskp.
-    // If >0, mtaskp must test whether its prereqs are done before starting,
-    // and may need to block.
-    static uint32_t packedMTaskMayBlock(const ExecMTask* mtaskp) {
-        uint32_t result = 0;
-        for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            const ExecMTask* prevp = dynamic_cast<ExecMTask*>(edgep->fromp());
-            if (prevp->thread() != mtaskp->thread()) ++result;
-        }
-        return result;
-    }
-
-    void emitMTaskBody(AstMTaskBody* nodep) {
-        ExecMTask* curExecMTaskp = nodep->execMTaskp();
-        if (packedMTaskMayBlock(curExecMTaskp)) {
-            puts("vlSelf->__Vm_mt_" + cvtToStr(curExecMTaskp->id())
-                 + ".waitUntilUpstreamDone(even_cycle);\n");
-        }
-
-        string recName;
-        if (v3Global.opt.profThreads()) {
-            recName = "__Vprfthr_" + cvtToStr(curExecMTaskp->id());
-            puts("VlProfileRec* " + recName + " = nullptr;\n");
-            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-            puts("if (VL_UNLIKELY(vlSelf->__Vm_profile_cycle_start)) {\n");
-            puts(recName + " = vlSelf->__Vm_threadPoolp->profileAppend();\n");
-            puts(recName + "->startRecord(VL_RDTSC_Q() - vlSelf->__Vm_profile_cycle_start,");
-            puts(" " + cvtToStr(curExecMTaskp->id()) + ",");
-            puts(" " + cvtToStr(curExecMTaskp->cost()) + ");\n");
-            puts("}\n");
-        }
-        puts("Verilated::mtaskId(" + cvtToStr(curExecMTaskp->id()) + ");\n");
-
-        // The actual body of calls to leaf functions
-        iterateAndNextNull(nodep->stmtsp());
-
-        if (v3Global.opt.profThreads()) {
-            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-            puts("if (VL_UNLIKELY(" + recName + ")) {\n");
-            puts(recName + "->endRecord(VL_RDTSC_Q() - vlSelf->__Vm_profile_cycle_start);\n");
-            puts("}\n");
-        }
-
-        // Flush message queue
-        puts("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
-
-        // For any downstream mtask that's on another thread, bump its
-        // counter and maybe notify it.
-        for (V3GraphEdge* edgep = curExecMTaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const ExecMTask* nextp = dynamic_cast<ExecMTask*>(edgep->top());
-            if (nextp->thread() != curExecMTaskp->thread()) {
-                puts("vlSelf->__Vm_mt_" + cvtToStr(nextp->id())
-                     + ".signalUpstreamDone(even_cycle);\n");
-            }
-        }
-
-        // Run the next mtask inline
-        const ExecMTask* nextp = curExecMTaskp->packNextp();
-        if (nextp) {
-            emitMTaskBody(nextp->bodyp());
-        } else {
-            // Unblock the fake "final" mtask
-            puts("vlSelf->__Vm_mt_final.signalUpstreamDone(even_cycle);\n");
-        }
-    }
-
-    virtual void visit(AstMTaskBody* nodep) override {
-        VL_RESTORER(m_useSelfForThis);
-        maybeSplit();
-        splitSizeInc(10);
-
-        puts("\n");
-        for (const ExecMTask* mtp = nodep->execMTaskp(); mtp; mtp = mtp->packNextp()) {
-            m_lazyDecls.emit(mtp->bodyp());
-        }
-        puts("void ");
-        puts(topClassName() + "__" + protect(nodep->execMTaskp()->cFuncName()));
-        puts("(void* voidSelf, bool even_cycle) {\n");
-        puts(topClassName() + "* const vlSelf = static_cast<" + topClassName()
-             + "*>(voidSelf);\n");
-        m_useSelfForThis = true;
-        puts(symClassAssign());
-        emitMTaskBody(nodep);
-        ensureNewLine();
-        puts("}\n");
-    }
-
     //---------------------------------------
     // VISITORS
     using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warning
@@ -1732,6 +1633,12 @@ class EmitCImp final : EmitCStmts {
 
         puts("}\n");
         if (nodep->ifdef() != "") puts("#endif  // " + nodep->ifdef() + "\n");
+    }
+
+    virtual void visit(AstMTaskBody* nodep) override {
+        VL_RESTORER(m_useSelfForThis);
+        m_useSelfForThis = true;
+        iterateChildrenConst(nodep);
     }
 
     void emitChangeDet() {
@@ -1833,34 +1740,8 @@ class EmitCImp final : EmitCStmts {
                     "ExecGraph should be a singleton!");
         // The location of the AstExecGraph within the containing _eval()
         // function is where we want to invoke the graph and wait for it to
-        // complete. Do that now.
-        //
-        // Don't recurse to children -- this isn't the place to emit
-        // function definitions for the nested CFuncs. We'll do that at the
-        // end.
-        puts("vlSelf->__Vm_even_cycle = !vlSelf->__Vm_even_cycle;\n");
-
-        // Build the list of initial mtasks to start
-        std::vector<const ExecMTask*> execMTasks = nodep->rootMTasks();
-
-        if (!execMTasks.empty()) {
-            for (uint32_t i = 0; i < execMTasks.size(); ++i) {
-                const bool runInline = (i == execMTasks.size() - 1);
-                const string protName
-                    = topClassName() + "__" + protect(execMTasks[i]->cFuncName());
-                if (runInline) {
-                    // The thread calling eval() will run this mtask inline,
-                    // along with its packed successors.
-                    puts(protName + "(vlSelf, vlSelf->__Vm_even_cycle);\n");
-                    puts("Verilated::mtaskId(0);\n");
-                } else {
-                    // The other N-1 go to the thread pool.
-                    puts("vlSelf->__Vm_threadPoolp->workerp(" + cvtToStr(i) + ")->addTask("
-                         + protName + ", vlSelf, vlSelf->__Vm_even_cycle);\n");
-                }
-            }
-            puts("vlSelf->__Vm_mt_final.waitUntilUpstreamDone(vlSelf->__Vm_even_cycle);\n");
-        }
+        // complete. Emitting the children does just that.
+        iterateChildrenConst(nodep);
     }
 
     //---------------------------------------
@@ -2015,8 +1896,8 @@ class EmitCImp final : EmitCStmts {
     void emitSettleLoop(bool initial);
     void emitWrapEval();
     void emitWrapFast();
-    void emitMTaskState();
-    void emitMTaskVertexCtors(bool* firstp);
+    void emitThreadingState();
+    void emitThreadingCtors(bool* firstp);
     void emitIntTop(const AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
     void maybeSplit();
@@ -2085,6 +1966,7 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
         if (nodep->isWide()) puts("," + cvtToStr(nodep->widthWords()));
         puts(");\n");
     } else {
+        if (basicp && basicp->keyword().isMTaskState()) { m_ctorVarsVec.push_back(nodep); }
         // strings and other fundamental c types
         if (nodep->isFuncLocal() && nodep->isString()) {
             const string name = nodep->name();
@@ -2114,13 +1996,19 @@ void EmitCStmts::emitCtorSep(bool* firstp) {
 void EmitCStmts::emitVarCtors(bool* firstp) {
     if (!m_ctorVarsVec.empty()) {
         ofp()->indentInc();
-        puts("\n");
+        if (*firstp) puts("\n");
         for (const AstVar* varp : m_ctorVarsVec) {
-            bool isArray = !VN_CAST(varp->dtypeSkipRefp(), BasicDType);
-            if (isArray) {
+            const AstBasicDType* const dtypep = VN_CAST(varp->dtypeSkipRefp(), BasicDType);
+            if (!dtypep) {
                 puts("// Skipping array: ");
                 puts(varp->nameProtect());
                 puts("\n");
+            } else if (dtypep->keyword().isMTaskState()) {
+                emitCtorSep(firstp);
+                puts(varp->nameProtect());
+                puts("(");
+                iterate(varp->valuep());
+                puts(")");
             } else {
                 emitCtorSep(firstp);
                 puts(varp->nameProtect());
@@ -2555,36 +2443,17 @@ void EmitCImp::emitCoverageDecl(AstNodeModule*) {
     }
 }
 
-void EmitCImp::emitMTaskVertexCtors(bool* firstp) {
-    AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
-    UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
-    const V3Graph* depGraphp = execGraphp->depGraphp();
-
-    unsigned finalEdgesInCt = 0;
-    for (const V3GraphVertex* vxp = depGraphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
-        unsigned edgesInCt = packedMTaskMayBlock(mtp);
-        if (packedMTaskMayBlock(mtp) > 0) {
-            emitCtorSep(firstp);
-            puts("__Vm_mt_" + cvtToStr(mtp->id()) + "(" + cvtToStr(edgesInCt) + ")");
-        }
-        // Each mtask with no packed successor will become a dependency
-        // for the final node:
-        if (!mtp->packNextp()) ++finalEdgesInCt;
-    }
-
-    emitCtorSep(firstp);
-    puts("__Vm_mt_final(" + cvtToStr(finalEdgesInCt) + ")");
-
-    // This will flip to 'true' before the start of the 0th cycle.
+void EmitCImp::emitThreadingCtors(bool* firstp) {
+    ofp()->indentInc();
     emitCtorSep(firstp);
     puts("__Vm_threadPoolp(nullptr)");
+    emitCtorSep(firstp);
+    puts("__Vm_even_cycle(false)");
     if (v3Global.opt.profThreads()) {
         emitCtorSep(firstp);
         puts("__Vm_profile_cycle_start(0)");
     }
-    emitCtorSep(firstp);
-    puts("__Vm_even_cycle(false)");
+    ofp()->indentDec();
 }
 
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
@@ -2612,9 +2481,10 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     } else {
         puts(modName + "::" + modName + "(const char* _vcname__)\n");
         puts("    : VerilatedModule(_vcname__)\n");
+        first = false;  // printed the first ':'
     }
     emitVarCtors(&first);
-    if (modp->isTop() && v3Global.opt.mtasks()) emitMTaskVertexCtors(&first);
+    if (modp->isTop() && v3Global.opt.mtasks()) emitThreadingCtors(&first);
 
     puts(" {\n");
     emitCellCtors(modp);
@@ -2804,9 +2674,11 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                             puts("; ++" + ivar + ") {\n");
                             elementp = arrayp->subDTypep()->skipRefp();
                         }
+                        const AstBasicDType* const basicp = elementp->basicp();
+                        // Do not save MTask state, only matters within an evaluation
+                        if (basicp && basicp->keyword().isMTaskState()) continue;
                         // Want to detect types that are represented as arrays
                         // (i.e. packed types of more than 64 bits).
-                        AstBasicDType* basicp = elementp->basicp();
                         if (elementp->isWide()
                             && !(basicp && basicp->keyword() == AstBasicDTypeKwd::STRING)) {
                             int vecnum = vects++;
@@ -3249,26 +3121,13 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
     }
 }
 
-void EmitCImp::emitMTaskState() {
+void EmitCImp::emitThreadingState() {
     ofp()->putsPrivate(false);  // Accessed from loose function
     AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
     UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
 
-    const V3Graph* depGraphp = execGraphp->depGraphp();
-    for (const V3GraphVertex* vxp = depGraphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
-        if (packedMTaskMayBlock(mtp) > 0) {
-            puts("VlMTaskVertex __Vm_mt_" + cvtToStr(mtp->id()) + ";\n");
-        }
-    }
-    // This fake mtask depends on all the real ones.  We use it to block
-    // eval() until all mtasks are done.
-    //
-    // In the future we might allow _eval() to return before the graph is
-    // fully done executing, for "half wave" scheduling. For now we wait
-    // for all mtasks though.
-    puts("VlMTaskVertex __Vm_mt_final;\n");
     puts("VlThreadPool* __Vm_threadPoolp;\n");
+    puts("bool __Vm_even_cycle;\n");
 
     if (v3Global.opt.profThreads()) {
         // rdtsc() at current cycle start
@@ -3278,8 +3137,6 @@ void EmitCImp::emitMTaskState() {
         // Track our position in the cache warmup and actual profile window
         puts("vluint32_t __Vm_profile_window_ct;\n");
     }
-
-    puts("bool __Vm_even_cycle;\n");
 }
 
 void EmitCImp::emitIntTop(const AstNodeModule* modp) {
@@ -3380,7 +3237,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         if (v3Global.opt.inhibitSim()) {
             puts("bool __Vm_inhibitSim;  ///< Set true to disable evaluation of module\n");
         }
-        if (v3Global.opt.mtasks()) emitMTaskState();
+        if (v3Global.opt.mtasks()) emitThreadingState();
     }
     emitCoverageDecl(modp);  // may flip public/private
 
@@ -3634,23 +3491,6 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
         m_modp = modp;
     }
 
-    if (m_fast && modp->isTop() && v3Global.opt.mtasks()) {
-        // Make a final pass and emit function definitions for the mtasks
-        // in the ExecGraph
-        AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
-        const V3Graph* depGraphp = execGraphp->depGraphp();
-        for (const V3GraphVertex* vxp = depGraphp->verticesBeginp(); vxp;
-             vxp = vxp->verticesNextp()) {
-            const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp);
-            if (mtaskp->threadRoot()) {
-                // Only define one function for all the mtasks packed on
-                // a given thread. We'll name this function after the
-                // root mtask though it contains multiple mtasks' worth
-                // of logic.
-                iterate(mtaskp->bodyp());
-            }
-        }
-    }
     VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 

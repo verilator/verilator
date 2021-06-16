@@ -2070,7 +2070,8 @@ public:
     // (Slow) recurse down to find basic data type (Note don't need virtual -
     // AstVar isn't a NodeDType)
     AstBasicDType* basicp() const { return subDTypep()->basicp(); }
-    // op3 = Initial value that never changes (static const)
+    // op3 = Initial value that never changes (static const), or constructor argument for
+    // MTASKSTATE variables
     AstNode* valuep() const { return op3p(); }
     // It's valuep(), not constp(), as may be more complicated than an AstConst
     void valuep(AstNode* nodep) { setOp3p(nodep); }
@@ -9045,7 +9046,8 @@ class AstExecGraph final : public AstNode {
     // them without traversing the graph (it's not always needed to
     // traverse the graph.)
 private:
-    V3Graph* m_depGraphp;  // contains ExecMTask's
+    V3Graph* const m_depGraphp;  // contains ExecMTask's
+
 public:
     explicit AstExecGraph(FileLine* fl);
     ASTNODE_NODE_FUNCS_NO_DTOR(ExecGraph)
@@ -9057,7 +9059,7 @@ public:
     const V3Graph* depGraphp() const { return m_depGraphp; }
     V3Graph* mutableDepGraphp() { return m_depGraphp; }
     void addMTaskBody(AstMTaskBody* bodyp) { addOp1p(bodyp); }
-    std::vector<const ExecMTask*> rootMTasks();
+    void addStmtsp(AstNode* stmtp) { addOp2p(stmtp); }
 };
 
 class AstSplitPlaceholder final : public AstNode {

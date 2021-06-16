@@ -63,7 +63,6 @@ public:
     static void finalize();
 
 private:
-    static void finalizeCosts(V3Graph* execMTaskGraphp);
     static void setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp);
 
     VL_DEBUG_FUNC;  // Declare debug()

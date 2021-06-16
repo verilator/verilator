@@ -33,7 +33,7 @@ if ($Self->{vlt_all}) {
         $text =~ s/vlSelf->.* = VL_RAND_RESET.*;//g;
         $text =~ s/vlSelf->__Vm_even_cycle//g;
         $text =~ s/vlSelf->__Vm_even_cycle//g;
-        $text =~ s/vlSelf->__Vm_mt_(final|\d+)//g;
+        $text =~ s/vlSelf->__Vm_mtaskstate_(final|\d+)//g;
         $text =~ s/vlSelf->__Vm_threadPoolp//g;
         if ($text =~ m/this->/ || $text =~ m/vlSelf->/) {
             error("$file has unexpected this-> refs when --norelative-cfuncs");
