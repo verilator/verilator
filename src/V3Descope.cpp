@@ -74,15 +74,10 @@ private:
     string descopedSelfPointer(const AstScope* scopep) {
         UASSERT(scopep, "Var/Func not scoped");
 
-        // It's possible to disable relative references. This is a concession
-        // to older compilers (gcc < 4.5.x) that don't understand __restrict__
-        // well and emit extra ld/st to guard against pointer aliasing
-        // when this-> and vlSyms-> are mixed in the same function.
-        bool relativeRefOk = v3Global.opt.relativeCFuncs();
-        //
+        // Whether to use relative references via 'this->'
+        bool relativeRefOk = true;
         // Static functions can't use this
         if (!m_allowThis) relativeRefOk = false;
-        //
         // Class methods need relative
         if (m_modp && VN_IS(m_modp, Class)) relativeRefOk = true;
 

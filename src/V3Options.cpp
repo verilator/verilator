@@ -1243,11 +1243,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
 
-    DECL_OPTION("-relative-cfuncs", CbOnOff, [this, fl](bool flag) {
-        m_relativeCFuncs = flag;
-        if (!m_relativeCFuncs)
-            fl->v3warn(DEPRECATED, "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
-    });
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
         m_reloopLimit = std::atoi(valp);
