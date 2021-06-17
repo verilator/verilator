@@ -171,7 +171,7 @@ private:
 
         // Does this have side effects? Can we just get rid of it if we're supporting non-top
         //   top-modules
-        //for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
+        // for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
         //    if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
         //        // +1 so we leave level 1  for the new wrapper we'll make in a moment
         //        AstNodeModule* modp = vvertexp->modp();
