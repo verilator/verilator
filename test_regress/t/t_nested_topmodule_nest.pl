@@ -14,9 +14,5 @@ compile(
     verilator_flags2 => ["--top-module top"]
     );
 
-execute(
-    check_finished => 1,
-    );
-
 ok(1);
 1;

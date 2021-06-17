@@ -32,7 +32,7 @@ endmodule
 module top(/*AUTOARG*/
    );
 
-   Under under();
+   under under();
 
 endmodule
 
