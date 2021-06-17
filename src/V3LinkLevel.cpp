@@ -49,11 +49,17 @@ void V3LinkLevel::modSortByLevel() {
     ModVec mods;  // Modules
     ModVec tops;  // Top level modules
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
-        if (nodep->level() <= 2) tops.push_back(nodep);
+        nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        if (v3Global.opt.topModule() == nodep->prettyName()) {
+           tops.insert(tops.begin(), nodep);
+        }
+        else if (nodep->level() <= 2) {
+           tops.push_back(nodep);
+        }
         mods.push_back(nodep);
     }
-    if (tops.size() >= 2) {
+
+    if (v3Global.opt.topModule() == "" && tops.size() >= 2) {
         AstNode* secp = tops[1];  // Complain about second one, as first often intended
         if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
             secp->v3warn(MULTITOP, "Multiple top level modules\n"

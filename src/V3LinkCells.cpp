@@ -168,26 +168,29 @@ private:
         m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
         m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
-                // +1 so we leave level 1  for the new wrapper we'll make in a moment
-                AstNodeModule* modp = vvertexp->modp();
-                modp->level(vvertexp->rank() + 1);
-                if (vvertexp == m_topVertexp && modp->level() != 2) {
-                    AstNodeModule* abovep = nullptr;
-                    if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
-                        if (LinkCellsVertex* eFromVertexp
-                            = dynamic_cast<LinkCellsVertex*>(edgep->fromp())) {
-                            abovep = eFromVertexp->modp();
-                        }
-                    }
-                    v3error("Specified --top-module '"
-                            << v3Global.opt.topModule()
-                            << "' isn't at the top level, it's under another instance '"
-                            << (abovep ? abovep->prettyName() : "UNKNOWN") << "'");
-                }
-            }
-        }
+
+        // Does this have side effects? Can we just get rid of it if we're supporting non-top
+        //   top-modules
+        //for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
+        //    if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
+        //        // +1 so we leave level 1  for the new wrapper we'll make in a moment
+        //        AstNodeModule* modp = vvertexp->modp();
+        //        modp->level(vvertexp->rank() + 1);
+        //        if (vvertexp == m_topVertexp && modp->level() != 2) {
+        //            AstNodeModule* abovep = nullptr;
+        //            if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
+        //                if (LinkCellsVertex* eFromVertexp
+        //                    = dynamic_cast<LinkCellsVertex*>(edgep->fromp())) {
+        //                    abovep = eFromVertexp->modp();
+        //                }
+        //            }
+        //            v3error("Specified --top-module '"
+        //                    << v3Global.opt.topModule()
+        //                    << "' isn't at the top level, it's under another instance '"
+        //                    << (abovep ? abovep->prettyName() : "UNKNOWN") << "'");
+        //        }
+        //    }
+        //}
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
             v3error("Specified --top-module '" << v3Global.opt.topModule()
                                                << "' was not found in design.");

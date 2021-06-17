@@ -27,6 +27,11 @@ endmodule
 module top(/*AUTOARG*/
    );
 
+   initial begin
+     $write("*-* All Finished *-*\n");
+     $finish();
+   end
+
 endmodule
 
 module faketop(/*AUTOARG*/
