@@ -16,9 +16,9 @@
 // LOCALIZE TRANSFORMATIONS:
 //      All modules:
 //          VARSCOPE(BLOCKTEMP...
-//             if only referenced in a CFUNC, make it local to that CFUNC
-//          VARSCOPE(others
-//             if non-public, set before used, and in single CFUNC, make it local
+//             if only referenced in one CFUNC, make it local
+//          VARSCOPE
+//             if non-public, always written before used, make it local
 //
 //*************************************************************************
 
@@ -29,6 +29,7 @@
 #include "V3Localize.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+#include "V3AstUserAllocator.h"
 
 #include <vector>
 
@@ -38,98 +39,73 @@
 class LocalizeVisitor final : public AstNVisitor {
 private:
     // NODE STATE
-    //  AstVar::user1p()        -> First AstCFunc which references the variable
-    //  AstVar::user2()         -> VarFlags.  Flag state
-    //  AstVar::user4p()        -> AstVarRef that writes whole variable, if first write ref.
+    //  AstVarScope::user1()    ->  Bool indicating VarScope is not optimizable.
+    //  AstVarScope::user2()    ->  Bool indicating VarScope was fully assigned in the current
+    //                              function.
+    //  AstVarScope::user3p()   ->  Set of CFuncs referencing this VarScope. (via m_accessors)
+    //  AstCFunc::user4p()      ->  Multimap of 'VarScope -> VarRefs that reference that VarScope'
+    //                              in this function. (via m_references)
     AstUser1InUse m_inuser1;
     AstUser2InUse m_inuser2;
+    AstUser3InUse m_inuser3;
     AstUser4InUse m_inuser4;
 
-    // TYPES
-    union VarFlags {
-        // Per-variable flags
-        // Used in user()'s so initializes to all zeros
-        struct {
-            int m_notOpt : 1;  // NOT optimizable
-            int m_notStd : 1;  // NOT optimizable if a non-blocktemp signal
-            int m_stdFuncAsn : 1;  // Found simple assignment
-        };
-        // cppcheck-suppress unusedStructMember
-        uint32_t m_flags;
-        explicit VarFlags(AstVarScope* nodep) { m_flags = nodep->user2(); }
-        void setNodeFlags(AstVarScope* nodep) { nodep->user2(m_flags); }
-    };
+    AstUser3Allocator<AstVarScope, std::unordered_set<AstCFunc*>> m_accessors;
+    AstUser4Allocator<AstCFunc, std::unordered_multimap<const AstVarScope*, AstVarRef*>>
+        m_references;
 
     // STATE
     VDouble0 m_statLocVars;  // Statistic tracking
     AstCFunc* m_cfuncp = nullptr;  // Current active function
+    uint32_t m_nodeDepth = 0;  // Node depth under m_cfuncp
     std::vector<AstVarScope*> m_varScopeps;  // List of variables to consider for localization
-    std::unordered_multimap<const AstVarScope*, AstVarRef*>
-        m_references;  // VarRefs referencing the given VarScope
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    void clearOptimizable(AstVarScope* nodep, const char* reason) {
-        UINFO(4, "       NoOpt " << reason << " " << nodep << endl);
-        VarFlags flags(nodep);
-        flags.m_notOpt = true;
-        flags.setNodeFlags(nodep);
+    bool isOptimizable(AstVarScope* nodep) {
+        return !nodep->user1() ||  // Not marked as not optimizable, or ...
+               (nodep->varp()->varType() == AstVarType::BLOCKTEMP
+                && m_accessors(nodep).size() == 1);  // .. a block temp used in a single CFunc
     }
-    void clearStdOptimizable(AstVarScope* nodep, const char* reason) {
-        UINFO(4, "       NoStd " << reason << " " << nodep << endl);
-        VarFlags flags(nodep);
-        flags.m_notStd = true;
-        flags.setNodeFlags(nodep);
-    }
+
     void moveVarScopes() {
         for (AstVarScope* const nodep : m_varScopeps) {
-            if (nodep->varp()->valuep()) clearOptimizable(nodep, "HasInitValue");
-            if (!VarFlags(nodep).m_stdFuncAsn) clearStdOptimizable(nodep, "NoStdAssign");
-            VarFlags flags(nodep);
+            if (!isOptimizable(nodep)) continue;  // Not optimizable
 
-            if ((nodep->varp()->varType() == AstVarType::BLOCKTEMP
-                 || !flags.m_notStd)  // Temporary Or used only in block
-                && !flags.m_notOpt  // Optimizable
-                && !nodep->varp()->isClassMember() &&  // Statically exists in design hierarchy
-                nodep->user1p())  // Is under a CFunc
-            {
-                UINFO(4, "Localizing " << nodep << endl);
-                ++m_statLocVars;
-                AstCFunc* const funcp = VN_CAST(nodep->user1p(), CFunc);
-                // Yank the Var and VarScope from it's parent and schedule them for deletion
-                AstVar* const varp = nodep->varp();
-                if (varp->backp()) {  // Might have already unlinked this via another AstVarScope
-                    pushDeletep(varp->unlinkFrBack());
-                }
-                pushDeletep(nodep->unlinkFrBack());
+            const std::unordered_set<AstCFunc*>& funcps = m_accessors(nodep);
+            if (funcps.empty()) continue;  // No referencing functions at all
 
+            UINFO(4, "Localizing " << nodep << endl);
+            ++m_statLocVars;
+
+            // Yank the VarScope from it's parent and schedule them for deletion. Leave the Var
+            // for now, as not all VarScopes referencing this Var might be localized.
+            pushDeletep(nodep->unlinkFrBack());
+
+            // In each referencing function, create a replacement local variable
+            AstVar* const oldVarp = nodep->varp();
+            for (AstCFunc* const funcp : funcps) {
                 // Create the new local variable.
                 const string newName
                     = nodep->scopep() == funcp->scopep()
-                          ? varp->name()
-                          : nodep->scopep()->nameDotless() + "__DOT__" + varp->name();
-
+                          ? oldVarp->name()
+                          : nodep->scopep()->nameDotless() + "__DOT__" + oldVarp->name();
                 AstVar* const newVarp
-                    = new AstVar(varp->fileline(), varp->varType(), newName, varp);
+                    = new AstVar(oldVarp->fileline(), oldVarp->varType(), newName, oldVarp);
                 newVarp->funcLocal(true);
+                funcp->addInitsp(newVarp);
 
-                // Fix up all the references
-                const auto er = m_references.equal_range(nodep);
+                // Fix up all the references within this function
+                const auto er = m_references(funcp).equal_range(nodep);
                 for (auto it = er.first; it != er.second; ++it) {
                     AstVarRef* const refp = it->second;
                     refp->varScopep(nullptr);
                     refp->varp(newVarp);
                 }
-
-                // Add the var to this function, and mark local
-                funcp->addInitsp(newVarp);
-            } else {
-                clearOptimizable(nodep, "NotDone");
             }
         }
         m_varScopeps.clear();
-        m_references.clear();
     }
 
     // VISITORS
@@ -137,39 +113,35 @@ private:
         iterateChildrenConst(nodep);
         moveVarScopes();
     }
+
     virtual void visit(AstCFunc* nodep) override {
         UINFO(4, "  CFUNC " << nodep << endl);
         VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_nodeDepth);
         {
             m_cfuncp = nodep;
-            searchFuncStmts(nodep->argsp());
-            searchFuncStmts(nodep->initsp());
-            searchFuncStmts(nodep->stmtsp());
-            searchFuncStmts(nodep->finalsp());
+            m_nodeDepth = 0;
+            AstNode::user2ClearTree();  // Check each function independently
             iterateChildrenConst(nodep);
         }
     }
-    void searchFuncStmts(AstNode* nodep) {
-        // Search for basic assignments to allow moving non-blocktemps
-        // For now we only find simple assignments not under any other statement.
-        // This could be more complicated; allow always-set under both branches of a IF.
-        // If so, check for ArrayRef's and such, as they aren't acceptable.
-        for (; nodep; nodep = nodep->nextp()) {
-            if (AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
-                if (AstVarRef* const varrefp = VN_CAST(assignp->lhsp(), VarRef)) {
-                    UASSERT_OBJ(varrefp->access().isWriteOrRW(), varrefp,
-                                "LHS of assignment is not an lvalue");
-                    AstVarScope* const varScopep = varrefp->varScopep();
-                    if (!varScopep->user4p()) {
-                        UINFO(4, "      FuncAsn " << varrefp << endl);
-                        varScopep->user4p(varrefp);
-                        VarFlags flags(varScopep);
-                        flags.m_stdFuncAsn = true;
-                        flags.setNodeFlags(varScopep);
-                    }
-                }
+
+    virtual void visit(AstNodeAssign* nodep) override {
+        // Analyze RHS first so "a = a + 1" is detected as a read before write
+        iterate(nodep->rhsp());
+        // For now we only consider an assignment that is directly under the function, (in
+        // particular: not under an AstIf, or other kind of branch). This could be improved with
+        // proper data flow analysis.
+        if (m_nodeDepth == 0) {
+            // Check if simple "VARREF = ..." assignment, i.e.: this assignment sets the whole
+            // variable (and in particular, it is not assigned only in part).
+            if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
+                // Mark this VarScope as assigned in this function
+                refp->varScopep()->user2(1);
             }
         }
+        // Analyze LHS (in case it's not the above simple case
+        iterate(nodep->lhsp());
     }
 
     virtual void visit(AstVarScope* nodep) override {
@@ -177,42 +149,44 @@ private:
             && !nodep->varp()->isSigPublic()  // Not something the user wants to interact with
             && !nodep->varp()->isFuncLocal()  // Not already a function local (e.g.: argument)
             && !nodep->varp()->isStatic()  // Not a static variable
+            && !nodep->varp()->isClassMember()  // Statically exists in design hierarchy
+            && !nodep->varp()->valuep()  // Does not have an initializer
         ) {
-            UINFO(4, "    BLKVAR " << nodep << endl);
+            UINFO(4, "Consider for localization: " << nodep << endl);
             m_varScopeps.push_back(nodep);
         }
-        // No iterate; Don't want varrefs under it
+        // No iterate; Don't want varrefs under it (e.g.: in child dtype?)
     }
+
     virtual void visit(AstVarRef* nodep) override {
+        UASSERT_OBJ(m_cfuncp, nodep, "AstVarRef not under function");
+
         AstVarScope* const varScopep = nodep->varScopep();
-        if (!VarFlags(varScopep).m_notOpt) {
-            // Remember the reference
-            m_references.emplace(varScopep, nodep);
-            if (!m_cfuncp) {  // Not in function, can't optimize
-                // Perhaps impossible, but better safe
-                clearOptimizable(varScopep, "BVnofunc");  // LCOV_EXCL_LINE
-            } else {
-                // Allow a variable to appear in only a single function
-                AstNode* const oldfunc = varScopep->user1p();
-                if (!oldfunc) {
-                    // First encounter with this variable
-                    UINFO(4, "      BVnewref " << nodep << endl);
-                    varScopep->user1p(m_cfuncp);  // Remember where it was used
-                } else if (m_cfuncp != oldfunc) {
-                    // Used in multiple functions
-                    clearOptimizable(varScopep, "BVmultiF");
-                }
-                // First varref in function must be assignment found earlier
-                const AstVarRef* const firstasn = VN_CAST(varScopep->user4p(), VarRef);
-                if (firstasn && nodep != firstasn) {
-                    clearStdOptimizable(varScopep, "notFirstAsn");
-                    varScopep->user4p(nullptr);
-                }
+        // Remember this function accesses this VarScope (we always need this as we might optimize
+        // this VarScope into a local, even if it's not assigned. See 'isOptimizable')
+        m_accessors(varScopep).emplace(m_cfuncp);
+        // Remember the reference so we can fix it up later (we always need this as well)
+        m_references(m_cfuncp).emplace(varScopep, nodep);
+
+        // Check if already marked as not optimizable
+        if (!varScopep->user1()) {
+            // Note: we only check read variables, as it's ok to localize (and in fact discard)
+            // any variables that are only written but never read.
+            if (nodep->access().isReadOrRW() && !varScopep->user2()) {
+                // Variable is read, but is not known to have been assigned in this function. Mark
+                // as not optimizable.
+                UINFO(4, "Not optimizable (not written): " << nodep << endl);
+                varScopep->user1(1);
             }
         }
-        // No iterate; Don't want varrefs under it
+        // No iterate; Don't want varrefs under it  (e.g.: in child dtype?)
     }
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    virtual void visit(AstNode* nodep) override {
+        ++m_nodeDepth;
+        iterateChildrenConst(nodep);
+        --m_nodeDepth;
+    }
 
 public:
     // CONSTRUCTORS
