@@ -18,6 +18,7 @@ Verilator 4.205 devel
 
 **Minor:**
 
+* Optimize a lot more model variables into function locals (#3027). [Geza Lore]
 * Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]
 * Merge const static data globally into a new constant pool (#3013). [Geza Lore]
 * Fix error on unsupported recursive functions (#2957). [Trefor Southwell]
