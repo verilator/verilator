@@ -195,7 +195,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     AstUser4InUse m_inuser4;
     std::vector<AstNode*> m_frozenNodes;  // Nodes that cannot be optimized
-    std::vector<VarInfo*> m_varInfos;  // VarInfo for each variable, [0] is nullptr
+    std::vector<std::unique_ptr<VarInfo>> m_varInfos;  // VarInfo for each variable, [0] is nullptr
 
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
@@ -235,14 +235,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             baseIdx = m_varInfos.size();
             const int numWords
                 = ref.m_refp->dtypep()->isWide() ? ref.m_refp->dtypep()->widthWords() : 1;
-            m_varInfos.resize(m_varInfos.size() + numWords, nullptr);
+            m_varInfos.resize(m_varInfos.size() + numWords);
             nodep->user4(baseIdx);
         }
         const size_t idx = baseIdx + std::max(0, ref.m_wordIdx);
-        VarInfo* varInfop = m_varInfos[idx];
+        VarInfo* varInfop = m_varInfos[idx].get();
         if (!varInfop) {
             varInfop = new VarInfo{this, ref.m_refp};
-            m_varInfos[idx] = varInfop;
+            m_varInfos[idx].reset(varInfop);
         } else {
             if (!varInfop->sameVarAs(ref.m_refp))
                 CONST_BITOP_SET_FAILED("different var (scope?)", ref.m_refp);
@@ -442,11 +442,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         }
         UASSERT_OBJ(isXorTree() || m_polarity, nodep, "must be the original polarity");
     }
-    virtual ~ConstBitOpTreeVisitor() {
-        for (size_t i = 0; i < m_varInfos.size(); ++i) {
-            VL_DO_DANGLING(delete m_varInfos[i], m_varInfos[i]);
-        }
-    }
+    virtual ~ConstBitOpTreeVisitor() = default;
 #undef CONST_BITOP_RETURN_IF
 #undef CONST_BITOP_SET_FAILED
 
@@ -466,7 +462,7 @@ public:
         // Two ops for each varInfo. (And and Eq)
         const int vars = visitor.m_varInfos.size() - 1;
         int constTerms = 0;
-        for (const VarInfo* v : visitor.m_varInfos) {
+        for (auto&& v : visitor.m_varInfos) {
             if (v && v->hasConstantResult()) ++constTerms;
         }
         // Expected number of ops after this simplification
@@ -486,7 +482,7 @@ public:
         AstNode* resultp = nullptr;
         // VarInfo in visitor.m_varInfos appears in deterministic order,
         // so the optimized AST is deterministic too.
-        for (const VarInfo* varinfop : visitor.m_varInfos) {
+        for (auto&& varinfop : visitor.m_varInfos) {
             if (!varinfop) continue;
             AstNode* partialresultp = varinfop->getResult();
             resultp = visitor.combineTree(resultp, partialresultp);
