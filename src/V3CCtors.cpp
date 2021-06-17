@@ -145,8 +145,7 @@ void V3CCtors::evalAsserts() {
                         // if (signal & CONST(upper_non_clean_mask)) { fail; }
                         AstVarRef* const vrefp
                             = new AstVarRef(varp->fileline(), varp, VAccess::READ);
-                        vrefp->selfPointer(v3Global.opt.relativeCFuncs() ? "this"
-                                                                         : "vlSymsp->TOPp");
+                        vrefp->selfPointer("this");
                         AstNode* newp = vrefp;
                         if (varp->isWide()) {
                             newp = new AstWordSel(
