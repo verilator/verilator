@@ -344,6 +344,7 @@ private:
             // See under ASSIGN(WIDE)
         } else if (nodep->fromp()->isWide()) {
             UINFO(8, "    SEL(wide) " << nodep << endl);
+            UASSERT_OBJ(nodep->widthConst() <= 64, nodep, "Inconsistent width");
             // Selection amounts
             // Check for constant shifts & save some constification work later.
             // Grab lowest bit(s)
@@ -358,60 +359,65 @@ private:
             AstNode* midp = nullptr;
             V3Number zero(nodep, longOrQuadWidth(nodep));
             if (nodep->widthConst() > 1) {
-                AstNode* midwordp =  // SEL(from,[1+wordnum])
+                const uint32_t midMsbOffset
+                    = std::min<uint32_t>(nodep->widthConst(), VL_EDATASIZE) - 1;
+                AstNode* const midMsbp
+                    = new AstAdd(nodep->lsbp()->fileline(),
+                                 new AstConst(nodep->lsbp()->fileline(), midMsbOffset),
+                                 nodep->lsbp()->cloneTree(false));
+                AstNode* midwordp =  // SEL(from,[midwordnum])
                     newWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
-                               nodep->lsbp(), 1);
+                               midMsbp, 0);
+                // newWordSel clones the index, so delete it
+                VL_DO_DANGLING(midMsbp->deleteTree(), midMsbp);
                 if (nodep->isQuad() && !midwordp->isQuad()) {
                     midwordp = new AstCCast(nodep->fileline(), midwordp, nodep);
                 }
-                // If we're selecting bit zero, then all 32 bits in word 1
-                // get shifted << by 32 bits
-                // else we need to form the lower word, so we << by 31 or less
-                // nbitsfromlow <= (lsb==0) ? 64-bitbit(lsb) : 32-bitbit(lsb)
-                AstNode* midshiftp
+                AstNode* const midshiftp
                     = new AstSub(nodep->lsbp()->fileline(),
                                  new AstConst(nodep->lsbp()->fileline(), VL_EDATASIZE),
                                  newSelBitBit(nodep->lsbp()));
-                if (nodep->isQuad()) {
-                    midshiftp = new AstCond(
-                        nodep->fileline(),
-                        new AstEq(nodep->fileline(), new AstConst(nodep->fileline(), 0),
-                                  newSelBitBit(nodep->lsbp())),
-                        new AstConst(nodep->lsbp()->fileline(), VL_EDATASIZE), midshiftp);
-                }
-                AstNode* midmayp
-                    = new AstShiftL(nodep->fileline(), midwordp, midshiftp, nodep->width());
-                if (nodep->isQuad()) {
-                    midp = midmayp;  // Always grab from two words
-                } else {
-                    midp = new AstCond(nodep->fileline(),
-                                       new AstEq(nodep->fileline(),
-                                                 new AstConst(nodep->fileline(), 0),
-                                                 newSelBitBit(nodep->lsbp())),
-                                       new AstConst(nodep->fileline(), zero), midmayp);
-                }
+                // If we're selecting bit zero, then all 32 bits in the mid word
+                // get shifted << by 32 bits, so ignore them.
+                midp = new AstCond(
+                    nodep->fileline(),
+                    // lsb % VL_EDATASIZE == 0 ?
+
+                    new AstEq(nodep->fileline(), new AstConst(nodep->fileline(), 0),
+                              newSelBitBit(nodep->lsbp())),
+                    // 0 :
+                    new AstConst(nodep->fileline(), zero),
+                    //  midword >> (VL_EDATASIZE - (lbs % VL_EDATASIZE))
+                    new AstShiftL(nodep->fileline(), midwordp, midshiftp, nodep->width()));
             }
             // If > 32 bits, we might be crossing the second word boundary
             AstNode* hip = nullptr;
             if (nodep->widthConst() > VL_EDATASIZE) {
-                AstNode* hiwordp =  // SEL(from,[2+wordnum])
-                    newWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
-                               nodep->lsbp(), 2);
+                const uint32_t hiMsbOffset = nodep->widthConst() - 1;
+                AstNode* const hiMsbp
+                    = new AstAdd(nodep->lsbp()->fileline(),
+                                 new AstConst(nodep->lsbp()->fileline(), hiMsbOffset),
+                                 nodep->lsbp()->cloneTree(false));
+                AstNode* hiwordp =  // SEL(from,[hiwordnum])
+                    newWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true), hiMsbp,
+                               0);
+                // newWordSel clones the index, so delete it
+                VL_DO_DANGLING(hiMsbp->deleteTree(), hiMsbp);
                 if (nodep->isQuad() && !hiwordp->isQuad()) {
                     hiwordp = new AstCCast(nodep->fileline(), hiwordp, nodep);
                 }
-                AstNode* himayp
-                    = new AstShiftL(nodep->fileline(), hiwordp,
-                                    // nbitsfromlow_and_mid <= 64-bitbit(lsb)
-                                    new AstSub(nodep->lsbp()->fileline(),
-                                               new AstConst(nodep->lsbp()->fileline(), 64),
-                                               newSelBitBit(nodep->lsbp())),
-                                    nodep->width());
-                // if (frombit==0) then ignore, else use it
-                hip = new AstCond(nodep->fileline(),
+                AstNode* const hishiftp
+                    = new AstCond(nodep->fileline(),
+                                  // lsb % VL_EDATASIZE == 0 ?
                                   new AstEq(nodep->fileline(), new AstConst(nodep->fileline(), 0),
                                             newSelBitBit(nodep->lsbp())),
-                                  new AstConst(nodep->fileline(), zero), himayp);
+                                  // VL_EDATASIZE :
+                                  new AstConst(nodep->lsbp()->fileline(), VL_EDATASIZE),
+                                  // 64 - (lbs % VL_EDATASIZE)
+                                  new AstSub(nodep->lsbp()->fileline(),
+                                             new AstConst(nodep->lsbp()->fileline(), 64),
+                                             newSelBitBit(nodep->lsbp())));
+                hip = new AstShiftL(nodep->fileline(), hiwordp, hishiftp, nodep->width());
             }
 
             AstNode* newp = lowp;
