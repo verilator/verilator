@@ -878,14 +878,14 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
 
 extern std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE;
 inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
-    WData lw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> lw;
     VL_SET_WQ(lw, lhs);
     return VL_CVT_PACK_STR_NW(VL_WQ_WORDS_E, lw);
 }
 inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE { return lhs; }
 inline std::string& VL_CVT_PACK_STR_NN(std::string& lhs) VL_PURE { return lhs; }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
-    WData lw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> lw;
     VL_SET_WI(lw, lhs);
     return VL_CVT_PACK_STR_NW(1, lw);
 }
@@ -924,31 +924,31 @@ extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suff
                                VerilatedContext* contextp) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
-    WData rwp[2];  // WData must always be at least 2
+    VlWide<2> rwp;  // WData must always be at least 2
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, SData& rdr) VL_MT_SAFE {
-    WData rwp[2];  // WData must always be at least 2
+    VlWide<2> rwp;  // WData must always be at least 2
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {
-    WData rwp[2];
+    VlWide<2> rwp;
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) VL_MT_SAFE {
-    WData rwp[2];
+    VlWide<2> rwp;
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_SET_QW(rwp);
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr) VL_MT_SAFE {
-    WData rwp[2];
+    VlWide<2> rwp;
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
     return got;

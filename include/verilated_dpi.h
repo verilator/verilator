@@ -28,6 +28,7 @@
 
 #include "verilatedos.h"
 #include "verilated.h"  // Also presumably included by caller
+#include "verilated_heavy.h"  // Also presumably included by caller
 #include "verilated_sym_props.h"
 
 #include "svdpi.h"
@@ -82,7 +83,7 @@ static inline void VL_SET_SVLV_I(int, svLogicVecVal* owp, IData ld) VL_MT_SAFE {
     owp[0].bval = 0;
 }
 static inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, QData ld) VL_MT_SAFE {
-    WData lwp[2];
+    VlWide<2> lwp;
     VL_SET_WQ(lwp, ld);
     owp[0].aval = lwp[0];
     owp[0].bval = 0;
