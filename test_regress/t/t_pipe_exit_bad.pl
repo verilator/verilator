@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 top_filename("t/t_pipe_filter.v");
 
 lint(
-    verilator_flags2 => ['-E --pipe-filter \'perl t/t_pipe_exit_bad.pf\' '],
+    verilator_flags2 => ['-E --pipe-filter \'python3 t/t_pipe_exit_bad.pf\' '],
     stdout_filename => $stdout_filename,
     fails => 1,
     expect =>

@@ -333,17 +333,20 @@ public:  // But only for verilated*.cpp
     }
     void fdClose(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
-        if ((fdi & (1 << 31)) != 0) {
+        if (VL_BITISSET_I(fdi, 31)) {
             // Non-MCD case
             IData idx = VL_MASK_I(31) & fdi;
             if (VL_UNLIKELY(idx >= m_fdps.size())) return;
+            if (VL_UNLIKELY(idx <= 2)) return;  // stdout/stdin/stderr
             if (VL_UNLIKELY(!m_fdps[idx])) return;  // Already free
             std::fclose(m_fdps[idx]);
             m_fdps[idx] = (FILE*)0;
             m_fdFree.push_back(idx);
         } else {
             // MCD case
-            for (int i = 0; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
+            // Starts at 1 to skip stdout
+            fdi >>= 1;
+            for (int i = 1; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) {
                     std::fclose(m_fdps[i]);
                     m_fdps[i] = nullptr;
@@ -375,7 +378,9 @@ private:
             }
         } else {
             // MCD Case
-            for (size_t i = 0; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
+            if (fdi & 1) fp.push_back(stdout);
+            fdi >>= 1;
+            for (size_t i = 1; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) fp.push_back(m_fdps[i]);
             }
         }

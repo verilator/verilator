@@ -279,7 +279,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
     case VLVT_UINT16: d[0] = *(reinterpret_cast<SData*>(datap)); return;
     case VLVT_UINT32: d[0] = *(reinterpret_cast<IData*>(datap)); return;
     case VLVT_UINT64: {
-        WData lwp[2];
+        VlWide<2> lwp;
         VL_SET_WQ(lwp, *(reinterpret_cast<QData*>(datap)));
         d[0] = lwp[0];
         d[1] = lwp[1];
@@ -316,7 +316,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         d[0].bval = 0;
         return;
     case VLVT_UINT64: {
-        WData lwp[2];
+        VlWide<2> lwp;
         VL_SET_WQ(lwp, *(reinterpret_cast<QData*>(datap)));
         d[0].aval = lwp[0];
         d[0].bval = 0;

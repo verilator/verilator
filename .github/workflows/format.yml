@@ -1,7 +1,7 @@
 # DESCRIPTION: Github actions config
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-name: clang-format
+name: format
 
 on:
   push:
@@ -16,6 +16,7 @@ jobs:
       CI_OS_NAME: linux
       CI_RUNS_ON: ubuntu-20.04
       CI_COMMIT: ${{ github.sha }}
+      CI_M32: 0
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -26,18 +27,18 @@ jobs:
           CI_BUILD_STAGE_NAME: build
         run: |
           bash ci/ci-install.bash &&
-          sudo apt-get install clang-10 yapf3 &&
+          sudo apt-get install clang-format-11 yapf3 &&
           git config --global user.email "action@example.com" &&
           git config --global user.name "github action"
       - name: Format code
         run: |
           autoconf &&
           ./configure &&
-          make -j 2 format CLANGFORMAT=clang-format-10 &&
+          make -j 2 format CLANGFORMAT=clang-format-11 &&
           git status
       - name: Push
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            git commit . -m "Apply clang-format" &&
+            git commit . -m "Apply 'make format'" &&
             git push origin
           fi

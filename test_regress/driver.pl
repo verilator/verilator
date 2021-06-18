@@ -601,6 +601,7 @@ sub new {
                         ? " -Wl,-undefined,dynamic_lookup"
                         : " -export-dynamic")
                       .($opt_verbose ? " -DTEST_VERBOSE=1":"")
+                      .(cfg_with_m32() ? " -m32" : "")
                       ." -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
         # ATSIM
@@ -2304,6 +2305,18 @@ sub cfg_with_threaded {
     return 1;  # C++11 now always required
 }
 
+our $_Cfg_with_ccache;
+sub cfg_with_ccache {
+    $_Cfg_with_ccache ||= `grep "OBJCACHE \?= ccache" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
+    return $_Cfg_with_ccache;
+}
+
+our $_Cfg_with_m32;
+sub cfg_with_m32 {
+    $_Cfg_with_m32 ||= `grep "CXX.*=.*-m32" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
+    return $_Cfg_with_m32;
+}
+
 sub tries {
     # Number of retries when reading logfiles, generally only need many
     # retries when system is busy running a lot of tests
@@ -2528,9 +2541,9 @@ with many cores.  See the -j option and OBJCACHE environment variable.
 
 =head1 TEST CONFIGURATION
 
-The Perl script (e.g. C<test_regres/t/t_EXAMPLE.pl>) controls how the test
-will run by driver.pl. In general it includes a call to the C<compile>
-subroutine to compile the test with Verilator (or an alternative
+The test configuration script (e.g. C<test_regres/t/t_EXAMPLE.pl>) controls
+how the test will run by driver.pl. In general it includes a call to the
+C<compile> subroutine to compile the test with Verilator (or an alternative
 simulator), followed by a call to the C<execute> subroutine to run the
 test. Compile-only tests omit the call to C<execute>.
 

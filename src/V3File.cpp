@@ -692,7 +692,7 @@ int V3OutFormatter::endLevels(const char* strg) {
 }
 
 void V3OutFormatter::puts(const char* strg) {
-    if (m_prependIndent) {
+    if (m_prependIndent && strg[0] != '\n') {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
     }
@@ -966,7 +966,7 @@ public:
     VIdProtectImp() {
         passthru("this");
         passthru("TOPp");
-        passthru("vlTOPp");
+        passthru("vlSelf");
         passthru("vlSymsp");
     }
     ~VIdProtectImp() = default;
@@ -1016,8 +1016,7 @@ public:
         }
     }
     string protectWordsIf(const string& old, bool doIt) {
-        // Split at " " (for traces), "." (for scopes), "->" (for scopes), "::" (for superclass
-        // reference)
+        // Split at " " (for traces), "." (for scopes), "->", "(", "&", ")" (for self pointers)
         if (!(doIt && v3Global.opt.protectIds())) return old;
         string out;
         string::size_type start = 0;
@@ -1029,7 +1028,9 @@ public:
             trySep(old, start, " ", pos /*ref*/, separator /*ref*/);
             trySep(old, start, ".", pos /*ref*/, separator /*ref*/);
             trySep(old, start, "->", pos /*ref*/, separator /*ref*/);
-            trySep(old, start, "::", pos /*ref*/, separator /*ref*/);
+            trySep(old, start, "(", pos /*ref*/, separator /*ref*/);
+            trySep(old, start, "&", pos /*ref*/, separator /*ref*/);
+            trySep(old, start, ")", pos /*ref*/, separator /*ref*/);
             if (pos == string::npos) break;
             out += protectIf(old.substr(start, pos - start), true) + separator;
             start = pos + separator.length();

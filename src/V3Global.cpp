@@ -29,11 +29,7 @@
 //######################################################################
 // V3 Class -- top level
 
-AstNetlist* V3Global::makeNetlist() {
-    AstNetlist* newp = new AstNetlist();
-    newp->addTypeTablep(new AstTypeTable(newp->fileline()));
-    return newp;
-}
+AstNetlist* V3Global::makeNetlist() { return new AstNetlist(); }
 
 void V3Global::clear() {
 #ifdef VL_LEAK_CHECK

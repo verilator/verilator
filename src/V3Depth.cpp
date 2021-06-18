@@ -128,7 +128,7 @@ private:
     // (Here instead of new visitor after V3Descope just to avoid another visitor)
     void needNonStaticFunc(AstNode* nodep) {
         UASSERT_OBJ(m_cfuncp, nodep, "Non-static accessor not under a function");
-        if (m_cfuncp->isStatic().trueUnknown()) {
+        if (m_cfuncp->isStatic()) {
             UINFO(5, "Mark non-public due to " << nodep << endl);
             m_cfuncp->isStatic(false);
         }

@@ -92,12 +92,18 @@ public:
     AstNode* nodep() const { return m_nodep; }
     AstVar* varp() const { return VN_CAST(nodep(), Var); }
     virtual string name() const override {
-        return ((isTristate() ? "tri\\n" : feedsTri() ? "feed\\n" : "-\\n")
+        return ((isTristate() ? "tri\\n"
+                 : feedsTri() ? "feed\\n"
+                              : "-\\n")
                 + (nodep()->prettyTypeName() + " " + cvtToHex(nodep())));
     }
     virtual string dotColor() const override {
-        return (varp() ? (isTristate() ? "darkblue" : feedsTri() ? "blue" : "lightblue")
-                       : (isTristate() ? "darkgreen" : feedsTri() ? "green" : "lightgreen"));
+        return (varp() ? (isTristate() ? "darkblue"
+                          : feedsTri() ? "blue"
+                                       : "lightblue")
+                       : (isTristate() ? "darkgreen"
+                          : feedsTri() ? "green"
+                                       : "lightgreen"));
     }
     virtual FileLine* fileline() const override { return nodep()->fileline(); }
     void isTristate(bool flag) { m_isTristate = flag; }

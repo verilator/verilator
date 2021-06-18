@@ -21,6 +21,12 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
+if [ "$CI_M32" = "0" ]; then
+  unset CI_M32
+elif [ "$CI_M32" != "1" ]; then
+  fatal "\$CI_M32 must be '0' or '1'";
+fi
+
 if [ "$CI_OS_NAME" = "linux" ]; then
   export MAKE=make
   NPROC=$(nproc)
@@ -40,8 +46,10 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$COVERAGE" != 1 ]; then
     autoconf
-    ./configure --enable-longtests --enable-ccwarn
+    ./configure --enable-longtests --enable-ccwarn ${CI_M32:+--enable-m32}
+    ccache -z
     "$MAKE" -j "$NPROC" -k
+    ccache -s
     if [ "$CI_OS_NAME" = "osx" ]; then
       file bin/verilator_bin
       file bin/verilator_bin_dbg
@@ -80,29 +88,25 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   fi
 
   # Run sanitize on Ubuntu 20.04 only
-  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && sanitize='--sanitize' || sanitize=''
+  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && [ "$CI_M32" = "" ] && sanitize='--sanitize' || sanitize=''
 
   # Run the specified test
+  ccache -z
   case $TESTS in
     dist-vlt-0)
-      if [[ "$CI_RUNS_ON" != "ubuntu-18.04" || "$CXX" != "clang++" ]]; then  # issue #2963
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/2
-      fi
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/3
       ;;
     dist-vlt-1)
-      if [[ "$CI_RUNS_ON" != "ubuntu-18.04" || "$CXX" != "clang++" ]]; then  # issue #2963
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/2
-      fi
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/3
+      ;;
+    dist-vlt-2)
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=2/3
       ;;
     vltmt-0)
-      if [[ "$CI_RUNS_ON" != "ubuntu-18.04" || "$CXX" != "clang++" ]]; then  # issue #2963
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
-      fi
       ;;
     vltmt-1)
-      if [[ "$CI_RUNS_ON" != "ubuntu-18.04" || "$CXX" != "clang++" ]]; then  # issue #2963
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
-      fi
       ;;
     coverage-all)
       nodist/code_coverage --stages 1-
@@ -174,6 +178,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       fatal "Unknown test: $TESTS"
       ;;
   esac
+  ccache -s
+
   # Upload coverage data
   if [[ $TESTS == coverage-* ]]; then
     bash <(cat ci/coverage-upload.sh) -f nodist/obj_dir/coverage/app_total.info

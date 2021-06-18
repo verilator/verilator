@@ -815,7 +815,7 @@ string V3Options::protectKeyDefaulted() {
 void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     // clang-format off
-    { char* zp = nullptr; *zp = 0; }  // Intentional core dump, ignore warnings here
+    *static_cast<volatile char*>(nullptr) = 0;  // Intentional core dump, ignore warnings here
     // clang-format on
 #endif
 }  // LCOV_EXCL_STOP
@@ -1060,6 +1060,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-E", Set, &m_preprocOnly);
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
+    DECL_OPTION("-expand-limit", CbVal,
+                [this](const char* valp) { m_expandLimit = std::atoi(valp); });
 
     DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) {
         parseOptsFile(fl, parseFileArg(optdir, valp), true);
@@ -1139,6 +1141,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         }
     });
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
+    DECL_OPTION("-merge-const-pool", OnOff, &m_mergeConstPool);
     DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
 
     DECL_OPTION("-O", CbPartialMatch, [this](const char* optp) {
@@ -1240,11 +1243,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
 
-    DECL_OPTION("-relative-cfuncs", CbOnOff, [this, fl](bool flag) {
-        m_relativeCFuncs = flag;
-        if (!m_relativeCFuncs)
-            fl->v3warn(DEPRECATED, "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
-    });
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
         m_reloopLimit = std::atoi(valp);

@@ -26,9 +26,7 @@ sub checkRelativeRefs {
     my $file = "$Self->{obj_dir}/V$Self->{name}_${mod}.cpp";
     my $text = file_contents($file);
 
-    # Remove "this->__VlSymsp" which is noise
-    $text =~ s/this->__VlSymsp//g;
-    if ($text =~ m/this->/) {
+    if ($text =~ m/this->/ || $text =~ m/vlSelf->/) {
         $found_relative = 1;
     }
 
@@ -45,12 +43,9 @@ if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i,
               ($Self->{vltmt} ? 84 : 52));
 
-    # Expect absolute refs in CFuncs for t (top module) and l1 (because it
-    # has only one instance)
-    checkRelativeRefs("t", 0);
-    checkRelativeRefs("l1", 0);
-
-    # Others should get relative references
+    # Everything should use relative references
+    checkRelativeRefs("t", 1);
+    checkRelativeRefs("l1", 1);
     checkRelativeRefs("l2", 1);
     checkRelativeRefs("l3", 1);
     checkRelativeRefs("l4", 1);

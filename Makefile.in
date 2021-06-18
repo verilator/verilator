@@ -44,6 +44,7 @@
 srcdir = @srcdir@
 VPATH = @srcdir@
 HOST = @HOST@
+EXEEXT = @EXEEXT@
 
 DOXYGEN = doxygen
 INSTALL = @INSTALL@
@@ -130,6 +131,7 @@ DISTFILES1 = $(INFOS) .gitignore \
 	verilator-config.cmake.in \
 	verilator-config-version.cmake.in \
 	bin/verilator \
+	bin/verilator_ccache_report \
 	bin/verilator_coverage \
 	bin/verilator_difftree \
 	bin/verilator_gantt \
@@ -193,6 +195,7 @@ DISTFILES2 = \
 
 INST_PROJ_FILES = \
 	bin/verilator \
+	bin/verilator_ccache_report \
 	bin/verilator_coverage \
 	bin/verilator_gantt \
 	bin/verilator_includer \
@@ -203,9 +206,9 @@ INST_PROJ_FILES = \
 	include/vltstd/*.[chv]* \
 
 INST_PROJ_BIN_FILES = \
-	bin/verilator_bin \
-	bin/verilator_bin_dbg \
-	bin/verilator_coverage_bin_dbg \
+	bin/verilator_bin$(EXEEXT) \
+	bin/verilator_bin_dbg$(EXEEXT) \
+	bin/verilator_coverage_bin_dbg$(EXEEXT) \
 
 EXAMPLES_FIRST = \
 	examples/make_hello_c \
@@ -221,13 +224,13 @@ all: all_nomsg msg_test
 all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 
 .PHONY:verilator_exe
-.PHONY:verilator_bin
-.PHONY:verilator_bin_dbg
-.PHONY:verilator_coverage_bin_dbg
-verilator_exe verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg:
+.PHONY:verilator_bin$(EXEEXT)
+.PHONY:verilator_bin_dbg$(EXEEXT)
+.PHONY:verilator_coverage_bin_dbg$(EXEEXT)
+verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT):
 	@echo ------------------------------------------------------------
 	@echo "making verilator in src"
-	$(MAKE) -C src $(OBJCACHE_JOBS) $(CI_MAKE_SRC_TARGET)
+	$(MAKE) -C src $(OBJCACHE_JOBS)
 
 .PHONY:msg_test
 msg_test: all_nomsg
@@ -280,8 +283,8 @@ verilator.pdf: Makefile
 	$(MAKE) -C docs verilator.pdf
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg \
-	verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
+VL_INST_BIN_FILES = verilator verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT) \
+	verilator_ccache_report verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
 # Some scripts go into both the search path and pkgdatadir,
 # so they can be found by the user, and under $VERILATOR_ROOT.
 
@@ -305,11 +308,12 @@ installbin:
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage $(DESTDIR)$(bindir)/verilator_coverage )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_gantt $(DESTDIR)$(bindir)/verilator_gantt )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_bin$(EXEEXT) $(DESTDIR)$(bindir)/verilator_bin$(EXEEXT) )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_bin_dbg$(EXEEXT) $(DESTDIR)$(bindir)/verilator_bin_dbg$(EXEEXT) )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg$(EXEEXT) $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg$(EXEEXT) )
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_ccache_report $(DESTDIR)$(pkgdatadir)/bin/verilator_ccache_report )
 
 # Man files can either be part of the original kit, or built in current directory
 # So important we use $^ so VPATH is searched
@@ -458,7 +462,7 @@ clang-tidy: $(CLANGTIDY_DEP)
 
 analyzer-src:
 	-rm -rf src/obj_dbg
-	scan-build $(MAKE) -k verilator_coverage_bin_dbg verilator_bin_dbg
+	scan-build $(MAKE) -k verilator_coverage_bin_dbg$(EXEEXT) verilator_bin_dbg$(EXEEXT)
 
 analyzer-include:
 	-rm -rf examples/*/obj*
@@ -466,16 +470,17 @@ analyzer-include:
 
 format: clang-format yapf format-pl-exec
 
-CLANGFORMAT = clang-format
+CLANGFORMAT = clang-format-11
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 clang-format:
-	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
-		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
+	@$(CLANGFORMAT) --version | egrep 11.0 > /dev/null \
+		|| echo "*** You are not using clang-format 11.0, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 PY_PROGRAMS = \
+	bin/verilator_ccache_report \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
 	docs/guide/conf.py \
@@ -487,6 +492,7 @@ PY_PROGRAMS = \
 	src/cppcheck_filtered \
 	src/flexfix \
 	src/vlcovgen \
+	test_regress/t/*.pf \
 	nodist/code_coverage \
 	nodist/dot_importer \
 	nodist/fuzzer/actual_fail \

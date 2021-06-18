@@ -22,7 +22,7 @@ compile(
     make_main => 0,
     make_pli => 1,
     iv_flags2 => ["-g2005-sv"],
-    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi --no-l2name $Self->{t_dir}/t_vpi_module.cpp"],
+    verilator_flags2 => ["--exe --vpi --no-l2name $Self->{t_dir}/t_vpi_module.cpp"],
     );
 
 execute(

@@ -152,30 +152,34 @@ public:
     const VerilatedRange& unpacked() const { return m_unpacked[0]; }
     // DPI accessors
     int left(int dim) const {
-        return dim == 0 ? m_packed.left()
-                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].left() : 0;
+        return dim == 0                                ? m_packed.left()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].left()
+                                                       : 0;
     }
     int right(int dim) const {
-        return dim == 0 ? m_packed.right()
-                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].right() : 0;
+        return dim == 0                                ? m_packed.right()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].right()
+                                                       : 0;
     }
     int low(int dim) const {
-        return dim == 0 ? m_packed.low()
-                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low() : 0;
+        return dim == 0                                ? m_packed.low()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low()
+                                                       : 0;
     }
     int high(int dim) const {
-        return dim == 0 ? m_packed.high()
-                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high() : 0;
+        return dim == 0                                ? m_packed.high()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high()
+                                                       : 0;
     }
     int increment(int dim) const {
-        return dim == 0
-                   ? m_packed.increment()
-                   : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment() : 0;
+        return dim == 0                                ? m_packed.increment()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment()
+                                                       : 0;
     }
     int elements(int dim) const {
-        return dim == 0
-                   ? m_packed.elements()
-                   : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements() : 0;
+        return dim == 0                                ? m_packed.elements()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements()
+                                                       : 0;
     }
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;

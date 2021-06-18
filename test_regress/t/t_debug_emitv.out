@@ -45,10 +45,8 @@ module Vt_debug_emitv;
         $display("stmt");
         $display("stmt");
     end
-    
+
     ???? // CFUNC '_final_TOP'
-    $_CSTMT(Vt_debug_emitv* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
-    );
     $display("stmt");
     always @(posedge clk)@(negedge clk) begin
         $display("posedge clk");
@@ -238,13 +236,9 @@ class Vt_debug_emitv___024unit__03a__03aCls;
 signed int [31:0]  member;
 
 ???? // CFUNC '__VnoInFunc_method'
-$_CSTMT(Vt_debug_emitv* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
-);
 
 ???? // CFUNC 'new'
 $_CSTMT(_ctor_var_reset(vlSymsp);
-);
-$_CSTMT(Vt_debug_emitv* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
 );
 $unit::Cls.member = 32'sh1;
 endclass

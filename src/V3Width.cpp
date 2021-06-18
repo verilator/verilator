@@ -492,7 +492,7 @@ private:
         //   signed: Unsigned  (11.8.1)
         //   width: LHS + RHS
         AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
-        userIterateAndNext(vdtypep, WidthVP(SELF, BOTH).p());
+        userIterate(vdtypep, WidthVP(SELF, BOTH).p());
         if (VN_IS(vdtypep, QueueDType)) {
             // Queue "element 0" is lhsp, so we need to swap arguments
             auto* newp = new AstConsQueue(nodep->fileline(), nodep->rhsp()->unlinkFrBack(),
@@ -2457,7 +2457,7 @@ private:
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         AstBasicDType* basicp = fromDtp ? fromDtp->basicp() : nullptr;
         UINFO(9, "     from dt " << fromDtp << endl);
-        userIterateAndNext(fromDtp, WidthVP(SELF, BOTH).p());
+        userIterate(fromDtp, WidthVP(SELF, BOTH).p());
         if (AstEnumDType* adtypep = VN_CAST(fromDtp, EnumDType)) {
             methodCallEnum(nodep, adtypep);
         } else if (AstAssocArrayDType* adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
@@ -3310,7 +3310,9 @@ private:
             while (const AstConstDType* vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
             }
-            userIterateAndNext(dtypep, WidthVP(SELF, BOTH).p());
+
+            userIterate(dtypep, WidthVP(SELF, BOTH).p());
+
             if (auto* vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
                 VL_DO_DANGLING(patternUOrStruct(nodep, vdtypep, defaultp), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {

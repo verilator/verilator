@@ -76,8 +76,7 @@ private:
         // cppcheck-suppress unreadVariable  // cppcheck 1.90 bug
         VarFlags flags(nodep->varp());
         if (flags.m_done) {
-            nodep->hiernameToProt("");  // Remove this->
-            nodep->hiernameToUnprot("");  // Remove this->
+            nodep->selfPointer("");  // Remove 'this'
             nodep->hierThis(true);
         }
     }

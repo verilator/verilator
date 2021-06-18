@@ -770,6 +770,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
         }
     }
     virtual void visit(AstTypeTable*) override {}
+    virtual void visit(AstConstPool*) override {}
     virtual void visit(AstNodeModule* nodep) override {
         // Called on top module from Netlist, other modules from the cell creating them,
         // and packages
@@ -1364,6 +1365,7 @@ private:
 
     // VISITs
     virtual void visit(AstTypeTable*) override {}
+    virtual void visit(AstConstPool*) override {}
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(5, "   " << nodep << endl);
         if (nodep->dead() || !nodep->user4()) {
@@ -1530,6 +1532,7 @@ class LinkDotScopeVisitor final : public AstNVisitor {
         // Recurse..., backward as must do packages before using packages
         iterateChildrenBackwards(nodep);
     }
+    virtual void visit(AstConstPool*) override {}
     virtual void visit(AstScope* nodep) override {
         UINFO(8, "  SCOPE " << nodep << endl);
         UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
@@ -1925,6 +1928,7 @@ private:
         iterateChildrenBackwards(nodep);
     }
     virtual void visit(AstTypeTable*) override {}
+    virtual void visit(AstConstPool*) override {}
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) return;
         checkNoDot(nodep);
@@ -2662,11 +2666,17 @@ private:
                 UINFO(7, "   ErrFtask curSymp=se" << cvtToHex(m_curSymp) << " dotSymp=se"
                                                   << cvtToHex(dotSymp) << endl);
                 if (foundp) {
-                    nodep->v3error("Found definition of '"
-                                   << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
-                                   << nodep->prettyName() << "'"
-                                   << " as a " << foundp->nodep()->typeName()
-                                   << " but expected a task/function");
+                    if (VN_IS(foundp->nodep(), Var) && m_ds.m_dotText == "" && m_ftaskp
+                        && m_ftaskp->name() == foundp->nodep()->name()) {
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function call "
+                                                         << nodep->prettyNameQ());
+                    } else {
+                        nodep->v3error("Found definition of '"
+                                       << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
+                                       << nodep->prettyName() << "'"
+                                       << " as a " << foundp->nodep()->typeName()
+                                       << " but expected a task/function");
+                    }
                 } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {
                     // Resolved in V3Width
                 } else if (nodep->dotted() == "") {

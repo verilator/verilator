@@ -457,6 +457,7 @@ public:
         // Internal types for mid-steps
         SCOPEPTR,
         CHARPTR,
+        MTASKSTATE,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -467,18 +468,19 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {
-            "%E-unk", "bit",     "byte",  "chandle",        "event", "int",    "integer",
-            "logic",  "longint", "real",  "shortint",       "time",  "string", "VerilatedScope*",
-            "char*",  "IData",   "QData", "LOGIC_IMPLICIT", " MAX"};
+        static const char* const names[]
+            = {"%E-unk",       "bit",     "byte",   "chandle",         "event",
+               "int",          "integer", "logic",  "longint",         "real",
+               "shortint",     "time",    "string", "VerilatedScope*", "char*",
+               "VlMTaskState", "IData",   "QData",  "LOGIC_IMPLICIT",  " MAX"};
         return names[m_e];
     }
     const char* dpiType() const {
         static const char* const names[]
-            = {"%E-unk",      "svBit",    "char",        "void*",  "char",  "int",
-               "%E-integer",  "svLogic",  "long long",   "double", "short", "%E-time",
-               "const char*", "dpiScope", "const char*", "IData",  "QData", "%E-logic-implicit",
-               " MAX"};
+            = {"%E-unk",        "svBit",      "char",        "void*",           "char",
+               "int",           "%E-integer", "svLogic",     "long long",       "double",
+               "short",         "%E-time",    "const char*", "dpiScope",        "const char*",
+               "%E-mtaskstate", "IData",      "QData",       "%E-logic-implct", " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -511,6 +513,7 @@ public:
         case STRING: return 64;  // opaque  // Just the pointer, for today
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque
+        case MTASKSTATE: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -549,11 +552,13 @@ public:
                 || m_e == DOUBLE || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
     }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
-        return (m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR || m_e == DOUBLE);
+        return (m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR || m_e == MTASKSTATE
+                || m_e == DOUBLE);
     }
     bool isDouble() const { return m_e == DOUBLE; }
     bool isEventValue() const { return m_e == EVENTVALUE; }
     bool isString() const { return m_e == STRING; }
+    bool isMTaskState() const { return m_e == MTASKSTATE; }
 };
 inline bool operator==(const AstBasicDTypeKwd& lhs, const AstBasicDTypeKwd& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -1687,6 +1692,7 @@ public:
     AstNodeDType* findSigned32DType() { return findBasicDType(AstBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
+    AstNodeDType* findCHandleDType() { return findBasicDType(AstBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
@@ -2272,9 +2278,9 @@ private:
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
-    string m_hiernameToProt;  // Scope converted into name-> for emitting
-    string m_hiernameToUnprot;  // Scope converted into name-> for emitting
-    bool m_hierThis = false;  // Hiername points to "this" function
+    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
+    string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
+    bool m_hierThis = false;  // m_selfPointer points to "this" function
 
 protected:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
@@ -2306,13 +2312,14 @@ public:
     void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
-    string hiernameToProt() const { return m_hiernameToProt; }
-    void hiernameToProt(const string& hn) { m_hiernameToProt = hn; }
-    string hiernameToUnprot() const { return m_hiernameToUnprot; }
-    void hiernameToUnprot(const string& hn) { m_hiernameToUnprot = hn; }
-    string hiernameProtect() const;
     bool hierThis() const { return m_hierThis; }
     void hierThis(bool flag) { m_hierThis = flag; }
+    string selfPointer() const { return m_selfPointer; }
+    void selfPointer(const string& value) { m_selfPointer = value; }
+    string selfPointerProtect(bool useSelfForThis) const;
+    string classPrefix() const { return m_classPrefix; }
+    void classPrefix(const string& value) { m_classPrefix = value; }
+    string classPrefixProtect() const;
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
@@ -2615,8 +2622,8 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
-    string m_hiernameToProt;
-    string m_hiernameToUnprot;
+    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
+    string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
     string m_argTypes;
 
 protected:
@@ -2642,11 +2649,12 @@ public:
     virtual bool isPure() const override;
     virtual bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
-    string hiernameToProt() const { return m_hiernameToProt; }
-    void hiernameToProt(const string& hn) { m_hiernameToProt = hn; }
-    string hiernameToUnprot() const { return m_hiernameToUnprot; }
-    void hiernameToUnprot(const string& hn) { m_hiernameToUnprot = hn; }
-    string hiernameProtect() const;
+    string selfPointer() const { return m_selfPointer; }
+    void selfPointer(const string& value) { m_selfPointer = value; }
+    string selfPointerProtect(bool useSelfForThis) const;
+    string classPrefix() const { return m_classPrefix; }
+    void classPrefix(const string& value) { m_classPrefix = value; }
+    string classPrefixProtect() const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall
@@ -2919,10 +2927,6 @@ public:
 };
 
 //######################################################################
-
-#include "V3AstNodes.h"
-
-//######################################################################
 // Inline AstNVisitor METHODS
 
 inline void AstNVisitor::iterate(AstNode* nodep) { nodep->accept(*this); }
@@ -2947,71 +2951,7 @@ inline AstNode* AstNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 }
 
 //######################################################################
-// Inline ACCESSORS
 
-inline int AstNode::width() const { return dtypep() ? dtypep()->width() : 0; }
-inline int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }
-inline bool AstNode::width1() const {  // V3Const uses to know it can optimize
-    return dtypep() && dtypep()->width() == 1;
-}
-inline int AstNode::widthInstrs() const {
-    return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1));
-}
-inline bool AstNode::isDouble() const {
-    return dtypep() && VN_IS(dtypep(), BasicDType) && VN_CAST(dtypep(), BasicDType)->isDouble();
-}
-inline bool AstNode::isString() const {
-    return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString();
-}
-inline bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
-
-inline bool AstNode::isZero() const {
-    return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->num().isEqZero());
-}
-inline bool AstNode::isNeqZero() const {
-    return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->num().isNeqZero());
-}
-inline bool AstNode::isOne() const {
-    return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->num().isEqOne());
-}
-inline bool AstNode::isAllOnes() const {
-    return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->isEqAllOnes());
-}
-inline bool AstNode::isAllOnesV() const {
-    return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->isEqAllOnesV());
-}
-inline bool AstNode::sameTree(const AstNode* node2p) const {
-    return sameTreeIter(this, node2p, true, false);
-}
-inline bool AstNode::sameGateTree(const AstNode* node2p) const {
-    return sameTreeIter(this, node2p, true, true);
-}
-
-inline void AstNodeVarRef::varp(AstVar* varp) {
-    m_varp = varp;
-    dtypeFrom(varp);
-}
-
-inline bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }
-
-inline void AstNodeArrayDType::rangep(AstRange* nodep) { setOp2p(nodep); }
-inline int AstNodeArrayDType::left() const { return rangep()->leftConst(); }
-inline int AstNodeArrayDType::right() const { return rangep()->rightConst(); }
-inline int AstNodeArrayDType::hi() const { return rangep()->hiConst(); }
-inline int AstNodeArrayDType::lo() const { return rangep()->loConst(); }
-inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
-inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right()}; }
-
-inline const char* AstNodeFTaskRef::broken() const {
-    BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
-    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
-    return nullptr;
-}
-
-inline void AstIfaceRefDType::cloneRelink() {
-    if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep();
-    if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
-    if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep();
-}
+#include "V3AstNodes.h"
 
 #endif  // Guard

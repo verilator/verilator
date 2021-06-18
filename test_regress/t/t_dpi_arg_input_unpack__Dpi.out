@@ -10,8 +10,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
- 
- 
+
+
  // DPI EXPORTS
  extern void e_bit121_0d(const svBitVecVal* val);
  extern void e_bit121_1d(const svBitVecVal* val);
@@ -93,7 +93,7 @@ extern "C" {
  extern void e_time_1d(const svLogicVecVal* val);
  extern void e_time_2d(const svLogicVecVal* val);
  extern void e_time_3d(const svLogicVecVal* val);
- 
+
  // DPI IMPORTS
  extern void check_exports();
  extern void* get_non_null();
@@ -177,7 +177,7 @@ extern "C" {
  extern void i_time_1d(const svLogicVecVal* val);
  extern void i_time_2d(const svLogicVecVal* val);
  extern void i_time_3d(const svLogicVecVal* val);
- 
+
 #ifdef __cplusplus
 }
 #endif

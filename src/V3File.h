@@ -165,6 +165,9 @@ public:
     void blockDec() {
         if (!m_parenVec.empty()) m_parenVec.pop();
     }
+    void ensureNewLine() {
+        if (!m_nobreak) puts("\n");
+    }
     // STATIC METHODS
     static string indentSpaces(int num);
     // Add escaped characters to strings

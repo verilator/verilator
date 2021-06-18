@@ -1,29 +1,30 @@
 -V{t#,#}- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.
--V{t#,#}+    Vt_verilated_debug::_ctor_var_reset
+-V{t#,#}+    Vt_verilated_debug___ctor_var_reset
 internalsDump:
   Version: Verilator ###
   Argv: obj_vlt/t_verilated_debug/Vt_verilated_debug
   scopesDump:
 
--V{t#,#}+++++TOP Evaluate Vt_verilated_debug::eval
--V{t#,#}+    Vt_verilated_debug::_eval_debug_assertions
--V{t#,#}+    Vt_verilated_debug::_eval_initial
--V{t#,#}+    Vt_verilated_debug::_initial__TOP__1
+-V{t#,#}+++++TOP Evaluate Vt_verilated_debug::eval_step
+-V{t#,#}+    Vt_verilated_debug___eval_debug_assertions
+-V{t#,#}+    Vt_verilated_debug___eval_initial
+-V{t#,#}+    Vt_verilated_debug___initial__TOP__1
   Data: w96: 000000aa 000000bb 000000cc 
--V{t#,#}+    Vt_verilated_debug::_eval_settle
--V{t#,#}+    Vt_verilated_debug::_eval
--V{t#,#}+    Vt_verilated_debug::_change_request
--V{t#,#}+    Vt_verilated_debug::_change_request_1
+-V{t#,#}+ Initial loop
+-V{t#,#}+    Vt_verilated_debug___eval_settle
+-V{t#,#}+    Vt_verilated_debug___eval
+-V{t#,#}+    Vt_verilated_debug___change_request
+-V{t#,#}+    Vt_verilated_debug___change_request_1
 -V{t#,#}+ Clock loop
--V{t#,#}+    Vt_verilated_debug::_eval
--V{t#,#}+    Vt_verilated_debug::_change_request
--V{t#,#}+    Vt_verilated_debug::_change_request_1
--V{t#,#}+++++TOP Evaluate Vt_verilated_debug::eval
--V{t#,#}+    Vt_verilated_debug::_eval_debug_assertions
+-V{t#,#}+    Vt_verilated_debug___eval
+-V{t#,#}+    Vt_verilated_debug___change_request
+-V{t#,#}+    Vt_verilated_debug___change_request_1
+-V{t#,#}+++++TOP Evaluate Vt_verilated_debug::eval_step
+-V{t#,#}+    Vt_verilated_debug___eval_debug_assertions
 -V{t#,#}+ Clock loop
--V{t#,#}+    Vt_verilated_debug::_eval
--V{t#,#}+    Vt_verilated_debug::_sequent__TOP__2
+-V{t#,#}+    Vt_verilated_debug___eval
+-V{t#,#}+    Vt_verilated_debug___sequent__TOP__2
 *-* All Finished *-*
--V{t#,#}+    Vt_verilated_debug::_change_request
--V{t#,#}+    Vt_verilated_debug::_change_request_1
--V{t#,#}+    Vt_verilated_debug::final
+-V{t#,#}+    Vt_verilated_debug___change_request
+-V{t#,#}+    Vt_verilated_debug___change_request_1
+-V{t#,#}+    Vt_verilated_debug___final

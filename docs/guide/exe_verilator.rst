@@ -403,6 +403,12 @@ Summary:
    files on the command line that implement the main loop for your
    simulation.
 
+.. option:: --expand-limit <value>
+
+   Rarely needed.  Fine-tune optimizations to set the maximum size of an
+   expression in 32-bit words to expand into separate word-based
+   statements.
+
 .. option:: -F <file>
 
    Read the specified file, and act as if all text inside it was specified
@@ -627,6 +633,13 @@ Summary:
    The directory is created if it does not exist and the parent directories
    exist; otherwise manually create the Mdir before calling Verilator.
 
+.. option:: --no-merge-const-pool
+
+   Rarely needed.  In order to minimize cache footprint, values of different
+   data type, that are yet emitted identically in C++ are merged in the
+   constant pool.  This option disables this and causes every constant pool
+   entry with a distinct data type to be emitted separately.
+
 .. option:: --mod-prefix <topname>
 
    Specifies the name to prepend to all lower level classes.  Defaults to
@@ -647,10 +660,6 @@ Summary:
 .. option:: --no-pins64
 
    Backward compatible alias for :vlopt:`--pins-bv 33 <--pins-bv>`.
-
-.. option:: --no-relative-cfuncs
-
-   Deprecated.
 
 .. option:: --no-skip-identical =item --skip-identical
 

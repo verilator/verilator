@@ -193,6 +193,7 @@ private:
                                                << "' was not found in design.");
         }
     }
+    virtual void visit(AstConstPool* nodep) override {}
     virtual void visit(AstNodeModule* nodep) override {
         // Module: Pick up modnames, so we can resolve cells later
         VL_RESTORER(m_modp);
