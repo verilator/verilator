@@ -752,6 +752,43 @@ private:
             return false;
         }
     }
+    bool matchMaskedShift(AstAnd* nodep) {
+        // Drop redundant masking of right shift result. E.g: 0xff & ((uint32_t)a >> 24). This
+        // commonly appears after V3Expand and the simplification in matchMaskedOr. Similarly,
+        // drop redundant masking of left shift result. E.g.: 0xff000000 & ((uint32_t)a << 24).
+
+        if (nodep->width() != nodep->rhsp()->width()) return false;  // Paranoia
+
+        const auto checkMask = [=](const V3Number& mask) -> bool {
+            const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
+            if (constp->num().isCaseEq(mask)) {
+                nodep->replaceWith(nodep->rhsp()->unlinkFrBack());
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return true;
+            }
+            return false;
+        };
+
+        // Check if masking is redundant
+        if (AstShiftR* const shiftp = VN_CAST(nodep->rhsp(), ShiftR)) {
+            if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+                // Check if mask is full over the non-zero bits
+                V3Number maskLo(nodep, nodep->width());
+                maskLo.setMask(nodep->width() - scp->num().toUInt());
+                return checkMask(maskLo);
+            }
+        } else if (AstShiftL* const shiftp = VN_CAST(nodep->rhsp(), ShiftL)) {
+            if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+                // Check if mask is full over the non-zero bits
+                V3Number maskLo(nodep, nodep->width()), maskHi(nodep, nodep->width());
+                maskLo.setMask(nodep->width() - scp->num().toUInt());
+                maskHi.opShiftL(maskLo, scp->num());
+                return checkMask(maskHi);
+            }
+        }
+        return false;
+    }
+
     bool matchBitOpTree(AstNode* nodep) {
         if (!v3Global.opt.oConstBitOpTree()) return false;
 
@@ -3008,6 +3045,7 @@ private:
     // Common two-level operations that can be simplified
     TREEOP ("AstAnd {$lhsp.castConst,matchAndCond(nodep)}", "DONE");
     TREEOP ("AstAnd {$lhsp.castConst, $rhsp.castOr, matchMaskedOr(nodep)}", "DONE");
+    TREEOP ("AstAnd {$lhsp.castConst, matchMaskedShift(nodep)}", "DONE");
     TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}", "replaceAndOr(nodep)");
     TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}", "replaceAndOr(nodep)");
     TREEOP ("AstOr  {matchOrAndNot(nodep)}",            "DONE");
