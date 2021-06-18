@@ -484,9 +484,9 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp,
     owp[0] = 1;
     for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
     // cppcheck-suppress variableScope
-    WData powstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
-    WData lastpowstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
-    WData lastoutstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
+    VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
+    VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
+    VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-suppress variableScope
     VL_ASSIGN_W(obits, powstore, lwp);
     for (int bit = 0; bit < rbits; bit++) {
@@ -503,7 +503,7 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp,
 }
 WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp,
                      QData rhs) VL_MT_SAFE {
-    WData rhsw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> rhsw;
     VL_SET_WQ(rhsw, rhs);
     return VL_POW_WWW(obits, lbits, rbits, owp, lwp, rhsw);
 }
@@ -547,7 +547,7 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, W
 }
 WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs,
                        bool lsign, bool rsign) VL_MT_SAFE {
-    WData rhsw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> rhsw;
     VL_SET_WQ(rhsw, rhs);
     return VL_POWSS_WWW(obits, lbits, rbits, owp, lwp, rhsw, lsign, rsign);
 }
@@ -602,10 +602,10 @@ double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE {
 std::string VL_DECIMAL_NW(int width, WDataInP lwp) VL_MT_SAFE {
     int maxdecwidth = (width + 3) * 4 / 3;
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
-    WData bcd[VL_VALUE_STRING_MAX_WIDTH / 4 + 2];
+    VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> bcd;
     VL_ZERO_RESET_W(maxdecwidth, bcd);
-    WData tmp[VL_VALUE_STRING_MAX_WIDTH / 4 + 2];
-    WData tmp2[VL_VALUE_STRING_MAX_WIDTH / 4 + 2];
+    VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> tmp;
+    VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> tmp2;
     int from_bit = width - 1;
     // Skip all leading zeros
     for (; from_bit >= 0 && !(VL_BITRSHIFT_W(lwp, from_bit) & 1); --from_bit) {}
@@ -648,7 +648,7 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
     if (std::numeric_limits<T>::is_integer) {
         constexpr int b = 128;
         constexpr int w = VL_WORDS_I(b);
-        WData tmp0[w], tmp1[w], tmp2[w], tmp3[w];
+        VlWide<w> tmp0, tmp1, tmp2, tmp3;
 
         WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, static_cast<QData>(ld));
         if (shift < 0) {
@@ -666,7 +666,7 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
             = VL_EXTEND_WQ(b, 0, tmp2, std::numeric_limits<vluint64_t>::max());  // breaks shifted
         if (VL_GT_W(w, integer, max64Bit)) {
             WDataOutP v = VL_ASSIGN_W(b, tmp3, integer);  // breaks fracDigitsPow10
-            WData zero[w], ten[w];
+            VlWide<w> zero, ten;
             VL_ZERO_W(b, zero);
             VL_EXTEND_WI(b, 0, ten, 10);
             char buf[128];  // 128B is obviously long enough to represent 128bit integer in decimal
@@ -676,7 +676,7 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
                 --ptr;
                 WDataInP mod = VL_MODDIV_WWW(b, tmp2, v, ten);  // breaks max64Bit
                 *ptr = "0123456789"[VL_SET_QW(mod)];
-                WData divided[w];
+                VlWide<w> divided;
                 VL_DIV_WWW(b, divided, v, ten);
                 VL_ASSIGN_W(b, v, divided);
             }
@@ -818,7 +818,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 // Deal with all read-and-print somethings
                 const int lbits = va_arg(ap, int);
                 QData ld = 0;
-                WData qlwp[VL_WQ_WORDS_E];
+                VlWide<VL_WQ_WORDS_E> qlwp;
                 WDataInP lwp = nullptr;
                 if (lbits <= VL_QUADSIZE) {
                     ld = VL_VA_ARG_Q_(ap, lbits);
@@ -860,7 +860,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         append = t_tmp;
                     } else {
                         if (VL_SIGN_E(lbits, lwp[VL_WORDS_I(lbits) - 1])) {
-                            WData neg[VL_VALUE_STRING_MAX_WIDTH / 4 + 2];
+                            VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> neg;
                             VL_NEGATE_W(VL_WORDS_I(lbits), neg, lwp);
                             append = std::string("-") + VL_DECIMAL_NW(lbits, neg);
                         } else {
@@ -1119,7 +1119,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 // Deal with all read-and-scan somethings
                 // Note LSBs are preserved if there's an overflow
                 const int obits = inIgnore ? 0 : va_arg(ap, int);
-                WData qowp[VL_WQ_WORDS_E];
+                VlWide<VL_WQ_WORDS_E> qowp;
                 VL_SET_WQ(qowp, 0ULL);
                 WDataOutP owp = qowp;
                 if (obits == -1) {  // string
@@ -1485,7 +1485,7 @@ IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE {
 }
 
 IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) VL_MT_SAFE {
-    WData fnw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> fnw;
     VL_SET_WI(fnw, ld);
 
     va_list ap;
@@ -1495,7 +1495,7 @@ IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) VL_MT_SAFE {
     return got;
 }
 IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) VL_MT_SAFE {
-    WData fnw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> fnw;
     VL_SET_WQ(fnw, ld);
 
     va_list ap;
@@ -1572,7 +1572,7 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
 }
 
 IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
-    WData lhsw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> lhsw;
     VL_SET_WQ(lhsw, lhs);
     return VL_SYSTEM_IW(VL_WQ_WORDS_E, lhsw);
 }
