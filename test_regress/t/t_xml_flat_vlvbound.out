@@ -15,10 +15,10 @@
   </cells>
   <netlist>
     <module fl="d7" loc="d,7,8,7,21" name="TOP" origName="TOP" topModule="1" public="true">
-      <var fl="d9" loc="d,9,25,9,28" name="i_a" dtype_id="1" dir="input" vartype="logic" origName="i_a" public="true"/>
-      <var fl="d10" loc="d,10,25,10,28" name="i_b" dtype_id="1" dir="input" vartype="logic" origName="i_b" public="true"/>
-      <var fl="d11" loc="d,11,25,11,28" name="o_a" dtype_id="2" dir="output" vartype="logic" origName="o_a" public="true"/>
-      <var fl="d12" loc="d,12,25,12,28" name="o_b" dtype_id="2" dir="output" vartype="logic" origName="o_b" public="true"/>
+      <var fl="d9" loc="d,9,25,9,28" name="i_a" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="i_a" public="true"/>
+      <var fl="d10" loc="d,10,25,10,28" name="i_b" dtype_id="1" dir="input" pinIndex="2" vartype="logic" origName="i_b" public="true"/>
+      <var fl="d11" loc="d,11,25,11,28" name="o_a" dtype_id="2" dir="output" pinIndex="3" vartype="logic" origName="o_a" public="true"/>
+      <var fl="d12" loc="d,12,25,12,28" name="o_b" dtype_id="2" dir="output" pinIndex="4" vartype="logic" origName="o_b" public="true"/>
       <var fl="d9" loc="d,9,25,9,28" name="vlvbound_test.i_a" dtype_id="1" vartype="logic" origName="i_a"/>
       <var fl="d10" loc="d,10,25,10,28" name="vlvbound_test.i_b" dtype_id="1" vartype="logic" origName="i_b"/>
       <var fl="d11" loc="d,11,25,11,28" name="vlvbound_test.o_a" dtype_id="2" vartype="logic" origName="o_a"/>

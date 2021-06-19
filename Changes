@@ -22,6 +22,7 @@ Verilator 4.205 devel
 * Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]
 * Merge const static data globally into a new constant pool (#3013). [Geza Lore]
 * Allow configure override of AR program (#2999). [ahouska]
+* In XML, show pinIndex information (#2877). [errae233]
 * Fix error on unsupported recursive functions (#2957). [Trefor Southwell]
 
 

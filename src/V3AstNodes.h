@@ -1889,6 +1889,10 @@ private:
     VDirection m_direction;  // Direction input/output etc
     VDirection m_declDirection;  // Declared direction input/output etc
     AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
+    VLifetime m_lifetime;  // Lifetime
+    VVarAttrClocker m_attrClocker;
+    MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
+    int m_pinNum = 0;  // For XML, if non-zero the connection pin number
     bool m_ansi : 1;  // ANSI port list variable (for dedup check)
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg
@@ -1925,9 +1929,6 @@ private:
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
-    VLifetime m_lifetime;  // Lifetime
-    VVarAttrClocker m_attrClocker;
-    MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
 
     void init() {
         m_ansi = false;
@@ -2226,6 +2227,8 @@ public:
     void addProducingMTaskId(int id) { m_mtaskIds.insert(id); }
     void addConsumingMTaskId(int id) { m_mtaskIds.insert(id); }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
+    void pinNum(int id) { m_pinNum = id; }
+    int pinNum() const { return m_pinNum; }
 };
 
 class AstDefParam final : public AstNode {
