@@ -1873,7 +1873,6 @@ class EmitCImp final : EmitCStmts {
         return "";
     }
 
-    void emitCellCtors(AstNodeModule* modp);
     void emitSensitives();
     // Medium level
     void emitCtorImp(AstNodeModule* modp);
@@ -2480,7 +2479,15 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     if (modp->isTop() && v3Global.opt.mtasks()) emitThreadingCtors(&first);
 
     puts(" {\n");
-    emitCellCtors(modp);
+
+    if (modp->isTop()) {
+        putsDecoration("// Create Sym instance\n");
+        // Must be before other constructors, as __vlCoverInsert calls it.
+        // Note _vcontextp__ may be nullptr, VerilatedSyms::VerilatedSyms cleans it up
+        puts(EmitCBaseVisitor::symClassVar() + " = new " + symClassName() + "("
+             + (optSystemC() ? "nullptr" : "_vcontextp__") + ", this, name());\n");
+    }
+
     emitSensitives();
 
     putsDecoration("// Reset internal values\n");
@@ -2715,21 +2722,6 @@ void EmitCImp::emitTextSection(AstType type) {
         }
     }
     if (last_line > 0) puts("//*** Above code from `systemc in Verilog file\n\n");
-}
-
-void EmitCImp::emitCellCtors(AstNodeModule* modp) {
-    if (modp->isTop()) {
-        // Must be before other constructors, as __vlCoverInsert calls it
-        // Note _vcontextp__ may be nullptr, VerilatedSyms::VerilatedSyms cleans it up
-        puts(EmitCBaseVisitor::symClassVar() + " = new " + symClassName() + "("
-             + (optSystemC() ? "nullptr" : "_vcontextp__") + ", this, name());\n");
-    }
-    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (AstCell* cellp = VN_CAST(nodep, Cell)) {
-            puts("VL_CELL(" + cellp->nameProtect() + ", " + prefixNameProtect(cellp->modp())
-                 + ");\n");
-        }
-    }
 }
 
 void EmitCImp::emitSensitives() {
