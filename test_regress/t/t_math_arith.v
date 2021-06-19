@@ -174,6 +174,11 @@ module t (/*AUTOARG*/
          if ((1 <-> 0) != 1'b0) $stop;
          if ((1 <-> 1) != 1'b1) $stop;
 
+         // bug2912
+         // verilator lint_off WIDTH
+         if (2'(~1'b1) != 2'b10) $stop;
+         // verilator lint_on WIDTH
+
          $write("*-* All Finished *-*\n");
          $finish;
       end
