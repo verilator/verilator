@@ -136,6 +136,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         if (nodep->isIO()) {
             puts(" dir=");
             putsQuoted(kw);
+            if (nodep->pinNum() != 0) puts(" pinIndex=\"" + cvtToStr(nodep->pinNum()) + "\"");
             puts(" vartype=");
             putsQuoted(!vt.empty() ? vt : typ == AstVarType::PORT ? "port" : "unknown");
         } else {

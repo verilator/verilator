@@ -18,9 +18,9 @@
   </cells>
   <netlist>
     <module fl="d7" loc="d,7,8,7,9" name="t" origName="t" topModule="1">
-      <var fl="d13" loc="d,13,10,13,13" name="clk" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
-      <var fl="d14" loc="d,14,16,14,17" name="d" dtype_id="2" dir="input" vartype="logic" origName="d"/>
-      <var fl="d15" loc="d,15,22,15,23" name="q" dtype_id="2" dir="output" vartype="logic" origName="q"/>
+      <var fl="d13" loc="d,13,10,13,13" name="clk" dtype_id="1" dir="input" pinIndex="2" vartype="logic" origName="clk"/>
+      <var fl="d14" loc="d,14,16,14,17" name="d" dtype_id="2" dir="input" pinIndex="3" vartype="logic" origName="d"/>
+      <var fl="d15" loc="d,15,22,15,23" name="q" dtype_id="2" dir="output" pinIndex="1" vartype="logic" origName="q"/>
       <var fl="d17" loc="d,17,22,17,29" name="between" dtype_id="2" vartype="logic" origName="between"/>
       <instance fl="d20" loc="d,20,4,20,9" name="cell1" defName="mod1__W4" origName="cell1">
         <port fl="d20" loc="d,20,12,20,13" name="q" direction="out" portIndex="1">
@@ -49,9 +49,9 @@
       <var fl="d32" loc="d,32,15,32,20" name="WIDTH" dtype_id="3" vartype="logic" origName="WIDTH" param="true">
         <const fl="d19" loc="d,19,18,19,19" name="32&apos;sh4" dtype_id="3"/>
       </var>
-      <var fl="d34" loc="d,34,24,34,27" name="clk" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
-      <var fl="d35" loc="d,35,30,35,31" name="d" dtype_id="2" dir="input" vartype="logic" origName="d"/>
-      <var fl="d36" loc="d,36,30,36,31" name="q" dtype_id="2" dir="output" vartype="logic" origName="q"/>
+      <var fl="d34" loc="d,34,24,34,27" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk"/>
+      <var fl="d35" loc="d,35,30,35,31" name="d" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="d"/>
+      <var fl="d36" loc="d,36,30,36,31" name="q" dtype_id="2" dir="output" pinIndex="3" vartype="logic" origName="q"/>
       <var fl="d39" loc="d,39,15,39,22" name="IGNORED" dtype_id="3" vartype="logic" origName="IGNORED" localparam="true">
         <const fl="d39" loc="d,39,25,39,26" name="32&apos;sh1" dtype_id="3"/>
       </var>
@@ -68,9 +68,9 @@
       </always>
     </module>
     <module fl="d46" loc="d,46,8,46,12" name="mod2" origName="mod2">
-      <var fl="d48" loc="d,48,10,48,13" name="clk" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
-      <var fl="d49" loc="d,49,16,49,17" name="d" dtype_id="2" dir="input" vartype="logic" origName="d"/>
-      <var fl="d50" loc="d,50,22,50,23" name="q" dtype_id="2" dir="output" vartype="logic" origName="q"/>
+      <var fl="d48" loc="d,48,10,48,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk"/>
+      <var fl="d49" loc="d,49,16,49,17" name="d" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="d"/>
+      <var fl="d50" loc="d,50,22,50,23" name="q" dtype_id="2" dir="output" pinIndex="3" vartype="logic" origName="q"/>
       <contassign fl="d53" loc="d,53,13,53,14" dtype_id="2">
         <varref fl="d53" loc="d,53,15,53,16" name="d" dtype_id="2"/>
         <varref fl="d53" loc="d,53,11,53,12" name="q" dtype_id="2"/>

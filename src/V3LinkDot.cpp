@@ -1438,6 +1438,7 @@ private:
                                                 "__pinNumber" + cvtToStr(nodep->pinNum()), refp,
                                                 nullptr /*classOrPackagep*/);
             symp->exported(false);
+            refp->pinNum(nodep->pinNum());
         }
         // Ports not needed any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
