@@ -80,6 +80,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
@@ -640,7 +641,7 @@ private:
     // NODE STATE
     // Forming graph:
     //   Entire Netlist:
-    //    AstVarScope::user1p   -> OrderUser* for usage var
+    //    AstVarScope::user1u   -> OrderUser* for usage var (via m_orderUser)
     //    {statement}Node::user1p-> AstModule* statement is under
     //   USER4 Cleared on each Logic stmt
     //    AstVarScope::user4()  -> VarUsage(gen/con/both).      Where already encountered signal
@@ -653,6 +654,8 @@ private:
     AstUser2InUse m_inuser2;
     AstUser3InUse m_inuser3;
     // AstUser4InUse     m_inuser4;      // Used only when building tree, so below
+
+    AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
     OrderGraph m_graph;  // Scoreboard of var usages/dependencies
@@ -673,7 +676,6 @@ private:
     bool m_inPost = false;  // Underneath AstAssignPost
     bool m_inPostponed = false;  // Underneath AstAssignPostponed
     OrderLogicVertex* m_activeSenVxp = nullptr;  // Sensitivity vertex
-    std::deque<OrderUser*> m_orderUserps;  // All created OrderUser's for later deletion.
     // STATE... for inside process
     AstCFunc* m_pomNewFuncp = nullptr;  // Current function being created
     int m_pomNewStmts = 0;  // Statements in function being created
@@ -717,14 +719,7 @@ private:
 
     OrderVarVertex* newVarUserVertex(AstVarScope* varscp, WhichVertex type,
                                      bool* createdp = nullptr) {
-        if (!varscp->user1p()) {
-            OrderUser* newup = new OrderUser();
-            m_orderUserps.push_back(newup);
-            varscp->user1p(newup);
-        }
-        OrderUser* up = reinterpret_cast<OrderUser*>(varscp->user1p());
-        OrderVarVertex* varVxp = up->newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
-        return varVxp;
+        return m_orderUser(varscp).newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
     }
 
     void process();
@@ -1232,7 +1227,6 @@ public:
             }
         }
         // Destruction
-        for (OrderUser* ip : m_orderUserps) delete ip;
         m_graph.debug(V3Error::debugDefault());
     }
     void main(AstNode* nodep) { iterate(nodep); }
