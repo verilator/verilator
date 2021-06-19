@@ -283,8 +283,6 @@ public:
 #define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
 #define VL_OUTW(name, msb, lsb, words) WData name[words]  ///< Declare output signal, 65+ bits
 
-#define VL_CELL(instname, type)  ///< Declare a cell, ala SP_CELL
-
 ///< Declare a module, ala SC_MODULE
 #define VL_MODULE(modname) class modname VL_NOT_FINAL : public VerilatedModule
 // Not class final in VL_MODULE, as users might be abstracting our models (--hierarchical)
