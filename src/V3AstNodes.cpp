@@ -63,10 +63,6 @@ string AstNodeVarRef::selfPointerProtect(bool useSelfForThis) const {
     return VIdProtect::protectWordsIf(sp, protect());
 }
 
-string AstNodeVarRef::classPrefixProtect() const {
-    return v3Global.opt.modPrefix() + "_" + VIdProtect::protectWordsIf(classPrefix(), protect());
-}
-
 void AstAddrOfCFunc::cloneRelink() {
     if (m_funcp && m_funcp->clonep()) m_funcp = m_funcp->clonep();
 }
@@ -129,9 +125,6 @@ string AstNodeCCall::selfPointerProtect(bool useSelfForThis) const {
     const string& sp
         = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
     return VIdProtect::protectWordsIf(sp, protect());
-}
-string AstNodeCCall::classPrefixProtect() const {
-    return v3Global.opt.modPrefix() + "_" + VIdProtect::protectWordsIf(classPrefix(), protect());
 }
 
 void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,

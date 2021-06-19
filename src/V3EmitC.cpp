@@ -386,12 +386,11 @@ public:
             puts(funcp->name());
         } else if (funcp->isProperMethod() && funcp->isStatic()) {
             // Call static method via the containing class
-            AstNodeModule* modp = VN_CAST(funcp->user4p(), NodeModule);
-            puts(prefixNameProtect(modp) + "::");
+            puts(prefixNameProtect(funcp->user4p()) + "::");
             puts(funcp->nameProtect());
-        } else if (!nodep->classPrefix().empty()) {
-            // Prefix explicitly given
-            puts(nodep->classPrefixProtect() + "::");
+        } else if (VN_IS(funcp->user4p(), Class) && funcp->user4p() != m_modp) {
+            // Calling superclass method
+            puts(prefixNameProtect(funcp->user4p()) + "::");
             puts(funcp->nameProtect());
         } else if (funcp->isLoose()) {
             // Calling loose method
@@ -1133,8 +1132,9 @@ public:
         } else if (varp->isStatic()) {
             // Access static variable via the containing class
             puts(prefixNameProtect(varp->user4p()) + "::");
-        } else if (!nodep->classPrefix().empty()) {
-            puts(nodep->classPrefixProtect() + "::");
+        } else if (VN_IS(varp->user4p(), Class) && varp->user4p() != m_modp) {
+            // Superclass member reference
+            puts(prefixNameProtect(varp->user4p()) + "::");
         } else if (!nodep->selfPointer().empty()) {
             emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
         }
