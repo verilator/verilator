@@ -150,7 +150,7 @@ void VerilatedFst::emitTimeChange(vluint64_t timeui) { fstWriterEmitTimeChange(m
 void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
                                  unsigned int minValbits, const char** itemNamesp,
                                  const char** itemValuesp) {
-    fstEnumHandle enumNum
+    const fstEnumHandle enumNum
         = fstWriterCreateEnumTable(m_fst, name, elements, minValbits, itemNamesp, itemValuesp);
     m_local2fstdtype[dtypenum] = enumNum;
 }
@@ -206,7 +206,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
     std::string name_str = name_ss.str();
 
     if (dtypenum > 0) {
-        fstEnumHandle enumNum = m_local2fstdtype[dtypenum];
+        const fstEnumHandle enumNum = m_local2fstdtype[dtypenum];
         fstWriterEmitEnumTableRef(m_fst, enumNum);
     }
 
