@@ -704,6 +704,18 @@ void EmitCSyms::emitSymImp() {
         }
     }
 
+    puts("// Configure time unit / time precision\n");
+    if (!v3Global.rootp()->timeunit().isNone()) {
+        puts("_vm_contextp__->timeunit(");
+        puts(cvtToStr(v3Global.rootp()->timeunit().powerOfTen()));
+        puts(");\n");
+    }
+    if (!v3Global.rootp()->timeprecision().isNone()) {
+        puts("_vm_contextp__->timeprecision(");
+        puts(cvtToStr(v3Global.rootp()->timeprecision().powerOfTen()));
+        puts(");\n");
+    }
+
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
     puts("TOPp->" + protect("__Vconfigure") + "(this, true);\n");
     for (const auto& i : m_scopes) {

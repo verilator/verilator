@@ -2549,14 +2549,6 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     if (v3Global.opt.coverage()) {
         puts(modName + "__" + protect("_configure_coverage") + "(this, first);\n");
     }
-    if (modp->isTop() && !v3Global.rootp()->timeunit().isNone()) {
-        puts("vlSymsp->_vm_contextp__->timeunit("
-             + cvtToStr(v3Global.rootp()->timeunit().powerOfTen()) + ");\n");
-    }
-    if (modp->isTop() && !v3Global.rootp()->timeprecision().isNone()) {
-        puts("vlSymsp->_vm_contextp__->timeprecision("
-             + cvtToStr(v3Global.rootp()->timeprecision().powerOfTen()) + ");\n");
-    }
     puts("}\n");
     splitSizeInc(10);
 }
