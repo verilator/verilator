@@ -99,19 +99,19 @@ public:
     // false while it's still waiting on more dependencies.
     inline bool signalUpstreamDone(bool evenCycle) {
         if (evenCycle) {
-            vluint32_t upstreamDepsDone
+            const vluint32_t upstreamDepsDone
                 = 1 + m_upstreamDepsDone.fetch_add(1, std::memory_order_release);
             assert(upstreamDepsDone <= m_upstreamDepCount);
             return (upstreamDepsDone == m_upstreamDepCount);
         } else {
-            vluint32_t upstreamDepsDone_prev
+            const vluint32_t upstreamDepsDone_prev
                 = m_upstreamDepsDone.fetch_sub(1, std::memory_order_release);
             assert(upstreamDepsDone_prev > 0);
             return (upstreamDepsDone_prev == 1);
         }
     }
     inline bool areUpstreamDepsDone(bool evenCycle) const {
-        vluint32_t target = evenCycle ? m_upstreamDepCount : 0;
+        const vluint32_t target = evenCycle ? m_upstreamDepCount : 0;
         return m_upstreamDepsDone.load(std::memory_order_acquire) == target;
     }
     inline void waitUntilUpstreamDone(bool evenCycle) const {

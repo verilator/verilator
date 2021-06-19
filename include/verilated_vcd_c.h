@@ -233,11 +233,11 @@ public:
     // Inside dumping routines, dump one signal if it has changed.
     // We do want to inline these to avoid calls when the value did not change.
     inline void chgBit(vluint32_t code, const vluint32_t newval) {
-        vluint32_t diff = oldp(code)[0] ^ newval;
+        const vluint32_t diff = oldp(code)[0] ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(code, newval);
     }
     inline void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
-        vluint32_t diff = oldp(code)[0] ^ newval;
+        const vluint32_t diff = oldp(code)[0] ^ newval;
         if (VL_UNLIKELY(diff)) {
             if (VL_UNLIKELY(bits == 32 || (diff & ((1U << bits) - 1)))) {
                 fullBus(code, newval, bits);
@@ -245,7 +245,7 @@ public:
         }
     }
     inline void chgQuad(vluint32_t code, const vluint64_t newval, int bits) {
-        vluint64_t diff = (*(reinterpret_cast<vluint64_t*>(oldp(code)))) ^ newval;
+        const vluint64_t diff = (*(reinterpret_cast<vluint64_t*>(oldp(code)))) ^ newval;
         if (VL_UNLIKELY(diff)) {
             if (VL_UNLIKELY(bits == 64 || (diff & ((1ULL << bits) - 1)))) {
                 fullQuad(code, newval, bits);
@@ -270,7 +270,7 @@ public:
         }
     }
     inline void chgTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri) {
-        vluint32_t diff = ((oldp(code)[0] ^ newval) | (oldp(code)[1] ^ newtri));
+        const vluint32_t diff = ((oldp(code)[0] ^ newval) | (oldp(code)[1] ^ newtri));
         if (VL_UNLIKELY(diff)) {
             // Verilator 3.510 and newer provide clean input, so the below
             // is only for back compatibility
@@ -281,7 +281,7 @@ public:
     }
     inline void chgTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri,
                           int bits) {
-        vluint32_t diff = ((oldp(code)[0] ^ newval) | (oldp(code)[1] ^ newtri));
+        const vluint32_t diff = ((oldp(code)[0] ^ newval) | (oldp(code)[1] ^ newtri));
         if (VL_UNLIKELY(diff)) {
             if (VL_UNLIKELY(bits == 32 || (diff & ((1U << bits) - 1)))) {
                 fullTriBus(code, newval, newtri, bits);
@@ -290,8 +290,8 @@ public:
     }
     inline void chgTriQuad(vluint32_t code, const vluint64_t newval, const vluint64_t newtri,
                            int bits) {
-        vluint64_t diff = (((*(reinterpret_cast<vluint64_t*>(oldp(code)))) ^ newval)
-                           | ((*(reinterpret_cast<vluint64_t*>(oldp(code + 1)))) ^ newtri));
+        const vluint64_t diff = (((*(reinterpret_cast<vluint64_t*>(oldp(code)))) ^ newval)
+                                 | ((*(reinterpret_cast<vluint64_t*>(oldp(code + 1)))) ^ newtri));
         if (VL_UNLIKELY(diff)) {
             if (VL_UNLIKELY(bits == 64 || (diff & ((1ULL << bits) - 1)))) {
                 fullTriQuad(code, newval, newtri, bits);

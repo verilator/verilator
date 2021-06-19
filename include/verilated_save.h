@@ -236,43 +236,43 @@ public:
 
 //=============================================================================
 
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, vluint64_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const vluint64_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint64_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, vluint32_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const vluint32_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint32_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, vluint16_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const vluint16_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint16_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, vluint8_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const vluint8_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint8_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, bool& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const bool& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, bool& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, double& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const double& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, double& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, float& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const float& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, float& rhs) {
@@ -295,11 +295,11 @@ VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhs
 template <class T_Key, class T_Value>
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
     os << rhs.atDefault();
-    vluint32_t len = rhs.size();
+    const vluint32_t len = rhs.size();
     os << len;
     for (const auto& i : rhs) {
-        T_Key index = i.first;  // Copy to get around const_iterator
-        T_Value value = i.second;
+        const T_Key index = i.first;  // Copy to get around const_iterator
+        const T_Value value = i.second;
         os << index << value;
     }
     return os;
