@@ -38,6 +38,139 @@ inline bool v3EpsilonEqual(double a, double b) {
 //============================================================================
 
 class AstNode;
+class FileLine;
+
+// Subset of std::vector<T> with small object optimization to reduce dynamic memory allocation
+template <typename T> class V3NumberInlinedVector final {
+    // TYPES
+    struct InlinedData final {  // Contain data when the number of data is small
+        int m_size;  // int is sufficient to count the size of m_array
+        T m_array[(sizeof(std::vector<T>) - sizeof(m_size)) / sizeof(T)];
+        static_assert(sizeof(m_array) / sizeof(T) < std::numeric_limits<decltype(m_size)>::max(),
+                      "int is not enough");
+    };
+    union InlineUnion {
+        // Holds data when the number of entries is greater than maxInlineSize()
+        std::vector<T> m_vector;
+        // Holds data when the number of entries is same or less than maxInlineSize()
+        InlinedData m_inlined;
+        InlineUnion() {}  // Can't be = default
+        ~InlineUnion() {}  // Can't be = default
+    };
+
+    // MEMBERS
+    InlineUnion m_data;  // Either InlineUniof::m_vector or m_inlined is valid
+    bool m_isInlined;  // true when InlineUnion::m_inlined is valid
+
+    // METHODS
+    static constexpr size_t maxInlineSize() { return sizeof(InlinedData::m_array) / sizeof(T); }
+    void destructUnion() {
+        if (m_isInlined) {
+            for (int i = 0; i < m_data.m_inlined.m_size; ++i) m_data.m_inlined.m_array[i].~T();
+        } else {
+            m_data.m_vector.~vector();
+            m_isInlined = true;
+        }
+        m_data.m_inlined.m_size = 0;
+    }
+
+public:
+    // CONSTRUCTORS
+    V3NumberInlinedVector()
+        : m_isInlined(true) {
+        m_data.m_inlined.m_size = 0;
+    }
+    V3NumberInlinedVector(const V3NumberInlinedVector& other)
+        : m_isInlined(other.m_isInlined) {
+        if (m_isInlined) {
+            m_data.m_inlined.m_size = other.m_data.m_inlined.m_size;
+            for (int i = 0; i < other.m_data.m_inlined.m_size; ++i)
+                new (m_data.m_inlined.m_array + i) T(other.m_data.m_inlined.m_array[i]);
+        } else {
+            new (&m_data.m_vector) std::vector<T>(other.m_data.m_vector);
+        }
+        UDEBUGONLY(UASSERT(*this == other, "must be properly copied"););
+    }
+    ~V3NumberInlinedVector() { destructUnion(); }
+
+    // METHODS
+    size_t size() const { return m_isInlined ? m_data.m_inlined.m_size : m_data.m_vector.size(); }
+    bool operator==(const V3NumberInlinedVector<T>& other) const {
+        if (size() != other.size()) return false;
+        for (size_t i = 0; i < size(); ++i)
+            if ((*this)[i] != other[i]) return false;
+        return true;
+    }
+    bool operator!=(const V3NumberInlinedVector<T>& other) const { return !(operator==(other)); }
+
+    V3NumberInlinedVector& operator=(const V3NumberInlinedVector& other) {
+        if (this == &other) return *this;  // Do nothing
+        if (other.m_isInlined) {
+            destructUnion();
+            for (int i = 0; i < other.m_data.m_inlined.m_size; ++i)
+                new (m_data.m_inlined.m_array + i) T(other.m_data.m_inlined.m_array[i]);
+            m_data.m_inlined.m_size = other.m_data.m_inlined.m_size;
+        } else {
+            if (m_isInlined) {
+                destructUnion();
+                new (&m_data.m_vector) std::vector<T>(other.m_data.m_vector);
+            } else {
+                m_data.m_vector = other.m_data.m_vector;
+            }
+        }
+        m_isInlined = other.m_isInlined;
+        UDEBUGONLY(UASSERT(*this == other, "must be properly copied"););
+        return *this;
+    }
+    void resize(size_t newSize) {
+        if (newSize <= maxInlineSize()) {
+            if (m_isInlined) {
+                // If shrink, destruct
+                for (int i = newSize; i < m_data.m_inlined.m_size; ++i)
+                    m_data.m_inlined.m_array[i].~T();
+                // If extend, construct
+                for (int i = m_data.m_inlined.m_size; i < static_cast<int>(newSize); ++i)
+                    new (m_data.m_inlined.m_array + i) T();
+            } else {
+                UDEBUGONLY(
+                    UASSERT(newSize <= size(), "newSize:" << newSize << " size:" << size()););
+                std::vector<T> tmp = std::move(m_data.m_vector);
+                m_data.m_vector.~vector();
+                for (size_t i = 0; i < newSize; ++i)
+                    new (m_data.m_inlined.m_array + i) T(std::move(tmp[i]));
+                m_isInlined = true;
+            }
+            m_data.m_inlined.m_size = newSize;
+        } else {
+            if (m_isInlined) {
+                UDEBUGONLY(
+                    UASSERT(size() <= newSize, "size:" << size() << " newSize:" << newSize););
+                std::vector<T> tmp;
+                tmp.reserve(newSize);
+                for (int i = 0; i < m_data.m_inlined.m_size; ++i)
+                    tmp.emplace_back(std::move(m_data.m_inlined.m_array[i]));
+                destructUnion();
+                tmp.resize(newSize);
+                new (&m_data.m_vector) std::vector<T>(std::move(tmp));
+                m_isInlined = false;
+            } else {
+                m_data.m_vector.resize(newSize);
+            }
+        }
+        UDEBUGONLY(UASSERT(size() == newSize, "expected:" << newSize << " actual:" << size()););
+    }
+    T& operator[](size_t idx) {
+        UDEBUGONLY(UASSERT(idx < size(), "idx:" << idx << " size:" << size()););
+        if (m_isInlined) {
+            return m_data.m_inlined.m_array[idx];
+        } else {
+            return m_data.m_vector[idx];
+        }
+    }
+    const T& operator[](size_t idx) const {
+        return const_cast<V3NumberInlinedVector<T>&>(*this)[idx];
+    }
+};
 
 class V3Number final {
     // Large 4-state number handling
@@ -51,8 +184,9 @@ class V3Number final {
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
     FileLine* m_fileline;
     AstNode* m_nodep;  // Parent node
-    std::vector<uint32_t> m_value;  // Value, with bit 0 in bit 0 of this vector (unless X/Z)
-    std::vector<uint32_t> m_valueX;  // Each bit is true if it's X or Z, 10=z, 11=x
+    // Value, with bit 0 in bit 0 of this vector (unless X/Z)
+    V3NumberInlinedVector<uint32_t> m_value;
+    V3NumberInlinedVector<uint32_t> m_valueX;  // Each bit is true if it's X or Z, 10=z, 11=x
     string m_stringVal;  // If isString, the value of the string
     // METHODS
     V3Number& setSingleBits(char value);
