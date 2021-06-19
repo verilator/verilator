@@ -9,13 +9,12 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 ######################################################################
 
-PERL = @PERL@
-PYTHON3 = @PYTHON3@
+AR = @AR@
 CXX = @CXX@
 LINK = @CXX@
-AR = ar
-RANLIB = ranlib
 OBJCACHE ?= @OBJCACHE@
+PERL = @PERL@
+PYTHON3 = @PYTHON3@
 
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
