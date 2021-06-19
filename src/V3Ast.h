@@ -2285,7 +2285,6 @@ private:
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
     string m_selfPointer;  // Output code object pointer (e.g.: 'this')
-    string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
 
 protected:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
@@ -2320,9 +2319,6 @@ public:
     string selfPointer() const { return m_selfPointer; }
     void selfPointer(const string& value) { m_selfPointer = value; }
     string selfPointerProtect(bool useSelfForThis) const;
-    string classPrefix() const { return m_classPrefix; }
-    void classPrefix(const string& value) { m_classPrefix = value; }
-    string classPrefixProtect() const;
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
@@ -2626,7 +2622,6 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
     string m_selfPointer;  // Output code object pointer (e.g.: 'this')
-    string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
     string m_argTypes;
 
 protected:
@@ -2655,9 +2650,6 @@ public:
     string selfPointer() const { return m_selfPointer; }
     void selfPointer(const string& value) { m_selfPointer = value; }
     string selfPointerProtect(bool useSelfForThis) const;
-    string classPrefix() const { return m_classPrefix; }
-    void classPrefix(const string& value) { m_classPrefix = value; }
-    string classPrefixProtect() const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall

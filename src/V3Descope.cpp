@@ -106,17 +106,6 @@ private:
         }
     }
 
-    // Construct the class prefix (as in, the part before the :: scope resolution operator) when
-    // referencing an object in 'scopep' from a CFunc in 'm_scopep'.
-    string descopedClassPrefix(const AstScope* scopep) {
-        UASSERT(scopep, "Var/Func not scoped");
-        if (VN_IS(scopep->modp(), Class) && scopep != m_scopep) {
-            return scopep->modp()->name();
-        } else {
-            return "";
-        }
-    }
-
     void makePublicFuncWrappers() {
         // We recorded all public functions in m_modFuncs.
         // If for any given name only one function exists, we can use that function directly.
@@ -229,10 +218,7 @@ private:
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         const AstVar* const varp = nodep->varScopep()->varp();
         const AstScope* const scopep = nodep->varScopep()->scopep();
-        if (!varp->isFuncLocal()) {
-            nodep->selfPointer(descopedSelfPointer(scopep));
-            nodep->classPrefix(descopedClassPrefix(scopep));
-        }
+        if (!varp->isFuncLocal()) { nodep->selfPointer(descopedSelfPointer(scopep)); }
         nodep->varScopep(nullptr);
         UINFO(9, "  refout " << nodep << endl);
     }
@@ -243,7 +229,6 @@ private:
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         const AstScope* const scopep = nodep->funcp()->scopep();
         nodep->selfPointer(descopedSelfPointer(scopep));
-        nodep->classPrefix(descopedClassPrefix(scopep));
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }

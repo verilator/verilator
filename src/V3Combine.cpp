@@ -73,7 +73,6 @@ public:
                     = oldp->argsp() ? oldp->argsp()->unlinkFrBackWithNext() : nullptr;
                 AstCCall* const newp = new AstCCall(oldp->fileline(), newfuncp, argsp);
                 newp->selfPointer(oldp->selfPointer());
-                newp->classPrefix(oldp->classPrefix());
                 newp->argTypes(oldp->argTypes());
                 addCall(newp);  // Fix the table, in case the newfuncp itself gets replaced
                 oldp->replaceWith(newp);
