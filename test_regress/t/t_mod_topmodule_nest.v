@@ -36,4 +36,3 @@ module faketop(/*AUTOARG*/
    top top();
 
 endmodule
-
