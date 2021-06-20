@@ -117,7 +117,7 @@ private:
                 string dottedname = nodep->name() + "__DOT__";  // So always found
                 string::size_type pos;
                 while ((pos = dottedname.find("__DOT__")) != string::npos) {
-                    string ident = dottedname.substr(0, pos);
+                    const string ident = dottedname.substr(0, pos);
                     dottedname = dottedname.substr(pos + strlen("__DOT__"));
                     if (nodep->name() != "") m_namedScope = dot(m_namedScope, ident);
                     m_unnamedScope = dot(m_unnamedScope, ident);

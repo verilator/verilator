@@ -276,7 +276,7 @@ private:
         } else if (AstWordSel* wordp = VN_CAST(nodep->lhsp(), WordSel)) {
             if (AstVarRef* varrefp = VN_CAST(wordp->lhsp(), VarRef)) {
                 if (VN_IS(wordp->rhsp(), Const) && isSubstVar(varrefp->varp())) {
-                    int word = VN_CAST(wordp->rhsp(), Const)->toUInt();
+                    const int word = VN_CAST(wordp->rhsp(), Const)->toUInt();
                     SubstVarEntry* entryp = getEntryp(varrefp);
                     hit = true;
                     if (m_ops > SUBST_MAX_OPS_SUBST) {
@@ -309,7 +309,7 @@ private:
         if (varrefp && isSubstVar(varrefp->varp()) && varrefp->access().isReadOnly() && constp) {
             // Nicely formed lvalues handled in NodeAssign
             // Other lvalues handled as unknown mess in AstVarRef
-            int word = constp->toUInt();
+            const int word = constp->toUInt();
             UINFO(8, " USEword" << word << " " << varrefp << endl);
             SubstVarEntry* entryp = getEntryp(varrefp);
             if (AstNode* substp = entryp->substWord(nodep, word)) {

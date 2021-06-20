@@ -86,9 +86,9 @@ class SliceVisitor final : public AstNVisitor {
         AstNode* newp;
         if (AstInitArray* initp = VN_CAST(nodep, InitArray)) {
             UINFO(9, "  cloneInitArray(" << elements << "," << offset << ") " << nodep << endl);
-            int leOffset = !arrayp->rangep()->littleEndian()
-                               ? arrayp->rangep()->elementsConst() - 1 - offset
-                               : offset;
+            const int leOffset = !arrayp->rangep()->littleEndian()
+                                     ? arrayp->rangep()->elementsConst() - 1 - offset
+                                     : offset;
             AstNode* itemp = initp->getIndexDefaultedValuep(leOffset);
             if (!itemp) {
                 nodep->v3error("Array initialization has too few elements, need element "
@@ -103,17 +103,17 @@ class SliceVisitor final : public AstNVisitor {
                                      cloneAndSel(snodep->expr2p(), elements, offset));
         } else if (AstSliceSel* snodep = VN_CAST(nodep, SliceSel)) {
             UINFO(9, "  cloneSliceSel(" << elements << "," << offset << ") " << nodep << endl);
-            int leOffset = (snodep->declRange().lo()
-                            + (!snodep->declRange().littleEndian()
-                                   ? snodep->declRange().elements() - 1 - offset
-                                   : offset));
+            const int leOffset = (snodep->declRange().lo()
+                                  + (!snodep->declRange().littleEndian()
+                                         ? snodep->declRange().elements() - 1 - offset
+                                         : offset));
             newp = new AstArraySel(nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset);
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
                    || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
-            int leOffset = !arrayp->rangep()->littleEndian()
-                               ? arrayp->rangep()->elementsConst() - 1 - offset
-                               : offset;
+            const int leOffset = !arrayp->rangep()->littleEndian()
+                                     ? arrayp->rangep()->elementsConst() - 1 - offset
+                                     : offset;
             newp = new AstArraySel(nodep->fileline(), nodep->cloneTree(false), leOffset);
         } else {
             if (!m_assignError) {
@@ -138,7 +138,7 @@ class SliceVisitor final : public AstNVisitor {
                 // and all variables are realigned to start at zero
                 // Assign of a little endian'ed slice to a big endian one must reverse the elements
                 AstNode* newlistp = nullptr;
-                int elements = arrayp->rangep()->elementsConst();
+                const int elements = arrayp->rangep()->elementsConst();
                 for (int offset = 0; offset < elements; ++offset) {
                     AstNode* newp = nodep->cloneType  // AstNodeAssign
                                     (cloneAndSel(nodep->lhsp(), elements, offset),

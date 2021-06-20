@@ -110,7 +110,7 @@ private:
         if (!lastrefp) {
             vscp->user5p(nodep);
         } else {
-            bool last_was_blocking = lastrefp->user5();
+            const bool last_was_blocking = lastrefp->user5();
             if (last_was_blocking != blocking) {
                 AstNode* nonblockingp = blocking ? nodep : lastrefp;
                 AstNode* blockingp = blocking ? lastrefp : nodep;
@@ -228,7 +228,7 @@ private:
         UASSERT_OBJ(varrefp->varScopep(), varrefp, "Var didn't get varscoped in V3Scope.cpp");
         varrefp->unlinkFrBack();
         AstVar* oldvarp = varrefp->varp();
-        int modVecNum = m_scopeVecMap[varrefp->varScopep()]++;
+        const int modVecNum = m_scopeVecMap[varrefp->varScopep()]++;
         //
         std::deque<AstNode*> dimreadps;  // Read value for each dimension of assignment
         for (unsigned dimension = 0; dimension < dimvalp.size(); dimension++) {
@@ -236,8 +236,8 @@ private:
             if (VN_IS(dimp, Const)) {  // bit = const, can just use it
                 dimreadps.push_front(dimp);
             } else {
-                string bitvarname = (string("__Vdlyvdim") + cvtToStr(dimension) + "__"
-                                     + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
+                const string bitvarname = (string("__Vdlyvdim") + cvtToStr(dimension) + "__"
+                                           + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
                 AstVarScope* bitvscp
                     = createVarSc(varrefp->varScopep(), bitvarname, dimp->width(), nullptr);
                 AstAssign* bitassignp = new AstAssign(
@@ -256,8 +256,8 @@ private:
                 // vlsb = constant, can just push constant into where we use it
                 bitreadp = lsbvaluep;
             } else {
-                string bitvarname = (string("__Vdlyvlsb__") + oldvarp->shortName() + "__v"
-                                     + cvtToStr(modVecNum));
+                const string bitvarname = (string("__Vdlyvlsb__") + oldvarp->shortName() + "__v"
+                                           + cvtToStr(modVecNum));
                 AstVarScope* bitvscp
                     = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width(), nullptr);
                 AstAssign* bitassignp = new AstAssign(
@@ -440,7 +440,7 @@ private:
                     checkActivePost(nodep, oldactivep);
                 }
                 if (!dlyvscp) {  // First use of this delayed variable
-                    string newvarname = (string("__Vdly__") + nodep->varp()->shortName());
+                    const string newvarname = (string("__Vdly__") + nodep->varp()->shortName());
                     dlyvscp = createVarSc(oldvscp, newvarname, 0, nullptr);
                     AstNodeAssign* prep;
                     AstBasicDType* basicp = oldvscp->dtypep()->basicp();

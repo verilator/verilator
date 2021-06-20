@@ -87,7 +87,7 @@ private:
                 }
             } else if (prev) {
                 AstBasicDType* bdtypep = m_varp->basicp();
-                int lsb = bit + 1;
+                const int lsb = bit + 1;
                 if (bits != "") bits += ",";
                 if (lsb == msb) {
                     bits += cvtToStr(lsb + bdtypep->lo());
@@ -141,9 +141,9 @@ public:
         return isUsedNotDrivenBit(0, m_bitFlags.size() / FLAGS_PER_BIT);
     }
     bool unusedMatch(AstVar* nodep) {
-        string regexp = v3Global.opt.unusedRegexp();
+        const string regexp = v3Global.opt.unusedRegexp();
         if (regexp == "") return false;
-        string prettyName = nodep->prettyName();
+        const string prettyName = nodep->prettyName();
         return VString::wildmatch(prettyName.c_str(), regexp.c_str());
     }
     void reportViolations() {
@@ -158,8 +158,8 @@ public:
             bool anyDnotU = false;
             bool anynotDU = false;
             for (unsigned bit = 0; bit < m_bitFlags.size() / FLAGS_PER_BIT; bit++) {
-                bool used = usedFlag(bit);
-                bool driv = drivenFlag(bit);
+                const bool used = usedFlag(bit);
+                const bool driv = drivenFlag(bit);
                 allU &= used;
                 anyU |= used;
                 allD &= driv;
@@ -326,7 +326,7 @@ private:
         if (varrefp && constp && !constp->num().isFourState()) {
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
                 UndrivenVarEntry* entryp = getEntryp(varrefp->varp(), usr);
-                int lsb = constp->toUInt();
+                const int lsb = constp->toUInt();
                 if (m_inBBox || varrefp->access().isWriteOrRW()) {
                     // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
                     if (usr == 2 && m_alwaysCombp
@@ -365,8 +365,8 @@ private:
         }
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             UndrivenVarEntry* entryp = getEntryp(nodep->varp(), usr);
-            bool fdrv = nodep->access().isWriteOrRW()
-                        && nodep->varp()->attrFileDescr();  // FD's are also being read from
+            const bool fdrv = nodep->access().isWriteOrRW()
+                              && nodep->varp()->attrFileDescr();  // FD's are also being read from
             if (m_inBBox || nodep->access().isWriteOrRW()) {
                 if (usr == 2 && m_alwaysCombp && entryp->isUsedNotDrivenAny()) {
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);

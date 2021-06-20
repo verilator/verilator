@@ -61,7 +61,7 @@ public:
     // METHODS
     string keyExtract(const char* shortKey) const {
         // Hot function
-        size_t shortLen = std::strlen(shortKey);
+        const size_t shortLen = std::strlen(shortKey);
         const string namestr = name();
         for (const char* cp = namestr.c_str(); *cp; ++cp) {
             if (*cp == '\001') {

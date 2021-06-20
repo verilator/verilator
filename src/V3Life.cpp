@@ -387,7 +387,7 @@ private:
         // Just don't optimize blocks with labels; they're rare - so far.
         LifeBlock* prevLifep = m_lifep;
         LifeBlock* bodyLifep = new LifeBlock(prevLifep, m_statep);
-        bool prev_noopt = m_noopt;
+        const bool prev_noopt = m_noopt;
         {
             m_lifep = bodyLifep;
             m_noopt = true;

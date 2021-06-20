@@ -125,7 +125,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             && !(VN_IS(nodep, CFunc)
                  && (VN_CAST(nodep, CFunc)->isConstructor()
                      || VN_CAST(nodep, CFunc)->isDestructor()))) {
-            string rsvd = V3LanguageWords::isKeyword(nodep->name());
+            const string rsvd = V3LanguageWords::isKeyword(nodep->name());
             if (rsvd != "") {
                 // Generally V3Name should find all of these and throw SYMRSVDWORD.
                 // We'll still check here because the compiler errors
@@ -170,7 +170,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             const auto scpit = m_vpiScopeCandidates.find(scp);
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
-                auto scopeNameit = m_scopeNames.find(scpit->second.m_symName);
+                const auto scopeNameit = m_scopeNames.find(scpit->second.m_symName);
                 if (scopeNameit == m_scopeNames.end()) {
                     m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
                 } else {
@@ -216,9 +216,9 @@ class EmitCSyms final : EmitCBaseVisitor {
                     }
                     // UINFO(9,"For "<<scopep->name()<<" - "<<varp->name()<<"  Scp "<<scpName<<"
                     // Var "<<varBase<<endl);
-                    string varBasePretty = AstNode::prettyName(varBase);
-                    string scpPretty = AstNode::prettyName(scpName);
-                    string scpSym = scopeSymString(scpName);
+                    const string varBasePretty = AstNode::prettyName(varBase);
+                    const string scpPretty = AstNode::prettyName(scpName);
+                    const string scpSym = scopeSymString(scpName);
                     // UINFO(9," scnameins sp "<<scpName<<" sp "<<scpPretty<<" ss "<<scpSym<<endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
@@ -238,7 +238,7 @@ class EmitCSyms final : EmitCBaseVisitor {
              ++it) {
             if (it->second.m_type != "SCOPE_MODULE") continue;
 
-            string symName = it->second.m_symName;
+            const string symName = it->second.m_symName;
             string above = symName;
             if (above.substr(0, 4) == "TOP.") above.replace(0, 4, "");
 
@@ -289,10 +289,11 @@ class EmitCSyms final : EmitCBaseVisitor {
     }
     virtual void visit(AstCellInline* nodep) override {
         if (v3Global.opt.vpi()) {
-            string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
-            string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
-            string name_dedot = AstNode::dedotName(name);
-            int timeunit = m_modp->timeunit().powerOfTen();
+            const string type
+                = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
+            const string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
+            const string name_dedot = AstNode::dedotName(name);
+            const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 std::make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
         }
@@ -304,19 +305,19 @@ class EmitCSyms final : EmitCBaseVisitor {
         m_scopes.emplace_back(std::make_pair(nodep, m_modp));
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
-            string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
-            string name_dedot = AstNode::dedotName(nodep->shortName());
-            int timeunit = m_modp->timeunit().powerOfTen();
+            const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
+            const string name_dedot = AstNode::dedotName(nodep->shortName());
+            const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
                                                         timeunit, type)));
         }
     }
     virtual void visit(AstScopeName* nodep) override {
-        string name = nodep->scopeSymName();
+        const string name = nodep->scopeSymName();
         // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
         // <<" ss"<<name<<endl);
-        int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
+        const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
             m_scopeNames.emplace(
                 name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"));
@@ -369,7 +370,7 @@ public:
 
 void EmitCSyms::emitSymHdr() {
     UINFO(6, __FUNCTION__ << ": " << endl);
-    string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".h";
+    const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".h";
     newCFile(filename, true /*slow*/, false /*source*/);
 
     if (v3Global.opt.systemC()) {
@@ -408,7 +409,8 @@ void EmitCSyms::emitSymHdr() {
         for (const auto& itr : m_scopeFuncs) {
             AstCFunc* funcp = itr.second.m_cfuncp;
             if (funcp->dpiExportImpl()) {
-                string cbtype = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
+                const string cbtype
+                    = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
                 types["using " + cbtype + " = void (*) (" + cFuncArgs(funcp) + ");\n"] = 1;
             }
         }
@@ -575,12 +577,12 @@ void EmitCSyms::emitSymImpPreamble() {
 
 void EmitCSyms::emitScopeHier(bool destroy) {
     if (v3Global.opt.vpi()) {
-        string verb = destroy ? "Tear down" : "Set up";
-        string method = destroy ? "remove" : "add";
+        const string verb = destroy ? "Tear down" : "Set up";
+        const string method = destroy ? "remove" : "add";
         puts("\n// " + verb + " scope hierarchy\n");
         for (ScopeNames::const_iterator it = m_scopeNames.begin(); it != m_scopeNames.end();
              ++it) {
-            string name = it->second.m_prettyName;
+            const string name = it->second.m_prettyName;
             if (it->first == "TOP") continue;
             if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
                 puts("__Vhier." + method + "(0, &" + protect("__Vscope_" + it->second.m_symName)
@@ -591,8 +593,8 @@ void EmitCSyms::emitScopeHier(bool destroy) {
         for (auto it = m_vpiScopeHierarchy.cbegin(); it != m_vpiScopeHierarchy.cend(); ++it) {
             for (ScopeNameList::const_iterator lit = it->second.begin(); lit != it->second.end();
                  ++lit) {
-                string fromname = scopeSymString(it->first);
-                string toname = scopeSymString(*lit);
+                const string fromname = scopeSymString(it->first);
+                const string toname = scopeSymString(*lit);
                 const auto from = vlstd::as_const(m_scopeNames).find(fromname);
                 const auto to = vlstd::as_const(m_scopeNames).find(toname);
                 UASSERT(from != m_scopeNames.end(), fromname + " not in m_scopeNames");
@@ -608,7 +610,7 @@ void EmitCSyms::emitScopeHier(bool destroy) {
 
 void EmitCSyms::emitSymImp() {
     UINFO(6, __FUNCTION__ << ": " << endl);
-    string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".cpp";
+    const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".cpp";
     AstCFile* cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
 
@@ -623,9 +625,9 @@ void EmitCSyms::emitSymImp() {
 
     if (v3Global.opt.savable()) {
         for (int de = 0; de < 2; ++de) {
-            string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
-            string funcname = de ? "__Vdeserialize" : "__Vserialize";
-            string op = de ? ">>" : "<<";
+            const string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
+            const string funcname = de ? "__Vdeserialize" : "__Vserialize";
+            const string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             puts("void " + symClassName() + "::" + protect(funcname) + "(" + classname
                  + "& os) {\n");
@@ -724,7 +726,7 @@ void EmitCSyms::emitSymImp() {
         if (!modp->isTop()) {
             checkSplit(false);
             // first is used by AstCoverDecl's call to __vlCoverInsert
-            bool first = !modp->user1();
+            const bool first = !modp->user1();
             modp->user1(true);
             puts(protectIf(scopep->nameDotless(), scopep->protect()) + "."
                  + protect("__Vconfigure") + "(this, " + (first ? "true" : "false") + ");\n");
@@ -878,7 +880,7 @@ void EmitCSyms::emitSymImp() {
 
 void EmitCSyms::emitDpiHdr() {
     UINFO(6, __FUNCTION__ << ": " << endl);
-    string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.h";
+    const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.h";
     AstCFile* cfilep = newCFile(filename, false /*slow*/, false /*source*/);
     cfilep->support(true);
     V3OutCFile hf(filename);
@@ -927,7 +929,7 @@ void EmitCSyms::emitDpiHdr() {
 
 void EmitCSyms::emitDpiImp() {
     UINFO(6, __FUNCTION__ << ": " << endl);
-    string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.cpp";
+    const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.cpp";
     AstCFile* cfilep = newCFile(filename, false /*slow*/, true /*source*/);
     cfilep->support(true);
     V3OutCFile hf(filename);

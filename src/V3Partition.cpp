@@ -622,7 +622,7 @@ public:
     }
 
     static void dumpCpFilePrefixed(const V3Graph* graphp, const string& nameComment) {
-        string filename = v3Global.debugFilename(nameComment) + ".txt";
+        const string filename = v3Global.debugFilename(nameComment) + ".txt";
         UINFO(1, "Writing " << filename << endl);
         std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
         std::ostream* osp = &(*ofp);  // &* needed to deref unique_ptr
@@ -901,7 +901,7 @@ private:
 // vertex.
 static void partInitHalfCriticalPaths(GraphWay way, V3Graph* mtasksp, bool checkOnly) {
     GraphStreamUnordered order(mtasksp, way);
-    GraphWay rev = way.invert();
+    const GraphWay rev = way.invert();
     for (const V3GraphVertex* vertexp; (vertexp = order.nextp());) {
         const LogicMTask* mtaskcp = dynamic_cast<const LogicMTask*>(vertexp);
         LogicMTask* mtaskp = const_cast<LogicMTask*>(mtaskcp);
@@ -997,7 +997,7 @@ static V3GraphEdge* partBlastEdgep(GraphWay way, V3GraphEdge* edgep) {
 static void partMergeEdgesFrom(V3Graph* mtasksp, LogicMTask* recipientp, LogicMTask* donorp,
                                V3Scoreboard<MergeCandidate, uint32_t>* sbp) {
     for (unsigned wi = 0; wi < 2; ++wi) {
-        GraphWay way = wi ? GraphWay::REVERSE : GraphWay::FORWARD;
+        const GraphWay way = wi ? GraphWay::REVERSE : GraphWay::FORWARD;
         for (V3GraphEdge* edgep = donorp->beginp(way); edgep; edgep = partBlastEdgep(way, edgep)) {
             MTaskEdge* tedgep = MTaskEdge::cast(edgep);
             if (sbp && !tedgep->removedFromSb()) sbp->removeElem(tedgep);
@@ -1252,7 +1252,7 @@ private:
             erased = m_pairs.erase(*pairp);
             UASSERT_OBJ(erased > 0, mtaskp, "Expected existing mtask");
         }
-        size_t erased = m_mtask2sibs.erase(mtaskp);
+        const size_t erased = m_mtask2sibs.erase(mtaskp);
         UASSERT_OBJ(erased > 0, mtaskp, "Expected existing mtask");
     }
 
@@ -1297,10 +1297,10 @@ private:
         //
         // These 'NewCp' objects carry a bit indicating whether we must
         // propagate CP for each of the four cases:
-        NewCp recipientNewCpFwd = newCp(GraphWay::FORWARD, recipientp, donorp, mergeEdgep);
-        NewCp donorNewCpFwd = newCp(GraphWay::FORWARD, donorp, recipientp, mergeEdgep);
-        NewCp recipientNewCpRev = newCp(GraphWay::REVERSE, recipientp, donorp, mergeEdgep);
-        NewCp donorNewCpRev = newCp(GraphWay::REVERSE, donorp, recipientp, mergeEdgep);
+        const NewCp recipientNewCpFwd = newCp(GraphWay::FORWARD, recipientp, donorp, mergeEdgep);
+        const NewCp donorNewCpFwd = newCp(GraphWay::FORWARD, donorp, recipientp, mergeEdgep);
+        const NewCp recipientNewCpRev = newCp(GraphWay::REVERSE, recipientp, donorp, mergeEdgep);
+        const NewCp donorNewCpRev = newCp(GraphWay::REVERSE, donorp, recipientp, mergeEdgep);
 
         if (mergeEdgep) {
             // Remove and free the connecting edge. Must do this before
@@ -2456,7 +2456,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     // remove this later if it doesn't really help.
     mtasksp->orderPreRanked();
 
-    int targetParFactor = v3Global.opt.threads();
+    const int targetParFactor = v3Global.opt.threads();
     if (targetParFactor < 2) v3fatalSrc("We should not reach V3Partition when --threads <= 1");
 
     // Set cpLimit to roughly totalGraphCost / nThreads
@@ -2464,8 +2464,8 @@ void V3Partition::go(V3Graph* mtasksp) {
     // Actually set it a bit lower, by a hardcoded fudge factor. This
     // results in more smaller mtasks, which helps reduce fragmentation
     // when scheduling them.
-    unsigned fudgeNumerator = 3;
-    unsigned fudgeDenominator = 5;
+    const unsigned fudgeNumerator = 3;
+    const unsigned fudgeDenominator = 5;
     uint32_t cpLimit = ((totalGraphCost * fudgeNumerator) / (targetParFactor * fudgeDenominator));
     UINFO(4, "V3Partition set cpLimit = " << cpLimit << endl);
 

@@ -149,11 +149,11 @@ private:
         AstNode* newp;
         // Negative word numbers requested for lhs when it's "before" what we want.
         // We get a 0 then.
-        int othword = word - shift / VL_EDATASIZE;
+        const int othword = word - shift / VL_EDATASIZE;
         AstNode* llowp = newAstWordSelClone(lhsp, othword);
-        if (int loffset = VL_BITBIT_E(shift)) {
+        if (const int loffset = VL_BITBIT_E(shift)) {
             AstNode* lhip = newAstWordSelClone(lhsp, othword - 1);
-            int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
+            const int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             newp = new AstOr(
                 fl,
                 new AstAnd(fl, new AstConst(fl, AstConst::SizedEData(), VL_MASK_E(loffset)),
@@ -448,7 +448,7 @@ private:
         UASSERT_OBJ(nodep->widthMin() == rhsp->widthConst(), nodep, "Width mismatch");
         if (!doExpand(nodep)) return false;
         if (VN_IS(rhsp->lsbp(), Const) && VL_BITBIT_E(rhsp->lsbConst()) == 0) {
-            int lsb = rhsp->lsbConst();
+            const int lsb = rhsp->lsbConst();
             UINFO(8, "    Wordize ASSIGN(SEL,align) " << nodep << endl);
             for (int w = 0; w < nodep->widthWords(); w++) {
                 addWordAssign(nodep, w, newAstWordSelClone(rhsp->fromp(), w + VL_BITWORD_E(lsb)));
@@ -491,15 +491,15 @@ private:
         //      rhsp:  may be allones and can remove AND NOT gate
         //      lsbp:  constant or variable
         // Yuk.
-        bool destwide = lhsp->fromp()->isWide();
-        bool ones = nodep->rhsp()->isAllOnesV();
+        const bool destwide = lhsp->fromp()->isWide();
+        const bool ones = nodep->rhsp()->isAllOnesV();
         if (VN_IS(lhsp->lsbp(), Const)) {
             // The code should work without this constant test, but it won't
             // constify as nicely as we'd like.
             AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
             AstNode* destp = lhsp->fromp()->unlinkFrBack();
-            int lsb = lhsp->lsbConst();
-            int msb = lhsp->msbConst();
+            const int lsb = lhsp->lsbConst();
+            const int msb = lhsp->msbConst();
             V3Number maskset(nodep, destp->widthMin());
             for (int bit = lsb; bit < (msb + 1); bit++) maskset.setBit(bit, 1);
             V3Number maskold(nodep, destp->widthMin());
@@ -659,7 +659,7 @@ private:
             UINFO(8, "    CONCAT " << nodep << endl);
             AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
             AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
-            int rhsshift = rhsp->widthMin();
+            const int rhsshift = rhsp->widthMin();
             if (nodep->isQuad() && !lhsp->isQuad()) {
                 lhsp = new AstCCast(nodep->fileline(), lhsp, nodep);
             }
@@ -680,7 +680,7 @@ private:
         if (!doExpand(rhsp)) return false;
         // Lhs or Rhs may be word, long, or quad.
         // newAstWordSelClone nicely abstracts the difference.
-        int rhsshift = rhsp->rhsp()->widthMin();
+        const int rhsshift = rhsp->rhsp()->widthMin();
         // Sometimes doing the words backwards is preferable.
         // When we have x={x,foo} backwards is better, when x={foo,x} forward is better
         // However V3Subst tends to rip this up, so not worth optimizing now.
@@ -701,7 +701,7 @@ private:
         } else {
             AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
             AstNode* newp;
-            int lhswidth = lhsp->widthMin();
+            const int lhswidth = lhsp->widthMin();
             if (lhswidth == 1) {
                 UINFO(8, "    REPLICATE(w1) " << nodep << endl);
                 newp = new AstNegate(nodep->fileline(), lhsp);
@@ -716,7 +716,7 @@ private:
                 }
                 newp = lhsp->cloneTree(true);
                 for (unsigned repnum = 1; repnum < times; repnum++) {
-                    int rhsshift = repnum * lhswidth;
+                    const int rhsshift = repnum * lhswidth;
                     newp = new AstOr(nodep->fileline(),
                                      new AstShiftL(nodep->fileline(), lhsp->cloneTree(true),
                                                    new AstConst(nodep->fileline(), rhsshift),
@@ -734,7 +734,7 @@ private:
         UINFO(8, "    Wordize ASSIGN(REPLICATE) " << nodep << endl);
         if (!doExpand(rhsp)) return false;
         AstNode* lhsp = rhsp->lhsp();
-        int lhswidth = lhsp->widthMin();
+        const int lhswidth = lhsp->widthMin();
         const AstConst* constp = VN_CAST(rhsp->rhsp(), Const);
         UASSERT_OBJ(constp, rhsp, "Replication value isn't a constant.  Checked earlier!");
         uint32_t times = constp->toUInt();

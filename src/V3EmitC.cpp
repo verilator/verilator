@@ -561,7 +561,7 @@ public:
         // displays are handled in AstDisplay
         if (!nodep->dpiExport()) {
             // this is where the DPI import context scope is set
-            string scope = nodep->scopeDpiName();
+            const string scope = nodep->scopeDpiName();
             putbs("(&(vlSymsp->" + protect("__Vscope_" + scope) + "))");
         }
     }
@@ -1520,15 +1520,15 @@ class EmitCImp final : EmitCStmts {
         if (v3Global.opt.lintOnly()) {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
             // We should move them to a different stage.
-            string filename = VL_DEV_NULL;
+            const string filename = VL_DEV_NULL;
             newCFile(filename, slow, source);
             ofp = new V3OutCFile(filename);
         } else if (optSystemC()) {
-            string filename = filenameNoExt + (source ? ".cpp" : ".h");
+            const string filename = filenameNoExt + (source ? ".cpp" : ".h");
             newCFile(filename, slow, source);
             ofp = new V3OutScFile(filename);
         } else {
-            string filename = filenameNoExt + (source ? ".cpp" : ".h");
+            const string filename = filenameNoExt + (source ? ".cpp" : ".h");
             newCFile(filename, slow, source);
             ofp = new V3OutCFile(filename);
         }
@@ -1800,30 +1800,30 @@ class EmitCImp final : EmitCStmts {
         // Returns string to do resetting, empty to do nothing (which caller should handle)
         if (AstAssocArrayDType* adtypep = VN_CAST(dtypep, AssocArrayDType)) {
             // Access std::array as C array
-            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
+            const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                        suffix + ".atDefault()" + cvtarray);
         } else if (VN_IS(dtypep, ClassRefDType)) {
             return "";  // Constructor does it
         } else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
             // Access std::array as C array
-            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
+            const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                        suffix + ".atDefault()" + cvtarray);
         } else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
             // Access std::array as C array
-            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
+            const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                        suffix + ".atDefault()" + cvtarray);
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                         "Should have swapped msb & lsb earlier.");
-            string ivar = string("__Vi") + cvtToStr(depth);
-            string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
-                          + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
-            string below = emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(),
-                                               depth + 1, suffix + "[" + ivar + "]");
-            string post = "}\n";
+            const string ivar = string("__Vi") + cvtToStr(depth);
+            const string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
+                                + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
+            const string below = emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(),
+                                                     depth + 1, suffix + "[" + ivar + "]");
+            const string post = "}\n";
             return below.empty() ? "" : pre + below + post;
         } else if (basicp && basicp->keyword() == AstBasicDTypeKwd::STRING) {
             // String's constructor deals with it
@@ -2224,9 +2224,9 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
         ofp()->putsQuoted(emitDispState.m_format);
         // Arguments
         for (unsigned i = 0; i < emitDispState.m_argsp.size(); i++) {
-            char fmt = emitDispState.m_argsChar[i];
+            const char fmt = emitDispState.m_argsChar[i];
             AstNode* argp = emitDispState.m_argsp[i];
-            string func = emitDispState.m_argsFunc[i];
+            const string func = emitDispState.m_argsFunc[i];
             if (func != "" || argp) {
                 puts(",");
                 ofp()->indentInc();
@@ -2234,7 +2234,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
                 if (func != "") {
                     puts(func);
                 } else if (argp) {
-                    bool addrof = isScan || (fmt == '@');
+                    const bool addrof = isScan || (fmt == '@');
                     if (addrof) puts("&(");
                     iterate(argp);
                     if (!addrof) emitDatap(argp);
@@ -2287,7 +2287,7 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
         // + 1.0 rounding bias.
         double dchars = mantissabits / 3.321928094887362 + 1.0;
         if (fmtLetter == 'd') dchars++;  // space for sign
-        int nchars = int(dchars);
+        const int nchars = int(dchars);
         pfmt = string("%") + cvtToStr(nchars) + fmtLetter;
     } else {
         pfmt = string("%") + vfmt + fmtLetter;
@@ -2392,7 +2392,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
             case 'z': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'z'); break;
             case 'm': {
                 UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
-                string suffix = scopenamep->scopePrettySymName();
+                const string suffix = scopenamep->scopePrettySymName();
                 if (suffix == "") {
                     emitDispState.pushFormat("%S");
                 } else {
@@ -2613,9 +2613,9 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
     if (v3Global.opt.savable()) {
         puts("\n// Savable\n");
         for (int de = 0; de < 2; ++de) {
-            string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
-            string funcname = de ? "__Vdeserialize" : "__Vserialize";
-            string op = de ? ">>" : "<<";
+            const string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
+            const string funcname = de ? "__Vdeserialize" : "__Vserialize";
+            const string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             puts("void " + prefixNameProtect(modp) + "::" + protect(funcname) + "(" + classname
                  + "& os) {\n");
@@ -2657,10 +2657,10 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                         AstNodeDType* elementp = varp->dtypeSkipRefp();
                         for (AstUnpackArrayDType* arrayp = VN_CAST(elementp, UnpackArrayDType);
                              arrayp; arrayp = VN_CAST(elementp, UnpackArrayDType)) {
-                            int vecnum = vects++;
+                            const int vecnum = vects++;
                             UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                         "Should have swapped msb & lsb earlier.");
-                            string ivar = string("__Vi") + cvtToStr(vecnum);
+                            const string ivar = string("__Vi") + cvtToStr(vecnum);
                             puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
                             puts("; " + ivar + "<" + cvtToStr(arrayp->elementsConst()));
                             puts("; ++" + ivar + ") {\n");
@@ -2673,8 +2673,8 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                         // (i.e. packed types of more than 64 bits).
                         if (elementp->isWide()
                             && !(basicp && basicp->keyword() == AstBasicDTypeKwd::STRING)) {
-                            int vecnum = vects++;
-                            string ivar = string("__Vi") + cvtToStr(vecnum);
+                            const int vecnum = vects++;
+                            const string ivar = string("__Vi") + cvtToStr(vecnum);
                             puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
                             puts("; " + ivar + "<" + cvtToStr(elementp->widthWords()));
                             puts("; ++" + ivar + ") {\n");
@@ -2731,10 +2731,10 @@ void EmitCImp::emitSensitives() {
                          = VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType);
                          arrayp;
                          arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
-                        int vecnum = vects++;
+                        const int vecnum = vects++;
                         UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                     "Should have swapped msb & lsb earlier.");
-                        string ivar = string("__Vi") + cvtToStr(vecnum);
+                        const string ivar = string("__Vi") + cvtToStr(vecnum);
                         puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(arrayp->lo()));
                         puts("; " + ivar + "<=" + cvtToStr(arrayp->hi()));
                         puts("; ++" + ivar + ") {\n");
@@ -2947,7 +2947,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
                 }
                 if (varp->isStatic() ? !isstatic : isstatic) doit = false;
                 if (doit) {
-                    int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
+                    const int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
                     int sortbytes = 9;
                     if (varp->isUsedClock() && varp->widthMin() == 1) {
                         sortbytes = 0;
@@ -2966,13 +2966,14 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
                     } else if (sigbytes == 1) {
                         sortbytes = 1;
                     }
-                    bool anonOk = (v3Global.opt.compLimitMembers() != 0  // Enabled
-                                   && !varp->isStatic() && !varp->isIO()  // Confusing to user
-                                   && !varp->isSc()  // Aggregates can't be anon
-                                   && (varp->basicp()
-                                       && !varp->basicp()->isOpaque())  // Aggregates can't be anon
-                                   && which != EVL_FUNC_ALL);  // Anon not legal in funcs, and gcc
-                                                               // bug free there anyhow
+                    const bool anonOk
+                        = (v3Global.opt.compLimitMembers() != 0  // Enabled
+                           && !varp->isStatic() && !varp->isIO()  // Confusing to user
+                           && !varp->isSc()  // Aggregates can't be anon
+                           && (varp->basicp()
+                               && !varp->basicp()->isOpaque())  // Aggregates can't be anon
+                           && which != EVL_FUNC_ALL);  // Anon not legal in funcs, and gcc
+                                                       // bug free there anyhow
                     if (anonOk) {
                         varAnonMap[sortbytes].push_back(varp);
                     } else {
@@ -3013,7 +3014,7 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
     using MTaskVarSortMap = std::map<const MTaskIdSet, VarSortMap>;
     MTaskVarSortMap m2v;
     for (VarSortMap::const_iterator it = vmap.begin(); it != vmap.end(); ++it) {
-        int size_class = it->first;
+        const int size_class = it->first;
         const VarVec& vec = it->second;
         for (const AstVar* varp : vec) { m2v[varp->mtaskIds()][size_class].push_back(varp); }
     }
@@ -3048,8 +3049,8 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
     string curVarCmt;
     // Output anons
     {
-        int anonMembers = anons.size();
-        int lim = v3Global.opt.compLimitMembers();
+        const int anonMembers = anons.size();
+        const int lim = v3Global.opt.compLimitMembers();
         int anonL3s = 1;
         int anonL2s = 1;
         int anonL1s = 1;
@@ -3643,8 +3644,8 @@ class EmitCTrace final : EmitCStmts {
             }
             //
             // fstVarType
-            AstVarType vartype = nodep->varType();
-            AstBasicDTypeKwd kwd = nodep->declKwd();
+            const AstVarType vartype = nodep->varType();
+            const AstBasicDTypeKwd kwd = nodep->declKwd();
             string fstvt;
             // Doubles have special decoding properties, so must indicate if a double
             if (nodep->dtypep()->basicp()->isDouble()) {
@@ -3902,7 +3903,7 @@ class EmitCTrace final : EmitCStmts {
         }
     }
     virtual void visit(AstTraceDecl* nodep) override {
-        int enumNum = emitTraceDeclDType(nodep->dtypep());
+        const int enumNum = emitTraceDeclDType(nodep->dtypep());
         if (nodep->arrayRange().ranged()) {
             puts("{int i; for (i=0; i<" + cvtToStr(nodep->arrayRange().elements()) + "; i++) {\n");
             emitTraceInitOne(nodep, enumNum);
@@ -3947,7 +3948,7 @@ public:
 
 static void setParentClassPointers() {
     // Set user4p in all CFunc and Var to point to the containing AstNodeModule
-    auto setAll = [](AstNodeModule* modp) -> void {
+    const auto setAll = [](AstNodeModule* modp) -> void {
         for (AstNode* nodep = VN_CAST(modp, NodeModule)->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var)) nodep->user4p(modp);
         }

@@ -125,9 +125,9 @@ private:
                 out << "'{";
                 for (AstMemberDType* itemp = stp->membersp(); itemp;
                      itemp = VN_CAST(itemp->nextp(), MemberDType)) {
-                    int width = itemp->width();
-                    int lsb = itemp->lsb();
-                    int msb = lsb + width - 1;
+                    const int width = itemp->width();
+                    const int lsb = itemp->lsb();
+                    const int msb = lsb + width - 1;
                     V3Number fieldNum(nump, width);
                     fieldNum.opSel(*nump, msb, lsb);
                     out << itemp->name() << ": ";
@@ -145,14 +145,14 @@ private:
             if (AstNodeDType* childTypep = arrayp->subDTypep()) {
                 std::ostringstream out;
                 out << "[";
-                int arrayElements = arrayp->elementsConst();
+                const int arrayElements = arrayp->elementsConst();
                 for (int element = 0; element < arrayElements; ++element) {
-                    int width = childTypep->width();
-                    int lsb = width * element;
-                    int msb = lsb + width - 1;
+                    const int width = childTypep->width();
+                    const int lsb = width * element;
+                    const int msb = lsb + width - 1;
                     V3Number fieldNum(nump, width);
                     fieldNum.opSel(*nump, msb, lsb);
-                    int arrayElem = arrayp->lo() + element;
+                    const int arrayElem = arrayp->lo() + element;
                     out << arrayElem << " = " << prettyNumber(&fieldNum, childTypep);
                     if (element < arrayElements - 1) out << ", ";
                 }
@@ -424,7 +424,7 @@ private:
                     clearOptimizable(nodep, "Var write & read");
                 }
                 vscp->user1(vscp->user1() | VU_RV);
-                bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
+                const bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
                 AstNode* valuep = isConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 if (isConst
                     && valuep) {  // Propagate PARAM constants for constant function analysis
@@ -1021,7 +1021,7 @@ private:
             AstNode* nextArgp = nodep->exprsp();
 
             string result;
-            string format = nodep->text();
+            const string format = nodep->text();
             auto pos = format.cbegin();
             bool inPct = false;
             for (; pos != format.cend(); ++pos) {
@@ -1041,7 +1041,7 @@ private:
                                 nodep, "Argument for $display like statement is not constant");
                             break;
                         }
-                        string pformat = string("%") + pos[0];
+                        const string pformat = string("%") + pos[0];
                         result += constp->num().displayed(nodep, pformat);
                     } else {
                         switch (tolower(pos[0])) {

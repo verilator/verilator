@@ -1138,13 +1138,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (debug() >= 9) nodep->dumpTree(cout, "-pin-pre: ");
 
             // Empty/in-only; need Z to propagate
-            bool inDeclProcessing = (nodep->exprp()
-                                     && nodep->modVarp()->direction() == VDirection::INPUT
-                                     // Need to consider the original state
-                                     // instead of current state as we converted
-                                     // tristates to inputs, which do not want
-                                     // to have this.
-                                     && !nodep->modVarp()->declDirection().isWritable());
+            const bool inDeclProcessing = (nodep->exprp()
+                                           && nodep->modVarp()->direction() == VDirection::INPUT
+                                           // Need to consider the original state
+                                           // instead of current state as we converted
+                                           // tristates to inputs, which do not want
+                                           // to have this.
+                                           && !nodep->modVarp()->declDirection().isWritable());
             if (!nodep->exprp()) {  // No-connect; covert to empty connection
                 UINFO(5, "Unconnected pin terminate " << nodep << endl);
                 AstVar* ucVarp = getCreateUnconnVarp(nodep, nodep->modVarp()->dtypep());

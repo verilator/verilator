@@ -73,7 +73,7 @@ GraphPathChecker::~GraphPathChecker() {
 
 void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
     GraphStreamUnordered order(m_graphp, way);
-    GraphWay rev = way.invert();
+    const GraphWay rev = way.invert();
     while (const V3GraphVertex* vertexp = order.nextp()) {
         unsigned critPathCost = 0;
         for (V3GraphEdge* edgep = vertexp->beginp(rev); edgep; edgep = edgep->nextp(rev)) {

@@ -235,7 +235,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         startStatement(nodep);
         {
-            bool noopt = PremitAssignVisitor(nodep).noOpt();
+            const bool noopt = PremitAssignVisitor(nodep).noOpt();
             if (noopt && !nodep->user1()) {
                 nodep->user1(true);
                 // Need to do this even if not wide, as e.g. a select may be on a wide operator

@@ -53,7 +53,7 @@ void V3ParseImp::lexUnputString(const char* textp, size_t length) {
 void V3ParseImp::yylexReadTok() {
     // Call yylex() remembering last non-whitespace token
     parsep()->lexFileline()->startToken();
-    int token = parsep()->m_lexerp->yylex();
+    const int token = parsep()->m_lexerp->yylex();
     m_lexPrevToken = token;  // Save so can find '#' to parse following number
     yylval.token = token;
 }

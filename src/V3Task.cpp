@@ -628,7 +628,7 @@ private:
             }
         }
         // First argument is symbol table, then output if a function
-        bool needSyms = !refp->taskp()->dpiImport();
+        const bool needSyms = !refp->taskp()->dpiImport();
         if (needSyms) ccallp->argTypes("vlSymsp");
 
         if (refp->taskp()->dpiContext()) {
@@ -691,7 +691,7 @@ private:
 
     AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
                                        const string& toSuffix) {
-        string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
+        const string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
         return new AstCStmt(portp->fileline(), stmt);
     }
 
@@ -992,14 +992,14 @@ private:
                         // Ideally we'd make a table of variable
                         // characteristics, and reuse it wherever we can
                         // At least put them into the module's CTOR as static?
-                        string propName = portp->name() + "__Vopenprops";
-                        string propCode = portp->vlPropDecl(propName);
+                        const string propName = portp->name() + "__Vopenprops";
+                        const string propCode = portp->vlPropDecl(propName);
                         cfuncp->addStmtsp(new AstCStmt(portp->fileline(), propCode));
                         //
                         // At runtime we need the svOpenArrayHandle to
                         // point to this task & thread's data, in addition
                         // to static info about the variable
-                        string name = portp->name() + "__Vopenarray";
+                        const string name = portp->name() + "__Vopenarray";
                         string varCode
                             = ("VerilatedDpiOpenVar "
                                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
@@ -1025,7 +1025,7 @@ private:
 
         // Store context, if needed
         if (nodep->dpiContext()) {
-            string stmt = "Verilated::dpiContext(__Vscopep, __Vfilenamep, __Vlineno);\n";
+            const string stmt = "Verilated::dpiContext(__Vscopep, __Vfilenamep, __Vlineno);\n";
             cfuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
         }
 
@@ -1135,7 +1135,7 @@ private:
         // so make it unique now.
         string suffix;  // So, make them unique
         if (!nodep->taskPublic() && !nodep->classMethod()) suffix = "_" + m_scopep->nameDotless();
-        string name = ((nodep->name() == "new") ? "new" : prefix + nodep->name() + suffix);
+        const string name = ((nodep->name() == "new") ? "new" : prefix + nodep->name() + suffix);
         AstCFunc* cfuncp = new AstCFunc(
             nodep->fileline(), name, m_scopep,
             ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : ""));
@@ -1307,8 +1307,8 @@ private:
         UINFO(4, " FTask REF   " << nodep << endl);
         if (debug() >= 9) nodep->dumpTree(cout, "-inlfunc:");
         UASSERT_OBJ(m_scopep, nodep, "func ref not under scope");
-        string namePrefix = ((VN_IS(nodep, FuncRef) ? "__Vfunc_" : "__Vtask_")
-                             + nodep->taskp()->shortName() + "__" + cvtToStr(m_modNCalls++));
+        const string namePrefix = ((VN_IS(nodep, FuncRef) ? "__Vfunc_" : "__Vtask_")
+                                   + nodep->taskp()->shortName() + "__" + cvtToStr(m_modNCalls++));
         // Create output variable
         AstVarScope* outvscp = nullptr;
         if (nodep->taskp()->isFunction()) {
@@ -1621,8 +1621,8 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
     string ket;
     // Someday we'll have better type support, and this can make variables and casts.
     // But for now, we'll just text-bash it.
-    string frName = frPrefix + portp->name() + frSuffix;
-    string toName = portp->name() + toSuffix;
+    const string frName = frPrefix + portp->name() + frSuffix;
+    const string toName = portp->name() + toSuffix;
     size_t unpackSize = 1;  // non-unpacked array is treated as size 1
     int unpackDim = 0;
     if (AstUnpackArrayDType* unpackp = VN_CAST(portp->dtypep()->skipRefp(), UnpackArrayDType)) {

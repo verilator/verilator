@@ -52,7 +52,7 @@ private:
         UINFO(6, "  Deep  " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
 
-        string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
+        const string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
         AstVar* varp
             = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep());
         UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");

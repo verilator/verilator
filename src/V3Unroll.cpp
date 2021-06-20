@@ -324,8 +324,8 @@ private:
                         VL_DO_DANGLING(tempp->deleteTree(), tempp);
                     }
                     if (m_generate) {
-                        string index = AstNode::encodeNumber(m_varValuep->toSInt());
-                        string nname = m_beginName + "__BRA__" + index + "__KET__";
+                        const string index = AstNode::encodeNumber(m_varValuep->toSInt());
+                        const string nname = m_beginName + "__BRA__" + index + "__KET__";
                         oneloopp = new AstBegin(oneloopp->fileline(), nname, oneloopp, true);
                     }
                     VL_DO_CLEAR(pushDeletep(m_varValuep), m_varValuep = nullptr);

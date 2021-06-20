@@ -165,7 +165,7 @@ private:
 
                     const string irpName = irp->prettyName();
                     if (scopeLen > irpName.length()) continue;
-                    string intfScopeName = irpName.substr(0, scopeLen);
+                    const string intfScopeName = irpName.substr(0, scopeLen);
                     if (scopeName != intfScopeName) continue;
                     callCFuncSub(origSubFunc, m_initSubFuncp, irp);
                     ++origSubStmts;

@@ -34,7 +34,7 @@ void test(const string& lhss, const string& op, const string& rhss, const string
     char* r1 = strdup(rhss.c_str());
     char* e1 = strdup(exps.c_str());
 
-    FileLine fl = new FileLine(FileLine::builtInFinename());
+    const FileLine fl = new FileLine(FileLine::builtInFinename());
 
     V3Number lhnum(fl, l1);
     V3Number rhnum(fl, r1);

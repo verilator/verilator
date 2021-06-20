@@ -157,13 +157,13 @@ private:
                 // We check this rule in the parser, so shouldn't fire
                 nodep->v3error("Enum ranges must be integral, per spec");
             }  // LCOV_EXCL_STOP
-            int left = nodep->rangep()->leftConst();
-            int right = nodep->rangep()->rightConst();
-            int increment = (left > right) ? -1 : 1;
+            const int left = nodep->rangep()->leftConst();
+            const int right = nodep->rangep()->rightConst();
+            const int increment = (left > right) ? -1 : 1;
             int offset_from_init = 0;
             AstNode* addp = nullptr;
             for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
-                string name = nodep->name() + cvtToStr(i);
+                const string name = nodep->name() + cvtToStr(i);
                 AstNode* valuep = nullptr;
                 if (nodep->valuep()) {
                     valuep = new AstAdd(
@@ -350,7 +350,7 @@ private:
             m_varp->addNext(nodep);
             // lvalue is true, because we know we have a verilator public_flat_rw
             // but someday we may be more general
-            bool lvalue = m_varp->isSigUserRWPublic();
+            const bool lvalue = m_varp->isSigUserRWPublic();
             nodep->addStmtp(
                 new AstVarRef(nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ));
         }
@@ -540,10 +540,10 @@ private:
         cleanFileline(nodep);
         AstNode* backp = nodep->backp();
         // IEEE says directly nested item is not a new block
-        bool nestedIf = (nodep->implied()  // User didn't provide begin/end
-                         && (VN_IS(nodep->stmtsp(), GenIf)
-                             || VN_IS(nodep->stmtsp(), GenCase))  // Has an if/case
-                         && !nodep->stmtsp()->nextp());  // Has only one item
+        const bool nestedIf = (nodep->implied()  // User didn't provide begin/end
+                               && (VN_IS(nodep->stmtsp(), GenIf)
+                                   || VN_IS(nodep->stmtsp(), GenCase))  // Has an if/case
+                               && !nodep->stmtsp()->nextp());  // Has only one item
         // It's not FOR(BEGIN(...)) but we earlier changed it to BEGIN(FOR(...))
         if (nodep->genforp()) {
             ++m_genblkNum;

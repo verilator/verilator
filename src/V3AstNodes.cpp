@@ -284,7 +284,7 @@ AstNetlist::AstNetlist()
 }
 
 void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
-    VTimescale prec = v3Global.opt.timeComputePrec(value);
+    const VTimescale prec = v3Global.opt.timeComputePrec(value);
     if (prec.isNone() || prec == m_timeprecision) {
     } else if (m_timeprecision.isNone()) {
         m_timeprecision = prec;
@@ -343,7 +343,8 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     string ostatic;
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
-    bool isRef = isDpiOpenArray() || (forFunc && (isWritable() || direction().isRefOrConstRef()));
+    const bool isRef
+        = isDpiOpenArray() || (forFunc && (isWritable() || direction().isRefOrConstRef()));
 
     if (forFunc && isReadOnly() && isRef) ostatic = ostatic + "const ";
 
@@ -358,7 +359,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 string AstVar::vlEnumType() const {
     string arg;
     AstBasicDType* bdtypep = basicp();
-    bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
+    const bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
         return "VLVT_PTR";
     } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) {
@@ -648,7 +649,7 @@ public:
 };
 
 string AstNodeDType::cType(const string& name, bool forFunc, bool isRef) const {
-    CTypeRecursed info = cTypeRecurse(false);
+    const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
 
@@ -1251,8 +1252,9 @@ const char* AstClassPackage::broken() const {
     return nullptr;
 }
 void AstClass::insertCache(AstNode* nodep) {
-    bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
-                 || (VN_IS(nodep, NodeFTask) && !VN_CAST(nodep, NodeFTask)->isExternProto()));
+    const bool doit
+        = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
+           || (VN_IS(nodep, NodeFTask) && !VN_CAST(nodep, NodeFTask)->isExternProto()));
     if (doit) {
         if (m_members.find(nodep->name()) != m_members.end()) {
             nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());

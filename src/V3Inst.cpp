@@ -207,7 +207,7 @@ private:
             AstUnpackArrayDType* arrdtype = VN_CAST(nodep->dtypep(), UnpackArrayDType);
             AstNode* prevp = nullptr;
             for (int i = arrdtype->lo(); i <= arrdtype->hi(); ++i) {
-                string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
+                const string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 UINFO(8, "VAR name insert " << varNewName << "  " << nodep << endl);
                 if (!m_deModVars.find(varNewName)) {
                     AstIfaceRefDType* ifaceRefp
@@ -246,15 +246,16 @@ private:
             m_cellRangep = nodep->rangep();
 
             AstVar* ifaceVarp = VN_CAST(nodep->nextp(), Var);
-            bool isIface = ifaceVarp && VN_IS(ifaceVarp->dtypep(), UnpackArrayDType)
-                           && VN_IS(VN_CAST(ifaceVarp->dtypep(), UnpackArrayDType)->subDTypep(),
-                                    IfaceRefDType);
+            const bool isIface
+                = ifaceVarp && VN_IS(ifaceVarp->dtypep(), UnpackArrayDType)
+                  && VN_IS(VN_CAST(ifaceVarp->dtypep(), UnpackArrayDType)->subDTypep(),
+                           IfaceRefDType);
 
             // Make all of the required clones
             for (int i = 0; i < m_cellRangep->elementsConst(); i++) {
                 m_instSelNum
                     = m_cellRangep->littleEndian() ? (m_cellRangep->elementsConst() - 1 - i) : i;
-                int instNum = m_cellRangep->loConst() + i;
+                const int instNum = m_cellRangep->loConst() + i;
 
                 AstCell* newp = nodep->cloneTree(false);
                 nodep->addNextHere(newp);
@@ -316,8 +317,8 @@ private:
         if (!nodep->exprp()) return;  // No-connect
         if (m_cellRangep) {
             UINFO(4, "   PIN  " << nodep << endl);
-            int pinwidth = nodep->modVarp()->width();
-            int expwidth = nodep->exprp()->width();
+            const int pinwidth = nodep->modVarp()->width();
+            const int expwidth = nodep->exprp()->width();
             std::pair<uint32_t, uint32_t> pinDim = nodep->modVarp()->dtypep()->dimensions(false);
             std::pair<uint32_t, uint32_t> expDim = nodep->exprp()->dtypep()->dimensions(false);
             UINFO(4, "   PINVAR  " << nodep->modVarp() << endl);
@@ -328,9 +329,9 @@ private:
             if (expDim.first == pinDim.first && expDim.second == pinDim.second + 1) {
                 // Connection to array, where array dimensions match the instant dimension
                 AstRange* rangep = VN_CAST(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();
-                int arraySelNum = rangep->littleEndian()
-                                      ? (rangep->elementsConst() - 1 - m_instSelNum)
-                                      : m_instSelNum;
+                const int arraySelNum = rangep->littleEndian()
+                                            ? (rangep->elementsConst() - 1 - m_instSelNum)
+                                            : m_instSelNum;
                 AstNode* exprp = nodep->exprp()->unlinkFrBack();
                 exprp = new AstArraySel(exprp->fileline(), exprp, arraySelNum);
                 nodep->exprp(exprp);
@@ -346,7 +347,7 @@ private:
                                                           << m_cellRangep->rightConst() << "]");
                 }
                 AstNode* exprp = nodep->exprp()->unlinkFrBack();
-                bool inputPin = nodep->modVarp()->isNonOutput();
+                const bool inputPin = nodep->modVarp()->isNonOutput();
                 if (!inputPin
                     && !VN_IS(exprp, VarRef)
                     // V3Const will collapse the SEL with the one we're about to make
@@ -373,7 +374,7 @@ private:
                         "Unsupported: Non-constant index when passing interface to module");
                     return;
                 }
-                string index = AstNode::encodeNumber(constp->toSInt());
+                const string index = AstNode::encodeNumber(constp->toSInt());
                 if (VN_IS(arrselp->lhsp(), SliceSel))
                     arrselp->lhsp()->v3error("Unsupported: interface slices");
                 AstVarRef* varrefp = VN_CAST(arrselp->lhsp(), VarRef);
@@ -397,7 +398,7 @@ private:
             // Clone pin varp:
             for (int in = 0; in < pinArrp->elementsConst(); ++in) {  // 0 = leftmost
                 int i = pinArrp->left() + in * pinArrp->declRange().leftToRightInc();
-                string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
+                const string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 AstVar* varNewp = nullptr;
 
                 // Only clone the var once for all usages of a given child module
@@ -445,7 +446,7 @@ private:
                     expr_i = exprArrp->left() + in * exprArrp->declRange().leftToRightInc();
                 }
 
-                string newname = varrefp->name() + "__BRA__" + cvtToStr(expr_i) + "__KET__";
+                const string newname = varrefp->name() + "__BRA__" + cvtToStr(expr_i) + "__KET__";
                 AstVarXRef* newVarXRefp
                     = new AstVarXRef(nodep->fileline(), newname, "", VAccess::WRITE);
                 newVarXRefp->varp(newp->modVarp());

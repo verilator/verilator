@@ -60,7 +60,7 @@ string FileLineSingleton::filenameLetters(int fileno) {
 int FileLineSingleton::nameToNumber(const string& filename) {
     const auto it = vlstd::as_const(m_namemap).find(filename);
     if (VL_LIKELY(it != m_namemap.end())) return it->second;
-    int num = m_names.size();
+    const int num = m_names.size();
     m_names.push_back(filename);
     m_languages.push_back(V3LangCode::mostRecent());
     m_namemap.emplace(filename, num);
@@ -95,7 +95,7 @@ void VFileContent::pushText(const string& text) {
     }
 
     // Any leftover text is stored on largest line (might be "")
-    string leftover = m_lines.back() + text;
+    const string leftover = m_lines.back() + text;
     m_lines.pop_back();
 
     // Insert line-by-line
@@ -125,7 +125,7 @@ string VFileContent::getLine(int lineno) const {
             return "";
         }
     }
-    string text = m_lines[lineno];
+    const string text = m_lines[lineno];
     UINFO(9, "Get Stream[ct" << m_id << "+" << lineno << "]: " << text);
     return text;
 }
@@ -399,7 +399,7 @@ string FileLine::warnContext(bool secondary) const {
     if (!v3Global.opt.context()) return "";
     string out;
     if (firstLineno() == lastLineno() && firstColumn()) {
-        string sourceLine = prettySource();
+        const string sourceLine = prettySource();
         // Don't show super-long lines as can fill screen and unlikely to help user
         if (!sourceLine.empty() && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
             && sourceLine.length() >= static_cast<size_t>(lastColumn() - 1)) {

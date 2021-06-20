@@ -165,11 +165,11 @@ void V3ParseImp::lexErrorPreprocDirective(FileLine* fl, const char* textp) {
     VSpellCheck speller;
     for (V3LanguageWords::const_iterator it = V3LanguageWords::begin();
          it != V3LanguageWords::end(); ++it) {
-        string ppDirective = it->first;
+        const string ppDirective = it->first;
         if (ppDirective[0] == '`') speller.pushCandidate(ppDirective);
     }
     V3PreShell::candidateDefines(&speller);
-    string suggest = speller.bestCandidateMsg(textp);
+    const string suggest = speller.bestCandidateMsg(textp);
     fl->v3error("Define or directive not defined: '"
                 << textp << "'\n"
                 << (suggest.empty() ? "" : fl->warnMore() + suggest));
@@ -183,7 +183,7 @@ string V3ParseImp::lexParseTag(const char* textp) {
 }
 
 double V3ParseImp::lexParseTimenum(const char* textp) {
-    size_t length = strlen(textp);
+    const size_t length = strlen(textp);
     char* strgp = new char[length + 1];
     char* dp = strgp;
     const char* sp = textp;
@@ -227,7 +227,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
         m_ppBuffers.pop_front();
         size_t len = front.length();
         if (len > (max_size - got)) {  // Front string too big
-            string remainder = front.substr(max_size - got);
+            const string remainder = front.substr(max_size - got);
             front = front.substr(0, max_size - got);
             m_ppBuffers.push_front(remainder);  // Put back remainder for next time
             len = (max_size - got);
@@ -236,7 +236,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
         got += len;
     }
     if (debug() >= 9) {
-        string out = string(buf, got);
+        const string out = string(buf, got);
         cout << "   inputToLex  got=" << got << " '" << out << "'" << endl;
     }
     // Note returns 0 at EOF
@@ -247,7 +247,7 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
     if (v3Global.opt.dumpDefines()) {
         V3PreShell::dumpDefines(os);
     } else {
-        bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
+        const bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
         for (auto& buf : m_ppBuffers) {
             if (noblanks) {
                 bool blank = true;
@@ -266,7 +266,7 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
 
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
                            const string& errmsg) {  // "" for no error, make fake node
-    string modname = V3Os::filenameNonExt(modfilename);
+    const string modname = V3Os::filenameNonExt(modfilename);
 
     UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << endl);
     m_lexFileline = new FileLine(fileline);
@@ -275,7 +275,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     m_inLibrary = inLibrary;
 
     // Preprocess into m_ppBuffer
-    bool ok = V3PreShell::preproc(fileline, modfilename, m_filterp, this, errmsg);
+    const bool ok = V3PreShell::preproc(fileline, modfilename, m_filterp, this, errmsg);
     if (!ok) {
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
@@ -351,7 +351,7 @@ size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
     depth += 2;  // Past the (
     int parens = 1;  // Count first (
     while (true) {
-        int tok = tokenPeekp(depth)->token;
+        const int tok = tokenPeekp(depth)->token;
         if (tok == 0) {
             UINFO(9, "tokenPipeScanParam hit EOF; probably syntax error to come");
             break;
@@ -392,7 +392,7 @@ void V3ParseImp::tokenPipeline() {
         }
         V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
         const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);
-        int nexttok = nexttokp->token;
+        const int nexttok = nexttokp->token;
         yylval = curValue;
         // Now potentially munge the current token
         if (token == '('
@@ -467,7 +467,7 @@ void V3ParseImp::tokenPipeline() {
             } else if (nexttok == '#') {
                 V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
                 {
-                    size_t depth = tokenPipeScanParam(0);
+                    const size_t depth = tokenPipeScanParam(0);
                     if (tokenPeekp(depth)->token == yP_COLONCOLON) token = yaID__CC;
                 }
                 yylval = curValue;

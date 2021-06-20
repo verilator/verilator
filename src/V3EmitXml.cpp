@@ -129,9 +129,9 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         outputChildrenEnd(nodep, "");
     }
     virtual void visit(AstVar* nodep) override {
-        AstVarType typ = nodep->varType();
-        string kw = nodep->verilogKwd();
-        string vt = nodep->dtypep()->name();
+        const AstVarType typ = nodep->varType();
+        const string kw = nodep->verilogKwd();
+        const string vt = nodep->dtypep()->name();
         outputTag(nodep, "");
         if (nodep->isIO()) {
             puts(" dir=");
@@ -183,7 +183,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
     }
     virtual void visit(AstModportVarRef* nodep) override {
         // Dump direction for Modport references
-        string kw = nodep->direction().xmlKwd();
+        const string kw = nodep->direction().xmlKwd();
         outputTag(nodep, "");
         puts(" direction=");
         putsQuoted(kw);
@@ -376,9 +376,9 @@ public:
 void V3EmitXml::emitxml() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // All-in-one file
-    string filename = (v3Global.opt.xmlOutput().empty()
-                           ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"
-                           : v3Global.opt.xmlOutput());
+    const string filename = (v3Global.opt.xmlOutput().empty()
+                                 ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"
+                                 : v3Global.opt.xmlOutput());
     V3OutXmlFile of(filename);
     of.putsHeader();
     of.puts("<!-- DESCR"
