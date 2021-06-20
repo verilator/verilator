@@ -169,11 +169,14 @@ private:
         m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
 
+        // Adjust all levels so that the defined topmodule is level 2
+        int levelOffset = m_topVertexp ? (m_topVertexp->rank() + 1 - 2) : 0;
+
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
            if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
                // +1 so we leave level 1  for the new wrapper we'll make in a moment
                AstNodeModule* modp = vvertexp->modp();
-               modp->level(vvertexp->rank() + 1);
+               modp->level(vvertexp->rank() + 1 - levelOffset);
                if (vvertexp == m_topVertexp && modp->level() != 2) {
                    AstNodeModule* abovep = nullptr;
                    if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
