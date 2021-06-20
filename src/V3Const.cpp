@@ -82,12 +82,57 @@ public:
 class ConstBitOpTreeVisitor final : public AstNVisitor {
     // TYPES
 
-    struct LeafInfo {  // Leaf node (either AstConst or AstVarRef)
+    struct LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
         bool m_polarity = true;
         int m_lsb = 0;
         int m_wordIdx = -1;  // -1 means AstWordSel is not used.
         AstVarRef* m_refp = nullptr;
         AstConst* m_constp = nullptr;
+    };
+
+    struct BitPolarityEntry final {  // Found bit polarity during iterate()
+        LeafInfo m_info;
+        bool m_polarity;
+        int m_bit;
+        BitPolarityEntry(const LeafInfo& info, bool pol, int bit)
+            : m_info(info)
+            , m_polarity(pol)
+            , m_bit(bit) {}
+        BitPolarityEntry() = default;
+    };
+
+    class Restorer final {  // Restore the original state unless disableRestore() is called
+        ConstBitOpTreeVisitor& m_visitor;
+        const size_t m_polaritiesSize;
+        const size_t m_frozenSize;
+        const int m_ops;
+        const bool m_polarity;
+        bool m_restore;
+
+    public:
+        explicit Restorer(ConstBitOpTreeVisitor& visitor)
+            : m_visitor(visitor)
+            , m_polaritiesSize(visitor.m_bitPolarities.size())
+            , m_frozenSize(visitor.m_frozenNodes.size())
+            , m_ops(visitor.m_ops)
+            , m_polarity(visitor.m_polarity)
+            , m_restore(true) {}
+        ~Restorer() {
+            UASSERT(m_visitor.m_bitPolarities.size() >= m_polaritiesSize,
+                    "m_bitPolarities must grow monotorilaclly");
+            UASSERT(m_visitor.m_frozenNodes.size() >= m_frozenSize,
+                    "m_frozenNodes must grow monotorilaclly");
+            if (m_restore) restoreNow();
+        }
+        void disableRestore() { m_restore = false; }
+        void restoreNow() {
+            UASSERT(m_restore, "Can be called just once");
+            m_visitor.m_bitPolarities.resize(m_polaritiesSize);
+            m_visitor.m_frozenNodes.resize(m_frozenSize);
+            m_visitor.m_ops = m_ops;
+            m_visitor.m_polarity = m_polarity;
+            m_restore = false;
+        }
     };
     // Collect information for each Variable to transform as below
     class VarInfo final {
@@ -195,7 +240,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     AstUser4InUse m_inuser4;
     std::vector<AstNode*> m_frozenNodes;  // Nodes that cannot be optimized
-    std::vector<VarInfo*> m_varInfos;  // VarInfo for each variable, [0] is nullptr
+    std::vector<BitPolarityEntry> m_bitPolarities;  // Polarity of bits found during iterate()
+    std::vector<std::unique_ptr<VarInfo>> m_varInfos;  // VarInfo for each variable, [0] is nullptr
 
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
@@ -235,14 +281,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             baseIdx = m_varInfos.size();
             const int numWords
                 = ref.m_refp->dtypep()->isWide() ? ref.m_refp->dtypep()->widthWords() : 1;
-            m_varInfos.resize(m_varInfos.size() + numWords, nullptr);
+            m_varInfos.resize(m_varInfos.size() + numWords);
             nodep->user4(baseIdx);
         }
         const size_t idx = baseIdx + std::max(0, ref.m_wordIdx);
-        VarInfo* varInfop = m_varInfos[idx];
+        VarInfo* varInfop = m_varInfos[idx].get();
         if (!varInfop) {
             varInfop = new VarInfo{this, ref.m_refp};
-            m_varInfos[idx] = varInfop;
+            m_varInfos[idx].reset(varInfop);
         } else {
             if (!varInfop->sameVarAs(ref.m_refp))
                 CONST_BITOP_SET_FAILED("different var (scope?)", ref.m_refp);
@@ -325,6 +371,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     }
 
     virtual void visit(AstRedXor* nodep) override {  // Expect '^(mask & v)'
+        Restorer restorer{*this};
         CONST_BITOP_RETURN_IF(!VN_IS(m_rootp, Xor), nodep);
         AstAnd* andp = VN_CAST(nodep->lhsp(), And);
         CONST_BITOP_RETURN_IF(!andp, nodep->lhsp());
@@ -335,13 +382,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         LeafInfo leaf = findLeaf(andp->rhsp(), false);
         CONST_BITOP_RETURN_IF(!leaf.m_refp, andp->rhsp());
 
+        restorer.disableRestore();  // Now all subtree succeeded
+
         incrOps(nodep, __LINE__);
         incrOps(andp, __LINE__);
         const V3Number& maskNum = mask.m_constp->num();
-        VarInfo& varInfo = getVarInfo(leaf);
         for (int i = 0; i < maskNum.width(); ++i) {
             // Set true, m_treePolarity takes care of the entire parity
-            if (maskNum.bitIs1(i)) varInfo.setPolarity(true, i + leaf.m_lsb);
+            if (maskNum.bitIs1(i)) m_bitPolarities.emplace_back(leaf, true, i + leaf.m_lsb);
         }
     }
 
@@ -357,29 +405,28 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             VL_RESTORER(m_leafp);
 
             for (int i = 0; i < 2; ++i) {
+                Restorer restorer{*this};
                 LeafInfo leafInfo;
                 m_leafp = &leafInfo;
                 m_curOpp = i == 0 ? nodep->lhsp() : nodep->rhsp();
-                const size_t origFrozens = m_frozenNodes.size();
-                const int origOps = m_ops;
                 const bool origFailed = m_failed;
                 iterate(m_curOpp);
                 if (leafInfo.m_constp || m_failed) {
                     // Rvert changes in leaf
-                    if (m_frozenNodes.size() > origFrozens) m_frozenNodes.resize(origFrozens);
+                    restorer.restoreNow();
                     m_frozenNodes.push_back(m_curOpp);
-                    m_ops = origOps;
                     m_failed = origFailed;
-                } else if (leafInfo.m_refp) {
-                    VarInfo& varInfo = getVarInfo(leafInfo);
-                    if (!varInfo.hasConstantResult()) {
-                        varInfo.setPolarity(isXorTree() || leafInfo.m_polarity, leafInfo.m_lsb);
-                    }
+                    continue;
                 }
+                restorer.disableRestore();  // Now all checks passed
+                if (leafInfo.m_refp)
+                    m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.m_polarity,
+                                                 leafInfo.m_lsb);
             }
             return;
         } else if (VN_IS(m_rootp, Xor) && VN_IS(nodep, Eq) && isConst(nodep->lhsp(), 0)
                    && VN_IS(nodep->rhsp(), And)) {  // 0 == (1 & RedXor)
+            Restorer restorer{*this};
             AstAnd* andp = static_cast<AstAnd*>(nodep->rhsp());  // already checked above
             CONST_BITOP_RETURN_IF(!isConst(andp->lhsp(), 1), andp->lhsp());
             AstRedXor* redXorp = VN_CAST(andp->rhsp(), RedXor);
@@ -388,14 +435,21 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             incrOps(andp, __LINE__);
             m_polarity = !m_polarity;
             iterate(redXorp);
+            CONST_BITOP_RETURN_IF(m_failed, redXorp);
+
+            restorer.disableRestore();  // Now all checks passed
             return;
         } else if (VN_IS(m_rootp, Xor) && VN_IS(nodep, And) && isConst(nodep->lhsp(), 1)
                    && (VN_IS(nodep->rhsp(), Xor)
                        || VN_IS(nodep->rhsp(), RedXor))) {  // 1 & (v[3] ^ v[2])
+            Restorer restorer{*this};
             incrOps(nodep, __LINE__);
             iterate(nodep->rhsp());
+            CONST_BITOP_RETURN_IF(m_failed, nodep->rhsp());
+            restorer.disableRestore();  // Now all checks passed
             return;
         } else if ((isAndTree() && VN_IS(nodep, Eq)) || (isOrTree() && VN_IS(nodep, Neq))) {
+            Restorer restorer{*this};
             CONST_BITOP_RETURN_IF(!m_polarity, nodep);
             const bool maskFlip = isOrTree();
             LeafInfo comp = findLeaf(nodep->lhsp(), true);
@@ -410,14 +464,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             LeafInfo ref = findLeaf(andp->rhsp(), false);
             CONST_BITOP_RETURN_IF(!ref.m_refp, andp->rhsp());
 
-            VarInfo& varInfo = getVarInfo(ref);
+            restorer.disableRestore();  // Now all checks passed
 
             const V3Number maskNum = mask.m_constp->num();
             const V3Number compNum = comp.m_constp->num();
-            for (int i = 0; i < maskNum.width() && !varInfo.hasConstantResult(); ++i) {
+            for (int i = 0; i < maskNum.width(); ++i) {
                 const int bit = i + ref.m_lsb;
                 if (maskNum.bitIs0(i)) continue;
-                varInfo.setPolarity(compNum.bitIs1(i) ^ maskFlip, bit);
+                m_bitPolarities.emplace_back(ref, compNum.bitIs1(i) != maskFlip, bit);
             }
             incrOps(nodep, __LINE__);
             incrOps(andp, __LINE__);
@@ -440,13 +494,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             incrOps(nodep, __LINE__);
             iterateChildren(nodep);
         }
+        for (auto&& entry : m_bitPolarities) {
+            VarInfo& info = getVarInfo(entry.m_info);
+            if (info.hasConstantResult()) continue;
+            info.setPolarity(entry.m_polarity, entry.m_bit);
+        }
         UASSERT_OBJ(isXorTree() || m_polarity, nodep, "must be the original polarity");
     }
-    virtual ~ConstBitOpTreeVisitor() {
-        for (size_t i = 0; i < m_varInfos.size(); ++i) {
-            VL_DO_DANGLING(delete m_varInfos[i], m_varInfos[i]);
-        }
-    }
+    virtual ~ConstBitOpTreeVisitor() = default;
 #undef CONST_BITOP_RETURN_IF
 #undef CONST_BITOP_SET_FAILED
 
@@ -466,7 +521,7 @@ public:
         // Two ops for each varInfo. (And and Eq)
         const int vars = visitor.m_varInfos.size() - 1;
         int constTerms = 0;
-        for (const VarInfo* v : visitor.m_varInfos) {
+        for (auto&& v : visitor.m_varInfos) {
             if (v && v->hasConstantResult()) ++constTerms;
         }
         // Expected number of ops after this simplification
@@ -486,7 +541,7 @@ public:
         AstNode* resultp = nullptr;
         // VarInfo in visitor.m_varInfos appears in deterministic order,
         // so the optimized AST is deterministic too.
-        for (const VarInfo* varinfop : visitor.m_varInfos) {
+        for (auto&& varinfop : visitor.m_varInfos) {
             if (!varinfop) continue;
             AstNode* partialresultp = varinfop->getResult();
             resultp = visitor.combineTree(resultp, partialresultp);
