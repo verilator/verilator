@@ -1,16 +1,9 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Use this file as a template for submitting bugs, etc.
-// This module takes a single clock input, and should either
-//      $write("*-* All Finished *-*\n");
-//      $finish;
-// on success, or $stop.
-//
-// The code as shown applies a random vector to the Test
-// module, then calculates a CRC on the Test module's outputs.
-//
-// **If you do not wish for your code to be released to the public
-// please note it here, otherwise:**
+// This test verifies that a top-module can be specified which
+// is instantiated beneath another module in the compiled source
+// code, even when that top-module has a module both above and beside
+// it in the hierarchy.
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2021 by Dan Petrisko.
