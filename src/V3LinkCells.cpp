@@ -176,16 +176,7 @@ private:
             if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
                 // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* modp = vvertexp->modp();
-                modp->level(vvertexp->rank() + 1);
-                if (vvertexp == m_topVertexp && modp->level() != 2) {
-                    AstNodeModule* abovep = nullptr;
-                    if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
-                        if (LinkCellsVertex* eFromVertexp
-                            = dynamic_cast<LinkCellsVertex*>(edgep->fromp())) {
-                            abovep = eFromVertexp->modp();
-                        }
-                    }
-                }
+                modp->level(vvertexp->rank() + 1 - levelOffset);
             }
         }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
