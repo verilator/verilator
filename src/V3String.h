@@ -226,7 +226,7 @@ public:
     }
     // Return friendly message
     string bestCandidateMsg(const string& goal) const {
-        string candidate = bestCandidate(goal);
+        const string candidate = bestCandidate(goal);
         if (candidate.empty()) {
             return "";
         } else {

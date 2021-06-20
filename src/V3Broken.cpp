@@ -72,7 +72,7 @@ public:
         UASSERT_OBJ(!(iter != s_nodes.end() && (iter->second & FLAG_ALLOCATED)), nodep,
                     "Newing AstNode object that is already allocated");
         if (iter == s_nodes.end()) {
-            int flags = FLAG_ALLOCATED;  // This int needed to appease GCC 4.1.2
+            const int flags = FLAG_ALLOCATED;  // This int needed to appease GCC 4.1.2
             s_nodes.emplace(nodep, flags);
         }
     }
@@ -103,7 +103,7 @@ public:
             UASSERT_OBJ(!(iter->second & FLAG_IN_TREE), nodep,
                         "AstNode is already in tree at another location");
         }
-        int or_flags = FLAG_IN_TREE | (linkable ? FLAG_LINKABLE : 0);
+        const int or_flags = FLAG_IN_TREE | (linkable ? FLAG_LINKABLE : 0);
         if (iter == s_nodes.end()) {
             s_nodes.emplace(nodep, or_flags);
         } else {

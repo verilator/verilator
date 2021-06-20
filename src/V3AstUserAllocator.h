@@ -36,19 +36,19 @@ private:
     inline T_Data* getUserp(T_Node* nodep) const {
         // This simplifies statically as T_UserN is constant. In C++17, use 'if constexpr'.
         if (T_UserN == 1) {
-            VNUser user = nodep->user1u();
+            const VNUser user = nodep->user1u();
             return user.to<T_Data*>();
         } else if (T_UserN == 2) {
-            VNUser user = nodep->user2u();
+            const VNUser user = nodep->user2u();
             return user.to<T_Data*>();
         } else if (T_UserN == 3) {
-            VNUser user = nodep->user3u();
+            const VNUser user = nodep->user3u();
             return user.to<T_Data*>();
         } else if (T_UserN == 4) {
-            VNUser user = nodep->user4u();
+            const VNUser user = nodep->user4u();
             return user.to<T_Data*>();
         } else {
-            VNUser user = nodep->user5u();
+            const VNUser user = nodep->user5u();
             return user.to<T_Data*>();
         }
     }

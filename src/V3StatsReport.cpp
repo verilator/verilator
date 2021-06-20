@@ -206,13 +206,13 @@ void V3Stats::statsStage(const string& name) {
 
     const string digitName = V3Global::digitsFilename(++fileNumber) + "_" + name;
 
-    double wallTime = V3Os::timeUsecs() / 1.0e6;
+    const double wallTime = V3Os::timeUsecs() / 1.0e6;
     if (lastWallTime < 0) lastWallTime = wallTime;
-    double wallTimeDelta = wallTime - lastWallTime;
+    const double wallTimeDelta = wallTime - lastWallTime;
     lastWallTime = wallTime;
     V3Stats::addStatPerf("Stage, Elapsed time (sec), " + digitName, wallTimeDelta);
 
-    double memory = V3Os::memUsageBytes() / 1024.0 / 1024.0;
+    const double memory = V3Os::memUsageBytes() / 1024.0 / 1024.0;
     V3Stats::addStatPerf("Stage, Memory (MB), " + digitName, memory);
 }
 
@@ -220,7 +220,8 @@ void V3Stats::statsReport() {
     UINFO(2, __FUNCTION__ << ": " << endl);
 
     // Open stats file
-    string filename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "__stats.txt";
+    const string filename
+        = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "__stats.txt";
     std::ofstream* ofp(V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatal("Can't write " << filename);
 

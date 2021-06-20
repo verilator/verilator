@@ -640,7 +640,7 @@ private:
                 // If required, create the conditional node checking the activity flags
                 if (!prevActSet || actSet != *prevActSet) {
                     FileLine* const flp = m_topScopep->fileline();
-                    bool always = actSet.count(TraceActivityVertex::ACTIVITY_ALWAYS) != 0;
+                    const bool always = actSet.count(TraceActivityVertex::ACTIVITY_ALWAYS) != 0;
                     AstNode* condp = nullptr;
                     if (always) {
                         condp = new AstConst(flp, 1);  // Always true, will be folded later

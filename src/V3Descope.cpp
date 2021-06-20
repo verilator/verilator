@@ -111,7 +111,7 @@ private:
         // If for any given name only one function exists, we can use that function directly.
         // If multiple functions exist, we need to select the appropriate scope.
         for (FuncMmap::iterator it = m_modFuncs.begin(); it != m_modFuncs.end(); ++it) {
-            string name = it->first;
+            const string name = it->first;
             AstCFunc* topFuncp = it->second;
             auto nextIt1 = it;
             ++nextIt1;
@@ -133,7 +133,8 @@ private:
                     AstCFunc* funcp = eachIt->second;
                     auto nextIt2 = eachIt;
                     ++nextIt2;
-                    bool moreOfSame = (nextIt2 != m_modFuncs.end() && nextIt2->first == name);
+                    const bool moreOfSame
+                        = (nextIt2 != m_modFuncs.end() && nextIt2->first == name);
                     UASSERT_OBJ(funcp->scopep(), funcp, "Not scoped");
 
                     UINFO(6, "     Wrapping " << name << " " << funcp << endl);

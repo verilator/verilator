@@ -685,7 +685,7 @@ public:
         refDTypep(nullptr);
         setOp2p(rangep);
         dtypep(nullptr);  // V3Width will resolve
-        int width = subDTypep()->width() * rangep->elementsConst();
+        const int width = subDTypep()->width() * rangep->elementsConst();
         widthForce(width, width);
     }
     AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
@@ -693,7 +693,7 @@ public:
         refDTypep(dtp);
         setOp2p(rangep);
         dtypep(this);
-        int width = subDTypep()->width() * rangep->elementsConst();
+        const int width = subDTypep()->width() * rangep->elementsConst();
         widthForce(width, width);
     }
     ASTNODE_NODE_FUNCS(PackArrayDType)
@@ -848,7 +848,7 @@ private:
         numeric(numer);
         if (!rangep && (wantwidth || wantwidthmin >= 0)) {  // Constant width
             if (wantwidth > 1) m.m_nrange.init(wantwidth - 1, 0, false);
-            int wmin = wantwidthmin >= 0 ? wantwidthmin : wantwidth;
+            const int wmin = wantwidthmin >= 0 ? wantwidthmin : wantwidth;
             widthForce(wantwidth, wmin);
         } else if (!rangep) {  // Set based on keyword properties
             // V3Width will pull from this width

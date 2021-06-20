@@ -48,16 +48,16 @@ private:
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
             if (addPvt) {
-                string newname = string("__PVT__") + nodep->name();
+                const string newname = string("__PVT__") + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
             } else {
-                string rsvd = V3LanguageWords::isKeyword(nodep->name());
+                const string rsvd = V3LanguageWords::isKeyword(nodep->name());
                 if (rsvd != "") {
                     nodep->v3warn(SYMRSVDWORD,
                                   "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
-                    string newname = string("__SYM__") + nodep->name();
+                    const string newname = string("__SYM__") + nodep->name();
                     nodep->name(newname);
                     nodep->editCountInc();
                 }

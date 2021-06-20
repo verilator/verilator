@@ -129,7 +129,7 @@ private:
             nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
         }
         if (local || prot) {
-            auto refClassp = VN_CAST(m_modp, Class);
+            const auto refClassp = VN_CAST(m_modp, Class);
             const char* how = nullptr;
             if (local && defClassp && refClassp != defClassp) {
                 how = "'local'";

@@ -89,8 +89,8 @@ class V3FileDependImp final {
         time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); }  // Nanoseconds
         void loadStats() {
             if (!m_stat.st_mtime) {
-                string fn = filename();
-                int err = stat(fn.c_str(), &m_stat);
+                const string fn = filename();
+                const int err = stat(fn.c_str(), &m_stat);
                 if (err != 0) {
                     memset(&m_stat, 0, sizeof(m_stat));
                     m_stat.st_mtime = 1;
@@ -181,7 +181,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
-    string cmdline = stripQuotes(cmdlineIn);
+    const string cmdline = stripQuotes(cmdlineIn);
     *ofp << "# DESCR"
          << "IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will.\n";
     *ofp << "C \"" << cmdline << "\"\n";
@@ -219,7 +219,7 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
         return false;
     }
     {
-        string ignore = V3Os::getline(*ifp);
+        const string ignore = V3Os::getline(*ifp);
         if (ignore.empty()) { /*used*/
         }
     }
@@ -228,8 +228,8 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
         *ifp >> chkDir;
         char quote;
         *ifp >> quote;
-        string chkCmdline = V3Os::getline(*ifp, '"');
-        string cmdline = stripQuotes(cmdlineIn);
+        const string chkCmdline = V3Os::getline(*ifp, '"');
+        const string cmdline = stripQuotes(cmdlineIn);
         if (cmdline != chkCmdline) {
             UINFO(2, "   --check-times failed: different command line\n");
             return false;
@@ -254,12 +254,12 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
         *ifp >> chkMnstime;
         char quote;
         *ifp >> quote;
-        string chkFilename = V3Os::getline(*ifp, '"');
+        const string chkFilename = V3Os::getline(*ifp, '"');
 
         V3Options::fileNfsFlush(chkFilename);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
         struct stat chkStat;
-        int err = stat(chkFilename.c_str(), &chkStat);
+        const int err = stat(chkFilename.c_str(), &chkStat);
         if (err != 0) {
             UINFO(2, "   --check-times failed: missing " << chkFilename << endl);
             return false;
@@ -354,7 +354,7 @@ private:
         }
     }
     bool readContentsFile(const string& filename, StrList& outl) {
-        int fd = open(filename.c_str(), O_RDONLY);
+        const int fd = open(filename.c_str(), O_RDONLY);
         if (fd < 0) return false;
         m_readEof = false;
         readBlocks(fd, -1, outl);
@@ -365,7 +365,7 @@ private:
         if (filename != "" || outl.empty()) {}  // Prevent unused
 #ifdef INFILTER_PIPE
         writeFilter("read \"" + filename + "\"\n");
-        string line = readFilterLine();
+        const string line = readFilterLine();
         if (line.find("Content-Length") != string::npos) {
             int len = 0;
             sscanf(line.c_str(), "Content-Length: %d\n", &len);
@@ -402,7 +402,7 @@ private:
             ssize_t todo = INFILTER_IPC_BUFSIZ;
             if (size > 0 && size < todo) todo = size;
             errno = 0;
-            ssize_t got = read(fd, buf, todo);
+            const ssize_t got = read(fd, buf, todo);
             // UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);
             // usleep(50*1000);
             if (got > 0) {
@@ -431,7 +431,7 @@ private:
         while (!m_readEof) {
             StrList outl;
             readBlocks(m_readFd, 1, outl);
-            string onechar = listString(outl);
+            const string onechar = listString(outl);
             line += onechar;
             if (onechar == "\n") {
                 if (line == "\n") {
@@ -459,7 +459,7 @@ private:
         unsigned offset = 0;
         while (!m_readEof && out.length() > offset) {
             errno = 0;
-            int got = write(m_writeFd, (out.c_str()) + offset, out.length() - offset);
+            const int got = write(m_writeFd, (out.c_str()) + offset, out.length() - offset);
             // UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);
             // usleep(50*1000);
             if (got > 0) {
@@ -506,7 +506,7 @@ private:
 
         UINFO(1, "--pipe-filter: /bin/sh -c " << command << endl);
 
-        pid_t pid = fork();
+        const pid_t pid = fork();
         if (pid < 0) v3fatal("--pipe-filter: fork failed: " << strerror(errno));
         if (pid == 0) {  // Child
             UINFO(6, "In child\n");
@@ -827,7 +827,7 @@ void V3OutFormatter::putsQuoted(const string& strg) {
     // Quote \ and " for use inside C programs
     // Don't use to quote a filename for #include - #include doesn't \ escape.
     putcNoTracking('"');
-    string quoted = quoteNameControls(strg);
+    const string quoted = quoteNameControls(strg);
     for (const char c : quoted) putcNoTracking(c);
     putcNoTracking('"');
 }
@@ -894,8 +894,8 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += c;
             } else {
                 // This will also cover \a etc
-                string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
-                               + cvtToStr(c & 7);
+                const string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
+                                     + cvtToStr(c & 7);
                 out += octal;
             }
         }
@@ -1003,7 +1003,7 @@ public:
                 out = "PS" + digest.digestSymbol();
                 // See if we can shrink the digest symbol to something smaller
                 for (size_t len = 6; len < out.size() - 3; len += 3) {
-                    string tryout = out.substr(0, len);
+                    const string tryout = out.substr(0, len);
                     if (m_newIdSet.find(tryout) == m_newIdSet.end()) {
                         out = tryout;
                         break;

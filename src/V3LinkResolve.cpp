@@ -153,7 +153,7 @@ private:
             AstNode* sensp = nodep->sensp();
             if (sensp && !VN_IS(sensp, NodeVarRef) && !VN_IS(sensp, Const)) {
                 // Make a new temp wire
-                string newvarname = "__Vsenitemexpr" + cvtToStr(++m_senitemCvtNum);
+                const string newvarname = "__Vsenitemexpr" + cvtToStr(++m_senitemCvtNum);
                 AstVar* newvarp = new AstVar(sensp->fileline(), AstVarType::MODULETEMP, newvarname,
                                              VFlagLogicPacked(), 1);
                 // We can't just add under the module, because we may be
@@ -354,14 +354,14 @@ private:
                     continue;
                 }
                 AstConst* constp = VN_CAST(argp, Const);
-                bool isFromString = (constp) ? constp->num().isFromString() : false;
+                const bool isFromString = (constp) ? constp->num().isFromString() : false;
                 if (isFromString) {
-                    int numchars = argp->dtypep()->width() / 8;
+                    const int numchars = argp->dtypep()->width() / 8;
                     string str(numchars, ' ');
                     // now scan for % operators
                     bool inpercent = false;
                     for (int i = 0; i < numchars; i++) {
-                        int ii = numchars - i - 1;
+                        const int ii = numchars - i - 1;
                         char c = constp->num().dataByte(ii);
                         str[i] = c;
                         if (!inpercent && c == '%') {
@@ -454,7 +454,7 @@ private:
             }
             nodep->hasFormat(true);
         }
-        string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
+        const string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
         nodep->text(newFormat);
         if ((VN_IS(nodep->backp(), Display)
              && VN_CAST(nodep->backp(), Display)->displayType().needScopeTracking())

@@ -79,7 +79,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
         if (argv[i][0] == '-') {
-            if (int consumed = parser.parse(i, argc, argv)) {
+            if (const int consumed = parser.parse(i, argc, argv)) {
                 i += consumed;
             } else {
                 v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));

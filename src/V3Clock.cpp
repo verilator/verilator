@@ -219,7 +219,7 @@ private:
         if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
         while (tempp->stmtsp()) {
             AstNode* itemp = tempp->stmtsp()->unlinkFrBack();
-            int stmts = EmitCBaseCounterVisitor(itemp).count();
+            const int stmts = EmitCBaseCounterVisitor(itemp).count();
             if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
                 // Make a new function
                 funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + cvtToStr(++funcnum),

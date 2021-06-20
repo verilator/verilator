@@ -139,8 +139,8 @@ void V3CCtors::evalAsserts() {
         if (AstVar* varp = VN_CAST(np, Var)) {
             if (varp->isPrimaryInish() && !varp->isSc()) {
                 if (AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
-                    int storedWidth = basicp->widthAlignBytes() * 8;
-                    int lastWordWidth = varp->width() % storedWidth;
+                    const int storedWidth = basicp->widthAlignBytes() * 8;
+                    const int lastWordWidth = varp->width() % storedWidth;
                     if (lastWordWidth != 0) {
                         // if (signal & CONST(upper_non_clean_mask)) { fail; }
                         AstVarRef* const vrefp

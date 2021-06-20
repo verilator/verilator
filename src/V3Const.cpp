@@ -376,10 +376,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         AstAnd* andp = VN_CAST(nodep->lhsp(), And);
         CONST_BITOP_RETURN_IF(!andp, nodep->lhsp());
 
-        auto mask = findLeaf(andp->lhsp(), true);
+        const auto mask = findLeaf(andp->lhsp(), true);
         CONST_BITOP_RETURN_IF(!mask.m_constp || mask.m_lsb != 0, andp->lhsp());
 
-        LeafInfo leaf = findLeaf(andp->rhsp(), false);
+        const LeafInfo leaf = findLeaf(andp->rhsp(), false);
         CONST_BITOP_RETURN_IF(!leaf.m_refp, andp->rhsp());
 
         restorer.disableRestore();  // Now all subtree succeeded
@@ -394,7 +394,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     }
 
     virtual void visit(AstNodeBiop* nodep) override {
-        auto isConst = [](AstNode* nodep, vluint64_t v) -> bool {
+        const auto isConst = [](AstNode* nodep, vluint64_t v) -> bool {
             AstConst* constp = VN_CAST(nodep, Const);
             return constp && constp->toUQuad() == v;
         };
@@ -452,16 +452,16 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             Restorer restorer{*this};
             CONST_BITOP_RETURN_IF(!m_polarity, nodep);
             const bool maskFlip = isOrTree();
-            LeafInfo comp = findLeaf(nodep->lhsp(), true);
+            const LeafInfo comp = findLeaf(nodep->lhsp(), true);
             CONST_BITOP_RETURN_IF(!comp.m_constp || comp.m_lsb != 0, nodep->lhsp());
 
             AstAnd* andp = VN_CAST(nodep->rhsp(), And);  // comp == (mask & v)
             CONST_BITOP_RETURN_IF(!andp, nodep->rhsp());
 
-            LeafInfo mask = findLeaf(andp->lhsp(), true);
+            const LeafInfo mask = findLeaf(andp->lhsp(), true);
             CONST_BITOP_RETURN_IF(!mask.m_constp || mask.m_lsb != 0, andp->lhsp());
 
-            LeafInfo ref = findLeaf(andp->rhsp(), false);
+            const LeafInfo ref = findLeaf(andp->rhsp(), false);
             CONST_BITOP_RETURN_IF(!ref.m_refp, andp->rhsp());
 
             restorer.disableRestore();  // Now all checks passed
@@ -1002,7 +1002,7 @@ private:
             || lp->num().isFourState() || lp->num().isNegative()) {
             return false;
         }
-        int newLsb = lp->toSInt() + bp->toSInt();
+        const int newLsb = lp->toSInt() + bp->toSInt();
         if (newLsb + nodep->widthConst() > ap->width()) return false;
         //
         UINFO(9, "SEL(SHIFTR(a,b),l,w) -> SEL(a,l+b,w)\n");
@@ -1023,7 +1023,7 @@ private:
         AstExtend* extendp = VN_CAST(nodep->rhsp(), Extend);
         if (!extendp) return false;
         AstNode* smallerp = extendp->lhsp();
-        int subsize = smallerp->width();
+        const int subsize = smallerp->width();
         AstConst* constp = VN_CAST(nodep->lhsp(), Const);
         if (!constp) return false;
         if (!constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
@@ -1048,7 +1048,7 @@ private:
         const AstExtend* extendp = VN_CAST_CONST(nodep->rhsp(), Extend);
         if (!extendp) return false;
         AstNode* smallerp = extendp->lhsp();
-        int subsize = smallerp->width();
+        const int subsize = smallerp->width();
         const AstConst* constp = VN_CAST_CONST(nodep->lhsp(), Const);
         if (!constp) return false;
         if (constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
@@ -1079,10 +1079,10 @@ private:
         }
         // Find range of dtype we are selecting from
         // Similar code in V3Unknown::AstSel
-        bool doit = true;
+        const bool doit = true;
         if (m_warn && VN_IS(nodep->lsbp(), Const) && VN_IS(nodep->widthp(), Const) && doit) {
-            int maxDeclBit = nodep->declRange().hiMaxSelect() * nodep->declElWidth()
-                             + (nodep->declElWidth() - 1);
+            const int maxDeclBit = nodep->declRange().hiMaxSelect() * nodep->declElWidth()
+                                   + (nodep->declElWidth() - 1);
             if (VN_CAST(nodep->lsbp(), Const)->num().isFourState()
                 || VN_CAST(nodep->widthp(), Const)->num().isFourState()) {
                 nodep->v3error("Selection index is constantly unknown or tristated: "
@@ -1157,7 +1157,7 @@ private:
         const AstConst* lwidth = VN_CAST_CONST(lhsp->widthp(), Const);
         const AstConst* rwidth = VN_CAST_CONST(rhsp->widthp(), Const);
         if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
-        int rend = (rstart->toSInt() + rwidth->toSInt());
+        const int rend = (rstart->toSInt() + rwidth->toSInt());
         return (rend == lstart->toSInt());
     }
     bool ifMergeAdjacent(AstNode* lhsp, AstNode* rhsp) {
@@ -1190,7 +1190,7 @@ private:
         AstConst* lwidth = VN_CAST(lselp->widthp(), Const);
         AstConst* rwidth = VN_CAST(rselp->widthp(), Const);
         if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
-        int rend = (rstart->toSInt() + rwidth->toSInt());
+        const int rend = (rstart->toSInt() + rwidth->toSInt());
         // a[i:j] a[j-1:k]
         if (rend == lstart->toSInt()) return true;
         // a[i:0] a[msb:j]
@@ -1207,8 +1207,8 @@ private:
         const AstNodeBiop* rp = VN_CAST_CONST(rhsp, NodeBiop);
         if (!lp || !rp) return false;
         // {a[]&b[], a[]&b[]}
-        bool lad = ifMergeAdjacent(lp->lhsp(), rp->lhsp());
-        bool rad = ifMergeAdjacent(lp->rhsp(), rp->rhsp());
+        const bool lad = ifMergeAdjacent(lp->lhsp(), rp->lhsp());
+        const bool rad = ifMergeAdjacent(lp->rhsp(), rp->rhsp());
         if (lad && rad) return true;
         // {a[] & b[]&c[], a[] & b[]&c[]}
         if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
@@ -1449,10 +1449,10 @@ private:
         // {a[1], a[0]} -> a[1:0]
         AstSel* lselp = VN_CAST(nodep->lhsp()->unlinkFrBack(), Sel);
         AstSel* rselp = VN_CAST(nodep->rhsp()->unlinkFrBack(), Sel);
-        int lstart = lselp->lsbConst();
-        int lwidth = lselp->widthConst();
-        int rstart = rselp->lsbConst();
-        int rwidth = rselp->widthConst();
+        const int lstart = lselp->lsbConst();
+        const int lwidth = lselp->widthConst();
+        const int rstart = rselp->lsbConst();
+        const int rwidth = rselp->widthConst();
 
         UASSERT_OBJ((rstart + rwidth) == lstart, nodep,
                     "tried to merge two selects which are not adjacent");
@@ -1513,7 +1513,7 @@ private:
     }
     void replaceMulShift(AstMul* nodep) {  // Mul, but not MulS as not simple shift
         UINFO(5, "MUL(2^n,b)->SHIFTL(b,n) " << nodep << endl);
-        int amount = VN_CAST(nodep->lhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        const int amount = VN_CAST(nodep->lhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         AstNode* opp = nodep->rhsp()->unlinkFrBack();
         AstShiftL* newp
             = new AstShiftL(nodep->fileline(), opp, new AstConst(nodep->fileline(), amount));
@@ -1523,7 +1523,7 @@ private:
     }
     void replaceDivShift(AstDiv* nodep) {  // Mul, but not MulS as not simple shift
         UINFO(5, "DIV(b,2^n)->SHIFTR(b,n) " << nodep << endl);
-        int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        const int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         AstNode* opp = nodep->lhsp()->unlinkFrBack();
         AstShiftR* newp
             = new AstShiftR(nodep->fileline(), opp, new AstConst(nodep->fileline(), amount));
@@ -1533,7 +1533,7 @@ private:
     }
     void replaceModAnd(AstModDiv* nodep) {  // Mod, but not ModS as not simple shift
         UINFO(5, "MOD(b,2^n)->AND(b,2^n-1) " << nodep << endl);
-        int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        const int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         V3Number mask(nodep, nodep->width());
         mask.setMask(amount);
         AstNode* opp = nodep->lhsp()->unlinkFrBack();
@@ -1576,7 +1576,7 @@ private:
         if (nodep->type() == lhsp->type()) {
             int shift1 = VN_CAST(shift1p, Const)->toUInt();
             int shift2 = VN_CAST(shift2p, Const)->toUInt();
-            int newshift = shift1 + shift2;
+            const int newshift = shift1 + shift2;
             VL_DO_DANGLING(shift1p->deleteTree(), shift1p);
             VL_DO_DANGLING(shift2p->deleteTree(), shift2p);
             nodep->lhsp(ap);
@@ -1588,7 +1588,7 @@ private:
             if (VN_IS(lhsp, ShiftR)) shift1 = -shift1;
             int shift2 = VN_CAST(shift2p, Const)->toUInt();
             if (VN_IS(nodep, ShiftR)) shift2 = -shift2;
-            int newshift = shift1 + shift2;
+            const int newshift = shift1 + shift2;
             VL_DO_DANGLING(shift1p->deleteTree(), shift1p);
             VL_DO_DANGLING(shift2p->deleteTree(), shift2p);
             AstNode* newp;
@@ -1656,7 +1656,7 @@ private:
             && (con2p->toSInt() != con1p->toSInt() + sel1p->width())) {
             return false;
         }
-        bool lsbFirstAssign = (con1p->toUInt() < con2p->toUInt());
+        const bool lsbFirstAssign = (con1p->toUInt() < con2p->toUInt());
         UINFO(4, "replaceAssignMultiSel " << nodep << endl);
         UINFO(4, "                   && " << nextp << endl);
         // nodep->dumpTree(cout, "comb1: ");
@@ -1815,8 +1815,8 @@ private:
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamL)) {
             // Push the stream operator to the rhs of the assignment statement
-            int dWidth = VN_CAST(nodep->lhsp(), StreamL)->lhsp()->width();
-            int sWidth = nodep->rhsp()->width();
+            const int dWidth = VN_CAST(nodep->lhsp(), StreamL)->lhsp()->width();
+            const int sWidth = nodep->rhsp()->width();
             // Unlink the stuff
             AstNode* dstp = VN_CAST(nodep->lhsp(), StreamL)->lhsp()->unlinkFrBack();
             AstNode* streamp = VN_CAST(nodep->lhsp(), StreamL)->unlinkFrBack();
@@ -1836,8 +1836,8 @@ private:
             // The right stream operator on lhs of assignment statement does
             // not reorder bits. However, if the rhs is wider than the lhs,
             // then we select bits from the left-most, not the right-most.
-            int dWidth = VN_CAST(nodep->lhsp(), StreamR)->lhsp()->width();
-            int sWidth = nodep->rhsp()->width();
+            const int dWidth = VN_CAST(nodep->lhsp(), StreamR)->lhsp()->width();
+            const int sWidth = nodep->rhsp()->width();
             // Unlink the stuff
             AstNode* dstp = VN_CAST(nodep->lhsp(), StreamR)->lhsp()->unlinkFrBack();
             AstNode* sizep = VN_CAST(nodep->lhsp(), StreamR)->rhsp()->unlinkFrBack();
@@ -2666,7 +2666,7 @@ private:
             string fmt;
             bool inPct = false;
             AstNode* argp = nodep->exprsp();
-            string text = nodep->text();
+            const string text = nodep->text();
             for (const char ch : text) {
                 if (!inPct && ch == '%') {
                     inPct = true;
@@ -2688,7 +2688,8 @@ private:
                         if (argp) {
                             AstNode* nextp = argp->nextp();
                             if (VN_IS(argp, Const)) {  // Convert it
-                                string out = VN_CAST(argp, Const)->num().displayed(nodep, fmt);
+                                const string out
+                                    = VN_CAST(argp, Const)->num().displayed(nodep, fmt);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
                                                             << argp << endl);
                                 // fmt = out w/ replace % with %% as it must be literal.
@@ -2726,10 +2727,10 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstWhile* nodep) override {
-        bool oldHasJumpDelay = m_hasJumpDelay;
+        const bool oldHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = false;
         { iterateChildren(nodep); }
-        bool thisWhileHasJumpDelay = m_hasJumpDelay;
+        const bool thisWhileHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = thisWhileHasJumpDelay || oldHasJumpDelay;
         if (m_doNConst) {
             if (nodep->condp()->isZero()) {

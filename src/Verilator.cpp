@@ -704,7 +704,7 @@ int main(int argc, char** argv, char** env) {
 
     // Command option parsing
     v3Global.opt.bin(argv[0]);
-    string argString = V3Options::argString(argc - 1, argv + 1);
+    const string argString = V3Options::argString(argc - 1, argv + 1);
     v3Global.opt.parseOpts(new FileLine(FileLine::commandLineFilename()), argc - 1, argv + 1);
 
     // Validate settings (aka Boost.Program_options)
