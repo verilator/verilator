@@ -337,14 +337,15 @@ string AstVar::verilogKwd() const {
     }
 }
 
-string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc) const {
+string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
+                         bool asRef) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
-    const bool isRef
-        = isDpiOpenArray() || (forFunc && (isWritable() || direction().isRefOrConstRef()));
+    const bool isRef = isDpiOpenArray()
+                       || (forFunc && (isWritable() || direction().isRefOrConstRef())) || asRef;
 
     if (forFunc && isReadOnly() && isRef) ostatic = ostatic + "const ";
 
@@ -641,8 +642,15 @@ public:
     string render(const string& name, bool isRef) const {
         string out;
         out += m_type;
-        if (name != "") out += " ";
-        out += isRef ? "(&" + name + ")" : name;
+        if (!name.empty()) out += " ";
+        if (isRef) {
+            if (!m_dims.empty()) out += "(";
+            out += "&";
+            out += name;
+            if (!m_dims.empty()) out += ")";
+        } else {
+            out += name;
+        }
         out += m_dims;
         return out;
     }

@@ -701,31 +701,6 @@ void EmitCFunc::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
     }
 }
 
-void EmitCFunc::emitIntFuncDecls(AstNodeModule* modp, bool inClassBody) {
-    std::vector<const AstCFunc*> funcsp;
-
-    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-            if (funcp->dpiImportPrototype())  // DPI import prototypes are declared in __Dpi.h
-                continue;
-            if (funcp->isMethod() != inClassBody)  // Only methods go inside class
-                continue;
-            if (funcp->isMethod() && funcp->isLoose())  // Loose methods are declared lazily
-                continue;
-            funcsp.push_back(funcp);
-        }
-    }
-
-    stable_sort(funcsp.begin(), funcsp.end(), [](const AstNode* ap, const AstNode* bp) {  //
-        return ap->name() < bp->name();
-    });
-
-    for (const AstCFunc* funcp : funcsp) {
-        if (inClassBody) ofp()->putsPrivate(funcp->declPrivate());
-        emitCFuncDecl(funcp, modp);
-    }
-}
-
 void EmitCFunc::emitCCallArgs(AstNodeCCall* nodep) {
     bool comma = false;
     if (nodep->funcp()->isLoose() && !nodep->funcp()->isStatic()) {

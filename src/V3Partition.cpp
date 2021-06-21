@@ -2617,9 +2617,10 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
         recName = "__Vprfthr_" + cvtToStr(mtaskp->id());
         addStrStmt("VlProfileRec* " + recName + " = nullptr;\n");
         // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-        addStrStmt("if (VL_UNLIKELY(vlSelf->__Vm_profile_cycle_start)) {\n" +  //
-                   recName + " = vlSelf->__Vm_threadPoolp->profileAppend();\n" +  //
-                   recName + "->startRecord(VL_RDTSC_Q() - vlSelf->__Vm_profile_cycle_start," +  //
+        addStrStmt("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n" +  //
+                   recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n" +  //
+                   recName + "->startRecord(VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start,"
+                   +  //
                    " " + cvtToStr(mtaskp->id()) + "," +  //
                    " " + cvtToStr(mtaskp->cost()) + ");\n" +  //
                    "}\n");
@@ -2634,7 +2635,7 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
     if (v3Global.opt.profThreads()) {
         // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
         addStrStmt("if (VL_UNLIKELY(" + recName + ")) {\n" +  //
-                   recName + "->endRecord(VL_RDTSC_Q() - vlSelf->__Vm_profile_cycle_start);\n"
+                   recName + "->endRecord(VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start);\n"
                    + "}\n");
     }
 
@@ -2672,7 +2673,7 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         funcp->argTypes("void* voidSelf, bool even_cycle");
 
         // Setup vlSelf an vlSyms
-        funcp->addStmtsp(new AstCStmt(fl, EmitCBaseVisitor::voidSelfAssign()));
+        funcp->addStmtsp(new AstCStmt(fl, EmitCBaseVisitor::voidSelfAssign(modp)));
         funcp->addStmtsp(new AstCStmt(fl, EmitCBaseVisitor::symClassAssign()));
 
         // Invoke each mtask scheduled to this thread from the thread function
@@ -2710,26 +2711,26 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         execGraphp->addStmtsp(new AstText(fl, text, /* tracking: */ true));
     };
 
-    addStrStmt("vlSelf->__Vm_even_cycle = !vlSelf->__Vm_even_cycle;\n");
+    addStrStmt("vlSymsp->__Vm_even_cycle = !vlSymsp->__Vm_even_cycle;\n");
 
     const uint32_t last = funcps.size() - 1;
     for (uint32_t i = 0; i <= last; ++i) {
         AstCFunc* const funcp = funcps.at(i);
         if (i != last) {
             // The first N-1 will run on the thread pool.
-            addTextStmt("vlSelf->__Vm_threadPoolp->workerp(" + cvtToStr(i) + ")->addTask(");
+            addTextStmt("vlSymsp->__Vm_threadPoolp->workerp(" + cvtToStr(i) + ")->addTask(");
             execGraphp->addStmtsp(new AstAddrOfCFunc(fl, funcp));
-            addTextStmt(", vlSelf, vlSelf->__Vm_even_cycle);\n");
+            addTextStmt(", vlSelf, vlSymsp->__Vm_even_cycle);\n");
         } else {
             // The last will run on the main thread.
             AstCCall* const callp = new AstCCall(fl, funcp);
-            callp->argTypes("vlSelf, vlSelf->__Vm_even_cycle");
+            callp->argTypes("vlSelf, vlSymsp->__Vm_even_cycle");
             execGraphp->addStmtsp(callp);
             addStrStmt("Verilated::mtaskId(0);\n");
         }
     }
 
-    addStrStmt("vlSelf->__Vm_mtaskstate_final.waitUntilUpstreamDone(vlSelf->__Vm_even_cycle);\n");
+    addStrStmt("vlSelf->__Vm_mtaskstate_final.waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle);\n");
 }
 
 static void implementExecGraph(AstExecGraph* const execGraphp) {

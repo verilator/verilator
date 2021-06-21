@@ -53,9 +53,10 @@ public:
         return VIdProtect::protectWordsIf(name, doIt);
     }
     static string ifNoProtect(const string& in) { return v3Global.opt.protectIds() ? "" : in; }
-    static string voidSelfAssign() {
-        return topClassName() + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<"
-               + topClassName() + "*>(voidSelf);\n";
+    static string voidSelfAssign(const AstNodeModule* modp) {
+        const string className = prefixNameProtect(modp);
+        return className + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<" + className
+               + "*>(voidSelf);\n";
     }
     static string symClassName() { return v3Global.opt.prefix() + "_" + protect("_Syms"); }
     static string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
@@ -64,12 +65,7 @@ public:
     }
     static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
     static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
-        const AstNodeModule* modp = VN_CAST_CONST(nodep, NodeModule);
-        if (modp && modp->isTop()) {
-            return topClassName();
-        } else {
-            return v3Global.opt.modPrefix() + "_" + protect(nodep->name());
-        }
+        return v3Global.opt.modPrefix() + "_" + protect(nodep->name());
     }
     static string topClassName() {  // Return name of top wrapper module
         return v3Global.opt.prefix();
@@ -83,7 +79,7 @@ public:
     string cFuncArgs(const AstCFunc* nodep);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
-    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
+    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp, bool asRef = false);
     void emitModCUse(AstNodeModule* modp, VUseType useType);
 
     // CONSTRUCTORS

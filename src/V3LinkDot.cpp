@@ -592,13 +592,10 @@ public:
                 // $root we walk up to Netlist
                 else if (ident == "$root") {
                     lookupSymp = rootEntp();
-                    // We've added TOP module, now everything else is one lower
+                    // We've added the '$root' module, now everything else is one lower
                     if (!m_forPrearray) {
-                        VSymEnt* topSymp = lookupSymp->findIdFlat("TOP");
-                        if (!topSymp) {
-                            topSymp->nodep()->v3fatalSrc("TOP not found under netlist for $root");
-                        }
-                        lookupSymp = topSymp;
+                        lookupSymp = lookupSymp->findIdFlat(ident);
+                        UASSERT(lookupSymp, "Cannot find $root module under netlist");
                     }
                 }
                 // Move up and check cellname + modname
