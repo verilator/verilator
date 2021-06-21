@@ -4127,6 +4127,9 @@ private:
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
+            if (auto* patternp = VN_CAST(nodep->exprp(), Pattern))
+                if (auto* modVarp = nodep->modVarp())
+                    patternp->childDTypep(modVarp->childDTypep()->cloneTree(false));
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {
