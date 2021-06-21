@@ -1097,10 +1097,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
     DECL_OPTION("-ignc", OnOff, &m_ignc);
-    DECL_OPTION("-inhibit-sim", CbOnOff, [this, fl](bool flag) {
-        fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
-        m_inhibitSim = flag;
-    });
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
 
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));

@@ -2490,11 +2490,6 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
 
     emitSensitives();
 
-    putsDecoration("// Reset internal values\n");
-    if (modp->isTop()) {
-        if (v3Global.opt.inhibitSim()) puts("__Vm_inhibitSim = false;\n");
-        puts("\n");
-    }
     putsDecoration("// Reset structure values\n");
     puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
     emitTextSection(AstType::atScCtor);
@@ -2644,7 +2639,6 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
             puts("os " + op + " vlSymsp->_vm_contextp__;\n");
 
             // Save all members
-            if (v3Global.opt.inhibitSim()) puts("os" + op + "__Vm_inhibitSim;\n");
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (const AstVar* varp = VN_CAST(nodep, Var)) {
                     if (varp->isIO() && modp->isTop() && optSystemC()) {
@@ -2830,7 +2824,6 @@ void EmitCImp::emitWrapEval() {
     putsDecoration("// Initialize\n");
     puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) " + protect("_eval_initial_loop")
          + "(this);\n");
-    if (v3Global.opt.inhibitSim()) puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
 
     if (v3Global.opt.threads() == 1) {
         uint32_t mtaskId = 0;
@@ -3207,9 +3200,6 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
     ofp()->putsPrivate(false);  // public:
     if (modp->isTop()) {
-        if (v3Global.opt.inhibitSim()) {
-            puts("bool __Vm_inhibitSim;  ///< Set true to disable evaluation of module\n");
-        }
         if (v3Global.opt.mtasks()) emitThreadingState();
     }
     emitCoverageDecl(modp);  // may flip public/private
@@ -3314,10 +3304,6 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                  "must call on completion.\n");
         }
         puts("void final();\n");
-        if (v3Global.opt.inhibitSim()) {
-            puts("/// Disable evaluation of module (e.g. turn off)\n");
-            puts("void inhibitSim(bool flag) { __Vm_inhibitSim = flag; }\n");
-        }
     }
 
     puts("\n// INTERNAL METHODS\n");
