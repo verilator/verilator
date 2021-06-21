@@ -1,11 +1,12 @@
 <?xml version="1.0" ?>
 <!-- DESCRIPTION: Verilator output: XML representation of netlist -->
 <verilator_id_map>
+  <map from="TOP" to="TOP"/>
   <map from="PSlhR1" to="TOP__t__DOT__secret_inst"/>
-  <map from="TOPp" to="TOPp"/>
   <map from="PS5Fdb" to="Vt_protect_ids_key__Vcb_dpix_a_func_t"/>
   <map from="PSlYpp" to="Vt_protect_ids_key__Vcb_dpix_a_task_t"/>
   <map from="PSOAAo" to="_Syms"/>
+  <map from="PS9tBB" to="__024root"/>
   <map from="PSm6SZ" to="__PVT__secret_cyc"/>
   <map from="PSfqIT" to="__PVT__secret_cyc_r"/>
   <map from="PStVCQ" to="__PVT__secret_r"/>

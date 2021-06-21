@@ -98,11 +98,7 @@ private:
         } else {
             // Reference to something elsewhere, or relative references are disabled. Use global
             // variable
-            if (scopep->isTop()) {  // Top
-                return "vlSymsp->TOPp";
-            } else {
-                return "(&" + scopep->nameVlSym() + ")";
-            }
+            return "(&" + scopep->nameVlSym() + ")";
         }
     }
 

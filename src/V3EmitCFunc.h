@@ -188,7 +188,6 @@ public:
     }
     void emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, AstNode* rhsp,
                     AstNode* thsp);
-    void emitIntFuncDecls(AstNodeModule* modp, bool inClassBody);
     void emitCCallArgs(AstNodeCCall* nodep);
     void emitDereference(const string& pointer);
     void emitCvtPackStr(AstNode* nodep);
@@ -514,7 +513,7 @@ public:
         case VDumpCtlType::VARS:
             // We ignore number of levels to dump in exprp()
             if (v3Global.opt.trace()) {
-                puts("vlSymsp->TOPp->_traceDumpOpen();\n");
+                puts("vlSymsp->_traceDumpOpen();\n");
             } else {
                 puts("VL_PRINTF_MT(\"-Info: ");
                 puts(protect(nodep->fileline()->filename()));
