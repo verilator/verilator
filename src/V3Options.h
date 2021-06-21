@@ -242,7 +242,6 @@ private:
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_hierChild = false;       // main switch: --hierarchical-child
     bool m_ignc = false;            // main switch: --ignc
-    bool m_inhibitSim = false;      // main switch: --inhibit-sim
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
     bool m_main = false;            // main swithc: --main
@@ -470,7 +469,6 @@ public:
     bool publicFlatRW() const { return m_publicFlatRW; }
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
-    bool inhibitSim() const { return m_inhibitSim; }
     bool quietExit() const { return m_quietExit; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
