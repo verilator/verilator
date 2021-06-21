@@ -43,28 +43,29 @@ class FileLine;
 class V3Number final {
     // TYPES
     class ValueAndX final {
-        // Value, with bit 0 in bit 0 of this vector (unless X/Z)
-        std::vector<uint32_t> m_value;
-        // Each bit is true if it's X or Z, 10=z, 11=x
-        std::vector<uint32_t> m_valueX;
+        struct Values final {
+            // Value, with bit 0 in bit 0 of this vector (unless X/Z)
+            uint32_t m_value;
+            // Each bit is true if it's X or Z, 10=z, 11=x
+            uint32_t m_valueX;
+            bool operator==(const Values& other) const {
+                return m_value == other.m_value && m_valueX == other.m_valueX;
+            }
+        };
+        std::vector<Values> m_data;
 
     public:
         size_t size() const {
             // UDEBUGONLY(UASSERT(m_value.size() == m_valueX.size(), "value:" << m_value.size() <<
             // " X:" << m_valueX.size()););
-            return m_value.size();
+            return m_data.size();
         }
-        void resize(size_t s) {
-            m_value.resize(s);
-            m_valueX.resize(s);
-        }
-        uint32_t& value(size_t idx) { return m_value[idx]; }
-        uint32_t& valueX(size_t idx) { return m_valueX[idx]; }
-        const uint32_t& value(size_t idx) const { return m_value[idx]; }
-        const uint32_t& valueX(size_t idx) const { return m_valueX[idx]; }
-        bool operator==(const ValueAndX& other) const {
-            return m_value == other.m_value && m_valueX == other.m_valueX;
-        }
+        void resize(size_t s) { m_data.resize(s); }
+        uint32_t& value(size_t idx) { return m_data[idx].m_value; }
+        uint32_t& valueX(size_t idx) { return m_data[idx].m_valueX; }
+        const uint32_t& value(size_t idx) const { return m_data[idx].m_value; }
+        const uint32_t& valueX(size_t idx) const { return m_data[idx].m_valueX; }
+        bool operator==(const ValueAndX& other) const { return m_data == other.m_data; }
     };
 
     // Large 4-state number handling
