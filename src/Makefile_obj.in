@@ -184,9 +184,10 @@ RAW_OBJS = \
 	V3EmitCConstPool.o \
 	V3EmitCFunc.o \
 	V3EmitCInlines.o \
-	V3EmitCSyms.o \
-	V3EmitCMake.o \
 	V3EmitCMain.o \
+	V3EmitCMake.o \
+	V3EmitCModel.o \
+	V3EmitCSyms.o \
 	V3EmitMk.o \
 	V3EmitV.o \
 	V3EmitXml.o \

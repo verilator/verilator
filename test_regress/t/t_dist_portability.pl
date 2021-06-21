@@ -80,7 +80,7 @@ sub cstr {
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-        if ($line =~ /^([^:]+).*\(\)[a-z0-9_().->]*[.->]+(c_str|r?begin|r?end)\(\)/) {
+        if ($line =~ /^([^:]+)[^"]*\(\)[a-z0-9_().->]*[.->]+(c_str|r?begin|r?end)\(\)/) {
             next if $line =~ /lintok-begin-on-ref/;
             print "$line\n";
             $names{$1} = 1;
