@@ -103,7 +103,7 @@ V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
         const int topos = str.length() - 1 - pos;
         for (int bit = 0; bit < 8; ++bit) {
             if (str[pos] & (1UL << bit)) {
-                m_value[topos / 4] |= (1UL << (bit + (topos % 4) * 8));
+                m_value.value(topos / 4) |= (1UL << (bit + (topos % 4) * 8));
             }
         }
     }
@@ -159,7 +159,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
         base = 'd';
     }
 
-    for (int i = 0; i < words(); ++i) m_value[i] = m_valueX[i] = 0;
+    for (int i = 0; i < words(); ++i) m_value.value(i) = m_value.valueX(i) = 0;
 
     // Special SystemVerilog unsized constructs
     if (base == '0') {
@@ -216,7 +216,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                 if (olen <= 7) {  // 10000000 fits in 32 bits, so ok
                     // Constants are common, so for speed avoid wide math until we need it
                     val = val * 10 + (*cp - '0');
-                    m_value[0] = val;
+                    m_value.value(0) = val;
                 } else {  // Wide; all previous digits are already in m_value[0]
                     // this = (this * 10)/*product*/ + (*cp-'0')/*addend*/
                     // Assumed rare; lots of optimizations are possible here
@@ -373,31 +373,31 @@ int V3Number::log2b(uint32_t num) {
 // Setters
 
 V3Number& V3Number::setZero() {
-    for (int i = 0; i < words(); i++) m_value[i] = m_valueX[i] = 0;
+    for (int i = 0; i < words(); i++) m_value.value(i) = m_value.valueX(i) = 0;
     return *this;
 }
 V3Number& V3Number::setQuad(vluint64_t value) {
-    for (int i = 0; i < words(); i++) m_value[i] = m_valueX[i] = 0;
-    m_value[0] = value & 0xffffffffULL;
-    m_value[1] = (value >> 32ULL) & 0xffffffffULL;
+    for (int i = 0; i < words(); i++) m_value.value(i) = m_value.valueX(i) = 0;
+    m_value.value(0) = value & 0xffffffffULL;
+    m_value.value(1) = (value >> 32ULL) & 0xffffffffULL;
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setLong(uint32_t value) {
-    for (int i = 0; i < words(); i++) m_value[i] = m_valueX[i] = 0;
-    m_value[0] = value;
+    for (int i = 0; i < words(); i++) m_value.value(i) = m_value.valueX(i) = 0;
+    m_value.value(0) = value;
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setLongS(vlsint32_t value) {
-    for (int i = 0; i < words(); i++) m_value[i] = m_valueX[i] = 0;
+    for (int i = 0; i < words(); i++) m_value.value(i) = m_value.valueX(i) = 0;
     union {
         uint32_t u;
         vlsint32_t s;
     } u;
     u.s = value;
     if (u.s) {}
-    m_value[0] = u.u;
+    m_value.value(0) = u.u;
     opCleanThis();
     return *this;
 }
@@ -410,40 +410,40 @@ V3Number& V3Number::setDouble(double value) {
     } u;
     u.d = value;
     if (u.d != 0.0) {}
-    for (int i = 2; i < words(); i++) m_value[i] = m_valueX[i] = 0;
-    m_value[0] = u.u[0];
-    m_value[1] = u.u[1];
+    for (int i = 2; i < words(); i++) m_value.value(i) = m_value.valueX(i) = 0;
+    m_value.value(0) = u.u[0];
+    m_value.value(1) = u.u[1];
     return *this;
 }
 V3Number& V3Number::setSingleBits(char value) {
-    for (int i = 1 /*upper*/; i < words(); i++) m_value[i] = m_valueX[i] = 0;
-    m_value[0] = (value == '1' || value == 'x' || value == 1 || value == 3);
-    m_valueX[0] = (value == 'z' || value == 'x' || value == 2 || value == 3);
+    for (int i = 1 /*upper*/; i < words(); i++) m_value.value(i) = m_value.valueX(i) = 0;
+    m_value.value(0) = (value == '1' || value == 'x' || value == 1 || value == 3);
+    m_value.valueX(0) = (value == 'z' || value == 'x' || value == 2 || value == 3);
     return *this;
 }
 
 V3Number& V3Number::setAllBits0() {
-    for (int i = 0; i < words(); i++) { m_value[i] = m_valueX[i] = 0; }
+    for (int i = 0; i < words(); i++) { m_value.value(i) = m_value.valueX(i) = 0; }
     return *this;
 }
 V3Number& V3Number::setAllBits1() {
     for (int i = 0; i < words(); i++) {
-        m_value[i] = ~0;
-        m_valueX[i] = 0;
+        m_value.value(i) = ~0;
+        m_value.valueX(i) = 0;
     }
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setAllBitsX() {
     // Use setAllBitsXRemoved if calling this based on a non-X/Z input value such as divide by zero
-    for (int i = 0; i < words(); i++) { m_value[i] = m_valueX[i] = ~0; }
+    for (int i = 0; i < words(); i++) { m_value.value(i) = m_value.valueX(i) = ~0; }
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setAllBitsZ() {
     for (int i = 0; i < words(); i++) {
-        m_value[i] = 0;
-        m_valueX[i] = ~0;
+        m_value.value(i) = 0;
+        m_value.valueX(i) = ~0;
     }
     opCleanThis();
     return *this;
@@ -485,7 +485,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     } else if (isString()) {
         return '"' + toString() + '"';
     } else {
-        if (VL_UNCOVERABLE((m_value[words() - 1] | m_valueX[words() - 1]) & ~hiWordMask())) {
+        if (VL_UNCOVERABLE((m_value.value(words() - 1) | m_value.valueX(words() - 1))
+                           & ~hiWordMask())) {
             out << "%E-hidden-bits";  // LCOV_EXCL_LINE
         }
     }
@@ -704,23 +705,23 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     // 'p'   // Packed - converted to another code by V3Width
     case 'u': {  // Packed 2-state
         for (int i = 0; i < words(); i++) {
-            str += static_cast<char>((m_value[i] >> 0) & 0xff);
-            str += static_cast<char>((m_value[i] >> 8) & 0xff);
-            str += static_cast<char>((m_value[i] >> 16) & 0xff);
-            str += static_cast<char>((m_value[i] >> 24) & 0xff);
+            str += static_cast<char>((m_value.value(i) >> 0) & 0xff);
+            str += static_cast<char>((m_value.value(i) >> 8) & 0xff);
+            str += static_cast<char>((m_value.value(i) >> 16) & 0xff);
+            str += static_cast<char>((m_value.value(i) >> 24) & 0xff);
         }
         return str;
     }
     case 'z': {  // Packed 4-state
         for (int i = 0; i < words(); i++) {
-            str += static_cast<char>((m_value[i] >> 0) & 0xff);
-            str += static_cast<char>((m_value[i] >> 8) & 0xff);
-            str += static_cast<char>((m_value[i] >> 16) & 0xff);
-            str += static_cast<char>((m_value[i] >> 24) & 0xff);
-            str += static_cast<char>((m_valueX[i] >> 0) & 0xff);
-            str += static_cast<char>((m_valueX[i] >> 8) & 0xff);
-            str += static_cast<char>((m_valueX[i] >> 16) & 0xff);
-            str += static_cast<char>((m_valueX[i] >> 24) & 0xff);
+            str += static_cast<char>((m_value.value(i) >> 0) & 0xff);
+            str += static_cast<char>((m_value.value(i) >> 8) & 0xff);
+            str += static_cast<char>((m_value.value(i) >> 16) & 0xff);
+            str += static_cast<char>((m_value.value(i) >> 24) & 0xff);
+            str += static_cast<char>((m_value.valueX(i) >> 0) & 0xff);
+            str += static_cast<char>((m_value.valueX(i) >> 8) & 0xff);
+            str += static_cast<char>((m_value.valueX(i) >> 16) & 0xff);
+            str += static_cast<char>((m_value.valueX(i) >> 24) & 0xff);
         }
         return str;
     }
@@ -809,12 +810,12 @@ uint32_t V3Number::toUInt() const {
     UASSERT(!isFourState(), "toUInt with 4-state " << *this);
     // We allow wide numbers that represent values <= 32 bits
     for (int i = 1; i < words(); ++i) {
-        if (m_value[i]) {
+        if (m_value.value(i)) {
             v3error("Value too wide for 32-bits expected in this context " << *this);
             break;
         }
     }
-    return m_value[0];
+    return m_value.value(0);
 }
 
 double V3Number::toDouble() const {
@@ -825,8 +826,8 @@ double V3Number::toDouble() const {
         double d;
         uint32_t u[2];
     } u;
-    u.u[0] = m_value[0];
-    u.u[1] = m_value[1];
+    u.u[0] = m_value.value(0);
+    u.u[1] = m_value.value(1);
     return u.d;
 }
 
@@ -848,14 +849,14 @@ vluint64_t V3Number::toUQuad() const {
     // We allow wide numbers that represent values <= 64 bits
     if (isDouble()) return static_cast<vluint64_t>(toDouble());
     for (int i = 2; i < words(); ++i) {
-        if (m_value[i]) {
+        if (m_value.value(i)) {
             v3error("Value too wide for 64-bits expected in this context " << *this);
             break;
         }
     }
     if (width() <= 32) return (static_cast<vluint64_t>(toUInt()));
-    return ((static_cast<vluint64_t>(m_value[1]) << 32ULL)
-            | (static_cast<vluint64_t>(m_value[0])));
+    return ((static_cast<vluint64_t>(m_value.value(1)) << 32ULL)
+            | (static_cast<vluint64_t>(m_value.value(0))));
 }
 
 vlsint64_t V3Number::toSQuad() const {
@@ -886,13 +887,13 @@ string V3Number::toString() const {
 
 V3Hash V3Number::toHash() const {
     V3Hash hash(m_width);
-    for (int i = 0; i < words(); ++i) { hash += m_value[i]; }
+    for (int i = 0; i < words(); ++i) { hash += m_value.value(i); }
     return hash;
 }
 
 uint32_t V3Number::edataWord(int eword) const {
     UASSERT(!isFourState(), "edataWord with 4-state " << *this);
-    return m_value[eword];
+    return m_value.value(eword);
 }
 
 uint8_t V3Number::dataByte(int byte) const {
@@ -901,13 +902,13 @@ uint8_t V3Number::dataByte(int byte) const {
 
 bool V3Number::isEqZero() const {
     for (int i = 0; i < words(); i++) {
-        if (m_value[i] || m_valueX[i]) return false;
+        if (m_value.value(i) || m_value.valueX(i)) return false;
     }
     return true;
 }
 bool V3Number::isNeqZero() const {
     for (int i = 0; i < words(); i++) {
-        if (m_value[i] & ~m_valueX[i]) return true;
+        if (m_value.value(i) & ~m_value.valueX(i)) return true;
     }
     return false;
 }
@@ -918,9 +919,9 @@ bool V3Number::isBitsZero(int msb, int lsb) const {
     return true;
 }
 bool V3Number::isEqOne() const {
-    if (m_value[0] != 1 || m_valueX[0]) return false;
+    if (m_value.value(0) != 1 || m_value.valueX(0)) return false;
     for (int i = 1; i < words(); i++) {
-        if (m_value[i] || m_valueX[i]) return false;
+        if (m_value.value(i) || m_value.valueX(i)) return false;
     }
     return true;
 }
@@ -934,7 +935,7 @@ bool V3Number::isEqAllOnes(int optwidth) const {
 bool V3Number::isFourState() const {
     if (isDouble() || isString()) return false;
     for (int i = 0; i < words(); ++i) {
-        if (m_valueX[i]) return true;
+        if (m_value.valueX(i)) return true;
     }
     return false;
 }
@@ -1129,7 +1130,7 @@ V3Number& V3Number::opCountBits(const V3Number& expr, const V3Number& ctrl1, con
     NUM_ASSERT_OP_ARGS4(expr, ctrl1, ctrl2, ctrl3);
     NUM_ASSERT_LOGIC_ARGS4(expr, ctrl1, ctrl2, ctrl3);
     setZero();
-    m_value[0] = expr.countBits(ctrl1, ctrl2, ctrl3);
+    m_value.value(0) = expr.countBits(ctrl1, ctrl2, ctrl3);
     opCleanThis();
     return *this;
 }
@@ -1138,7 +1139,7 @@ V3Number& V3Number::opCountOnes(const V3Number& lhs) {
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     if (lhs.isFourState()) return setAllBitsX();
     setZero();
-    m_value[0] = lhs.countOnes();
+    m_value.value(0) = lhs.countOnes();
     opCleanThis();
     return *this;
 }
@@ -1531,8 +1532,7 @@ bool V3Number::isCaseEq(const V3Number& rhs) const {
     if (isString()) return toString() == rhs.toString();
     if (isDouble()) return toDouble() == rhs.toDouble();
     if (this->width() != rhs.width()) return false;
-    if (m_value != rhs.m_value) return false;
-    return m_valueX == rhs.m_valueX;
+    return m_value == rhs.m_value;
 }
 
 V3Number& V3Number::opCaseEq(const V3Number& lhs, const V3Number& rhs) {
@@ -1761,15 +1761,15 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
         opCleanThis();  // Mult produces extra bits in result
     } else {
         for (int lword = 0; lword < lhs.words(); lword++) {
-            const vluint64_t lwordval = static_cast<vluint64_t>(lhs.m_value[lword]);
+            const vluint64_t lwordval = static_cast<vluint64_t>(lhs.m_value.value(lword));
             if (lwordval == 0) continue;
             for (int rword = 0; rword < rhs.words(); rword++) {
-                const vluint64_t rwordval = static_cast<vluint64_t>(rhs.m_value[rword]);
+                const vluint64_t rwordval = static_cast<vluint64_t>(rhs.m_value.value(rword));
                 if (rwordval == 0) continue;
                 vluint64_t mul = lwordval * rwordval;
                 for (int qword = lword + rword; qword < this->words(); qword++) {
-                    mul += static_cast<vluint64_t>(m_value[qword]);
-                    m_value[qword] = (mul & 0xffffffffULL);
+                    mul += static_cast<vluint64_t>(m_value.value(qword));
+                    m_value.value(qword) = (mul & 0xffffffffULL);
                     mul = (mul >> 32ULL) & 0xffffffffULL;
                     if (mul == 0) break;
                 }
@@ -1886,16 +1886,17 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         vluint64_t k = 0;
         for (int j = uw - 1; j >= 0; j--) {
-            vluint64_t unw64 = ((k << 32ULL) + static_cast<vluint64_t>(lhs.m_value[j]));
-            m_value[j] = unw64 / static_cast<vluint64_t>(rhs.m_value[0]);
+            vluint64_t unw64 = ((k << 32ULL) + static_cast<vluint64_t>(lhs.m_value.value(j)));
+            m_value.value(j) = unw64 / static_cast<vluint64_t>(rhs.m_value.value(0));
             k = unw64
-                - (static_cast<vluint64_t>(m_value[j]) * static_cast<vluint64_t>(rhs.m_value[0]));
+                - (static_cast<vluint64_t>(m_value.value(j))
+                   * static_cast<vluint64_t>(rhs.m_value.value(0)));
         }
         UINFO(9, "  opmoddiv-1w  " << lhs << " " << rhs << " q=" << *this << " rem=0x" << std::hex
                                    << k << std::dec << endl);
         if (is_modulus) {
             setZero();
-            m_value[0] = k;
+            m_value.value(0) = k;
         }
         opCleanThis();
         return *this;
@@ -1906,7 +1907,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     uint32_t vn[VL_MULS_MAX_WORDS + 1];  // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
-    for (int i = 0; i < words; i++) { m_value[i] = 0; }
+    for (int i = 0; i < words; i++) { m_value.value(i) = 0; }
     for (int i = 0; i < words + 1; i++) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
 
     // Algorithm requires divisor MSB to be set
@@ -1914,20 +1915,22 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     int s = 31 - ((vmsbp1 - 1) & 31);  // shift amount (0...31)
     uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
     for (int i = vw - 1; i > 0; i--) {
-        vn[i] = (rhs.m_value[i] << s) | (shift_mask & (rhs.m_value[i - 1] >> (32 - s)));
+        vn[i]
+            = (rhs.m_value.value(i) << s) | (shift_mask & (rhs.m_value.value(i - 1) >> (32 - s)));
     }
-    vn[0] = rhs.m_value[0] << s;
+    vn[0] = rhs.m_value.value(0) << s;
 
     // Copy and shift dividend by same amount; may set new upper word
     if (s) {
-        un[uw] = lhs.m_value[uw - 1] >> (32 - s);
+        un[uw] = lhs.m_value.value(uw - 1) >> (32 - s);
     } else {
         un[uw] = 0;
     }
     for (int i = uw - 1; i > 0; i--) {
-        un[i] = (lhs.m_value[i] << s) | (shift_mask & (lhs.m_value[i - 1] >> (32 - s)));
+        un[i]
+            = (lhs.m_value.value(i) << s) | (shift_mask & (lhs.m_value.value(i - 1) >> (32 - s)));
     }
-    un[0] = lhs.m_value[0] << s;
+    un[0] = lhs.m_value.value(0) << s;
 
     // printf("  un="); for (int i=5; i>=0; i--) printf(" %08x",un[i]); printf("\n");
     // printf("  vn="); for (int i=5; i>=0; i--) printf(" %08x",vn[i]); printf("\n");
@@ -1958,11 +1961,11 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         }
         t = un[j + vw] - k;
         un[j + vw] = t;
-        this->m_value[j] = qhat;  // Save quotient digit
+        this->m_value.value(j) = qhat;  // Save quotient digit
 
         if (t < 0) {
             // Over subtracted; correct by adding back
-            this->m_value[j]--;
+            this->m_value.value(j)--;
             k = 0;
             for (int i = 0; i < vw; i++) {
                 t = static_cast<vluint64_t>(un[i + j]) + static_cast<vluint64_t>(vn[i]) + k;
@@ -1980,9 +1983,9 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     if (is_modulus) {  // modulus
         // Need to reverse normalization on copy to output
         for (int i = 0; i < vw; i++) {
-            m_value[i] = (un[i] >> s) | (shift_mask & (un[i + 1] << (32 - s)));
+            m_value.value(i) = (un[i] >> s) | (shift_mask & (un[i + 1] << (32 - s)));
         }
-        for (int i = vw; i < words; i++) m_value[i] = 0;
+        for (int i = vw; i < words; i++) m_value.value(i) = 0;
         opCleanThis();
         UINFO(9, "  opmoddiv-mod " << lhs << " " << rhs << " now=" << *this << endl);
         return *this;
@@ -2016,7 +2019,7 @@ V3Number& V3Number::opPow(const V3Number& lhs, const V3Number& rhs, bool lsign, 
     }
     if (lhs.isEqZero()) return setZero();
     setZero();
-    m_value[0] = 1;
+    m_value.value(0) = 1;
     V3Number power(&lhs, width());
     power.opAssign(lhs);
     for (int bit = 0; bit < rhs.width(); bit++) {
@@ -2104,15 +2107,16 @@ V3Number& V3Number::opClean(const V3Number& lhs, uint32_t bits) { return opSel(l
 void V3Number::opCleanThis(bool warnOnTruncation) {
     // Clean MSB of number
     NUM_ASSERT_LOGIC_ARGS1(*this);
-    uint32_t newValueMsb = m_value[words() - 1] & hiWordMask();
-    uint32_t newValueXMsb = m_valueX[words() - 1] & hiWordMask();
+    uint32_t newValueMsb = m_value.value(words() - 1) & hiWordMask();
+    uint32_t newValueXMsb = m_value.valueX(words() - 1) & hiWordMask();
     if (warnOnTruncation
-        && (newValueMsb != m_value[words() - 1] || newValueXMsb != m_valueX[words() - 1])) {
+        && (newValueMsb != m_value.value(words() - 1)
+            || newValueXMsb != m_value.valueX(words() - 1))) {
         // Displaying in decimal avoids hiWordMask truncation
         v3warn(WIDTH, "Value too large for " << width() << " bit number: " << displayed("%d"));
     }
-    m_value[words() - 1] = newValueMsb;
-    m_valueX[words() - 1] = newValueXMsb;
+    m_value.value(words() - 1) = newValueMsb;
+    m_value.valueX(words() - 1) = newValueXMsb;
 }
 
 V3Number& V3Number::opSel(const V3Number& lhs, const V3Number& msb, const V3Number& lsb) {

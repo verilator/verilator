@@ -38,8 +38,35 @@ inline bool v3EpsilonEqual(double a, double b) {
 //============================================================================
 
 class AstNode;
+class FileLine;
 
 class V3Number final {
+    // TYPES
+    class ValueAndX final {
+        // Value, with bit 0 in bit 0 of this vector (unless X/Z)
+        std::vector<uint32_t> m_value;
+        // Each bit is true if it's X or Z, 10=z, 11=x
+        std::vector<uint32_t> m_valueX;
+
+    public:
+        size_t size() const {
+            // UDEBUGONLY(UASSERT(m_value.size() == m_valueX.size(), "value:" << m_value.size() <<
+            // " X:" << m_valueX.size()););
+            return m_value.size();
+        }
+        void resize(size_t s) {
+            m_value.resize(s);
+            m_valueX.resize(s);
+        }
+        uint32_t& value(size_t idx) { return m_value[idx]; }
+        uint32_t& valueX(size_t idx) { return m_valueX[idx]; }
+        const uint32_t& value(size_t idx) const { return m_value[idx]; }
+        const uint32_t& valueX(size_t idx) const { return m_valueX[idx]; }
+        bool operator==(const ValueAndX& other) const {
+            return m_value == other.m_value && m_valueX == other.m_valueX;
+        }
+    };
+
     // Large 4-state number handling
     int m_width;  // Width as specified/calculated.
     bool m_sized : 1;  // True if the user specified the width, else we track it.
@@ -51,8 +78,7 @@ class V3Number final {
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
     FileLine* m_fileline;
     AstNode* m_nodep;  // Parent node
-    std::vector<uint32_t> m_value;  // Value, with bit 0 in bit 0 of this vector (unless X/Z)
-    std::vector<uint32_t> m_valueX;  // Each bit is true if it's X or Z, 10=z, 11=x
+    ValueAndX m_value;
     string m_stringVal;  // If isString, the value of the string
     // METHODS
     V3Number& setSingleBits(char value);
@@ -75,17 +101,17 @@ public:
         if (bit >= m_width) return;
         uint32_t mask = (1UL << (bit & 31));
         if (value == '0' || value == 0) {
-            m_value[bit / 32] &= ~mask;
-            m_valueX[bit / 32] &= ~mask;
+            m_value.value(bit / 32) &= ~mask;
+            m_value.valueX(bit / 32) &= ~mask;
         } else if (value == '1' || value == 1) {
-            m_value[bit / 32] |= mask;
-            m_valueX[bit / 32] &= ~mask;
+            m_value.value(bit / 32) |= mask;
+            m_value.valueX(bit / 32) &= ~mask;
         } else if (value == 'z' || value == 2) {
-            m_value[bit / 32] &= ~mask;
-            m_valueX[bit / 32] |= mask;
+            m_value.value(bit / 32) &= ~mask;
+            m_value.valueX(bit / 32) |= mask;
         } else {  // X
-            m_value[bit / 32] |= mask;
-            m_valueX[bit / 32] |= mask;
+            m_value.value(bit / 32) |= mask;
+            m_value.valueX(bit / 32) |= mask;
         }
     }
 
@@ -95,8 +121,8 @@ private:
             // We never sign extend
             return '0';
         }
-        return ("01zx"[(((m_value[bit / 32] & (1UL << (bit & 31))) ? 1 : 0)
-                        | ((m_valueX[bit / 32] & (1UL << (bit & 31))) ? 2 : 0))]);
+        return ("01zx"[(((m_value.value(bit / 32) & (1UL << (bit & 31))) ? 1 : 0)
+                        | ((m_value.valueX(bit / 32) & (1UL << (bit & 31))) ? 2 : 0))]);
     }
     char bitIsExtend(int bit, int lbits) const {
         // lbits usually = width, but for C optimizations width=32_bits, lbits = 32_or_less
@@ -105,48 +131,48 @@ private:
         if (bit >= lbits) {
             bit = lbits ? lbits - 1 : 0;
             // We do sign extend
-            return ("01zx"[(((m_value[bit / 32] & (1UL << (bit & 31))) ? 1 : 0)
-                            | ((m_valueX[bit / 32] & (1UL << (bit & 31))) ? 2 : 0))]);
+            return ("01zx"[(((m_value.value(bit / 32) & (1UL << (bit & 31))) ? 1 : 0)
+                            | ((m_value.valueX(bit / 32) & (1UL << (bit & 31))) ? 2 : 0))]);
         }
-        return ("01zx"[(((m_value[bit / 32] & (1UL << (bit & 31))) ? 1 : 0)
-                        | ((m_valueX[bit / 32] & (1UL << (bit & 31))) ? 2 : 0))]);
+        return ("01zx"[(((m_value.value(bit / 32) & (1UL << (bit & 31))) ? 1 : 0)
+                        | ((m_value.valueX(bit / 32) & (1UL << (bit & 31))) ? 2 : 0))]);
     }
 
 public:
     bool bitIs0(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return !bitIsXZ(m_width - 1);
-        return ((m_value[bit / 32] & (1UL << (bit & 31))) == 0
-                && !(m_valueX[bit / 32] & (1UL << (bit & 31))));
+        return ((m_value.value(bit / 32) & (1UL << (bit & 31))) == 0
+                && !(m_value.valueX(bit / 32) & (1UL << (bit & 31))));
     }
     bool bitIs1(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return false;
-        return ((m_value[bit / 32] & (1UL << (bit & 31)))
-                && !(m_valueX[bit / 32] & (1UL << (bit & 31))));
+        return ((m_value.value(bit / 32) & (1UL << (bit & 31)))
+                && !(m_value.valueX(bit / 32) & (1UL << (bit & 31))));
     }
     bool bitIs1Extend(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIs1Extend(m_width - 1);
-        return ((m_value[bit / 32] & (1UL << (bit & 31)))
-                && !(m_valueX[bit / 32] & (1UL << (bit & 31))));
+        return ((m_value.value(bit / 32) & (1UL << (bit & 31)))
+                && !(m_value.valueX(bit / 32) & (1UL << (bit & 31))));
     }
     bool bitIsX(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsZ(m_width - 1);
-        return ((m_value[bit / 32] & (1UL << (bit & 31)))
-                && (m_valueX[bit / 32] & (1UL << (bit & 31))));
+        return ((m_value.value(bit / 32) & (1UL << (bit & 31)))
+                && (m_value.valueX(bit / 32) & (1UL << (bit & 31))));
     }
     bool bitIsXZ(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsXZ(m_width - 1);
-        return ((m_valueX[bit / 32] & (1UL << (bit & 31))));
+        return ((m_value.valueX(bit / 32) & (1UL << (bit & 31))));
     }
     bool bitIsZ(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsZ(m_width - 1);
-        return ((~m_value[bit / 32] & (1UL << (bit & 31)))
-                && (m_valueX[bit / 32] & (1UL << (bit & 31))));
+        return ((~m_value.value(bit / 32) & (1UL << (bit & 31)))
+                && (m_value.valueX(bit / 32) & (1UL << (bit & 31))));
     }
 
 private:
@@ -167,7 +193,7 @@ public:
     V3Number(AstNode* nodep, int width) { init(nodep, width); }  // 0=unsized
     V3Number(AstNode* nodep, int width, uint32_t value, bool sized = true) {
         init(nodep, width, sized);
-        m_value[0] = value;
+        m_value.value(0) = value;
         opCleanThis();
     }
     // Create from a verilog 32'hxxxx number.
@@ -195,7 +221,7 @@ public:
     }
     V3Number(const V3Number* nump, int width, uint32_t value) {
         init(nullptr, width);
-        m_value[0] = value;
+        m_value.value(0) = value;
         opCleanThis();
         m_fileline = nump->fileline();
     }
@@ -212,7 +238,7 @@ private:
         m_autoExtend = false;
         m_fromString = false;
         width(swidth, sized);
-        for (int i = 0; i < words(); ++i) m_value[i] = m_valueX[i] = 0;
+        for (int i = 0; i < words(); ++i) m_value.value(i) = m_value.valueX(i) = 0;
     }
     void setNames(AstNode* nodep);
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
@@ -231,10 +257,7 @@ public:
             m_sized = false;
             m_width = 1;
         }
-        if (VL_UNLIKELY(m_value.size() < (unsigned)(words() + 1))) {
-            m_value.resize(words() + 1);
-            m_valueX.resize(words() + 1);
-        }
+        if (VL_UNLIKELY(m_value.size() < (unsigned)(words() + 1))) { m_value.resize(words() + 1); }
     }
 
     // SETTERS
@@ -269,7 +292,7 @@ public:
     bool isFourState() const;
     bool hasZ() const {
         for (int i = 0; i < words(); i++) {
-            if ((~m_value[i]) & m_valueX[i]) return true;
+            if ((~m_value.value(i)) & m_value.valueX(i)) return true;
         }
         return false;
     }
