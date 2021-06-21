@@ -18,6 +18,7 @@
 
 #include <functional>
 #include <iomanip>
+#include <iostream>
 
 V3Hash::V3Hash(const std::string& val)
     : m_value{static_cast<uint32_t>(std::hash<std::string>{}(val))} {}
