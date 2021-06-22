@@ -423,7 +423,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// LOCAL STATE\n");
     // Must be before subcells, as constructor order needed before _vlCoverInsert.
-    puts("const char* __Vm_namep;\n");
+    puts("const char* const __Vm_namep;\n");
 
     if (v3Global.needTraceDumper()) {
         // __Vm_dumperp is local, otherwise we wouldn't know what design's eval()
