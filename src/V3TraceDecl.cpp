@@ -94,7 +94,7 @@ private:
         basep->addStmtsp(callp);
     }
     AstCFunc* newCFuncSub(AstCFunc* basep) {
-        const string name = "traceInitSub" + cvtToStr(m_funcNum++);
+        const string name = "trace_init_sub_" + cvtToStr(m_funcNum++);
         AstCFunc* const funcp = newCFunc(AstCFuncType::TRACE_INIT_SUB, name);
         if (!m_interface) callCFuncSub(basep, funcp, nullptr);
         return funcp;
@@ -135,7 +135,7 @@ private:
     virtual void visit(AstTopScope* nodep) override {
         m_topScopep = nodep->scopep();
         // Create the trace init function
-        m_initFuncp = newCFunc(AstCFuncType::TRACE_INIT, "traceInitTop");
+        m_initFuncp = newCFunc(AstCFuncType::TRACE_INIT, "trace_init_top");
         // Create initial sub function
         m_initSubFuncp = newCFuncSub(m_initFuncp);
         // And find variables
