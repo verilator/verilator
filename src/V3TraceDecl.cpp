@@ -69,13 +69,13 @@ private:
         return nullptr;
     }
 
-    AstCFunc* newCFunc(AstCFuncType type, const string& name) {
+    AstCFunc* newCFunc(const string& name) {
         FileLine* const flp = m_topScopep->fileline();
         AstCFunc* const funcp = new AstCFunc(flp, name, m_topScopep);
         string argTypes = v3Global.opt.traceClassBase() + "* tracep";
         if (m_interface) argTypes += ", int scopet, const char* scopep";
         funcp->argTypes(argTypes);
-        funcp->funcType(type);
+        funcp->isTrace(true);
         funcp->isStatic(false);
         funcp->isLoose(true);
         funcp->slow(true);
@@ -94,8 +94,11 @@ private:
         basep->addStmtsp(callp);
     }
     AstCFunc* newCFuncSub(AstCFunc* basep) {
+        FileLine* const fl = basep->fileline();
         const string name = "trace_init_sub_" + cvtToStr(m_funcNum++);
-        AstCFunc* const funcp = newCFunc(AstCFuncType::TRACE_INIT_SUB, name);
+        AstCFunc* const funcp = newCFunc(name);
+        funcp->addInitsp(new AstCStmt(fl, "const int c = vlSymsp->__Vm_baseCode;\n"));
+        funcp->addInitsp(new AstCStmt(fl, "if (false && tracep && c) {}  // Prevent unused\n"));
         if (!m_interface) callCFuncSub(basep, funcp, nullptr);
         return funcp;
     }
@@ -135,7 +138,7 @@ private:
     virtual void visit(AstTopScope* nodep) override {
         m_topScopep = nodep->scopep();
         // Create the trace init function
-        m_initFuncp = newCFunc(AstCFuncType::TRACE_INIT, "trace_init_top");
+        m_initFuncp = newCFunc("trace_init_top");
         // Create initial sub function
         m_initSubFuncp = newCFuncSub(m_initFuncp);
         // And find variables

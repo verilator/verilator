@@ -171,6 +171,7 @@ private:
     AstNodeModule* m_topModp = nullptr;  // Module to add variables to
     AstScope* m_topScopep = nullptr;  // Scope to add variables to
     AstCFunc* m_cfuncp = nullptr;  // C function adding to graph
+    AstCFunc* m_regFuncp = nullptr;  // Trace registration function
     AstTraceDecl* m_tracep = nullptr;  // Trace function adding to graph
     AstVarScope* m_activityVscp = nullptr;  // Activity variable
     uint32_t m_activityNumber = 0;  // Count of fields in activity variable
@@ -472,69 +473,77 @@ private:
         }
     }
 
-    AstCFunc* newCFunc(AstCFuncType type, AstCFunc* callfromp, AstCFunc* regp, int& funcNump) {
+    AstCFunc* newCFunc(bool full, AstCFunc* topFuncp, int& funcNump, uint32_t baseCode = 0) {
         // Create new function
-        string name;
-        switch (type) {
-        case AstCFuncType::TRACE_FULL: name = "trace_full_top_"; break;
-        case AstCFuncType::TRACE_FULL_SUB: name = "trace_full_sub_"; break;
-        case AstCFuncType::TRACE_CHANGE: name = "trace_chg_top_"; break;
-        case AstCFuncType::TRACE_CHANGE_SUB: name = "trace_chg_sub_"; break;
-        default: m_topScopep->v3fatalSrc("Bad trace function type");
-        }
-        name += cvtToStr(funcNump++);
-        FileLine* const flp = m_topScopep->fileline();
-        AstCFunc* const funcp = new AstCFunc(flp, name, m_topScopep);
-        funcp->funcType(type);
-        funcp->dontCombine(true);
-        const bool isTopFunc
-            = type == AstCFuncType::TRACE_FULL || type == AstCFuncType::TRACE_CHANGE;
-        if (isTopFunc) {
-            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase() + "* tracep");
-            funcp->isStatic(true);
-            funcp->addInitsp(new AstCStmt(
-                flp, prefixNameProtect(m_topModp) + "* const __restrict vlSelf = static_cast<"
-                         + prefixNameProtect(m_topModp) + "*>(voidSelf);\n"));
-            funcp->addInitsp(new AstCStmt(flp, symClassAssign()));
+        const bool isTopFunc = topFuncp == nullptr;
+        const string baseName = full && isTopFunc ? "trace_full_top_"
+                                : full            ? "trace_full_sub_"
+                                : isTopFunc       ? "trace_chg_top_"
+                                                  : "trace_chg_sub_";
 
-        } else {
-            funcp->argTypes(v3Global.opt.traceClassBase() + "* tracep");
-            funcp->isStatic(false);
-        }
+        FileLine* const flp = m_topScopep->fileline();
+        AstCFunc* const funcp = new AstCFunc(flp, baseName + cvtToStr(funcNump++), m_topScopep);
+        funcp->isTrace(true);
+        funcp->dontCombine(true);
         funcp->isLoose(true);
-        funcp->slow(type == AstCFuncType::TRACE_FULL || type == AstCFuncType::TRACE_FULL_SUB);
+        funcp->slow(full);
+        funcp->isStatic(isTopFunc);
         // Add it to top scope
         m_topScopep->addActivep(funcp);
-        // Add call to new function
-        if (callfromp) {
+        const auto addInitStr = [funcp, flp](const string& str) -> void {
+            funcp->addInitsp(new AstCStmt(flp, str));
+        };
+        if (isTopFunc) {
+            // Top functions
+            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase() + "* tracep");
+            addInitStr(voidSelfAssign(m_topModp));
+            addInitStr(symClassAssign());
+            // Add global activity check to change dump functions
+            if (!full) {  //
+                addInitStr("if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;\n");
+            }
+            // Register function
+            if (full) {
+                m_regFuncp->addStmtsp(new AstText(flp, "tracep->addFullCb(", true));
+            } else {
+                m_regFuncp->addStmtsp(new AstText(flp, "tracep->addChgCb(", true));
+            }
+            m_regFuncp->addStmtsp(new AstAddrOfCFunc(flp, funcp));
+            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf);\n", true));
+        } else {
+            // Sub functions
+            funcp->argTypes(v3Global.opt.traceClassBase() + "* tracep");
+            // Setup base references. Note in rare occasions we can end up with an empty trace
+            // sub function, hence the VL_ATTR_UNUSED attributes.
+            if (full) {
+                // Full dump sub function
+                addInitStr("vluint32_t* const oldp VL_ATTR_UNUSED = "
+                           "tracep->oldp(vlSymsp->__Vm_baseCode);\n");
+            } else {
+                // Change dump sub function
+                if (v3Global.opt.trueTraceThreads()) {
+                    addInitStr("const vluint32_t base VL_ATTR_UNUSED = "
+                               "vlSymsp->__Vm_baseCode + "
+                               + cvtToStr(baseCode) + ";\n");
+                    addInitStr("if (false && tracep) {}  // Prevent unused\n");
+                } else {
+                    addInitStr("vluint32_t* const oldp VL_ATTR_UNUSED = "
+                               "tracep->oldp(vlSymsp->__Vm_baseCode + "
+                               + cvtToStr(baseCode) + ");\n");
+                }
+            }
+            // Add call to top function
             AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
             callp->argTypes("tracep");
-            callfromp->addStmtsp(callp);
-        }
-        // Register function
-        if (regp) {
-            if (type == AstCFuncType::TRACE_FULL) {
-                regp->addStmtsp(new AstText(flp, "tracep->addFullCb(", true));
-            } else if (type == AstCFuncType::TRACE_CHANGE) {
-                regp->addStmtsp(new AstText(flp, "tracep->addChgCb(", true));
-            } else {
-                funcp->v3fatalSrc("Don't know how to register this type of function");
-            }
-            regp->addStmtsp(new AstAddrOfCFunc(flp, funcp));
-            regp->addStmtsp(new AstText(flp, ", vlSelf);\n", true));
-        }
-        // Add global activity check to TRACE_CHANGE functions
-        if (type == AstCFuncType::TRACE_CHANGE) {
-            funcp->addInitsp(
-                new AstCStmt(flp, string("if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;\n")));
+            topFuncp->addStmtsp(callp);
         }
         // Done
         UINFO(5, "  newCFunc " << funcp << endl);
         return funcp;
     }
 
-    void createFullTraceFunction(const TraceVec& traces, uint32_t nAllCodes, uint32_t parallelism,
-                                 AstCFunc* regFuncp) {
+    void createFullTraceFunction(const TraceVec& traces, uint32_t nAllCodes,
+                                 uint32_t parallelism) {
         const int splitLimit = v3Global.opt.outputSplitCTrace() ? v3Global.opt.outputSplitCTrace()
                                                                 : std::numeric_limits<int>::max();
 
@@ -571,20 +580,17 @@ private:
                     ++m_statUniqSigs;
 
                     // Create top function if not yet created
-                    if (!topFuncp) {
-                        topFuncp
-                            = newCFunc(AstCFuncType::TRACE_FULL, nullptr, regFuncp, topFuncNum);
-                    }
+                    if (!topFuncp) { topFuncp = newCFunc(/* full: */ true, nullptr, topFuncNum); }
 
                     // Crate new sub function if required
                     if (!subFuncp || subStmts > splitLimit) {
                         subStmts = 0;
-                        subFuncp = newCFunc(AstCFuncType::TRACE_FULL_SUB, topFuncp, nullptr,
-                                            subFuncNum);
+                        subFuncp = newCFunc(/* full: */ true, topFuncp, subFuncNum);
                     }
 
                     // Add TraceInc node
-                    AstTraceInc* const incp = new AstTraceInc(declp->fileline(), declp, true);
+                    AstTraceInc* const incp
+                        = new AstTraceInc(declp->fileline(), declp, /* full: */ true);
                     subFuncp->addStmtsp(incp);
                     subStmts += EmitCBaseCounterVisitor(incp).count();
 
@@ -599,8 +605,8 @@ private:
         }
     }
 
-    void createChgTraceFunctions(const TraceVec& traces, uint32_t nAllCodes, uint32_t parallelism,
-                                 AstCFunc* regFuncp) {
+    void createChgTraceFunctions(const TraceVec& traces, uint32_t nAllCodes,
+                                 uint32_t parallelism) {
         const int splitLimit = v3Global.opt.outputSplitCTrace() ? v3Global.opt.outputSplitCTrace()
                                                                 : std::numeric_limits<int>::max();
         int topFuncNum = 0;
@@ -615,6 +621,7 @@ private:
             uint32_t nCodes = 0;
             const ActCodeSet* prevActSet = nullptr;
             AstIf* ifp = nullptr;
+            uint32_t baseCode = 0;
             for (; nCodes < maxCodes && it != traces.end(); ++it) {
                 const TraceTraceVertex* const vtxp = it->second;
                 // This is a duplicate decl, no need to add it to incremental dump
@@ -623,16 +630,16 @@ private:
                 // Traced value never changes, no need to add it to incremental dump
                 if (actSet.count(TraceActivityVertex::ACTIVITY_NEVER)) continue;
 
-                // Create top function if not yet created
-                if (!topFuncp) {
-                    topFuncp = newCFunc(AstCFuncType::TRACE_CHANGE, nullptr, regFuncp, topFuncNum);
-                }
+                AstTraceDecl* const declp = vtxp->nodep();
 
-                // Crate new sub function if required
+                // Create top function if not yet created
+                if (!topFuncp) { topFuncp = newCFunc(/* full: */ false, nullptr, topFuncNum); }
+
+                // Create new sub function if required
                 if (!subFuncp || subStmts > splitLimit) {
+                    baseCode = declp->code();
                     subStmts = 0;
-                    subFuncp
-                        = newCFunc(AstCFuncType::TRACE_CHANGE_SUB, topFuncp, nullptr, subFuncNum);
+                    subFuncp = newCFunc(/* full: */ false, topFuncp, subFuncNum, baseCode);
                     prevActSet = nullptr;
                     ifp = nullptr;
                 }
@@ -658,8 +665,8 @@ private:
                 }
 
                 // Add TraceInc node
-                AstTraceDecl* const declp = vtxp->nodep();
-                AstTraceInc* const incp = new AstTraceInc(declp->fileline(), declp, VAccess::READ);
+                AstTraceInc* const incp
+                    = new AstTraceInc(declp->fileline(), declp, /* full: */ false, baseCode);
                 ifp->addIfsp(incp);
                 subStmts += EmitCBaseCounterVisitor(incp).count();
 
@@ -673,25 +680,23 @@ private:
         }
     }
 
-    void createCleanupFunction(AstCFunc* regFuncp) {
+    void createCleanupFunction() {
         FileLine* const fl = m_topScopep->fileline();
         AstCFunc* const cleanupFuncp = new AstCFunc(fl, "trace_cleanup", m_topScopep);
         cleanupFuncp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase()
                                + "* /*unused*/");
-        cleanupFuncp->funcType(AstCFuncType::TRACE_CLEANUP);
+        cleanupFuncp->isTrace(true);
         cleanupFuncp->slow(false);
         cleanupFuncp->isStatic(true);
         cleanupFuncp->isLoose(true);
         m_topScopep->addActivep(cleanupFuncp);
-        cleanupFuncp->addInitsp(new AstCStmt(
-            fl, prefixNameProtect(m_topModp) + "* const __restrict vlSelf = static_cast<"
-                    + prefixNameProtect(m_topModp) + "*>(voidSelf);\n"));
+        cleanupFuncp->addInitsp(new AstCStmt(fl, voidSelfAssign(m_topModp)));
         cleanupFuncp->addInitsp(new AstCStmt(fl, symClassAssign()));
 
         // Register it
-        regFuncp->addStmtsp(new AstText(fl, "tracep->addCleanupCb(", true));
-        regFuncp->addStmtsp(new AstAddrOfCFunc(fl, cleanupFuncp));
-        regFuncp->addStmtsp(new AstText(fl, ", vlSelf);\n", true));
+        m_regFuncp->addStmtsp(new AstText(fl, "tracep->addCleanupCb(", true));
+        m_regFuncp->addStmtsp(new AstAddrOfCFunc(fl, cleanupFuncp));
+        m_regFuncp->addStmtsp(new AstText(fl, ", vlSelf);\n", true));
 
         // Clear global activity flag
         cleanupFuncp->addStmtsp(
@@ -735,22 +740,21 @@ private:
         // last value vector is more compact
 
         // Create the trace registration function
-        AstCFunc* const regFuncp
-            = new AstCFunc(m_topScopep->fileline(), "trace_register", m_topScopep);
-        regFuncp->argTypes(v3Global.opt.traceClassBase() + "* tracep");
-        regFuncp->funcType(AstCFuncType::TRACE_REGISTER);
-        regFuncp->slow(true);
-        regFuncp->isStatic(false);
-        regFuncp->isLoose(true);
-        m_topScopep->addActivep(regFuncp);
+        m_regFuncp = new AstCFunc(m_topScopep->fileline(), "trace_register", m_topScopep);
+        m_regFuncp->argTypes(v3Global.opt.traceClassBase() + "* tracep");
+        m_regFuncp->isTrace(true);
+        m_regFuncp->slow(true);
+        m_regFuncp->isStatic(false);
+        m_regFuncp->isLoose(true);
+        m_topScopep->addActivep(m_regFuncp);
 
         const int parallelism = 1;  // Note: will bump this later, code below works for any value
 
         // Create the full dump functions, also allocates signal numbers
-        createFullTraceFunction(traces, nFullCodes, parallelism, regFuncp);
+        createFullTraceFunction(traces, nFullCodes, parallelism);
 
         // Create the incremental dump functions
-        createChgTraceFunctions(traces, nChgCodes, parallelism, regFuncp);
+        createChgTraceFunctions(traces, nChgCodes, parallelism);
 
         // Remove refs to traced values from TraceDecl nodes, these have now moved under
         // TraceInc
@@ -761,7 +765,7 @@ private:
         }
 
         // Create the trace cleanup function clearing the activity flags
-        createCleanupFunction(regFuncp);
+        createCleanupFunction();
     }
 
     TraceCFuncVertex* getCFuncVertexp(AstCFunc* nodep) {

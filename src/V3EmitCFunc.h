@@ -1223,8 +1223,6 @@ public:
     virtual void visit(AstCell*) override {}  // Handled outside the Visit class
     virtual void visit(AstVar*) override {}  // Handled outside the Visit class
     virtual void visit(AstNodeText*) override {}  // Handled outside the Visit class
-    virtual void visit(AstTraceDecl*) override {}  // Handled outside the Visit class
-    virtual void visit(AstTraceInc*) override {}  // Handled outside the Visit class
     virtual void visit(AstCFile*) override {}  // Handled outside the Visit class
     virtual void visit(AstCellInline*) override {}  // Handled outside visit (in EmitCSyms)
     virtual void visit(AstCUse*) override {}  // Handled outside the Visit class

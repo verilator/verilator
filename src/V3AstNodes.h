@@ -5244,11 +5244,14 @@ class AstTraceInc final : public AstNodeStmt {
 private:
     AstTraceDecl* m_declp;  // Pointer to declaration
     const bool m_full;  // Is this a full vs incremental dump
+    const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
+
 public:
-    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full)
+    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full, uint32_t baseCode = 0)
         : ASTGEN_SUPER_TraceInc(fl)
         , m_declp{declp}
-        , m_full{full} {
+        , m_full{full}
+        , m_baseCode{baseCode} {
         dtypeFrom(declp);
         addOp2p(declp->valuep()->cloneTree(true));
     }
@@ -5276,6 +5279,7 @@ public:
     AstNode* valuep() const { return op2p(); }
     AstTraceDecl* declp() const { return m_declp; }
     bool full() const { return m_full; }
+    uint32_t baseCode() const { return m_baseCode; }
 };
 
 class AstActive final : public AstNode {
@@ -8728,7 +8732,6 @@ class AstCFunc final : public AstNode {
     // Parents:  MODULE/SCOPE
     // Children: VAR/statements
 private:
-    AstCFuncType m_funcType;
     AstScope* m_scopep;
     string m_name;
     string m_cname;  // C name, for dpiExports
@@ -8738,6 +8741,7 @@ private:
     string m_ifdef;  // #ifdef symbol around this function
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
+    bool m_isTrace : 1;  // Function is related to tracing
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
     bool m_declPrivate : 1;  // Declare it private
     bool m_formCallTree : 1;  // Make a global function to call entire tree of functions
@@ -8759,12 +8763,12 @@ private:
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
-        m_funcType = AstCFuncType::FT_NORMAL;
         m_isConst = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until analyzed
         m_scopep = scopep;
         m_name = name;
         m_rtnType = rtnType;
         m_isStatic = false;
+        m_isTrace = false;
         m_dontCombine = false;
         m_declPrivate = false;
         m_formCallTree = false;
@@ -8793,7 +8797,7 @@ public:
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual bool same(const AstNode* samep) const override {
         const AstCFunc* asamep = static_cast<const AstCFunc*>(samep);
-        return ((funcType() == asamep->funcType()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
+        return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && (ctorInits() == asamep->ctorInits())
                 && isLoose() == asamep->isLoose()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
@@ -8806,12 +8810,14 @@ public:
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
     bool isStatic() const { return m_isStatic; }
     void isStatic(bool flag) { m_isStatic = flag; }
+    bool isTrace() const { return m_isTrace; }
+    void isTrace(bool flag) { m_isTrace = flag; }
     void cname(const string& name) { m_cname = name; }
     string cname() const { return m_cname; }
     AstScope* scopep() const { return m_scopep; }
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     string rtnTypeVoid() const { return ((m_rtnType == "") ? "void" : m_rtnType); }
-    bool dontCombine() const { return m_dontCombine || funcType() != AstCFuncType::FT_NORMAL; }
+    bool dontCombine() const { return m_dontCombine || isTrace(); }
     void dontCombine(bool flag) { m_dontCombine = flag; }
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
@@ -8828,8 +8834,6 @@ public:
     string ctorInits() const { return m_ctorInits; }
     void ifdef(const string& str) { m_ifdef = str; }
     string ifdef() const { return m_ifdef; }
-    void funcType(AstCFuncType flag) { m_funcType = flag; }
-    AstCFuncType funcType() const { return m_funcType; }
     bool isConstructor() const { return m_isConstructor; }
     void isConstructor(bool flag) { m_isConstructor = flag; }
     bool isDestructor() const { return m_isDestructor; }

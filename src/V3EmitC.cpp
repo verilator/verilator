@@ -74,7 +74,7 @@ class EmitCImp final : EmitCFunc {
     using EmitCFunc::visit;  // Suppress hidden overloaded virtual function warning
     virtual void visit(AstCFunc* nodep) override {
         // TRACE_* and DPI handled elsewhere
-        if (nodep->funcType().isTrace()) return;
+        if (nodep->isTrace()) return;
         if (nodep->dpiImportPrototype()) return;
         if (nodep->dpiExportDispatcher()) return;
         if (!(nodep->slow() ? m_slow : m_fast)) return;
@@ -675,10 +675,8 @@ class EmitCTrace final : EmitCFunc {
     AstUser1InUse m_inuser1;
 
     // MEMBERS
-    AstCFunc* m_cfuncp = nullptr;  // Function we're in now
-    bool m_slow;  // Making slow file
+    const bool m_slow;  // Making slow file
     int m_enumNum = 0;  // Enumeration number (whole netlist)
-    int m_baseCode = -1;  // Code of first AstTraceInc in this function
 
     // METHODS
     void newOutCFile(int filenum) {
@@ -703,10 +701,6 @@ class EmitCTrace final : EmitCFunc {
         m_ofp->puts("// DESCR"
                     "IPTION: Verilator output: Tracing implementation internals\n");
 
-        emitTraceHeader();
-    }
-
-    void emitTraceHeader() {
         // Includes
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
         puts("#include \"" + symClassName() + ".h\"\n");
@@ -895,12 +889,13 @@ class EmitCTrace final : EmitCFunc {
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
         puts(v3Global.opt.trueTraceThreads() && !nodep->full() ? "(base+" : "(oldp+");
-        puts(cvtToStr(code - m_baseCode));
+        puts(cvtToStr(code - nodep->baseCode()));
         puts(",");
         emitTraceValue(nodep, arrayindex);
         if (emitWidth) puts("," + cvtToStr(nodep->declp()->widthMin()));
         puts(");\n");
     }
+
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
         if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
             AstVar* varp = varrefp->varp();
@@ -939,92 +934,20 @@ class EmitCTrace final : EmitCFunc {
 
     // VISITORS
     using EmitCFunc::visit;  // Suppress hidden overloaded virtual function warning
-    virtual void visit(AstNetlist* nodep) override {
-        // Top module only
-        iterate(nodep->topModulep());
-    }
-    virtual void visit(AstNodeModule* nodep) override {
-        m_modp = nodep;
-        iterateChildren(nodep);
-        m_modp = nullptr;
-    }
     virtual void visit(AstCFunc* nodep) override {
+        if (!nodep->isTrace()) return;
         if (nodep->slow() != m_slow) return;
-        VL_RESTORER(m_cfuncp);
-        VL_RESTORER(m_useSelfForThis);
-        if (nodep->funcType().isTrace()) {  // TRACE_*
-            m_cfuncp = nodep;
 
-            if (splitNeeded()) {
-                // Splitting file, so using parallel build.
-                v3Global.useParallelBuild(true);
-                // Close old file
-                VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
-                // Open a new file
-                newOutCFile(splitFilenumInc());
-            }
-
-            splitSizeInc(nodep);
-
-            puts("\n");
-            m_lazyDecls.emit(nodep);
-            emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
-            puts(" {\n");
-
-            if (nodep->isLoose()) {
-                m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
-                if (!nodep->isStatic()) {  // Standard prologue
-                    puts("if (false && vlSelf) {}  // Prevent unused\n");
-                    m_useSelfForThis = true;
-                    puts(symClassAssign());
-                }
-            }
-
-            if (nodep->initsp()) {
-                string section;
-                emitVarList(nodep->initsp(), EVL_FUNC_ALL, "", section /*ref*/);
-                iterateAndNextNull(nodep->initsp());
-            }
-
-            m_baseCode = -1;
-
-            if (nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
-                const AstNode* const stmtp = nodep->stmtsp();
-                const AstIf* const ifp = VN_CAST_CONST(stmtp, If);
-                const AstTraceInc* const tracep
-                    = VN_CAST_CONST(ifp ? ifp->ifsp() : stmtp, TraceInc);
-                // On rare occasions we can end up with an empty sub function
-                m_baseCode = tracep ? tracep->declp()->code() : 0;
-                if (v3Global.opt.trueTraceThreads()) {
-                    puts("const vluint32_t base = vlSymsp->__Vm_baseCode + " + cvtToStr(m_baseCode)
-                         + ";\n");
-                    puts("if (false && tracep && base) {}  // Prevent unused\n");
-                } else {
-                    puts("vluint32_t* const oldp = tracep->oldp(vlSymsp->__Vm_baseCode + "
-                         + cvtToStr(m_baseCode) + ");\n");
-                    puts("if (false && oldp) {}  // Prevent unused\n");
-                }
-            } else if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB) {
-                m_baseCode = 0;
-                puts("vluint32_t* const oldp = tracep->oldp(vlSymsp->__Vm_baseCode);\n");
-                puts("if (false && oldp) {}  // Prevent unused\n");
-            } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
-                puts("const int c = vlSymsp->__Vm_baseCode;\n");
-                puts("if (false && tracep && c) {}  // Prevent unused\n");
-            }
-
-            if (nodep->stmtsp()) {
-                putsDecoration("// Body\n");
-                puts("{\n");
-                iterateAndNextNull(nodep->stmtsp());
-                puts("}\n");
-            }
-            if (nodep->finalsp()) {
-                putsDecoration("// Final\n");
-                iterateAndNextNull(nodep->finalsp());
-            }
-            puts("}\n");
+        if (splitNeeded()) {
+            // Splitting file, so using parallel build.
+            v3Global.useParallelBuild(true);
+            // Close old file
+            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            // Open a new file
+            newOutCFile(splitFilenumInc());
         }
+
+        EmitCFunc::visit(nodep);
     }
     virtual void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());
@@ -1047,28 +970,32 @@ class EmitCTrace final : EmitCFunc {
             emitTraceChangeOne(nodep, -1);
         }
     }
-    virtual void visit(AstCoverDecl* nodep) override {}
-    virtual void visit(AstCoverInc* nodep) override {}
 
-public:
-    explicit EmitCTrace(bool slow)
-        : m_slow{slow} {}
-    virtual ~EmitCTrace() override = default;
-    void main() {
-        // Put out the file
+    explicit EmitCTrace(AstNodeModule* modp, bool slow)
+        : m_slow{slow} {
+        m_modp = modp;
+        // Open output file
         newOutCFile(0);
-
-        iterate(v3Global.rootp());
-
+        // Emit functions
+        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) { iterate(funcp); }
+        }
+        // Close output file
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
+    virtual ~EmitCTrace() override = default;
+
+public:
+    static void main(AstNodeModule* modp, bool slow) { EmitCTrace(modp, slow); }
 };
 
 //######################################################################
 // EmitC class functions
 
-static void setParentClassPointers() {
+void V3EmitC::emitc() {
+    UINFO(2, __FUNCTION__ << ": " << endl);
     // Set user4p in all CFunc and Var to point to the containing AstNodeModule
+    AstUser4InUse user4InUse;
     const auto setAll = [](AstNodeModule* modp) -> void {
         for (AstNode* nodep = VN_CAST(modp, NodeModule)->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var)) nodep->user4p(modp);
@@ -1078,13 +1005,7 @@ static void setParentClassPointers() {
         setAll(VN_CAST(modp, NodeModule));
     }
     setAll(v3Global.rootp()->constPoolp()->modp());
-}
 
-void V3EmitC::emitc() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
-    // Set user4 to parent module
-    AstUser4InUse user4InUse;
-    setParentClassPointers();
     // Process each module in turn
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
@@ -1099,22 +1020,11 @@ void V3EmitC::emitc() {
             fast.mainImp(nodep, false);
         }
     }
-}
 
-void V3EmitC::emitcTrace() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    // Emit trace routines (currently they can only exist in the top module)
     if (v3Global.opt.trace()) {
-        // Set user4 to parent module
-        AstUser4InUse user4InUse;
-        setParentClassPointers();
-        {
-            EmitCTrace slow(true);
-            slow.main();
-        }
-        {
-            EmitCTrace fast(false);
-            fast.main();
-        }
+        EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ true);
+        EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ false);
     }
 }
 

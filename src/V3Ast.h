@@ -238,39 +238,6 @@ inline bool operator==(AstPragmaType::en lhs, const AstPragmaType& rhs) { return
 
 //######################################################################
 
-class AstCFuncType final {
-public:
-    enum en : uint8_t {
-        FT_NORMAL,
-        TRACE_REGISTER,
-        TRACE_INIT,
-        TRACE_INIT_SUB,
-        TRACE_FULL,
-        TRACE_FULL_SUB,
-        TRACE_CHANGE,
-        TRACE_CHANGE_SUB,
-        TRACE_CLEANUP
-    };
-    enum en m_e;
-    inline AstCFuncType()
-        : m_e{FT_NORMAL} {}
-    // cppcheck-suppress noExplicitConstructor
-    inline AstCFuncType(en _e)
-        : m_e{_e} {}
-    explicit inline AstCFuncType(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
-    // METHODS
-    bool isTrace() const { return m_e != FT_NORMAL; }
-};
-inline bool operator==(const AstCFuncType& lhs, const AstCFuncType& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-inline bool operator==(const AstCFuncType& lhs, AstCFuncType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(AstCFuncType::en lhs, const AstCFuncType& rhs) { return lhs == rhs.m_e; }
-
-//######################################################################
-
 class VEdgeType final {
 public:
     // REMEMBER to edit the strings below too
