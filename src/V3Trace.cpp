@@ -476,10 +476,10 @@ private:
         // Create new function
         string name;
         switch (type) {
-        case AstCFuncType::TRACE_FULL: name = "traceFullTop"; break;
-        case AstCFuncType::TRACE_FULL_SUB: name = "traceFullSub"; break;
-        case AstCFuncType::TRACE_CHANGE: name = "traceChgTop"; break;
-        case AstCFuncType::TRACE_CHANGE_SUB: name = "traceChgSub"; break;
+        case AstCFuncType::TRACE_FULL: name = "trace_full_top_"; break;
+        case AstCFuncType::TRACE_FULL_SUB: name = "trace_full_sub_"; break;
+        case AstCFuncType::TRACE_CHANGE: name = "trace_chg_top_"; break;
+        case AstCFuncType::TRACE_CHANGE_SUB: name = "trace_chg_sub_"; break;
         default: m_topScopep->v3fatalSrc("Bad trace function type");
         }
         name += cvtToStr(funcNump++);
@@ -593,8 +593,8 @@ private:
                 }
             }
             if (topFuncp) {  // might be nullptr if all trailing entries were duplicates
-                UINFO(5, "traceFullTop" << topFuncNum - 1 << " codes: " << nCodes << "/"
-                                        << maxCodes << endl);
+                UINFO(5, "trace_full_top" << topFuncNum - 1 << " codes: " << nCodes << "/"
+                                          << maxCodes << endl);
             }
         }
     }
@@ -667,15 +667,15 @@ private:
                 nCodes += declp->codeInc();
             }
             if (topFuncp) {  // might be nullptr if all trailing entries were duplicates/constants
-                UINFO(5, "traceChgTop" << topFuncNum - 1 << " codes: " << nCodes << "/" << maxCodes
-                                       << endl);
+                UINFO(5, "trace_chg_top" << topFuncNum - 1 << " codes: " << nCodes << "/"
+                                         << maxCodes << endl);
             }
         }
     }
 
     void createCleanupFunction(AstCFunc* regFuncp) {
         FileLine* const fl = m_topScopep->fileline();
-        AstCFunc* const cleanupFuncp = new AstCFunc(fl, "traceCleanup", m_topScopep);
+        AstCFunc* const cleanupFuncp = new AstCFunc(fl, "trace_cleanup", m_topScopep);
         cleanupFuncp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase()
                                + "* /*unused*/");
         cleanupFuncp->funcType(AstCFuncType::TRACE_CLEANUP);
@@ -736,7 +736,7 @@ private:
 
         // Create the trace registration function
         AstCFunc* const regFuncp
-            = new AstCFunc(m_topScopep->fileline(), "traceRegister", m_topScopep);
+            = new AstCFunc(m_topScopep->fileline(), "trace_register", m_topScopep);
         regFuncp->argTypes(v3Global.opt.traceClassBase() + "* tracep");
         regFuncp->funcType(AstCFuncType::TRACE_REGISTER);
         regFuncp->slow(true);
