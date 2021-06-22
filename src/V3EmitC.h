@@ -32,7 +32,6 @@ public:
     static void emitcInlines();
     static void emitcModel();
     static void emitcSyms(bool dpiHdrOnly = false);
-    static void emitcTrace();
     static void emitcFiles();
 };
 

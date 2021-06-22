@@ -512,7 +512,6 @@ static void process() {
         V3EmitC::emitcSyms();
         V3EmitC::emitcConstPool();
         V3EmitC::emitcModel();
-        V3EmitC::emitcTrace();
     } else if (v3Global.opt.dpiHdrOnly()) {
         V3EmitC::emitcSyms(true);
     }
