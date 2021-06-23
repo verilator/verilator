@@ -8411,7 +8411,8 @@ public:
     AstNode* lhssp() const { return op1p(); }
     AstNode* keyp() const { return op2p(); }  // op2 = assignment key (Const, id Text)
     AstNode* repp() const { return op3p(); }  // op3 = replication count, or nullptr for count 1
-    bool isDefault() const { return m_default; }
+    bool isDefault() const { return m_default && !keyp(); }
+    bool isTypedDefault() const { return m_default && keyp(); }
     void isDefault(bool flag) { m_default = flag; }
 };
 
