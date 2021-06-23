@@ -40,33 +40,49 @@ inline bool v3EpsilonEqual(double a, double b) {
 class AstNode;
 class FileLine;
 
+// Holds a few entries of ValueAndX to avoid dynamic allocation in std::vector for less width of
+// constants
+class V3NumberData final {
+public:
+    // TYPES
+    struct ValueAndX final {
+        // Value, with bit 0 in bit 0 of this vector (unless X/Z)
+        uint32_t m_value;
+        // Each bit is true if it's X or Z, 10=z, 11=x
+        uint32_t m_valueX;
+        bool operator==(const ValueAndX& other) const {
+            return m_value == other.m_value && m_valueX == other.m_valueX;
+        }
+    };
+
+private:
+    // MEMBERS
+    static constexpr size_t m_inlinedSize = 2;  // Can hold 64 bit without dynamic allocation
+    ValueAndX m_inlined[m_inlinedSize];  // Holds the beginning m_inlinedSize words
+    std::vector<ValueAndX> m_data;  // Holds m_inlinedSize-th word and later
+
+public:
+    // CONSTRUCTORS
+    V3NumberData() {
+        for (size_t i = 0; i < m_inlinedSize; ++i) m_inlined[i] = {0, 0};
+    }
+
+    // METHODS
+    void ensureSizeAtLeast(size_t s) {
+        if (VL_UNLIKELY(s > m_data.size() + m_inlinedSize)) m_data.resize(s - m_inlinedSize);
+    }
+    ValueAndX& operator[](size_t idx) {
+        UDEBUGONLY(UASSERT(idx < m_data.size() + m_inlinedSize,
+                           "idx:" << idx << " size:" << m_data.size()
+                                  << " inlinedSize:" << m_inlinedSize););
+        return idx >= m_inlinedSize ? m_data[idx - m_inlinedSize] : m_inlined[idx];
+    }
+    const ValueAndX& operator[](size_t idx) const { return const_cast<V3NumberData&>(*this)[idx]; }
+};
+
 class V3Number final {
     // TYPES
-    class ValueAndX final {
-        struct Values final {
-            // Value, with bit 0 in bit 0 of this vector (unless X/Z)
-            uint32_t m_value;
-            // Each bit is true if it's X or Z, 10=z, 11=x
-            uint32_t m_valueX;
-            bool operator==(const Values& other) const {
-                return m_value == other.m_value && m_valueX == other.m_valueX;
-            }
-        };
-        std::vector<Values> m_data;
-
-    public:
-        size_t size() const {
-            // UDEBUGONLY(UASSERT(m_value.size() == m_valueX.size(), "value:" << m_value.size() <<
-            // " X:" << m_valueX.size()););
-            return m_data.size();
-        }
-        void resize(size_t s) { m_data.resize(s); }
-        uint32_t& value(size_t idx) { return m_data[idx].m_value; }
-        uint32_t& valueX(size_t idx) { return m_data[idx].m_valueX; }
-        const uint32_t& value(size_t idx) const { return m_data[idx].m_value; }
-        const uint32_t& valueX(size_t idx) const { return m_data[idx].m_valueX; }
-        bool operator==(const ValueAndX& other) const { return m_data == other.m_data; }
-    };
+    using ValueAndX = V3NumberData::ValueAndX;
 
     // Large 4-state number handling
     int m_width;  // Width as specified/calculated.
@@ -79,7 +95,7 @@ class V3Number final {
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
     FileLine* m_fileline;
     AstNode* m_nodep;  // Parent node
-    ValueAndX m_value;
+    V3NumberData m_value;  // Value and X/Z information
     string m_stringVal;  // If isString, the value of the string
     // METHODS
     V3Number& setSingleBits(char value);
@@ -101,18 +117,19 @@ public:
     void setBit(int bit, char value) {  // Note must be pre-zeroed!
         if (bit >= m_width) return;
         uint32_t mask = (1UL << (bit & 31));
+        ValueAndX& v = m_value[bit / 32];
         if (value == '0' || value == 0) {
-            m_value.value(bit / 32) &= ~mask;
-            m_value.valueX(bit / 32) &= ~mask;
+            v.m_value &= ~mask;
+            v.m_valueX &= ~mask;
         } else if (value == '1' || value == 1) {
-            m_value.value(bit / 32) |= mask;
-            m_value.valueX(bit / 32) &= ~mask;
+            v.m_value |= mask;
+            v.m_valueX &= ~mask;
         } else if (value == 'z' || value == 2) {
-            m_value.value(bit / 32) &= ~mask;
-            m_value.valueX(bit / 32) |= mask;
+            v.m_value &= ~mask;
+            v.m_valueX |= mask;
         } else {  // X
-            m_value.value(bit / 32) |= mask;
-            m_value.valueX(bit / 32) |= mask;
+            v.m_value |= mask;
+            v.m_valueX |= mask;
         }
     }
 
@@ -122,8 +139,9 @@ private:
             // We never sign extend
             return '0';
         }
-        return ("01zx"[(((m_value.value(bit / 32) & (1UL << (bit & 31))) ? 1 : 0)
-                        | ((m_value.valueX(bit / 32) & (1UL << (bit & 31))) ? 2 : 0))]);
+        const ValueAndX v = m_value[bit / 32];
+        return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
+                        | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
     }
     char bitIsExtend(int bit, int lbits) const {
         // lbits usually = width, but for C optimizations width=32_bits, lbits = 32_or_less
@@ -131,49 +149,52 @@ private:
         UASSERT(lbits <= m_width, "Extend of wrong size");
         if (bit >= lbits) {
             bit = lbits ? lbits - 1 : 0;
+            const ValueAndX v = m_value[bit / 32];
             // We do sign extend
-            return ("01zx"[(((m_value.value(bit / 32) & (1UL << (bit & 31))) ? 1 : 0)
-                            | ((m_value.valueX(bit / 32) & (1UL << (bit & 31))) ? 2 : 0))]);
+            return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
+                            | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
         }
-        return ("01zx"[(((m_value.value(bit / 32) & (1UL << (bit & 31))) ? 1 : 0)
-                        | ((m_value.valueX(bit / 32) & (1UL << (bit & 31))) ? 2 : 0))]);
+        const ValueAndX v = m_value[bit / 32];
+        return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
+                        | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
     }
 
 public:
     bool bitIs0(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return !bitIsXZ(m_width - 1);
-        return ((m_value.value(bit / 32) & (1UL << (bit & 31))) == 0
-                && !(m_value.valueX(bit / 32) & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_value & (1UL << (bit & 31))) == 0 && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIs1(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return false;
-        return ((m_value.value(bit / 32) & (1UL << (bit & 31)))
-                && !(m_value.valueX(bit / 32) & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_value & (1UL << (bit & 31))) && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIs1Extend(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIs1Extend(m_width - 1);
-        return ((m_value.value(bit / 32) & (1UL << (bit & 31)))
-                && !(m_value.valueX(bit / 32) & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_value & (1UL << (bit & 31))) && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsX(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsZ(m_width - 1);
-        return ((m_value.value(bit / 32) & (1UL << (bit & 31)))
-                && (m_value.valueX(bit / 32) & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_value & (1UL << (bit & 31))) && (v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsXZ(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsXZ(m_width - 1);
-        return ((m_value.valueX(bit / 32) & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsZ(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsZ(m_width - 1);
-        return ((~m_value.value(bit / 32) & (1UL << (bit & 31)))
-                && (m_value.valueX(bit / 32) & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((~v.m_value & (1UL << (bit & 31))) && (v.m_valueX & (1UL << (bit & 31))));
     }
 
 private:
@@ -194,7 +215,7 @@ public:
     V3Number(AstNode* nodep, int width) { init(nodep, width); }  // 0=unsized
     V3Number(AstNode* nodep, int width, uint32_t value, bool sized = true) {
         init(nodep, width, sized);
-        m_value.value(0) = value;
+        m_value[0].m_value = value;
         opCleanThis();
     }
     // Create from a verilog 32'hxxxx number.
@@ -222,7 +243,7 @@ public:
     }
     V3Number(const V3Number* nump, int width, uint32_t value) {
         init(nullptr, width);
-        m_value.value(0) = value;
+        m_value[0].m_value = value;
         opCleanThis();
         m_fileline = nump->fileline();
     }
@@ -239,7 +260,7 @@ private:
         m_autoExtend = false;
         m_fromString = false;
         width(swidth, sized);
-        for (int i = 0; i < words(); ++i) m_value.value(i) = m_value.valueX(i) = 0;
+        for (int i = 0; i < words(); ++i) m_value[i] = {0, 0};
     }
     void setNames(AstNode* nodep);
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
@@ -258,7 +279,9 @@ public:
             m_sized = false;
             m_width = 1;
         }
-        if (VL_UNLIKELY(m_value.size() < (unsigned)(words() + 1))) { m_value.resize(words() + 1); }
+        const size_t size
+            = std::max<size_t>(2, words());  // minimum size is 2 because setQuad() accesses
+        m_value.ensureSizeAtLeast(size);
     }
 
     // SETTERS
@@ -293,7 +316,8 @@ public:
     bool isFourState() const;
     bool hasZ() const {
         for (int i = 0; i < words(); i++) {
-            if ((~m_value.value(i)) & m_value.valueX(i)) return true;
+            const ValueAndX v = m_value[i];
+            if ((~v.m_value) & v.m_valueX) return true;
         }
         return false;
     }
