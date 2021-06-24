@@ -23,7 +23,6 @@
 #include "V3EmitCBase.h"
 #include "V3Number.h"
 #include "V3PartitionGraph.h"
-#include "V3Task.h"
 #include "V3TSP.h"
 
 #include <algorithm>
@@ -80,7 +79,6 @@ public:
     void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt, bool ignore,
                     char fmtLetter);
 
-    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
     enum EisWhich : uint8_t {
         EVL_CLASS_IO,
         EVL_CLASS_SIG,
@@ -116,14 +114,6 @@ public:
 
     void emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, AstNode* rhsp,
                     AstNode* thsp);
-    void emitDeclArrayBrackets(const AstVar* nodep) {
-        // This isn't very robust and may need cleanup for other data types
-        for (const AstUnpackArrayDType* arrayp
-             = VN_CAST_CONST(nodep->dtypeSkipRefp(), UnpackArrayDType);
-             arrayp; arrayp = VN_CAST_CONST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
-            puts("[" + cvtToStr(arrayp->elementsConst()) + "]");
-        }
-    }
     void emitTypedefs(AstNode* firstp) {
         bool first = true;
         for (AstNode* loopp = firstp; loopp; loopp = loopp->nextp()) {
@@ -1742,24 +1732,6 @@ class EmitCImp final : EmitCStmts {
 
     // METHODS
     // Low level
-    void emitModCUse(AstNodeModule* modp, VUseType useType) {
-        string nl;
-        for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
-            if (AstCUse* usep = VN_CAST(itemp, CUse)) {
-                if (usep->useType() == useType) {
-                    if (usep->useType().isInclude()) {
-                        puts("#include \"" + prefixNameProtect(usep) + ".h\"\n");
-                    }
-                    if (usep->useType().isFwdClass()) {
-                        puts("class " + prefixNameProtect(usep) + ";\n");
-                    }
-                    nl = "\n";
-                }
-            }
-        }
-        puts(nl);
-    }
-
     void emitVarReset(AstVar* varp) {
         AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
         const string varNameProtected
@@ -1905,75 +1877,6 @@ public:
 
 //######################################################################
 // Internal EmitCStmts
-
-void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
-    AstBasicDType* basicp = nodep->basicp();
-    if (nodep->isIO() && nodep->isSc()) {
-        UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
-        m_ctorVarsVec.push_back(nodep);
-        if (nodep->attrScClocked() && nodep->isReadOnly()) {
-            puts("sc_in_clk ");
-        } else {
-            if (nodep->isInoutish()) {
-                puts("sc_inout<");
-            } else if (nodep->isWritable()) {
-                puts("sc_out<");
-            } else if (nodep->isNonOutput()) {
-                puts("sc_in<");
-            } else {
-                nodep->v3fatalSrc("Unknown type");
-            }
-            puts(nodep->scType());
-            puts("> ");
-        }
-        puts(nodep->nameProtect());
-        emitDeclArrayBrackets(nodep);
-        puts(";\n");
-    } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
-        if (nodep->isInoutish()) {
-            puts("VL_INOUT");
-        } else if (nodep->isWritable()) {
-            puts("VL_OUT");
-        } else if (nodep->isNonOutput()) {
-            puts("VL_IN");
-        } else {
-            nodep->v3fatalSrc("Unknown type");
-        }
-
-        if (nodep->isQuad()) {
-            puts("64");
-        } else if (nodep->widthMin() <= 8) {
-            puts("8");
-        } else if (nodep->widthMin() <= 16) {
-            puts("16");
-        } else if (nodep->isWide()) {
-            puts("W");
-        }
-
-        puts("(" + nodep->nameProtect());
-        emitDeclArrayBrackets(nodep);
-        // If it's a packed struct/array then nodep->width is the whole
-        // thing, msb/lsb is just lowest dimension
-        puts("," + cvtToStr(basicp->lo() + nodep->width() - 1) + "," + cvtToStr(basicp->lo()));
-        if (nodep->isWide()) puts("," + cvtToStr(nodep->widthWords()));
-        puts(");\n");
-    } else {
-        if (basicp && basicp->keyword().isMTaskState()) { m_ctorVarsVec.push_back(nodep); }
-        // strings and other fundamental c types
-        if (nodep->isFuncLocal() && nodep->isString()) {
-            const string name = nodep->name();
-            const string suffix = V3Task::dpiTemporaryVarSuffix();
-            // string temporary variable for DPI-C needs to be static because c_str() will be
-            // passed to C code and the lifetime of the variable must be long enough. See also
-            // Issue 2622.
-            const bool beStatic = name.size() >= suffix.size()
-                                  && name.substr(name.size() - suffix.size()) == suffix;
-            if (beStatic) puts("static VL_THREAD_LOCAL ");
-        }
-        puts(nodep->vlArgType(true, false, false, prefixIfImp));
-        puts(";\n");
-    }
-}
 
 void EmitCStmts::emitCtorSep(bool* firstp) {
     if (*firstp) {
@@ -3084,7 +2987,12 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
         }
     }
     // Output nonanons
-    for (const AstVar* varp : nonanons) { emitVarDecl(varp, prefixIfImp); }
+    for (const AstVar* varp : nonanons) {
+        if (varp->isIO() && varp->isSc()) { m_ctorVarsVec.push_back(varp); }
+        AstBasicDType* const basicp = varp->basicp();
+        if (basicp && basicp->keyword().isMTaskState()) { m_ctorVarsVec.push_back(varp); }
+        emitVarDecl(varp, prefixIfImp);
+    }
 }
 
 void EmitCImp::emitThreadingState() {

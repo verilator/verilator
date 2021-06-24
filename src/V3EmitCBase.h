@@ -83,6 +83,8 @@ public:
     string cFuncArgs(const AstCFunc* nodep);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
+    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
+    void emitModCUse(AstNodeModule* modp, VUseType useType);
 
     // CONSTRUCTORS
     EmitCBaseVisitor() = default;
