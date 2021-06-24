@@ -176,7 +176,7 @@ int _mon_check_unimpl(p_cb_data cb_data) {
     return 0;  // Ok
 }
 
-int mon_check() {
+extern "C" int mon_check() {
     // Callback from initial block in monitor
     if (int status = _mon_check_unimpl(NULL)) return status;
     return 0;  // Ok
