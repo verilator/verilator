@@ -18,6 +18,7 @@
 #include "verilatedos.h"
 
 #include "V3EmitCBase.h"
+#include "V3Task.h"
 
 //######################################################################
 // EmitCBaseVisitor implementation
@@ -105,4 +106,99 @@ void EmitCBaseVisitor::emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule*
     if (funcp->slow()) puts(" VL_ATTR_COLD");
     puts(";\n");
     if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
+}
+
+void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
+    const AstBasicDType* const basicp = nodep->basicp();
+
+    const auto emitDeclArrayBrackets = [this](const AstVar* nodep) -> void {
+        // This isn't very robust and may need cleanup for other data types
+        for (const AstUnpackArrayDType* arrayp
+             = VN_CAST_CONST(nodep->dtypeSkipRefp(), UnpackArrayDType);
+             arrayp; arrayp = VN_CAST_CONST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
+            puts("[" + cvtToStr(arrayp->elementsConst()) + "]");
+        }
+    };
+
+    if (nodep->isIO() && nodep->isSc()) {
+        UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
+        if (nodep->attrScClocked() && nodep->isReadOnly()) {
+            puts("sc_in_clk ");
+        } else {
+            if (nodep->isInoutish()) {
+                puts("sc_inout<");
+            } else if (nodep->isWritable()) {
+                puts("sc_out<");
+            } else if (nodep->isNonOutput()) {
+                puts("sc_in<");
+            } else {
+                nodep->v3fatalSrc("Unknown type");
+            }
+            puts(nodep->scType());
+            puts("> ");
+        }
+        puts(nodep->nameProtect());
+        emitDeclArrayBrackets(nodep);
+        puts(";\n");
+    } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
+        if (nodep->isInoutish()) {
+            puts("VL_INOUT");
+        } else if (nodep->isWritable()) {
+            puts("VL_OUT");
+        } else if (nodep->isNonOutput()) {
+            puts("VL_IN");
+        } else {
+            nodep->v3fatalSrc("Unknown type");
+        }
+
+        if (nodep->isQuad()) {
+            puts("64");
+        } else if (nodep->widthMin() <= 8) {
+            puts("8");
+        } else if (nodep->widthMin() <= 16) {
+            puts("16");
+        } else if (nodep->isWide()) {
+            puts("W");
+        }
+
+        puts("(" + nodep->nameProtect());
+        emitDeclArrayBrackets(nodep);
+        // If it's a packed struct/array then nodep->width is the whole
+        // thing, msb/lsb is just lowest dimension
+        puts("," + cvtToStr(basicp->lo() + nodep->width() - 1) + "," + cvtToStr(basicp->lo()));
+        if (nodep->isWide()) puts("," + cvtToStr(nodep->widthWords()));
+        puts(");\n");
+    } else {
+        // strings and other fundamental c types
+        if (nodep->isFuncLocal() && nodep->isString()) {
+            const string name = nodep->name();
+            const string suffix = V3Task::dpiTemporaryVarSuffix();
+            // string temporary variable for DPI-C needs to be static because c_str() will be
+            // passed to C code and the lifetime of the variable must be long enough. See also
+            // Issue 2622.
+            const bool beStatic = name.size() >= suffix.size()
+                                  && name.substr(name.size() - suffix.size()) == suffix;
+            if (beStatic) puts("static VL_THREAD_LOCAL ");
+        }
+        puts(nodep->vlArgType(true, false, false, prefixIfImp));
+        puts(";\n");
+    }
+}
+
+void EmitCBaseVisitor::emitModCUse(AstNodeModule* modp, VUseType useType) {
+    string nl;
+    for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
+        if (AstCUse* usep = VN_CAST(itemp, CUse)) {
+            if (usep->useType() == useType) {
+                if (usep->useType().isInclude()) {
+                    puts("#include \"" + prefixNameProtect(usep) + ".h\"\n");
+                }
+                if (usep->useType().isFwdClass()) {
+                    puts("class " + prefixNameProtect(usep) + ";\n");
+                }
+                nl = "\n";
+            }
+        }
+    }
+    puts(nl);
 }
