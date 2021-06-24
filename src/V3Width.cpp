@@ -3310,9 +3310,9 @@ private:
                     if (matching_type_it == type_defaults.end()) {
                         type_defaults.push_back({type, patp});
                     }
-                    auto helper = VN_CAST(patp->nextp(), PatMember);
+                    const auto nextp = VN_CAST(patp->nextp(), PatMember);
                     patp->unlinkFrBack();
-                    patp = helper;
+                    patp = nextp;
                     continue;
                 }
                 patp = VN_CAST(patp->nextp(), PatMember);
