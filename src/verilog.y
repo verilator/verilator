@@ -3412,7 +3412,7 @@ patternMemberOne<patmemberp>:	// IEEE: part of pattern and assignment_pattern
 	//			// From assignment_pattern_key
 	|	yDEFAULT ':' expr			{ $$ = new AstPatMember($1,$3,nullptr,nullptr); $$->isDefault(true); }
 	|	yDEFAULT ':' patternNoExpr		{ $$ = nullptr; BBUNSUP($2, "Unsupported: '{} .* patterns"); }
-	|   simple_type ':' expr			{ $$ = new AstPatMember($1->fileline(),$3,$1,nullptr); $$->isDefault(true);}
+	|       simple_type ':' expr			{ $$ = new AstPatMember($1->fileline(), $3, $1, nullptr); $$->isDefault(true); }
 	;
 
 patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
