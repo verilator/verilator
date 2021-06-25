@@ -3309,11 +3309,11 @@ private:
                                   [&type](auto x) { return type->similarDType(x.first); });
                     if (matching_type_it == type_defaults.end()) {
                         type_defaults.push_back({type, patp});
+                        const auto nextp = VN_CAST(patp->nextp(), PatMember);
+                        patp->unlinkFrBack();
+                        patp = nextp;
+                        continue;
                     }
-                    const auto nextp = VN_CAST(patp->nextp(), PatMember);
-                    patp->unlinkFrBack();
-                    patp = nextp;
-                    continue;
                 }
                 patp = VN_CAST(patp->nextp(), PatMember);
             }
@@ -3377,6 +3377,7 @@ private:
                                     break;
                                 }
                             } else if (patp->isTypedDefault()) {
+                                continue;
                             } else {
                                 patp->keyp()->v3error(
                                     "Assignment pattern key not supported/understood: "
