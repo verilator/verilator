@@ -812,12 +812,13 @@ private:
         // commonly appears after V3Expand and the simplification in matchMaskedOr. Similarly,
         // drop redundant masking of left shift result. E.g.: 0xff000000 & ((uint32_t)a << 24).
 
-        if (nodep->width() != nodep->rhsp()->width()) return false;  // Paranoia
-
         const auto checkMask = [=](const V3Number& mask) -> bool {
             const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
             if (constp->num().isCaseEq(mask)) {
-                nodep->replaceWith(nodep->rhsp()->unlinkFrBack());
+                AstNode* const rhsp = nodep->rhsp();
+                rhsp->unlinkFrBack();
+                nodep->replaceWith(rhsp);
+                rhsp->dtypeFrom(nodep);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return true;
             }
@@ -3101,7 +3102,7 @@ private:
     // Common two-level operations that can be simplified
     TREEOP ("AstAnd {$lhsp.castConst,matchAndCond(nodep)}", "DONE");
     TREEOP ("AstAnd {$lhsp.castConst, $rhsp.castOr, matchMaskedOr(nodep)}", "DONE");
-    TREEOP ("AstAnd {$lhsp.castConst, matchMaskedShift(nodep)}", "DONE");
+    TREEOPC("AstAnd {$lhsp.castConst, matchMaskedShift(nodep)}", "DONE");
     TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}", "replaceAndOr(nodep)");
     TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}", "replaceAndOr(nodep)");
     TREEOP ("AstOr  {matchOrAndNot(nodep)}",            "DONE");
