@@ -3376,9 +3376,8 @@ private:
                                                           << "' not found as member");
                                     break;
                                 }
-                            } else if (patp->isTypedDefault())
-                                ;
-                            else {
+                            } else if (patp->isTypedDefault()) {
+                            } else {
                                 patp->keyp()->v3error(
                                     "Assignment pattern key not supported/understood: "
                                     << patp->keyp()->prettyTypeName());
