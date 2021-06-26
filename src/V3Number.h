@@ -279,9 +279,7 @@ public:
             m_sized = false;
             m_width = 1;
         }
-        const size_t size
-            = std::max<size_t>(2, words());  // minimum size is 2 because setQuad() accesses
-        m_value.ensureSizeAtLeast(size);
+        m_value.ensureSizeAtLeast(words());
     }
 
     // SETTERS

@@ -378,7 +378,7 @@ V3Number& V3Number::setZero() {
 V3Number& V3Number::setQuad(vluint64_t value) {
     for (int i = 0; i < words(); i++) m_value[i] = {0, 0};
     m_value[0].m_value = value & 0xffffffffULL;
-    m_value[1].m_value = (value >> 32ULL) & 0xffffffffULL;
+    if (width() > 32) m_value[1].m_value = (value >> 32ULL) & 0xffffffffULL;
     opCleanThis();
     return *this;
 }
