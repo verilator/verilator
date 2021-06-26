@@ -189,7 +189,7 @@ private:
 
         // Prepare a temporary variable
         FileLine* fl = backp->fileline();
-        string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
+        const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
         AstVar* varp = new AstVar(fl, AstVarType::BLOCKTEMP, name, VFlagChildDType(),
                                   varrefp->varp()->subDTypep()->cloneTree(true));
 

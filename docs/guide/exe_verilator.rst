@@ -527,14 +527,6 @@ Summary:
 
    See :vlopt:`-y`.
 
-.. option:: --inhibit-sim
-
-   Rarely needed and deprecated.  Create a :code:`inhibitSim(bool)`
-   function to enable and disable evaluation.  This allows an upper level
-   testbench to disable modules that are not important in a given
-   simulation, without needing to recompile or change the SystemC modules
-   instantiated.
-
 .. option:: --inline-mult <value>
 
    Tune the inlining of modules.  The default value of 2000 specifies that up

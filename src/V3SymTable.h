@@ -315,7 +315,7 @@ public:
     }
     void dumpFilePrefixed(const string& nameComment) {
         if (v3Global.opt.dumpTree()) {
-            string filename = v3Global.debugFilename(nameComment) + ".txt";
+            const string filename = v3Global.debugFilename(nameComment) + ".txt";
             UINFO(2, "Dumping " << filename << endl);
             const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
             if (logp->fail()) v3fatal("Can't write " << filename);

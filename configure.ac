@@ -163,6 +163,11 @@ AC_RUN_IFELSE(
     AC_MSG_RESULT(no);AC_MSG_ERROR([a working C++ compiler is required]),
     AC_MSG_RESULT(yes))
 
+AC_CHECK_PROG(AR,ar,ar)
+if test "x$AR" = "x" ; then
+   AC_MSG_ERROR([Cannot find "ar" in your PATH, please install it])
+fi
+
 AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
    AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])

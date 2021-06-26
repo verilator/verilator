@@ -26,6 +26,7 @@
 #include "V3Global.h"
 
 #include <cmath>
+#include <type_traits>
 #include <unordered_set>
 
 #include "V3Ast__gen_classes.h"  // From ./astgen
@@ -155,6 +156,7 @@ public:
         return (m_e == READWRITE) ? VAccess(m_e) : (m_e == WRITE ? VAccess(READ) : VAccess(WRITE));
     }
     bool isReadOnly() const { return m_e == READ; }  // False with READWRITE
+    bool isWriteOnly() const { return m_e == WRITE; }  // False with READWRITE
     bool isReadOrRW() const { return m_e == READ || m_e == READWRITE; }
     bool isWriteOrRW() const { return m_e == WRITE || m_e == READWRITE; }
     bool isRW() const { return m_e == READWRITE; }
@@ -1141,10 +1143,14 @@ public:
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() = default;
     // Casters
-    WidthVP* c() const { return reinterpret_cast<WidthVP*>(m_u.up); }
-    VSymEnt* toSymEnt() const { return reinterpret_cast<VSymEnt*>(m_u.up); }
-    AstNode* toNodep() const { return reinterpret_cast<AstNode*>(m_u.up); }
-    V3GraphVertex* toGraphVertex() const { return reinterpret_cast<V3GraphVertex*>(m_u.up); }
+    template <class T>  //
+    typename std::enable_if<std::is_pointer<T>::value, T>::type to() const {
+        return reinterpret_cast<T>(m_u.up);
+    }
+    WidthVP* c() const { return to<WidthVP*>(); }
+    VSymEnt* toSymEnt() const { return to<VSymEnt*>(); }
+    AstNode* toNodep() const { return to<AstNode*>(); }
+    V3GraphVertex* toGraphVertex() const { return to<V3GraphVertex*>(); }
     int toInt() const { return m_u.ui; }
     static VNUser fromInt(int i) { return VNUser(i); }
 };
@@ -2279,8 +2285,6 @@ private:
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
     string m_selfPointer;  // Output code object pointer (e.g.: 'this')
-    string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
-    bool m_hierThis = false;  // m_selfPointer points to "this" function
 
 protected:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
@@ -2312,14 +2316,9 @@ public:
     void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
-    bool hierThis() const { return m_hierThis; }
-    void hierThis(bool flag) { m_hierThis = flag; }
     string selfPointer() const { return m_selfPointer; }
     void selfPointer(const string& value) { m_selfPointer = value; }
     string selfPointerProtect(bool useSelfForThis) const;
-    string classPrefix() const { return m_classPrefix; }
-    void classPrefix(const string& value) { m_classPrefix = value; }
-    string classPrefixProtect() const;
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
@@ -2623,7 +2622,6 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
     string m_selfPointer;  // Output code object pointer (e.g.: 'this')
-    string m_classPrefix;  // Output class prefix (i.e.: the part before ::)
     string m_argTypes;
 
 protected:
@@ -2652,9 +2650,6 @@ public:
     string selfPointer() const { return m_selfPointer; }
     void selfPointer(const string& value) { m_selfPointer = value; }
     string selfPointerProtect(bool useSelfForThis) const;
-    string classPrefix() const { return m_classPrefix; }
-    void classPrefix(const string& value) { m_classPrefix = value; }
-    string classPrefixProtect() const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall

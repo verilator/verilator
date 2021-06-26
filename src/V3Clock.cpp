@@ -38,6 +38,34 @@
 #include <algorithm>
 
 //######################################################################
+// Convert every WRITE AstVarRef to a READ ref
+
+class ConvertWriteRefsToRead final : public AstNVisitor {
+private:
+    // MEMBERS
+    AstNode* m_result = nullptr;
+
+    // CONSTRUCTORS
+    explicit ConvertWriteRefsToRead(AstNode* nodep) {
+        m_result = iterateSubtreeReturnEdits(nodep);
+    }
+
+    // VISITORS
+    void visit(AstVarRef* nodep) override {
+        UASSERT_OBJ(!nodep->access().isRW(), nodep, "Cannot handle a READWRITE reference");
+        if (nodep->access().isWriteOnly()) {
+            nodep->replaceWith(
+                new AstVarRef(nodep->fileline(), nodep->varScopep(), VAccess::READ));
+        }
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    static AstNode* main(AstNode* nodep) { return ConvertWriteRefsToRead(nodep).m_result; }
+};
+
+//######################################################################
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public AstNVisitor {
@@ -191,7 +219,7 @@ private:
         if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
         while (tempp->stmtsp()) {
             AstNode* itemp = tempp->stmtsp()->unlinkFrBack();
-            int stmts = EmitCBaseCounterVisitor(itemp).count();
+            const int stmts = EmitCBaseCounterVisitor(itemp).count();
             if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
                 // Make a new function
                 funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + cvtToStr(++funcnum),
@@ -272,14 +300,14 @@ private:
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
         AstNode* incp = nodep->incp()->unlinkFrBack();
         AstNode* origp = nodep->origp()->unlinkFrBack();
-        AstNode* changep = nodep->changep()->unlinkFrBack();
-        AstIf* newp = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changep),
+        AstNode* changeWrp = nodep->changep()->unlinkFrBack();
+        AstNode* changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
+        AstIf* newp = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp),
                                 incp, nullptr);
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addIfsp(
-            new AstAssign(nodep->fileline(), changep->cloneTree(false), origp->cloneTree(false)));
+        newp->addIfsp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

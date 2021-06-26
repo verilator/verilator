@@ -43,7 +43,7 @@ extern std::string VL_TO_STRING(SData lhs);
 extern std::string VL_TO_STRING(IData lhs);
 extern std::string VL_TO_STRING(QData lhs);
 inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
-extern std::string VL_TO_STRING_W(int words, WDataInP obj);
+extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 
 //===================================================================
 // Shuffle RNG
@@ -131,7 +131,8 @@ template <std::size_t T_Words> struct VlWide final {
 
 // Convert a C array to std::array reference by pointer magic, without copy.
 // Data type (second argument) is so the function template can automatically generate.
-template <std::size_t T_Words> VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
+template <std::size_t T_Words>
+VlWide<T_Words>& VL_CVT_W_A(const WDataInP inp, const VlWide<T_Words>&) {
     return *((VlWide<T_Words>*)inp);
 }
 
@@ -795,7 +796,7 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
     VlWriteMem wmem(hex, bits, filename, start, end);
     if (VL_UNLIKELY(!wmem.isOpen())) return;
     for (const auto& i : obj) {
-        QData addr = i.first;
+        const QData addr = i.first;
         if (addr >= start && addr <= end) wmem.print(addr, true, &(i.second));
     }
 }
@@ -876,16 +877,16 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
 //======================================================================
 // Conversion functions
 
-extern std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE;
+extern std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE;
 inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
-    WData lw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> lw;
     VL_SET_WQ(lw, lhs);
     return VL_CVT_PACK_STR_NW(VL_WQ_WORDS_E, lw);
 }
 inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE { return lhs; }
 inline std::string& VL_CVT_PACK_STR_NN(std::string& lhs) VL_PURE { return lhs; }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
-    WData lw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> lw;
     VL_SET_WI(lw, lhs);
     return VL_CVT_PACK_STR_NW(1, lw);
 }
@@ -924,31 +925,31 @@ extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suff
                                VerilatedContext* contextp) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
-    WData rwp[2];  // WData must always be at least 2
+    VlWide<2> rwp;  // WData must always be at least 2
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, SData& rdr) VL_MT_SAFE {
-    WData rwp[2];  // WData must always be at least 2
+    VlWide<2> rwp;  // WData must always be at least 2
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {
-    WData rwp[2];
+    VlWide<2> rwp;
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) VL_MT_SAFE {
-    WData rwp[2];
+    VlWide<2> rwp;
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_SET_QW(rwp);
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr) VL_MT_SAFE {
-    WData rwp[2];
+    VlWide<2> rwp;
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
     return got;

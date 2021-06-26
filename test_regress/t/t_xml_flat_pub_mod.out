@@ -15,7 +15,7 @@
   </cells>
   <netlist>
     <module fl="d11" loc="d,11,8,11,11" name="TOP" origName="TOP" topModule="1" public="true">
-      <var fl="d11" loc="d,11,24,11,29" name="i_clk" dtype_id="1" dir="input" vartype="logic" origName="i_clk" public="true"/>
+      <var fl="d11" loc="d,11,24,11,29" name="i_clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="i_clk" public="true"/>
       <var fl="d11" loc="d,11,24,11,29" name="top.i_clk" dtype_id="1" vartype="logic" origName="i_clk"/>
       <var fl="d7" loc="d,7,24,7,29" name="top.f.i_clk" dtype_id="1" vartype="logic" origName="i_clk"/>
       <topscope fl="d11" loc="d,11,8,11,11">

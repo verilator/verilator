@@ -164,7 +164,7 @@ public:
     VL_DEBUG_FUNC;  // Declare debug()
     void dump(const string& nameComment = "linkdot", bool force = false) {
         if (debug() >= 6 || force) {
-            string filename = v3Global.debugFilename(nameComment) + ".txt";
+            const string filename = v3Global.debugFilename(nameComment) + ".txt";
             const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
             if (logp->fail()) v3fatal("Can't write " << filename);
             std::ostream& os = *logp;
@@ -476,8 +476,8 @@ public:
                     }
                 }
                 if (!ok) {
-                    string suggest = suggestSymFallback(ifaceSymp, ifacerefp->modportName(),
-                                                        LinkNodeMatcherModport());
+                    const string suggest = suggestSymFallback(ifaceSymp, ifacerefp->modportName(),
+                                                              LinkNodeMatcherModport());
                     ifacerefp->modportFileline()->v3error(
                         "Modport not found under interface "
                         << ifacerefp->prettyNameQ(ifacerefp->ifaceName()) << ": "
@@ -658,8 +658,8 @@ public:
 
     static string removeLastInlineScope(const string& name) {
         string out = name;
-        string dot = "__DOT__";
-        size_t dotPos = out.rfind(dot, out.size() - dot.length() - 2);
+        const string dot = "__DOT__";
+        const size_t dotPos = out.rfind(dot, out.size() - dot.length() - 2);
         if (dotPos == string::npos) {
             return "";
         } else {
@@ -676,12 +676,12 @@ public:
                      << ((lookupSymp->symPrefix() == "") ? "" : " as ")
                      << ((lookupSymp->symPrefix() == "") ? "" : lookupSymp->symPrefix() + dotname)
                      << "  at se" << lookupSymp << endl);
-        string prefix = lookupSymp->symPrefix();
+        const string prefix = lookupSymp->symPrefix();
         VSymEnt* foundp = nullptr;
         while (!foundp) {
             foundp = lookupSymp->findIdFallback(prefix + dotname);  // Might be nullptr
             if (prefix.empty()) break;
-            string nextPrefix = removeLastInlineScope(prefix);
+            const string nextPrefix = removeLastInlineScope(prefix);
             if (prefix == nextPrefix) break;
         }
         if (!foundp) baddot = dotname;
@@ -778,8 +778,9 @@ class LinkDotFindVisitor final : public AstNVisitor {
         // m_curSymp/m_modSymp maybe nullptr for packages and non-top modules
         // Packages will be under top after the initial phases, but until then
         // need separate handling
-        bool standalonePkg = !m_modSymp && (m_statep->forPrearray() && VN_IS(nodep, Package));
-        bool doit = (m_modSymp || standalonePkg);
+        const bool standalonePkg
+            = !m_modSymp && (m_statep->forPrearray() && VN_IS(nodep, Package));
+        const bool doit = (m_modSymp || standalonePkg);
         VL_RESTORER(m_scope);
         VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_modSymp);
@@ -888,11 +889,11 @@ class LinkDotFindVisitor final : public AstNVisitor {
         VL_RESTORER(m_inRecursion);
         // Where do we add it?
         VSymEnt* aboveSymp = m_curSymp;
-        string origname = AstNode::dedotName(nodep->name());
+        const string origname = AstNode::dedotName(nodep->name());
         string::size_type pos;
         if ((pos = origname.rfind('.')) != string::npos) {
             // Flattened, find what CellInline it should live under
-            string scope = origname.substr(0, pos);
+            const string scope = origname.substr(0, pos);
             string baddot;
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(nodep->fileline(), aboveSymp, scope, baddot, okSymp);
@@ -913,11 +914,11 @@ class LinkDotFindVisitor final : public AstNVisitor {
         UINFO(5, "   CELLINLINE under " << m_scope << " is " << nodep << endl);
         VSymEnt* aboveSymp = m_curSymp;
         // If baz__DOT__foo__DOT__bar, we need to find baz__DOT__foo and add bar to it.
-        string dottedname = nodep->name();
+        const string dottedname = nodep->name();
         string::size_type pos;
         if ((pos = dottedname.rfind("__DOT__")) != string::npos) {
-            string dotted = dottedname.substr(0, pos);
-            string ident = dottedname.substr(pos + strlen("__DOT__"));
+            const string dotted = dottedname.substr(0, pos);
+            const string ident = dottedname.substr(pos + strlen("__DOT__"));
             string baddot;
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(nodep->fileline(), aboveSymp, dotted, baddot, okSymp);
@@ -1004,7 +1005,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
                 m_classOrPackagep = VN_CAST(m_curSymp->nodep(), Class);
             }
             // Create symbol table for the task's vars
-            string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
+            const string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
             m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
             m_curSymp->fallbackp(upSymp);
             // Convert the func's range to the output variable
@@ -1068,7 +1069,8 @@ class LinkDotFindVisitor final : public AstNVisitor {
                     bool nansiBad
                         = ((findvarp->isDeclTyped() && nodep->isDeclTyped())
                            || (findvarp->isIO() && nodep->isIO()));  // e.g. !(output && output)
-                    bool ansiBad = findvarp->isAnsi() || nodep->isAnsi();  // dup illegal with ANSI
+                    const bool ansiBad
+                        = findvarp->isAnsi() || nodep->isAnsi();  // dup illegal with ANSI
                     if (ansiBad || nansiBad) {
                         bool ansiWarn = ansiBad && !nansiBad;
                         if (ansiWarn) {
@@ -1134,7 +1136,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
                             = new AstVar(nodep->fileline(), AstVarType(AstVarType::GPARAM),
                                          nodep->name(), nodep);
                         newp->combineType(nodep);
-                        string svalue = v3Global.opt.parameter(nodep->name());
+                        const string svalue = v3Global.opt.parameter(nodep->name());
                         if (AstNode* valuep
                             = AstConst::parseParamLiteral(nodep->fileline(), svalue)) {
                             newp->valuep(valuep);
@@ -1268,12 +1270,12 @@ class LinkDotFindVisitor final : public AstNVisitor {
     }
     virtual void visit(AstWithParse* nodep) override {
         // Change WITHPARSE(FUNCREF, equation) to FUNCREF(WITH(equation))
-        auto funcrefp = VN_CAST(nodep->funcrefp(), NodeFTaskRef);
+        const auto funcrefp = VN_CAST(nodep->funcrefp(), NodeFTaskRef);
         UASSERT_OBJ(funcrefp, nodep, "'with' only can operate on a function/task");
         string name = "item";
         FileLine* argFl = nodep->fileline();
-        if (auto argp = VN_CAST(funcrefp->pinsp(), Arg)) {
-            if (auto parserefp = VN_CAST(argp->exprp(), ParseRef)) {
+        if (const auto argp = VN_CAST(funcrefp->pinsp(), Arg)) {
+            if (const auto parserefp = VN_CAST(argp->exprp(), ParseRef)) {
                 name = parserefp->name();
                 argFl = parserefp->fileline();
             } else {
@@ -1438,6 +1440,7 @@ private:
                                                 "__pinNumber" + cvtToStr(nodep->pinNum()), refp,
                                                 nullptr /*classOrPackagep*/);
             symp->exported(false);
+            refp->pinNum(nodep->pinNum());
         }
         // Ports not needed any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -1556,7 +1559,7 @@ class LinkDotScopeVisitor final : public AstNVisitor {
                     = LinkDotState::ifaceRefFromArray(nodep->varp()->dtypep());
                 UASSERT_OBJ(dtypep, nodep, "Non AstIfaceRefDType on isIfaceRef() var");
                 UINFO(9, "Iface parent dtype " << dtypep << endl);
-                string ifcellname = dtypep->cellName();
+                const string ifcellname = dtypep->cellName();
                 string baddot;
                 VSymEnt* okSymp;
                 VSymEnt* cellSymp = m_statep->findDotted(nodep->fileline(), m_modSymp, ifcellname,
@@ -1643,7 +1646,8 @@ class LinkDotScopeVisitor final : public AstNVisitor {
 
             UASSERT_OBJ(refp || xrefp, nodep,
                         "Unsupported: Non Var(X)Ref attached to interface pin");
-            string scopename = refp ? refp->varp()->name() : xrefp->dotted() + "." + xrefp->name();
+            const string scopename
+                = refp ? refp->varp()->name() : xrefp->dotted() + "." + xrefp->name();
             string baddot;
             VSymEnt* okSymp;
             VSymEnt* symp = m_statep->findDotted(nodep->lhsp()->fileline(), m_modSymp, scopename,
@@ -1843,8 +1847,8 @@ private:
         if (!nodep->varp()) {
             if (!noWarn) {
                 if (nodep->fileline()->warnIsOff(V3ErrorCode::I_DEF_NETTYPE_WIRE)) {
-                    string suggest = m_statep->suggestSymFallback(moduleSymp, nodep->name(),
-                                                                  LinkNodeMatcherVar());
+                    const string suggest = m_statep->suggestSymFallback(moduleSymp, nodep->name(),
+                                                                        LinkNodeMatcherVar());
                     nodep->v3error("Signal definition not found, and implicit disabled with "
                                    "`default_nettype: "
                                    << nodep->prettyNameQ() << '\n'
@@ -1854,8 +1858,8 @@ private:
                 // Bypass looking for suggestions if IMPLICIT is turned off
                 // as there could be thousands of these suppressed in large netlists
                 else if (!nodep->fileline()->warnIsOff(V3ErrorCode::IMPLICIT)) {
-                    string suggest = m_statep->suggestSymFallback(moduleSymp, nodep->name(),
-                                                                  LinkNodeMatcherVar());
+                    const string suggest = m_statep->suggestSymFallback(moduleSymp, nodep->name(),
+                                                                        LinkNodeMatcherVar());
                     nodep->v3warn(IMPLICIT,
                                   "Signal definition not found, creating implicitly: "
                                       << nodep->prettyNameQ() << '\n'
@@ -1904,7 +1908,7 @@ private:
         }
     }
     AstVar* findIfaceTopVarp(AstNode* nodep, VSymEnt* parentEntp, const string& name) {
-        string findName = name + "__Viftop";
+        const string findName = name + "__Viftop";
         VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
         AstVar* ifaceTopVarp = ifaceSymp ? VN_CAST(ifaceSymp->nodep(), Var) : nullptr;
         UASSERT_OBJ(ifaceTopVarp, nodep, "Can't find interface var ref: " << findName);
@@ -2056,8 +2060,8 @@ private:
         // DOT(DOT(DOT(PARSEREF(text), ...
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
-        DotStates lastStates = m_ds;
-        bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
+        const DotStates lastStates = m_ds;
+        const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         {
             if (start) {  // Starting dot sequence
                 if (debug() >= 9) nodep->dumpTree("-dot-in: ");
@@ -2087,14 +2091,14 @@ private:
                     nodep->v3error("'super' used outside class (IEEE 1800-2017 8.15)");
                     m_ds.m_dotErr = true;
                 } else {
-                    auto classp = VN_CAST(classSymp->nodep(), Class);
+                    const auto classp = VN_CAST(classSymp->nodep(), Class);
                     if (!classp->extendsp()) {
                         nodep->v3error("'super' used on non-extended class (IEEE 1800-2017 8.15)");
                         m_ds.m_dotErr = true;
                     } else {
-                        auto cextp = VN_CAST(classp->extendsp(), ClassExtends);
+                        const auto cextp = VN_CAST(classp->extendsp(), ClassExtends);
                         UASSERT_OBJ(cextp, nodep, "Bad super extends link");
-                        auto sclassp = cextp->classp();
+                        const auto sclassp = cextp->classp();
                         UASSERT_OBJ(sclassp, nodep, "Bad superclass");
                         m_ds.m_dotSymp = m_statep->getNodeSym(sclassp);
                         UINFO(8, "     super. " << m_ds.ascii() << endl);
@@ -2160,8 +2164,8 @@ private:
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
         if (nodep->name() == "super") nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
-        DotStates lastStates = m_ds;
-        bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
+        const DotStates lastStates = m_ds;
+        const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
             m_ds.init(m_curSymp);
             // Note m_ds.m_dot remains nullptr; this is a reference not under a dot
@@ -2174,8 +2178,8 @@ private:
             && nodep->name() == "index") {
             // 'with' statement's 'item.index'
             iterateChildren(nodep);
-            auto newp = new AstLambdaArgRef(nodep->fileline(),
-                                            m_ds.m_unlinkedScopep->name() + "__DOT__index", true);
+            const auto newp = new AstLambdaArgRef(
+                nodep->fileline(), m_ds.m_unlinkedScopep->name() + "__DOT__index", true);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
@@ -2303,8 +2307,8 @@ private:
                         }
                         m_ds.m_dotText = "";
                         if (m_ds.m_unresolved && m_ds.m_unlinkedScopep) {
-                            string dotted = refp->dotted();
-                            size_t pos = dotted.find("__BRA__??__KET__");
+                            const string dotted = refp->dotted();
+                            const size_t pos = dotted.find("__BRA__??__KET__");
                             // Arrays of interfaces all have the same parameters
                             if (pos != string::npos && varp->isParam()
                                 && VN_IS(m_ds.m_unlinkedScopep, CellArrayRef)) {
@@ -2401,9 +2405,9 @@ private:
             //
             if (!ok) {
                 // Cells/interfaces can't be implicit
-                bool isCell = foundp ? VN_IS(foundp->nodep(), Cell) : false;
-                bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !isCell);
-                bool err = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
+                const bool isCell = foundp ? VN_IS(foundp->nodep(), Cell) : false;
+                const bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !isCell);
+                const bool err = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
                 if (err) {
                     if (foundp) {
                         nodep->v3error("Found definition of '"
@@ -2414,7 +2418,7 @@ private:
                     } else if (m_ds.m_dotText == "") {
                         UINFO(7, "   ErrParseRef curSymp=se" << cvtToHex(m_curSymp)
                                                              << " ds=" << m_ds.ascii() << endl);
-                        string suggest = m_statep->suggestSymFallback(
+                        const string suggest = m_statep->suggestSymFallback(
                             m_ds.m_dotSymp, nodep->name(), VNodeMatcher());
                         nodep->v3error("Can't find definition of "
                                        << expectWhat << ": " << nodep->prettyNameQ() << '\n'
@@ -2485,7 +2489,7 @@ private:
                 // variable name lower down with same scope name we want to
                 // ignore (t_math_divw)
                 dotSymp = m_modSymp;
-                string inl = AstNode::dedotName(nodep->inlinedDots());
+                const string inl = AstNode::dedotName(nodep->inlinedDots());
                 dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, inl, baddot, okSymp);
                 UASSERT_OBJ(dotSymp, nodep,
                             "Couldn't resolve inlined scope " << AstNode::prettyNameQ(baddot)
@@ -2640,7 +2644,7 @@ private:
                     // variable name lower down with same scope name we want
                     // to ignore (t_math_divw)
                     dotSymp = m_modSymp;
-                    string inl = AstNode::dedotName(nodep->inlinedDots());
+                    const string inl = AstNode::dedotName(nodep->inlinedDots());
                     UINFO(8, "    Inlined " << inl << endl);
                     dotSymp
                         = m_statep->findDotted(nodep->fileline(), dotSymp, inl, baddot, okSymp);
@@ -2707,15 +2711,15 @@ private:
                                 "Unsupported or unknown PLI call: " << nodep->prettyNameQ());
                         }
                     } else {
-                        string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
-                                                                      LinkNodeMatcherFTask());
+                        const string suggest = m_statep->suggestSymFallback(
+                            dotSymp, nodep->name(), LinkNodeMatcherFTask());
                         nodep->v3error("Can't find definition of task/function: "
                                        << nodep->prettyNameQ() << '\n'
                                        << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                     }
                 } else {
-                    string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
-                                                                  LinkNodeMatcherFTask());
+                    const string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
+                                                                        LinkNodeMatcherFTask());
                     nodep->v3error("Can't find definition of "
                                    << AstNode::prettyNameQ(baddot) << " in dotted task/function: '"
                                    << nodep->dotted() + "." + nodep->prettyName() << "'\n"
@@ -2879,7 +2883,7 @@ private:
                             }
                         }
                         if (!ok) {
-                            string suggest = m_statep->suggestSymFallback(
+                            const string suggest = m_statep->suggestSymFallback(
                                 m_curSymp, cpackagerefp->name(), LinkNodeMatcherClass{});
                             cpackagerefp->v3error(
                                 "Class to extend not found: "

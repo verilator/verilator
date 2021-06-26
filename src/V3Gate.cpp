@@ -571,7 +571,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                 if (logicVertexp->reducible()) {
                     // Can we eliminate?
                     GateOkVisitor okVisitor(logicp, vvertexp->isClock(), false);
-                    bool multiInputs = okVisitor.rhsVarRefs().size() > 1;
+                    const bool multiInputs = okVisitor.rhsVarRefs().size() > 1;
                     // Was it ok?
                     bool doit = okVisitor.isSimple();
                     if (doit && multiInputs) {

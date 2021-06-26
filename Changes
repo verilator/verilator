@@ -18,8 +18,12 @@ Verilator 4.205 devel
 
 **Minor:**
 
+* Optimize a lot more model variables into function locals (#3027). [Geza Lore]
 * Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]
+* Remove deprecated --inhibit-sim option (#3035). [Geza Lore]
 * Merge const static data globally into a new constant pool (#3013). [Geza Lore]
+* Allow configure override of AR program (#2999). [ahouska]
+* In XML, show pinIndex information (#2877). [errae233]
 * Fix error on unsupported recursive functions (#2957). [Trefor Southwell]
 
 

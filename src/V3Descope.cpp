@@ -46,9 +46,9 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstScope* m_scopep = nullptr;  // Current scope
-    bool m_modSingleton = false;  // m_modp is only instanced once
-    bool m_allowThis = false;  // Allow function non-static
+    const AstScope* m_scopep = nullptr;  // Current scope
+    const AstCFunc* m_funcp = nullptr;  // Current function
+    bool m_modSingleton = false;  // m_modp is only instantiated once
     FuncMmap m_modFuncs;  // Name of public functions added
 
     // METHODS
@@ -74,12 +74,8 @@ private:
     string descopedSelfPointer(const AstScope* scopep) {
         UASSERT(scopep, "Var/Func not scoped");
 
-        // Whether to use relative references via 'this->'
-        bool relativeRefOk = true;
-        // Static functions can't use this
-        if (!m_allowThis) relativeRefOk = false;
-        // Class methods need relative
-        if (m_modp && VN_IS(m_modp, Class)) relativeRefOk = true;
+        // Static functions can't use relative references via 'this->'
+        const bool relativeRefOk = !m_funcp->isStatic();
 
         UINFO(8, "      Descope ref under " << m_scopep << endl);
         UINFO(8, "              ref to    " << scopep << endl);
@@ -88,7 +84,7 @@ private:
         if (relativeRefOk && scopep == m_scopep) {
             return "this";
         } else if (VN_IS(scopep->modp(), Class)) {
-            return "";
+            return "this";
         } else if (!m_modSingleton && relativeRefOk && scopep->aboveScopep() == m_scopep
                    && VN_IS(scopep->modp(), Module)) {
             // Reference to scope of instance directly under this module, can just "this->cell",
@@ -110,23 +106,12 @@ private:
         }
     }
 
-    // Construct the class prefix (as in, the part before the :: scope resolution operator) when
-    // referencing an object in 'scopep' from a CFunc in 'm_scopep'.
-    string descopedClassPrefix(const AstScope* scopep) {
-        UASSERT(scopep, "Var/Func not scoped");
-        if (VN_IS(scopep->modp(), Class) && scopep != m_scopep) {
-            return scopep->modp()->name();
-        } else {
-            return "";
-        }
-    }
-
     void makePublicFuncWrappers() {
         // We recorded all public functions in m_modFuncs.
         // If for any given name only one function exists, we can use that function directly.
         // If multiple functions exist, we need to select the appropriate scope.
         for (FuncMmap::iterator it = m_modFuncs.begin(); it != m_modFuncs.end(); ++it) {
-            string name = it->first;
+            const string name = it->first;
             AstCFunc* topFuncp = it->second;
             auto nextIt1 = it;
             ++nextIt1;
@@ -148,7 +133,8 @@ private:
                     AstCFunc* funcp = eachIt->second;
                     auto nextIt2 = eachIt;
                     ++nextIt2;
-                    bool moreOfSame = (nextIt2 != m_modFuncs.end() && nextIt2->first == name);
+                    const bool moreOfSame
+                        = (nextIt2 != m_modFuncs.end() && nextIt2->first == name);
                     UASSERT_OBJ(funcp->scopep(), funcp, "Not scoped");
 
                     UINFO(6, "     Wrapping " << name << " " << funcp << endl);
@@ -223,18 +209,17 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
+        if (!nodep->varScopep()) {
+            UASSERT_OBJ(nodep->varp()->isFuncLocal(), nodep,
+                        "unscoped reference can only appear to function locals at this point");
+            return;
+        }
         // Convert the hierch name
         UINFO(9, "  ref-in " << nodep << endl);
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         const AstVar* const varp = nodep->varScopep()->varp();
         const AstScope* const scopep = nodep->varScopep()->scopep();
-        if (varp->isFuncLocal()) {
-            nodep->hierThis(true);
-        } else {
-            nodep->hierThis(scopep == m_scopep);
-            nodep->selfPointer(descopedSelfPointer(scopep));
-            nodep->classPrefix(descopedClassPrefix(scopep));
-        }
+        if (!varp->isFuncLocal()) { nodep->selfPointer(descopedSelfPointer(scopep)); }
         nodep->varScopep(nullptr);
         UINFO(9, "  refout " << nodep << endl);
     }
@@ -245,14 +230,16 @@ private:
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         const AstScope* const scopep = nodep->funcp()->scopep();
         nodep->selfPointer(descopedSelfPointer(scopep));
-        nodep->classPrefix(descopedClassPrefix(scopep));
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }
     virtual void visit(AstCFunc* nodep) override {
-        VL_RESTORER(m_allowThis);
+        VL_RESTORER(m_funcp);
         if (!nodep->user1()) {
-            m_allowThis = !nodep->isStatic();
+            // Static functions should have been moved under the corresponding AstClassPackage
+            UASSERT(!(nodep->isStatic() && VN_IS(m_modp, Class)),
+                    "Static function under AstClass");
+            m_funcp = nodep;
             iterateChildren(nodep);
             nodep->user1(true);
             // If it's under a scope, move it up to the top
@@ -283,7 +270,6 @@ public:
 
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    v3Global.assertScoped(false);
     { DescopeVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

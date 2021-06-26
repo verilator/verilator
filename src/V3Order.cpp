@@ -80,6 +80,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
@@ -321,9 +322,9 @@ private:
     virtual void visit(AstConcat* nodep) override {
         if (m_inAss) {
             iterateAndNextNull(nodep->lhsp());
-            int lw = m_childClkWidth;
+            const int lw = m_childClkWidth;
             iterateAndNextNull(nodep->rhsp());
-            int rw = m_childClkWidth;
+            const int rw = m_childClkWidth;
             m_childClkWidth = lw + rw;  // Pass up
         }
     }
@@ -501,7 +502,7 @@ private:
             if (edgep->weight() == 0) {  // Was cut
                 continue;
             }
-            int weight = edgep->weight();
+            const int weight = edgep->weight();
             if (const OrderLogicVertex* toLVertexp
                 = dynamic_cast<const OrderLogicVertex*>(edgep->top())) {
 
@@ -640,7 +641,7 @@ private:
     // NODE STATE
     // Forming graph:
     //   Entire Netlist:
-    //    AstVarScope::user1p   -> OrderUser* for usage var
+    //    AstVarScope::user1u   -> OrderUser* for usage var (via m_orderUser)
     //    {statement}Node::user1p-> AstModule* statement is under
     //   USER4 Cleared on each Logic stmt
     //    AstVarScope::user4()  -> VarUsage(gen/con/both).      Where already encountered signal
@@ -653,6 +654,8 @@ private:
     AstUser2InUse m_inuser2;
     AstUser3InUse m_inuser3;
     // AstUser4InUse     m_inuser4;      // Used only when building tree, so below
+
+    AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
     OrderGraph m_graph;  // Scoreboard of var usages/dependencies
@@ -673,7 +676,6 @@ private:
     bool m_inPost = false;  // Underneath AstAssignPost
     bool m_inPostponed = false;  // Underneath AstAssignPostponed
     OrderLogicVertex* m_activeSenVxp = nullptr;  // Sensitivity vertex
-    std::deque<OrderUser*> m_orderUserps;  // All created OrderUser's for later deletion.
     // STATE... for inside process
     AstCFunc* m_pomNewFuncp = nullptr;  // Current function being created
     int m_pomNewStmts = 0;  // Statements in function being created
@@ -717,14 +719,7 @@ private:
 
     OrderVarVertex* newVarUserVertex(AstVarScope* varscp, WhichVertex type,
                                      bool* createdp = nullptr) {
-        if (!varscp->user1p()) {
-            OrderUser* newup = new OrderUser();
-            m_orderUserps.push_back(newup);
-            varscp->user1p(newup);
-        }
-        OrderUser* up = reinterpret_cast<OrderUser*>(varscp->user1p());
-        OrderVarVertex* varVxp = up->newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
-        return varVxp;
+        return m_orderUser(varscp).newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
     }
 
     void process();
@@ -763,7 +758,7 @@ private:
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep,
                      AstNode* forWhatp) {
         modp->user3Inc();
-        int funcnum = modp->user3();
+        const int funcnum = modp->user3();
         string name = (domainp->hasCombo()
                            ? "_combo"
                            : (domainp->hasInitial()
@@ -810,7 +805,7 @@ private:
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT,
                                                      true);  // Complain just once
                     // Give the user an example.
-                    bool tempWeight = (edgep && edgep->weight() == 0);
+                    const bool tempWeight = (edgep && edgep->weight() == 0);
                     // Else the below loop detect can't see the loop
                     if (tempWeight) edgep->weight(1);
                     // Calls OrderGraph::loopsVertexCb
@@ -829,7 +824,7 @@ private:
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT,
                                                      true);  // Complain just once
                     // Give the user an example.
-                    bool tempWeight = (edgep && edgep->weight() == 0);
+                    const bool tempWeight = (edgep && edgep->weight() == 0);
                     // Else the below loop detect can't see the loop
                     if (tempWeight) edgep->weight(1);
                     // Calls OrderGraph::loopsVertexCb
@@ -919,7 +914,7 @@ private:
             // Only reporting on standard variable vertices
             AstVar* varp = vsvertexp->varScp()->varp();
             if (!varp->user3()) {
-                string name = varp->prettyName();
+                const string name = varp->prettyName();
                 if ((varp->width() != 1) && (name.find("__Vdly") == string::npos)
                     && (name.find("__Vcell") == string::npos)) {
                     // Variable to report on and not yet done
@@ -1226,13 +1221,12 @@ public:
     virtual ~OrderVisitor() override {
         // Stats
         for (int type = 0; type < OrderVEdgeType::_ENUM_END; type++) {
-            double count = double(m_statCut[type]);
+            const double count = double(m_statCut[type]);
             if (count != 0.0) {
                 V3Stats::addStat(string("Order, cut, ") + OrderVEdgeType(type).ascii(), count);
             }
         }
         // Destruction
-        for (OrderUser* ip : m_orderUserps) delete ip;
         m_graph.debug(V3Error::debugDefault());
     }
     void main(AstNode* nodep) { iterate(nodep); }
@@ -1256,8 +1250,8 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     //
     // ... unless you know more about A and B, which sounds hard.
 
-    bool toInitial = top->hasInitial() || top->hasSettle();
-    bool fromInitial = fromp->hasInitial() || fromp->hasSettle();
+    const bool toInitial = top->hasInitial() || top->hasSettle();
+    const bool fromInitial = fromp->hasInitial() || fromp->hasSettle();
     if (toInitial != fromInitial) return true;
 
     const AstSenItem* fromSenListp = VN_CAST(fromp->sensesp(), SenItem);
@@ -1498,7 +1492,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                     // Ignore that we have a constant (initial) input
                 } else if (domainp != fromVertexp->domainp()) {
                     // Make a domain that merges the two domains
-                    bool ddebug = debug() >= 9;
+                    const bool ddebug = debug() >= 9;
 
                     if (ddebug) {  // LCOV_EXCL_START
 
@@ -1550,7 +1544,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 
 void OrderVisitor::processEdgeReport() {
     // Make report of all signal names and what clock edges they have
-    string filename = v3Global.debugFilename("order_edges.txt");
+    const string filename = v3Global.debugFilename("order_edges.txt");
     const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
     if (logp->fail()) v3fatal("Can't write " << filename);
     // Testing emitter: V3EmitV::verilogForTree(v3Global.rootp(), *logp);
@@ -1856,7 +1850,7 @@ void OrderVisitor::processMTasks() {
     const V3GraphVertex* moveVxp;
     while ((moveVxp = emit_logic.nextp())) {
         const MTaskMoveVertex* movep = dynamic_cast<const MTaskMoveVertex*>(moveVxp);
-        unsigned mtaskId = movep->color();
+        const unsigned mtaskId = movep->color();
         UASSERT(mtaskId > 0, "Every MTaskMoveVertex should have an mtask assignment >0");
         if (movep->logicp()) {
             // Add this logic to the per-mtask order
@@ -2009,7 +2003,8 @@ void OrderVisitor::process() {
     // Dump data
     m_graph.dumpDotFilePrefixed("orderg_done");
     if (false && debug()) {
-        string dfilename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_INT_order";
+        const string dfilename
+            = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_INT_order";
         const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(dfilename));
         if (logp->fail()) v3fatal("Can't write " << dfilename);
         m_graph.dump(*logp);

@@ -102,7 +102,7 @@ public:
         // The only time we may create duplicate edges is when
         // combining the MST with the perfect-matched pairs,
         // and in that case, we want to permit duplicate edges.
-        unsigned edgeId = ++V3TSP::edgeIdNext;
+        const unsigned edgeId = ++V3TSP::edgeIdNext;
 
         // Record the 'id' which identifies a single bidir edge
         // in the user field of each V3GraphEdge:
@@ -127,8 +127,8 @@ public:
         EdgeCmp() = default;
         // METHODS
         bool operator()(const V3GraphEdge* ap, const V3GraphEdge* bp) {
-            int aCost = ap->weight();
-            int bCost = bp->weight();
+            const int aCost = ap->weight();
+            const int bCost = bp->weight();
             // Sort first on cost, lowest cost edges first:
             if (aCost < bCost) return true;
             if (bCost < aCost) return false;
@@ -188,7 +188,7 @@ public:
             // to the pending set.
             Vertex* neighborp = castVertexp(bestEdgep->top());
             if (visited_set.find(neighborp) == visited_set.end()) {
-                int bestCost = bestEdgep->weight();
+                const int bestCost = bestEdgep->weight();
                 UINFO(6, "bestCost = " << bestCost << "  from " << from_vertexp->key() << " to "
                                        << neighborp->key() << endl);
 
@@ -354,7 +354,7 @@ public:
     }
     void dumpGraphFilePrefixed(const string& nameComment) const {
         if (v3Global.opt.dumpTree()) {
-            string filename = v3Global.debugFilename(nameComment) + ".txt";
+            const string filename = v3Global.debugFilename(nameComment) + ".txt";
             const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
             if (logp->fail()) v3fatal("Can't write " << filename);
             dumpGraph(*logp, nameComment);
@@ -463,7 +463,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
             const TspStateBase* ap = (*resultp)[i];
             const TspStateBase* bp
                 = (i + 1 == resultp->size()) ? (*resultp)[0] : (*resultp)[i + 1];
-            unsigned cost = ap->cost(bp);
+            const unsigned cost = ap->cost(bp);
             if (cost > max_cost) {
                 max_cost = cost;
                 max_cost_idx = i;

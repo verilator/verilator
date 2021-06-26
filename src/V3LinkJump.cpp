@@ -144,7 +144,7 @@ private:
         //    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
         // Note var can be signed or unsigned based on original number.
         AstNode* countp = nodep->countp()->unlinkFrBackWithNext();
-        string name = string("__Vrepeat") + cvtToStr(m_modRepeatNum++);
+        const string name = string("__Vrepeat") + cvtToStr(m_modRepeatNum++);
         // Spec says value is integral, if negative is ignored
         AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
                                   nodep->findSigned32DType());

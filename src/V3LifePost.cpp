@@ -108,8 +108,8 @@ public:
         : mtaskp{mtaskp_}
         , sequence{sequence_} {}
     bool operator<(const LifeLocation& b) const {
-        unsigned a_id = mtaskp ? mtaskp->id() : 0;
-        unsigned b_id = b.mtaskp ? b.mtaskp->id() : 0;
+        const unsigned a_id = mtaskp ? mtaskp->id() : 0;
+        const unsigned b_id = b.mtaskp ? b.mtaskp->id() : 0;
         if (a_id < b_id) return true;
         if (b_id < a_id) return false;
         return sequence < b.sequence;

@@ -282,7 +282,7 @@ class ParamProcessor final {
                     usedLetter[static_cast<int>(ch)]++;
                 }
             } else if (AstParamTypeDType* typep = VN_CAST(stmtp, ParamTypeDType)) {
-                char ch = 'T';
+                const char ch = 'T';
                 typep->user4(usedLetter[static_cast<int>(ch)] * 256 + ch);
                 usedLetter[static_cast<int>(ch)]++;
             }
@@ -291,7 +291,7 @@ class ParamProcessor final {
     string paramSmallName(AstNodeModule* modp, AstNode* varp) {
         if (varp->user4() <= 1) makeSmallNames(modp);
         int index = varp->user4() / 256;
-        char ch = varp->user4() & 255;
+        const char ch = varp->user4() & 255;
         string st = cvtToStr(ch);
         while (index) {
             st += cvtToStr(char((index % 25) + 'A'));
@@ -477,7 +477,7 @@ class ParamProcessor final {
 
         string longname = modp->name();
         for (auto&& defaultValue : paramsIt->second) {
-            auto pinIt = pins.find(defaultValue.first);
+            const auto pinIt = pins.find(defaultValue.first);
             AstConst* constp = pinIt == pins.end() ? defaultValue.second : pinIt->second;
             // This longname is not valid as verilog symbol, but ok, because it will be hashed
             longname += "_" + defaultValue.first + "=";
@@ -485,7 +485,7 @@ class ParamProcessor final {
             if (constp) longname += constp->num().ascii(false);
         }
 
-        auto iter = m_longMap.find(longname);
+        const auto iter = m_longMap.find(longname);
         if (iter != m_longMap.end()) return iter->second;  // Already calculated
 
         VHashSha256 hash;
@@ -538,7 +538,7 @@ class ParamProcessor final {
         insertp->addNextHere(newmodp);
 
         m_modNameMap.emplace(newmodp->name(), ModInfo(newmodp));
-        auto iter = m_modNameMap.find(newname);
+        const auto iter = m_modNameMap.find(newname);
         CloneMap* clonemapp = &(iter->second.m_cloneMap);
         UINFO(4, "     De-parameterize to new: " << newmodp << endl);
 
@@ -773,7 +773,8 @@ public:
             // We need to relink the pins to the new module
             relinkPinsByName(nodep->pinsp(), paramedModp);
         } else {
-            string newname = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
+            const string newname
+                = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
             const ModInfo* modInfop
                 = moduleFindOrClone(srcModp, nodep, nodep->paramsp(), newname, ifaceRefRefs);
             // Have child use this module instead.
@@ -980,7 +981,7 @@ class ParamVisitor final : public AstNVisitor {
     }
     virtual void visit(AstVarXRef* nodep) override {
         // Check to see if the scope is just an interface because interfaces are special
-        string dotted = nodep->dotted();
+        const string dotted = nodep->dotted();
         if (!dotted.empty() && nodep->varp() && nodep->varp()->isParam()) {
             AstNode* backp = nodep;
             while ((backp = backp->backp())) {
@@ -1048,9 +1049,9 @@ class ParamVisitor final : public AstNVisitor {
     virtual void visit(AstCellArrayRef* nodep) override {
         V3Const::constifyParamsEdit(nodep->selp());
         if (const AstConst* constp = VN_CAST(nodep->selp(), Const)) {
-            string index = AstNode::encodeNumber(constp->toSInt());
-            string replacestr = nodep->name() + "__BRA__??__KET__";
-            size_t pos = m_unlinkedTxt.find(replacestr);
+            const string index = AstNode::encodeNumber(constp->toSInt());
+            const string replacestr = nodep->name() + "__BRA__??__KET__";
+            const size_t pos = m_unlinkedTxt.find(replacestr);
             UASSERT_OBJ(pos != string::npos, nodep,
                         "Could not find array index in unlinked text: '"
                             << m_unlinkedTxt << "' for node: " << nodep);
@@ -1105,7 +1106,7 @@ class ParamVisitor final : public AstNVisitor {
             // doesn't conflict in V3LinkDot resolution with other genvars
             // Now though we need to change BEGIN("zzz", GENFOR(...)) to
             // a BEGIN("zzz__BRA__{loop#}__KET__")
-            string beginName = nodep->name();
+            const string beginName = nodep->name();
             // Leave the original Begin, as need a container for the (possible) GENVAR
             // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
             // Don't remove any deleted nodes in m_unroller until whole process finishes,

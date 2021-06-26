@@ -232,7 +232,7 @@ private:
         // removed from the map.
         // Clear the m_vals mapping for k.
         KeySet& keysAtOldVal = m_vals[oldVal];
-        size_t erased = keysAtOldVal.erase(k);
+        const size_t erased = keysAtOldVal.erase(k);
         UASSERT(erased == 1, "removeKeyFromOldVal() removal key not found");
         if (keysAtOldVal.empty()) {
             // Don't keep empty sets in the value map.
@@ -451,7 +451,7 @@ public:
     // and sort all elements by their current score.
     void rescore() {
         for (const T_Elem* elp : m_unknown) {
-            T_Score sortScore = m_scoreFnp(elp);
+            const T_Score sortScore = m_scoreFnp(elp);
             m_sorted.set(elp, sortScore);
         }
         m_unknown.clear();

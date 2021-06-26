@@ -403,9 +403,6 @@ static void process() {
         if (v3Global.opt.trace()) V3Trace::traceAll(v3Global.rootp());
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Scoped");
-
-        // Remove scopes; make varrefs/funccalls relative to current module
-        V3Descope::descopeAll(v3Global.rootp());
     }
 
     //--MODULE OPTIMIZATIONS--------------
@@ -416,8 +413,14 @@ static void process() {
             V3DepthBlock::depthBlockAll(v3Global.rootp());
         }
 
-        // Move BLOCKTEMPS from class to local variables
+        // Up until this point, all references must be scoped
+        v3Global.assertScoped(false);
+
+        // Move variables from modules to function local variables where possible
         if (v3Global.opt.oLocalize()) V3Localize::localizeAll(v3Global.rootp());
+
+        // Remove remaining scopes; make varrefs/funccalls relative to current module
+        V3Descope::descopeAll(v3Global.rootp());
 
         // Icache packing; combine common code in each module's functions into subroutines
         if (v3Global.opt.oCombine()) V3Combine::combineAll(v3Global.rootp());
@@ -701,7 +704,7 @@ int main(int argc, char** argv, char** env) {
 
     // Command option parsing
     v3Global.opt.bin(argv[0]);
-    string argString = V3Options::argString(argc - 1, argv + 1);
+    const string argString = V3Options::argString(argc - 1, argv + 1);
     v3Global.opt.parseOpts(new FileLine(FileLine::commandLineFilename()), argc - 1, argv + 1);
 
     // Validate settings (aka Boost.Program_options)

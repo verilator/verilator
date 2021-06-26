@@ -42,9 +42,9 @@ public:
         // We want to avoid a depreciated warning, but still be back compatible.
         // Turning off the message just for this still results in an
         // annoying "to turn off" message.
-        sc_time t1sec(1, SC_SEC);
+        const sc_time t1sec(1, SC_SEC);
         if (t1sec.to_default_time_units() != 0) {
-            sc_time tunits(1.0 / t1sec.to_default_time_units(), SC_SEC);
+            const sc_time tunits(1.0 / t1sec.to_default_time_units(), SC_SEC);
             spTrace()->set_time_unit(tunits.to_string());
         }
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());

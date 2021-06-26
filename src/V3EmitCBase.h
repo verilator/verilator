@@ -62,23 +62,7 @@ public:
     static string symClassAssign() {
         return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
     }
-    static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr) {
-        modp = modp ? modp : VN_CAST(nodep->user4p(), NodeModule);
-        string name;
-        if (nodep->isConstructor()) {
-            name += prefixNameProtect(modp);
-        } else if (nodep->isDestructor()) {
-            name += "~";
-            name += prefixNameProtect(modp);
-        } else {
-            if (nodep->isLoose()) {
-                name += prefixNameProtect(modp);
-                name += "__";
-            }
-            name += nodep->nameProtect();
-        }
-        return name;
-    }
+    static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
     static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
         const AstNodeModule* modp = VN_CAST_CONST(nodep, NodeModule);
         if (modp && modp->isTop()) {
@@ -95,69 +79,12 @@ public:
         return modp == v3Global.rootp()->constPoolp()->modp();
     }
 
-    static AstCFile* newCFile(const string& filename, bool slow, bool source) {
-        AstCFile* cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
-        cfilep->slow(slow);
-        cfilep->source(source);
-        v3Global.rootp()->addFilesp(cfilep);
-        return cfilep;
-    }
-    string cFuncArgs(const AstCFunc* nodep) {
-        // Return argument list for given C function
-        string args;
-        if (nodep->isLoose() && !nodep->isStatic()) {
-            if (nodep->isConst().trueKnown()) args += "const ";
-            AstNodeModule* modp = VN_CAST(nodep->user4p(), NodeModule);
-            args += prefixNameProtect(modp);
-            args += "* vlSelf";
-        }
-        if (!nodep->argTypes().empty()) {
-            if (!args.empty()) args += ", ";
-            args += nodep->argTypes();
-        }
-        // Might be a user function with argument list.
-        for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (const AstVar* portp = VN_CAST_CONST(stmtp, Var)) {
-                if (portp->isIO() && !portp->isFuncReturn()) {
-                    if (args != "") args += ", ";
-                    if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
-                        args += portp->dpiArgType(true, false);
-                    } else if (nodep->funcPublic()) {
-                        args += portp->cPubArgType(true, false);
-                    } else {
-                        args += portp->vlArgType(true, false, true);
-                    }
-                }
-            }
-        }
-        return args;
-    }
-
-    void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope) {
-        if (!funcp->isConstructor() && !funcp->isDestructor()) {
-            puts(funcp->rtnTypeVoid());
-            puts(" ");
-        }
-        if (withScope && funcp->isProperMethod()) puts(prefixNameProtect(modp) + "::");
-        puts(funcNameProtect(funcp, modp));
-        puts("(" + cFuncArgs(funcp) + ")");
-        if (funcp->isConst().trueKnown() && funcp->isProperMethod()) puts(" const");
-    }
-
-    void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false) {
-        ensureNewLine();
-        if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
-        if (cLinkage) puts("extern \"C\" ");
-        if (funcp->isStatic() && funcp->isProperMethod()) puts("static ");
-        if (funcp->isVirtual()) {
-            UASSERT_OBJ(funcp->isProperMethod(), funcp, "Virtual function is not a proper method");
-            puts("virtual ");
-        }
-        emitCFuncHeader(funcp, modp, /* withScope: */ false);
-        if (funcp->slow()) puts(" VL_ATTR_COLD");
-        puts(";\n");
-        if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
-    }
+    static AstCFile* newCFile(const string& filename, bool slow, bool source);
+    string cFuncArgs(const AstCFunc* nodep);
+    void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
+    void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
+    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
+    void emitModCUse(AstNodeModule* modp, VUseType useType);
 
     // CONSTRUCTORS
     EmitCBaseVisitor() = default;

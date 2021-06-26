@@ -163,7 +163,7 @@ private:
             } else {
                 ++m_statAsNotImm;
             }
-            bool force = VN_IS(nodep, AssertIntrinsic);
+            const bool force = VN_IS(nodep, AssertIntrinsic);
             if (passsp) passsp = newIfAssertOn(passsp, force);
             if (failsp) failsp = newIfAssertOn(failsp, force);
             if (!failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
@@ -231,7 +231,7 @@ private:
             } while (ifp);
 
             AstNode* newifp = nodep->cloneTree(false);
-            bool allow_none = nodep->unique0Pragma();
+            const bool allow_none = nodep->unique0Pragma();
 
             // Empty case means no property
             if (!propp) propp = new AstConst(nodep->fileline(), AstConst::BitFalse());
@@ -305,7 +305,7 @@ private:
                     // Empty case means no property
                     if (!propp) propp = new AstConst(nodep->fileline(), AstConst::BitFalse());
 
-                    bool allow_none = has_default || nodep->unique0Pragma();
+                    const bool allow_none = has_default || nodep->unique0Pragma();
                     AstNode* ohot
                         = (allow_none
                                ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))

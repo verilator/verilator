@@ -64,7 +64,7 @@ class CMakeEmitter final {
 
     static void cmake_set(std::ofstream& of, const string& name, const string& value,
                           const string& cache_type = "", const string& docstring = "") {
-        string raw_value = "\"" + value + "\"";
+        const string raw_value = "\"" + value + "\"";
         cmake_set_raw(of, name, raw_value, cache_type, docstring);
     }
 
@@ -80,7 +80,7 @@ class CMakeEmitter final {
     static void emitOverallCMake() {
         const std::unique_ptr<std::ofstream> of(
             V3File::new_ofstream(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".cmake"));
-        string name = v3Global.opt.prefix();
+        const string name = v3Global.opt.prefix();
 
         *of << "# Verilated -*- CMake -*-\n";
         *of << "# DESCR"
