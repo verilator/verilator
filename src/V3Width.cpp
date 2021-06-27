@@ -3320,12 +3320,16 @@ private:
 
             AstPatMember* defaultp = nullptr;
             for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
-                 patp = VN_CAST(patp->nextp(), PatMember)) {
+                 ) {
                 if (patp->isDefault()) {
                     if (defaultp) nodep->v3error("Multiple '{ default: } clauses");
                     defaultp = patp;
+                    const auto nextp = VN_CAST(patp->nextp(), PatMember);
                     patp->unlinkFrBack();
+                    patp = nextp;
+                    continue;
                 }
+                patp = VN_CAST(patp->nextp(), PatMember);
             }
             while (const AstConstDType* vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
