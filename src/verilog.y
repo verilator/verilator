@@ -3412,7 +3412,6 @@ patternMemberOne<patmemberp>:	// IEEE: part of pattern and assignment_pattern
 	//			// From assignment_pattern_key
 	|	yDEFAULT ':' expr			{ $$ = new AstPatMember($1,$3,nullptr,nullptr); $$->isDefault(true); }
 	|	yDEFAULT ':' patternNoExpr		{ $$ = nullptr; BBUNSUP($2, "Unsupported: '{} .* patterns"); }
-	|       simple_type ':' expr			{ $$ = new AstPatMember($1->fileline(), $3, $1, nullptr); $$->isDefault(true); }
 	;
 
 patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
@@ -3420,13 +3419,13 @@ patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, ass
 	//			// id/*member*/ is part of constExpr below
 	//UNSUP	constExpr				{ $$ = $1; }
 	//			// IEEE: assignment_pattern_key
-	//UNSUP	simple_type				{ $1->v3error("Unsupported: '{} with data type as key"); $$=$1; }
+		simple_type				{ $$ = $1; }
 	//			// simple_type reference looks like constExpr
 	//			// Verilator:
 	//			//   The above expressions cause problems because "foo" may be a constant identifier
 	//			//   (if array) or a reference to the "foo"member (if structure)
 	//			//   So for now we only allow a true constant number, or a identifier which we treat as a structure member name
-		yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
+	|	yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
 	|	yaFLOATNUM				{ $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
 	|	id					{ $$ = new AstText($<fl>1,*$1); }
 	|	strAsInt				{ $$ = $1; }

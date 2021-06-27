@@ -3302,8 +3302,7 @@ private:
             std::vector<std::pair<AstNodeDType*, AstPatMember*>> type_defaults;
             for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
                  ) {
-                if (patp->isTypedDefault()) {
-                    AstNodeDType* type = VN_CAST(patp->keyp(), NodeDType);
+                if (AstNodeDType* type = VN_CAST(patp->keyp(), NodeDType)) {
                     auto matching_type_it
                         = find_if(type_defaults.begin(), type_defaults.end(),
                                   [&type](auto x) { return type->similarDType(x.first); });
@@ -3380,7 +3379,7 @@ private:
                                                           << "' not found as member");
                                     break;
                                 }
-                            } else if (patp->isTypedDefault()) {
+                            } else if (AstNodeDType* type = VN_CAST(patp->keyp(), NodeDType)) {
                                 continue;
                             } else {
                                 patp->keyp()->v3error(
