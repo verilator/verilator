@@ -339,9 +339,9 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     }
 
     puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(" + symClassName()
-         + "* vlSymsp, bool first) {\n");
+         + "* _vlSymsp, bool first) {\n");
     puts("if (false && first) {}  // Prevent unused\n");
-    puts("this->vlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
+    puts("this->vlSymsp = _vlSymsp;\n");  // First, as later stuff needs it.
     if (v3Global.opt.coverage()) {
         puts(modName + "__" + protect("_configure_coverage") + "(this, first);\n");
     }
