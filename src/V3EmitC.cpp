@@ -285,8 +285,8 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
         putsDecoration("// Create Sym instance\n");
         // Must be before other constructors, as __vlCoverInsert calls it.
         // Note _vcontextp__ may be nullptr, VerilatedSyms::VerilatedSyms cleans it up
-        puts("new " + symClassName() + "("
-             + (optSystemC() ? "nullptr" : "_vcontextp__") + ", this, name());\n");
+        puts("new " + symClassName() + "(" + (optSystemC() ? "nullptr" : "_vcontextp__")
+             + ", this, name());\n");
     }
 
     emitSensitives();
