@@ -112,12 +112,67 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         putsQuoted(nodep->origName());
         outputChildrenEnd(nodep, "instance");
     }
+    virtual void visit(AstNodeIf* nodep) override {
+        outputTag(nodep, "if");
+        puts(">\n");
+        iterateAndNextNull(nodep->op1p());
+        puts("<begin>\n");
+        iterateAndNextNull(nodep->op2p());
+        puts("</begin>\n");
+        if (nodep->op3p()) {
+            puts("<begin>\n");
+            iterateAndNextNull(nodep->op3p());
+            puts("</begin>\n");
+        }
+        puts("</if>\n");
+    }
+    virtual void visit(AstWhile* nodep) override {
+        outputTag(nodep, "while");
+        puts(">\n");
+        puts("<begin>\n");
+        iterateAndNextNull(nodep->op1p());
+        puts("</begin>\n");
+        if (nodep->op2p()) {
+            puts("<begin>\n");
+            iterateAndNextNull(nodep->op2p());
+            puts("</begin>\n");
+        }
+        if (nodep->op3p()) {
+            puts("<begin>\n");
+            iterateAndNextNull(nodep->op3p());
+            puts("</begin>\n");
+        }
+        if (nodep->op4p()) {
+            puts("<begin>\n");
+            iterateAndNextNull(nodep->op4p());
+            puts("</begin>\n");
+        }
+        puts("</while>\n");
+    }
     virtual void visit(AstNetlist* nodep) override {
         puts("<netlist>\n");
         iterateChildren(nodep);
         puts("</netlist>\n");
     }
-    virtual void visit(AstConstPool*) override {}
+    virtual void visit(AstConstPool* nodep) override {
+        if (!v3Global.opt.xmlOnly()) {
+          puts("<constpool>\n");
+          iterateChildren(nodep);
+          puts("</constpool>\n");
+        }
+    }
+    virtual void visit(AstInitArray* nodep) override {
+        puts("<initarray>\n");
+        const AstInitArray::KeyItemMap& map = nodep->map();
+        for (AstInitArray::KeyItemMap::const_iterator it = map.begin(); it != map.end(); ++it) {
+            puts("<inititem index=\"");
+            puts(cvtToStr(it->first));
+            puts("\">\n");
+            iterateChildren(it->second);
+            puts("</inititem>\n");
+        }
+        puts("</initarray>\n");
+    }
     virtual void visit(AstNodeModule* nodep) override {
         outputTag(nodep, "");
         puts(" origName=");
@@ -193,6 +248,12 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         outputTag(nodep, "");
         puts(" dotted=");
         putsQuoted(nodep->dotted());
+        outputChildrenEnd(nodep, "");
+    }
+    virtual void visit(AstNodeCCall* nodep) override {
+        outputTag(nodep, "");
+        puts(" func=");
+        putsQuoted(nodep->funcp()->name());
         outputChildrenEnd(nodep, "");
     }
 
@@ -319,6 +380,7 @@ private:
 
     // VISITORS
     virtual void visit(AstConstPool*) override {}
+
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->level() >= 0
             && nodep->level() <= 2) {  // ==2 because we don't add wrapper when in XML mode

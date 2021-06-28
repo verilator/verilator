@@ -14,5 +14,8 @@ compile(
      verilator_flags2 => ["--debug-check"],
     );
 
-ok(1);
+if (-e "$Self->{obj_dir}/Vt_var_xref_gen.xml") {
+    ok(1);
+}
+
 1;
