@@ -16,7 +16,6 @@ env:
   CI_COMMIT: ${{ github.sha }}
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
 
 jobs:
 
@@ -31,7 +30,7 @@ jobs:
     - id: generate
       name: Run 'generate_matrix.sh'
       run: |
-        if [ '${{ github.event_name}}' = 'pull_request' ]; then
+        if [ '${{ github.event_name }}' = 'pull_request' ]; then
           matrix='[ "ubuntu-20.04" ]'
         else
           matrix='[ "ubuntu-16.04", "ubuntu-18.04", "ubuntu-20.04" ]'
@@ -57,7 +56,8 @@ jobs:
       CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
+      CACHE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}
+      CCACHE_MAXSIZE: 256Mi # Per build matrix entry
     steps:
 
     - name: Checkout
@@ -77,7 +77,9 @@ jobs:
 
     - name: Build
       run: |
+        ccache -z
         ./ci/ci-script.bash
+        ccache -s
         tar cvzf verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz ./bin
 
     - uses: actions/upload-artifact@v2
@@ -89,7 +91,6 @@ jobs:
     needs: [ Matrix, Build ]
     strategy:
       fail-fast: false
-      max-parallel: 8
       matrix:
         os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
         compiler:
@@ -98,6 +99,7 @@ jobs:
         suite:
           - dist-vlt-0
           - dist-vlt-1
+          - dist-vlt-2
           - vltmt-0
           - vltmt-1
     runs-on: ${{ matrix.os }}
@@ -107,7 +109,8 @@ jobs:
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
+      CACHE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
+      CCACHE_MAXSIZE: 256Mi # Per build matrix entry
     steps:
 
     - name: Checkout
@@ -134,4 +137,7 @@ jobs:
     - name: Test
       env:
         TESTS: ${{ matrix.suite }}
-      run: ./ci/ci-script.bash
+      run: |
+        ccache -z
+        ./ci/ci-script.bash
+        ccache -s

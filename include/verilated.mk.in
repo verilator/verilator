@@ -269,15 +269,20 @@ ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
   endif
 
   # Report ccache behaviour for this invocation of make
-  export CCACHE_LOGFILE := $(VM_PREFIX).ccache-log
+  VK_CCACHE_LOGDIR := ccache-logs
   VK_CCACHE_REPORT := $(VM_PREFIX)__ccache_report.txt
-  # Truncate logfile
-  $(shell echo "" > $(CCACHE_LOGFILE))
-  # Remove previous report
-  $(shell rm -f $(VK_CCACHE_REPORT))
+  # Remove previous logfiles and report
+  $(shell rm -rf $(VK_CCACHE_LOGDIR) $(VK_CCACHE_REPORT))
+
+$(VK_CCACHE_LOGDIR):
+	mkdir -p $@
+
+$(VK_OBJS): | $(VK_CCACHE_LOGDIR)
+
+$(VK_OBJS): export CCACHE_LOGFILE=$(VK_CCACHE_LOGDIR)/$@.log
 
 $(VK_CCACHE_REPORT): $(VK_OBJS)
-	$(VERILATOR_CCACHE_REPORT) -o $@ $(CCACHE_LOGFILE)
+	$(VERILATOR_CCACHE_REPORT) -o $@ $(VK_CCACHE_LOGDIR)
 
 .PHONY: ccache-report
 ccache-report: $(VK_CCACHE_REPORT)

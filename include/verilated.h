@@ -1812,7 +1812,7 @@ static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP lwp) VL_M
     }
     return owp;
 }
-static void VL_NEGATE_INPLACE_W(int words, WDataOutP owp_lwp) VL_MT_SAFE {
+static inline void VL_NEGATE_INPLACE_W(int words, WDataOutP owp_lwp) VL_MT_SAFE {
     EData carry = 1;
     for (int i = 0; i < words; ++i) {
         EData word = ~owp_lwp[i] + carry;

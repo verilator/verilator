@@ -8,11 +8,19 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 4.203 devel
+Verilator 4.205 devel
 ==========================
 
 **Minor:**
 
+
+
+Verilator 4.204 2021-06-12
+==========================
+
+**Minor:**
+
+* Add 'make ccache-report' (#3011). [Geza Lore]
 * Add --reloop-limit argument (#2943) (#2960). [Geza Lore]
 * Add --expand-limit argument (#3005). [Julien Margetts]
 * Add TRACE_THREADS to CMake (#2934). [Jonathan Drolet]
@@ -22,6 +30,7 @@ Verilator 4.203 devel
 * Support ignoring "`pragma protect ..." (#2886). [Udi Finkelstein]
 * Support --trace-fst for SystemC with CMake (#2927). [Jonathan Drolet]
 * Update cmake latest C++ Standard Compilation flag (#2951). [Ameya Vikram Singh]
+* Prep work towards better ccache hashing/performance. [Geza Lore]
 * Fix assertion failure in bitOpTree optimization (#2891) (#2899). [Raynard Qiao]
 * Fix DPI functions not seen as vpiModule (#2893). [Todd Strader]
 * Fix bounds check in VL_SEL_IWII (#2910). [Krzysztof Bieganski]
@@ -38,6 +47,7 @@ Verilator 4.203 devel
 * Fix unused variable warnings (#2991). [Pieter Kapsenberg]
 * Fix --protect-ids when using SV classes (#2994). [Geza Lore]
 * Fix constant function calls with uninit value (#2995). [yanx21]
+* Fix Makefiles to support Windows EXEEXT usage (#3008). [Miodrag Milanovic]
 
 
 Verilator 4.202 2021-04-24
@@ -363,7 +373,7 @@ Verilator 4.034 2020-05-03
 * Support event data type (with some restrictions).
 * Support $root. (#2150) [Keyi Zhang]
 * Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.
-* Fix build of fast path tracing code to use OPT_FAST. (#2245) [Geza Lore]
+* Add support of --trace-structs for CMake (#2986). [Martin Schmidt]
 * Fix arrayed instances connecting to slices. (#2263) [Don/engr248]
 * Fix error on unpacked connecting to packed. (#2288) [Joseph Shaker]
 * Fix logical not optimization with empty begin. (#2291) [Baltazar Ortiz]
