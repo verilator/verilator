@@ -57,7 +57,6 @@ void V3LinkLevel::modSortByLevel() {
         }
         mods.push_back(nodep);
     }
-
     if (tops.size() >= 2) {
         AstNode* secp = tops[1];  // Complain about second one, as first often intended
         if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
