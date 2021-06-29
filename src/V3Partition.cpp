@@ -2010,12 +2010,26 @@ class PartPackMTasks;
 // (attributes).
 class ThreadSchedule final {
 public:
+    // CONSTANTS
+    static constexpr uint32_t UNASSIGNED = 0xffffffff;
+
+    // TYPES
+    struct MTaskState {
+        uint32_t completionTime = 0;  // Estimated time this mtask will complete
+        uint32_t threadId = UNASSIGNED;  // Thread id this MTask is assigned to
+        const ExecMTask* nextp = nullptr;  // Next MTask on same thread after this
+    };
+
+    // MEMBERS
     // Allocation of sequence of MTasks to threads. Can be considered a map from thread ID to
     // the sequence of MTasks to be executed by that thread.
     std::vector<std::vector<const ExecMTask*>> threads;
 
     // Map from MTask to ID of thread it is assigned to.
     std::unordered_map<const ExecMTask*, uint32_t> threadId;
+
+    // State for each mtask.
+    std::unordered_map<const ExecMTask*, MTaskState> mtaskState;
 
 private:
     friend class PartPackMTasks;
@@ -2038,6 +2052,13 @@ public:
         }
         return result;
     }
+
+    uint32_t startTime(const ExecMTask* mtaskp) const {
+        return mtaskState.at(mtaskp).completionTime - mtaskp->cost();
+    }
+    uint32_t endTime(const ExecMTask* mtaskp) const {
+        return mtaskState.at(mtaskp).completionTime;
+    }
 };
 
 //######################################################################
@@ -2059,16 +2080,7 @@ public:
 // thread A checks the end time of an mtask running on thread B. This extra
 // "padding" avoids tight "layovers" at cross-thread dependencies.
 class PartPackMTasks final {
-    // CONSTANTS
-    static constexpr uint32_t UNASSIGNED = 0xffffffff;
-
     // TYPES
-    struct MTaskState {
-        uint32_t completionTime = 0;  // Estimated time this mtask will complete
-        uint32_t threadId = UNASSIGNED;  // Thread id this MTask is assigned to
-        const ExecMTask* nextp = nullptr;  // Next MTask on same thread after this
-    };
-
     struct MTaskCmp {
         bool operator()(const ExecMTask* ap, const ExecMTask* bp) const {
             return ap->id() < bp->id();
@@ -2079,8 +2091,6 @@ class PartPackMTasks final {
     const uint32_t m_nThreads;  // Number of threads
     const uint32_t m_sandbagNumerator;  // Numerator padding for est runtime
     const uint32_t m_sandbagDenom;  // Denominator padding for est runtime
-
-    std::unordered_map<const ExecMTask*, MTaskState> m_mtaskState;  // State for each mtask.
 
 public:
     // CONSTRUCTORS
@@ -2093,9 +2103,13 @@ public:
 
 private:
     // METHODS
-    uint32_t completionTime(const ExecMTask* mtaskp, uint32_t threadId) {
-        const MTaskState& state = m_mtaskState[mtaskp];
-        UASSERT(state.threadId != UNASSIGNED, "Mtask should have assigned thread");
+    uint32_t completionTime(const ThreadSchedule& schedule, const ExecMTask* mtaskp,
+                            uint32_t threadId) {
+        const auto& stateIt = schedule.mtaskState.find(mtaskp);
+        UASSERT(stateIt != schedule.mtaskState.end()
+                    && stateIt->second.threadId != ThreadSchedule::UNASSIGNED,
+                "Mtask should have assigned thread");
+        const ThreadSchedule::MTaskState& state = stateIt->second;
         if (threadId == state.threadId) {
             // No overhead on same thread
             return state.completionTime;
@@ -2111,7 +2125,8 @@ private:
         // finishes, otherwise we get priority inversions and fail the self
         // test.
         if (state.nextp) {
-            const uint32_t successorEndTime = completionTime(state.nextp, state.threadId);
+            const uint32_t successorEndTime
+                = completionTime(schedule, state.nextp, state.threadId);
             if ((sandbaggedEndTime >= successorEndTime) && (successorEndTime > 1)) {
                 sandbaggedEndTime = successorEndTime - 1;
             }
@@ -2122,10 +2137,10 @@ private:
         return sandbaggedEndTime;
     }
 
-    bool isReady(const ExecMTask* mtaskp) {
+    bool isReady(ThreadSchedule& schedule, const ExecMTask* mtaskp) {
         for (V3GraphEdge* edgeInp = mtaskp->inBeginp(); edgeInp; edgeInp = edgeInp->inNextp()) {
             const ExecMTask* const prevp = dynamic_cast<ExecMTask*>(edgeInp->fromp());
-            if (m_mtaskState[prevp].threadId == UNASSIGNED) {
+            if (schedule.mtaskState[prevp].threadId == ThreadSchedule::UNASSIGNED) {
                 // This predecessor is not assigned yet
                 return false;
             }
@@ -2148,11 +2163,8 @@ public:
         // Build initial ready list
         for (V3GraphVertex* vxp = mtaskGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             const ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(vxp);
-            if (isReady(mtaskp)) readyMTasks.insert(mtaskp);
+            if (isReady(schedule, mtaskp)) readyMTasks.insert(mtaskp);
         }
-
-        // Clear algorithm state
-        m_mtaskState.clear();
 
         while (!readyMTasks.empty()) {
             // For each task in the ready set, compute when it might start
@@ -2172,7 +2184,7 @@ public:
                     for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep;
                          edgep = edgep->inNextp()) {
                         const ExecMTask* const priorp = dynamic_cast<ExecMTask*>(edgep->fromp());
-                        const uint32_t priorEndTime = completionTime(priorp, threadId);
+                        const uint32_t priorEndTime = completionTime(schedule, priorp, threadId);
                         if (priorEndTime > timeBegin) timeBegin = priorEndTime;
                     }
                     UINFO(6, "Task " << mtaskp->name() << " start at " << timeBegin
@@ -2197,9 +2209,9 @@ public:
 
             // Update algorithm state
             const uint32_t bestEndTime = bestTime + bestMtaskp->cost();
-            m_mtaskState[bestMtaskp].completionTime = bestEndTime;
-            m_mtaskState[bestMtaskp].threadId = bestThreadId;
-            if (!bestThread.empty()) { m_mtaskState[bestThread.back()].nextp = bestMtaskp; }
+            schedule.mtaskState[bestMtaskp].completionTime = bestEndTime;
+            schedule.mtaskState[bestMtaskp].threadId = bestThreadId;
+            if (!bestThread.empty()) { schedule.mtaskState[bestThread.back()].nextp = bestMtaskp; }
             busyUntil[bestThreadId] = bestEndTime;
 
             // Add the MTask to the schedule
@@ -2213,12 +2225,12 @@ public:
                  edgeOutp = edgeOutp->outNextp()) {
                 const ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgeOutp->top());
                 // Dependent MTask should not yet be assigned to a thread
-                UASSERT(m_mtaskState[nextp].threadId == UNASSIGNED,
+                UASSERT(schedule.mtaskState[nextp].threadId == ThreadSchedule::UNASSIGNED,
                         "Tasks after one being assigned should not be assigned yet");
                 // Dependent MTask should not be ready yet, since dependency is just being assigned
                 UASSERT_OBJ(readyMTasks.find(nextp) == readyMTasks.end(), nextp,
                             "Tasks after one being assigned should not be ready");
-                if (isReady(nextp)) {
+                if (isReady(schedule, nextp)) {
                     readyMTasks.insert(nextp);
                     UINFO(6, "Inserted " << nextp->name() << " into ready\n");
                 }
@@ -2265,19 +2277,19 @@ public:
         UASSERT_SELFTEST(uint32_t, schedule.threadId.at(t2), 1);
 
         // On its native thread, we see the actual end time for t0:
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(t0, 0), 1000);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t0, 0), 1000);
         // On the other thread, we see a sandbagged end time which does not
         // exceed the t1 end time:
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(t0, 1), 1099);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t0, 1), 1099);
 
         // Actual end time on native thread:
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(t1, 0), 1100);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t1, 0), 1100);
         // Sandbagged end time seen on thread 1.  Note it does not compound
         // with t0's sandbagged time; compounding caused trouble in
         // practice.
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(t1, 1), 1130);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(t2, 0), 1229);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(t2, 1), 1199);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t1, 1), 1130);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t2, 0), 1229);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t2, 1), 1199);
     }
 
 private:
