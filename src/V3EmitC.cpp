@@ -319,12 +319,6 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
              // duration of the eval call.
              + string("vlSymsp->_vm_contextp__, ") + cvtToStr(v3Global.opt.threads() - 1) + ", "
              + cvtToStr(v3Global.opt.profThreads()) + ");\n");
-
-        if (v3Global.opt.profThreads()) {
-            puts("__Vm_profile_cycle_start = 0;\n");
-            puts("__Vm_profile_time_finished = 0;\n");
-            puts("__Vm_profile_window_ct = 0;");
-        }
     }
     puts("}\n");
 }
@@ -713,11 +707,11 @@ void EmitCImp::emitThreadingState() {
 
     if (v3Global.opt.profThreads()) {
         // rdtsc() at current cycle start
-        puts("vluint64_t __Vm_profile_cycle_start;\n");
+        puts("vluint64_t __Vm_profile_cycle_start = 0;\n");
         // Time we finished analysis
-        puts("vluint64_t __Vm_profile_time_finished;\n");
+        puts("vluint64_t __Vm_profile_time_finished = 0;\n");
         // Track our position in the cache warmup and actual profile window
-        puts("vluint32_t __Vm_profile_window_ct;\n");
+        puts("vluint32_t __Vm_profile_window_ct = 0;\n");
     }
 }
 
