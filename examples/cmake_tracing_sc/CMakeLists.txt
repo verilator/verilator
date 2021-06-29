@@ -38,9 +38,9 @@ find_package(SystemCLanguage QUIET)
 add_executable(example ../make_tracing_sc/sc_main.cpp)
 
 set_property(
-	TARGET example
-	PROPERTY CXX_STANDARD ${SystemC_CXX_STANDARD}
-	)
+  TARGET example
+  PROPERTY CXX_STANDARD ${SystemC_CXX_STANDARD}
+  )
 
 # Add the Verilated circuit to the target
 verilate(example SYSTEMC COVERAGE TRACE
