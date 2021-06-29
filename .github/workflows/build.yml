@@ -16,6 +16,7 @@ env:
   CI_COMMIT: ${{ github.sha }}
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_LIMIT_MULTIPLE: 0.95
 
 jobs:
 
@@ -44,33 +45,37 @@ jobs:
       fail-fast: false
       matrix:
         os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
-        debug: [ opt, dbg ]
+        target:
+          - { name: opt, ccache_size: 48M  }
+          - { name: dbg, ccache_size: 208M }
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
     runs-on: ${{ matrix.os }}
-    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }}
+    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.target.name }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
-      CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
+      CI_MAKE_SRC_TARGET: ${{ matrix.target.name }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}
-      CCACHE_MAXSIZE: 256Mi # Per build matrix entry
+      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.target.name }}
+      CCACHE_MAXSIZE: ${{ matrix.target.ccache_size }} # Per build matrix entry (1G in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.target.name }}.tar.gz
     steps:
 
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Cache
+    - name: Cache $CCACHE_DIR
       uses: actions/cache@v2
       env:
-        cache-name: ccache
+        CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
       with:
-        path: ${{ github.workspace }}/.ccache
-        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+        restore-keys: |
+          ${{ env.CACHE_KEY }}-
 
     - name: Install packages for build
       run: ./ci/ci-install.bash
@@ -80,11 +85,13 @@ jobs:
         ccache -z
         ./ci/ci-script.bash
         ccache -s
-        tar cvzf verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz ./bin
+        tar cvzf ${{ env.VERILATOR_ARCHIVE }} bin
 
-    - uses: actions/upload-artifact@v2
+    - name: Upload Verilator artifact
+      uses: actions/upload-artifact@v2
       with:
-        path: verilator-${{ matrix.os}}-${{ env.CI_COMMIT }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
+        name: ${{ env.VERILATOR_ARCHIVE }}
+        path: ${{ env.VERILATOR_ARCHIVE }}
 
 
   Test:
@@ -109,29 +116,41 @@ jobs:
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
-      CCACHE_MAXSIZE: 256Mi # Per build matrix entry
+      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
+      CCACHE_MAXSIZE: 64M # Per build matrix entry (1920M in total)
+      VERILATOR_ARCHIVE_BASE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}
     steps:
 
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Cache
+    - name: Cache $CCACHE_DIR
       uses: actions/cache@v2
       env:
-        cache-name: ccache
+        CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
       with:
-        path: ${{ github.workspace }}/.ccache
-        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+        restore-keys: |
+          ${{ env.CACHE_KEY }}-
 
-    - uses: actions/download-artifact@v2
+    - name: Download Verilator artifact (opt)
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.VERILATOR_ARCHIVE_BASE }}-opt.tar.gz
 
-    - name: Install Verilator and test dependencies
+    - name: Download Verilator artifact (dbg)
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.VERILATOR_ARCHIVE_BASE }}-dbg.tar.gz
+
+    - name: Unpack Verilator artifacts
       run: |
-        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-opt.tgz
-        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-dbg.tgz
-        rm -rf artifact
+        tar xvzf ${{ env.VERILATOR_ARCHIVE_BASE }}-opt.tar.gz
+        tar xvzf ${{ env.VERILATOR_ARCHIVE_BASE }}-dbg.tar.gz
+
+    - name: Install test dependencies
+      run: |
         ./ci/ci-install.bash
 
     - name: Test
