@@ -2040,6 +2040,11 @@ private:
     ThreadSchedule(ThreadSchedule&&) = default;
     ThreadSchedule& operator=(ThreadSchedule&&) = default;
 
+    // Debugging
+    void dumpDotFile(const string& filename) const;
+    void dumpDotFilePrefixed(const string& nameComment) const;
+    void dumpDotFilePrefixedAlways(const string& nameComment) const;
+
 public:
     // Returns the number of cross-thread dependencies of the given MTask. If > 0, the MTask must
     // test whether its dependencies are ready before starting, and therefore may need to block.
@@ -2060,6 +2065,83 @@ public:
         return mtaskState.at(mtaskp).completionTime;
     }
 };
+
+void ThreadSchedule::dumpDotFilePrefixed(const string& nameComment) const {
+    if (v3Global.opt.dumpTree()) dumpDotFilePrefixedAlways(nameComment);
+}
+
+//! Variant of dumpDotFilePrefixed without --dump option check
+void ThreadSchedule::dumpDotFilePrefixedAlways(const string& nameComment) const {
+    dumpDotFile(v3Global.debugFilename(nameComment) + ".dot");
+}
+
+void ThreadSchedule::dumpDotFile(const string& filename) const {
+    // This generates a file used by graphviz, https://www.graphviz.org
+    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    if (logp->fail()) v3fatal("Can't write " << filename);
+    auto* depGraph = v3Global.rootp()->execGraphp()->depGraphp();
+
+    // Header
+    *logp << "digraph v3graph {\n";
+    *logp << "  graph[layout=\"neato\" labelloc=t labeljust=l label=\"" << filename << "\"]\n";
+    *logp << "  node[shape=\"rect\" ratio=\"fill\" fixedsize=true]\n";
+
+    // Thread labels
+    *logp << "\n  // Threads\n";
+    const int threadBoxWidth = 2;
+    for (int i = 0; i < v3Global.opt.threads(); i++) {
+        *logp << "  t" << i << " [label=\"Thread " << i << "\" width=" << threadBoxWidth
+              << " pos=\"" << (-threadBoxWidth / 2) << "," << -i
+              << "!\" style=\"filled\" fillcolor=\"grey\"] \n";
+    }
+
+    // MTask nodes
+    *logp << "\n  // MTasks\n";
+
+    // Find minimum cost MTask for scaling MTask node widths
+    uint32_t minCost = UINT32_MAX;
+    for (const V3GraphVertex* vxp = depGraph->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+        if (const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
+            minCost = minCost > mtaskp->cost() ? mtaskp->cost() : minCost;
+        }
+    }
+    const double minWidth = 2.0;
+    auto mtaskXPos = [&](const ExecMTask* mtaskp, const double nodeWidth) {
+        const double startPosX = (minWidth * startTime(mtaskp)) / minCost;
+        return nodeWidth / minWidth + startPosX;
+    };
+
+    auto emitMTask = [&](const ExecMTask* mtaskp) {
+        const int thread = threadId.at(mtaskp);
+        const double nodeWidth = minWidth * (static_cast<double>(mtaskp->cost()) / minCost);
+        const double x = mtaskXPos(mtaskp, nodeWidth);
+        const int y = -thread;
+        string label = "label=\"" + mtaskp->name() + " (" + cvtToStr(startTime(mtaskp)) + ":"
+                       + std::to_string(endTime(mtaskp)) + ")" + "\"";
+        *logp << "  " << mtaskp->name() << " [" << label << " width=" << nodeWidth << " pos=\""
+              << x << "," << y << "!\"]\n";
+    };
+
+    // Emit MTasks
+    for (const V3GraphVertex* vxp = depGraph->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+        if (const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp)) { emitMTask(mtaskp); }
+    }
+
+    // Emit MTask dependency edges
+    *logp << "\n  // MTask dependencies\n";
+    for (const V3GraphVertex* vxp = depGraph->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+        if (const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
+            for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+                const V3GraphVertex* top = edgep->top();
+                *logp << "  " << vxp->name() << " -> " << top->name() << "\n";
+            }
+        }
+    }
+
+    // Trailer
+    *logp << "}\n";
+    logp->close();
+}
 
 //######################################################################
 // PartPackMTasks
@@ -2236,6 +2318,8 @@ public:
                 }
             }
         }
+
+        if (debug() >= 4) { schedule.dumpDotFilePrefixedAlways("schedule"); }
 
         return schedule;
     }
