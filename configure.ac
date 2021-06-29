@@ -35,7 +35,7 @@ AC_ARG_ENABLE([silent-rules],
 AC_MSG_CHECKING(whether to perform partial static linking of Verilator binary)
 AC_ARG_ENABLE([partial-static],
               [AS_HELP_STRING([--disable-partial-static],
-                              [By default, for Verilation peformance, Verilator
+                              [By default, for Verilation performance, Verilator
                                is linked against some of its dependencies
                                statically. Use this to link the Verilator binary
                                fully dynamically.])],
