@@ -169,14 +169,11 @@ private:
         m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
 
-        // Adjust all levels so that the defined topmodule is level 2
-        int levelOffset = m_topVertexp ? (m_topVertexp->rank() + 1 - 2) : 0;
-
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
                 // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* modp = vvertexp->modp();
-                modp->level(vvertexp->rank() + 1 - levelOffset);
+                modp->level(vvertexp->rank() + 1);
             }
         }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
@@ -284,7 +281,7 @@ private:
         if (nodep->user1p() == m_modp) return;  // AstBind and AstNodeModule may call a cell twice
         if (v3Global.opt.hierChild() && nodep->modName() == m_origTopModuleName) {
             if (nodep->modName() == m_modp->origName()) {
-                // Only the root of the recursive instantiation can be a hierarhcical block.
+                // Only the root of the recursive instantiation can be a hierarchical block.
                 nodep->modName(m_modp->name());
             } else {
                 // In hierarchical mode, non-top module can be the top module of this run
@@ -448,6 +445,10 @@ private:
         }
         if (nodep->modp()) {  //
             iterateChildren(nodep);
+        }
+        if (nodep->prettyName() == v3Global.opt.topModule()) {
+           VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+           UINFO(4, " Top Module linked: " << nodep << ", unlinking parents" << endl);
         }
         UINFO(4, " Link Cell done: " << nodep << endl);
     }
