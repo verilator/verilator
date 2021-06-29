@@ -8,16 +8,11 @@
 // any use, without warranty, 2021 by Dan Petrisko
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/
+module top(/*AUTOARG*/
    // Inputs
    clk
    );
    input clk;
-
-endmodule
-
-module top(/*AUTOARG*/
-   );
 
 endmodule
 

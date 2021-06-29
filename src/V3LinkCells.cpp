@@ -209,8 +209,6 @@ private:
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep << endl);
                 nodep->inLibrary(false);  // Safer to make sure it doesn't disappear
-                UINFO(2, "Unlinking upper modules from --top-module: " << nodep << endl);
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep); // Unlink top-module from above
             }
             if (v3Global.opt.topModule() == "" ? nodep->inLibrary()  // Library cells are lower
                                                : !topMatch) {  // Any non-specified module is lower
@@ -280,12 +278,12 @@ private:
         // m_mod, if 0 never did it, if !=, it is an unprocessed clone
         const bool cloned = (nodep->user1p() && nodep->user1p() != m_modp);
         if (nodep->user1p() == m_modp) return;  // AstBind and AstNodeModule may call a cell twice
-        if (v3Global.opt.hierChild() && nodep->modName() == m_origTopModuleName) {
-            if (nodep->modName() == m_modp->origName()) {
+        if (nodep->modName() == m_origTopModuleName) {
+            if (v3Global.opt.hierChild() && nodep->modName() == m_modp->origName()) {
                 // Only the root of the recursive instantiation can be a hierarchical block.
                 nodep->modName(m_modp->name());
             } else {
-                // In hierarchical mode, non-top module can be the top module of this run
+                // non-top module will be the top module of this run
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }

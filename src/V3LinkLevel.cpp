@@ -50,11 +50,7 @@ void V3LinkLevel::modSortByLevel() {
     ModVec tops;  // Top level modules
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
-        if (v3Global.opt.topModule() == nodep->prettyName()) {
-            tops.insert(tops.begin(), nodep);
-        } else if (v3Global.opt.topModule() == "" && nodep->level() <= 2) {
-            tops.push_back(nodep);
-        }
+        if (nodep->level() <= 2) tops.push_back(nodep);
         mods.push_back(nodep);
     }
     if (tops.size() >= 2) {
