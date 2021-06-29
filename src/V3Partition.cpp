@@ -2029,7 +2029,18 @@ public:
     std::unordered_map<const ExecMTask*, uint32_t> threadId;
 
     // State for each mtask.
-    std::unordered_map<const ExecMTask*, MTaskState> mtaskState;
+    std::unordered_map<const ExecMTask*, MTaskState> mtaskStates;
+
+    MTaskState& mtaskState(const ExecMTask* mtaskp) { return mtaskStates[mtaskp]; }
+    const MTaskState& mtaskState(const ExecMTask* mtaskp) const { return mtaskStates.at(mtaskp); }
+    uint32_t mtaskThread(const ExecMTask* mtaskp) const {
+        const auto& it = threadId.find(mtaskp);
+        if (it != threadId.end()) {
+            return it->second;
+        } else {
+            return UNASSIGNED;
+        }
+    }
 
 private:
     friend class PartPackMTasks;
@@ -2042,7 +2053,6 @@ private:
 
     // Debugging
     void dumpDotFile(const string& filename) const;
-    void dumpDotFilePrefixed(const string& nameComment) const;
     void dumpDotFilePrefixedAlways(const string& nameComment) const;
 
 public:
@@ -2059,16 +2069,12 @@ public:
     }
 
     uint32_t startTime(const ExecMTask* mtaskp) const {
-        return mtaskState.at(mtaskp).completionTime - mtaskp->cost();
+        return mtaskStates.at(mtaskp).completionTime - mtaskp->cost();
     }
     uint32_t endTime(const ExecMTask* mtaskp) const {
-        return mtaskState.at(mtaskp).completionTime;
+        return mtaskStates.at(mtaskp).completionTime;
     }
 };
-
-void ThreadSchedule::dumpDotFilePrefixed(const string& nameComment) const {
-    if (v3Global.opt.dumpTree()) dumpDotFilePrefixedAlways(nameComment);
-}
 
 //! Variant of dumpDotFilePrefixed without --dump option check
 void ThreadSchedule::dumpDotFilePrefixedAlways(const string& nameComment) const {
@@ -2187,11 +2193,8 @@ private:
     // METHODS
     uint32_t completionTime(const ThreadSchedule& schedule, const ExecMTask* mtaskp,
                             uint32_t threadId) {
-        const auto& stateIt = schedule.mtaskState.find(mtaskp);
-        UASSERT(stateIt != schedule.mtaskState.end()
-                    && stateIt->second.threadId != ThreadSchedule::UNASSIGNED,
-                "Mtask should have assigned thread");
-        const ThreadSchedule::MTaskState& state = stateIt->second;
+        const ThreadSchedule::MTaskState& state = schedule.mtaskState(mtaskp);
+        UASSERT(state.threadId != ThreadSchedule::UNASSIGNED, "Mtask should have assigned thread");
         if (threadId == state.threadId) {
             // No overhead on same thread
             return state.completionTime;
@@ -2222,7 +2225,7 @@ private:
     bool isReady(ThreadSchedule& schedule, const ExecMTask* mtaskp) {
         for (V3GraphEdge* edgeInp = mtaskp->inBeginp(); edgeInp; edgeInp = edgeInp->inNextp()) {
             const ExecMTask* const prevp = dynamic_cast<ExecMTask*>(edgeInp->fromp());
-            if (schedule.mtaskState[prevp].threadId == ThreadSchedule::UNASSIGNED) {
+            if (schedule.mtaskThread(prevp) == ThreadSchedule::UNASSIGNED) {
                 // This predecessor is not assigned yet
                 return false;
             }
@@ -2291,9 +2294,9 @@ public:
 
             // Update algorithm state
             const uint32_t bestEndTime = bestTime + bestMtaskp->cost();
-            schedule.mtaskState[bestMtaskp].completionTime = bestEndTime;
-            schedule.mtaskState[bestMtaskp].threadId = bestThreadId;
-            if (!bestThread.empty()) { schedule.mtaskState[bestThread.back()].nextp = bestMtaskp; }
+            schedule.mtaskState(bestMtaskp).completionTime = bestEndTime;
+            schedule.mtaskState(bestMtaskp).threadId = bestThreadId;
+            if (!bestThread.empty()) { schedule.mtaskState(bestThread.back()).nextp = bestMtaskp; }
             busyUntil[bestThreadId] = bestEndTime;
 
             // Add the MTask to the schedule
@@ -2307,7 +2310,7 @@ public:
                  edgeOutp = edgeOutp->outNextp()) {
                 const ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgeOutp->top());
                 // Dependent MTask should not yet be assigned to a thread
-                UASSERT(schedule.mtaskState[nextp].threadId == ThreadSchedule::UNASSIGNED,
+                UASSERT(schedule.mtaskThread(nextp) == ThreadSchedule::UNASSIGNED,
                         "Tasks after one being assigned should not be assigned yet");
                 // Dependent MTask should not be ready yet, since dependency is just being assigned
                 UASSERT_OBJ(readyMTasks.find(nextp) == readyMTasks.end(), nextp,
@@ -2319,7 +2322,7 @@ public:
             }
         }
 
-        if (debug() >= 4) { schedule.dumpDotFilePrefixedAlways("schedule"); }
+        if (debug() >= 4) schedule.dumpDotFilePrefixedAlways("schedule");
 
         return schedule;
     }
@@ -2740,7 +2743,7 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
     // For any dependent mtask that's on another thread, signal one dependency completion.
     for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
         const ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgep->top());
-        if (schedule.threadId.at(nextp) != threadId) {
+        if (schedule.mtaskThread(nextp) != threadId) {
             addStrStmt("vlSelf->__Vm_mtaskstate_" + cvtToStr(nextp->id())
                        + ".signalUpstreamDone(even_cycle);\n");
         }
