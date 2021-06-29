@@ -96,6 +96,7 @@
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
+#include "V3VariableOrder.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
 
@@ -506,6 +507,9 @@ static void process() {
         // Create AstCUse to determine what class forward declarations/#includes needed in C
         // Must be before V3EmitC
         V3CUse::cUseAll();
+
+        // Order variables
+        V3VariableOrder::orderAll();
 
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();

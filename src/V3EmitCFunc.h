@@ -114,12 +114,8 @@ public:
 
 class EmitCFunc VL_NOT_FINAL : public EmitCBaseVisitor {
 private:
-    using VarVec = std::vector<const AstVar*>;
-    using VarSortMap = std::map<int, VarVec>;  // Map size class to VarVec
-
     bool m_suppressSemi;
     AstVarRef* m_wideTempRefp;  // Variable that _WW macros should be setting
-    VarVec m_ctorVarsVec;  // All variables in constructor order
     int m_labelNum;  // Next label number
     int m_splitSize;  // # of cfunc nodes placed into output file
     int m_splitFilenum;  // File number being created, 0 = primary
@@ -155,18 +151,6 @@ public:
     void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt, bool ignore,
                     char fmtLetter);
 
-    enum EisWhich : uint8_t {
-        EVL_CLASS_IO,
-        EVL_CLASS_SIG,
-        EVL_CLASS_TEMP,
-        EVL_CLASS_PAR,
-        EVL_CLASS_ALL
-    };
-    void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp, string& sectionr);
-    static void emitVarSort(const VarSortMap& vmap, VarVec* sortedp);
-    void emitSortedVarList(const VarVec& anons, const VarVec& nonanons, const string& prefixIfImp);
-    void emitVarCtors(bool* firstp);
-    void emitCtorSep(bool* firstp);
     bool emitSimpleOk(AstNodeMath* nodep);
     void emitIQW(AstNode* nodep) {
         // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
@@ -242,7 +226,7 @@ public:
 
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
             if (AstVar* varp = VN_CAST(subnodep, Var)) {
-                if (varp->isFuncReturn()) emitVarDecl(varp, "");
+                if (varp->isFuncReturn()) emitVarDecl(varp);
             }
         }
 
@@ -271,7 +255,7 @@ public:
 
     virtual void visit(AstVar* nodep) override {
         UASSERT_OBJ(m_cfuncp, nodep, "Cannot emit non-local variable");
-        emitVarDecl(nodep, "");
+        emitVarDecl(nodep);
     }
 
     virtual void visit(AstNodeAssign* nodep) override {

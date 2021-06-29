@@ -123,7 +123,7 @@ class EmitCImp final : EmitCFunc {
             }
         }
     }
-    void emitParams(AstNodeModule* modp, bool init, bool* firstp, string& sectionr) {
+    void emitParams(AstNodeModule* modp, bool init, string& sectionr) {
         bool anyi = false;
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* varp = VN_CAST(nodep, Var)) {
@@ -207,6 +207,99 @@ class EmitCImp final : EmitCFunc {
             emitCFuncDecl(funcp, modp);
         }
     }
+    void emitVarDecls(const AstNodeModule* modp) {
+        // Output a list of variable declarations
+
+        std::vector<const AstVar*> varList;
+        bool lastAnon = false;  // initial value is not important, but is used
+
+        const auto emitCurrentList = [this, &varList, &lastAnon]() {
+            if (varList.empty()) return;
+
+            if (lastAnon) {  // Output as anons
+                const int anonMembers = varList.size();
+                const int lim = v3Global.opt.compLimitMembers();
+                int anonL3s = 1;
+                int anonL2s = 1;
+                int anonL1s = 1;
+                if (anonMembers > (lim * lim * lim)) {
+                    anonL3s = (anonMembers + (lim * lim * lim) - 1) / (lim * lim * lim);
+                    anonL2s = lim;
+                    anonL1s = lim;
+                } else if (anonMembers > (lim * lim)) {
+                    anonL2s = (anonMembers + (lim * lim) - 1) / (lim * lim);
+                    anonL1s = lim;
+                } else if (anonMembers > lim) {
+                    anonL1s = (anonMembers + lim - 1) / lim;
+                }
+                if (anonL1s != 1)
+                    puts("// Anonymous structures to workaround compiler member-count bugs\n");
+                auto it = varList.cbegin();
+                for (int l3 = 0; l3 < anonL3s && it != varList.cend(); ++l3) {
+                    if (anonL3s != 1) puts("struct {\n");
+                    for (int l2 = 0; l2 < anonL2s && it != varList.cend(); ++l2) {
+                        if (anonL2s != 1) puts("struct {\n");
+                        for (int l1 = 0; l1 < anonL1s && it != varList.cend(); ++l1) {
+                            if (anonL1s != 1) puts("struct {\n");
+                            for (int l0 = 0; l0 < lim && it != varList.cend(); ++l0) {
+                                emitVarDecl(*it);
+                                ++it;
+                            }
+                            if (anonL1s != 1) puts("};\n");
+                        }
+                        if (anonL2s != 1) puts("};\n");
+                    }
+                    if (anonL3s != 1) puts("};\n");
+                }
+                // Leftovers, just in case off by one error somewhere above
+                for (; it != varList.cend(); ++it) emitVarDecl(*it);
+            } else {  // Output as nonanons
+                for (const auto& pair : varList) emitVarDecl(pair);
+            }
+
+            varList.clear();
+        };
+
+        // Emit variables in consecutive anon and non-anon batches
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+                if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
+                    || (varp->isParam() && !VN_IS(varp->valuep(), Const))) {
+                    const bool anon = isAnonOk(varp);
+                    if (anon != lastAnon) emitCurrentList();
+                    lastAnon = anon;
+                    varList.emplace_back(varp);
+                }
+            }
+        }
+
+        // Emit final batch
+        emitCurrentList();
+    }
+    void emitVarCtors(const AstNodeModule* modp) {
+        ofp()->indentInc();
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+                const AstBasicDType* const dtypep = VN_CAST(varp->dtypeSkipRefp(), BasicDType);
+                if (!dtypep) continue;
+                if (varp->isIO() && varp->isSc()) {
+                    puts(", ");
+                    puts(varp->nameProtect());
+                    puts("(");
+                    putsQuoted(varp->nameProtect());
+                    puts(")\n");
+                }
+                if (dtypep->keyword().isMTaskState()) {
+                    puts(", ");
+                    puts(varp->nameProtect());
+                    puts("(");
+                    iterate(varp->valuep());
+                    puts(")\n");
+                }
+            }
+        }
+        ofp()->indentDec();
+    }
 
     // Medium level
     void emitCtorImp(AstNodeModule* modp);
@@ -248,9 +341,8 @@ void EmitCImp::emitCoverageDecl(AstNodeModule*) {
 
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
-    bool first = true;
     string section;
-    emitParams(modp, true, &first, section /*ref*/);
+    emitParams(modp, true, section);
 
     const string modName = prefixNameProtect(modp);
 
@@ -264,9 +356,8 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     } else {
         puts(modName + "::" + modName + "(const char* _vcname__)\n");
         puts("    : VerilatedModule(_vcname__)\n");
-        first = false;  // printed the first ':'
     }
-    emitVarCtors(&first);
+    emitVarCtors(modp);
 
     puts(" {\n");
 
@@ -500,15 +591,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     emitTypedefs(modp->stmtsp());
 
-    string section;
-    section = "\n// PORTS\n";
-    emitVarList(modp->stmtsp(), EVL_CLASS_IO, "", section /*ref*/);
-
-    section = "\n// LOCAL SIGNALS\n";
-    emitVarList(modp->stmtsp(), EVL_CLASS_SIG, "", section /*ref*/);
-
-    section = "\n// LOCAL VARIABLES\n";
-    emitVarList(modp->stmtsp(), EVL_CLASS_TEMP, "", section /*ref*/);
+    puts("\n// DESIGN SPECIFIC STATE\n");
+    emitVarDecls(modp);
 
     puts("\n// INTERNAL VARIABLES\n");
     if (!VN_IS(modp, Class)) {  // Avoid clang unused error (& don't want in every object)
@@ -518,12 +602,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->putsPrivate(false);  // public:
     emitCoverageDecl(modp);  // may flip public/private
 
-    section = "\n// PARAMETERS\n";
-    ofp()->putsPrivate(false);  // public:
-    emitVarList(modp->stmtsp(), EVL_CLASS_PAR, "",
-                section /*ref*/);  // Only those that are non-CONST
-    bool first = true;
-    emitParams(modp, false, &first, section /*ref*/);
+    {
+        string section = "\n// PARAMETERS\n";
+        emitParams(modp, false, section);
+    }
 
     if (!VN_IS(modp, Class)) {
         puts("\n// CONSTRUCTORS\n");
@@ -588,8 +670,16 @@ void EmitCImp::emitImpTop() {
 void EmitCImp::emitImp(AstNodeModule* modp) {
     puts("\n//==========\n");
     if (m_slow) {
-        string section;
-        emitVarList(modp->stmtsp(), EVL_CLASS_ALL, prefixNameProtect(modp), section /*ref*/);
+        // Emit static variable definitions
+        const string prefix = prefixNameProtect(modp);
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+                if (varp->isStatic()) {
+                    puts(varp->vlArgType(true, false, false, prefix));
+                    puts(";\n");
+                }
+            }
+        }
         if (!VN_IS(modp, Class)) emitCtorImp(modp);
         if (!VN_IS(modp, Class)) emitConfigureImp(modp);
         if (!VN_IS(modp, Class)) emitDestructorImp(modp);

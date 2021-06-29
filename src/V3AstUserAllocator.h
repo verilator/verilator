@@ -33,7 +33,7 @@ template <class T_Node, class T_Data, int T_UserN> class AstUserAllocatorBase VL
 private:
     std::vector<T_Data*> m_allocated;
 
-    inline T_Data* getUserp(T_Node* nodep) const {
+    inline T_Data* getUserp(const T_Node* nodep) const {
         // This simplifies statically as T_UserN is constant. In C++17, use 'if constexpr'.
         if (T_UserN == 1) {
             const VNUser user = nodep->user1u();
@@ -98,6 +98,13 @@ public:
             m_allocated.push_back(userp);
             setUserp(nodep, userp);
         }
+        return *userp;
+    }
+
+    // Get a reference to the user data
+    T_Data& operator()(const T_Node* nodep) {
+        T_Data* userp = getUserp(nodep);
+        UASSERT_OBJ(userp, nodep, "Missing User data on const AstNode");
         return *userp;
     }
 };

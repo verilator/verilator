@@ -90,7 +90,7 @@ class EmitCModel final : public EmitCFunc {
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {  //
-                    emitVarDecl(varp, "", /* asRef: */ true);
+                    emitVarDecl(varp, /* asRef: */ true);
                 }
             }
         }
