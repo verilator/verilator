@@ -95,7 +95,7 @@ protected:
 
         // Preprocess
         s_filterp = filterp;
-        string modfilename = preprocOpen(fl, s_filterp, modname, "", errmsg);
+        const string modfilename = preprocOpen(fl, s_filterp, modname, "", errmsg);
         if (modfilename.empty()) return false;
 
         // Set language standard up front
@@ -112,7 +112,7 @@ protected:
         }
 
         while (!s_preprocp->isEof()) {
-            string line = s_preprocp->getline();
+            const string line = s_preprocp->getline();
             V3Parse::ppPushText(parsep, line);
         }
         return true;
@@ -138,7 +138,7 @@ private:
         if (filename == "") {
             // Allow user to put `defined names on the command line instead of filenames,
             // then convert them properly.
-            string ppmodname = s_preprocp->removeDefines(modname);
+            const string ppmodname = s_preprocp->removeDefines(modname);
 
             filename = v3Global.opt.filePath(fl, ppmodname, lastpath, errmsg);
         }
@@ -160,7 +160,7 @@ V3PreProc* V3PreShellImp::s_preprocp = nullptr;
 VInFilter* V3PreShellImp::s_filterp = nullptr;
 
 //######################################################################
-// Perl class functions
+// V3PreShell
 
 void V3PreShell::boot(char** env) { V3PreShellImp::s_preImp.boot(env); }
 bool V3PreShell::preproc(FileLine* fl, const string& modname, VInFilter* filterp,

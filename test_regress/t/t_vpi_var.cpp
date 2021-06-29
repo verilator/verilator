@@ -638,7 +638,7 @@ int _mon_check_vlog_info() {
     return 0;
 }
 
-int mon_check() {
+extern "C" int mon_check() {
     // Callback from initial block in monitor
 #ifdef TEST_VERBOSE
     printf("-mon_check()\n");

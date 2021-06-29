@@ -82,12 +82,57 @@ public:
 class ConstBitOpTreeVisitor final : public AstNVisitor {
     // TYPES
 
-    struct LeafInfo {  // Leaf node (either AstConst or AstVarRef)
+    struct LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
         bool m_polarity = true;
         int m_lsb = 0;
         int m_wordIdx = -1;  // -1 means AstWordSel is not used.
         AstVarRef* m_refp = nullptr;
         AstConst* m_constp = nullptr;
+    };
+
+    struct BitPolarityEntry final {  // Found bit polarity during iterate()
+        LeafInfo m_info;
+        bool m_polarity;
+        int m_bit;
+        BitPolarityEntry(const LeafInfo& info, bool pol, int bit)
+            : m_info(info)
+            , m_polarity(pol)
+            , m_bit(bit) {}
+        BitPolarityEntry() = default;
+    };
+
+    class Restorer final {  // Restore the original state unless disableRestore() is called
+        ConstBitOpTreeVisitor& m_visitor;
+        const size_t m_polaritiesSize;
+        const size_t m_frozenSize;
+        const int m_ops;
+        const bool m_polarity;
+        bool m_restore;
+
+    public:
+        explicit Restorer(ConstBitOpTreeVisitor& visitor)
+            : m_visitor(visitor)
+            , m_polaritiesSize(visitor.m_bitPolarities.size())
+            , m_frozenSize(visitor.m_frozenNodes.size())
+            , m_ops(visitor.m_ops)
+            , m_polarity(visitor.m_polarity)
+            , m_restore(true) {}
+        ~Restorer() {
+            UASSERT(m_visitor.m_bitPolarities.size() >= m_polaritiesSize,
+                    "m_bitPolarities must grow monotorilaclly");
+            UASSERT(m_visitor.m_frozenNodes.size() >= m_frozenSize,
+                    "m_frozenNodes must grow monotorilaclly");
+            if (m_restore) restoreNow();
+        }
+        void disableRestore() { m_restore = false; }
+        void restoreNow() {
+            UASSERT(m_restore, "Can be called just once");
+            m_visitor.m_bitPolarities.resize(m_polaritiesSize);
+            m_visitor.m_frozenNodes.resize(m_frozenSize);
+            m_visitor.m_ops = m_ops;
+            m_visitor.m_polarity = m_polarity;
+            m_restore = false;
+        }
     };
     // Collect information for each Variable to transform as below
     class VarInfo final {
@@ -195,7 +240,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     AstUser4InUse m_inuser4;
     std::vector<AstNode*> m_frozenNodes;  // Nodes that cannot be optimized
-    std::vector<VarInfo*> m_varInfos;  // VarInfo for each variable, [0] is nullptr
+    std::vector<BitPolarityEntry> m_bitPolarities;  // Polarity of bits found during iterate()
+    std::vector<std::unique_ptr<VarInfo>> m_varInfos;  // VarInfo for each variable, [0] is nullptr
 
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
@@ -235,14 +281,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             baseIdx = m_varInfos.size();
             const int numWords
                 = ref.m_refp->dtypep()->isWide() ? ref.m_refp->dtypep()->widthWords() : 1;
-            m_varInfos.resize(m_varInfos.size() + numWords, nullptr);
+            m_varInfos.resize(m_varInfos.size() + numWords);
             nodep->user4(baseIdx);
         }
         const size_t idx = baseIdx + std::max(0, ref.m_wordIdx);
-        VarInfo* varInfop = m_varInfos[idx];
+        VarInfo* varInfop = m_varInfos[idx].get();
         if (!varInfop) {
             varInfop = new VarInfo{this, ref.m_refp};
-            m_varInfos[idx] = varInfop;
+            m_varInfos[idx].reset(varInfop);
         } else {
             if (!varInfop->sameVarAs(ref.m_refp))
                 CONST_BITOP_SET_FAILED("different var (scope?)", ref.m_refp);
@@ -325,28 +371,30 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     }
 
     virtual void visit(AstRedXor* nodep) override {  // Expect '^(mask & v)'
+        Restorer restorer{*this};
         CONST_BITOP_RETURN_IF(!VN_IS(m_rootp, Xor), nodep);
         AstAnd* andp = VN_CAST(nodep->lhsp(), And);
         CONST_BITOP_RETURN_IF(!andp, nodep->lhsp());
 
-        auto mask = findLeaf(andp->lhsp(), true);
+        const auto mask = findLeaf(andp->lhsp(), true);
         CONST_BITOP_RETURN_IF(!mask.m_constp || mask.m_lsb != 0, andp->lhsp());
 
-        LeafInfo leaf = findLeaf(andp->rhsp(), false);
+        const LeafInfo leaf = findLeaf(andp->rhsp(), false);
         CONST_BITOP_RETURN_IF(!leaf.m_refp, andp->rhsp());
+
+        restorer.disableRestore();  // Now all subtree succeeded
 
         incrOps(nodep, __LINE__);
         incrOps(andp, __LINE__);
         const V3Number& maskNum = mask.m_constp->num();
-        VarInfo& varInfo = getVarInfo(leaf);
         for (int i = 0; i < maskNum.width(); ++i) {
             // Set true, m_treePolarity takes care of the entire parity
-            if (maskNum.bitIs1(i)) varInfo.setPolarity(true, i + leaf.m_lsb);
+            if (maskNum.bitIs1(i)) m_bitPolarities.emplace_back(leaf, true, i + leaf.m_lsb);
         }
     }
 
     virtual void visit(AstNodeBiop* nodep) override {
-        auto isConst = [](AstNode* nodep, vluint64_t v) -> bool {
+        const auto isConst = [](AstNode* nodep, vluint64_t v) -> bool {
             AstConst* constp = VN_CAST(nodep, Const);
             return constp && constp->toUQuad() == v;
         };
@@ -357,29 +405,28 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             VL_RESTORER(m_leafp);
 
             for (int i = 0; i < 2; ++i) {
+                Restorer restorer{*this};
                 LeafInfo leafInfo;
                 m_leafp = &leafInfo;
                 m_curOpp = i == 0 ? nodep->lhsp() : nodep->rhsp();
-                const size_t origFrozens = m_frozenNodes.size();
-                const int origOps = m_ops;
                 const bool origFailed = m_failed;
                 iterate(m_curOpp);
                 if (leafInfo.m_constp || m_failed) {
                     // Rvert changes in leaf
-                    if (m_frozenNodes.size() > origFrozens) m_frozenNodes.resize(origFrozens);
+                    restorer.restoreNow();
                     m_frozenNodes.push_back(m_curOpp);
-                    m_ops = origOps;
                     m_failed = origFailed;
-                } else if (leafInfo.m_refp) {
-                    VarInfo& varInfo = getVarInfo(leafInfo);
-                    if (!varInfo.hasConstantResult()) {
-                        varInfo.setPolarity(isXorTree() || leafInfo.m_polarity, leafInfo.m_lsb);
-                    }
+                    continue;
                 }
+                restorer.disableRestore();  // Now all checks passed
+                if (leafInfo.m_refp)
+                    m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.m_polarity,
+                                                 leafInfo.m_lsb);
             }
             return;
         } else if (VN_IS(m_rootp, Xor) && VN_IS(nodep, Eq) && isConst(nodep->lhsp(), 0)
                    && VN_IS(nodep->rhsp(), And)) {  // 0 == (1 & RedXor)
+            Restorer restorer{*this};
             AstAnd* andp = static_cast<AstAnd*>(nodep->rhsp());  // already checked above
             CONST_BITOP_RETURN_IF(!isConst(andp->lhsp(), 1), andp->lhsp());
             AstRedXor* redXorp = VN_CAST(andp->rhsp(), RedXor);
@@ -388,36 +435,43 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             incrOps(andp, __LINE__);
             m_polarity = !m_polarity;
             iterate(redXorp);
+            CONST_BITOP_RETURN_IF(m_failed, redXorp);
+
+            restorer.disableRestore();  // Now all checks passed
             return;
         } else if (VN_IS(m_rootp, Xor) && VN_IS(nodep, And) && isConst(nodep->lhsp(), 1)
                    && (VN_IS(nodep->rhsp(), Xor)
                        || VN_IS(nodep->rhsp(), RedXor))) {  // 1 & (v[3] ^ v[2])
+            Restorer restorer{*this};
             incrOps(nodep, __LINE__);
             iterate(nodep->rhsp());
+            CONST_BITOP_RETURN_IF(m_failed, nodep->rhsp());
+            restorer.disableRestore();  // Now all checks passed
             return;
         } else if ((isAndTree() && VN_IS(nodep, Eq)) || (isOrTree() && VN_IS(nodep, Neq))) {
+            Restorer restorer{*this};
             CONST_BITOP_RETURN_IF(!m_polarity, nodep);
             const bool maskFlip = isOrTree();
-            LeafInfo comp = findLeaf(nodep->lhsp(), true);
+            const LeafInfo comp = findLeaf(nodep->lhsp(), true);
             CONST_BITOP_RETURN_IF(!comp.m_constp || comp.m_lsb != 0, nodep->lhsp());
 
             AstAnd* andp = VN_CAST(nodep->rhsp(), And);  // comp == (mask & v)
             CONST_BITOP_RETURN_IF(!andp, nodep->rhsp());
 
-            LeafInfo mask = findLeaf(andp->lhsp(), true);
+            const LeafInfo mask = findLeaf(andp->lhsp(), true);
             CONST_BITOP_RETURN_IF(!mask.m_constp || mask.m_lsb != 0, andp->lhsp());
 
-            LeafInfo ref = findLeaf(andp->rhsp(), false);
+            const LeafInfo ref = findLeaf(andp->rhsp(), false);
             CONST_BITOP_RETURN_IF(!ref.m_refp, andp->rhsp());
 
-            VarInfo& varInfo = getVarInfo(ref);
+            restorer.disableRestore();  // Now all checks passed
 
             const V3Number maskNum = mask.m_constp->num();
             const V3Number compNum = comp.m_constp->num();
-            for (int i = 0; i < maskNum.width() && !varInfo.hasConstantResult(); ++i) {
+            for (int i = 0; i < maskNum.width(); ++i) {
                 const int bit = i + ref.m_lsb;
                 if (maskNum.bitIs0(i)) continue;
-                varInfo.setPolarity(compNum.bitIs1(i) ^ maskFlip, bit);
+                m_bitPolarities.emplace_back(ref, compNum.bitIs1(i) != maskFlip, bit);
             }
             incrOps(nodep, __LINE__);
             incrOps(andp, __LINE__);
@@ -440,13 +494,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             incrOps(nodep, __LINE__);
             iterateChildren(nodep);
         }
+        for (auto&& entry : m_bitPolarities) {
+            VarInfo& info = getVarInfo(entry.m_info);
+            if (info.hasConstantResult()) continue;
+            info.setPolarity(entry.m_polarity, entry.m_bit);
+        }
         UASSERT_OBJ(isXorTree() || m_polarity, nodep, "must be the original polarity");
     }
-    virtual ~ConstBitOpTreeVisitor() {
-        for (size_t i = 0; i < m_varInfos.size(); ++i) {
-            VL_DO_DANGLING(delete m_varInfos[i], m_varInfos[i]);
-        }
-    }
+    virtual ~ConstBitOpTreeVisitor() = default;
 #undef CONST_BITOP_RETURN_IF
 #undef CONST_BITOP_SET_FAILED
 
@@ -466,7 +521,7 @@ public:
         // Two ops for each varInfo. (And and Eq)
         const int vars = visitor.m_varInfos.size() - 1;
         int constTerms = 0;
-        for (const VarInfo* v : visitor.m_varInfos) {
+        for (auto&& v : visitor.m_varInfos) {
             if (v && v->hasConstantResult()) ++constTerms;
         }
         // Expected number of ops after this simplification
@@ -486,7 +541,7 @@ public:
         AstNode* resultp = nullptr;
         // VarInfo in visitor.m_varInfos appears in deterministic order,
         // so the optimized AST is deterministic too.
-        for (const VarInfo* varinfop : visitor.m_varInfos) {
+        for (auto&& varinfop : visitor.m_varInfos) {
             if (!varinfop) continue;
             AstNode* partialresultp = varinfop->getResult();
             resultp = visitor.combineTree(resultp, partialresultp);
@@ -710,6 +765,86 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         return true;
     }
+    bool matchMaskedOr(AstAnd* nodep) {
+        // Masking an OR with terms that have no bits set under the mask is replaced with masking
+        // only the remaining terms. Canonical example as generated by V3Expand is:
+        // 0xff & (a << 8 | b >> 24) --> 0xff & (b >> 24)
+
+        // Compute how many significant bits are in the mask
+        const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
+        const uint32_t significantBits = constp->num().widthMin();
+
+        AstOr* const orp = VN_CAST(nodep->rhsp(), Or);
+
+        // Predicate for checking whether the bottom 'significantBits' bits of the given expression
+        // are all zeroes.
+        const auto checkBottomClear = [=](const AstNode* nodep) -> bool {
+            if (const AstShiftL* const shiftp = VN_CAST_CONST(nodep, ShiftL)) {
+                if (const AstConst* const scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+                    return scp->num().toUInt() >= significantBits;
+                }
+            }
+            return false;
+        };
+
+        const bool orLIsRedundant = checkBottomClear(orp->lhsp());
+        const bool orRIsRedundant = checkBottomClear(orp->rhsp());
+
+        if (orLIsRedundant && orRIsRedundant) {
+            nodep->replaceWith(
+                new AstConst(nodep->fileline(), AstConst::DtypedValue(), nodep->dtypep(), 0));
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return true;
+        } else if (orLIsRedundant) {
+            orp->replaceWith(orp->rhsp()->unlinkFrBack());
+            VL_DO_DANGLING(orp->deleteTree(), orp);
+            return false;  // input node is still valid, keep going
+        } else if (orRIsRedundant) {
+            orp->replaceWith(orp->lhsp()->unlinkFrBack());
+            VL_DO_DANGLING(orp->deleteTree(), orp);
+            return false;  // input node is still valid, keep going
+        } else {
+            return false;
+        }
+    }
+    bool matchMaskedShift(AstAnd* nodep) {
+        // Drop redundant masking of right shift result. E.g: 0xff & ((uint32_t)a >> 24). This
+        // commonly appears after V3Expand and the simplification in matchMaskedOr. Similarly,
+        // drop redundant masking of left shift result. E.g.: 0xff000000 & ((uint32_t)a << 24).
+
+        const auto checkMask = [=](const V3Number& mask) -> bool {
+            const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
+            if (constp->num().isCaseEq(mask)) {
+                AstNode* const rhsp = nodep->rhsp();
+                rhsp->unlinkFrBack();
+                nodep->replaceWith(rhsp);
+                rhsp->dtypeFrom(nodep);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return true;
+            }
+            return false;
+        };
+
+        // Check if masking is redundant
+        if (AstShiftR* const shiftp = VN_CAST(nodep->rhsp(), ShiftR)) {
+            if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+                // Check if mask is full over the non-zero bits
+                V3Number maskLo(nodep, nodep->width());
+                maskLo.setMask(nodep->width() - scp->num().toUInt());
+                return checkMask(maskLo);
+            }
+        } else if (AstShiftL* const shiftp = VN_CAST(nodep->rhsp(), ShiftL)) {
+            if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+                // Check if mask is full over the non-zero bits
+                V3Number maskLo(nodep, nodep->width()), maskHi(nodep, nodep->width());
+                maskLo.setMask(nodep->width() - scp->num().toUInt());
+                maskHi.opShiftL(maskLo, scp->num());
+                return checkMask(maskHi);
+            }
+        }
+        return false;
+    }
+
     bool matchBitOpTree(AstNode* nodep) {
         if (!v3Global.opt.oConstBitOpTree()) return false;
 
@@ -868,7 +1003,7 @@ private:
             || lp->num().isFourState() || lp->num().isNegative()) {
             return false;
         }
-        int newLsb = lp->toSInt() + bp->toSInt();
+        const int newLsb = lp->toSInt() + bp->toSInt();
         if (newLsb + nodep->widthConst() > ap->width()) return false;
         //
         UINFO(9, "SEL(SHIFTR(a,b),l,w) -> SEL(a,l+b,w)\n");
@@ -889,7 +1024,7 @@ private:
         AstExtend* extendp = VN_CAST(nodep->rhsp(), Extend);
         if (!extendp) return false;
         AstNode* smallerp = extendp->lhsp();
-        int subsize = smallerp->width();
+        const int subsize = smallerp->width();
         AstConst* constp = VN_CAST(nodep->lhsp(), Const);
         if (!constp) return false;
         if (!constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
@@ -914,7 +1049,7 @@ private:
         const AstExtend* extendp = VN_CAST_CONST(nodep->rhsp(), Extend);
         if (!extendp) return false;
         AstNode* smallerp = extendp->lhsp();
-        int subsize = smallerp->width();
+        const int subsize = smallerp->width();
         const AstConst* constp = VN_CAST_CONST(nodep->lhsp(), Const);
         if (!constp) return false;
         if (constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
@@ -945,10 +1080,10 @@ private:
         }
         // Find range of dtype we are selecting from
         // Similar code in V3Unknown::AstSel
-        bool doit = true;
+        const bool doit = true;
         if (m_warn && VN_IS(nodep->lsbp(), Const) && VN_IS(nodep->widthp(), Const) && doit) {
-            int maxDeclBit = nodep->declRange().hiMaxSelect() * nodep->declElWidth()
-                             + (nodep->declElWidth() - 1);
+            const int maxDeclBit = nodep->declRange().hiMaxSelect() * nodep->declElWidth()
+                                   + (nodep->declElWidth() - 1);
             if (VN_CAST(nodep->lsbp(), Const)->num().isFourState()
                 || VN_CAST(nodep->widthp(), Const)->num().isFourState()) {
                 nodep->v3error("Selection index is constantly unknown or tristated: "
@@ -1023,7 +1158,7 @@ private:
         const AstConst* lwidth = VN_CAST_CONST(lhsp->widthp(), Const);
         const AstConst* rwidth = VN_CAST_CONST(rhsp->widthp(), Const);
         if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
-        int rend = (rstart->toSInt() + rwidth->toSInt());
+        const int rend = (rstart->toSInt() + rwidth->toSInt());
         return (rend == lstart->toSInt());
     }
     bool ifMergeAdjacent(AstNode* lhsp, AstNode* rhsp) {
@@ -1056,7 +1191,7 @@ private:
         AstConst* lwidth = VN_CAST(lselp->widthp(), Const);
         AstConst* rwidth = VN_CAST(rselp->widthp(), Const);
         if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
-        int rend = (rstart->toSInt() + rwidth->toSInt());
+        const int rend = (rstart->toSInt() + rwidth->toSInt());
         // a[i:j] a[j-1:k]
         if (rend == lstart->toSInt()) return true;
         // a[i:0] a[msb:j]
@@ -1073,8 +1208,8 @@ private:
         const AstNodeBiop* rp = VN_CAST_CONST(rhsp, NodeBiop);
         if (!lp || !rp) return false;
         // {a[]&b[], a[]&b[]}
-        bool lad = ifMergeAdjacent(lp->lhsp(), rp->lhsp());
-        bool rad = ifMergeAdjacent(lp->rhsp(), rp->rhsp());
+        const bool lad = ifMergeAdjacent(lp->lhsp(), rp->lhsp());
+        const bool rad = ifMergeAdjacent(lp->rhsp(), rp->rhsp());
         if (lad && rad) return true;
         // {a[] & b[]&c[], a[] & b[]&c[]}
         if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
@@ -1315,10 +1450,10 @@ private:
         // {a[1], a[0]} -> a[1:0]
         AstSel* lselp = VN_CAST(nodep->lhsp()->unlinkFrBack(), Sel);
         AstSel* rselp = VN_CAST(nodep->rhsp()->unlinkFrBack(), Sel);
-        int lstart = lselp->lsbConst();
-        int lwidth = lselp->widthConst();
-        int rstart = rselp->lsbConst();
-        int rwidth = rselp->widthConst();
+        const int lstart = lselp->lsbConst();
+        const int lwidth = lselp->widthConst();
+        const int rstart = rselp->lsbConst();
+        const int rwidth = rselp->widthConst();
 
         UASSERT_OBJ((rstart + rwidth) == lstart, nodep,
                     "tried to merge two selects which are not adjacent");
@@ -1379,7 +1514,7 @@ private:
     }
     void replaceMulShift(AstMul* nodep) {  // Mul, but not MulS as not simple shift
         UINFO(5, "MUL(2^n,b)->SHIFTL(b,n) " << nodep << endl);
-        int amount = VN_CAST(nodep->lhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        const int amount = VN_CAST(nodep->lhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         AstNode* opp = nodep->rhsp()->unlinkFrBack();
         AstShiftL* newp
             = new AstShiftL(nodep->fileline(), opp, new AstConst(nodep->fileline(), amount));
@@ -1389,7 +1524,7 @@ private:
     }
     void replaceDivShift(AstDiv* nodep) {  // Mul, but not MulS as not simple shift
         UINFO(5, "DIV(b,2^n)->SHIFTR(b,n) " << nodep << endl);
-        int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        const int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         AstNode* opp = nodep->lhsp()->unlinkFrBack();
         AstShiftR* newp
             = new AstShiftR(nodep->fileline(), opp, new AstConst(nodep->fileline(), amount));
@@ -1399,7 +1534,7 @@ private:
     }
     void replaceModAnd(AstModDiv* nodep) {  // Mod, but not ModS as not simple shift
         UINFO(5, "MOD(b,2^n)->AND(b,2^n-1) " << nodep << endl);
-        int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        const int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         V3Number mask(nodep, nodep->width());
         mask.setMask(amount);
         AstNode* opp = nodep->lhsp()->unlinkFrBack();
@@ -1442,7 +1577,7 @@ private:
         if (nodep->type() == lhsp->type()) {
             int shift1 = VN_CAST(shift1p, Const)->toUInt();
             int shift2 = VN_CAST(shift2p, Const)->toUInt();
-            int newshift = shift1 + shift2;
+            const int newshift = shift1 + shift2;
             VL_DO_DANGLING(shift1p->deleteTree(), shift1p);
             VL_DO_DANGLING(shift2p->deleteTree(), shift2p);
             nodep->lhsp(ap);
@@ -1454,7 +1589,7 @@ private:
             if (VN_IS(lhsp, ShiftR)) shift1 = -shift1;
             int shift2 = VN_CAST(shift2p, Const)->toUInt();
             if (VN_IS(nodep, ShiftR)) shift2 = -shift2;
-            int newshift = shift1 + shift2;
+            const int newshift = shift1 + shift2;
             VL_DO_DANGLING(shift1p->deleteTree(), shift1p);
             VL_DO_DANGLING(shift2p->deleteTree(), shift2p);
             AstNode* newp;
@@ -1522,7 +1657,7 @@ private:
             && (con2p->toSInt() != con1p->toSInt() + sel1p->width())) {
             return false;
         }
-        bool lsbFirstAssign = (con1p->toUInt() < con2p->toUInt());
+        const bool lsbFirstAssign = (con1p->toUInt() < con2p->toUInt());
         UINFO(4, "replaceAssignMultiSel " << nodep << endl);
         UINFO(4, "                   && " << nextp << endl);
         // nodep->dumpTree(cout, "comb1: ");
@@ -1681,8 +1816,8 @@ private:
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamL)) {
             // Push the stream operator to the rhs of the assignment statement
-            int dWidth = VN_CAST(nodep->lhsp(), StreamL)->lhsp()->width();
-            int sWidth = nodep->rhsp()->width();
+            const int dWidth = VN_CAST(nodep->lhsp(), StreamL)->lhsp()->width();
+            const int sWidth = nodep->rhsp()->width();
             // Unlink the stuff
             AstNode* dstp = VN_CAST(nodep->lhsp(), StreamL)->lhsp()->unlinkFrBack();
             AstNode* streamp = VN_CAST(nodep->lhsp(), StreamL)->unlinkFrBack();
@@ -1702,8 +1837,8 @@ private:
             // The right stream operator on lhs of assignment statement does
             // not reorder bits. However, if the rhs is wider than the lhs,
             // then we select bits from the left-most, not the right-most.
-            int dWidth = VN_CAST(nodep->lhsp(), StreamR)->lhsp()->width();
-            int sWidth = nodep->rhsp()->width();
+            const int dWidth = VN_CAST(nodep->lhsp(), StreamR)->lhsp()->width();
+            const int sWidth = nodep->rhsp()->width();
             // Unlink the stuff
             AstNode* dstp = VN_CAST(nodep->lhsp(), StreamR)->lhsp()->unlinkFrBack();
             AstNode* sizep = VN_CAST(nodep->lhsp(), StreamR)->rhsp()->unlinkFrBack();
@@ -2532,7 +2667,7 @@ private:
             string fmt;
             bool inPct = false;
             AstNode* argp = nodep->exprsp();
-            string text = nodep->text();
+            const string text = nodep->text();
             for (const char ch : text) {
                 if (!inPct && ch == '%') {
                     inPct = true;
@@ -2554,7 +2689,8 @@ private:
                         if (argp) {
                             AstNode* nextp = argp->nextp();
                             if (VN_IS(argp, Const)) {  // Convert it
-                                string out = VN_CAST(argp, Const)->num().displayed(nodep, fmt);
+                                const string out
+                                    = VN_CAST(argp, Const)->num().displayed(nodep, fmt);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
                                                             << argp << endl);
                                 // fmt = out w/ replace % with %% as it must be literal.
@@ -2592,10 +2728,10 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstWhile* nodep) override {
-        bool oldHasJumpDelay = m_hasJumpDelay;
+        const bool oldHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = false;
         { iterateChildren(nodep); }
-        bool thisWhileHasJumpDelay = m_hasJumpDelay;
+        const bool thisWhileHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = thisWhileHasJumpDelay || oldHasJumpDelay;
         if (m_doNConst) {
             if (nodep->condp()->isZero()) {
@@ -2964,9 +3100,11 @@ private:
     TREEOPV("AstConcat{$lhsp.castSel, $rhsp.castSel, ifAdjacentSel(VN_CAST($lhsp,,Sel),,VN_CAST($rhsp,,Sel))}",  "replaceConcatSel(nodep)");
     TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp)}", "replaceConcatMerge(nodep)");
     // Common two-level operations that can be simplified
-    TREEOP ("AstAnd {$lhsp.castConst,matchAndCond(nodep)}",           "DONE");
-    TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}",     "replaceAndOr(nodep)");
-    TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}",     "replaceAndOr(nodep)");
+    TREEOP ("AstAnd {$lhsp.castConst,matchAndCond(nodep)}", "DONE");
+    TREEOP ("AstAnd {$lhsp.castConst, $rhsp.castOr, matchMaskedOr(nodep)}", "DONE");
+    TREEOPC("AstAnd {$lhsp.castConst, matchMaskedShift(nodep)}", "DONE");
+    TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}", "replaceAndOr(nodep)");
+    TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}", "replaceAndOr(nodep)");
     TREEOP ("AstOr  {matchOrAndNot(nodep)}",            "DONE");
     TREEOP ("AstAnd {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");

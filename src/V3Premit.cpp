@@ -92,11 +92,9 @@ private:
     //  AstNodeMath::user()     -> bool.  True if iterated already
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
-    //  AstConst::user2p()      -> Replacement static variable pointer
     //  *::user4()              -> See PremitAssignVisitor
     AstUser1InUse m_inuser1;
     AstUser2InUse m_inuser2;
-    // AstUser4InUse     part of V3Hasher via V3DupFinder
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -106,10 +104,7 @@ private:
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
 
-    V3DupFinder m_dupFinder;  // Duplicate finder for static constants that can be reused
-
-    VDouble0 m_staticConstantsExtracted;  // Statistic tracking
-    VDouble0 m_staticConstantsReused;  // Statistic tracking
+    VDouble0 m_extractedToConstPool;  // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -170,71 +165,48 @@ private:
     }
 
     void createDeepTemp(AstNode* nodep, bool noSubst) {
-        if (nodep->user1()) return;
-        if (debug() > 8) nodep->dumpTree(cout, "deepin:");
+        if (nodep->user1SetOnce()) return;  // Only add another assignment for this node
 
-        AstNRelinker linker;
-        nodep->unlinkFrBack(&linker);
+        AstNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
 
+        FileLine* const fl = nodep->fileline();
         AstVar* varp = nullptr;
-
         AstConst* const constp = VN_CAST(nodep, Const);
-
-        const bool useStatic = constp && (constp->width() >= STATIC_CONST_MIN_WIDTH)
-                               && !constp->num().isFourState();
-        if (useStatic) {
-            // Extract as static constant
-            const auto& it = m_dupFinder.findDuplicate(constp);
-            if (it == m_dupFinder.end()) {
-                const string newvarname = string("__Vconst") + cvtToStr(m_modp->varNumGetInc());
-                varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP, newvarname,
-                                  nodep->dtypep());
-                varp->isConst(true);
-                varp->isStatic(true);
-                varp->valuep(constp);
-                m_modp->addStmtp(varp);
-                m_dupFinder.insert(constp);
-                nodep->user2p(varp);
-                ++m_staticConstantsExtracted;
-            } else {
-                varp = VN_CAST(it->second->user2p(), Var);
-                ++m_staticConstantsReused;
-            }
+        const bool useConstPool = constp  // Is a constant
+                                  && (constp->width() >= STATIC_CONST_MIN_WIDTH)  // Large enough
+                                  && !constp->num().isFourState()  // Not four state
+                                  && !constp->num().isString();  // Not a string
+        if (useConstPool) {
+            // Extract into constant pool.
+            const bool merge = v3Global.opt.mergeConstPool();
+            varp = v3Global.rootp()->constPoolp()->findConst(constp, merge)->varp();
+            nodep->deleteTree();
+            ++m_extractedToConstPool;
         } else {
             // Keep as local temporary
-            const string newvarname = string("__Vtemp") + cvtToStr(m_modp->varNumGetInc());
-            varp
-                = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep());
+            const string name = string("__Vtemp") + cvtToStr(m_modp->varNumGetInc());
+            varp = new AstVar(fl, AstVarType::STMTTEMP, name, nodep->dtypep());
             m_cfuncp->addInitsp(varp);
-        }
-
-        if (noSubst) varp->noSubst(true);  // Do not remove varrefs to this in V3Const
-
-        // Replace node tree with reference to var
-        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
-        linker.relink(newp);
-
-        if (!useStatic) {
             // Put assignment before the referencing statement
-            AstAssign* assp = new AstAssign(
-                nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), nodep);
-            insertBeforeStmt(assp);
-            if (debug() > 8) assp->dumpTree(cout, "deepou:");
+            insertBeforeStmt(new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE), nodep));
         }
 
-        nodep->user1(true);  // Don't add another assignment
+        // Do not remove VarRefs to this in V3Const
+        if (noSubst) varp->noSubst(true);
+
+        // Replace node with VarRef to new Var
+        relinker.relink(new AstVarRef(fl, varp, VAccess::READ));
     }
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         UASSERT_OBJ(m_modp == nullptr, nodep, "Nested modules ?");
-        UASSERT_OBJ(m_dupFinder.empty(), nodep, "Statements outside module ?");
         m_modp = nodep;
         m_cfuncp = nullptr;
         iterateChildren(nodep);
         m_modp = nullptr;
-        m_dupFinder.clear();
     }
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
@@ -263,7 +235,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         startStatement(nodep);
         {
-            bool noopt = PremitAssignVisitor(nodep).noOpt();
+            const bool noopt = PremitAssignVisitor(nodep).noOpt();
             if (noopt && !nodep->user1()) {
                 nodep->user1(true);
                 // Need to do this even if not wide, as e.g. a select may be on a wide operator
@@ -442,9 +414,8 @@ public:
     // CONSTRUCTORS
     explicit PremitVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~PremitVisitor() {
-        V3Stats::addStat("Optimizations, Prelim static constants extracted",
-                         m_staticConstantsExtracted);
-        V3Stats::addStat("Optimizations, Prelim static constants reused", m_staticConstantsReused);
+        V3Stats::addStat("Optimizations, Prelim extracted value to ConstPool",
+                         m_extractedToConstPool);
     }
 };
 

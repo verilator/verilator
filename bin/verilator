@@ -332,7 +332,6 @@ detailed descriptions of these arguments.
     --gate-stmts <value>        Tune gate optimizer depth
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
-    --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
     --l2-name <value>           Verilog scope name of the top module
@@ -344,6 +343,7 @@ detailed descriptions of these arguments.
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
+    --no-merge-const-pool       Disable merging of different types in const pool
     --mod-prefix <topname>      Name to prepend to lower classes
     --no-clk <signal-name>      Prevent marking specified signal as clock
     --no-decoration             Disable comments and symbol decorations
@@ -378,7 +378,6 @@ detailed descriptions of these arguments.
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet-exit                Don't print the command on failure
     --relative-includes         Resolve includes relative to current file
-    --no-relative-cfuncs        Disallow 'this->' in generated functions
     --reloop-limit              Minimum iterations for forming loops
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr

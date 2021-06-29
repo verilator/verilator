@@ -18,54 +18,47 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_LIMIT_MULTIPLE: 0.95
 
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
+
 jobs:
 
-
-  Matrix:
-    runs-on: ubuntu-latest
-    name: Generate Build matrix
-    outputs:
-      matrix: ${{ steps.generate.outputs.matrix }}
-    steps:
-    - uses: actions/checkout@v2
-    - id: generate
-      name: Run 'generate_matrix.sh'
-      run: |
-        if [ '${{ github.event_name }}' = 'pull_request' ]; then
-          matrix='[ "ubuntu-20.04" ]'
-        else
-          matrix='[ "ubuntu-16.04", "ubuntu-18.04", "ubuntu-20.04" ]'
-        fi
-        echo "::set-output name=matrix::$matrix"
-
-
-  Build:
-    needs: Matrix
+  build:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
-        target:
-          - { name: opt, ccache_size: 48M  }
-          - { name: dbg, ccache_size: 208M }
+        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
+        m32: [0, 1]
+        exclude:
+          # Build pull requests only with ubuntu-20.04 and without m32
+          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
+          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-16.04' || 'do-not-exclude' }}
+          - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
+          # Build -m32 only on ubuntu-20.04
+          - {os: ubuntu-18.04, m32: 1}
+          - {os: ubuntu-16.04, m32: 1}
     runs-on: ${{ matrix.os }}
-    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.target.name }}
+    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} ${{ matrix.m32 && '| -m32' || '' }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
-      CI_MAKE_SRC_TARGET: ${{ matrix.target.name }}
+      CI_M32: ${{ matrix.m32 }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.target.name }}
-      CCACHE_MAXSIZE: ${{ matrix.target.ccache_size }} # Per build matrix entry (1G in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.target.name }}.tar.gz
+      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}
+      CCACHE_MAXSIZE: 250M # Per build matrix entry (2000M in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
     steps:
 
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        path: repo
 
     - name: Cache $CCACHE_DIR
       uses: actions/cache@v2
@@ -81,48 +74,60 @@ jobs:
       run: ./ci/ci-install.bash
 
     - name: Build
-      run: |
-        ccache -z
-        ./ci/ci-script.bash
-        ccache -s
-        tar cvzf ${{ env.VERILATOR_ARCHIVE }} bin
+      run: ./ci/ci-script.bash
 
-    - name: Upload Verilator artifact
+    - name: Tar up repository
+      working-directory: ${{ github.workspace }}
+      run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
+
+    - name: Upload tar archive
       uses: actions/upload-artifact@v2
       with:
+        path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
         name: ${{ env.VERILATOR_ARCHIVE }}
-        path: ${{ env.VERILATOR_ARCHIVE }}
 
 
-  Test:
-    needs: [ Matrix, Build ]
+  test:
+    needs: build
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJson(needs.Matrix.outputs.matrix) }}
+        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-        suite:
-          - dist-vlt-0
-          - dist-vlt-1
-          - dist-vlt-2
-          - vltmt-0
-          - vltmt-1
+        m32: [0, 1]
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, vltmt-0, vltmt-1]
+        exclude:
+          # Build pull requests only with ubuntu-20.04 and without m32
+          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
+          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-16.04' || 'do-not-exclude' }}
+          - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
+          # Build -m32 only on ubuntu-20.04
+          - {os: ubuntu-18.04, m32: 1}
+          - {os: ubuntu-16.04, m32: 1}
     runs-on: ${{ matrix.os }}
-    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }} ${{ matrix.m32 && '| -m32' || '' }}
     env:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ${{ matrix.os }}
+      CI_M32: ${{ matrix.m32 }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
-      CCACHE_MAXSIZE: 64M # Per build matrix entry (1920M in total)
-      VERILATOR_ARCHIVE_BASE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}
+      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}-${ matrix.suite }}
+      CCACHE_MAXSIZE: 64M # Per build matrix entry (2160M in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
     steps:
 
-    - name: Checkout
-      uses: actions/checkout@v2
+    - name: Download tar archive
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.VERILATOR_ARCHIVE }}
+        path: ${{ github.workspace }}
+
+    - name: Unpack tar archive
+      working-directory: ${{ github.workspace }}
+      run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
 
     - name: Cache $CCACHE_DIR
       uses: actions/cache@v2
@@ -134,29 +139,10 @@ jobs:
         restore-keys: |
           ${{ env.CACHE_KEY }}-
 
-    - name: Download Verilator artifact (opt)
-      uses: actions/download-artifact@v2
-      with:
-        name: ${{ env.VERILATOR_ARCHIVE_BASE }}-opt.tar.gz
-
-    - name: Download Verilator artifact (dbg)
-      uses: actions/download-artifact@v2
-      with:
-        name: ${{ env.VERILATOR_ARCHIVE_BASE }}-dbg.tar.gz
-
-    - name: Unpack Verilator artifacts
-      run: |
-        tar xvzf ${{ env.VERILATOR_ARCHIVE_BASE }}-opt.tar.gz
-        tar xvzf ${{ env.VERILATOR_ARCHIVE_BASE }}-dbg.tar.gz
-
     - name: Install test dependencies
-      run: |
-        ./ci/ci-install.bash
+      run: ./ci/ci-install.bash
 
     - name: Test
       env:
         TESTS: ${{ matrix.suite }}
-      run: |
-        ccache -z
-        ./ci/ci-script.bash
-        ccache -s
+      run: ./ci/ci-script.bash

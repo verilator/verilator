@@ -61,23 +61,21 @@ private:
         const int funcNum = m_newFunctions.size();
         const string funcName = m_basename + "_" + cvtToStr(funcNum);
         AstCFunc* const funcp = new AstCFunc(m_modp->fileline(), funcName, nullptr, "void");
-        funcp->isStatic(!m_type.isClass());  // Class constructors are non static
+        funcp->isStatic(false);
+        funcp->isLoose(!m_type.isClass());
         funcp->declPrivate(true);
         funcp->slow(!m_type.isClass());  // Only classes construct on fast path
         string preventUnusedStmt;
         if (m_type.isClass()) {
             funcp->argTypes(EmitCBaseVisitor::symClassVar());
-            preventUnusedStmt = "if (false && vlSymsp) {}";
+            preventUnusedStmt = "if (false && vlSymsp) {}  // Prevent unused\n";
         } else if (m_type.isCoverage()) {
-            funcp->argTypes(EmitCBaseVisitor::prefixNameProtect(m_modp) + "* self, "
-                            + EmitCBaseVisitor::symClassVar() + ", bool first");
-            preventUnusedStmt = "if (false && self && vlSymsp && first) {}";
-        } else {  // Module
-            funcp->argTypes(EmitCBaseVisitor::prefixNameProtect(m_modp) + "* self");
-            preventUnusedStmt = "if (false && self) {}";
+            funcp->argTypes("bool first");
+            preventUnusedStmt = "if (false && first) {}  // Prevent unused\n";
         }
-        preventUnusedStmt += "  // Prevent unused\n";
-        funcp->addStmtsp(new AstCStmt(m_modp->fileline(), preventUnusedStmt));
+        if (!preventUnusedStmt.empty()) {
+            funcp->addStmtsp(new AstCStmt(m_modp->fileline(), preventUnusedStmt));
+        }
         m_modp->addStmtp(funcp);
         m_numStmts = 0;
         return funcp;
@@ -113,10 +111,9 @@ public:
                 AstCCall* const callp = new AstCCall(m_modp->fileline(), funcp);
                 if (m_type.isClass()) {
                     callp->argTypes("vlSymsp");
-                } else if (m_type.isCoverage()) {
-                    callp->argTypes("self, vlSymsp, first");
-                } else {  // Module
-                    callp->argTypes("self");
+                } else {
+                    if (m_type.isCoverage()) callp->argTypes("first");
+                    callp->selfPointer("this");
                 }
                 rootFuncp->addStmtsp(callp);
             }
@@ -134,6 +131,7 @@ void V3CCtors::evalAsserts() {
     AstCFunc* funcp = new AstCFunc(modp->fileline(), "_eval_debug_assertions", nullptr, "void");
     funcp->declPrivate(true);
     funcp->isStatic(false);
+    funcp->isLoose(true);
     funcp->slow(false);
     funcp->ifdef("VL_DEBUG");
     modp->addStmtp(funcp);
@@ -141,11 +139,14 @@ void V3CCtors::evalAsserts() {
         if (AstVar* varp = VN_CAST(np, Var)) {
             if (varp->isPrimaryInish() && !varp->isSc()) {
                 if (AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
-                    int storedWidth = basicp->widthAlignBytes() * 8;
-                    int lastWordWidth = varp->width() % storedWidth;
+                    const int storedWidth = basicp->widthAlignBytes() * 8;
+                    const int lastWordWidth = varp->width() % storedWidth;
                     if (lastWordWidth != 0) {
                         // if (signal & CONST(upper_non_clean_mask)) { fail; }
-                        AstNode* newp = new AstVarRef(varp->fileline(), varp, VAccess::READ);
+                        AstVarRef* const vrefp
+                            = new AstVarRef(varp->fileline(), varp, VAccess::READ);
+                        vrefp->selfPointer("this");
+                        AstNode* newp = vrefp;
                         if (varp->isWide()) {
                             newp = new AstWordSel(
                                 varp->fileline(), newp,

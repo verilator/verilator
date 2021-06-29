@@ -213,7 +213,7 @@ void _mon_check_memory() {
     }
 }
 
-int mon_check() {
+extern "C" int mon_check() {
     // Callback from initial block in monitor
     _mon_check_memory();
     return errors;

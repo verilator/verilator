@@ -685,7 +685,7 @@ public:
         refDTypep(nullptr);
         setOp2p(rangep);
         dtypep(nullptr);  // V3Width will resolve
-        int width = subDTypep()->width() * rangep->elementsConst();
+        const int width = subDTypep()->width() * rangep->elementsConst();
         widthForce(width, width);
     }
     AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
@@ -693,7 +693,7 @@ public:
         refDTypep(dtp);
         setOp2p(rangep);
         dtypep(this);
-        int width = subDTypep()->width() * rangep->elementsConst();
+        const int width = subDTypep()->width() * rangep->elementsConst();
         widthForce(width, width);
     }
     ASTNODE_NODE_FUNCS(PackArrayDType)
@@ -848,7 +848,7 @@ private:
         numeric(numer);
         if (!rangep && (wantwidth || wantwidthmin >= 0)) {  // Constant width
             if (wantwidth > 1) m.m_nrange.init(wantwidth - 1, 0, false);
-            int wmin = wantwidthmin >= 0 ? wantwidthmin : wantwidth;
+            const int wmin = wantwidthmin >= 0 ? wantwidthmin : wantwidth;
             widthForce(wantwidth, wmin);
         } else if (!rangep) {  // Set based on keyword properties
             // V3Width will pull from this width
@@ -1889,6 +1889,10 @@ private:
     VDirection m_direction;  // Direction input/output etc
     VDirection m_declDirection;  // Declared direction input/output etc
     AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
+    VLifetime m_lifetime;  // Lifetime
+    VVarAttrClocker m_attrClocker;
+    MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
+    int m_pinNum = 0;  // For XML, if non-zero the connection pin number
     bool m_ansi : 1;  // ANSI port list variable (for dedup check)
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg
@@ -1925,9 +1929,6 @@ private:
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
-    VLifetime m_lifetime;  // Lifetime
-    VVarAttrClocker m_attrClocker;
-    MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
 
     void init() {
         m_ansi = false;
@@ -2070,7 +2071,8 @@ public:
     // (Slow) recurse down to find basic data type (Note don't need virtual -
     // AstVar isn't a NodeDType)
     AstBasicDType* basicp() const { return subDTypep()->basicp(); }
-    // op3 = Initial value that never changes (static const)
+    // op3 = Initial value that never changes (static const), or constructor argument for
+    // MTASKSTATE variables
     AstNode* valuep() const { return op3p(); }
     // It's valuep(), not constp(), as may be more complicated than an AstConst
     void valuep(AstNode* nodep) { setOp3p(nodep); }
@@ -2149,7 +2151,6 @@ public:
     }
     bool isClassMember() const { return varType() == AstVarType::MEMBER; }
     bool isStatementTemp() const { return (varType() == AstVarType::STMTTEMP); }
-    bool isMovableToBlock() const { return (varType() == AstVarType::BLOCKTEMP || isFuncLocal()); }
     bool isXTemp() const { return (varType() == AstVarType::XTEMP); }
     bool isParam() const {
         return (varType() == AstVarType::LPARAM || varType() == AstVarType::GPARAM);
@@ -2226,7 +2227,8 @@ public:
     void addProducingMTaskId(int id) { m_mtaskIds.insert(id); }
     void addConsumingMTaskId(int id) { m_mtaskIds.insert(id); }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
-    string mtasksString() const;
+    void pinNum(int id) { m_pinNum = id; }
+    int pinNum() const { return m_pinNum; }
 };
 
 class AstDefParam final : public AstNode {
@@ -2388,8 +2390,7 @@ public:
         if (varScopep()) {
             return (varScopep() == samep->varScopep() && access() == samep->access());
         } else {
-            return (hiernameToProt() == samep->hiernameToProt()
-                    && hiernameToUnprot() == samep->hiernameToUnprot()
+            return (selfPointer() == samep->selfPointer()
                     && varp()->name() == samep->varp()->name() && access() == samep->access());
         }
     }
@@ -2397,9 +2398,8 @@ public:
         if (varScopep()) {
             return (varScopep() == samep->varScopep());
         } else {
-            return (hiernameToProt() == samep->hiernameToProt()
-                    && hiernameToUnprot() == samep->hiernameToUnprot()
-                    && (!hiernameToProt().empty() || !samep->hiernameToProt().empty())
+            return (selfPointer() == samep->selfPointer()
+                    && (!selfPointer().empty() || !samep->selfPointer().empty())
                     && varp()->name() == samep->varp()->name());
         }
     }
@@ -2439,10 +2439,31 @@ public:
     virtual int instrCount() const override { return widthInstrs(); }
     virtual bool same(const AstNode* samep) const override {
         const AstVarXRef* asamep = static_cast<const AstVarXRef*>(samep);
-        return (hiernameToProt() == asamep->hiernameToProt()
-                && hiernameToUnprot() == asamep->hiernameToUnprot() && varp() == asamep->varp()
+        return (selfPointer() == asamep->selfPointer() && varp() == asamep->varp()
                 && name() == asamep->name() && dotted() == asamep->dotted());
     }
+};
+
+class AstAddrOfCFunc final : public AstNodeMath {
+    // Get address of CFunc
+private:
+    AstCFunc* m_funcp;  // Pointer to function itself
+
+public:
+    AstAddrOfCFunc(FileLine* fl, AstCFunc* funcp)
+        : ASTGEN_SUPER_AddrOfCFunc(fl)
+        , m_funcp{funcp} {
+        dtypep(findCHandleDType());
+    }
+
+public:
+    ASTNODE_NODE_FUNCS(AddrOfCFunc)
+    virtual void cloneRelink() override;
+    virtual const char* broken() const override;
+    virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    AstCFunc* funcp() const { return m_funcp; }
 };
 
 class AstPin final : public AstNode {
@@ -5426,9 +5447,9 @@ public:
                        : (m_urandom ? "%f$urandom()" : "%f$random()");
     }
     virtual string emitC() override {
-        return m_reset
-                   ? "VL_RAND_RESET_%nq(%nw, %P)"
-                   : seedp() ? "VL_RANDOM_SEEDED_%nq%lq(%nw, %P, %li)" : "VL_RANDOM_%nq(%nw, %P)";
+        return m_reset   ? "VL_RAND_RESET_%nq(%nw, %P)"
+               : seedp() ? "VL_RANDOM_SEEDED_%nq%lq(%nw, %P, %li)"
+                         : "VL_RANDOM_%nq(%nw, %P)";
     }
     virtual bool cleanOut() const override { return true; }
     virtual bool isGateOptimizable() const override { return false; }
@@ -8732,9 +8753,8 @@ private:
     string m_ctorInits;  // Constructor sub-class inits
     string m_ifdef;  // #ifdef symbol around this function
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
-    VBoolOrUnknown m_isStatic;  // Function is declared static (no this)
+    bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
-    bool m_skipDecl : 1;  // Don't declare it
     bool m_declPrivate : 1;  // Declare it private
     bool m_formCallTree : 1;  // Make a global function to call entire tree of functions
     bool m_slow : 1;  // Slow routine, called once or just at init time
@@ -8742,26 +8762,26 @@ private:
     bool m_isConstructor : 1;  // Is C class constructor
     bool m_isDestructor : 1;  // Is C class destructor
     bool m_isMethod : 1;  // Is inside a class definition
+    bool m_isLoose : 1;  // Semantically this is a method, but is implemented as a function
+                         // with an explicitly passed 'self' pointer as the first argument
     bool m_isInline : 1;  // Inline function
     bool m_isVirtual : 1;  // Virtual function
-    bool m_symProlog : 1;  // Setup symbol table for later instructions
     bool m_entryPoint : 1;  // User may call into this top level function
     bool m_pure : 1;  // Pure function
-    bool m_dpiExport : 1;  // From dpi export
-    bool m_dpiExportWrapper : 1;  // From dpi export; static function with dispatch table
-    bool m_dpiImport : 1;  // From dpi import
-    bool m_dpiImportWrapper : 1;  // Wrapper from dpi import
+    bool m_dpiExportDispatcher : 1;  // This is the DPI export entry point (i.e.: called by user)
+    bool m_dpiExportImpl : 1;  // DPI export implementation (called from DPI dispatcher via lookup)
+    bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
+    bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
         m_funcType = AstCFuncType::FT_NORMAL;
         m_isConst = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until analyzed
-        m_isStatic = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until see where thisp needed
         m_scopep = scopep;
         m_name = name;
         m_rtnType = rtnType;
+        m_isStatic = false;
         m_dontCombine = false;
-        m_skipDecl = false;
         m_declPrivate = false;
         m_formCallTree = false;
         m_slow = false;
@@ -8769,14 +8789,14 @@ public:
         m_isConstructor = false;
         m_isDestructor = false;
         m_isMethod = true;
+        m_isLoose = false;
         m_isInline = false;
         m_isVirtual = false;
-        m_symProlog = false;
         m_entryPoint = false;
         m_pure = false;
-        m_dpiExport = false;
-        m_dpiExportWrapper = false;
-        m_dpiImport = false;
+        m_dpiExportDispatcher = false;
+        m_dpiExportImpl = false;
+        m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
     }
     ASTNODE_NODE_FUNCS(CFunc)
@@ -8791,17 +8811,17 @@ public:
         const AstCFunc* asamep = static_cast<const AstCFunc*>(samep);
         return ((funcType() == asamep->funcType()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && (ctorInits() == asamep->ctorInits())
-                && (!(dpiImport() || dpiExport()) || name() == asamep->name()));
+                && isLoose() == asamep->isLoose()
+                && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
     //
     virtual void name(const string& name) override { m_name = name; }
-    virtual int instrCount() const override { return dpiImport() ? instrCountDpi() : 0; }
+    virtual int instrCount() const override { return dpiImportPrototype() ? instrCountDpi() : 0; }
     VBoolOrUnknown isConst() const { return m_isConst; }
     void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
-    VBoolOrUnknown isStatic() const { return m_isStatic; }
-    void isStatic(bool flag) { m_isStatic.setTrueOrFalse(flag); }
-    void isStatic(VBoolOrUnknown flag) { m_isStatic = flag; }
+    bool isStatic() const { return m_isStatic; }
+    void isStatic(bool flag) { m_isStatic = flag; }
     void cname(const string& name) { m_cname = name; }
     string cname() const { return m_cname; }
     AstScope* scopep() const { return m_scopep; }
@@ -8809,9 +8829,7 @@ public:
     string rtnTypeVoid() const { return ((m_rtnType == "") ? "void" : m_rtnType); }
     bool dontCombine() const { return m_dontCombine || funcType() != AstCFuncType::FT_NORMAL; }
     void dontCombine(bool flag) { m_dontCombine = flag; }
-    bool dontInline() const { return dontCombine() || slow() || skipDecl() || funcPublic(); }
-    bool skipDecl() const { return m_skipDecl; }
-    void skipDecl(bool flag) { m_skipDecl = flag; }
+    bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
     void declPrivate(bool flag) { m_declPrivate = flag; }
     bool formCallTree() const { return m_formCallTree; }
@@ -8834,22 +8852,23 @@ public:
     void isDestructor(bool flag) { m_isDestructor = flag; }
     bool isMethod() const { return m_isMethod; }
     void isMethod(bool flag) { m_isMethod = flag; }
+    bool isLoose() const { return m_isLoose; }
+    void isLoose(bool flag) { m_isLoose = flag; }
+    bool isProperMethod() const { return isMethod() && !isLoose(); }
     bool isInline() const { return m_isInline; }
     void isInline(bool flag) { m_isInline = flag; }
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
-    bool symProlog() const { return m_symProlog; }
-    void symProlog(bool flag) { m_symProlog = flag; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool pure() const { return m_pure; }
     void pure(bool flag) { m_pure = flag; }
-    bool dpiExport() const { return m_dpiExport; }
-    void dpiExport(bool flag) { m_dpiExport = flag; }
-    bool dpiExportWrapper() const { return m_dpiExportWrapper; }
-    void dpiExportWrapper(bool flag) { m_dpiExportWrapper = flag; }
-    bool dpiImport() const { return m_dpiImport; }
-    void dpiImport(bool flag) { m_dpiImport = flag; }
+    bool dpiExportDispatcher() const { return m_dpiExportDispatcher; }
+    void dpiExportDispatcher(bool flag) { m_dpiExportDispatcher = flag; }
+    bool dpiExportImpl() const { return m_dpiExportImpl; }
+    void dpiExportImpl(bool flag) { m_dpiExportImpl = flag; }
+    bool dpiImportPrototype() const { return m_dpiImportPrototype; }
+    void dpiImportPrototype(bool flag) { m_dpiImportPrototype = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
     //
@@ -9044,7 +9063,8 @@ class AstExecGraph final : public AstNode {
     // them without traversing the graph (it's not always needed to
     // traverse the graph.)
 private:
-    V3Graph* m_depGraphp;  // contains ExecMTask's
+    V3Graph* const m_depGraphp;  // contains ExecMTask's
+
 public:
     explicit AstExecGraph(FileLine* fl);
     ASTNODE_NODE_FUNCS_NO_DTOR(ExecGraph)
@@ -9056,6 +9076,7 @@ public:
     const V3Graph* depGraphp() const { return m_depGraphp; }
     V3Graph* mutableDepGraphp() { return m_depGraphp; }
     void addMTaskBody(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+    void addStmtsp(AstNode* stmtp) { addOp2p(stmtp); }
 };
 
 class AstSplitPlaceholder final : public AstNode {
@@ -9080,10 +9101,7 @@ class AstTypeTable final : public AstNode {
     DetailedMap m_detailedMap;
 
 public:
-    explicit AstTypeTable(FileLine* fl)
-        : ASTGEN_SUPER_TypeTable(fl) {
-        for (int i = 0; i < AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = nullptr;
-    }
+    explicit AstTypeTable(FileLine* fl);
     ASTNODE_NODE_FUNCS(TypeTable)
     AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
@@ -9100,6 +9118,34 @@ public:
     virtual void dump(std::ostream& str = std::cout) const override;
 };
 
+class AstConstPool final : public AstNode {
+    // Container for const static data
+    std::unordered_multimap<uint32_t, AstVarScope*> m_tables;  // Constant tables (unpacked arrays)
+    std::unordered_multimap<uint32_t, AstVarScope*> m_consts;  // Constant tables (scalars)
+    AstModule* const m_modp;  // The Module holding the Scope below ...
+    AstScope* const m_scopep;  // Scope holding the constant variables
+
+    AstVarScope* createNewEntry(const string& name, AstNode* initp);
+
+public:
+    explicit AstConstPool(FileLine* fl);
+    ASTNODE_NODE_FUNCS(ConstPool)
+    AstModule* modp() const { return m_modp; }
+
+    // Find a table (unpacked array) within the constant pool which is initialized with the
+    // given value, or create one if one does not already exists. The returned VarScope *might*
+    // have a different dtype than the given initp->dtypep(), including a different element type,
+    // but it will always have the same size and element width. In contexts where this matters,
+    // the caller must handle the dtype difference as appropriate.
+    AstVarScope* findTable(AstInitArray* initp);
+    // Find a constant within the constant pool which is initialized with the given value, or
+    // create one if one does not already exists. If 'mergeDType' is true, then the returned
+    // VarScope *might* have a different type than the given initp->dtypep(). In contexts where
+    // this matters, the caller must handle the dtype difference as appropriate. If 'mergeDType' is
+    // false, the returned VarScope will have _->dtypep()->sameTree(initp->dtypep()) return true.
+    AstVarScope* findConst(AstConst* initp, bool mergeDType);
+};
+
 //######################################################################
 // Top
 
@@ -9108,7 +9154,8 @@ class AstNetlist final : public AstNode {
     // Parents:   none
     // Children:  MODULEs & CFILEs
 private:
-    AstTypeTable* m_typeTablep = nullptr;  // Reference to top type table, for faster lookup
+    AstTypeTable* const m_typeTablep;  // Reference to top type table, for faster lookup
+    AstConstPool* const m_constPoolp;  // Reference to constant pool, for faster lookup
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
@@ -9116,8 +9163,7 @@ private:
     VTimescale m_timeprecision;  // Global time precision
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
 public:
-    AstNetlist()
-        : ASTGEN_SUPER_Netlist(new FileLine(FileLine::builtInFilename())) {}
+    AstNetlist();
     ASTNODE_NODE_FUNCS(Netlist)
     virtual const char* broken() const override {
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
@@ -9138,10 +9184,7 @@ public:
     AstNode* miscsp() const { return op3p(); }  // op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
-    void addTypeTablep(AstTypeTable* nodep) {
-        m_typeTablep = nodep;
-        addMiscsp(nodep);
-    }
+    AstConstPool* constPoolp() { return m_constPoolp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp() {
         if (!m_dollarUnitPkgp) {

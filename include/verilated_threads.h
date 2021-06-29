@@ -48,12 +48,12 @@
 #endif
 // clang-format on
 
-// VlMTaskVertex and VlThreadpool will work with multiple symbol table types.
+// VlMTaskVertex and VlThreadpool will work with multiple model class types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
 // as a void* here.
-using VlThrSymTab = void*;
+using VlSelfP = void*;
 
-using VlExecFnp = void (*)(bool, VlThrSymTab);
+using VlExecFnp = void (*)(VlSelfP, bool);
 
 // Track dependencies for a single MTask.
 class VlMTaskVertex final {
@@ -99,19 +99,19 @@ public:
     // false while it's still waiting on more dependencies.
     inline bool signalUpstreamDone(bool evenCycle) {
         if (evenCycle) {
-            vluint32_t upstreamDepsDone
+            const vluint32_t upstreamDepsDone
                 = 1 + m_upstreamDepsDone.fetch_add(1, std::memory_order_release);
             assert(upstreamDepsDone <= m_upstreamDepCount);
             return (upstreamDepsDone == m_upstreamDepCount);
         } else {
-            vluint32_t upstreamDepsDone_prev
+            const vluint32_t upstreamDepsDone_prev
                 = m_upstreamDepsDone.fetch_sub(1, std::memory_order_release);
             assert(upstreamDepsDone_prev > 0);
             return (upstreamDepsDone_prev == 1);
         }
     }
     inline bool areUpstreamDepsDone(bool evenCycle) const {
-        vluint32_t target = evenCycle ? m_upstreamDepCount : 0;
+        const vluint32_t target = evenCycle ? m_upstreamDepCount : 0;
         return m_upstreamDepsDone.load(std::memory_order_acquire) == target;
     }
     inline void waitUntilUpstreamDone(bool evenCycle) const {
@@ -177,15 +177,15 @@ private:
     // TYPES
     struct ExecRec {
         VlExecFnp m_fnp;  // Function to execute
-        VlThrSymTab m_sym;  // Symbol table to execute
+        VlSelfP m_selfp;  // Symbol table to execute
         bool m_evenCycle;  // Even/odd for flag alternation
         ExecRec()
             : m_fnp{nullptr}
-            , m_sym{nullptr}
+            , m_selfp{nullptr}
             , m_evenCycle{false} {}
-        ExecRec(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym)
+        ExecRec(VlExecFnp fnp, VlSelfP selfp, bool evenCycle)
             : m_fnp{fnp}
-            , m_sym{sym}
+            , m_selfp{selfp}
             , m_evenCycle{evenCycle} {}
     };
 
@@ -237,13 +237,13 @@ public:
         m_ready.erase(m_ready.begin());
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
-    inline void wakeUp() { addTask(nullptr, false, nullptr); }
-    inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym)
+    inline void wakeUp() { addTask(nullptr, nullptr, false); }
+    inline void addTask(VlExecFnp fnp, VlSelfP selfp, bool evenCycle)
         VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
         {
             const VerilatedLockGuard lk(m_mutex);
-            m_ready.emplace_back(fnp, evenCycle, sym);
+            m_ready.emplace_back(fnp, selfp, evenCycle);
             m_ready_size.fetch_add(1, std::memory_order_relaxed);
             notify = m_waiting;
         }

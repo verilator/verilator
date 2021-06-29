@@ -119,7 +119,7 @@ string AstNode::encodeName(const string& namein) {
             // a user identifier nor a temp we create in Verilator.
             // We also do *NOT* use __DOT__ etc, as we search for those
             // in some replacements, and don't want to mangle the user's names.
-            unsigned val = pos[0] & 0xff;  // Mask to avoid sign extension
+            const unsigned val = pos[0] & 0xff;  // Mask to avoid sign extension
             std::stringstream hex;
             hex << std::setfill('0') << std::setw(2) << std::hex << val;
             out += "__0" + hex.str();
@@ -1045,7 +1045,7 @@ void AstNode::dumpTreeFileGdb(const AstNode* nodep,  // LCOV_EXCL_START
         cout << "<nullptr>" << endl;
         return;
     }
-    string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);
+    const string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);
     v3Global.rootp()->dumpTreeFile(filename);
 }  // LCOV_EXCL_STOP
 
@@ -1178,7 +1178,7 @@ string AstNode::locationStr() const {
             str += modp->hierName();
             return str;
         } else if ((nvrp = VN_CAST_CONST(backp, NodeVarRef))) {
-            string prettyName = nvrp->prettyName();
+            const string prettyName = nvrp->prettyName();
             // VarRefs have not been flattened yet and do not contain location information
             if (prettyName != nvrp->name()) {
                 str += prettyName;

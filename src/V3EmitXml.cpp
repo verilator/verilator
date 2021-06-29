@@ -117,6 +117,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         iterateChildren(nodep);
         puts("</netlist>\n");
     }
+    virtual void visit(AstConstPool*) override {}
     virtual void visit(AstNodeModule* nodep) override {
         outputTag(nodep, "");
         puts(" origName=");
@@ -128,13 +129,14 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         outputChildrenEnd(nodep, "");
     }
     virtual void visit(AstVar* nodep) override {
-        AstVarType typ = nodep->varType();
-        string kw = nodep->verilogKwd();
-        string vt = nodep->dtypep()->name();
+        const AstVarType typ = nodep->varType();
+        const string kw = nodep->verilogKwd();
+        const string vt = nodep->dtypep()->name();
         outputTag(nodep, "");
         if (nodep->isIO()) {
             puts(" dir=");
             putsQuoted(kw);
+            if (nodep->pinNum() != 0) puts(" pinIndex=\"" + cvtToStr(nodep->pinNum()) + "\"");
             puts(" vartype=");
             putsQuoted(!vt.empty() ? vt : typ == AstVarType::PORT ? "port" : "unknown");
         } else {
@@ -181,7 +183,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
     }
     virtual void visit(AstModportVarRef* nodep) override {
         // Dump direction for Modport references
-        string kw = nodep->direction().xmlKwd();
+        const string kw = nodep->direction().xmlKwd();
         outputTag(nodep, "");
         puts(" direction=");
         putsQuoted(kw);
@@ -316,6 +318,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
+    virtual void visit(AstConstPool*) override {}
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->level() >= 0
             && nodep->level() <= 2) {  // ==2 because we don't add wrapper when in XML mode
@@ -373,9 +376,9 @@ public:
 void V3EmitXml::emitxml() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // All-in-one file
-    string filename = (v3Global.opt.xmlOutput().empty()
-                           ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"
-                           : v3Global.opt.xmlOutput());
+    const string filename = (v3Global.opt.xmlOutput().empty()
+                                 ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"
+                                 : v3Global.opt.xmlOutput());
     V3OutXmlFile of(filename);
     of.putsHeader();
     of.puts("<!-- DESCR"

@@ -97,7 +97,7 @@ void V3Error::incErrors() {
 }
 
 void V3Error::abortIfWarnings() {
-    bool exwarn = warnFatal() && warnCount();
+    const bool exwarn = warnFatal() && warnCount();
     if (errorCount() && exwarn) {
         v3fatalExit("Exiting due to " << std::dec << errorCount() << " error(s), "  //
                                       << warnCount() << " warning(s)\n");
@@ -132,7 +132,7 @@ bool V3Error::isError(V3ErrorCode code, bool supp) {
 
 string V3Error::msgPrefix() {
     V3ErrorCode code = s_errorCode;
-    bool supp = s_errorSuppressed;
+    const bool supp = s_errorSuppressed;
     if (supp) {
         return "-arning-suppressed: ";
     } else if (code == V3ErrorCode::USERINFO) {
@@ -210,8 +210,8 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     if (s_messages.find(msg) != s_messages.end()) return;
     s_messages.insert(msg);
     if (!locationStr.empty()) {
-        string locationMsg = warnMore() + locationStr + "\n";
-        size_t pos = msg.find('\n');
+        const string locationMsg = warnMore() + locationStr + "\n";
+        const size_t pos = msg.find('\n');
         msg.insert(pos + 1, locationMsg);
     }
     // Output

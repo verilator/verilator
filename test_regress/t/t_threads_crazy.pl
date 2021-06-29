@@ -10,6 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vltmt => 1);
 
+if ($Self->cfg_with_m32) {
+  skip("Does not work with -m32 (resource unavailable)");
+}
+
 compile(
     verilator_flags2 => ['--cc --threads 1024'],
     );

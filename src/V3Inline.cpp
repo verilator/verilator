@@ -165,7 +165,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         // Don't count assignments, as they'll likely flatten out
         // Still need to iterate though to nullify VarXRefs
-        int oldcnt = m_modp->user4();
+        const int oldcnt = m_modp->user4();
         iterateChildren(nodep);
         m_modp->user4(oldcnt);
     }
@@ -191,8 +191,8 @@ private:
             }
             modp->user4(statements);
 
-            int allowed = modp->user2();
-            int refs = modp->user3();
+            const int allowed = modp->user2();
+            const int refs = modp->user3();
 
             // Should we automatically inline this module?
             // If --flatten is specified, then force everything to be inlined that can be.
@@ -282,7 +282,7 @@ private:
         nodep->unlinkFrBack();
         m_modp->addInlinesp(nodep);
         // Rename
-        string name = m_cellp->name() + "__DOT__" + nodep->name();
+        const string name = m_cellp->name() + "__DOT__" + nodep->name();
         nodep->name(name);
         UINFO(6, "    Inline " << nodep << endl);
         // Do CellInlines under this, but don't move them
@@ -290,12 +290,12 @@ private:
     }
     virtual void visit(AstCell* nodep) override {
         // Cell under the inline cell, need to rename to avoid conflicts
-        string name = m_cellp->name() + "__DOT__" + nodep->name();
+        const string name = m_cellp->name() + "__DOT__" + nodep->name();
         nodep->name(name);
         iterateChildren(nodep);
     }
     virtual void visit(AstClass* nodep) override {
-        string name = m_cellp->name() + "__DOT__" + nodep->name();
+        const string name = m_cellp->name() + "__DOT__" + nodep->name();
         nodep->name(name);
         iterateChildren(nodep);
     }
@@ -376,7 +376,7 @@ private:
         }
         // Variable under the inline cell, need to rename to avoid conflicts
         // Also clear I/O bits, as it is now local.
-        string name = m_cellp->name() + "__DOT__" + nodep->name();
+        const string name = m_cellp->name() + "__DOT__" + nodep->name();
         if (!nodep->isFuncLocal() && !nodep->isClassMember()) nodep->inlineAttrReset(name);
         if (!m_cellp->isTrace()) nodep->trace(false);
         if (debug() >= 9) nodep->dumpTree(cout, "varchanged:");
@@ -415,7 +415,7 @@ private:
     }
     virtual void visit(AstVarXRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it
-        string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
+        const string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
         nodep->inlinedDots(newdots);
         for (string tryname = nodep->dotted(); true;) {
             if (m_renamedInterfaces.count(tryname)) {
@@ -434,7 +434,7 @@ private:
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it
-        string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
+        const string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
         nodep->inlinedDots(newdots);
         if (m_renamedInterfaces.count(nodep->dotted())) {
             nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
@@ -659,7 +659,7 @@ private:
                 AstCell* cellp;
                 if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
                     varp->user1p(cellp);
-                    string alias = m_scope + "__DOT__" + pinp->name();
+                    const string alias = m_scope + "__DOT__" + pinp->name();
                     cellp->addIntfRefp(new AstIntfRef(pinp->fileline(), alias));
                 }
             }

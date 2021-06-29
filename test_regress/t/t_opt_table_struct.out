@@ -1,0 +1,9 @@
+cyle 0 = {          0,     1,   2 }
+cyle 1 = {          1,     2,   3 }
+cyle 2 = {          2,     3,   4 }
+cyle 3 = {          0,     0,   0 }
+cyle 4 = {          4,     5,   6 }
+cyle 5 = {          5,     6,   7 }
+cyle 6 = {          0,     0,   0 }
+cyle 7 = {          0,     0,   0 }
+*-* All Finished *-*

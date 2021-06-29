@@ -202,7 +202,7 @@ int mon_check_props() {
     return 0;
 }
 
-int mon_check() {
+extern "C" int mon_check() {
     // Callback from initial block in monitor
     if (int status = mon_check_props()) return status;
     return 0;  // Ok

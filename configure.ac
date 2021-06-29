@@ -52,7 +52,7 @@ AC_MSG_CHECKING(whether to use tcmalloc)
 AC_ARG_ENABLE([tcmalloc],
               [AS_HELP_STRING([--enable-tcmalloc],
                               [Use libtcmalloc_minimal for faster dynamic memory
-                               management in Verilator binary@<:@default=check@:>@])],
+                               management in Verilator binary @<:@default=check@:>@])],
               [case "${enableval}" in
                 yes) CFG_WITH_TCMALLOC=yes ;;
                 no)  CFG_WITH_TCMALLOC=no ;;
@@ -60,6 +60,34 @@ AC_ARG_ENABLE([tcmalloc],
                esac],
               [CFG_WITH_TCMALLOC=check;])
 AC_MSG_RESULT($CFG_WITH_TCMALLOC)
+
+# Flag to enable -m32 build
+AC_MSG_CHECKING(whether to use -m32)
+AC_ARG_ENABLE([m32],
+              [AS_HELP_STRING([--enable-m32],
+                              [Use -m32 for all compilation and link,
+                               including Verialtor and generated models.])],
+              [case "${enableval}" in
+                yes) CFG_ENABLE_M32=yes ;;
+                no)  CFG_ENABLE_M32=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-m32]) ;;
+               esac],
+               CFG_ENABLE_M32=no)
+AC_MSG_RESULT($CFG_ENABLE_M32)
+
+# Flag to enable coverage build
+AC_MSG_CHECKING(whether to build for coverage collection)
+AC_ARG_ENABLE([coverage],
+              [AS_HELP_STRING([--enable-coverage],
+                              [Build Verilator for code coverage collection.
+                               For developers only.])],
+              [case "${enableval}" in
+                yes) CFG_ENABLE_COVERAGE=yes ;;
+                no)  CFG_ENABLE_COVERAGE=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-coverage]) ;;
+               esac],
+               CFG_ENABLE_COVERAGE=no)
+AC_MSG_RESULT($CFG_ENABLE_COVERAGE)
 
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
@@ -134,6 +162,11 @@ AC_RUN_IFELSE(
     AC_MSG_RESULT(yes),
     AC_MSG_RESULT(no);AC_MSG_ERROR([a working C++ compiler is required]),
     AC_MSG_RESULT(yes))
+
+AC_CHECK_PROG(AR,ar,ar)
+if test "x$AR" = "x" ; then
+   AC_MSG_ERROR([Cannot find "ar" in your PATH, please install it])
+fi
 
 AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
@@ -211,24 +244,34 @@ AC_DEFUN([_MY_CXX_CHECK_FLAG],
     CXXFLAGS="$ACO_SAVE_CXXFLAGS"
    ])
 
+AC_DEFUN([_MY_CXX_CHECK_IFELSE],
+   [# _MY_CXX_CHECK_IFELSE(option,action-if-supported,action-if-not-supported)
+    # Check if compiler supports specific option. If it does,
+    # do action-if-supported, otherwise do action-if-not-supported
+    _MY_CXX_CHECK_FLAG($1)
+    if test "$_my_result" = "yes" ; then
+      true
+      $2
+    else
+      true
+      $3
+    fi
+   ])
+
 AC_DEFUN([_MY_CXX_CHECK_SET],
-   [# _MY_CXX_CHECK_SET(variable,flag) -- Check if compiler supports specific options
-    # If it does, set variable to flag, only if not previously set
+   [# _MY_CXX_CHECK_SET(variable,option)
+    # Check if compiler supports specific option. If it does,
+    # set variable to option, only if not previously set.
     if test "$$1" = ""; then
-       _MY_CXX_CHECK_FLAG($2)
-       if test "$_my_result" = "yes" ; then
-          $1="$2"
-       fi
+       _MY_CXX_CHECK_IFELSE($2, $1="$2")
     fi
    ])
 
 AC_DEFUN([_MY_CXX_CHECK_OPT],
-   [# _MY_CXX_CHECK_OPT(flag) -- Check if compiler supports specific options
-    # If it does, append flag to variable
-    _MY_CXX_CHECK_FLAG($2)
-    if test "$_my_result" = "yes" ; then
-       $1="$$1 $2"
-    fi
+   [# _MY_CXX_CHECK_OPT(variable,option)
+    # Check if compiler supports specific option. If it does,
+    # append option to variable
+    _MY_CXX_CHECK_IFELSE($2, $1="$$1 $2")
    ])
 
 AC_DEFUN([_MY_LDLIBS_CHECK_FLAG],
@@ -269,6 +312,33 @@ AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
     # options. If it does, append flag to variable.
     _MY_LDLIBS_CHECK_IFELSE($2, $1="$$1 $2")
    ])
+
+# When using -m32. Check this first as later checks may fail with the -m32 flag.
+if test "$CFG_ENABLE_M32" = "yes"; then
+  _MY_CXX_CHECK_IFELSE(
+    -m32,
+    [CXX="$CXX -m32"],
+    [AC_MSG_ERROR([--enable-m32 was given but compiler does not support -m32])])
+fi
+
+# Similarly, add the coverage flags early as they influence later checks.
+if test "$CFG_ENABLE_COVERAGE" = "yes"; then
+  _MY_CXX_CHECK_OPT(CXX,--coverage)
+  # Otherwise inline may not show as uncovered
+  #  If we use this then e.g. verilated.h functions properly show up
+  #  if unused.
+  #  However, VerilatedSerialize::write then changes from covered
+  #  to uncovered (in G++ 9.3.0) even with all inlining turned off.
+  #  Having false negative coverage is more effort then missing negatives.
+  #  Also this seems to explode the runtime (since a lot more data).
+  #  _MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
+  # Otherwise static may not show as uncovered
+  _MY_CXX_CHECK_OPT(CXX,-fkeep-static-functions)
+  # Exceptions can pollute the branch coverage data
+  _MY_CXX_CHECK_OPT(CXX,-fno-exceptions)
+  # Define-out some impossible stuff
+  _MY_CXX_CHECK_OPT(CXX,-DVL_GCOV)
+fi
 
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
@@ -323,7 +393,9 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
 AC_SUBST(CFG_CXXFLAGS_PARSER)
 
 # Flags for compiling the debug version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
+if test "$CFG_ENABLE_COVERAGE" = "no"; then # Do not optimize for the coverage build
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-Og)
+fi
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-ggdb)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-gz)
 AC_SUBST(CFG_CXXFLAGS_DEBUG)

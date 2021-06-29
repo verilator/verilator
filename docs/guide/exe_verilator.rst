@@ -527,14 +527,6 @@ Summary:
 
    See :vlopt:`-y`.
 
-.. option:: --inhibit-sim
-
-   Rarely needed and deprecated.  Create a :code:`inhibitSim(bool)`
-   function to enable and disable evaluation.  This allows an upper level
-   testbench to disable modules that are not important in a given
-   simulation, without needing to recompile or change the SystemC modules
-   instantiated.
-
 .. option:: --inline-mult <value>
 
    Tune the inlining of modules.  The default value of 2000 specifies that up
@@ -633,6 +625,13 @@ Summary:
    The directory is created if it does not exist and the parent directories
    exist; otherwise manually create the Mdir before calling Verilator.
 
+.. option:: --no-merge-const-pool
+
+   Rarely needed.  In order to minimize cache footprint, values of different
+   data type, that are yet emitted identically in C++ are merged in the
+   constant pool.  This option disables this and causes every constant pool
+   entry with a distinct data type to be emitted separately.
+
 .. option:: --mod-prefix <topname>
 
    Specifies the name to prepend to all lower level classes.  Defaults to
@@ -653,10 +652,6 @@ Summary:
 .. option:: --no-pins64
 
    Backward compatible alias for :vlopt:`--pins-bv 33 <--pins-bv>`.
-
-.. option:: --no-relative-cfuncs
-
-   Deprecated.
 
 .. option:: --no-skip-identical =item --skip-identical
 

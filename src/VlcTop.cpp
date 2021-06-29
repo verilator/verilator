@@ -37,14 +37,14 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     VlcTest* testp = tests().newTest(filename, 0, 0);
 
     while (!is.eof()) {
-        string line = V3Os::getline(is);
+        const string line = V3Os::getline(is);
         // UINFO(9," got "<<line<<endl);
         if (line[0] == 'C') {
             string::size_type secspace = 3;
             for (; secspace < line.length(); secspace++) {
                 if (line[secspace] == '\'' && line[secspace + 1] == ' ') break;
             }
-            string point = line.substr(3, secspace - 3);
+            const string point = line.substr(3, secspace - 3);
             vluint64_t hits = std::atoll(line.c_str() + secspace + 1);
             // UINFO(9,"   point '"<<point<<"'"<<" "<<hits<<endl);
 
@@ -112,7 +112,7 @@ void VlcTop::writeInfo(const string& filename) {
         os << "SF:" << source.name() << '\n';
         VlcSource::LinenoMap& lines = source.lines();
         for (auto& li : lines) {
-            int lineno = li.first;
+            const int lineno = li.first;
             VlcSource::ColumnMap& cmap = li.second;
             bool first = true;
             vluint64_t min_count = 0;  // Minimum across all columns on line
@@ -198,14 +198,14 @@ void VlcTop::annotateCalc() {
     // Calculate per-line information into filedata structure
     for (const auto& i : m_points) {
         const VlcPoint& point = m_points.pointNumber(i.second);
-        string filename = point.filename();
-        int lineno = point.lineno();
+        const string filename = point.filename();
+        const int lineno = point.lineno();
         if (!filename.empty() && lineno != 0) {
             VlcSource& source = sources().findNewSource(filename);
-            string threshStr = point.thresh();
+            const string threshStr = point.thresh();
             unsigned thresh
                 = (!threshStr.empty()) ? std::atoi(threshStr.c_str()) : opt.annotateMin();
-            bool ok = (point.count() >= thresh);
+            const bool ok = (point.count() >= thresh);
             UINFO(9, "AnnoCalc count " << filename << ":" << lineno << ":" << point.column() << " "
                                        << point.count() << " " << point.linescov() << '\n');
             // Base coverage
@@ -214,7 +214,7 @@ void VlcTop::annotateCalc() {
             bool range = false;
             int start = 0;
             int end = 0;
-            string linescov = point.linescov();
+            const string linescov = point.linescov();
             for (const char* covp = linescov.c_str(); true; ++covp) {
                 if (!*covp || *covp == ',') {  // Ending
                     for (int lni = start; start && lni <= end; ++lni) {
@@ -262,7 +262,7 @@ void VlcTop::annotateCalcNeeded() {
             }
         }
     }
-    float pct = totCases ? (100 * totOk / totCases) : 0;
+    const float pct = totCases ? (100 * totOk / totCases) : 0;
     cout << "Total coverage (" << totOk << "/" << totCases << ") ";
     cout << std::fixed << std::setw(3) << std::setprecision(2) << pct << "%\n";
     if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
@@ -274,8 +274,8 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
     for (auto& si : m_sources) {
         VlcSource& source = si.second;
         if (!source.needed()) continue;
-        string filename = source.name();
-        string outfilename = dirname + "/" + V3Os::filenameNonDir(filename);
+        const string filename = source.name();
+        const string outfilename = dirname + "/" + V3Os::filenameNonDir(filename);
 
         UINFO(1, "annotateOutputFile " << filename << " -> " << outfilename << endl);
 

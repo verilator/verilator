@@ -79,19 +79,19 @@ void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
 
 void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width) {
     // See also VL_SEL_WWI
-    int msb = lsb + width - 1;
-    int word_shift = VL_BITWORD_I(lsb);
+    const int msb = lsb + width - 1;
+    const int word_shift = VL_BITWORD_I(lsb);
     if (VL_BITBIT_I(lsb) == 0) {
         // Just a word extract
         for (int i = 0; i < VL_WORDS_I(width); ++i) dp[i] = sp[i + word_shift];
     } else {
-        int loffset = lsb & VL_SIZEBITS_I;
-        int nbitsfromlow = 32 - loffset;  // bits that end up in lword (know loffset!=0)
+        const int loffset = lsb & VL_SIZEBITS_I;
+        const int nbitsfromlow = 32 - loffset;  // bits that end up in lword (know loffset!=0)
         // Middle words
-        int words = VL_WORDS_I(msb - lsb + 1);
+        const int words = VL_WORDS_I(msb - lsb + 1);
         for (int i = 0; i < words; ++i) {
             dp[i] = sp[i + word_shift] >> loffset;
-            int upperword = i + word_shift + 1;
+            const int upperword = i + word_shift + 1;
             if (upperword <= static_cast<int>(VL_BITWORD_I(msb))) {
                 dp[i] |= sp[upperword] << nbitsfromlow;
             }
@@ -101,20 +101,20 @@ void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width)
     dp[VL_WORDS_I(width) - 1] &= VL_MASK_I(width);
 }
 void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lsb, int width) {
-    int msb = lsb + width - 1;
-    int word_shift = VL_BITWORD_I(lsb);
+    const int msb = lsb + width - 1;
+    const int word_shift = VL_BITWORD_I(lsb);
     if (VL_BITBIT_I(lsb) == 0) {
         // Just a word extract
         for (int i = 0; i < VL_WORDS_I(width); ++i) dp[i] = sp[i + word_shift];
     } else {
-        int loffset = lsb & VL_SIZEBITS_I;
-        int nbitsfromlow = 32 - loffset;  // bits that end up in lword (know loffset!=0)
+        const int loffset = lsb & VL_SIZEBITS_I;
+        const int nbitsfromlow = 32 - loffset;  // bits that end up in lword (know loffset!=0)
         // Middle words
-        int words = VL_WORDS_I(msb - lsb + 1);
+        const int words = VL_WORDS_I(msb - lsb + 1);
         for (int i = 0; i < words; ++i) {
             dp[i].aval = sp[i + word_shift].aval >> loffset;
             dp[i].bval = sp[i + word_shift].bval >> loffset;
-            int upperword = i + word_shift + 1;
+            const int upperword = i + word_shift + 1;
             if (upperword <= static_cast<int>(VL_BITWORD_I(msb))) {
                 dp[i].aval |= sp[upperword].aval << nbitsfromlow;
                 dp[i].bval |= sp[upperword].bval << nbitsfromlow;
@@ -127,22 +127,22 @@ void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lsb, int 
 }
 void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int lbit, int width) {
     // See also _vl_insert_WI
-    int hbit = lbit + width - 1;
-    int hoffset = VL_BITBIT_I(hbit);
-    int loffset = VL_BITBIT_I(lbit);
+    const int hbit = lbit + width - 1;
+    const int hoffset = VL_BITBIT_I(hbit);
+    const int loffset = VL_BITBIT_I(lbit);
     if (hoffset == VL_SIZEBITS_I && loffset == 0) {
         // Fast and common case, word based insertion
         dp[VL_BITWORD_I(lbit)] = s;
     } else {
-        int hword = VL_BITWORD_I(hbit);
-        int lword = VL_BITWORD_I(lbit);
+        const int hword = VL_BITWORD_I(hbit);
+        const int lword = VL_BITWORD_I(lbit);
         if (hword == lword) {  // know < 32 bits because above checks it
-            IData insmask = (VL_MASK_I(hoffset - loffset + 1)) << loffset;
+            const IData insmask = (VL_MASK_I(hoffset - loffset + 1)) << loffset;
             dp[lword] = (dp[lword] & ~insmask) | ((s << loffset) & insmask);
         } else {
-            IData hinsmask = (VL_MASK_I(hoffset - 0 + 1)) << 0;
-            IData linsmask = (VL_MASK_I(31 - loffset + 1)) << loffset;
-            int nbitsonright = 32 - loffset;  // bits that end up in lword
+            const IData hinsmask = (VL_MASK_I(hoffset - 0 + 1)) << 0;
+            const IData linsmask = (VL_MASK_I(31 - loffset + 1)) << loffset;
+            const int nbitsonright = 32 - loffset;  // bits that end up in lword
             dp[lword] = (dp[lword] & ~linsmask) | ((s << loffset) & linsmask);
             dp[hword] = (dp[hword] & ~hinsmask) | ((s >> nbitsonright) & hinsmask);
         }
@@ -150,24 +150,24 @@ void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int lbit, int width) 
 }
 // cppcheck-suppress passedByValue
 void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int width) {
-    int hbit = lbit + width - 1;
-    int hoffset = VL_BITBIT_I(hbit);
-    int loffset = VL_BITBIT_I(lbit);
+    const int hbit = lbit + width - 1;
+    const int hoffset = VL_BITBIT_I(hbit);
+    const int loffset = VL_BITBIT_I(lbit);
     if (hoffset == VL_SIZEBITS_I && loffset == 0) {
         // Fast and common case, word based insertion
         dp[VL_BITWORD_I(lbit)].aval = s.aval;
         dp[VL_BITWORD_I(lbit)].bval = s.bval;
     } else {
-        int hword = VL_BITWORD_I(hbit);
-        int lword = VL_BITWORD_I(lbit);
+        const int hword = VL_BITWORD_I(hbit);
+        const int lword = VL_BITWORD_I(lbit);
         if (hword == lword) {  // know < 32 bits because above checks it
-            IData insmask = (VL_MASK_I(hoffset - loffset + 1)) << loffset;
+            const IData insmask = (VL_MASK_I(hoffset - loffset + 1)) << loffset;
             dp[lword].aval = (dp[lword].aval & ~insmask) | ((s.aval << loffset) & insmask);
             dp[lword].bval = (dp[lword].bval & ~insmask) | ((s.bval << loffset) & insmask);
         } else {
-            IData hinsmask = (VL_MASK_I(hoffset - 0 + 1)) << 0;
-            IData linsmask = (VL_MASK_I(31 - loffset + 1)) << loffset;
-            int nbitsonright = 32 - loffset;  // bits that end up in lword
+            const IData hinsmask = (VL_MASK_I(hoffset - 0 + 1)) << 0;
+            const IData linsmask = (VL_MASK_I(31 - loffset + 1)) << loffset;
+            const int nbitsonright = 32 - loffset;  // bits that end up in lword
             dp[lword].aval = (dp[lword].aval & ~linsmask) | ((s.aval << loffset) & linsmask);
             dp[lword].bval = (dp[lword].bval & ~linsmask) | ((s.bval << loffset) & linsmask);
             dp[hword].aval = (dp[hword].aval & ~hinsmask) | ((s.aval >> nbitsonright) & hinsmask);
@@ -279,7 +279,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
     case VLVT_UINT16: d[0] = *(reinterpret_cast<SData*>(datap)); return;
     case VLVT_UINT32: d[0] = *(reinterpret_cast<IData*>(datap)); return;
     case VLVT_UINT64: {
-        WData lwp[2];
+        VlWide<2> lwp;
         VL_SET_WQ(lwp, *(reinterpret_cast<QData*>(datap)));
         d[0] = lwp[0];
         d[1] = lwp[1];
@@ -316,7 +316,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         d[0].bval = 0;
         return;
     case VLVT_UINT64: {
-        WData lwp[2];
+        VlWide<2> lwp;
         VL_SET_WQ(lwp, *(reinterpret_cast<QData*>(datap)));
         d[0].aval = lwp[0];
         d[0].bval = 0;
@@ -460,13 +460,13 @@ void svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s, int 
     switch (varp->udims()) {
     case 1: _vl_svPutBitArrElemVecVal(d, s, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svPutBitArrElemVecVal(d, s, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svPutBitArrElemVecVal(d, s, 3, indx1, indx2, indx3);
         break;
     }
@@ -492,13 +492,13 @@ void svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s, 
     switch (varp->udims()) {
     case 1: _vl_svPutLogicArrElemVecVal(d, s, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svPutLogicArrElemVecVal(d, s, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svPutLogicArrElemVecVal(d, s, 3, indx1, indx2, indx3);
         break;
     }
@@ -528,13 +528,13 @@ void svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s, int indx1,
     switch (varp->udims()) {
     case 1: _vl_svGetBitArrElemVecVal(d, s, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svGetBitArrElemVecVal(d, s, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svGetBitArrElemVecVal(d, s, 3, indx1, indx2, indx3);
         break;
     }
@@ -559,13 +559,13 @@ void svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s, int in
     switch (varp->udims()) {
     case 1: _vl_svGetLogicArrElemVecVal(d, s, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svGetLogicArrElemVecVal(d, s, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svGetLogicArrElemVecVal(d, s, 3, indx1, indx2, indx3);
         break;
     }
@@ -592,13 +592,13 @@ svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...) {
     switch (varp->udims()) {
     case 1: out = _vl_svGetBitArrElem(s, 1, indx1, 0, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 2, indx1, indx2, 0, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 3, indx1, indx2, indx3, 0);
         break;
     }
@@ -625,13 +625,13 @@ svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...) {
     switch (varp->udims()) {
     case 1: out = _vl_svGetBitArrElem(s, 1, indx1, 0, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 2, indx1, indx2, 0, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 3, indx1, indx2, indx3, 0);
         break;
     }
@@ -660,13 +660,13 @@ void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...) {
     switch (varp->udims()) {
     case 1: _vl_svPutBitArrElem(d, value, 1, indx1, 0, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 2, indx1, indx2, 0, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 3, indx1, indx2, indx3, 0);
         break;
     }
@@ -691,13 +691,13 @@ void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1, ...)
     switch (varp->udims()) {
     case 1: _vl_svPutBitArrElem(d, value, 1, indx1, 0, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 2, indx1, indx2, 0, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 3, indx1, indx2, indx3, 0);
         break;
     }

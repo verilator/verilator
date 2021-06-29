@@ -205,7 +205,7 @@ public:
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
         for (const auto& cppfile : cppFiles) {
             of.puts("\t" + V3Os::filenameNonExt(cppfile) + " \\\n");
-            string dir = V3Os::filenameDir(cppfile);
+            const string dir = V3Os::filenameDir(cppfile);
             dirs.insert(dir);
         }
         of.puts("\n");
@@ -230,7 +230,7 @@ public:
             of.puts("VPATH += $(VM_USER_DIR)\n");
             of.puts("\n");
             for (const string& cppfile : cppFiles) {
-                string basename = V3Os::filenameNonExt(cppfile);
+                const string basename = V3Os::filenameNonExt(cppfile);
                 // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
                 of.puts(basename + ".o: " + cppfile + "\n");
                 of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");

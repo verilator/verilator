@@ -19,12 +19,11 @@ execute(
     expect_filename => $Self->{golden_filename},
     );
 
-if ($Self->{vlt}) {
-    # Note, with vltmt this might be split differently, so only checking vlt
-    file_grep($Self->{stats}, qr/Optimizations, Prelim static constants extracted\s+(\d+)/i,
-              2);
-    file_grep($Self->{stats}, qr/Optimizations, Prelim static constants reused\s+(\d+)/i,
-              6);
+if ($Self->{vlt_all}) {
+    file_grep($Self->{stats}, qr/Optimizations, Prelim extracted value to ConstPool\s+(\d+)/i,
+              8);
+    file_grep($Self->{stats}, qr/ConstPool, Constants emitted\s+(\d+)/i,
+              1);
 }
 
 ok(1);

@@ -550,7 +550,7 @@ void V3PreProcImp::unputString(const string& strg) {
 }
 
 void V3PreProcImp::unputDefrefString(const string& strg) {
-    int multiline = std::count(strg.begin(), strg.end(), '\n');
+    const int multiline = std::count(strg.begin(), strg.end(), '\n');
     unputString(strg);
     // A define that inserts multiple newlines are really attributed to one source line,
     // so temporarily don't increment lineno.
@@ -591,7 +591,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
         UINFO(4, "defineArg[" << i << "] = '" << refp->args()[i] << "'" << endl);
     }
     // Grab value
-    string value = defValue(refp->name());
+    const string value = defValue(refp->name());
     UINFO(4, "defineValue    '" << V3PreLex::cleanDbgStrg(value) << "'" << endl);
 
     std::map<const string, string> argValueByName;
@@ -603,7 +603,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
         bool quote = false;
         bool haveDefault = false;
         // Note there's a leading ( and trailing ), so parens==1 is the base parsing level
-        string params = refp->params();  // Must keep str in scope to get pointer
+        const string params = refp->params();  // Must keep str in scope to get pointer
         const char* cp = params.c_str();
         if (*cp == '(') cp++;
         for (; *cp; cp++) {
@@ -626,7 +626,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
                             // A call `def( a ) must be equivalent to `def(a ), so trimWhitespace
                             // At one point we didn't trim trailing
                             // whitespace, but this confuses `"
-                            string arg = trimWhitespace(refp->args()[numArgs], true);
+                            const string arg = trimWhitespace(refp->args()[numArgs], true);
                             if (arg != "") valueDef = arg;
                         } else if (!haveDefault) {
                             error("Define missing argument '" + argName + "' for: " + refp->name()
@@ -698,7 +698,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
                 const auto iter = argValueByName.find(argName);
                 if (iter != argValueByName.end()) {
                     // Substitute
-                    string subst = iter->second;
+                    const string subst = iter->second;
                     if (subst == "") {
                         // Normally `` is removed later, but with no token after, we're otherwise
                         // stuck, so remove proceeding ``
@@ -780,7 +780,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
 
     // Read a list<string> with the whole file.
     StrList wholefile;
-    bool ok = filterp->readWholefile(filename, wholefile /*ref*/);
+    const bool ok = filterp->readWholefile(filename, wholefile /*ref*/);
     if (!ok) {
         error("File not found: " + filename + "\n");
         return;
@@ -956,7 +956,7 @@ void V3PreProcImp::debugToken(int tok, const char* cmtp) {
         string::size_type pos;
         while ((pos = buf.find('\n')) != string::npos) { buf.replace(pos, 1, "\\n"); }
         while ((pos = buf.find('\r')) != string::npos) { buf.replace(pos, 1, "\\r"); }
-        string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+        const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
         fprintf(stderr, "%s: %s %s %s(%d) dr%d:  <%d>%-10s: %s\n", flcol.c_str(), cmtp,
                 (m_off ? "of" : "on"), procStateName(state()), static_cast<int>(m_states.size()),
                 static_cast<int>(m_defRefs.size()), m_lexp->currentStartState(), tokenName(tok),
@@ -1069,11 +1069,11 @@ int V3PreProcImp::getStateToken() {
                         error("`elsif with no matching `if\n");
                     } else {
                         // Handle `else portion
-                        VPreIfEntry lastIf = m_ifdefStack.top();
+                        const VPreIfEntry lastIf = m_ifdefStack.top();
                         m_ifdefStack.pop();
                         if (!lastIf.on()) parsingOn();
                         // Handle `if portion
-                        bool enable = !lastIf.everOn() && defExists(m_lastSym);
+                        const bool enable = !lastIf.everOn() && defExists(m_lastSym);
                         UINFO(4, "Elsif " << m_lastSym << (enable ? " ON" : " OFF") << endl);
                         m_ifdefStack.push(VPreIfEntry(enable, lastIf.everOn()));
                         if (!enable) parsingOff();
@@ -1142,7 +1142,7 @@ int V3PreProcImp::getStateToken() {
                          << "'  formals='" << V3PreLex::cleanDbgStrg(m_formals) << "'\n";
                 }
                 // Add any formals
-                string formals = m_formals;
+                const string formals = m_formals;
                 string value = m_lexp->m_defValue;
                 // Remove returns
                 // Not removing returns in values has two problems,
@@ -1165,7 +1165,7 @@ int V3PreProcImp::getStateToken() {
                     define(fileline(), m_lastSym, value, formals, false);
                 }
             } else {
-                string msg = string("Bad define text, unexpected ") + tokenName(tok) + "\n";
+                const string msg = string("Bad define text, unexpected ") + tokenName(tok) + "\n";
                 fatalSrc(msg);
             }
             statePop();
@@ -1220,7 +1220,7 @@ int V3PreProcImp::getStateToken() {
                         if (VL_UNCOVERABLE(m_joinStack.empty())) {
                             fatalSrc("`` join stack empty, but in a ``");
                         }
-                        string lhs = m_joinStack.top();
+                        const string lhs = m_joinStack.top();
                         m_joinStack.pop();
                         out.insert(0, lhs);
                         UINFO(5, "``-end-defarg Out:" << out << endl);
@@ -1309,12 +1309,12 @@ int V3PreProcImp::getStateToken() {
                 if (VL_UNCOVERABLE(m_joinStack.empty())) {
                     fatalSrc("`` join stack empty, but in a ``");
                 }
-                string lhs = m_joinStack.top();
+                const string lhs = m_joinStack.top();
                 m_joinStack.pop();
                 UINFO(5, "`` LHS:" << lhs << endl);
                 string rhs(yyourtext(), yyourleng());
                 UINFO(5, "`` RHS:" << rhs << endl);
-                string out = lhs + rhs;
+                const string out = lhs + rhs;
                 UINFO(5, "`` Out:" << out << endl);
                 unputString(out);
                 statePop();
@@ -1323,7 +1323,7 @@ int V3PreProcImp::getStateToken() {
                 // Other compilers just ignore this, so no warning
                 // "Expecting symbol to terminate ``; whitespace etc cannot
                 // follow ``. Found: "+tokenName(tok)+"\n"
-                string lhs = m_joinStack.top();
+                const string lhs = m_joinStack.top();
                 m_joinStack.pop();
                 unputString(lhs);
                 statePop();
@@ -1384,9 +1384,9 @@ int V3PreProcImp::getStateToken() {
             if (m_ifdefStack.empty()) {
                 error("`else with no matching `if\n");
             } else {
-                VPreIfEntry lastIf = m_ifdefStack.top();
+                const VPreIfEntry lastIf = m_ifdefStack.top();
                 m_ifdefStack.pop();
-                bool enable = !lastIf.everOn();
+                const bool enable = !lastIf.everOn();
                 UINFO(4, "Else " << (enable ? " ON" : " OFF") << endl);
                 m_ifdefStack.push(VPreIfEntry(enable, lastIf.everOn()));
                 if (!lastIf.on()) parsingOn();
@@ -1398,7 +1398,7 @@ int V3PreProcImp::getStateToken() {
             if (m_ifdefStack.empty()) {
                 error("`endif with no matching `if\n");
             } else {
-                VPreIfEntry lastIf = m_ifdefStack.top();
+                const VPreIfEntry lastIf = m_ifdefStack.top();
                 m_ifdefStack.pop();
                 if (!lastIf.on()) parsingOn();
                 // parsingOn() really only enables parsing if
@@ -1432,7 +1432,7 @@ int V3PreProcImp::getStateToken() {
                     goto next_tok;
                 }
             } else {
-                string params = defParams(name);
+                const string params = defParams(name);
                 if (params == "0" || params == "") {  // Found, as simple substitution
                     string out;
                     if (!m_off) {
@@ -1447,7 +1447,7 @@ int V3PreProcImp::getStateToken() {
                             if (VL_UNCOVERABLE(m_joinStack.empty())) {
                                 fatalSrc("`` join stack empty, but in a ``");
                             }
-                            string lhs = m_joinStack.top();
+                            const string lhs = m_joinStack.top();
                             m_joinStack.pop();
                             out.insert(0, lhs);
                             UINFO(5, "``-end-defref Out:" << out << endl);
@@ -1533,11 +1533,11 @@ int V3PreProcImp::getFinalToken(string& buf) {
         m_finToken = getStateToken();
         m_finBuf = string(yyourtext(), yyourleng());
     }
-    int tok = m_finToken;
+    const int tok = m_finToken;
     buf = m_finBuf;
     if (false && debug() >= 5) {
-        string bufcln = V3PreLex::cleanDbgStrg(buf);
-        string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+        const string bufcln = V3PreLex::cleanDbgStrg(buf);
+        const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
         fprintf(stderr, "%s: FIN:      %-10s: %s\n", flcol.c_str(), tokenName(tok),
                 bufcln.c_str());
     }
@@ -1552,7 +1552,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
             if (int outBehind
                 = (m_lexp->m_tokFilelinep->lastLineno() - m_finFilelinep->lastLineno())) {
                 if (debug() >= 5) {
-                    string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+                    const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
                     fprintf(stderr, "%s: FIN: readjust, fin at %d  request at %d\n", flcol.c_str(),
                             m_finFilelinep->lastLineno(), m_lexp->m_tokFilelinep->lastLineno());
                 }
@@ -1594,10 +1594,10 @@ string V3PreProcImp::getline() {
     bool gotEof = false;
     while (nullptr == (rtnp = strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
         string buf;
-        int tok = getFinalToken(buf /*ref*/);
+        const int tok = getFinalToken(buf /*ref*/);
         if (debug() >= 5) {
-            string bufcln = V3PreLex::cleanDbgStrg(buf);
-            string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+            const string bufcln = V3PreLex::cleanDbgStrg(buf);
+            const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
             fprintf(stderr, "%s: GETFETC:  %-10s: %s\n", flcol.c_str(), tokenName(tok),
                     bufcln.c_str());
         }
@@ -1613,12 +1613,12 @@ string V3PreProcImp::getline() {
     }
 
     // Make new string with data up to the newline.
-    int len = rtnp - m_lineChars.c_str() + 1;
+    const int len = rtnp - m_lineChars.c_str() + 1;
     string theLine(m_lineChars, 0, len);
     m_lineChars = m_lineChars.erase(0, len);  // Remove returned characters
     if (debug() >= 4) {
-        string lncln = V3PreLex::cleanDbgStrg(theLine);
-        string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+        const string lncln = V3PreLex::cleanDbgStrg(theLine);
+        const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
         fprintf(stderr, "%s: GETLINE:  %s\n", flcol.c_str(), lncln.c_str());
     }
     return theLine;

@@ -17,11 +17,10 @@ bool check() {
     bool verbose = false;
 #endif
 
-    int Y = ((tb->OE1) & (!tb->OE2))
-                ? tb->A1
-                : ((!tb->OE1) & (tb->OE2))
-                      ? tb->A2
-                      : ((tb->OE1) & (tb->OE2)) ? (tb->A1 | tb->A2) : 3;  // pullup
+    int Y = ((tb->OE1) & (!tb->OE2))   ? tb->A1
+            : ((!tb->OE1) & (tb->OE2)) ? tb->A2
+            : ((tb->OE1) & (tb->OE2))  ? (tb->A1 | tb->A2)
+                                       : 3;  // pullup
 
     int W = (((tb->OE2) ? (tb->A2 & 0x1) : 0) << tb->A1)
             | (((tb->OE1) ? (tb->A2 >> 1) & 0x1 : 0) << tb->A2);

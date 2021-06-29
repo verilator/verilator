@@ -103,7 +103,7 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 #else
     // setenv() replaced by putenv() in Solaris environment. Prototype is different
     // putenv() requires NAME=VALUE format
-    string vareq = envvar + "=" + value;
+    const string vareq = envvar + "=" + value;
     putenv(const_cast<char*>(vareq.c_str()));
 #endif
 }
@@ -168,7 +168,7 @@ string V3Os::filenameSubstitute(const string& filename) {
                 || ((brackets == PAREN) && (filename[endpos + 1] != ')'))) {
                 v3fatal("Unmatched brackets in variable substitution in file: " + filename);
             }
-            string envvar = filename.substr(pos + 1, endpos - pos);
+            const string envvar = filename.substr(pos + 1, endpos - pos);
             string envvalue;
             if (!envvar.empty()) envvalue = getenvStr(envvar, "");
             if (!envvalue.empty()) {
@@ -239,7 +239,7 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
     if (DIR* dirp = opendir(dir.c_str())) {
         while (struct dirent* direntp = readdir(dirp)) {
             if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
-                string fullname = dir + "/" + string(direntp->d_name);
+                const string fullname = dir + "/" + string(direntp->d_name);
 #if defined(_WIN32) || defined(__MINGW32__)
                 _unlink(fullname.c_str());
 #else
@@ -269,8 +269,8 @@ string V3Os::trueRandom(size_t size) {
     // Note: std::string.data() returns a non-const Char* from C++17 onwards.
     // For pre-C++17, this cast is OK in practice, even though it's UB.
 #if defined(_WIN32) || defined(__MINGW32__)
-    NTSTATUS hr = BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(data), size,
-                                  BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    const NTSTATUS hr = BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(data), size,
+                                        BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     if (!BCRYPT_SUCCESS(hr)) v3fatal("Could not acquire random data.");
 #else
     std::ifstream is("/dev/urandom", std::ios::in | std::ios::binary);
@@ -307,7 +307,7 @@ uint64_t V3Os::timeUsecs() {
 
 uint64_t V3Os::memUsageBytes() {
 #if defined(_WIN32) || defined(__MINGW32__)
-    HANDLE process = GetCurrentProcess();
+    const HANDLE process = GetCurrentProcess();
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(process, &pmc, sizeof(pmc))) {
         // The best we can do using simple Windows APIs is to get the size of the working set.
@@ -320,10 +320,10 @@ uint64_t V3Os::memUsageBytes() {
     FILE* fp = fopen(statmFilename, "r");
     if (!fp) return 0;
     vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    int items = fscanf(fp,
-                       "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
-                       "u %" VL_PRI64 "u %" VL_PRI64 "u",
-                       &size, &resident, &share, &text, &lib, &data, &dt);
+    const int items = fscanf(fp,
+                             "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
+                             "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u",
+                             &size, &resident, &share, &text, &lib, &data, &dt);
     fclose(fp);
     if (VL_UNCOVERABLE(7 != items)) return 0;
     return (text + data) * getpagesize();

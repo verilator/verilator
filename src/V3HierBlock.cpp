@@ -309,7 +309,7 @@ bool V3HierBlockPlan::isHierBlock(const AstNodeModule* modp) const {
 }
 
 void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams) {
-    iterator it = m_blocks.find(modp);
+    const iterator it = m_blocks.find(modp);
     if (it == m_blocks.end()) {
         V3HierBlock* hblockp = new V3HierBlock(modp, gparams);
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << gparams.size() << " parameters"
@@ -319,9 +319,9 @@ void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>&
 }
 
 void V3HierBlockPlan::registerUsage(const AstNodeModule* parentp, const AstNodeModule* childp) {
-    iterator parent = m_blocks.find(parentp);
+    const iterator parent = m_blocks.find(parentp);
     UASSERT_OBJ(parent != m_blocks.end(), parentp, "must be added");
-    iterator child = m_blocks.find(childp);
+    const iterator child = m_blocks.find(childp);
     if (child != m_blocks.end()) {
         UINFO(3, "Found usage relation " << parentp->prettyNameQ() << " uses "
                                          << childp->prettyNameQ() << std::endl);

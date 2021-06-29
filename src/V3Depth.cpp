@@ -52,7 +52,7 @@ private:
         UINFO(6, "  Deep  " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
 
-        string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
+        const string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
         AstVar* varp
             = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep());
         UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
@@ -128,7 +128,7 @@ private:
     // (Here instead of new visitor after V3Descope just to avoid another visitor)
     void needNonStaticFunc(AstNode* nodep) {
         UASSERT_OBJ(m_cfuncp, nodep, "Non-static accessor not under a function");
-        if (m_cfuncp->isStatic().trueUnknown()) {
+        if (m_cfuncp->isStatic()) {
             UINFO(5, "Mark non-public due to " << nodep << endl);
             m_cfuncp->isStatic(false);
         }

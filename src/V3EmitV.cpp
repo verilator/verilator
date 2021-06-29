@@ -624,9 +624,12 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         if (nodep->varScopep()) {
             putfs(nodep, nodep->varScopep()->prettyName());
         } else {
-            putfs(nodep, nodep->hiernameToUnprot());
-            puts(nodep->hiernameToProt());
-            puts(nodep->varp()->prettyName());
+            if (nodep->selfPointer().empty()) {
+                putfs(nodep, nodep->varp()->prettyName());
+            } else {
+                putfs(nodep, nodep->selfPointer() + "->");
+                puts(nodep->varp()->prettyName());
+            }
         }
     }
     virtual void visit(AstVarXRef* nodep) override {
@@ -847,7 +850,8 @@ void V3EmitV::emitvFiles() {
 
 void V3EmitV::debugEmitV(const string& stage) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__" + stage + ".v";
+    const string filename
+        = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__" + stage + ".v";
     V3OutVFile of(filename);
     EmitVFileVisitor visitor(v3Global.rootp(), &of, true, true);
 }

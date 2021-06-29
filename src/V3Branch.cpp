@@ -70,15 +70,15 @@ private:
             // Do if
             reset();
             iterateAndNextNull(nodep->ifsp());
-            int ifLikely = m_likely;
-            int ifUnlikely = m_unlikely;
+            const int ifLikely = m_likely;
+            const int ifUnlikely = m_unlikely;
             // Do else
             reset();
             iterateAndNextNull(nodep->elsesp());
-            int elseLikely = m_likely;
-            int elseUnlikely = m_unlikely;
+            const int elseLikely = m_likely;
+            const int elseUnlikely = m_unlikely;
             // Compute
-            int likeness = ifLikely - ifUnlikely - (elseLikely - elseUnlikely);
+            const int likeness = ifLikely - ifUnlikely - (elseLikely - elseUnlikely);
             if (likeness > 0) {
                 nodep->branchPred(VBranchPred::BP_LIKELY);
             } else if (likeness < 0) {

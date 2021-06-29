@@ -43,6 +43,7 @@ public:
         if (v3Global.opt.decoration()) puts(str);
     }
     void putsQuoted(const string& str) { ofp()->putsQuoted(str); }
+    void ensureNewLine() { ofp()->ensureNewLine(); }
     bool optSystemC() { return v3Global.opt.systemC(); }
     static string protect(const string& name) { return VIdProtect::protectIf(name, true); }
     static string protectIf(const string& name, bool doIt) {
@@ -52,24 +53,20 @@ public:
         return VIdProtect::protectWordsIf(name, doIt);
     }
     static string ifNoProtect(const string& in) { return v3Global.opt.protectIds() ? "" : in; }
+    static string voidSelfAssign() {
+        return topClassName() + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<"
+               + topClassName() + "*>(voidSelf);\n";
+    }
     static string symClassName() { return v3Global.opt.prefix() + "_" + protect("_Syms"); }
     static string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
-    static string symTopAssign() {
-        return v3Global.opt.prefix() + "* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;";
+    static string symClassAssign() {
+        return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
     }
-    static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp) {
-        if (nodep->isConstructor()) {
-            return prefixNameProtect(modp);
-        } else if (nodep->isDestructor()) {
-            return string("~") + prefixNameProtect(modp);
-        } else {
-            return nodep->nameProtect();
-        }
-    }
+    static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
     static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
         const AstNodeModule* modp = VN_CAST_CONST(nodep, NodeModule);
         if (modp && modp->isTop()) {
-            return v3Global.opt.prefix();
+            return topClassName();
         } else {
             return v3Global.opt.modPrefix() + "_" + protect(nodep->name());
         }
@@ -77,33 +74,17 @@ public:
     static string topClassName() {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
-    static AstCFile* newCFile(const string& filename, bool slow, bool source) {
-        AstCFile* cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
-        cfilep->slow(slow);
-        cfilep->source(source);
-        v3Global.rootp()->addFilesp(cfilep);
-        return cfilep;
+
+    static bool isConstPoolMod(AstNode* modp) {
+        return modp == v3Global.rootp()->constPoolp()->modp();
     }
-    string cFuncArgs(const AstCFunc* nodep) {
-        // Return argument list for given C function
-        string args = nodep->argTypes();
-        // Might be a user function with argument list.
-        for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (const AstVar* portp = VN_CAST_CONST(stmtp, Var)) {
-                if (portp->isIO() && !portp->isFuncReturn()) {
-                    if (args != "") args += ", ";
-                    if (nodep->dpiImport() || nodep->dpiExportWrapper()) {
-                        args += portp->dpiArgType(true, false);
-                    } else if (nodep->funcPublic()) {
-                        args += portp->cPubArgType(true, false);
-                    } else {
-                        args += portp->vlArgType(true, false, true);
-                    }
-                }
-            }
-        }
-        return args;
-    }
+
+    static AstCFile* newCFile(const string& filename, bool slow, bool source);
+    string cFuncArgs(const AstCFunc* nodep);
+    void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
+    void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
+    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
+    void emitModCUse(AstNodeModule* modp, VUseType useType);
 
     // CONSTRUCTORS
     EmitCBaseVisitor() = default;
