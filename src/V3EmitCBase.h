@@ -75,11 +75,18 @@ public:
         return modp == v3Global.rootp()->constPoolp()->modp();
     }
 
+    static bool isAnonOk(const AstVar* varp) {
+        return v3Global.opt.compLimitMembers() != 0  // Enabled
+               && !varp->isStatic()  // Not a static variable
+               && !varp->isSc()  // Aggregates can't be anon
+               && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
+    }
+
     static AstCFile* newCFile(const string& filename, bool slow, bool source);
     string cFuncArgs(const AstCFunc* nodep);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
-    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp, bool asRef = false);
+    void emitVarDecl(const AstVar* nodep, bool asRef = false);
     void emitModCUse(AstNodeModule* modp, VUseType useType);
 
     // CONSTRUCTORS

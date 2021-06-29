@@ -114,7 +114,7 @@ void EmitCBaseVisitor::emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule*
     if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
 }
 
-void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, const string& prefixIfImp, bool asRef) {
+void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, bool asRef) {
     const AstBasicDType* const basicp = nodep->basicp();
     bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
 
@@ -199,7 +199,7 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, const string& prefixIfIm
                                   && name.substr(name.size() - suffix.size()) == suffix;
             if (beStatic) puts("static VL_THREAD_LOCAL ");
         }
-        puts(nodep->vlArgType(true, false, false, prefixIfImp, asRef));
+        puts(nodep->vlArgType(true, false, false, "", asRef));
         puts(";\n");
     }
 }
