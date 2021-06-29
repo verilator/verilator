@@ -209,6 +209,8 @@ private:
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep << endl);
                 nodep->inLibrary(false);  // Safer to make sure it doesn't disappear
+                UINFO(2, "Unlinking upper modules from --top-module: " << nodep << endl);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep); // Unlink top-module from above
             }
             if (v3Global.opt.topModule() == "" ? nodep->inLibrary()  // Library cells are lower
                                                : !topMatch) {  // Any non-specified module is lower
@@ -444,10 +446,6 @@ private:
         }
         if (nodep->modp()) {  //
             iterateChildren(nodep);
-        }
-        if (nodep->prettyName() == v3Global.opt.topModule()) {
-           VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-           UINFO(4, " Top Module linked: " << nodep << ", unlinking parents" << endl);
         }
         UINFO(4, " Link Cell done: " << nodep << endl);
     }
