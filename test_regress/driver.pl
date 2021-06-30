@@ -1755,6 +1755,10 @@ sub _make_main {
     print $fh "#define MAIN_TIME_MULTIPLIER ".($self->{main_time_multiplier} || 1)."\n";
 
     print $fh "#include <memory>\n";
+    print $fh "#include <fstream>\n" if $self->{benchmarksim};
+    print $fh "#include <chrono>\n" if $self->{benchmarksim};
+    print $fh "#include <iomanip>\n" if $self->{benchmarksim};
+
     print $fh "// OS header\n";
     print $fh "#include \"verilatedos.h\"\n";
 
@@ -1770,9 +1774,6 @@ sub _make_main {
     print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-c';
     print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
-    print $fh "#include <fstream>\n" if $self->{benchmarksim};
-    print $fh "#include <chrono>\n" if $self->{benchmarksim};
-    print $fh "#include <iomanip>\n" if $self->{benchmarksim};
 
     print $fh "std::unique_ptr<$VM_PREFIX> topp;\n";
 
