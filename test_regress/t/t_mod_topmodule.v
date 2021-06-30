@@ -14,11 +14,21 @@ module top(/*AUTOARG*/
    );
    input clk;
 
+   always_ff @(posedge clk) begin
+      $write("*-* All Finished *-*\n");
+      $finish();
+   end
+
 endmodule
 
 module faketop(/*AUTOARG*/
    );
 
    top top();
+
+   // Stop immediately if this module is instantiated
+  initial begin
+    $stop();
+   end
 
 endmodule
