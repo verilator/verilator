@@ -13,14 +13,14 @@ scenarios(vlt => 1);
 # Use any top file
 top_filename("t/t_a1_first_cc.v");
 
-init_simbenchmark();
+init_benchmarksim();
 
 # As an example, compile and simulate the top file with varying optimization level
 my @l_opt = (1,2,3);
 
 foreach my $l_opt (@l_opt) {
     compile(
-        simbenchmark => 1,
+        benchmarksim => 1,
         v_flags2 => ["-O$l_opt"]
         );
 
@@ -29,7 +29,7 @@ foreach my $l_opt (@l_opt) {
         );
 }
 
-my $fh = IO::File->new("<".simbenchmark_filename) or error("Benchmark data file not found");
+my $fh = IO::File->new("<".benchmarksim_filename) or error("Benchmark data file not found");
 my $lines = 0;
 while (defined(my $line = $fh->getline)) {
     if ($line =~ /^#/) { next; }

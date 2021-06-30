@@ -697,16 +697,16 @@ sub new {
     return $self;
 }
 
-sub simbenchmark_filename {
+sub benchmarksim_filename {
     my $self = (ref $_[0] ? shift : $Self);
-    return $self->{obj_dir}."/$self->{name}_simbenchmark.csv";
+    return $self->{obj_dir}."/$self->{name}_benchmarksim.csv";
 }
 
-sub init_simbenchmark {
+sub init_benchmarksim {
     my $self = (ref $_[0] ? shift : $Self);
-    # Simulations with simbenchmark enabled append to the same file between runs.
+    # Simulations with benchmarksim enabled append to the same file between runs.
     # Test files must ensure a clean benchmark data file before executing tests.
-    my $fh = IO::File->new(">".simbenchmark_filename) or die "%Error: $! ".simbenchmark_filename;
+    my $fh = IO::File->new(">".benchmarksim_filename) or die "%Error: $! ".benchmarksim_filename;
     print $fh "# Verilator simulation benchmark data\n";
     print $fh "# Test name: ".$self->{name}."\n";
     print $fh "# Top file: ".$self->{top_filename}."\n";
@@ -912,7 +912,7 @@ sub compile_vlt_flags {
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
     $self->{sanitize} = $opt_sanitize unless exists($self->{sanitize});
-    $self->{simbenchmark} = 1 if ($param{simbenchmark});
+    $self->{benchmarksim} = 1 if ($param{benchmarksim});
 
     my @verilator_flags = @{$param{verilator_flags}};
     unshift @verilator_flags, "--gdb" if $opt_gdb;
@@ -1770,9 +1770,9 @@ sub _make_main {
     print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-c';
     print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
-    print $fh "#include <fstream>\n" if $self->{simbenchmark};
-    print $fh "#include <chrono>\n" if $self->{simbenchmark};
-    print $fh "#include <iomanip>\n" if $self->{simbenchmark};
+    print $fh "#include <fstream>\n" if $self->{benchmarksim};
+    print $fh "#include <chrono>\n" if $self->{benchmarksim};
+    print $fh "#include <iomanip>\n" if $self->{benchmarksim};
 
     print $fh "std::unique_ptr<$VM_PREFIX> topp;\n";
 
@@ -1826,7 +1826,7 @@ sub _make_main {
         $set = "topp->";
     }
 
-    if ($self->{simbenchmark}) {
+    if ($self->{benchmarksim}) {
         $fh->print("    std::chrono::time_point<std::chrono::steady_clock> starttime;\n");
         $fh->print("    bool warm = false;\n")
     }
@@ -1890,7 +1890,7 @@ sub _make_main {
         }
         _print_advance_time($self, $fh, 1, $action);
     }
-    if ($self->{simbenchmark}) {
+    if ($self->{benchmarksim}) {
         $fh->print("        if (VL_UNLIKELY(!warm)) {\n");
         $fh->print("            starttime = std::chrono::steady_clock::now();\n");
         $fh->print("            warm = true;\n");
@@ -1899,10 +1899,10 @@ sub _make_main {
     }
     print $fh "    }\n";
 
-    if ($self->{simbenchmark}) {
+    if ($self->{benchmarksim}) {
         $fh->print("    {\n");
         $fh->print("        const std::chrono::duration<double> exec_s =  std::chrono::steady_clock::now() - starttime;\n");
-        $fh->print("        std::ofstream benchfile(\"".$self->simbenchmark_filename."\", std::ofstream::out | std::ofstream::app);\n");
+        $fh->print("        std::ofstream benchfile(\"".$self->benchmarksim_filename."\", std::ofstream::out | std::ofstream::app);\n");
         $fh->print("        benchfile << std::fixed << std::setprecision(9) << sim_time << \",\" << exec_s.count() << std::endl;\n");
         $fh->print("        benchfile.close();\n");
         $fh->print("    }\n");
@@ -2701,10 +2701,10 @@ The equivalent of C<v_flags> and C<v_flags2>, but only for use with
 Verilator.  If a flag is a standard flag (+incdir for example) v_flags2
 should be used instead.
 
-=item simbenchmark
+=item benchmarksim
 
 Output the number of cycles executed and execution time of a test to
-I<test_output_dir>/I<test_name>_simbenchmark.csv. Multiple invocations 
+I<test_output_dir>/I<test_name>_benchmarksim.csv. Multiple invocations 
 of the same test file will append to to the same .csv file.
 
 =item xsim_flags
