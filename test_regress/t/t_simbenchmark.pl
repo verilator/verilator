@@ -17,7 +17,6 @@ init_simbenchmark();
 
 # As an example, compile and simulate the top file with varying optimization level
 my @l_opt = (1,2,3);
-my $n_opt = scalar(@l_opt);
 
 foreach my $l_opt (@l_opt) {
     compile(
@@ -34,15 +33,20 @@ my $fh = IO::File->new("<".simbenchmark_filename) or error("Benchmark data file 
 my $lines = 0;
 while (defined(my $line = $fh->getline)) {
     if ($line =~ /^#/) { next; }
-    my @data = grep {$_ != ""} ($line =~ /(\d*\.?\d*)/g);
-    error("Expected 2 tokens on line ".$lines." but got ".scalar(@data)) if scalar(@data) != 2;
-    my $cycles = $data[0];
-    my $time = $data[1];
-    error("Invalid data on line ".$lines) if $cycles <= 0.0 || $time <= 0.0;
+    if ($lines == 0) {
+        error("Expected header but found $line") if $line ne "evals, time[s]\n";
+    } else {
+        my @data = grep {$_ != ""} ($line =~ /(\d*\.?\d*)/g);
+        error("Expected 2 tokens on line ".$lines." but got ".scalar(@data)) if scalar(@data) != 2;
+        my $cycles = $data[0];
+        my $time = $data[1];
+        error("Invalid data on line ".$lines) if $cycles <= 0.0 || $time <= 0.0;
+    }
     $lines += 1;
 }
+my $n_lines_expected = scalar(@l_opt) + 1;
 
-error("Expected ".$n_opt." lines but found ".$lines) if int($lines) != int($n_opt);
+error("Expected ".$n_lines_expected." lines but found ".$lines) if int($lines) != int($n_lines_expected);
 
 1;
 ok(1);

@@ -699,7 +699,7 @@ sub new {
 
 sub simbenchmark_filename {
     my $self = (ref $_[0] ? shift : $Self);
-    return $self->{obj_dir}."/$self->{name}_simbenchmark.dat";
+    return $self->{obj_dir}."/$self->{name}_simbenchmark.csv";
 }
 
 sub init_simbenchmark {
@@ -710,7 +710,7 @@ sub init_simbenchmark {
     print $fh "# Verilator simulation benchmark data\n";
     print $fh "# Test name: ".$self->{name}."\n";
     print $fh "# Top file: ".$self->{top_filename}."\n";
-    print $fh "# cycles\ttime[s]\n";
+    print $fh "evals, time[s]\n";
 }
 
 sub soprint {
@@ -1772,6 +1772,7 @@ sub _make_main {
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
     print $fh "#include <fstream>\n" if $self->{simbenchmark};
     print $fh "#include <chrono>\n" if $self->{simbenchmark};
+    print $fh "#include <iomanip>\n" if $self->{simbenchmark};
 
     print $fh "std::unique_ptr<$VM_PREFIX> topp;\n";
 
@@ -1826,7 +1827,8 @@ sub _make_main {
     }
 
     if ($self->{simbenchmark}) {
-        $fh->print("    const auto starttime = std::chrono::steady_clock::now();\n");
+        $fh->print("    std::chrono::time_point<std::chrono::steady_clock> starttime;\n");
+        $fh->print("    bool warm = false;\n")
     }
 
     if ($self->{trace}) {
@@ -1888,14 +1890,20 @@ sub _make_main {
         }
         _print_advance_time($self, $fh, 1, $action);
     }
+    if ($self->{simbenchmark}) {
+        $fh->print("        if (VL_UNLIKELY(!warm)) {\n");
+        $fh->print("            starttime = std::chrono::steady_clock::now();\n");
+        $fh->print("            warm = true;\n");
+        $fh->print("        }\n");
+
+    }
     print $fh "    }\n";
 
     if ($self->{simbenchmark}) {
         $fh->print("    {\n");
         $fh->print("        const std::chrono::duration<double> exec_s =  std::chrono::steady_clock::now() - starttime;\n");
-        $fh->print("        std::ofstream benchfile;\n");
-        $fh->print("        benchfile.open(\"".$self->simbenchmark_filename."\", std::ofstream::out | std::ofstream::app);\n");
-        $fh->print("        benchfile << std::fixed << sim_time << \"\t\" << exec_s.count() << std::endl;\n");
+        $fh->print("        std::ofstream benchfile(\"".$self->simbenchmark_filename."\", std::ofstream::out | std::ofstream::app);\n");
+        $fh->print("        benchfile << std::fixed << std::setprecision(9) << sim_time << \",\" << exec_s.count() << std::endl;\n");
         $fh->print("        benchfile.close();\n");
         $fh->print("    }\n");
     }
@@ -2696,8 +2704,8 @@ should be used instead.
 =item simbenchmark
 
 Output the number of cycles executed and execution time of a test to
-${test output dir}/${test name}_simbenchmark.dat. Multiple invocations of
-C<execute> within the same test file will wrute to to the same .dat file.
+I<test_output_dir>/I<test_name>_simbenchmark.csv. Multiple invocations 
+of the same test file will append to to the same .csv file.
 
 =item xsim_flags
 
