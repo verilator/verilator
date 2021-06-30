@@ -1828,7 +1828,8 @@ sub _make_main {
 
     if ($self->{benchmarksim}) {
         $fh->print("    std::chrono::time_point<std::chrono::steady_clock> starttime;\n");
-        $fh->print("    bool warm = false;\n")
+        $fh->print("    bool warm = false;\n");
+        $fh->print("    uint64_t n_evals = 0;\n");
     }
 
     if ($self->{trace}) {
@@ -1894,8 +1895,9 @@ sub _make_main {
         $fh->print("        if (VL_UNLIKELY(!warm)) {\n");
         $fh->print("            starttime = std::chrono::steady_clock::now();\n");
         $fh->print("            warm = true;\n");
+        $fh->print("        } else {\n");
+        $fh->print("            n_evals++;\n");
         $fh->print("        }\n");
-
     }
     print $fh "    }\n";
 
@@ -1903,7 +1905,7 @@ sub _make_main {
         $fh->print("    {\n");
         $fh->print("        const std::chrono::duration<double> exec_s =  std::chrono::steady_clock::now() - starttime;\n");
         $fh->print("        std::ofstream benchfile(\"".$self->benchmarksim_filename."\", std::ofstream::out | std::ofstream::app);\n");
-        $fh->print("        benchfile << std::fixed << std::setprecision(9) << sim_time << \",\" << exec_s.count() << std::endl;\n");
+        $fh->print("        benchfile << std::fixed << std::setprecision(9) << n_evals << \",\" << exec_s.count() << std::endl;\n");
         $fh->print("        benchfile.close();\n");
         $fh->print("    }\n");
     }
@@ -2703,7 +2705,7 @@ should be used instead.
 
 =item benchmarksim
 
-Output the number of cycles executed and execution time of a test to
+Output the number of model evaluations and execution time of a test to
 I<test_output_dir>/I<test_name>_benchmarksim.csv. Multiple invocations 
 of the same test file will append to to the same .csv file.
 

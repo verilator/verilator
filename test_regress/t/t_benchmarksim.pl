@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 # Use any top file
-top_filename("t/t_a1_first_cc.v");
+top_filename("t/t_gen_alw.v");
 
 init_benchmarksim();
 
