@@ -2707,7 +2707,7 @@ should be used instead.
 =item benchmarksim
 
 Output the number of model evaluations and execution time of a test to
-I<test_output_dir>/I<test_name>_benchmarksim.csv. Multiple invocations 
+I<test_output_dir>/I<test_name>_benchmarksim.csv. Multiple invocations
 of the same test file will append to to the same .csv file.
 
 =item xsim_flags
