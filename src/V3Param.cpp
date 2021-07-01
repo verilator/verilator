@@ -299,9 +299,13 @@ class ParamProcessor final {
         }
         return st;
     }
-    string paramValueNumber(AstNode* nodep) {
+
+    static string paramValueKey(const AstNode* nodep) {
+        if (const AstRefDType* const refp = VN_CAST_CONST(nodep, RefDType)) {
+            nodep = refp->skipRefp();
+        }
         string key = nodep->name();
-        if (AstIfaceRefDType* ifrtp = VN_CAST(nodep, IfaceRefDType)) {
+        if (const AstIfaceRefDType* const ifrtp = VN_CAST_CONST(nodep, IfaceRefDType)) {
             if (ifrtp->cellp() && ifrtp->cellp()->modp()) {
                 key = ifrtp->cellp()->modp()->name();
             } else if (ifrtp->ifacep()) {
@@ -309,11 +313,33 @@ class ParamProcessor final {
             } else {
                 nodep->v3fatalSrc("Can't parameterize interface without module name");
             }
-        } else if (AstBasicDType* bdtp = VN_CAST(nodep, BasicDType)) {
-            if (bdtp->isRanged()) {
-                key += "[" + cvtToStr(bdtp->left()) + ":" + cvtToStr(bdtp->right()) + "]";
+        } else if (const AstNodeUOrStructDType* const dtypep
+                   = VN_CAST_CONST(nodep, NodeUOrStructDType)) {
+            key += " ";
+            key += dtypep->verilogKwd();
+            key += " {";
+            for (const AstNode* memberp = dtypep->membersp(); memberp;
+                 memberp = memberp->nextp()) {
+                key += paramValueKey(memberp);
+                key += ";";
+            }
+            key += "}";
+        } else if (const AstMemberDType* const dtypep = VN_CAST_CONST(nodep, MemberDType)) {
+            key += " ";
+            key += paramValueKey(dtypep->subDTypep());
+        } else if (const AstBasicDType* const dtypep = VN_CAST_CONST(nodep, BasicDType)) {
+            if (dtypep->isRanged()) {
+                key += "[" + cvtToStr(dtypep->left()) + ":" + cvtToStr(dtypep->right()) + "]";
             }
         }
+        return key;
+    }
+
+    string paramValueNumber(AstNode* nodep) {
+        // TODO: This parameter value number lookup via a constructed key string is not
+        //       particularly robust for type parameters. We should really have a type
+        //       equivalence predicate function.
+        const string key = paramValueKey(nodep);
         V3Hash hash = V3Hasher::uncachedHash(nodep);
         // Force hash collisions -- for testing only
         if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash();

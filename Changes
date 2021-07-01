@@ -31,6 +31,7 @@ Verilator 4.205 devel
 * Allow configure override of AR program (#2999). [ahouska]
 * In XML, show pinIndex information (#2877). [errae233]
 * Fix error on unsupported recursive functions (#2957). [Trefor Southwell]
+* Fix type parameter specialization when struct names are same (#3055). [7FM]
 
 
 Verilator 4.204 2021-06-12
