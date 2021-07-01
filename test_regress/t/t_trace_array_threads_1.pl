@@ -11,6 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 top_filename("t/t_trace_array.v");
+golden_filename("t/t_trace_array.out");
 
 compile(
     verilator_flags2 => ['--cc --trace --trace-threads 1 --trace-structs'],
@@ -20,7 +21,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
+vcd_identical($Self->trace_filename, $Self->{golden_filename});
 
 ok(1);
 1;
