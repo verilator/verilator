@@ -2261,7 +2261,7 @@ sub vcd_identical {
         $cmd = qq{vcddiff "$fn1" "$fn2"};
         print "\t$cmd\n" if $::Debug;
         $out = `$cmd`;
-        if ($out ne '') {
+        if ($? != 0 || $out ne '') {
             print $out;
             $self->error("VCD miscompares $fn1 $fn2\n");
             $self->copy_if_golden($fn1, $fn2);
