@@ -29,7 +29,7 @@ foreach my $l_opt (@l_opt) {
         );
 }
 
-my $fh = IO::File->new("<".benchmarksim_filename) or error("Benchmark data file not found");
+my $fh = IO::File->new("<".benchmarksim_filename()) or error("Benchmark data file not found");
 my $lines = 0;
 while (defined(my $line = $fh->getline)) {
     if ($line =~ /^#/) { next; }

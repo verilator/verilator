@@ -706,7 +706,8 @@ sub init_benchmarksim {
     my $self = (ref $_[0] ? shift : $Self);
     # Simulations with benchmarksim enabled append to the same file between runs.
     # Test files must ensure a clean benchmark data file before executing tests.
-    my $fh = IO::File->new(">".benchmarksim_filename) or die "%Error: $! ".benchmarksim_filename;
+    my $filename = $self->benchmarksim_filename();
+    my $fh = IO::File->new(">".$filename) or die "%Error: $! ".$filename;
     print $fh "# Verilator simulation benchmark data\n";
     print $fh "# Test name: ".$self->{name}."\n";
     print $fh "# Top file: ".$self->{top_filename}."\n";
@@ -1897,7 +1898,7 @@ sub _make_main {
         $fh->print("            starttime = std::chrono::steady_clock::now();\n");
         $fh->print("            warm = true;\n");
         $fh->print("        } else {\n");
-        $fh->print("            n_evals++;\n");
+        $fh->print("            ++n_evals;\n");
         $fh->print("        }\n");
     }
     print $fh "    }\n";
@@ -1905,7 +1906,7 @@ sub _make_main {
     if ($self->{benchmarksim}) {
         $fh->print("    {\n");
         $fh->print("        const std::chrono::duration<double> exec_s =  std::chrono::steady_clock::now() - starttime;\n");
-        $fh->print("        std::ofstream benchfile(\"".$self->benchmarksim_filename."\", std::ofstream::out | std::ofstream::app);\n");
+        $fh->print("        std::ofstream benchfile(\"".$self->benchmarksim_filename()."\", std::ofstream::out | std::ofstream::app);\n");
         $fh->print("        benchfile << std::fixed << std::setprecision(9) << n_evals << \",\" << exec_s.count() << std::endl;\n");
         $fh->print("        benchfile.close();\n");
         $fh->print("    }\n");
