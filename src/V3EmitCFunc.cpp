@@ -544,7 +544,6 @@ void EmitCFunc::emitVarList(AstNode* firstp, EisWhich which, const string& prefi
                     doit = (varp->isParam() && !VN_IS(varp->valuep(), Const));
                     break;
                 case EVL_CLASS_ALL: doit = true; break;
-                case EVL_FUNC_ALL: doit = true; break;
                 default: v3fatalSrc("Bad Case");
                 }
                 if (varp->isStatic() ? !isstatic : isstatic) doit = false;
@@ -574,8 +573,8 @@ void EmitCFunc::emitVarList(AstNode* firstp, EisWhich which, const string& prefi
                            && !varp->isSc()  // Aggregates can't be anon
                            && (varp->basicp()
                                && !varp->basicp()->isOpaque())  // Aggregates can't be anon
-                           && which != EVL_FUNC_ALL);  // Anon not legal in funcs, and gcc
-                                                       // bug free there anyhow
+                        );
+
                     if (anonOk) {
                         varAnonMap[sortbytes].push_back(varp);
                     } else {
