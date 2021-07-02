@@ -130,6 +130,7 @@ protected:
     EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
     AstNodeModule* m_modp = nullptr;  // Current module being emitted
+    AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
 
 public:
     // METHODS
@@ -159,8 +160,7 @@ public:
         EVL_CLASS_SIG,
         EVL_CLASS_TEMP,
         EVL_CLASS_PAR,
-        EVL_CLASS_ALL,
-        EVL_FUNC_ALL
+        EVL_CLASS_ALL
     };
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp, string& sectionr);
     static void emitVarSort(const VarSortMap& vmap, VarVec* sortedp);
@@ -203,6 +203,8 @@ public:
     // VISITORS
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_useSelfForThis);
+        VL_RESTORER(m_cfuncp);
+        m_cfuncp = nodep;
 
         m_blkChangeDetVec.clear();
 
@@ -238,30 +240,38 @@ public:
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
 
-        if (nodep->initsp()) putsDecoration("// Variables\n");
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
             if (AstVar* varp = VN_CAST(subnodep, Var)) {
                 if (varp->isFuncReturn()) emitVarDecl(varp, "");
             }
         }
-        string section;
-        emitVarList(nodep->initsp(), EVL_FUNC_ALL, "", section /*ref*/);
-        emitVarList(nodep->stmtsp(), EVL_FUNC_ALL, "", section /*ref*/);
 
-        iterateAndNextNull(nodep->initsp());
+        if (nodep->initsp()) {
+            putsDecoration("// Init\n");
+            iterateAndNextNull(nodep->initsp());
+        }
 
-        if (nodep->stmtsp()) putsDecoration("// Body\n");
-        iterateAndNextNull(nodep->stmtsp());
+        if (nodep->stmtsp()) {
+            putsDecoration("// Body\n");
+            iterateAndNextNull(nodep->stmtsp());
+        }
+
         if (!m_blkChangeDetVec.empty()) emitChangeDet();
 
-        if (nodep->finalsp()) putsDecoration("// Final\n");
-        iterateAndNextNull(nodep->finalsp());
-        //
+        if (nodep->finalsp()) {
+            putsDecoration("// Final\n");
+            iterateAndNextNull(nodep->finalsp());
+        }
 
         if (!m_blkChangeDetVec.empty()) puts("return __req;\n");
 
         puts("}\n");
         if (nodep->ifdef() != "") puts("#endif  // " + nodep->ifdef() + "\n");
+    }
+
+    virtual void visit(AstVar* nodep) override {
+        UASSERT_OBJ(m_cfuncp, nodep, "Cannot emit non-local variable");
+        emitVarDecl(nodep, "");
     }
 
     virtual void visit(AstNodeAssign* nodep) override {
@@ -1221,7 +1231,6 @@ public:
     virtual void visit(AstTypedef*) override {}
     virtual void visit(AstPragma*) override {}
     virtual void visit(AstCell*) override {}  // Handled outside the Visit class
-    virtual void visit(AstVar*) override {}  // Handled outside the Visit class
     virtual void visit(AstNodeText*) override {}  // Handled outside the Visit class
     virtual void visit(AstCFile*) override {}  // Handled outside the Visit class
     virtual void visit(AstCellInline*) override {}  // Handled outside visit (in EmitCSyms)
