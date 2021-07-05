@@ -61,9 +61,6 @@ public:
     ~SimStackNode() = default;
 };
 
-using ConstDeque = std::deque<AstConst*>;
-using ConstPile = std::unordered_map<const AstNodeDType*, ConstDeque>;
-
 class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
     // Simulate a node tree, returning value of variables
     // Two major operating modes:
@@ -82,6 +79,7 @@ private:
     // Checking:
     //  AstVar(Scope)::user1()  -> VarUsage.  Set true to indicate tracking as lvalue/rvalue
     // Simulating:
+    //  AstConst::user2()       -> bool. This AstConst (allocated by this class) is in use
     //  AstVar(Scope)::user3()  -> AstConst*. Input value of variable or node
     //    (and output for non-delayed assignments)
     //  AstVar(Scope)::user2()  -> AstCont*. Output value of variable (delayed assignments)
@@ -103,8 +101,8 @@ private:
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp;  ///< Jump label we're branching from
     // Simulating:
-    ConstPile m_constFreeps;  ///< List of all AstConst* free and not in use
-    ConstPile m_constAllps;  ///< List of all AstConst* free and in use
+    std::unordered_map<const AstNodeDType*, std::deque<AstConst*>>
+        m_constps;  ///< Lists of all AstConst* allocated per dtype
     std::vector<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
 
     // Cleanup
@@ -214,16 +212,31 @@ private:
         // It would be more efficient to do this by size, but the extra accounting
         // slows things down more than we gain.
         AstConst* constp;
-        AstNodeDType* dtypep = nodep->dtypep();
-        if (!m_constFreeps[dtypep].empty()) {
-            // UINFO(7, "Num Reuse " << nodep->width() << endl);
-            constp = m_constFreeps[dtypep].back();
-            m_constFreeps[dtypep].pop_back();
-            constp->num().nodep(nodep);
-        } else {
-            // UINFO(7, "Num New " << nodep->width() << endl);
+        // Grab free list corresponding to this dtype
+        std::deque<AstConst*>& freeList = m_constps[nodep->dtypep()];
+        bool allocNewConst = true;
+        if (!freeList.empty()) {
+            constp = freeList.front();
+            if (!constp->user2()) {
+                // Front of free list is free, reuse it (otherwise allocate new node)
+                allocNewConst = false;  // No need to allocate
+                // Mark the AstConst node as used, and move it to the back of the free list. This
+                // ensures that when all AstConst instances within the list are used, then the
+                // front of the list will be marked as used, in which case the enclosing 'if' will
+                // fail and we fall back to allocation.
+                constp->user2(1);
+                freeList.pop_front();
+                freeList.push_back(constp);
+                // configure const
+                constp->num().nodep(nodep);
+            }
+        }
+        if (allocNewConst) {
+            // Need to allocate new constant
             constp = new AstConst(nodep->fileline(), AstConst::DtypedValue(), nodep->dtypep(), 0);
-            m_constAllps[constp->dtypep()].push_back(constp);
+            // Mark as in use, add to free list for later reuse
+            constp->user2(1);
+            freeList.push_back(constp);
         }
         constp->num().isDouble(nodep->isDouble());
         constp->num().isString(nodep->isString());
@@ -1122,11 +1135,8 @@ public:
         m_jumpp = nullptr;
 
         AstNode::user1ClearTree();
-        AstNode::user2ClearTree();
+        AstNode::user2ClearTree();  // Also marks all elements in m_constps as free
         AstNode::user3ClearTree();
-
-        // Move all allocated numbers to the free pool
-        m_constFreeps = m_constAllps;
     }
     void mainTableCheck(AstNode* nodep) {
         setMode(true /*scoped*/, true /*checking*/, false /*params*/);
@@ -1145,13 +1155,12 @@ public:
         mainGuts(nodep);
     }
     virtual ~SimulateVisitor() override {
-        for (const auto& i : m_constAllps) {
-            for (AstConst* i2p : i.second) delete i2p;
+        for (const auto& pair : m_constps) {
+            for (AstConst* const constp : pair.second) { delete constp; }
         }
+        m_constps.clear();
         for (AstNode* ip : m_reclaimValuesp) delete ip;
         m_reclaimValuesp.clear();
-        m_constFreeps.clear();
-        m_constAllps.clear();
     }
 };
 
