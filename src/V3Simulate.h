@@ -42,6 +42,7 @@
 
 #include <deque>
 #include <sstream>
+#include <vector>
 
 //============================================================================
 
@@ -104,12 +105,12 @@ private:
     // Simulating:
     ConstPile m_constFreeps;  ///< List of all AstConst* free and not in use
     ConstPile m_constAllps;  ///< List of all AstConst* free and in use
-    std::deque<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
+    std::vector<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
 
     // Cleanup
     // V3Numbers that represents strings are a bit special and the API for
     // V3Number does not allow changing them.
-    std::deque<AstNode*> m_reclaimValuesp;  // List of allocated string numbers
+    std::vector<AstNode*> m_reclaimValuesp;  // List of allocated string numbers
 
     // Note level 8&9 include debugging each simulation value
     VL_DEBUG_FUNC;  // Declare debug()
@@ -180,8 +181,7 @@ public:
             }
             m_whyNotOptimizable = why;
             std::ostringstream stack;
-            for (std::deque<SimStackNode*>::iterator it = m_callStack.begin();
-                 it != m_callStack.end(); ++it) {
+            for (auto it = m_callStack.rbegin(); it != m_callStack.rend(); ++it) {
                 AstFuncRef* funcp = (*it)->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from "
                       << funcp->prettyName() << "() with parameters:";
@@ -978,7 +978,7 @@ private:
             }
         }
         SimStackNode stackNode(nodep, &tconnects);
-        m_callStack.push_front(&stackNode);
+        m_callStack.push_back(&stackNode);
         // Clear output variable
         if (auto* const basicp = VN_CAST(funcp->fvarp(), Var)->basicp()) {
             AstConst cnst(funcp->fvarp()->fileline(), AstConst::WidthedValue(), basicp->widthMin(),
@@ -992,7 +992,7 @@ private:
         }
         // Evaluate the function
         iterate(funcp);
-        m_callStack.pop_front();
+        m_callStack.pop_back();
         if (!m_checkOnly && optimizable()) {
             // Grab return value from output variable (if it's a function)
             UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");
