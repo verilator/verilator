@@ -450,11 +450,7 @@ void EmitCImp::emitIntTop(const AstNodeModule* modp) {
     puts("\n");
 
     ofp()->putsIntTopInclude();
-    if (v3Global.needHeavy()) {
-        puts("#include \"verilated_heavy.h\"\n");
-    } else {
-        puts("#include \"verilated.h\"\n");
-    }
+    puts("#include \"verilated_heavy.h\"\n");
     if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
     if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
     if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
