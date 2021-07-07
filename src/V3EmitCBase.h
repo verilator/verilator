@@ -87,7 +87,8 @@ public:
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
-    void emitModCUse(AstNodeModule* modp, VUseType useType);
+    void emitModCUse(const AstNodeModule* modp, VUseType useType);
+    void emitTextSection(const AstNodeModule* modp, AstType type);
 
     // CONSTRUCTORS
     EmitCBaseVisitor() = default;

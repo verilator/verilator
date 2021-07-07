@@ -585,8 +585,7 @@ class EmitCModel final : public EmitCFunc {
 
             if (!m_ofp) {
                 const string filename = v3Global.opt.makeDir() + "/" + topClassName()
-                                        + "__Dpi_Export_" + cvtToStr(splitFilenumInc() - 1)
-                                        + ".cpp";
+                                        + "__Dpi_Export_" + cvtToStr(splitFilenumInc()) + ".cpp";
                 newCFile(filename, /* slow: */ false, /* source: */ true);
                 m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename}
                                                : new V3OutCFile{filename};

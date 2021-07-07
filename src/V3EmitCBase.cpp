@@ -204,7 +204,7 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, bool asRef) {
     }
 }
 
-void EmitCBaseVisitor::emitModCUse(AstNodeModule* modp, VUseType useType) {
+void EmitCBaseVisitor::emitModCUse(const AstNodeModule* modp, VUseType useType) {
     string nl;
     for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
         if (AstCUse* usep = VN_CAST(itemp, CUse)) {
@@ -220,4 +220,25 @@ void EmitCBaseVisitor::emitModCUse(AstNodeModule* modp, VUseType useType) {
         }
     }
     puts(nl);
+}
+
+void EmitCBaseVisitor::emitTextSection(const AstNodeModule* modp, AstType type) {
+    int last_line = -999;
+    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        if (const AstNodeText* textp = VN_CAST(nodep, NodeText)) {
+            if (nodep->type() == type) {
+                if (last_line != nodep->fileline()->lineno()) {
+                    if (last_line < 0) {
+                        puts("\n//*** Below code from `systemc in Verilog file\n");
+                    }
+                    putsDecoration(
+                        ifNoProtect("// From `systemc at " + nodep->fileline()->ascii() + "\n"));
+                    last_line = nodep->fileline()->lineno();
+                }
+                ofp()->putsNoTracking(textp->text());
+                last_line++;
+            }
+        }
+    }
+    if (last_line > 0) puts("//*** Above code from `systemc in Verilog file\n\n");
 }

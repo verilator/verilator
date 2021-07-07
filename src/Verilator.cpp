@@ -516,12 +516,13 @@ static void process() {
         V3EmitC::emitcSyms();
         V3EmitC::emitcConstPool();
         V3EmitC::emitcModel();
+        V3EmitC::emitcHeaders();
     } else if (v3Global.opt.dpiHdrOnly()) {
         V3EmitC::emitcSyms(true);
     }
     if (!v3Global.opt.xmlOnly()
-        && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitc.
-        V3EmitC::emitc();
+        && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
+        V3EmitC::emitcImp();
     }
     if (v3Global.opt.xmlOnly()
         // Check XML when debugging to make sure no missing node types
