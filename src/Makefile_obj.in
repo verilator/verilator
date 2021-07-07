@@ -179,10 +179,11 @@ RAW_OBJS = \
 	V3DepthBlock.o \
 	V3Descope.o \
 	V3DupFinder.o \
-	V3EmitC.o \
 	V3EmitCBase.o \
 	V3EmitCConstPool.o \
 	V3EmitCFunc.o \
+	V3EmitCHeaders.o \
+	V3EmitCImp.o \
 	V3EmitCInlines.o \
 	V3EmitCMain.o \
 	V3EmitCMake.o \

@@ -125,7 +125,7 @@ private:
 protected:
     EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
-    AstNodeModule* m_modp = nullptr;  // Current module being emitted
+    const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
 
 public:
@@ -135,7 +135,7 @@ public:
     // ACCESSORS
     int splitFilenumInc() {
         m_splitSize = 0;
-        return ++m_splitFilenum;
+        return m_splitFilenum++;
     }
     int splitSize() const { return m_splitSize; }
     void splitSizeInc(int count) { m_splitSize += count; }
