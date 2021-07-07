@@ -367,6 +367,7 @@ detailed descriptions of these arguments.
     --pipe-filter <command>     Filter all input through a script
     --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top level class
+    --prof-c                    Compile C++ code with profiling
     --prof-cfuncs               Name functions for profiling
     --prof-threads              Enable generating gantt chart data for threads
     --protect-key <key>         Key for symbol protection

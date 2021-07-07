@@ -1222,8 +1222,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (m_modPrefix == "") m_modPrefix = m_prefix;
     });
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
-    DECL_OPTION("-prof-cfuncs", OnOff, &m_profCFuncs);
-    DECL_OPTION("-profile-cfuncs", OnOff, &m_profCFuncs).undocumented();  // Renamed
+    DECL_OPTION("-prof-c", OnOff, &m_profC);
+    DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
+    DECL_OPTION("-profile-cfuncs", CbCall,
+                [this]() { m_profC = m_profCFuncs = true; });  // Renamed
     DECL_OPTION("-prof-threads", OnOff, &m_profThreads);
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
