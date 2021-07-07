@@ -1458,10 +1458,10 @@ void AstRefDType::dump(std::ostream& str) const {
         if (!s_recursing) {  // Prevent infinite dump if circular typedefs
             s_recursing = true;
             str << " -> ";
-            if (typedefp()) {
-                typedefp()->dump(str);
-            } else if (subDTypep()) {
-                subDTypep()->dump(str);
+            if (const auto subp = typedefp()) {
+                subp->dump(str);
+            } else if (const auto subp = subDTypep()) {
+                subp->dump(str);
             }
             s_recursing = false;
         }
@@ -1506,7 +1506,8 @@ void AstNodeArrayDType::dump(std::ostream& str) const {
 }
 string AstPackArrayDType::prettyDTypeName() const {
     std::ostringstream os;
-    os << subDTypep()->prettyDTypeName() << declRange();
+    if (const auto subp = subDTypep()) os << subp->prettyDTypeName();
+    os << declRange();
     return os.str();
 }
 string AstUnpackArrayDType::prettyDTypeName() const {
