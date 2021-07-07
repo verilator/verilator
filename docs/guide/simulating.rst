@@ -272,8 +272,6 @@ profiled C++ code functions.
 To use profiling:
 
 #. Use Verilator's :vlopt:`--prof-cfuncs`.
-#. Use Verilator's :vlopt:`-CFLAGS "-g -pg" <-CFLAGS>` to pass the
-   profiling flags through to GCC/Clang.
 #. Build and run the simulation model.
 #. The model will create gmon.out.
 #. Run :command:`gprof` to see where in the C++ code the time is spent.

@@ -24,6 +24,7 @@ Verilator 4.205 devel
 
 **Minor:**
 
+* Add --prof-c to pass profiling to compiler (#3059). [Alexander Grobman]
 * Optimize a lot more model variables into function locals (#3027). [Geza Lore]
 * Support middle-of-design nested topmodules (#3026). [Dan Petrisko]
 * Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]

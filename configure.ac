@@ -340,6 +340,10 @@ if test "$CFG_ENABLE_COVERAGE" = "yes"; then
   _MY_CXX_CHECK_OPT(CXX,-DVL_GCOV)
 fi
 
+# Compiler flags to enable profiling
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PROFILE,-pg)
+AC_SUBST(CFG_CXXFLAGS_PROFILE)
+
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
 # Currently enabled gnu++14/c++14 due to packaged SystemC dependency

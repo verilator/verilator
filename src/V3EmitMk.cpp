@@ -168,6 +168,8 @@ public:
         }
 
         of.puts("\n### Switches...\n");
+        of.puts("# C++ code coverage  0/1 (from --prof-c)\n");
+        of.puts(string("VM_PROFC = ") + ((v3Global.opt.profC()) ? "1" : "0") + "\n");
         of.puts("# SystemC output mode?  0/1 (from --sc)\n");
         of.puts(string("VM_SC = ") + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
         of.puts("# Legacy or SystemC output mode?  0/1 (from --sc)\n");
