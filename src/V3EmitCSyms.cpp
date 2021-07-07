@@ -389,11 +389,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n");
     ofp()->putsIntTopInclude();
-    if (v3Global.needHeavy()) {
-        puts("#include \"verilated_heavy.h\"\n");
-    } else {
-        puts("#include \"verilated.h\"\n");
-    }
+    puts("#include \"verilated_heavy.h\"\n");
     if (v3Global.needTraceDumper()) {
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
     }
