@@ -25,6 +25,7 @@ Verilator 4.205 devel
 **Minor:**
 
 * Optimize a lot more model variables into function locals (#3027). [Geza Lore]
+* Support middle-of-design nested topmodules (#3026). [Dan Petrisko]
 * Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]
 * Remove deprecated --inhibit-sim option (#3035). [Geza Lore]
 * Merge const static data globally into a new constant pool (#3013). [Geza Lore]
