@@ -589,7 +589,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
-        AstNodeDType* expDTypep = nodep->findUInt64DType();
+        AstNodeDType* const expDTypep = nodep->findUInt64DType();
         iterateCheck(nodep, "Delay", nodep->lhsp(), CONTEXT, FINAL, expDTypep, EXTEND_ZERO);
     }
     virtual void visit(AstFork* nodep) override {

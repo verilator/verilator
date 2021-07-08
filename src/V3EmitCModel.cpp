@@ -166,9 +166,9 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.timing()) {
             // Calling this "time slots" matches IEEE nomenclature
             puts("/// Return true if no more timed work to do. Application uses to exit.\n");
-            puts("bool timeSlotsEmpty();\n");
+            puts("bool timeSlotsEmpty() const;\n");
             puts("/// Return earliest time slot. Application uses to advance time.\n");
-            puts("vluint64_t timeSlotsEarliestTime();\n");
+            puts("vluint64_t timeSlotsEarliestTime() const;\n");
         }
 
         if (v3Global.opt.trace()) {
@@ -480,12 +480,11 @@ class EmitCModel final : public EmitCFunc {
 
         if (v3Global.opt.timing()) {
             // ::timeSlotsEmpty
-            puts("\nbool " + topClassName()
-                 + "::timeSlotsEmpty() { return Verilated::timedQEmpty(vlSymsp); }\n");
+            puts("\nbool " + topClassName() + "::timeSlotsEmpty() const {"
+                 + " return Verilated::timedQEmpty(vlSymsp); }\n");
             // ::timeSlotsEarliestTime
-            puts("vluint64_t " + topClassName()
-                 + "::timeSlotsEarliestTime() { return Verilated::timedQEarliestTime(vlSymsp);"
-                   " }\n");
+            puts("vluint64_t " + topClassName() + "::timeSlotsEarliestTime() const {"
+                 + " return Verilated::timedQEarliestTime(vlSymsp); }\n");
         }
 
         // ::contextp
