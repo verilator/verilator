@@ -99,11 +99,11 @@ public:
 
     AstVarScope* getCreateEventVarScp(FileLine* fileline) {
         if (!m_eventVarScp) {
-            string name = "__vProc" + cvtToStr(m_procNum) + "Event";
-            AstVar* varp = new AstVar(fileline, AstVarType::MODULETEMP, name,
-                                      m_modp->findBasicDType(AstBasicDTypeKwd::EVENTVALUE));
+            const string name = "__vProc" + cvtToStr(m_procNum) + "Event";
+            AstVar* const varp = new AstVar{fileline, AstVarType::MODULETEMP, name,
+                                            m_modp->findBasicDType(AstBasicDTypeKwd::EVENTVALUE)};
             m_modp->addStmtp(varp);
-            m_eventVarScp = new AstVarScope(fileline, m_scopep, varp);
+            m_eventVarScp = new AstVarScope{fileline, m_scopep, varp};
             m_scopep->addVarp(m_eventVarScp);
         }
         return m_eventVarScp;
@@ -112,18 +112,19 @@ public:
         if (!m_fsmVarScp) {
             // TODO change width to CData at end-of-time for small FSMs
             // (Also makes more likely would land next to Event var)
-            AstVar* varp = new AstVar(fl, AstVarType::MODULETEMP, fsmName(), VFlagBitPacked(), 32);
+            AstVar* const varp
+                = new AstVar{fl, AstVarType::MODULETEMP, fsmName(), VFlagBitPacked{}, 32};
             m_modp->addStmtp(varp);
-            m_fsmVarScp = new AstVarScope(fl, m_scopep, varp);
+            m_fsmVarScp = new AstVarScope{fl, m_scopep, varp};
             m_fsmVarScp->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT,
                                                    true);  // FIXME remove, teach optimizer
             m_scopep->addVarp(m_fsmVarScp);
         }
         return m_fsmVarScp;
     }
-    AstNode* newFsmEqConst(FileLine* fl, int state) {
-        return new AstEq(fl, new AstConst(fl, state),
-                         new AstVarRef(fl, getCreateFsmVarScp(fl), VAccess::READ));
+    AstNode* newFsmEqConst(FileLine* fl, uint32_t state) {
+        return new AstEq{fl, new AstConst{fl, state},
+                         new AstVarRef{fl, getCreateFsmVarScp(fl), VAccess::READ}};
     }
     string fsmName() const { return "__vProc" + cvtToStr(m_procNum) + "Fsm"; }
 
@@ -152,19 +153,19 @@ class TimingProcedureVisitor final : public AstNVisitor {
 
     AstJumpLabel* newLabelp(AstNode* nodep) {
         // Create new JumpBlock/JumpLabel, return label for later insertion at appropriate point
-        AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), nullptr);
-        AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), blockp);
+        AstJumpBlock* const blockp = new AstJumpBlock{nodep->fileline(), nullptr};
+        AstJumpLabel* const labelp = new AstJumpLabel{nodep->fileline(), blockp};
         blockp->labelp(labelp);
         // Returned labelp must be tree inserted
         // block will be inserted by buildTable
         return labelp;
     }
     AstJumpBlock* buildJumpBlocks(AstJumpBlock* upblockp) {
-        for (JumpTableMap::iterator it = m_jumpTable.begin(); it != m_jumpTable.end(); ++it) {
-            AstJumpLabel* labelp = it->second;
+        for (auto it = m_jumpTable.begin(); it != m_jumpTable.end(); ++it) {
+            AstJumpLabel* const labelp = it->second;
             if (labelp != m_exitLabelp) {
-                AstJumpBlock* newblockp = labelp->blockp();
-                AstNode* stmtsp = upblockp->stmtsp();
+                AstJumpBlock* const newblockp = labelp->blockp();
+                AstNode* const stmtsp = upblockp->stmtsp();
                 if (stmtsp) newblockp->addStmtsp(stmtsp->unlinkFrBackWithNext());
                 upblockp->addStmtsp(newblockp);
                 upblockp = newblockp;
@@ -175,20 +176,20 @@ class TimingProcedureVisitor final : public AstNVisitor {
     void buildTable(AstJumpBlock* upblockp) {
         AstNode* newp = nullptr;
         AstNodeIf* lastIfp = nullptr;
-        for (JumpTableMap::iterator it = m_jumpTable.begin(); it != m_jumpTable.end(); ++it) {
-            AstJumpLabel* labelp = it->second;
+        for (auto it = m_jumpTable.begin(); it != m_jumpTable.end(); ++it) {
+            AstJumpLabel* const labelp = it->second;
             // Build  IF(EQ(CONST(state), fsmvar)) JUMPGO(label)
             //           ELSE ...
             // TODO support emitting case statements, so compiler may make a jump table
             // FIXME probably better location for this so can optimize if set later
-            AstNode* stmtp = new AstAssign(
+            AstNode* const stmtp = new AstAssign{
                 labelp->fileline(),
-                new AstVarRef(labelp->fileline(), m_state.getCreateFsmVarScp(labelp->fileline()),
-                              VAccess::WRITE),
-                new AstConst(labelp->fileline(), 0));
-            stmtp->addNext(new AstJumpGo(labelp->fileline(), labelp));
-            AstIf* ifp = new AstIf(labelp->fileline(),
-                                   m_state.newFsmEqConst(labelp->fileline(), it->first), stmtp);
+                new AstVarRef{labelp->fileline(), m_state.getCreateFsmVarScp(labelp->fileline()),
+                              VAccess::WRITE},
+                new AstConst{labelp->fileline(), 0}};
+            stmtp->addNext(new AstJumpGo{labelp->fileline(), labelp});
+            AstIf* const ifp = new AstIf{
+                labelp->fileline(), m_state.newFsmEqConst(labelp->fileline(), it->first), stmtp};
             if (!newp) {
                 newp = ifp;
             } else {
@@ -211,15 +212,15 @@ class TimingProcedureVisitor final : public AstNVisitor {
         // Keep any AstVars under the function not under the new JumpLabel/If
         while (VN_IS(stmtsp, Var)) stmtsp = stmtsp->nextp();
         // Move all other statements under end label, so can branch past it
-        AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), nullptr);
-        m_exitLabelp = new AstJumpLabel(nodep->fileline(), blockp);
+        AstJumpBlock* const blockp = new AstJumpBlock{nodep->fileline(), nullptr};
+        m_exitLabelp = new AstJumpLabel{nodep->fileline(), blockp};
         blockp->labelp(m_exitLabelp);
         blockp->addEndStmtsp(m_exitLabelp);
         if (stmtsp) blockp->addStmtsp(stmtsp->unlinkFrBackWithNext());
         if (!m_newProc) {
             // For existing procedure, allow activate only if state == 0
-            AstIf* ifp = new AstIf(nodep->fileline(), m_state.newFsmEqConst(nodep->fileline(), 0),
-                                   blockp);
+            AstIf* const ifp = new AstIf{nodep->fileline(),
+                                         m_state.newFsmEqConst(nodep->fileline(), 0), blockp};
             nodep->addStmtp(ifp);
         } else {
             nodep->addStmtp(blockp);
@@ -237,25 +238,25 @@ class TimingProcedureVisitor final : public AstNVisitor {
     }
     virtual void visit(AstDelay* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        int state = nodep->user1();
+        const uint32_t state = nodep->user1();
         UASSERT_OBJ(state, nodep, "delay state not assigned in TimingVisitor::AstDelay");
-        AstNode* newp = new AstAssign(nodep->fileline(),
-                                      new AstVarRef(nodep->fileline(),
-                                                    m_state.getCreateFsmVarScp(nodep->fileline()),
-                                                    VAccess::WRITE),
-                                      new AstConst(nodep->fileline(), state));
-        newp->addNext(new AstTimedEvent(
+        AstNode* const newp = new AstAssign{
+            nodep->fileline(),
+            new AstVarRef{nodep->fileline(), m_state.getCreateFsmVarScp(nodep->fileline()),
+                          VAccess::WRITE},
+            new AstConst{nodep->fileline(), state}};
+        newp->addNext(new AstTimedEvent{
             nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-            new AstVarRef(nodep->fileline(), m_state.getCreateEventVarScp(nodep->fileline()),
-                          VAccess::WRITE)));
-        newp->addNext(new AstJumpGo(nodep->fileline(), m_exitLabelp));
+            new AstVarRef{nodep->fileline(), m_state.getCreateEventVarScp(nodep->fileline()),
+                          VAccess::WRITE}});
+        newp->addNext(new AstJumpGo{nodep->fileline(), m_exitLabelp});
         if (m_newProc) {
-            AstJumpLabel* restoreLabelp = newLabelp(nodep);
+            AstJumpLabel* const restoreLabelp = newLabelp(nodep);
             m_jumpTable[state] = restoreLabelp;
             newp->addNext(restoreLabelp);
             newp->addNext(
-                new AstComment(nodep->fileline(),
-                               string("From " + m_state.fsmName() + " state ") + cvtToStr(state)));
+                new AstComment{nodep->fileline(),
+                               string("From " + m_state.fsmName() + " state ") + cvtToStr(state)});
         } else {
             // Any statements (at this statement level) can never execute
             // We might as well get rid of them now (V3Const will also clean up)
@@ -324,15 +325,15 @@ private:
             ++m_statProcedures;
             AstNodeProcedure* alwaysp = nullptr;
             {
-                FileLine* fl = nodep->fileline();
+                FileLine* const fl = nodep->fileline();
                 // For initial, create version with and without triggering statements
-                AstSenTree* sensesp = new AstSenTree(
-                    fl, new AstSenItem(
+                AstSenTree* const sensesp = new AstSenTree{
+                    fl, new AstSenItem{
                             fl, VEdgeType::ET_HIGHEDGE,
-                            new AstVarRef(fl, m_state.getCreateEventVarScp(nodep->fileline()),
-                                          VAccess::READ)));
-                alwaysp = new AstAlways(fl, VAlwaysKwd::ALWAYS, sensesp,
-                                        nodep->bodysp()->cloneTree(true));
+                            new AstVarRef{fl, m_state.getCreateEventVarScp(nodep->fileline()),
+                                          VAccess::READ}}};
+                alwaysp = new AstAlways{fl, VAlwaysKwd::ALWAYS, sensesp,
+                                        nodep->bodysp()->cloneTree(true)};
                 nodep->addNext(alwaysp);
             }
             // Add Jumps
@@ -342,9 +343,9 @@ private:
         m_procedurep = nullptr;
     }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+        VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = nullptr;
     }
     virtual void visit(AstDelay* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
