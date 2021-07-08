@@ -18,6 +18,7 @@
 // Entire netlist
 //      Mark all nodes
 //      Check all links point to marked nodes
+//      Check local variables in CFuncs appear before they are referenced
 //
 //*************************************************************************
 
@@ -33,6 +34,7 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 
 //######################################################################
 
@@ -240,13 +242,23 @@ public:
 class BrokenCheckVisitor final : public AstNVisitor {
     bool m_inScope = false;  // Under AstScope
 
+    // Current CFunc, if any
+    const AstCFunc* m_cfuncp = nullptr;
+    // All local variables declared in current function
+    std::unordered_set<const AstVar*> m_localVars;
+    // Variable references in current function that do not reference an in-scope local
+    std::unordered_map<const AstVar*, const AstNodeVarRef*> m_suspectRefs;
+    // Local variables declared in the scope of the current statement
+    std::vector<std::unordered_set<const AstVar*>> m_localsStack;
+
 private:
     static void checkWidthMin(const AstNode* nodep) {
         UASSERT_OBJ(nodep->width() == nodep->widthMin()
                         || v3Global.widthMinUsage() != VWidthMinUsage::MATCHES_WIDTH,
                     nodep, "Width != WidthMin");
     }
-    void processAndIterate(AstNode* nodep) {
+
+    void processEnter(AstNode* nodep) {
         BrokenTable::setUnder(nodep, true);
         const char* whyp = nodep->broken();
         UASSERT_OBJ(!whyp, nodep,
@@ -270,8 +282,30 @@ private:
             if (const AstNodeDType* dnodep = VN_CAST(nodep, NodeDType)) checkWidthMin(dnodep);
         }
         checkWidthMin(nodep);
+    }
+    void processExit(AstNode* nodep) { BrokenTable::setUnder(nodep, false); }
+    void processAndIterate(AstNode* nodep) {
+        processEnter(nodep);
         iterateChildrenConst(nodep);
-        BrokenTable::setUnder(nodep, false);
+        processExit(nodep);
+    }
+    void processAndIterateList(AstNode* nodep) {
+        while (nodep) {
+            processAndIterate(nodep);
+            nodep = nodep->nextp();
+        };
+    }
+    void pushLocalScope() {
+        if (m_cfuncp) m_localsStack.emplace_back();
+    }
+    void popLocalScope() {
+        if (m_cfuncp) m_localsStack.pop_back();
+    }
+    bool isInScopeLocal(const AstVar* varp) const {
+        for (const auto& set : m_localsStack) {
+            if (set.count(varp)) return true;
+        }
+        return false;
     }
     virtual void visit(AstNodeAssign* nodep) override {
         processAndIterate(nodep);
@@ -295,6 +329,65 @@ private:
         UASSERT_OBJ(
             !(v3Global.assertScoped() && m_inScope && nodep->varp() && !nodep->varScopep()), nodep,
             "VarRef missing VarScope pointer");
+        if (m_cfuncp) {
+            // Check if variable is an in-scope local, otherwise mark as suspect
+            if (const AstVar* const varp = nodep->varp()) {
+                if (!isInScopeLocal(varp)) {
+                    // This only stores the first ref for each Var, which is what we want
+                    m_suspectRefs.emplace(varp, nodep);
+                }
+            }
+        }
+    }
+    virtual void visit(AstCFunc* nodep) override {
+        UASSERT_OBJ(!m_cfuncp, nodep, "Nested AstCFunc");
+        m_cfuncp = nodep;
+        m_localVars.clear();
+        m_suspectRefs.clear();
+        m_localsStack.clear();
+        pushLocalScope();
+
+        processAndIterate(nodep);
+
+        // Check suspect references are all to non-locals
+        for (const auto& pair : m_suspectRefs) {
+            UASSERT_OBJ(m_localVars.count(pair.first) == 0, pair.second,
+                        "Local variable not in scope where referenced: " << pair.first);
+        }
+
+        m_cfuncp = nullptr;
+    }
+    virtual void visit(AstNodeIf* nodep) override {
+        // Each branch is a separate local variable scope
+        pushLocalScope();
+        processEnter(nodep);
+        processAndIterate(nodep->condp());
+        if (AstNode* const ifsp = nodep->ifsp()) {
+            pushLocalScope();
+            processAndIterateList(ifsp);
+            popLocalScope();
+        }
+        if (AstNode* const elsesp = nodep->elsesp()) {
+            pushLocalScope();
+            processAndIterateList(elsesp);
+            popLocalScope();
+        }
+        processExit(nodep);
+        popLocalScope();
+    }
+    virtual void visit(AstNodeStmt* nodep) override {
+        // For local variable checking act as if any statement introduces a new scope.
+        // This is aggressive but conservatively correct.
+        pushLocalScope();
+        processAndIterate(nodep);
+        popLocalScope();
+    }
+    virtual void visit(AstVar* nodep) override {
+        processAndIterate(nodep);
+        if (m_cfuncp) {
+            m_localVars.insert(nodep);
+            m_localsStack.back().insert(nodep);
+        }
     }
     virtual void visit(AstNode* nodep) override {
         // Process not just iterate

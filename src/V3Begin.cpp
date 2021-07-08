@@ -62,6 +62,7 @@ private:
     BeginState* m_statep;  // Current global state
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNode* m_liftedp = nullptr;  // Local  nodes we are lifting into m_ftaskp
     string m_namedScope;  // Name of begin blocks above us
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
@@ -72,6 +73,21 @@ private:
     string dot(const string& a, const string& b) {
         if (a == "") return b;
         return a + "__DOT__" + b;
+    }
+
+    void liftNode(AstNode* nodep) {
+        nodep->unlinkFrBack();
+        if (m_ftaskp) {
+            // AstBegin under ftask, just move into the ftask
+            if (!m_liftedp) {
+                m_liftedp = nodep;
+            } else {
+                m_liftedp->addNext(nodep);
+            }
+        } else {
+            // Move to module
+            m_modp->addStmtp(nodep);
+        }
     }
 
     // VISITORS
@@ -101,7 +117,17 @@ private:
             m_namedScope = "";
             m_unnamedScope = "";
             m_ftaskp = nodep;
+            m_liftedp = nullptr;
             iterateChildren(nodep);
+            if (m_liftedp) {
+                // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
+                if (AstNode* const stmtsp = nodep->stmtsp()) {
+                    stmtsp->unlinkFrBackWithNext();
+                    m_liftedp->addNext(stmtsp);
+                }
+                nodep->addStmtsp(m_liftedp);
+                m_liftedp = nullptr;
+            }
             m_ftaskp = nullptr;
         }
     }
@@ -157,13 +183,8 @@ private:
             // Rename it
             nodep->name(dot(m_unnamedScope, nodep->name()));
             m_statep->userMarkChanged(nodep);
-            // Move to module
-            nodep->unlinkFrBack();
-            if (m_ftaskp) {
-                m_ftaskp->addStmtsp(nodep);  // Begins under funcs just move into the func
-            } else {
-                m_modp->addStmtp(nodep);
-            }
+            // Move it under enclosing tree
+            liftNode(nodep);
         }
     }
     virtual void visit(AstTypedef* nodep) override {
@@ -171,14 +192,8 @@ private:
             // Rename it
             nodep->name(dot(m_unnamedScope, nodep->name()));
             m_statep->userMarkChanged(nodep);
-            // Move to module
-            nodep->unlinkFrBack();
-            // Begins under funcs just move into the func
-            if (m_ftaskp) {
-                m_ftaskp->addStmtsp(nodep);
-            } else {
-                m_modp->addStmtp(nodep);
-            }
+            // Move it under enclosing tree
+            liftNode(nodep);
         }
     }
     virtual void visit(AstCell* nodep) override {
