@@ -53,6 +53,8 @@ module t;
    parameter int52 = 1;
    parameter int61 = 1;
    parameter int62 = 1;
+   parameter int71 = 1;
+   parameter int72 = 1;
 
    initial begin
       `check(string1,"New String");
@@ -83,6 +85,11 @@ module t;
       `check(int52,32'hdeadbeef);
       `check(int61,32'hdeadbeef);
       `check(int62,32'hdeadbeef);
+      `check(int71,-1000);
+      `check(int72,-1000);
+
+      // Check parameter assigned simple integer literal is signed
+      if ((int11 << 27) >>> 31 != -1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
