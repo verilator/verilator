@@ -86,7 +86,13 @@ void EmitCBaseVisitor::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModul
         puts(funcp->rtnTypeVoid());
         puts(" ");
     }
-    if (withScope && funcp->isProperMethod()) puts(prefixNameProtect(modp) + "::");
+    if (withScope) {
+        if (funcp->dpiExportDispatcher()) {
+            puts(topClassName() + "::");
+        } else if (funcp->isProperMethod()) {
+            puts(prefixNameProtect(modp) + "::");
+        }
+    }
     puts(funcNameProtect(funcp, modp));
     puts("(" + cFuncArgs(funcp) + ")");
     if (funcp->isConst().trueKnown() && funcp->isProperMethod()) puts(" const");
@@ -108,8 +114,9 @@ void EmitCBaseVisitor::emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule*
     if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
 }
 
-void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
+void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, const string& prefixIfImp, bool asRef) {
     const AstBasicDType* const basicp = nodep->basicp();
+    bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
 
     const auto emitDeclArrayBrackets = [this](const AstVar* nodep) -> void {
         // This isn't very robust and may need cleanup for other data types
@@ -137,7 +144,12 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, const string& prefixIfIm
             puts(nodep->scType());
             puts("> ");
         }
+        if (asRef) {
+            if (refNeedParens) puts("(");
+            puts("&");
+        }
         puts(nodep->nameProtect());
+        if (asRef && refNeedParens) { puts(")"); }
         emitDeclArrayBrackets(nodep);
         puts(";\n");
     } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
@@ -159,9 +171,16 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, const string& prefixIfIm
             puts("16");
         } else if (nodep->isWide()) {
             puts("W");
+            refNeedParens = true;
         }
 
-        puts("(" + nodep->nameProtect());
+        puts("(");
+        if (asRef) {
+            if (refNeedParens) puts("(");
+            puts("&");
+        }
+        puts(nodep->nameProtect());
+        if (asRef && refNeedParens) { puts(")"); }
         emitDeclArrayBrackets(nodep);
         // If it's a packed struct/array then nodep->width is the whole
         // thing, msb/lsb is just lowest dimension
@@ -180,7 +199,7 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, const string& prefixIfIm
                                   && name.substr(name.size() - suffix.size()) == suffix;
             if (beStatic) puts("static VL_THREAD_LOCAL ");
         }
-        puts(nodep->vlArgType(true, false, false, prefixIfImp));
+        puts(nodep->vlArgType(true, false, false, prefixIfImp, asRef));
         puts(";\n");
     }
 }

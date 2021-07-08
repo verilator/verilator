@@ -8,23 +8,39 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 4.205 devel
+Verilator 4.211 devel
+==========================
+
+**Minor:**
+
+
+Verilator 4.210 2021-07-07
 ==========================
 
 **Major:**
 
 * Generated code is now emitted as global functions rather than methods. '$c'
   contents might need to be updated, see the docs (#3006). [Geza Lore]
+* The generated model class instantiated by the user is now an interface
+  object and no longer the TOP module instance.  User code with direct
+  C++ member access to model internals, including verilator public_flat
+  items will likely need to be updated. See the manual for instructions:
+  https://verilator.org/guide/latest/connecting.html#porting-from-pre-4-210
+  (#3036). [Geza Lore]
 
 **Minor:**
 
+* Add --prof-c to pass profiling to compiler (#3059). [Alexander Grobman]
 * Optimize a lot more model variables into function locals (#3027). [Geza Lore]
+* Support middle-of-design nested topmodules (#3026). [Dan Petrisko]
 * Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]
 * Remove deprecated --inhibit-sim option (#3035). [Geza Lore]
 * Merge const static data globally into a new constant pool (#3013). [Geza Lore]
 * Allow configure override of AR program (#2999). [ahouska]
 * In XML, show pinIndex information (#2877). [errae233]
 * Fix error on unsupported recursive functions (#2957). [Trefor Southwell]
+* Fix type parameter specialization when struct names are same (#3055). [7FM]
+* Improve speed of table optimization (-OA) pass. [Geza Lore]
 
 
 Verilator 4.204 2021-06-12

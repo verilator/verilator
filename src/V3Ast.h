@@ -1880,7 +1880,7 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
-    // For documentation on emitC format see EmitCStmts::emitOpName
+    // For documentation on emitC format see EmitCFunc::emitOpName
     virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS

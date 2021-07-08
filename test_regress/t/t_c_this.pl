@@ -15,7 +15,7 @@ compile();
 if ($Self->{vlt_all}) {
     # The word 'this' (but only the whole word 'this' should have been replaced
     # in the contents.
-    my $file = "$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp";
+    my $file = "$Self->{obj_dir}/$Self->{VM_PREFIX}___024root.cpp";
     my $text = file_contents($file);
     error("$file has 'this->clk'") if ($text =~ m/\bthis->clk\b/);
     error("$file does not have 'xthis'") if ($text !~ m/\bxthis\b/);

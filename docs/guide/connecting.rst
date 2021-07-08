@@ -7,22 +7,86 @@
 Connecting to Verilated Models
 ******************************
 
+Structure of the Verilated Model
+================================
+
+Verilator outputs a :file:`{prefix}.h` header file which defines a class
+named :code:`{prefix}` which represents the generated model the user is
+supposed to instantiate.  This model class defines the interface of the
+Verilated model.
+
+Verilator will additionally create a :file:`{prefix}.cpp` file, together
+with additional .h and .cpp files for internals.  See the :file:`examples`
+directory in the kit for examples.  See :ref:`Files Read/Written` for
+information on all the files Verilator might output.
+
+The output of Verilator will contain a :file:`{prefix}.mk` file that may be
+used with Make to build a :file:`{prefix}__ALL.a` library with all required
+objects in it.
+
+The generated model class file manages all internal state required by the
+model, and exposes the following interface that allows interaction with the
+model:
+
+* Top level IO ports are exposed as references to the appropriate internal
+  equivalents.
+
+* Public top level module instances are exposed as pointers to allow access
+  to :code:`/* verilator public */` items.
+
+* The root of the design hierarchy (as in SystemVerilog :code:`$root`) is
+  exposed via the :code:`rootp` member pointer to allow access to model
+  internals, including :code:`/* verilator public_flat */` items.
+
+
+.. _Porting from pre 4.210:
+
+Model interface changes in version 4.210
+------------------------------------------
+
+Starting from version 4.210, the model class is an interface object.
+
+Up until Verilator version 4.204 inclusive, the generated model class was
+also the instance of the top level instance in the design hierarchy (what
+you would refer to with :code:`$root` in SystemVerilog).  This meant that
+all internal variables that were implemented by Verilator in the root scope
+were accessible as members of the model class itself.  Note there were often
+many such variable due to module inlining, including :code:`/* verilator
+public_flat */` items.
+
+This means that user code that accesses internal signals in the model
+(likely including :code:`/* verilator public_flat */` signals, as they are
+often inlined into the root scope) will need to be updated as follows:
+
+* No change required for accessing top level IO signals. These are directly
+  accessible in the model class via references.
+
+* No change required for accessing :code:`/* verilator public */` items.
+  These are directly accessible via sub-module pointers in the model class.
+
+* Accessing any other internal members, including
+  :code:`/* verilator public_flat */` items requires the following changes:
+
+  * Additionally include :file:`{prefix}___024root.h`. This header defines
+    type of the :code:`rootp` pointer within the model class. Note the
+    :code:`__024` substring is the Verilator escape sequence for the
+    :code:`$` character, i.e.: :code:`rootp` points to the Verilated
+    SystemVerilog :code:`$root` scope.
+
+  * Replace :code:`modelp->internal->member->lookup` references with
+    :code:`modelp->rootp->internal->member->lookup` references, which
+    contain one additional indirection via the :code:`rootp` pointer.
+
+
 .. _Connecting to C++:
 
 Connecting to C++
 =================
 
-Verilator creates a :file:`{prefix}.h` and :file:`{prefix}.cpp` file for
-the top level module, together with additional .h and .cpp files for
-internals. See the :file:`examples` directory in the kit for examples.  See
-:ref:`Files Read/Written` for information on all the files it writes.
-
-After the model is created, there will be a :file:`{prefix}.mk` file that
-may be used with Make to produce a :file:`{prefix}__ALL.a` file with all
-required objects in it.
-
-The user must write a C++ wrapper and main loop for the simulation, to link
-with the Verilated model.  Here is a simple example:
+In C++ output mode (:vlopt:`--cc`), the Verilator generated model class is a
+simple C++ class.  The user must write a C++ wrapper and main loop for the
+simulation, which instantiates the model class, and link with the Verilated
+model.  Here is a simple example:
 
 .. code-block:: C++
 
@@ -30,7 +94,7 @@ with the Verilated model.  Here is a simple example:
          #include <iostream>             // Need std::cout
          #include "Vtop.h"               // From Verilating "top.v"
 
-         Vtop *top;                      // Instantiation of module
+         Vtop *top;                      // Instantiation of model
 
          vluint64_t main_time = 0;       // Current simulation time
          // This is a 64-bit integer to reduce wrap over issues and
@@ -45,7 +109,7 @@ with the Verilated model.  Here is a simple example:
          int main(int argc, char** argv) {
              Verilated::commandArgs(argc, argv);   // Remember args
 
-             top = new Vtop;             // Create instance
+             top = new Vtop;             // Create model
 
              top->reset_l = 0;           // Set some inputs
 
@@ -70,17 +134,18 @@ with the Verilated model.  Here is a simple example:
          }
 
 
-Note signals are read and written as member variables of the model.  You
-call the :code:`eval()` method to evaluate the model.  When the simulation
-is complete call the :code:`final()` method to execute any SystemVerilog
-final blocks, and complete any assertions. See :ref:`Evaluation Loop`.
+Note top level IO signals are read and written as members of the model.  You
+call the :code:`eval()` method to evaluate the model.  When the simulation is
+complete call the :code:`final()` method to execute any SystemVerilog final
+blocks, and complete any assertions. See :ref:`Evaluation Loop`.
 
 
 Connecting to SystemC
 =====================
 
-Verilator will convert the top level module to a SC_MODULE.  This module
-will attach directly into a SystemC netlist as an instantiation.
+In SystemC output mode (:vlopt:`--sc`), the Verilator generated model class
+is a SystemC SC_MODULE.  This module will attach directly into a SystemC
+netlist as an instantiation.
 
 The SC_MODULE gets the same pinout as the Verilog module, with the
 following type conversions: Pins of a single bit become bool.  Pins 2-32
@@ -88,9 +153,9 @@ bits wide become uint32_t's.  Pins 33-64 bits wide become sc_bv's or
 vluint64_t's depending on the :vlopt:`--no-pins64` option.  Wider pins
 become sc_bv's.  (Uints simulate the fastest so are used where possible.)
 
-Lower modules are not pure SystemC code.  This is a feature, as using the
-SystemC pin interconnect scheme everywhere would reduce performance by an
-order of magnitude.
+Model internals, including lower level sub-modules are not pure SystemC
+code.  This is a feature, as using the SystemC pin interconnect scheme
+everywhere would reduce performance by an order of magnitude.
 
 
 Direct Programming Interface (DPI)

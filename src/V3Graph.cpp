@@ -133,10 +133,10 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
         nsstr << endl;
         nsstr << "-vertex: " << this << endl;
     }
-    if (!fileline()) {
-        V3Error::v3errorEnd(nsstr);
+    if (FileLine* const flp = fileline()) {
+        flp->v3errorEnd(nsstr);
     } else {
-        fileline()->v3errorEnd(nsstr);
+        V3Error::v3errorEnd(nsstr);
     }
 }
 void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const {

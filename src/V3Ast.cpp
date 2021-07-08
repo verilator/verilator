@@ -932,7 +932,9 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
 void AstNode::cloneRelinkTree() {
     // private: Cleanup clone() operation on whole tree. Publicly call cloneTree() instead.
     for (AstNode* nodep = this; nodep; nodep = nodep->m_nextp) {
-        if (m_dtypep && m_dtypep->clonep()) m_dtypep = m_dtypep->clonep();
+        if (nodep->m_dtypep && nodep->m_dtypep->clonep()) {
+            nodep->m_dtypep = nodep->m_dtypep->clonep();
+        }
         nodep->cloneRelink();
         if (nodep->m_op1p) nodep->m_op1p->cloneRelinkTree();
         if (nodep->m_op2p) nodep->m_op2p->cloneRelinkTree();

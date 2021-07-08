@@ -31,7 +31,7 @@
 #include "V3Ast.h"
 
 #include <cmath>
-#include <deque>
+#include <vector>
 
 //######################################################################
 // Table class functions
@@ -156,7 +156,6 @@ private:
     //  State cleared on each module
     AstNodeModule* m_modp = nullptr;  // Current MODULE
     int m_modTables = 0;  // Number of tables created in this module
-    std::deque<AstVarScope*> m_modTableVscs;  // All tables created
 
     //  State cleared on each scope
     AstScope* m_scopep = nullptr;  // Current SCOPE
@@ -165,7 +164,7 @@ private:
     bool m_assignDly = false;  // Consists of delayed assignments instead of normal assignments
     unsigned m_inWidthBits = 0;  // Input table width - in bits
     unsigned m_outWidthBytes = 0;  // Output table width - in bytes
-    std::deque<AstVarScope*> m_inVarps;  // Input variable list
+    std::vector<AstVarScope*> m_inVarps;  // Input variable list
     std::vector<TableOutputVar> m_outVarps;  // Output variable list
 
     // METHODS
@@ -380,11 +379,9 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modTables);
-        VL_RESTORER(m_modTableVscs);
         {
             m_modp = nodep;
             m_modTables = 0;
-            m_modTableVscs.clear();
             iterateChildren(nodep);
         }
     }

@@ -1,4 +1,4 @@
-module Vt_debug_emitv;
+module Vt_debug_emitv___024root;
     input logic clk;
     input logic in;
     signed int [31:0]  t.array[0:2];

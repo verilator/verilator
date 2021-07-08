@@ -965,7 +965,7 @@ protected:
 public:
     VIdProtectImp() {
         passthru("this");
-        passthru("TOPp");
+        passthru("TOP");
         passthru("vlSelf");
         passthru("vlSymsp");
     }
