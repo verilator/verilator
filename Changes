@@ -8,7 +8,7 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 4.205 devel
+Verilator 4.210 2021-07-07
 ==========================
 
 **Major:**
@@ -19,7 +19,7 @@ Verilator 4.205 devel
   object and no longer the TOP module instance.  User code with direct
   C++ member access to model internals, including verilator public_flat
   items will likely need to be updated. See the manual for instructions:
-  https://verilator.org/guide/latest/connecting.html#porting-from-pre-4-206
+  https://verilator.org/guide/latest/connecting.html#porting-from-pre-4-210
   (#3036). [Geza Lore]
 
 **Minor:**
