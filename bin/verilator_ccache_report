@@ -88,6 +88,7 @@ else:
         args.o.write("{:{width}}| {}s\n".format(k,
                                                 v.total_seconds(),
                                                 width=wnames))
-        if i > 4: break
+        if i > 4:
+            break
 
 args.o.write("#" * 80 + "\n")

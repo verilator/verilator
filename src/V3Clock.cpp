@@ -38,6 +38,34 @@
 #include <algorithm>
 
 //######################################################################
+// Convert every WRITE AstVarRef to a READ ref
+
+class ConvertWriteRefsToRead final : public AstNVisitor {
+private:
+    // MEMBERS
+    AstNode* m_result = nullptr;
+
+    // CONSTRUCTORS
+    explicit ConvertWriteRefsToRead(AstNode* nodep) {
+        m_result = iterateSubtreeReturnEdits(nodep);
+    }
+
+    // VISITORS
+    void visit(AstVarRef* nodep) override {
+        UASSERT_OBJ(!nodep->access().isRW(), nodep, "Cannot handle a READWRITE reference");
+        if (nodep->access().isWriteOnly()) {
+            nodep->replaceWith(
+                new AstVarRef(nodep->fileline(), nodep->varScopep(), VAccess::READ));
+        }
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    static AstNode* main(AstNode* nodep) { return ConvertWriteRefsToRead(nodep).m_result; }
+};
+
+//######################################################################
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public AstNVisitor {
@@ -164,6 +192,18 @@ private:
         m_lastSenp = nullptr;
         m_lastIfp = nullptr;
     }
+    AstCFunc* makeTopFunction(const string& name, bool slow = false) {
+        AstCFunc* const funcp = new AstCFunc{m_topScopep->fileline(), name, m_topScopep->scopep()};
+        funcp->dontCombine(true);
+        funcp->isStatic(false);
+        funcp->isLoose(true);
+        funcp->entryPoint(true);
+        funcp->slow(slow);
+        funcp->isConst(false);
+        funcp->declPrivate(true);
+        m_topScopep->scopep()->addActivep(funcp);
+        return funcp;
+    }
     void splitCheck(AstCFunc* ofuncp) {
         if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
         if (EmitCBaseCounterVisitor(ofuncp->stmtsp()).count() < v3Global.opt.outputSplitCFuncs())
@@ -179,20 +219,18 @@ private:
         if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
         while (tempp->stmtsp()) {
             AstNode* itemp = tempp->stmtsp()->unlinkFrBack();
-            int stmts = EmitCBaseCounterVisitor(itemp).count();
+            const int stmts = EmitCBaseCounterVisitor(itemp).count();
             if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
                 // Make a new function
                 funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + cvtToStr(++funcnum),
                                      m_topScopep->scopep()};
-                funcp->argTypes(EmitCBaseVisitor::symClassVar());
                 funcp->dontCombine(true);
-                funcp->symProlog(true);
-                funcp->isStatic(true);
+                funcp->isStatic(false);
+                funcp->isLoose(true);
                 funcp->slow(ofuncp->slow());
                 m_topScopep->scopep()->addActivep(funcp);
                 //
                 AstCCall* callp = new AstCCall{funcp->fileline(), funcp};
-                callp->argTypes("vlSymsp");
                 ofuncp->addStmtsp(callp);
                 func_stmts = 0;
             }
@@ -212,55 +250,10 @@ private:
         // VV*****  We reset all user1p()
         AstNode::user1ClearTree();
         // Make top functions
-        {
-            AstCFunc* funcp = new AstCFunc{nodep->fileline(), "_eval", m_topScopep->scopep()};
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
-            funcp->dontCombine(true);
-            funcp->symProlog(true);
-            funcp->isStatic(true);
-            funcp->entryPoint(true);
-            m_topScopep->scopep()->addActivep(funcp);
-            m_evalFuncp = funcp;
-        }
-        {
-            AstCFunc* funcp
-                = new AstCFunc{nodep->fileline(), "_eval_initial", m_topScopep->scopep()};
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
-            funcp->dontCombine(true);
-            funcp->slow(true);
-            funcp->symProlog(true);
-            funcp->isStatic(true);
-            funcp->entryPoint(true);
-            m_topScopep->scopep()->addActivep(funcp);
-            m_initFuncp = funcp;
-        }
-        {
-            AstCFunc* funcp = new AstCFunc{nodep->fileline(), "final", m_topScopep->scopep()};
-            funcp->skipDecl(true);
-            funcp->dontCombine(true);
-            funcp->slow(true);
-            funcp->isStatic(false);
-            funcp->entryPoint(true);
-            funcp->protect(false);
-            funcp->addInitsp(new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symClassVar()
-                                                                 + " = this->__VlSymsp;\n"));
-            funcp->addInitsp(
-                new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symTopAssign() + "\n"));
-            m_topScopep->scopep()->addActivep(funcp);
-            m_finalFuncp = funcp;
-        }
-        {
-            AstCFunc* funcp
-                = new AstCFunc{nodep->fileline(), "_eval_settle", m_topScopep->scopep()};
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
-            funcp->dontCombine(true);
-            funcp->slow(true);
-            funcp->isStatic(true);
-            funcp->symProlog(true);
-            funcp->entryPoint(true);
-            m_topScopep->scopep()->addActivep(funcp);
-            m_settleFuncp = funcp;
-        }
+        m_evalFuncp = makeTopFunction("_eval");
+        m_initFuncp = makeTopFunction("_eval_initial", /* slow: */ true);
+        m_settleFuncp = makeTopFunction("_eval_settle", /* slow: */ true);
+        m_finalFuncp = makeTopFunction("_final", /* slow: */ true);
         // Process the activates
         iterateChildren(nodep);
         UINFO(4, " TOPSCOPE iter done " << nodep << endl);
@@ -307,14 +300,14 @@ private:
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
         AstNode* incp = nodep->incp()->unlinkFrBack();
         AstNode* origp = nodep->origp()->unlinkFrBack();
-        AstNode* changep = nodep->changep()->unlinkFrBack();
-        AstIf* newp = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changep),
+        AstNode* changeWrp = nodep->changep()->unlinkFrBack();
+        AstNode* changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
+        AstIf* newp = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp),
                                 incp, nullptr);
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addIfsp(
-            new AstAssign(nodep->fileline(), changep->cloneTree(false), origp->cloneTree(false)));
+        newp->addIfsp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -324,7 +317,6 @@ private:
         if (nodep->formCallTree()) {
             UINFO(4, "    formCallTree " << nodep << endl);
             AstCCall* callp = new AstCCall(nodep->fileline(), nodep);
-            callp->argTypes("vlSymsp");
             m_finalFuncp->addStmtsp(callp);
         }
     }

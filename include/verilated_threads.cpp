@@ -74,7 +74,7 @@ void VlWorkerThread::workerLoop() {
         if (VL_UNLIKELY(m_exiting.load(std::memory_order_acquire))) break;
 
         if (VL_LIKELY(work.m_fnp)) {
-            work.m_fnp(work.m_evenCycle, work.m_sym);
+            work.m_fnp(work.m_selfp, work.m_evenCycle);
             work.m_fnp = nullptr;
         }
     }
@@ -93,7 +93,7 @@ void VlWorkerThread::startWorker(VlWorkerThread* workerp) {
 VlThreadPool::VlThreadPool(VerilatedContext* contextp, int nThreads, bool profiling)
     : m_profiling{profiling} {
     // --threads N passes nThreads=N-1, as the "main" threads counts as 1
-    unsigned cpus = std::thread::hardware_concurrency();
+    const unsigned cpus = std::thread::hardware_concurrency();
     if (cpus < nThreads + 1) {
         static int warnedOnce = 0;
         if (!warnedOnce++) {
@@ -149,7 +149,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
     const VerilatedLockGuard lk(m_mutex);
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
 
-    FILE* fp = std::fopen(filenamep, "w");
+    FILE* const fp = std::fopen(filenamep, "w");
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filenamep, 0, "", "+prof+threads+file file not writable");
         // cppcheck-suppress resourceLeak   // bug, doesn't realize fp is nullptr

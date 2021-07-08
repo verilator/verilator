@@ -72,13 +72,13 @@ private:
     AstCFunc* newCFunc(AstCFuncType type, const string& name) {
         FileLine* const flp = m_topScopep->fileline();
         AstCFunc* const funcp = new AstCFunc(flp, name, m_topScopep);
-        string argTypes("void* userp, " + v3Global.opt.traceClassBase() + "* tracep");
+        string argTypes = v3Global.opt.traceClassBase() + "* tracep";
         if (m_interface) argTypes += ", int scopet, const char* scopep";
         funcp->argTypes(argTypes);
         funcp->funcType(type);
-        funcp->symProlog(true);
+        funcp->isStatic(false);
+        funcp->isLoose(true);
         funcp->slow(true);
-        funcp->declPrivate(true);
         m_topScopep->addActivep(funcp);
         UINFO(5, "  Newfunc " << funcp << endl);
         return funcp;
@@ -86,10 +86,10 @@ private:
     void callCFuncSub(AstCFunc* basep, AstCFunc* funcp, AstIntfRef* irp) {
         AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
         if (irp) {
-            callp->argTypes("userp, tracep, VLT_TRACE_SCOPE_INTERFACE");
+            callp->argTypes("tracep, VLT_TRACE_SCOPE_INTERFACE");
             callp->addArgsp(irp->unlinkFrBack());
         } else {
-            callp->argTypes("userp, tracep");
+            callp->argTypes("tracep");
         }
         basep->addStmtsp(callp);
     }
@@ -165,7 +165,7 @@ private:
 
                     const string irpName = irp->prettyName();
                     if (scopeLen > irpName.length()) continue;
-                    string intfScopeName = irpName.substr(0, scopeLen);
+                    const string intfScopeName = irpName.substr(0, scopeLen);
                     if (scopeName != intfScopeName) continue;
                     callCFuncSub(origSubFunc, m_initSubFuncp, irp);
                     ++origSubStmts;

@@ -89,7 +89,7 @@ private:
             return;
         }
         UINFO(6, "     CL STMT " << nodep << endl);
-        bool oldKeep = m_keepStmt;
+        const bool oldKeep = m_keepStmt;
         {
             m_matches = false;
             m_keepStmt = false;

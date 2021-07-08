@@ -17,9 +17,9 @@
   </cells>
   <netlist>
     <module fl="d12" loc="d,12,8,12,9" name="m" origName="m" topModule="1">
-      <var fl="d14" loc="d,14,11,14,17" name="clk_ip" tag="clk_ip" dtype_id="1" dir="input" vartype="logic" origName="clk_ip"/>
-      <var fl="d15" loc="d,15,11,15,17" name="rst_ip" dtype_id="1" dir="input" vartype="logic" origName="rst_ip"/>
-      <var fl="d16" loc="d,16,11,16,17" name="foo_op" tag="foo_op" dtype_id="1" dir="output" vartype="logic" origName="foo_op"/>
+      <var fl="d14" loc="d,14,11,14,17" name="clk_ip" tag="clk_ip" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk_ip"/>
+      <var fl="d15" loc="d,15,11,15,17" name="rst_ip" dtype_id="1" dir="input" pinIndex="2" vartype="logic" origName="rst_ip"/>
+      <var fl="d16" loc="d,16,11,16,17" name="foo_op" tag="foo_op" dtype_id="1" dir="output" pinIndex="3" vartype="logic" origName="foo_op"/>
       <typedef fl="d25" loc="d,25,6,25,15" name="my_struct" tag="my_struct" dtype_id="2"/>
       <instance fl="d29" loc="d,29,8,29,12" name="itop" defName="ifc" origName="itop"/>
       <var fl="d29" loc="d,29,8,29,12" name="itop__Viftop" dtype_id="3" vartype="ifaceref" origName="itop__Viftop"/>

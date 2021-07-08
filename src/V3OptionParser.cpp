@@ -116,7 +116,7 @@ V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbPartialMatchVal, void(const char*, cons
 // Member functions of V3OptionParser
 
 V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
-    auto it = m_pimpl->m_options.find(optp);
+    const auto it = m_pimpl->m_options.find(optp);
     if (it != m_pimpl->m_options.end()) return it->second.get();
     for (auto&& act : m_pimpl->m_options) {
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
@@ -218,7 +218,7 @@ V3OptionParser::ActionIfs&
 V3OptionParser::AppendHelper::operator()(const char* optp, CbPartialMatch,
                                          Impl::ActionCbPartialMatch::CbType cb) const {
     const size_t prefixLen = std::strlen(optp);
-    auto wrap = [prefixLen, cb](const char* optp) { cb(optp + prefixLen); };
+    const auto wrap = [prefixLen, cb](const char* optp) { cb(optp + prefixLen); };
     return m_parser.add<Impl::ActionCbPartialMatch>(optp, std::move(wrap));
 }
 

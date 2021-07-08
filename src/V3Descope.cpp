@@ -46,17 +46,17 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstScope* m_scopep = nullptr;  // Current scope
-    bool m_modSingleton = false;  // m_modp is only instanced once
-    bool m_allowThis = false;  // Allow function non-static
-    bool m_needThis = false;  // Make function non-static
+    const AstScope* m_scopep = nullptr;  // Current scope
+    const AstCFunc* m_funcp = nullptr;  // Current function
+    bool m_modSingleton = false;  // m_modp is only instantiated once
     FuncMmap m_modFuncs;  // Name of public functions added
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     static bool modIsSingleton(AstNodeModule* modp) {
-        // True iff there's exactly one instance of this module in the design.
+        // True iff there's exactly one instance of this module in the design (including top).
+        if (modp->isTop()) return true;
         int instances = 0;
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (VN_IS(stmtp, Scope)) {
@@ -66,82 +66,39 @@ private:
         return (instances == 1);
     }
 
-    // Construct the best prefix to reference an object in 'scopep'
-    // from a CFunc in 'm_scopep'. Result may be relative
-    // ("this->[...]") or absolute ("vlTOPp->[...]").
+    // Construct the best self pointer to reference an object in 'scopep'  from a CFunc in
+    // 'm_scopep'. Result may be relative ("this->[...]") or absolute ("vlSyms->[...]").
     //
-    // Using relative references allows V3Combine'ing
-    // code across multiple instances of the same module.
-    //
-    // Sets 'hierThisr' true if the object is local to this scope
-    // (and could be made into a function-local later in V3Localize),
-    // false if the object is in another scope.
-    string descopedName(bool& hierThisr, string& hierUnprot, const AstScope* scopep,
-                        const AstVar* varp) {
+    // Using relative references allows V3Combine'ing code across multiple instances of the same
+    // module.
+    string descopedSelfPointer(const AstScope* scopep) {
         UASSERT(scopep, "Var/Func not scoped");
-        hierThisr = (scopep == m_scopep);
 
-        // It's possible to disable relative references. This is a concession
-        // to older compilers (gcc < 4.5.x) that don't understand __restrict__
-        // well and emit extra ld/st to guard against pointer aliasing
-        // when this-> and vlTOPp-> are mixed in the same function.
-        //
-        // "vlTOPp" is declared "restrict" so better compilers understand
-        // that it won't alias with "this".
-        bool relativeRefOk = v3Global.opt.relativeCFuncs();
-        //
-        // Static functions can't use this
-        if (!m_allowThis) relativeRefOk = false;
-        //
-        // Use absolute refs in top-scoped routines, keep them static.
-        // The DPI callback registration depends on representing top-level
-        // static routines as plain function pointers. That breaks if those
-        // become true OO routines.
-        //
-        // V3Combine wouldn't likely be able to combine top-level
-        // routines anyway, so there's no harm in keeping these static.
-        UASSERT_OBJ(m_modp, scopep, "Scope not under module");
-        if (m_modp->isTop()) relativeRefOk = false;
-        //
-        // Use absolute refs if this scope is the only instance of the module.
-        // Saves a bit of overhead on passing the 'this' pointer, and there's no
-        // need to be nice to V3Combine when we have only a single instance.
-        // The risk that this prevents combining identical logic from differently-
-        // named but identical modules seems low.
-        if (m_modSingleton) relativeRefOk = false;
-        //
-        // Class methods need relative
-        if (m_modp && VN_IS(m_modp, Class)) relativeRefOk = true;
+        // Static functions can't use relative references via 'this->'
+        const bool relativeRefOk = !m_funcp->isStatic();
 
-        if (varp && varp->isFuncLocal()) {
-            hierThisr = true;
-            return "";  // Relative to function, not in this
-        } else if (relativeRefOk && scopep == m_scopep) {
-            m_needThis = true;
-            return "this->";
+        UINFO(8, "      Descope ref under " << m_scopep << endl);
+        UINFO(8, "              ref to    " << scopep << endl);
+        UINFO(8, "             aboveScope " << scopep->aboveScopep() << endl);
+
+        if (relativeRefOk && scopep == m_scopep) {
+            return "this";
         } else if (VN_IS(scopep->modp(), Class)) {
-            hierUnprot = v3Global.opt.modPrefix() + "_";  // Prefix before protected part
-            return scopep->modp()->name() + "::";
-        } else if (relativeRefOk && scopep->aboveScopep() && scopep->aboveScopep() == m_scopep) {
-            // Reference to scope of instance directly under this module, can just "cell->"
+            return "this";
+        } else if (!m_modSingleton && relativeRefOk && scopep->aboveScopep() == m_scopep
+                   && VN_IS(scopep->modp(), Module)) {
+            // Reference to scope of instance directly under this module, can just "this->cell",
+            // which can potentially be V3Combined, but note this requires one extra pointer
+            // dereference which is slower, so we only use it if the source scope is not a
+            // singleton.
             string name = scopep->name();
             string::size_type pos;
             if ((pos = name.rfind('.')) != string::npos) name.erase(0, pos + 1);
-            m_needThis = true;
-            return name + "->";
+            return "this->" + name;
         } else {
-            // Reference to something elsewhere, or relative references
-            // are disabled. Use global variable
-            UINFO(8, "      Descope " << scopep << endl);
-            UINFO(8, "           to " << scopep->name() << endl);
-            UINFO(8, "        under " << m_scopep->name() << endl);
-            if (!scopep->aboveScopep()) {  // Top
-                // We could also return "vlSymsp->TOPp->" here, but GCC would
-                // suspect aliases.
-                return "vlTOPp->";
-            } else {
-                return scopep->nameVlSym() + ".";
-            }
+            // Reference to something elsewhere, or relative references are disabled. Use global
+            // variable
+            return "(&" + scopep->nameVlSym() + ")";
         }
     }
 
@@ -150,7 +107,7 @@ private:
         // If for any given name only one function exists, we can use that function directly.
         // If multiple functions exist, we need to select the appropriate scope.
         for (FuncMmap::iterator it = m_modFuncs.begin(); it != m_modFuncs.end(); ++it) {
-            string name = it->first;
+            const string name = it->first;
             AstCFunc* topFuncp = it->second;
             auto nextIt1 = it;
             ++nextIt1;
@@ -164,11 +121,6 @@ private:
                 if (newfuncp->finalsp()) newfuncp->finalsp()->unlinkFrBackWithNext()->deleteTree();
                 newfuncp->name(name);
                 newfuncp->isStatic(false);
-                newfuncp->addInitsp(
-                    new AstCStmt(newfuncp->fileline(),
-                                 EmitCBaseVisitor::symClassVar() + " = this->__VlSymsp;\n"));
-                newfuncp->addInitsp(
-                    new AstCStmt(newfuncp->fileline(), EmitCBaseVisitor::symTopAssign() + "\n"));
                 topFuncp->addNextHere(newfuncp);
                 // In the body, call each function if it matches the given scope
                 for (FuncMmap::iterator eachIt = it;
@@ -177,7 +129,8 @@ private:
                     AstCFunc* funcp = eachIt->second;
                     auto nextIt2 = eachIt;
                     ++nextIt2;
-                    bool moreOfSame = (nextIt2 != m_modFuncs.end() && nextIt2->first == name);
+                    const bool moreOfSame
+                        = (nextIt2 != m_modFuncs.end() && nextIt2->first == name);
                     UASSERT_OBJ(funcp->scopep(), funcp, "Not scoped");
 
                     UINFO(6, "     Wrapping " << name << " " << funcp << endl);
@@ -252,16 +205,17 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
+        if (!nodep->varScopep()) {
+            UASSERT_OBJ(nodep->varp()->isFuncLocal(), nodep,
+                        "unscoped reference can only appear to function locals at this point");
+            return;
+        }
         // Convert the hierch name
         UINFO(9, "  ref-in " << nodep << endl);
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
-        bool hierThis;
-        string hierUnprot;
-        nodep->hiernameToProt(descopedName(hierThis /*ref*/, hierUnprot /*ref*/,
-                                           nodep->varScopep()->scopep(),
-                                           nodep->varScopep()->varp()));
-        nodep->hiernameToUnprot(hierUnprot);
-        nodep->hierThis(hierThis);
+        const AstVar* const varp = nodep->varScopep()->varp();
+        const AstScope* const scopep = nodep->varScopep()->scopep();
+        if (!varp->isFuncLocal()) { nodep->selfPointer(descopedSelfPointer(scopep)); }
         nodep->varScopep(nullptr);
         UINFO(9, "  refout " << nodep << endl);
     }
@@ -270,24 +224,20 @@ private:
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
-        UASSERT_OBJ(nodep->funcp()->scopep(), nodep, "CFunc not under scope");
-        bool hierThis;
-        string hierUnprot;
-        nodep->hiernameToProt(
-            descopedName(hierThis /*ref*/, hierUnprot /*ref*/, nodep->funcp()->scopep(), nullptr));
-        nodep->hiernameToUnprot(hierUnprot);
+        const AstScope* const scopep = nodep->funcp()->scopep();
+        nodep->selfPointer(descopedSelfPointer(scopep));
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }
     virtual void visit(AstCFunc* nodep) override {
-        VL_RESTORER(m_needThis);
-        VL_RESTORER(m_allowThis);
+        VL_RESTORER(m_funcp);
         if (!nodep->user1()) {
-            m_needThis = false;
-            m_allowThis = nodep->isStatic().falseUnknown();  // Non-static or unknown if static
+            // Static functions should have been moved under the corresponding AstClassPackage
+            UASSERT(!(nodep->isStatic() && VN_IS(m_modp, Class)),
+                    "Static function under AstClass");
+            m_funcp = nodep;
             iterateChildren(nodep);
             nodep->user1(true);
-            if (m_needThis) nodep->isStatic(false);
             // If it's under a scope, move it up to the top
             if (m_scopep) {
                 nodep->unlinkFrBack();
@@ -316,7 +266,6 @@ public:
 
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    v3Global.assertScoped(false);
     { DescopeVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

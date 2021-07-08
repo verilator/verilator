@@ -99,7 +99,7 @@ private:
                 if (v3Global.opt.statsVars()) m_statVarWidthNames.resize(nodep->width() + 5);
             }
             ++m_statVarWidths.at(nodep->width());
-            string pn = nodep->prettyName();
+            const string pn = nodep->prettyName();
             if (v3Global.opt.statsVars()) {
                 NameMap& nameMapr = m_statVarWidthNames.at(nodep->width());
                 if (nameMapr.find(pn) != nameMapr.end()) {
@@ -230,7 +230,7 @@ public:
             V3Stats::addStat(m_stage, "Var space, scoped, bytes", m_statVarScpBytes);
         }
         for (unsigned i = 0; i < m_statVarWidths.size(); i++) {
-            double count = double(m_statVarWidths.at(i));
+            const double count = double(m_statVarWidths.at(i));
             if (count != 0.0) {
                 if (v3Global.opt.statsVars()) {
                     NameMap& nameMapr = m_statVarWidthNames.at(i);
@@ -248,14 +248,14 @@ public:
         }
         // Node types
         for (int type = 0; type < AstType::_ENUM_END; type++) {
-            double count = double(m_statTypeCount.at(type));
+            const double count = double(m_statTypeCount.at(type));
             if (count != 0.0) {
                 V3Stats::addStat(m_stage, string("Node count, ") + AstType(type).ascii(), count);
             }
         }
         for (int type = 0; type < AstType::_ENUM_END; type++) {
             for (int type2 = 0; type2 < AstType::_ENUM_END; type2++) {
-                double count = double(m_statAbove[type][type2]);
+                const double count = double(m_statAbove[type][type2]);
                 if (count != 0.0) {
                     V3Stats::addStat(m_stage,
                                      (string("Node pairs, ") + AstType(type).ascii() + "_"
@@ -266,7 +266,7 @@ public:
         }
         // Branch pred
         for (int type = 0; type < VBranchPred::_ENUM_END; type++) {
-            double count = double(m_statPred[type]);
+            const double count = double(m_statPred[type]);
             if (count != 0.0) {
                 V3Stats::addStat(
                     m_stage, (string("Branch prediction, ") + VBranchPred(type).ascii()), count);

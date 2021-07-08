@@ -20,7 +20,7 @@ pli_filename("t_vpi_get.cpp");
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi"
+    verilator_flags2 => ["--exe --vpi"
                          ." --public-flat-rw --prefix Vt_vpi_get --no-l2name"
                          ." $Self->{t_dir}/t_vpi_get.cpp"],
     make_pli => 1,

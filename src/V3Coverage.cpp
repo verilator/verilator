@@ -92,7 +92,7 @@ private:
         // See also similar rule in V3TraceDecl::varIgnoreTrace
         if (!nodep->isToggleCoverable()) return "Not relevant signal type";
         if (!v3Global.opt.coverageUnderscore()) {
-            string prettyName = nodep->prettyName();
+            const string prettyName = nodep->prettyName();
             if (prettyName[0] == '_') return "Leading underscore";
             if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
         }
@@ -114,7 +114,7 @@ private:
         // Note the module name could have parameters appended, we'll consider this
         // a feature as it allows for each parameterized block to be counted separately.
         // Someday the user might be allowed to specify a different page suffix
-        string page = page_prefix + "/" + m_modp->prettyName();
+        const string page = page_prefix + "/" + m_modp->prettyName();
 
         AstCoverDecl* declp = new AstCoverDecl(fl, page, comment, linescov, offset);
         declp->hier(hier);
@@ -144,7 +144,7 @@ private:
         if (it == m_varnames.end()) {
             m_varnames.emplace(name, 1);
         } else {
-            int suffix = (it->second)++;
+            const int suffix = (it->second)++;
             name += "_" + cvtToStr(suffix);
         }
         return name;
@@ -278,7 +278,7 @@ private:
                 //      We'll do this, and make the if(...) coverinc later.
 
                 // Add signal to hold the old value
-                string newvarname = string("__Vtogcov__") + nodep->shortName();
+                const string newvarname = string("__Vtogcov__") + nodep->shortName();
                 AstVar* chgVarp
                     = new AstVar(nodep->fileline(), AstVarType::MODULETEMP, newvarname, nodep);
                 chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
@@ -312,7 +312,7 @@ private:
             if (bdtypep->isRanged()) {
                 for (int index_docs = bdtypep->lo(); index_docs < bdtypep->hi() + 1;
                      ++index_docs) {
-                    int index_code = index_docs - bdtypep->lo();
+                    const int index_code = index_docs - bdtypep->lo();
                     ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
                                      new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
                                                 index_code, 1),
@@ -326,7 +326,7 @@ private:
             }
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
-                int index_code = index_docs - adtypep->lo();
+                const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
                                  new AstArraySel(varp->fileline(),
                                                  above.m_varRefp->cloneTree(true), index_code),
@@ -339,7 +339,7 @@ private:
         } else if (AstPackArrayDType* adtypep = VN_CAST(dtypep, PackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 AstNodeDType* subtypep = adtypep->subDTypep()->skipRefp();
-                int index_code = index_docs - adtypep->lo();
+                const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
                                  new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
                                             index_code * subtypep->width(), subtypep->width()),
@@ -354,7 +354,7 @@ private:
             for (AstMemberDType* itemp = adtypep->membersp(); itemp;
                  itemp = VN_CAST(itemp->nextp(), MemberDType)) {
                 AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
-                int index_code = itemp->lsb();
+                const int index_code = itemp->lsb();
                 ToggleEnt newent(above.m_comment + string(".") + itemp->name(),
                                  new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
                                             index_code, subtypep->width()),
@@ -385,17 +385,18 @@ private:
         UINFO(4, " IF: " << nodep << endl);
         if (m_state.m_on) {
             // An else-if.  When we iterate the if, use "elsif" marking
-            bool elsif = nodep->ifsp() && VN_IS(nodep->elsesp(), If) && !nodep->elsesp()->nextp();
+            const bool elsif
+                = nodep->ifsp() && VN_IS(nodep->elsesp(), If) && !nodep->elsesp()->nextp();
             if (elsif) VN_CAST(nodep->elsesp(), If)->user1(true);
-            bool first_elsif = !nodep->user1() && elsif;
-            bool cont_elsif = nodep->user1() && elsif;
-            bool final_elsif = nodep->user1() && !elsif && nodep->elsesp();
+            const bool first_elsif = !nodep->user1() && elsif;
+            const bool cont_elsif = nodep->user1() && elsif;
+            const bool final_elsif = nodep->user1() && !elsif && nodep->elsesp();
             //
             // Considered: If conditional is on a different line from if/else then we
             // can show it as part of line coverage of the statement
             // above. Otherwise show it based on what is inside.
             // But: Seemed too complicated, and fragile.
-            CheckState lastState = m_state;
+            const CheckState lastState = m_state;
             CheckState ifState;
             CheckState elseState;
             {

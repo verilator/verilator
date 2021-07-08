@@ -21,6 +21,12 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
+if [ "$CI_M32" = "0" ]; then
+  unset CI_M32
+elif [ "$CI_M32" != "1" ]; then
+  fatal "\$CI_M32 must be '0' or '1'";
+fi
+
 if [ "$CI_OS_NAME" = "linux" ]; then
   export MAKE=make
   NPROC=$(nproc)
@@ -40,8 +46,10 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$COVERAGE" != 1 ]; then
     autoconf
-    ./configure --enable-longtests --enable-ccwarn
+    ./configure --enable-longtests --enable-ccwarn ${CI_M32:+--enable-m32}
+    ccache -z
     "$MAKE" -j "$NPROC" -k
+    ccache -s
     if [ "$CI_OS_NAME" = "osx" ]; then
       file bin/verilator_bin
       file bin/verilator_bin_dbg
@@ -61,6 +69,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
 
   if [ "$CI_OS_NAME" = "osx" ]; then
     export VERILATOR_TEST_NO_GDB=1  # Pain to get GDB to work on OS X
+    # TODO below may no longer be requried as configure checks for -pg
     export VERILATOR_TEST_NO_GPROF=1  # Apple Clang has no -pg
     # export PATH="/Applications/gtkwave.app/Contents/Resources/bin:$PATH" # fst2vcd
     file bin/verilator_bin
@@ -76,13 +85,15 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     "$MAKE" -j "$NPROC" -k
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
     export VERILATOR_TEST_NO_GDB=1 # Disable for now, ideally should run
+    # TODO below may no longer be requried as configure checks for -pg
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
   # Run sanitize on Ubuntu 20.04 only
-  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && sanitize='--sanitize' || sanitize=''
+  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && [ "$CI_M32" = "" ] && sanitize='--sanitize' || sanitize=''
 
   # Run the specified test
+  ccache -z
   case $TESTS in
     dist-vlt-0)
       "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/3
@@ -169,6 +180,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       fatal "Unknown test: $TESTS"
       ;;
   esac
+  ccache -s
+
   # Upload coverage data
   if [[ $TESTS == coverage-* ]]; then
     bash <(cat ci/coverage-upload.sh) -f nodist/obj_dir/coverage/app_total.info

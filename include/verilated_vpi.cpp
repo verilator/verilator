@@ -310,7 +310,7 @@ public:
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     vluint32_t mask() const { return m_mask.u32; }
-    vluint8_t mask_byte(int idx) { return m_mask.u8[idx & 3]; }
+    vluint8_t mask_byte(int idx) const { return m_mask.u8[idx & 3]; }
     vluint32_t entSize() const { return m_entSize; }
     vluint32_t index() const { return m_index; }
     virtual vluint32_t type() const override {
@@ -365,7 +365,7 @@ public:
     virtual vluint32_t type() const override { return vpiIterator; }
     virtual vpiHandle dovpi_scan() override {
         if (VL_LIKELY(m_scopep->varsp())) {
-            VerilatedVarNameMap* varsp = m_scopep->varsp();
+            const VerilatedVarNameMap* const varsp = m_scopep->varsp();
             if (VL_UNLIKELY(!m_started)) {
                 m_it = varsp->begin();
                 m_started = true;
@@ -564,7 +564,7 @@ public:
     }
     static void callTimedCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
-        QData time = VL_TIME_Q();
+        const QData time = VL_TIME_Q();
         for (auto it = s().m_timedCbs.begin(); it != s().m_timedCbs.end();) {
             if (VL_UNLIKELY(it->first.first <= time)) {
                 VerilatedVpiCbHolder& ho = it->second;
@@ -587,7 +587,7 @@ public:
         if (VL_LIKELY(it != s().m_timedCbs.cend())) return it->first.first;
         return ~0ULL;  // maxquad
     }
-    static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
+    static bool callCbs(const vluint32_t reason) VL_MT_UNSAFE_ONE {
         VpioCbList& cbObjList = s().m_cbObjLists[reason];
         bool called = false;
         if (cbObjList.empty()) return called;
@@ -619,7 +619,7 @@ public:
         const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
         for (auto it = cbObjList.begin(); true;) {
             // cbReasonRemove sets to nullptr, so we know on removal the old end() will still exist
-            bool was_last = it == last;
+            const bool was_last = it == last;
             if (VL_UNLIKELY(it->invalid())) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
                 if (was_last) break;
@@ -715,7 +715,7 @@ public:
     void resetError() { m_flag = false; }
     static void vpi_unsupported() {
         // Not supported yet
-        p_vpi_error_info error_info_p = VerilatedVpiImp::error_info()->getError();
+        const p_vpi_error_info error_info_p = VerilatedVpiImp::error_info()->getError();
         if (error_info_p) {
             VL_FATAL_MT(error_info_p->file, error_info_p->line, "", error_info_p->message);
             return;
@@ -1300,9 +1300,9 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
     case cbAfterDelay: {
         QData time = 0;
         if (cb_data_p->time) time = VL_SET_QII(cb_data_p->time->high, cb_data_p->time->low);
-        QData abstime = VL_TIME_Q() + time;
+        const QData abstime = VL_TIME_Q() + time;
         vluint64_t id = VerilatedVpiImp::nextCallbackId();
-        VerilatedVpioTimedCb* vop = new VerilatedVpioTimedCb{id, abstime};
+        VerilatedVpioTimedCb* const vop = new VerilatedVpioTimedCb{id, abstime};
         VerilatedVpiImp::cbTimedAdd(id, cb_data_p, abstime);
         return vop->castVpiHandle();
     }
@@ -1316,8 +1316,8 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
     case cbEnterInteractive:  // FALLTHRU // NOP, but need to return handle, so make object
     case cbExitInteractive:  // FALLTHRU // NOP, but need to return handle, so make object
     case cbInteractiveScopeChange: {  // FALLTHRU // NOP, but need to return handle, so make object
-        vluint64_t id = VerilatedVpiImp::nextCallbackId();
-        VerilatedVpioReasonCb* vop = new VerilatedVpioReasonCb{id, cb_data_p->reason};
+        const vluint64_t id = VerilatedVpiImp::nextCallbackId();
+        VerilatedVpioReasonCb* const vop = new VerilatedVpioReasonCb{id, cb_data_p->reason};
         VerilatedVpiImp::cbReasonAdd(id, cb_data_p);
         return vop->castVpiHandle();
     }
@@ -1332,7 +1332,7 @@ PLI_INT32 vpi_remove_cb(vpiHandle cb_obj) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_remove_cb %p\n", cb_obj););
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
-    VerilatedVpio* vop = VerilatedVpio::castp(cb_obj);
+    VerilatedVpio* const vop = VerilatedVpio::castp(cb_obj);
     if (VL_UNLIKELY(!vop)) return 0;
     return vop->dovpi_remove_cb();
 }
@@ -1355,7 +1355,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_name %s %p\n", namep, scope););
     const VerilatedVar* varp = nullptr;
     const VerilatedScope* scopep;
-    VerilatedVpioScope* voScopep = VerilatedVpioScope::castp(scope);
+    const VerilatedVpioScope* const voScopep = VerilatedVpioScope::castp(scope);
     std::string scopeAndName = namep;
     if (voScopep) {
         scopeAndName = std::string(voScopep->fullname()) + "." + namep;
@@ -1373,7 +1373,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         }
         const char* baseNamep = scopeAndName.c_str();
         std::string scopename;
-        const char* dotp = std::strrchr(namep, '.');
+        const char* const dotp = std::strrchr(namep, '.');
         if (VL_LIKELY(dotp)) {
             baseNamep = dotp + 1;
             scopename = std::string(namep, dotp - namep);
@@ -1407,7 +1407,7 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
     // Memory words are not indexable
     VerilatedVpioMemoryWord* vop = VerilatedVpioMemoryWord::castp(object);
     if (VL_UNLIKELY(vop)) return nullptr;
-    VerilatedVpioVar* varop = VerilatedVpioVar::castp(object);
+    const VerilatedVpioVar* const varop = VerilatedVpioVar::castp(object);
     if (VL_LIKELY(varop)) {
         if (varop->varp()->dims() < 2) return nullptr;
         if (VL_LIKELY(varop->varp()->unpacked().left() >= varop->varp()->unpacked().right())) {
@@ -1496,7 +1496,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     VL_VPI_ERROR_RESET_();
     switch (type) {
     case vpiMemoryWord: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         if (vop->varp()->dims() < 2) return nullptr;
         if (vop->varp()->dims() > 2) {
@@ -1508,7 +1508,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         return (new VerilatedVpioMemoryWordIter(object, vop->varp()))->castVpiHandle();
     }
     case vpiRange: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         if (vop->varp()->dims() < 2) return nullptr;
         // Unsupported is multidim list
@@ -1521,15 +1521,15 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         return ((new VerilatedVpioRangeIter(vop->rangep()))->castVpiHandle());
     }
     case vpiReg: {
-        VerilatedVpioScope* vop = VerilatedVpioScope::castp(object);
+        const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         return ((new VerilatedVpioVarIter(vop->scopep()))->castVpiHandle());
     }
     case vpiModule: {
-        VerilatedVpioModule* vop = VerilatedVpioModule::castp(object);
-        const VerilatedHierarchyMap* map = VerilatedImp::hierarchyMap();
-        const VerilatedScope* mod = vop ? vop->scopep() : nullptr;
-        const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(mod));
+        const VerilatedVpioModule* const vop = VerilatedVpioModule::castp(object);
+        const VerilatedHierarchyMap* const map = VerilatedImp::hierarchyMap();
+        const VerilatedScope* const modp = vop ? vop->scopep() : nullptr;
+        const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(modp));
         if (it == map->end()) return nullptr;
         return ((new VerilatedVpioModuleIter(it->second))->castVpiHandle());
     }
@@ -1560,30 +1560,30 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         return Verilated::threadContextp()->timeprecision();
     }
     case vpiTimeUnit: {
-        VerilatedVpioScope* vop = VerilatedVpioScope::castp(object);
+        const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
         if (!vop)
             return Verilated::threadContextp()->timeunit();  // Null asks for global, not unlikely
         return vop->scopep()->timeunit();
     }
     case vpiType: {
-        VerilatedVpio* vop = VerilatedVpio::castp(object);
+        const VerilatedVpio* const vop = VerilatedVpio::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->type();
     }
     case vpiDirection: {
         // By forthought, the directions already are vpi enumerated
-        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
+        const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->varp()->vldir();
     }
     case vpiScalar:  // FALLTHRU
     case vpiVector: {
-        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
+        const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return (property == vpiVector) ^ (vop->varp()->dims() == 0);
     }
     case vpiSize: {
-        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
+        const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->size();
     }
@@ -1602,7 +1602,7 @@ PLI_INT64 vpi_get64(PLI_INT32 /*property*/, vpiHandle /*object*/) {
 PLI_BYTE8* vpi_get_str(PLI_INT32 property, vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get_str %d %p\n", property, object););
     VerilatedVpiImp::assertOneCheck();
-    VerilatedVpio* vop = VerilatedVpio::castp(object);
+    const VerilatedVpio* const vop = VerilatedVpio::castp(object);
     VL_VPI_ERROR_RESET_();
     if (VL_UNLIKELY(!vop)) return nullptr;
     switch (property) {
@@ -1725,7 +1725,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                     __FILE__, __LINE__, "",
                     "vpi_get_value with more than VL_MULS_MAX_WORDS; increase and recompile");
             }
-            WDataInP datap = (reinterpret_cast<EData*>(varDatap));
+            const WDataInP datap = (reinterpret_cast<EData*>(varDatap));
             for (int i = 0; i < words; ++i) {
                 t_out[i].aval = datap[i];
                 t_out[i].bval = 0;
@@ -1756,7 +1756,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
     } else if (valuep->format == vpiOctStrVal) {
         valuep->value.str = t_outStr;
         int chars = (varp->packed().elements() + 2) / 3;
-        int bytes = VL_BYTES_I(varp->packed().elements());
+        const int bytes = VL_BYTES_I(varp->packed().elements());
         CData* datap = (reinterpret_cast<CData*>(varDatap));
         int i;
         if (chars > t_outStrSz) {
@@ -1770,7 +1770,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             chars = t_outStrSz;
         }
         for (i = 0; i < chars; ++i) {
-            div_t idx = div(i * 3, 8);
+            const div_t idx = div(i * 3, 8);
             int val = datap[idx.quot];
             if ((idx.quot + 1) < bytes) {
                 // if the next byte is valid or that in
@@ -1832,7 +1832,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             if (i == (chars - 1)) {
                 // most signifcant char, mask off non existant bits when vector
                 // size is not a multiple of 4
-                unsigned int rem = varp->packed().elements() & 3;
+                const unsigned int rem = varp->packed().elements() & 3;
                 if (rem) {
                     // generate bit mask & zero non existant bits
                     val &= (1 << rem) - 1;
@@ -1862,7 +1862,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                 bytes = t_outStrSz;
             }
             for (i = 0; i < bytes; ++i) {
-                char val = datap[bytes - i - 1];
+                const char val = datap[bytes - i - 1];
                 // other simulators replace [leading?] zero chars with spaces, replicate here.
                 t_outStr[i] = val ? val : ' ';
             }
@@ -1896,7 +1896,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
     if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
         vl_get_value(vop->varp(), vop->varDatap(), valuep, vop->fullname());
         return;
-    } else if (VerilatedVpioParam* vop = VerilatedVpioParam::castp(object)) {
+    } else if (const VerilatedVpioParam* const vop = VerilatedVpioParam::castp(object)) {
         vl_get_value(vop->varp(), vop->varDatap(), valuep, vop->fullname());
         return;
     } else if (VerilatedVpioConst* vop = VerilatedVpioConst::castp(object)) {
@@ -1920,7 +1920,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         VL_VPI_WARNING_(__FILE__, __LINE__, "Ignoring vpi_put_value with nullptr value pointer");
         return nullptr;
     }
-    if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+    if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
         VL_DEBUG_IF_PLI(
             VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
                         valuep->format, valuep->value.integer);
@@ -1953,7 +1953,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                     valuep->value.vector[1].aval & vop->mask(), valuep->value.vector[0].aval);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_WDATA) {
-                int words = VL_WORDS_I(vop->varp()->packed().elements());
+                const int words = VL_WORDS_I(vop->varp()->packed().elements());
                 WDataOutP datap = (reinterpret_cast<EData*>(vop->varDatap()));
                 for (int i = 0; i < words; ++i) {
                     datap[i] = valuep->value.vector[i].aval;
@@ -1962,8 +1962,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 return object;
             }
         } else if (valuep->format == vpiBinStrVal) {
-            int bits = vop->varp()->packed().elements();
-            int len = std::strlen(valuep->value.str);
+            const int bits = vop->varp()->packed().elements();
+            const int len = std::strlen(valuep->value.str);
             CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
             for (int i = 0; i < bits; ++i) {
                 char set = (i < len) ? (valuep->value.str[len - i - 1] == '1') : 0;
@@ -1977,9 +1977,9 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             }
             return object;
         } else if (valuep->format == vpiOctStrVal) {
-            int chars = (vop->varp()->packed().elements() + 2) / 3;
-            int bytes = VL_BYTES_I(vop->varp()->packed().elements());
-            int len = std::strlen(valuep->value.str);
+            const int chars = (vop->varp()->packed().elements() + 2) / 3;
+            const int bytes = VL_BYTES_I(vop->varp()->packed().elements());
+            const int len = std::strlen(valuep->value.str);
             CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
             div_t idx;
             datap[0] = 0;  // reset zero'th byte
@@ -2029,7 +2029,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         } else if (valuep->format == vpiDecStrVal) {
             char remainder[16];
             unsigned long long val;
-            int success = std::sscanf(valuep->value.str, "%30llu%15s", &val, remainder);
+            const int success = std::sscanf(valuep->value.str, "%30llu%15s", &val, remainder);
             if (success < 1) {
                 VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Parsing failed for '%s' as value %s for %s",
                               __func__, valuep->value.str,
@@ -2057,12 +2057,12 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 return object;
             }
         } else if (valuep->format == vpiHexStrVal) {
-            int chars = (vop->varp()->packed().elements() + 3) >> 2;
+            const int chars = (vop->varp()->packed().elements() + 3) >> 2;
             CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
             char* val = valuep->value.str;
             // skip hex ident if one is detected at the start of the string
             if (val[0] == '0' && (val[1] == 'x' || val[1] == 'X')) val += 2;
-            int len = std::strlen(val);
+            const int len = std::strlen(val);
             for (int i = 0; i < chars; ++i) {
                 char hex;
                 // compute hex digit value
@@ -2097,8 +2097,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             datap[(chars - 1) >> 1] &= vop->mask_byte((chars - 1) >> 1);
             return object;
         } else if (valuep->format == vpiStringVal) {
-            int bytes = VL_BYTES_I(vop->varp()->packed().elements());
-            int len = std::strlen(valuep->value.str);
+            const int bytes = VL_BYTES_I(vop->varp()->packed().elements());
+            const int len = std::strlen(valuep->value.str);
             CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
             for (int i = 0; i < bytes; ++i) {
                 // prepend with 0 values before placing string the least significant bytes
@@ -2120,11 +2120,11 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s",
                       __func__, VerilatedVpiError::strFromVpiVal(valuep->format), vop->fullname());
         return nullptr;
-    } else if (VerilatedVpioParam* vop = VerilatedVpioParam::castp(object)) {
+    } else if (const VerilatedVpioParam* const vop = VerilatedVpioParam::castp(object)) {
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Ignoring vpi_put_value to vpiParameter: %s",
                         __func__, vop->fullname());
         return nullptr;
-    } else if (VerilatedVpioConst* vop = VerilatedVpioConst::castp(object)) {
+    } else if (const VerilatedVpioConst* const vop = VerilatedVpioConst::castp(object)) {
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Ignoring vpi_put_value to vpiConstant: %s",
                         __func__, vop->fullname());
         return nullptr;
@@ -2153,8 +2153,8 @@ void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
         return;
     }
     if (time_p->type == vpiSimTime) {
-        QData qtime = VL_TIME_Q();
-        WData itime[2];
+        const QData qtime = VL_TIME_Q();
+        VlWide<2> itime;
         VL_SET_WQ(itime, qtime);
         time_p->low = itime[0];
         time_p->high = itime[1];
@@ -2162,9 +2162,9 @@ void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
     } else if (time_p->type == vpiScaledRealTime) {
         double dtime = VL_TIME_D();
         if (VerilatedVpioScope* vop = VerilatedVpioScope::castp(object)) {
-            int scalePow10
+            const int scalePow10
                 = Verilated::threadContextp()->timeprecision() - vop->scopep()->timeunit();
-            double scale = vl_time_multiplier(scalePow10);  // e.g. 0.0001
+            const double scale = vl_time_multiplier(scalePow10);  // e.g. 0.0001
             dtime *= scale;
         }
         time_p->real = dtime;
@@ -2198,7 +2198,7 @@ PLI_INT32 vpi_mcd_printf(PLI_UINT32 mcd, PLI_BYTE8* formatp, ...) {
     VL_VPI_ERROR_RESET_();
     va_list ap;
     va_start(ap, formatp);
-    int chars = vpi_mcd_vprintf(mcd, formatp, ap);
+    const int chars = vpi_mcd_vprintf(mcd, formatp, ap);
     va_end(ap);
     return chars;
 }
@@ -2208,7 +2208,7 @@ PLI_INT32 vpi_printf(PLI_BYTE8* formatp, ...) {
     VL_VPI_ERROR_RESET_();
     va_list ap;
     va_start(ap, formatp);
-    int chars = vpi_vprintf(formatp, ap);
+    const int chars = vpi_vprintf(formatp, ap);
     va_end(ap);
     return chars;
 }
@@ -2221,11 +2221,11 @@ PLI_INT32 vpi_vprintf(PLI_BYTE8* formatp, va_list ap) {
 
 PLI_INT32 vpi_mcd_vprintf(PLI_UINT32 mcd, PLI_BYTE8* format, va_list ap) {
     VerilatedVpiImp::assertOneCheck();
-    FILE* fp = VL_CVT_I_FP(mcd);
+    FILE* const fp = VL_CVT_I_FP(mcd);
     VL_VPI_ERROR_RESET_();
     // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!fp)) return 0;
-    int chars = vfprintf(fp, format, ap);
+    const int chars = vfprintf(fp, format, ap);
     return chars;
 }
 
@@ -2238,7 +2238,7 @@ PLI_INT32 vpi_flush(void) {
 
 PLI_INT32 vpi_mcd_flush(PLI_UINT32 mcd) {
     VerilatedVpiImp::assertOneCheck();
-    FILE* fp = VL_CVT_I_FP(mcd);
+    FILE* const fp = VL_CVT_I_FP(mcd);
     VL_VPI_ERROR_RESET_();
     if (VL_UNLIKELY(!fp)) return 1;
     std::fflush(fp);
@@ -2255,7 +2255,7 @@ PLI_INT32 vpi_chk_error(p_vpi_error_info error_info_p) {
     // executing vpi_chk_error does not reset error
     // error_info_p can be nullptr, so only return level in that case
     VerilatedVpiImp::assertOneCheck();
-    p_vpi_error_info _error_info_p = VerilatedVpiImp::error_info()->getError();
+    p_vpi_error_info const _error_info_p = VerilatedVpiImp::error_info()->getError();
     if (error_info_p && _error_info_p) *error_info_p = *_error_info_p;
     if (!_error_info_p) return 0;  // no error occured
     return _error_info_p->level;  // return error severity level

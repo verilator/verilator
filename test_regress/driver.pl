@@ -601,6 +601,7 @@ sub new {
                         ? " -Wl,-undefined,dynamic_lookup"
                         : " -export-dynamic")
                       .($opt_verbose ? " -DTEST_VERBOSE=1":"")
+                      .(cfg_with_m32() ? " -m32" : "")
                       ." -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
         # ATSIM
@@ -694,6 +695,23 @@ sub new {
     }
     $self->{pli_filename} ||= $self->{name}.".cpp";
     return $self;
+}
+
+sub benchmarksim_filename {
+    my $self = (ref $_[0] ? shift : $Self);
+    return $self->{obj_dir}."/$self->{name}_benchmarksim.csv";
+}
+
+sub init_benchmarksim {
+    my $self = (ref $_[0] ? shift : $Self);
+    # Simulations with benchmarksim enabled append to the same file between runs.
+    # Test files must ensure a clean benchmark data file before executing tests.
+    my $filename = $self->benchmarksim_filename();
+    my $fh = IO::File->new(">".$filename) or die "%Error: $! ".$filename;
+    print $fh "# Verilator simulation benchmark data\n";
+    print $fh "# Test name: ".$self->{name}."\n";
+    print $fh "# Top file: ".$self->{top_filename}."\n";
+    print $fh "evals, time[s]\n";
 }
 
 sub soprint {
@@ -895,6 +913,7 @@ sub compile_vlt_flags {
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
     $self->{sanitize} = $opt_sanitize unless exists($self->{sanitize});
+    $self->{benchmarksim} = 1 if ($param{benchmarksim});
 
     my @verilator_flags = @{$param{verilator_flags}};
     unshift @verilator_flags, "--gdb" if $opt_gdb;
@@ -1737,6 +1756,10 @@ sub _make_main {
     print $fh "#define MAIN_TIME_MULTIPLIER ".($self->{main_time_multiplier} || 1)."\n";
 
     print $fh "#include <memory>\n";
+    print $fh "#include <fstream>\n" if $self->{benchmarksim};
+    print $fh "#include <chrono>\n" if $self->{benchmarksim};
+    print $fh "#include <iomanip>\n" if $self->{benchmarksim};
+
     print $fh "// OS header\n";
     print $fh "#include \"verilatedos.h\"\n";
 
@@ -1805,6 +1828,12 @@ sub _make_main {
         $set = "topp->";
     }
 
+    if ($self->{benchmarksim}) {
+        $fh->print("    std::chrono::time_point<std::chrono::steady_clock> starttime;\n");
+        $fh->print("    bool warm = false;\n");
+        $fh->print("    uint64_t n_evals = 0;\n");
+    }
+
     if ($self->{trace}) {
         $fh->print("\n");
         $fh->print("#if VM_TRACE\n");
@@ -1864,7 +1893,25 @@ sub _make_main {
         }
         _print_advance_time($self, $fh, 1, $action);
     }
+    if ($self->{benchmarksim}) {
+        $fh->print("        if (VL_UNLIKELY(!warm)) {\n");
+        $fh->print("            starttime = std::chrono::steady_clock::now();\n");
+        $fh->print("            warm = true;\n");
+        $fh->print("        } else {\n");
+        $fh->print("            ++n_evals;\n");
+        $fh->print("        }\n");
+    }
     print $fh "    }\n";
+
+    if ($self->{benchmarksim}) {
+        $fh->print("    {\n");
+        $fh->print("        const std::chrono::duration<double> exec_s =  std::chrono::steady_clock::now() - starttime;\n");
+        $fh->print("        std::ofstream benchfile(\"".$self->benchmarksim_filename()."\", std::ofstream::out | std::ofstream::app);\n");
+        $fh->print("        benchfile << std::fixed << std::setprecision(9) << n_evals << \",\" << exec_s.count() << std::endl;\n");
+        $fh->print("        benchfile.close();\n");
+        $fh->print("    }\n");
+    }
+
     print $fh "    if (!contextp->gotFinish()) {\n";
     print $fh '        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");',"\n";
     print $fh "    }\n";
@@ -2214,7 +2261,7 @@ sub vcd_identical {
         $cmd = qq{vcddiff "$fn1" "$fn2"};
         print "\t$cmd\n" if $::Debug;
         $out = `$cmd`;
-        if ($out ne '') {
+        if ($? != 0 || $out ne '') {
             print $out;
             $self->error("VCD miscompares $fn1 $fn2\n");
             $self->copy_if_golden($fn1, $fn2);
@@ -2304,8 +2351,16 @@ sub cfg_with_threaded {
     return 1;  # C++11 now always required
 }
 
+our $_Cfg_with_ccache;
 sub cfg_with_ccache {
-    return `grep "OBJCACHE \?= ccache" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
+    $_Cfg_with_ccache ||= `grep "OBJCACHE \?= ccache" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
+    return $_Cfg_with_ccache;
+}
+
+our $_Cfg_with_m32;
+sub cfg_with_m32 {
+    $_Cfg_with_m32 ||= `grep "CXX.*=.*-m32" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
+    return $_Cfg_with_m32;
 }
 
 sub tries {
@@ -2532,9 +2587,9 @@ with many cores.  See the -j option and OBJCACHE environment variable.
 
 =head1 TEST CONFIGURATION
 
-The Perl script (e.g. C<test_regres/t/t_EXAMPLE.pl>) controls how the test
-will run by driver.pl. In general it includes a call to the C<compile>
-subroutine to compile the test with Verilator (or an alternative
+The test configuration script (e.g. C<test_regres/t/t_EXAMPLE.pl>) controls
+how the test will run by driver.pl. In general it includes a call to the
+C<compile> subroutine to compile the test with Verilator (or an alternative
 simulator), followed by a call to the C<execute> subroutine to run the
 test. Compile-only tests omit the call to C<execute>.
 
@@ -2649,6 +2704,12 @@ for use with the Synopsys VCS simulator.
 The equivalent of C<v_flags> and C<v_flags2>, but only for use with
 Verilator.  If a flag is a standard flag (+incdir for example) v_flags2
 should be used instead.
+
+=item benchmarksim
+
+Output the number of model evaluations and execution time of a test to
+I<test_output_dir>/I<test_name>_benchmarksim.csv. Multiple invocations
+of the same test file will append to to the same .csv file.
 
 =item xsim_flags
 

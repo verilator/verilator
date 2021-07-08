@@ -1,0 +1,7 @@
+%Error: t/t_source_sync.v:8:14: syntax error, unexpected /*verilator clocker*/, expecting ',' or ';'
+    8 |    logic clk /*verilator clocker*/ ;
+      |              ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_source_sync.v:10:1: syntax error, unexpected '}'
+   10 | } ss_s;
+      | ^
+%Error: Exiting due to

@@ -126,7 +126,7 @@ V3LangCode::V3LangCode(const char* textp) {
 VTimescale::VTimescale(const string& value, bool& badr)
     : m_e{VTimescale::NONE} {
     badr = true;
-    string spaceless = VString::removeWhitespace(value);
+    const string spaceless = VString::removeWhitespace(value);
     for (int i = TS_100S; i < _ENUM_END; ++i) {
         VTimescale ts(i);
         if (spaceless == ts.ascii()) {
@@ -339,7 +339,7 @@ bool V3Options::hasParameter(const string& name) {
 }
 
 string V3Options::parameter(const string& name) {
-    string value = m_parameters.find(name)->second;
+    const string value = m_parameters.find(name)->second;
     m_parameters.erase(m_parameters.find(name));
     return value;
 }
@@ -432,7 +432,7 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
 bool V3Options::fileStatNormal(const string& filename) {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     struct stat sstat;  // Stat information
-    int err = stat(filename.c_str(), &sstat);
+    const int err = stat(filename.c_str(), &sstat);
     if (err != 0) return false;
     if (S_ISDIR(sstat.st_mode)) return false;
     return true;
@@ -454,8 +454,8 @@ string V3Options::fileExists(const string& filename) {
     // is quite slow; presumably because of re-reading each directory
     // many times.  So we read a whole dir at once and cache it
 
-    string dir = V3Os::filenameDir(filename);
-    string basename = V3Os::filenameNonDir(filename);
+    const string dir = V3Os::filenameDir(filename);
+    const string basename = V3Os::filenameNonDir(filename);
 
     auto diriter = m_impp->m_dirMap.find(dir);
     if (diriter == m_impp->m_dirMap.end()) {
@@ -477,14 +477,14 @@ string V3Options::fileExists(const string& filename) {
         return "";  // Not found
     }
     // Check if it is a directory, ignore if so
-    string filenameOut = V3Os::filenameFromDirBase(dir, basename);
+    const string filenameOut = V3Os::filenameFromDirBase(dir, basename);
     if (!fileStatNormal(filenameOut)) return "";  // Directory
     return filenameOut;
 }
 
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
     for (const string& i : m_impp->m_libExtVs) {
-        string fn = V3Os::filenameFromDirBase(dirname, modname + i);
+        const string fn = V3Os::filenameFromDirBase(dirname, modname + i);
         string exists = fileExists(fn);
         if (exists != "") {
             // Strip ./, it just looks ugly
@@ -518,16 +518,16 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // using the incdir and libext's.
     // Return "" if not found.
     for (const string& dir : m_impp->m_incDirUsers) {
-        string exists = filePathCheckOneDir(modname, dir);
+        const string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirFallbacks) {
-        string exists = filePathCheckOneDir(modname, dir);
+        const string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
 
     if (m_relativeIncludes) {
-        string exists = filePathCheckOneDir(modname, lastpath);
+        const string exists = filePathCheckOneDir(modname, lastpath);
         if (exists != "") return V3Os::filenameRealPath(exists);
     }
 
@@ -554,13 +554,13 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
         std::cerr << V3Error::warnMore() << "... Looked in:" << endl;
         for (const string& dir : m_impp->m_incDirUsers) {
             for (const string& ext : m_impp->m_libExtVs) {
-                string fn = V3Os::filenameFromDirBase(dir, modname + ext);
+                const string fn = V3Os::filenameFromDirBase(dir, modname + ext);
                 std::cerr << V3Error::warnMore() << "     " << fn << endl;
             }
         }
         for (const string& dir : m_impp->m_incDirFallbacks) {
             for (const string& ext : m_impp->m_libExtVs) {
-                string fn = V3Os::filenameFromDirBase(dir, modname + ext);
+                const string fn = V3Os::filenameFromDirBase(dir, modname + ext);
                 std::cerr << V3Error::warnMore() << "     " << fn << endl;
             }
         }
@@ -633,16 +633,16 @@ string V3Options::getenvSYSTEMC_ARCH() {
     if (var == "") {
 #if defined(__MINGW32__)
         // Hardcoded with MINGW current version. Would like a better way.
-        string sysname = "MINGW32_NT-5.0";
+        const string sysname = "MINGW32_NT-5.0";
         var = "mingw32";
 #elif defined(_WIN32)
-        string sysname = "WIN32";
+        const string sysname = "WIN32";
         var = "win32";
 #else
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
         struct utsname uts;
         uname(&uts);
-        string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
+        const string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
         if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*solaris*"))) {
             var = "gccsparcOS5";
         } else if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*cygwin*"))) {
@@ -663,7 +663,7 @@ string V3Options::getenvSYSTEMC_INCLUDE() {
         V3Os::setenvStr("SYSTEMC_INCLUDE", var, "Hardcoded at build time");
     }
     if (var == "") {
-        string sc = getenvSYSTEMC();
+        const string sc = getenvSYSTEMC();
         if (sc != "") var = sc + "/include";
     }
     return var;
@@ -676,8 +676,8 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
         V3Os::setenvStr("SYSTEMC_LIBDIR", var, "Hardcoded at build time");
     }
     if (var == "") {
-        string sc = getenvSYSTEMC();
-        string arch = getenvSYSTEMC_ARCH();
+        const string sc = getenvSYSTEMC();
+        const string arch = getenvSYSTEMC_ARCH();
         if (sc != "" && arch != "") var = sc + "/lib-" + arch;
     }
     return var;
@@ -815,7 +815,7 @@ string V3Options::protectKeyDefaulted() {
 void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     // clang-format off
-    { char* zp = nullptr; *zp = 0; }  // Intentional core dump, ignore warnings here
+    *static_cast<volatile char*>(nullptr) = 0;  // Intentional core dump, ignore warnings here
     // clang-format on
 #endif
 }  // LCOV_EXCL_STOP
@@ -899,7 +899,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     V3OptionParser::AppendHelper DECL_OPTION{parser};
     V3OPTION_PARSER_DECL_TAGS;
 
-    auto callStrSetter = [this](void (V3Options::*cbStr)(const string&)) {
+    const auto callStrSetter = [this](void (V3Options::*cbStr)(const string&)) {
         return [this, cbStr](const string& v) { (this->*cbStr)(v); };
     };
     // Usage
@@ -1097,14 +1097,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
     DECL_OPTION("-ignc", OnOff, &m_ignc);
-    DECL_OPTION("-inhibit-sim", CbOnOff, [this, fl](bool flag) {
-        fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
-        m_inhibitSim = flag;
-    });
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
 
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
-    auto setLang = [this, fl](const char* valp) {
+    const auto setLang = [this, fl](const char* valp) {
         V3LangCode optval = V3LangCode(valp);
         if (optval.legal()) {
             m_defaultLanguage = optval;
@@ -1141,6 +1137,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         }
     });
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
+    DECL_OPTION("-merge-const-pool", OnOff, &m_mergeConstPool);
     DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
 
     DECL_OPTION("-O", CbPartialMatch, [this](const char* optp) {
@@ -1225,8 +1222,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (m_modPrefix == "") m_modPrefix = m_prefix;
     });
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
-    DECL_OPTION("-prof-cfuncs", OnOff, &m_profCFuncs);
-    DECL_OPTION("-profile-cfuncs", OnOff, &m_profCFuncs).undocumented();  // Renamed
+    DECL_OPTION("-prof-c", OnOff, &m_profC);
+    DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
+    DECL_OPTION("-profile-cfuncs", CbCall,
+                [this]() { m_profC = m_profCFuncs = true; });  // Renamed
     DECL_OPTION("-prof-threads", OnOff, &m_profThreads);
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
@@ -1242,11 +1241,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
 
-    DECL_OPTION("-relative-cfuncs", CbOnOff, [this, fl](bool flag) {
-        m_relativeCFuncs = flag;
-        if (!m_relativeCFuncs)
-            fl->v3warn(DEPRECATED, "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
-    });
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
         m_reloopLimit = std::atoi(valp);
@@ -1477,7 +1471,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             }
         } else {
             // Filename
-            string filename = parseFileArg(optdir, argv[i]);
+            const string filename = parseFileArg(optdir, argv[i]);
             if (suffixed(filename, ".cpp")  //
                 || suffixed(filename, ".cxx")  //
                 || suffixed(filename, ".cc")  //
@@ -1511,7 +1505,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     string whole_file;
     bool inCmt = false;
     while (!ifp->eof()) {
-        string line = V3Os::getline(*ifp);
+        const string line = V3Os::getline(*ifp);
         // Strip simple comments
         string oline;
         // cppcheck-suppress StlMissingComparison
@@ -1629,7 +1623,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     }
 
     // Path
-    string optdir = (rel ? V3Os::filenameDir(filename) : ".");
+    const string optdir = (rel ? V3Os::filenameDir(filename) : ".");
 
     // Convert to argv style arg list and parse them
     std::vector<char*> argv;
@@ -1653,7 +1647,7 @@ string V3Options::parseFileArg(const string& optdir, const string& relfilename) 
 bool V3Options::parseLangExt(const char* swp,  //!< argument text
                              const char* langswp,  //!< option to match
                              const V3LangCode& lc) {  //!< language code
-    int len = strlen(langswp);
+    const int len = strlen(langswp);
     if (!strncmp(swp, langswp, len)) {
         addLangExt(swp + len, lc);
         return true;
@@ -1751,7 +1745,7 @@ void V3Options::setDebugSrcLevel(const string& srcfile, int level) {
 int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
-    string srcfile = V3Os::filenameNonDirExt(srcfile_path);
+    const string srcfile = V3Os::filenameNonDirExt(srcfile_path);
     const auto iter = m_debugSrcs.find(srcfile);
     if (iter != m_debugSrcs.end()) {
         return iter->second;
@@ -1772,7 +1766,7 @@ void V3Options::setDumpTreeLevel(const string& srcfile, int level) {
 int V3Options::dumpTreeLevel(const string& srcfile_path) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
-    string srcfile = V3Os::filenameNonDirExt(srcfile_path);
+    const string srcfile = V3Os::filenameNonDirExt(srcfile_path);
     const auto iter = m_dumpTrees.find(srcfile);
     if (iter != m_dumpTrees.end()) {
         return iter->second;
@@ -1783,7 +1777,7 @@ int V3Options::dumpTreeLevel(const string& srcfile_path) {
 
 void V3Options::optimize(int level) {
     // Set all optimizations to on/off
-    bool flag = level > 0;
+    const bool flag = level > 0;
     m_oAcycSimp = flag;
     m_oAssemble = flag;
     m_oCase = flag;

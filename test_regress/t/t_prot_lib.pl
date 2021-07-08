@@ -35,6 +35,8 @@ while (1) {
                 $secret_dir,
                 "--protect-lib",
                 $secret_prefix,
+                "--protect-key",
+                "secret-key",
                 "t/t_prot_lib_secret.v"],
         verilator_run => 1,
         );

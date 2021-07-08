@@ -176,7 +176,7 @@ private:
     void prepost_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
 
-        AstNodeVarRef* varrefp;
+        AstNodeVarRef* varrefp = nullptr;
         if (m_unsupportedHere || !(varrefp = VN_CAST(nodep->rhsp(), VarRef))) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Incrementation in this context.");
             return;
@@ -189,7 +189,7 @@ private:
 
         // Prepare a temporary variable
         FileLine* fl = backp->fileline();
-        string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
+        const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
         AstVar* varp = new AstVar(fl, AstVarType::BLOCKTEMP, name, VFlagChildDType(),
                                   varrefp->varp()->subDTypep()->cloneTree(true));
 

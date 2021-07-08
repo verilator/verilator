@@ -201,7 +201,7 @@ public:
     }
 
     void applyBlock(AstNodeBlock* nodep) {
-        AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
+        const AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
                 if (VString::wildmatch(nodep->name(), i)) {
@@ -297,14 +297,14 @@ public:
 
     void applyBlock(AstNodeBlock* nodep) {
         // Apply to block at this line
-        AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
+        const AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
         if (lineMatch(nodep->fileline()->lineno(), pragma)) {
             nodep->addStmtsp(new AstPragma(nodep->fileline(), pragma));
         }
     }
     void applyCase(AstCase* nodep) {
         // Apply to this case at this line
-        int lineno = nodep->fileline()->lineno();
+        const int lineno = nodep->fileline()->lineno();
         if (lineMatch(lineno, AstPragmaType::FULL_CASE)) nodep->fullPragma(true);
         if (lineMatch(lineno, AstPragmaType::PARALLEL_CASE)) nodep->parallelPragma(true);
     }
@@ -313,7 +313,7 @@ public:
         if (m_lastIgnore.lineno != filelinep->lineno()) {
             // UINFO(9, "   ApplyIgnores for " << filelinep->ascii() << endl);
             // Process all on/offs for lines up to and including the current line
-            int curlineno = filelinep->lastLineno();
+            const int curlineno = filelinep->lastLineno();
             for (; m_lastIgnore.it != m_ignLines.end(); ++m_lastIgnore.it) {
                 if (m_lastIgnore.it->m_lineno > curlineno) break;
                 // UINFO(9, "     Hit " << *m_lastIt << endl);

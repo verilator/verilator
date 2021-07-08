@@ -207,9 +207,9 @@ private:
         AstNode* fromp = nodep->fromp()->unlinkFrBack();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
         if (debug() >= 9) nodep->dumpTree(cout, "--SELBT2: ");
-        FromData fromdata = fromDataForArray(nodep, fromp);
+        const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* ddtypep = fromdata.m_dtypep;
-        VNumRange fromRange = fromdata.m_fromRange;
+        const VNumRange fromRange = fromdata.m_fromRange;
         UINFO(6, "  ddtypep " << ddtypep << endl);
         if (AstUnpackArrayDType* adtypep = VN_CAST(ddtypep, UnpackArrayDType)) {
             // SELBIT(array, index) -> ARRAYSEL(array, index)
@@ -234,7 +234,7 @@ private:
                         adtypep,
                         "Array extraction with width miscomputed " << adtypep->width() << "/"
                                                                    << fromRange.elements());
-            int elwidth = adtypep->width() / fromRange.elements();
+            const int elwidth = adtypep->width() / fromRange.elements();
             AstSel* newp = new AstSel(
                 nodep->fileline(), fromp,
                 new AstMul(nodep->fileline(),
@@ -335,9 +335,9 @@ private:
         vlsint32_t msb = VN_CAST(msbp, Const)->toSInt();
         vlsint32_t lsb = VN_CAST(lsbp, Const)->toSInt();
         vlsint32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
-        FromData fromdata = fromDataForArray(nodep, fromp);
+        const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* ddtypep = fromdata.m_dtypep;
-        VNumRange fromRange = fromdata.m_fromRange;
+        const VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, UnpackArrayDType)) {
             // Slice extraction
             if (fromRange.elements() == elem
@@ -378,7 +378,7 @@ private:
                 msb = lsb;
                 lsb = x;
             }
-            int elwidth = adtypep->width() / fromRange.elements();
+            const int elwidth = adtypep->width() / fromRange.elements();
             AstSel* newp = new AstSel(
                 nodep->fileline(), fromp,
                 new AstMul(nodep->fileline(), newSubLsbOf(lsbp, fromRange),
@@ -479,15 +479,15 @@ private:
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* widthp = nodep->thsp()->unlinkFrBack();
         warnTri(rhsp);
-        int width = VN_CAST(widthp, Const)->toSInt();
+        const int width = VN_CAST(widthp, Const)->toSInt();
         if (width > (1 << 28)) {
             nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "
                            << widthp->prettyName());
         }
         if (width < 0) nodep->v3error("Width of :+ or :- is < 0: " << widthp->prettyName());
-        FromData fromdata = fromDataForArray(nodep, fromp);
+        const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* ddtypep = fromdata.m_dtypep;
-        VNumRange fromRange = fromdata.m_fromRange;
+        const VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, UnpackArrayDType)) {
             // Slice +: and -: extraction
             if (fromRange.elements() == width && VN_IS(rhsp, Const)

@@ -68,7 +68,7 @@ private:
     void setCppWidth(AstNode* nodep) {
         nodep->user2(true);  // Don't resize it again
         AstNodeDType* old_dtypep = nodep->dtypep();
-        int width = cppWidth(nodep);  // widthMin is unchanged
+        const int width = cppWidth(nodep);  // widthMin is unchanged
         if (old_dtypep->width() != width) {
             // Since any given dtype's cppWidth() is the same, we can just
             // remember one conversion for each, and reuse it
@@ -103,7 +103,7 @@ private:
     void setCleanState(AstNode* nodep, CleanState clean) { nodep->user1(clean); }
     CleanState getCleanState(AstNode* nodep) { return static_cast<CleanState>(nodep->user1()); }
     bool isClean(AstNode* nodep) {
-        CleanState clstate = getCleanState(nodep);
+        const CleanState clstate = getCleanState(nodep);
         if (clstate == CS_CLEAN) return true;
         if (clstate == CS_DIRTY) return false;
         nodep->v3fatalSrc("Unknown clean state on node: " + nodep->prettyTypeName());
@@ -111,8 +111,9 @@ private:
     }
     void setClean(AstNode* nodep, bool isClean) {
         computeCppWidth(nodep);  // Just to be sure it's in widthMin
-        bool wholeUint = (nodep->widthMin() == VL_IDATASIZE || nodep->widthMin() == VL_QUADSIZE
-                          || (nodep->widthMin() % VL_EDATASIZE) == 0);
+        const bool wholeUint
+            = (nodep->widthMin() == VL_IDATASIZE || nodep->widthMin() == VL_QUADSIZE
+               || (nodep->widthMin() % VL_EDATASIZE) == 0);
         setCleanState(nodep, ((isClean || wholeUint) ? CS_CLEAN : CS_DIRTY));
     }
 

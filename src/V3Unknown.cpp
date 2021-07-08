@@ -84,7 +84,7 @@ private:
             m_assignwp->convertToAlways();
             VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = nullptr);
         }
-        bool needDly = (m_assigndlyp != nullptr);
+        const bool needDly = (m_assigndlyp != nullptr);
         if (m_assigndlyp) {
             // Delayed assignments become normal assignments,
             // then the temp created becomes the delayed assignment
@@ -113,7 +113,7 @@ private:
             UINFO(4, "Edit BOUNDLVALUE " << newp << endl);
             replaceHandle.relink(newp);
         } else {
-            string name = (string("__Vlvbound") + cvtToStr(m_modp->varNumGetInc()));
+            const string name = (string("__Vlvbound") + cvtToStr(m_modp->varNumGetInc()));
             AstVar* varp = new AstVar(fl, AstVarType::MODULETEMP, name, prep->dtypep());
             m_modp->addStmtp(varp);
 
@@ -322,7 +322,7 @@ private:
                 // Make a Vxrand variable
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
-                string newvarname = (string("__Vxrand") + cvtToStr(m_modp->varNumGetInc()));
+                const string newvarname = (string("__Vxrand") + cvtToStr(m_modp->varNumGetInc()));
                 AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::XTEMP, newvarname,
                                              VFlagLogicPacked(), nodep->width());
                 ++m_statUnkVars;
@@ -365,7 +365,7 @@ private:
             }
             // Find range of dtype we are selecting from
             // Similar code in V3Const::warnSelect
-            int maxmsb = nodep->fromp()->dtypep()->width() - 1;
+            const int maxmsb = nodep->fromp()->dtypep()->width() - 1;
             if (debug() >= 9) nodep->dumpTree(cout, "sel_old: ");
 
             // If (maxmsb >= selected), we're in bound

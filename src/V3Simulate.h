@@ -42,6 +42,7 @@
 
 #include <deque>
 #include <sstream>
+#include <vector>
 
 //============================================================================
 
@@ -59,9 +60,6 @@ public:
         , m_tconnects{tconnects} {}
     ~SimStackNode() = default;
 };
-
-using ConstDeque = std::deque<AstConst*>;
-using ConstPile = std::unordered_map<const AstNodeDType*, ConstDeque>;
 
 class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
     // Simulate a node tree, returning value of variables
@@ -81,6 +79,7 @@ private:
     // Checking:
     //  AstVar(Scope)::user1()  -> VarUsage.  Set true to indicate tracking as lvalue/rvalue
     // Simulating:
+    //  AstConst::user2()       -> bool. This AstConst (allocated by this class) is in use
     //  AstVar(Scope)::user3()  -> AstConst*. Input value of variable or node
     //    (and output for non-delayed assignments)
     //  AstVar(Scope)::user2()  -> AstCont*. Output value of variable (delayed assignments)
@@ -102,14 +101,14 @@ private:
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp;  ///< Jump label we're branching from
     // Simulating:
-    ConstPile m_constFreeps;  ///< List of all AstConst* free and not in use
-    ConstPile m_constAllps;  ///< List of all AstConst* free and in use
-    std::deque<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
+    std::unordered_map<const AstNodeDType*, std::deque<AstConst*>>
+        m_constps;  ///< Lists of all AstConst* allocated per dtype
+    std::vector<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
 
     // Cleanup
     // V3Numbers that represents strings are a bit special and the API for
     // V3Number does not allow changing them.
-    std::deque<AstNode*> m_reclaimValuesp;  // List of allocated string numbers
+    std::vector<AstNode*> m_reclaimValuesp;  // List of allocated string numbers
 
     // Note level 8&9 include debugging each simulation value
     VL_DEBUG_FUNC;  // Declare debug()
@@ -125,9 +124,9 @@ private:
                 out << "'{";
                 for (AstMemberDType* itemp = stp->membersp(); itemp;
                      itemp = VN_CAST(itemp->nextp(), MemberDType)) {
-                    int width = itemp->width();
-                    int lsb = itemp->lsb();
-                    int msb = lsb + width - 1;
+                    const int width = itemp->width();
+                    const int lsb = itemp->lsb();
+                    const int msb = lsb + width - 1;
                     V3Number fieldNum(nump, width);
                     fieldNum.opSel(*nump, msb, lsb);
                     out << itemp->name() << ": ";
@@ -145,14 +144,14 @@ private:
             if (AstNodeDType* childTypep = arrayp->subDTypep()) {
                 std::ostringstream out;
                 out << "[";
-                int arrayElements = arrayp->elementsConst();
+                const int arrayElements = arrayp->elementsConst();
                 for (int element = 0; element < arrayElements; ++element) {
-                    int width = childTypep->width();
-                    int lsb = width * element;
-                    int msb = lsb + width - 1;
+                    const int width = childTypep->width();
+                    const int lsb = width * element;
+                    const int msb = lsb + width - 1;
                     V3Number fieldNum(nump, width);
                     fieldNum.opSel(*nump, msb, lsb);
-                    int arrayElem = arrayp->lo() + element;
+                    const int arrayElem = arrayp->lo() + element;
                     out << arrayElem << " = " << prettyNumber(&fieldNum, childTypep);
                     if (element < arrayElements - 1) out << ", ";
                 }
@@ -180,8 +179,7 @@ public:
             }
             m_whyNotOptimizable = why;
             std::ostringstream stack;
-            for (std::deque<SimStackNode*>::iterator it = m_callStack.begin();
-                 it != m_callStack.end(); ++it) {
+            for (auto it = m_callStack.rbegin(); it != m_callStack.rend(); ++it) {
                 AstFuncRef* funcp = (*it)->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from "
                       << funcp->prettyName() << "() with parameters:";
@@ -214,16 +212,31 @@ private:
         // It would be more efficient to do this by size, but the extra accounting
         // slows things down more than we gain.
         AstConst* constp;
-        AstNodeDType* dtypep = nodep->dtypep();
-        if (!m_constFreeps[dtypep].empty()) {
-            // UINFO(7, "Num Reuse " << nodep->width() << endl);
-            constp = m_constFreeps[dtypep].back();
-            m_constFreeps[dtypep].pop_back();
-            constp->num().nodep(nodep);
-        } else {
-            // UINFO(7, "Num New " << nodep->width() << endl);
+        // Grab free list corresponding to this dtype
+        std::deque<AstConst*>& freeList = m_constps[nodep->dtypep()];
+        bool allocNewConst = true;
+        if (!freeList.empty()) {
+            constp = freeList.front();
+            if (!constp->user2()) {
+                // Front of free list is free, reuse it (otherwise allocate new node)
+                allocNewConst = false;  // No need to allocate
+                // Mark the AstConst node as used, and move it to the back of the free list. This
+                // ensures that when all AstConst instances within the list are used, then the
+                // front of the list will be marked as used, in which case the enclosing 'if' will
+                // fail and we fall back to allocation.
+                constp->user2(1);
+                freeList.pop_front();
+                freeList.push_back(constp);
+                // configure const
+                constp->num().nodep(nodep);
+            }
+        }
+        if (allocNewConst) {
+            // Need to allocate new constant
             constp = new AstConst(nodep->fileline(), AstConst::DtypedValue(), nodep->dtypep(), 0);
-            m_constAllps[constp->dtypep()].push_back(constp);
+            // Mark as in use, add to free list for later reuse
+            constp->user2(1);
+            freeList.push_back(constp);
         }
         constp->num().isDouble(nodep->isDouble());
         constp->num().isString(nodep->isString());
@@ -424,7 +437,7 @@ private:
                     clearOptimizable(nodep, "Var write & read");
                 }
                 vscp->user1(vscp->user1() | VU_RV);
-                bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
+                const bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
                 AstNode* valuep = isConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 if (isConst
                     && valuep) {  // Propagate PARAM constants for constant function analysis
@@ -978,7 +991,7 @@ private:
             }
         }
         SimStackNode stackNode(nodep, &tconnects);
-        m_callStack.push_front(&stackNode);
+        m_callStack.push_back(&stackNode);
         // Clear output variable
         if (auto* const basicp = VN_CAST(funcp->fvarp(), Var)->basicp()) {
             AstConst cnst(funcp->fvarp()->fileline(), AstConst::WidthedValue(), basicp->widthMin(),
@@ -992,7 +1005,7 @@ private:
         }
         // Evaluate the function
         iterate(funcp);
-        m_callStack.pop_front();
+        m_callStack.pop_back();
         if (!m_checkOnly && optimizable()) {
             // Grab return value from output variable (if it's a function)
             UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");
@@ -1021,7 +1034,7 @@ private:
             AstNode* nextArgp = nodep->exprsp();
 
             string result;
-            string format = nodep->text();
+            const string format = nodep->text();
             auto pos = format.cbegin();
             bool inPct = false;
             for (; pos != format.cend(); ++pos) {
@@ -1041,7 +1054,7 @@ private:
                                 nodep, "Argument for $display like statement is not constant");
                             break;
                         }
-                        string pformat = string("%") + pos[0];
+                        const string pformat = string("%") + pos[0];
                         result += constp->num().displayed(nodep, pformat);
                     } else {
                         switch (tolower(pos[0])) {
@@ -1122,11 +1135,8 @@ public:
         m_jumpp = nullptr;
 
         AstNode::user1ClearTree();
-        AstNode::user2ClearTree();
+        AstNode::user2ClearTree();  // Also marks all elements in m_constps as free
         AstNode::user3ClearTree();
-
-        // Move all allocated numbers to the free pool
-        m_constFreeps = m_constAllps;
     }
     void mainTableCheck(AstNode* nodep) {
         setMode(true /*scoped*/, true /*checking*/, false /*params*/);
@@ -1145,13 +1155,12 @@ public:
         mainGuts(nodep);
     }
     virtual ~SimulateVisitor() override {
-        for (const auto& i : m_constAllps) {
-            for (AstConst* i2p : i.second) delete i2p;
+        for (const auto& pair : m_constps) {
+            for (AstConst* const constp : pair.second) { delete constp; }
         }
+        m_constps.clear();
         for (AstNode* ip : m_reclaimValuesp) delete ip;
         m_reclaimValuesp.clear();
-        m_constFreeps.clear();
-        m_constAllps.clear();
     }
 };
 

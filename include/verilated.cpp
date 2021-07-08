@@ -215,7 +215,7 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     char* bufp = new char[len + 1];
     VL_VSNPRINTF(bufp, len + 1, formatp, ap);
 
-    std::string out = std::string(bufp, len);
+    const std::string out = std::string(bufp, len);
     delete[] bufp;
     return out;
 }
@@ -246,7 +246,7 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     // includes that otherwise would be required in every Verilated module
     va_list ap;
     va_start(ap, formatp);
-    std::string out = _vl_string_vprintf(formatp, ap);
+    const std::string out = _vl_string_vprintf(formatp, ap);
     va_end(ap);
     // printf("-imm-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(),
     // out.c_str());
@@ -261,7 +261,7 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
 void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
-    std::string out = _vl_string_vprintf(formatp, ap);
+    const std::string out = _vl_string_vprintf(formatp, ap);
     va_end(ap);
     VerilatedThreadMsgQueue::post(VerilatedMsg([=]() {  //
         VL_PRINTF("%s", out.c_str());
@@ -301,7 +301,7 @@ vluint64_t vl_rand64() VL_MT_SAFE {
         if (VL_COUNTONES_I(t_state[1]) < 10) t_state[1] = ~t_state[1];
     }
     // Xoroshiro128+ algorithm
-    vluint64_t result = t_state[0] + t_state[1];
+    const vluint64_t result = t_state[0] + t_state[1];
     t_state[1] ^= t_state[0];
     t_state[0] = (((t_state[0] << 55) | (t_state[0] >> 9)) ^ t_state[1] ^ (t_state[1] << 14));
     t_state[1] = (t_state[1] << 36) | (t_state[1] >> 28);
@@ -356,7 +356,7 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
 //===========================================================================
 // Debug
 
-void _vl_debug_print_w(int lbits, WDataInP iwp) VL_MT_SAFE {
+void _vl_debug_print_w(int lbits, const WDataInP iwp) VL_MT_SAFE {
     VL_PRINTF_MT("  Data: w%d: ", lbits);
     for (int i = VL_WORDS_I(lbits) - 1; i >= 0; --i) VL_PRINTF_MT("%08x ", iwp[i]);
     VL_PRINTF_MT("\n");
@@ -365,24 +365,24 @@ void _vl_debug_print_w(int lbits, WDataInP iwp) VL_MT_SAFE {
 //===========================================================================
 // Slow math
 
-WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
+WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WDataInP rwp,
                        bool is_modulus) VL_MT_SAFE {
     // See Knuth Algorithm D.  Computes u/v = q.r
     // This isn't massively tuned, as wide division is rare
     // for debug see V3Number version
     // Requires clean input
-    int words = VL_WORDS_I(lbits);
+    const int words = VL_WORDS_I(lbits);
     for (int i = 0; i < words; ++i) owp[i] = 0;
     // Find MSB and check for zero.
-    int umsbp1 = VL_MOSTSETBITP1_W(words, lwp);  // dividend
-    int vmsbp1 = VL_MOSTSETBITP1_W(words, rwp);  // divisor
+    const int umsbp1 = VL_MOSTSETBITP1_W(words, lwp);  // dividend
+    const int vmsbp1 = VL_MOSTSETBITP1_W(words, rwp);  // divisor
     if (VL_UNLIKELY(vmsbp1 == 0)  // rwp==0 so division by zero.  Return 0.
         || VL_UNLIKELY(umsbp1 == 0)) {  // 0/x so short circuit and return 0
         return owp;
     }
 
-    int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
-    int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
+    const int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
+    const int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         vluint64_t k = 0;
@@ -408,8 +408,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
-    int s = 31 - VL_BITBIT_I(vmsbp1 - 1);  // shift amount (0...31)
-    vluint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
+    const int s = 31 - VL_BITBIT_I(vmsbp1 - 1);  // shift amount (0...31)
+    const vluint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
     for (int i = vw - 1; i > 0; --i) {
         vn[i] = (rwp[i] << s) | (shift_mask & (rwp[i - 1] >> (32 - s)));
     }
@@ -429,8 +429,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
     // Main loop
     for (int j = uw - vw; j >= 0; --j) {
         // Estimate
-        vluint64_t unw64 = (static_cast<vluint64_t>(un[j + vw]) << 32ULL
-                            | static_cast<vluint64_t>(un[j + vw - 1]));
+        const vluint64_t unw64 = (static_cast<vluint64_t>(un[j + vw]) << 32ULL
+                                  | static_cast<vluint64_t>(un[j + vw - 1]));
         vluint64_t qhat = unw64 / static_cast<vluint64_t>(vn[vw - 1]);
         vluint64_t rhat = unw64 - qhat * static_cast<vluint64_t>(vn[vw - 1]);
 
@@ -478,15 +478,15 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
     }
 }
 
-WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp,
-                     WDataInP rwp) VL_MT_SAFE {
+WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
+                     const WDataInP rwp) VL_MT_SAFE {
     // obits==lbits, rbits can be different
     owp[0] = 1;
     for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
     // cppcheck-suppress variableScope
-    WData powstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
-    WData lastpowstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
-    WData lastoutstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
+    VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
+    VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
+    VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-suppress variableScope
     VL_ASSIGN_W(obits, powstore, lwp);
     for (int bit = 0; bit < rbits; bit++) {
@@ -501,13 +501,13 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp,
     }
     return owp;
 }
-WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp,
+WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, const WDataInP lwp,
                      QData rhs) VL_MT_SAFE {
-    WData rhsw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> rhsw;
     VL_SET_WQ(rhsw, rhs);
     return VL_POW_WWW(obits, lbits, rbits, owp, lwp, rhsw);
 }
-QData VL_POW_QQW(int, int, int rbits, QData lhs, WDataInP rwp) VL_MT_SAFE {
+QData VL_POW_QQW(int, int, int rbits, QData lhs, const WDataInP rwp) VL_MT_SAFE {
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (VL_UNLIKELY(lhs == 0)) return 0;
     QData power = lhs;
@@ -519,11 +519,11 @@ QData VL_POW_QQW(int, int, int rbits, QData lhs, WDataInP rwp) VL_MT_SAFE {
     return out;
 }
 
-WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
-                       bool lsign, bool rsign) VL_MT_SAFE {
+WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
+                       const WDataInP rwp, bool lsign, bool rsign) VL_MT_SAFE {
     // obits==lbits, rbits can be different
     if (rsign && VL_SIGN_W(rbits, rwp)) {
-        int words = VL_WORDS_I(obits);
+        const int words = VL_WORDS_I(obits);
         VL_ZERO_W(obits, owp);
         EData lor = 0;  // 0=all zeros, ~0=all ones, else mix
         for (int i = 1; i < (words - 1); ++i) { lor |= lwp[i]; }
@@ -545,13 +545,13 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, W
     }
     return VL_POW_WWW(obits, rbits, rbits, owp, lwp, rwp);
 }
-WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs,
-                       bool lsign, bool rsign) VL_MT_SAFE {
-    WData rhsw[VL_WQ_WORDS_E];
+WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits, WDataOutP owp, const WDataInP lwp,
+                       QData rhs, bool lsign, bool rsign) VL_MT_SAFE {
+    VlWide<VL_WQ_WORDS_E> rhsw;
     VL_SET_WQ(rhsw, rhs);
     return VL_POWSS_WWW(obits, lbits, rbits, owp, lwp, rhsw, lsign, rsign);
 }
-QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsign,
+QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, const WDataInP rwp, bool lsign,
                    bool rsign) VL_MT_SAFE {
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (rsign && VL_SIGN_W(rbits, rwp)) {
@@ -571,23 +571,23 @@ QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsig
     return VL_POW_QQW(obits, rbits, rbits, lhs, rwp);
 }
 
-double VL_ITOR_D_W(int lbits, WDataInP lwp) VL_PURE {
+double VL_ITOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
     int ms_word = VL_WORDS_I(lbits) - 1;
     for (; !lwp[ms_word] && ms_word > 0;) --ms_word;
     if (ms_word == 0) return static_cast<double>(lwp[0]);
     if (ms_word == 1) return static_cast<double>(VL_SET_QW(lwp));
     // We need 53 bits of mantissa, which might mean looking at 3 words
     // namely ms_word, ms_word-1 and ms_word-2
-    EData ihi = lwp[ms_word];
-    EData imid = lwp[ms_word - 1];
-    EData ilo = lwp[ms_word - 2];
-    double hi = static_cast<double>(ihi) * std::exp2(2 * VL_EDATASIZE);
-    double mid = static_cast<double>(imid) * std::exp2(VL_EDATASIZE);
-    double lo = static_cast<double>(ilo);
-    double d = (hi + mid + lo) * std::exp2(VL_EDATASIZE * (ms_word - 2));
+    const EData ihi = lwp[ms_word];
+    const EData imid = lwp[ms_word - 1];
+    const EData ilo = lwp[ms_word - 2];
+    const double hi = static_cast<double>(ihi) * std::exp2(2 * VL_EDATASIZE);
+    const double mid = static_cast<double>(imid) * std::exp2(VL_EDATASIZE);
+    const double lo = static_cast<double>(ilo);
+    const double d = (hi + mid + lo) * std::exp2(VL_EDATASIZE * (ms_word - 2));
     return d;
 }
-double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE {
+double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
     vluint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
     VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
@@ -599,13 +599,13 @@ double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE {
 // Formatting
 
 // Output a string representation of a wide number
-std::string VL_DECIMAL_NW(int width, WDataInP lwp) VL_MT_SAFE {
-    int maxdecwidth = (width + 3) * 4 / 3;
+std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
+    const int maxdecwidth = (width + 3) * 4 / 3;
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
-    WData bcd[VL_VALUE_STRING_MAX_WIDTH / 4 + 2];
+    VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> bcd;
     VL_ZERO_RESET_W(maxdecwidth, bcd);
-    WData tmp[VL_VALUE_STRING_MAX_WIDTH / 4 + 2];
-    WData tmp2[VL_VALUE_STRING_MAX_WIDTH / 4 + 2];
+    VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> tmp;
+    VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> tmp2;
     int from_bit = width - 1;
     // Skip all leading zeros
     for (; from_bit >= 0 && !(VL_BITRSHIFT_W(lwp, from_bit) & 1); --from_bit) {}
@@ -648,25 +648,25 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
     if (std::numeric_limits<T>::is_integer) {
         constexpr int b = 128;
         constexpr int w = VL_WORDS_I(b);
-        WData tmp0[w], tmp1[w], tmp2[w], tmp3[w];
+        VlWide<w> tmp0, tmp1, tmp2, tmp3;
 
         WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, static_cast<QData>(ld));
         if (shift < 0) {
-            WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(-shift));
+            const WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(-shift));
             shifted = VL_DIV_WWW(b, tmp2, shifted, pow10);
         } else {
-            WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(shift));
+            const WDataInP pow10 = VL_EXTEND_WQ(b, 0, tmp1, vl_time_pow10(shift));
             shifted = VL_MUL_W(w, tmp2, shifted, pow10);
         }
 
-        WDataInP fracDigitsPow10 = VL_EXTEND_WQ(b, 0, tmp3, vl_time_pow10(fracDigits));
-        WDataInP integer = VL_DIV_WWW(b, tmp0, shifted, fracDigitsPow10);
-        WDataInP frac = VL_MODDIV_WWW(b, tmp1, shifted, fracDigitsPow10);
-        WDataInP max64Bit
+        const WDataInP fracDigitsPow10 = VL_EXTEND_WQ(b, 0, tmp3, vl_time_pow10(fracDigits));
+        const WDataInP integer = VL_DIV_WWW(b, tmp0, shifted, fracDigitsPow10);
+        const WDataInP frac = VL_MODDIV_WWW(b, tmp1, shifted, fracDigitsPow10);
+        const WDataInP max64Bit
             = VL_EXTEND_WQ(b, 0, tmp2, std::numeric_limits<vluint64_t>::max());  // breaks shifted
         if (VL_GT_W(w, integer, max64Bit)) {
             WDataOutP v = VL_ASSIGN_W(b, tmp3, integer);  // breaks fracDigitsPow10
-            WData zero[w], ten[w];
+            VlWide<w> zero, ten;
             VL_ZERO_W(b, zero);
             VL_EXTEND_WI(b, 0, ten, 10);
             char buf[128];  // 128B is obviously long enough to represent 128bit integer in decimal
@@ -674,9 +674,9 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
             *ptr = '\0';
             while (VL_GT_W(w, v, zero)) {
                 --ptr;
-                WDataInP mod = VL_MODDIV_WWW(b, tmp2, v, ten);  // breaks max64Bit
+                const WDataInP mod = VL_MODDIV_WWW(b, tmp2, v, ten);  // breaks max64Bit
                 *ptr = "0123456789"[VL_SET_QW(mod)];
-                WData divided[w];
+                VlWide<w> divided;
                 VL_DIV_WWW(b, divided, v, ten);
                 VL_ASSIGN_W(b, v, divided);
             }
@@ -801,7 +801,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
             case 'g':
             case '^': {  // Realtime
                 const int lbits = va_arg(ap, int);
-                double d = va_arg(ap, double);
+                const double d = va_arg(ap, double);
                 if (lbits) {}  // UNUSED - always 64
                 if (fmt == '^') {  // Realtime
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
@@ -818,7 +818,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 // Deal with all read-and-print somethings
                 const int lbits = va_arg(ap, int);
                 QData ld = 0;
-                WData qlwp[VL_WQ_WORDS_E];
+                VlWide<VL_WQ_WORDS_E> qlwp;
                 WDataInP lwp = nullptr;
                 if (lbits <= VL_QUADSIZE) {
                     ld = VL_VA_ARG_Q_(ap, lbits);
@@ -834,7 +834,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 }
                 switch (fmt) {
                 case 'c': {
-                    IData charval = ld & 0xff;
+                    const IData charval = ld & 0xff;
                     output += static_cast<char>(charval);
                     break;
                 }
@@ -842,7 +842,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     std::string field;
                     for (; lsb >= 0; --lsb) {
                         lsb = (lsb / 8) * 8;  // Next digit
-                        IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
+                        const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
                         field += (charval == 0) ? ' ' : charval;
                     }
                     std::string padding;
@@ -860,7 +860,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         append = t_tmp;
                     } else {
                         if (VL_SIGN_E(lbits, lwp[VL_WORDS_I(lbits) - 1])) {
-                            WData neg[VL_VALUE_STRING_MAX_WIDTH / 4 + 2];
+                            VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> neg;
                             VL_NEGATE_W(VL_WORDS_I(lbits), neg, lwp);
                             append = std::string("-") + VL_DECIMAL_NW(lbits, neg);
                         } else {
@@ -957,7 +957,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     }
                     break;
                 default: {  // LCOV_EXCL_START
-                    std::string msg = std::string("Unknown _vl_vsformat code: ") + pos[0];
+                    const std::string msg = std::string("Unknown _vl_vsformat code: ") + pos[0];
                     VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
                     break;
                 }  // LCOV_EXCL_STOP
@@ -982,11 +982,11 @@ static inline void _vl_vsss_advance(FILE* fp, int& floc) VL_MT_SAFE {
         floc -= 8;
     }
 }
-static inline int _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp,
+static inline int _vl_vsss_peek(FILE* fp, int& floc, const WDataInP fromp,
                                 const std::string& fstr) VL_MT_SAFE {
     // Get a character without advancing
     if (fp) {
-        int data = std::fgetc(fp);
+        const int data = std::fgetc(fp);
         if (data == EOF) return EOF;
         ungetc(data, fp);
         return data;
@@ -1000,16 +1000,17 @@ static inline int _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp,
         }
     }
 }
-static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp,
+static inline void _vl_vsss_skipspace(FILE* fp, int& floc, const WDataInP fromp,
                                       const std::string& fstr) VL_MT_SAFE {
     while (true) {
-        int c = _vl_vsss_peek(fp, floc, fromp, fstr);
+        const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
         if (c == EOF || !std::isspace(c)) return;
         _vl_vsss_advance(fp, floc);
     }
 }
-static inline void _vl_vsss_read_str(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr,
-                                     char* tmpp, const char* acceptp) VL_MT_SAFE {
+static inline void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp,
+                                     const std::string& fstr, char* tmpp,
+                                     const char* acceptp) VL_MT_SAFE {
     // Read into tmp, consisting of characters from acceptp list
     char* cp = tmpp;
     while (true) {
@@ -1023,8 +1024,9 @@ static inline void _vl_vsss_read_str(FILE* fp, int& floc, WDataInP fromp, const 
     *cp++ = '\0';
     // VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
-static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr,
-                                      char* beginp, std::size_t n, bool inhibit = false) {
+static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp,
+                                      const std::string& fstr, char* beginp, std::size_t n,
+                                      bool inhibit = false) {
     // Variant of _vl_vsss_read_str using the same underlying I/O functions but optimized
     // specifically for block reads of N bytes (read operations are not demarcated by
     // whitespace). In the fp case, except descriptor to have been opened in binary mode.
@@ -1074,7 +1076,7 @@ static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const 
 }
 
 IData _vl_vsscanf(FILE* fp,  // If a fscanf
-                  int fbits, WDataInP fromp,  // Else if a sscanf
+                  int fbits, const WDataInP fromp,  // Else if a sscanf
                   const std::string& fstr,  // if a sscanf to string
                   const char* formatp, va_list ap) VL_MT_SAFE {
     // Read a Verilog $sscanf/$fscanf style format into the output list
@@ -1119,7 +1121,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 // Deal with all read-and-scan somethings
                 // Note LSBs are preserved if there's an overflow
                 const int obits = inIgnore ? 0 : va_arg(ap, int);
-                WData qowp[VL_WQ_WORDS_E];
+                VlWide<VL_WQ_WORDS_E> qowp;
                 VL_SET_WQ(qowp, 0ULL);
                 WDataOutP owp = qowp;
                 if (obits == -1) {  // string
@@ -1240,7 +1242,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     break;
                 }
                 default: {  // LCOV_EXCL_START
-                    std::string msg = std::string("Unknown _vl_vsscanf code: ") + pos[0];
+                    const std::string msg = std::string("Unknown _vl_vsscanf code: ") + pos[0];
                     VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
                     break;
                 }  // LCOV_EXCL_STOP
@@ -1282,7 +1284,7 @@ FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE {
     return Verilated::threadContextp()->impp()->fdToFp(lhs);
 }
 
-void _vl_vint_to_string(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE {
+void _vl_vint_to_string(int obits, char* destoutp, const WDataInP sourcep) VL_MT_SAFE {
     // See also VL_DATA_TO_STRING_NW
     int lsb = obits - 1;
     bool start = true;
@@ -1303,7 +1305,7 @@ void _vl_vint_to_string(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE 
 
 void _vl_string_to_vint(int obits, void* destp, size_t srclen, const char* srcp) VL_MT_SAFE {
     // Convert C string to Verilog format
-    size_t bytes = VL_BYTES_I(obits);
+    const size_t bytes = VL_BYTES_I(obits);
     char* op = reinterpret_cast<char*>(destp);
     if (srclen > bytes) srclen = bytes;  // Don't overflow destination
     size_t i = 0;
@@ -1315,7 +1317,7 @@ static IData getLine(std::string& str, IData fpi, size_t maxLen) VL_MT_SAFE {
     str.clear();
 
     // While threadsafe, each thread can only access different file handles
-    FILE* fp = VL_CVT_I_FP(fpi);
+    FILE* const fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
 
     // We don't use fgets, as we must read \0s.
@@ -1331,7 +1333,7 @@ static IData getLine(std::string& str, IData fpi, size_t maxLen) VL_MT_SAFE {
 IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
     std::string str;
     const IData bytes = VL_BYTES_I(obits);
-    IData got = getLine(str, fpi, bytes);
+    const IData got = getLine(str, fpi, bytes);
 
     if (VL_UNLIKELY(str.empty())) return 0;
 
@@ -1351,7 +1353,7 @@ IData VL_FGETS_NI(std::string& dest, IData fpi) VL_MT_SAFE {
 
 IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
     // We ignore lhs/fpi - IEEE says "most recent error" so probably good enough
-    IData ret = errno;
+    const IData ret = errno;
     outputr = std::string(::std::strerror(ret));
     return ret;
 }
@@ -1474,47 +1476,47 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
 
 IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
-    FILE* fp = VL_CVT_I_FP(fpi);
+    FILE* const fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
 
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(fp, 0, nullptr, "", formatp, ap);
+    const IData got = _vl_vsscanf(fp, 0, nullptr, "", formatp, ap);
     va_end(ap);
     return got;
 }
 
 IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) VL_MT_SAFE {
-    WData fnw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> fnw;
     VL_SET_WI(fnw, ld);
 
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(nullptr, lbits, fnw, "", formatp, ap);
+    const IData got = _vl_vsscanf(nullptr, lbits, fnw, "", formatp, ap);
     va_end(ap);
     return got;
 }
 IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) VL_MT_SAFE {
-    WData fnw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> fnw;
     VL_SET_WQ(fnw, ld);
 
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(nullptr, lbits, fnw, "", formatp, ap);
+    const IData got = _vl_vsscanf(nullptr, lbits, fnw, "", formatp, ap);
     va_end(ap);
     return got;
 }
-IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...) VL_MT_SAFE {
+IData VL_SSCANF_IWX(int lbits, const WDataInP lwp, const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(nullptr, lbits, lwp, "", formatp, ap);
+    const IData got = _vl_vsscanf(nullptr, lbits, lwp, "", formatp, ap);
     va_end(ap);
     return got;
 }
 IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(nullptr, ld.length() * 8, nullptr, ld, formatp, ap);
+    const IData got = _vl_vsscanf(nullptr, ld.length() * 8, nullptr, ld, formatp, ap);
     va_end(ap);
     return got;
 }
@@ -1522,7 +1524,7 @@ IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) VL_MT_
 IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi, IData start,
                  IData count) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
-    FILE* fp = VL_CVT_I_FP(fpi);
+    FILE* const fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
     if (count > (array_size - (start - array_lsb))) count = array_size - (start - array_lsb);
     // Prep for reading
@@ -1572,14 +1574,14 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
 }
 
 IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
-    WData lhsw[VL_WQ_WORDS_E];
+    VlWide<VL_WQ_WORDS_E> lhsw;
     VL_SET_WQ(lhsw, lhs);
     return VL_SYSTEM_IW(VL_WQ_WORDS_E, lhsw);
 }
-IData VL_SYSTEM_IW(int lhswords, WDataInP lhsp) VL_MT_SAFE {
+IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
     char filenamez[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     _vl_vint_to_string(lhswords * VL_EDATASIZE, filenamez, lhsp);
-    int code = std::system(filenamez);  // Yes, std::system() is threadsafe
+    const int code = std::system(filenamez);  // Yes, std::system() is threadsafe
     return code >> 8;  // Want exit status
 }
 
@@ -1707,7 +1709,7 @@ std::string VL_TO_STRING(CData lhs) { return VL_SFORMATF_NX("'h%0x", 8, lhs); }
 std::string VL_TO_STRING(SData lhs) { return VL_SFORMATF_NX("'h%0x", 16, lhs); }
 std::string VL_TO_STRING(IData lhs) { return VL_SFORMATF_NX("'h%0x", 32, lhs); }
 std::string VL_TO_STRING(QData lhs) { return VL_SFORMATF_NX("'h%0x", 64, lhs); }
-std::string VL_TO_STRING_W(int words, WDataInP obj) {
+std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_NX("'h%0x", words * VL_EDATASIZE, obj);
 }
 
@@ -1722,7 +1724,7 @@ std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
     return out;
 }
 
-std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
+std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE {
     // See also _vl_vint_to_string
     char destout[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     int obits = lwords * VL_EDATASIZE;
@@ -1804,7 +1806,7 @@ static const char* formatBinary(int nBits, vluint32_t bits) {
 
     static VL_THREAD_LOCAL char t_buf[64];
     for (int i = 0; i < nBits; i++) {
-        bool isOne = bits & (1 << (nBits - 1 - i));
+        const bool isOne = bits & (1 << (nBits - 1 - i));
         t_buf[i] = (isOne ? '1' : '0');
     }
     t_buf[nBits] = '\0';
@@ -1885,7 +1887,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
             // Check for hex or binary digits as file format requests
             else if (std::isxdigit(c) || (!reading_addr && (c == 'x' || c == 'X'))) {
                 c = std::tolower(c);
-                int value
+                const int value
                     = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
                 if (reading_addr) {
                     // Decode @ addresses
@@ -1914,12 +1916,13 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
     return false;  // EOF
 }
 void VlReadMem::setData(void* valuep, const std::string& rhs) {
-    QData shift = m_hex ? 4ULL : 1ULL;
+    const QData shift = m_hex ? 4ULL : 1ULL;
     bool innum = false;
     // Shift value in
     for (const auto& i : rhs) {
-        char c = std::tolower(i);
-        int value = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
+        const char c = std::tolower(i);
+        const int value
+            = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
         if (m_bits <= 8) {
             CData* datap = reinterpret_cast<CData*>(valuep);
             if (!innum) *datap = 0;
@@ -2001,9 +2004,9 @@ void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
         }
     } else if (m_bits <= 64) {
         const QData* datap = reinterpret_cast<const QData*>(valuep);
-        vluint64_t value = VL_MASK_Q(m_bits) & *datap;
-        vluint32_t lo = value & 0xffffffff;
-        vluint32_t hi = value >> 32;
+        const vluint64_t value = VL_MASK_Q(m_bits) & *datap;
+        const vluint32_t lo = value & 0xffffffff;
+        const vluint32_t hi = value >> 32;
         if (m_hex) {
             fprintf(m_fp, memhFormat(m_bits - 32), hi);
             fprintf(m_fp, "%08x\n", lo);
@@ -2012,7 +2015,7 @@ void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
             fprintf(m_fp, "%s\n", formatBinary(32, lo));
         }
     } else {
-        WDataInP datap = reinterpret_cast<WDataInP>(valuep);
+        const WDataInP datap = reinterpret_cast<WDataInP>(valuep);
         // output as a sequence of VL_EDATASIZE'd words
         // from MSB to LSB. Mask off the MSB word which could
         // contain junk above the top of valid data.
@@ -2022,7 +2025,7 @@ void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
             EData data = datap[word_idx];
             if (first) {
                 data &= VL_MASK_E(m_bits);
-                int top_word_nbits = VL_BITBIT_E(m_bits - 1) + 1;
+                const int top_word_nbits = VL_BITBIT_E(m_bits - 1) + 1;
                 if (m_hex) {
                     fprintf(m_fp, memhFormat(top_word_nbits), data);
                 } else {
@@ -2108,7 +2111,7 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
     if (VL_UNLIKELY(!wmem.isOpen())) return;
 
     for (QData addr = start; addr <= end; ++addr) {
-        QData row_offset = addr - array_lsb;
+        const QData row_offset = addr - array_lsb;
         if (bits <= 8) {
             const CData* datap = &(reinterpret_cast<const CData*>(memp))[row_offset];
             wmem.print(addr, false, datap);
@@ -2122,8 +2125,8 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
             const QData* datap = &(reinterpret_cast<const QData*>(memp))[row_offset];
             wmem.print(addr, false, datap);
         } else {
-            WDataInP memDatap = reinterpret_cast<WDataInP>(memp);
-            WDataInP datap = &memDatap[row_offset * VL_WORDS_I(bits)];
+            const WDataInP memDatap = reinterpret_cast<WDataInP>(memp);
+            const WDataInP datap = &memDatap[row_offset * VL_WORDS_I(bits)];
             wmem.print(addr, false, datap);
         }
     }
@@ -2351,7 +2354,7 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     m_s.m_timeprecision = value;
 #ifdef SYSTEMC_VERSION
-    sc_time sc_res = sc_get_time_resolution();
+    const sc_time sc_res = sc_get_time_resolution();
     int sc_prec = 99;
     if (sc_res == sc_time(1, SC_SEC)) {
         sc_prec = 0;
@@ -2373,7 +2376,7 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
             << ". Suggest use 'sc_set_time_resolution(" << vl_time_str(value)
             << ")', or Verilator '--timescale-override " << vl_time_str(sc_prec) << "/"
             << vl_time_str(sc_prec) << "'";
-        std::string msgs = msg.str();
+        const std::string msgs = msg.str();
         VL_FATAL_MT("", 0, "", msgs.c_str());
     }
 #endif
@@ -2434,7 +2437,7 @@ std::string VerilatedContextImp::argPlusMatch(const char* prefixp)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock(m_argMutex);
     // Note prefixp does not include the leading "+"
-    size_t len = std::strlen(prefixp);
+    const size_t len = std::strlen(prefixp);
     if (VL_UNLIKELY(!m_args.m_argVecLoaded)) {
         m_args.m_argVecLoaded = true;  // Complain only once
         VL_FATAL_MT("unknown", 0, "",
@@ -2511,7 +2514,7 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
 }
 bool VerilatedContextImp::commandArgVlValue(const std::string& arg, const std::string& prefix,
                                             std::string& valuer) {
-    size_t len = prefix.length();
+    const size_t len = prefix.length();
     if (0 == std::strncmp(prefix.c_str(), arg.c_str(), len)) {
         valuer = arg.substr(len);
         return true;
@@ -2528,7 +2531,7 @@ void VerilatedContext::randSeed(int val) VL_MT_SAFE {
     // and so the rand seed's mutex must also be static
     const VerilatedLockGuard lock(VerilatedContextImp::s().s_randMutex);
     m_s.m_randSeed = val;
-    vluint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
+    const vluint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
     // Obververs must see new epoch AFTER seed updated
 #ifdef VL_THREADED
     std::atomic_signal_fence(std::memory_order_release);
@@ -2623,7 +2626,7 @@ const char* Verilated::catName(const char* n1, const char* n2, int scopet,
     // Used by symbol table creation to make module names
     static VL_THREAD_LOCAL char* t_strp = nullptr;
     static VL_THREAD_LOCAL size_t t_len = 0;
-    size_t newlen
+    const size_t newlen
         = std::strlen(n1) + std::strlen(n2) + std::strlen(delimiter) + (scopet > 0 ? 2 : 1);
     if (VL_UNLIKELY(!t_strp || newlen > t_len)) {
         if (t_strp) delete[] t_strp;
@@ -2726,8 +2729,8 @@ void Verilated::nullPointerError(const char* filename, int linenum) VL_MT_SAFE {
 
 void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
     // Slowpath - Called only when signal sets too high of a bit
-    std::string msg = (std::string("Testbench C set input '") + signame
-                       + "' to value that overflows what the signal's width can fit");
+    const std::string msg = (std::string("Testbench C set input '") + signame
+                             + "' to value that overflows what the signal's width can fit");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     VL_UNREACHABLE
 }
@@ -2889,8 +2892,8 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, boo
     va_list ap;
     va_start(ap, dims);
     for (int i = 0; i < dims; ++i) {
-        int msb = va_arg(ap, int);
-        int lsb = va_arg(ap, int);
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
         if (i == 0) {
             var.m_packed.m_left = msb;
             var.m_packed.m_right = lsb;
@@ -2921,18 +2924,20 @@ VerilatedVar* VerilatedScope::varFind(const char* namep) const VL_MT_SAFE_POSTIN
 
 void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
-    std::string msg = (std::string("Testbench C called '") + VerilatedImp::exportName(funcnum)
-                       + "' but scope wasn't set, perhaps due to dpi import call without "
-                       + "'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.");
+    const std::string msg
+        = (std::string("Testbench C called '") + VerilatedImp::exportName(funcnum)
+           + "' but scope wasn't set, perhaps due to dpi import call without "
+           + "'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return nullptr;
 }
 
 void* VerilatedScope::exportFindError(int funcnum) const {
     // Slowpath - Called only when find has failed
-    std::string msg = (std::string("Testbench C called '") + VerilatedImp::exportName(funcnum)
-                       + "' but this DPI export function exists only in other scopes, not scope '"
-                       + name() + "'");
+    const std::string msg
+        = (std::string("Testbench C called '") + VerilatedImp::exportName(funcnum)
+           + "' but this DPI export function exists only in other scopes, not scope '" + name()
+           + "'");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return nullptr;
 }

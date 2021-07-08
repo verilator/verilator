@@ -502,7 +502,7 @@ Some of the code implementing passes is extremely repetitive, and must be
 implemented for each sub-class of ``AstNode``. However, while repetitive,
 there is more variability than can be handled in C++ macros.
 
-In Verilator this is implemented by using a Perl script, ``astgen`` to
+In Verilator this is implemented by using a script, ``astgen`` to
 pre-process the C++ code. For example in ``V3Const.cpp`` this is used to
 implement the ``visit()`` functions for each binary operation using the
 ``TREEOP`` macro.
@@ -750,8 +750,8 @@ test. For run-time tests, this is followed by a call to the ``execute``
 subroutine. Both of these functions can optionally be provided with a hash
 table as argument specifying additional options.
 
-The test driver assumes by default that the source Verilog file name
-matches the PERL driver name. So a test whose driver is
+The driver.pl script assumes by default that the source Verilog file name
+matches the test script name. So a test whose driver is
 ``t/t_mytest.pl`` will expect a Verilog source file ``t/t_mytest.v``.
 This can be changed using the ``top_filename`` subroutine, for example
 

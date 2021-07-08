@@ -26,6 +26,7 @@
 #include "V3Global.h"
 
 #include <cmath>
+#include <type_traits>
 #include <unordered_set>
 
 #include "V3Ast__gen_classes.h"  // From ./astgen
@@ -155,6 +156,7 @@ public:
         return (m_e == READWRITE) ? VAccess(m_e) : (m_e == WRITE ? VAccess(READ) : VAccess(WRITE));
     }
     bool isReadOnly() const { return m_e == READ; }  // False with READWRITE
+    bool isWriteOnly() const { return m_e == WRITE; }  // False with READWRITE
     bool isReadOrRW() const { return m_e == READ || m_e == READWRITE; }
     bool isWriteOrRW() const { return m_e == WRITE || m_e == READWRITE; }
     bool isRW() const { return m_e == READWRITE; }
@@ -457,6 +459,7 @@ public:
         // Internal types for mid-steps
         SCOPEPTR,
         CHARPTR,
+        MTASKSTATE,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -467,18 +470,19 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {
-            "%E-unk", "bit",     "byte",  "chandle",        "event", "int",    "integer",
-            "logic",  "longint", "real",  "shortint",       "time",  "string", "VerilatedScope*",
-            "char*",  "IData",   "QData", "LOGIC_IMPLICIT", " MAX"};
+        static const char* const names[]
+            = {"%E-unk",       "bit",     "byte",   "chandle",         "event",
+               "int",          "integer", "logic",  "longint",         "real",
+               "shortint",     "time",    "string", "VerilatedScope*", "char*",
+               "VlMTaskState", "IData",   "QData",  "LOGIC_IMPLICIT",  " MAX"};
         return names[m_e];
     }
     const char* dpiType() const {
         static const char* const names[]
-            = {"%E-unk",      "svBit",    "char",        "void*",  "char",  "int",
-               "%E-integer",  "svLogic",  "long long",   "double", "short", "%E-time",
-               "const char*", "dpiScope", "const char*", "IData",  "QData", "%E-logic-implicit",
-               " MAX"};
+            = {"%E-unk",        "svBit",      "char",        "void*",           "char",
+               "int",           "%E-integer", "svLogic",     "long long",       "double",
+               "short",         "%E-time",    "const char*", "dpiScope",        "const char*",
+               "%E-mtaskstate", "IData",      "QData",       "%E-logic-implct", " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -511,6 +515,7 @@ public:
         case STRING: return 64;  // opaque  // Just the pointer, for today
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque
+        case MTASKSTATE: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -549,11 +554,13 @@ public:
                 || m_e == DOUBLE || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
     }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
-        return (m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR || m_e == DOUBLE);
+        return (m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR || m_e == MTASKSTATE
+                || m_e == DOUBLE);
     }
     bool isDouble() const { return m_e == DOUBLE; }
     bool isEventValue() const { return m_e == EVENTVALUE; }
     bool isString() const { return m_e == STRING; }
+    bool isMTaskState() const { return m_e == MTASKSTATE; }
 };
 inline bool operator==(const AstBasicDTypeKwd& lhs, const AstBasicDTypeKwd& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -1136,10 +1143,14 @@ public:
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() = default;
     // Casters
-    WidthVP* c() const { return reinterpret_cast<WidthVP*>(m_u.up); }
-    VSymEnt* toSymEnt() const { return reinterpret_cast<VSymEnt*>(m_u.up); }
-    AstNode* toNodep() const { return reinterpret_cast<AstNode*>(m_u.up); }
-    V3GraphVertex* toGraphVertex() const { return reinterpret_cast<V3GraphVertex*>(m_u.up); }
+    template <class T>  //
+    typename std::enable_if<std::is_pointer<T>::value, T>::type to() const {
+        return reinterpret_cast<T>(m_u.up);
+    }
+    WidthVP* c() const { return to<WidthVP*>(); }
+    VSymEnt* toSymEnt() const { return to<VSymEnt*>(); }
+    AstNode* toNodep() const { return to<AstNode*>(); }
+    V3GraphVertex* toGraphVertex() const { return to<V3GraphVertex*>(); }
     int toInt() const { return m_u.ui; }
     static VNUser fromInt(int i) { return VNUser(i); }
 };
@@ -1687,6 +1698,7 @@ public:
     AstNodeDType* findSigned32DType() { return findBasicDType(AstBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
+    AstNodeDType* findCHandleDType() { return findBasicDType(AstBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
@@ -1868,7 +1880,7 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
-    // For documentation on emitC format see EmitCStmts::emitOpName
+    // For documentation on emitC format see EmitCFunc::emitOpName
     virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
@@ -2272,9 +2284,7 @@ private:
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
-    string m_hiernameToProt;  // Scope converted into name-> for emitting
-    string m_hiernameToUnprot;  // Scope converted into name-> for emitting
-    bool m_hierThis = false;  // Hiername points to "this" function
+    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
 
 protected:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
@@ -2306,13 +2316,9 @@ public:
     void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
-    string hiernameToProt() const { return m_hiernameToProt; }
-    void hiernameToProt(const string& hn) { m_hiernameToProt = hn; }
-    string hiernameToUnprot() const { return m_hiernameToUnprot; }
-    void hiernameToUnprot(const string& hn) { m_hiernameToUnprot = hn; }
-    string hiernameProtect() const;
-    bool hierThis() const { return m_hierThis; }
-    void hierThis(bool flag) { m_hierThis = flag; }
+    string selfPointer() const { return m_selfPointer; }
+    void selfPointer(const string& value) { m_selfPointer = value; }
+    string selfPointerProtect(bool useSelfForThis) const;
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
@@ -2615,8 +2621,7 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
-    string m_hiernameToProt;
-    string m_hiernameToUnprot;
+    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
     string m_argTypes;
 
 protected:
@@ -2642,11 +2647,9 @@ public:
     virtual bool isPure() const override;
     virtual bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
-    string hiernameToProt() const { return m_hiernameToProt; }
-    void hiernameToProt(const string& hn) { m_hiernameToProt = hn; }
-    string hiernameToUnprot() const { return m_hiernameToUnprot; }
-    void hiernameToUnprot(const string& hn) { m_hiernameToUnprot = hn; }
-    string hiernameProtect() const;
+    string selfPointer() const { return m_selfPointer; }
+    void selfPointer(const string& value) { m_selfPointer = value; }
+    string selfPointerProtect(bool useSelfForThis) const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall

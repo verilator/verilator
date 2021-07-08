@@ -33,7 +33,12 @@ or "`ifdef`"'s may break other tools.
    that returns up to a 32-bit number (without a trailing ;). This can be
    used to call C++ functions from your Verilog code.
 
-   String arguments will be put directly into the output C++ code.
+   String arguments will be put directly into the output C++ code, except
+   the word 'this' (i.e.: the object pointer) might be replaced with a
+   different pointer as Verilator might implement logic with non-member
+   functions. For this reason, any references to class members must be made
+   via an explicit 'this->' pointer dereference.
+
    Expression arguments will have the code to evaluate the expression
    inserted.  Thus to call a C++ function, :code:`$c("func(",a,")")` will
    result in :code:`func(a)` in the output C++ code.  For input arguments,

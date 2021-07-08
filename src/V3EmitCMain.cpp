@@ -40,7 +40,7 @@ public:
 private:
     // MAIN METHOD
     void emitInt() {
-        string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__main.cpp";
+        const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__main.cpp";
         newCFile(filename, false /*slow*/, true /*source*/);
         V3OutCFile cf(filename);
         m_ofp = &cf;

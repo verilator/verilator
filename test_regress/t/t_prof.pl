@@ -10,6 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
+# TODO below might no longer be requried as configure checks for -pg
 if ($ENV{VERILATOR_TEST_NO_GPROF}) {
     skip("Skipping due to VERILATOR_TEST_NO_GPROF");
 } else {
@@ -20,7 +21,7 @@ ok(1);
 
 sub dotest {
     compile(
-        verilator_flags2 => ["--stats --prof-cfuncs -CFLAGS '-pg' -LDFLAGS '-pg'"],
+        verilator_flags2 => ["--stats --prof-cfuncs"],
         );
 
     unlink $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");

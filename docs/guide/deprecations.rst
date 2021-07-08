@@ -11,14 +11,6 @@ C++11 compiler support
   require C++14 or newer compilers for both compiling Verilator and
   compiling Verilated models no sooner than January 2022.
 
-No-Relative-Cfuncs Option
-  The :vlopt:`--no-relative-cfuncs` option is not be required by any C++11
-  compliant compiler and is planned for removal no sooner than July 2021.
-
-Inhibit-Sim Option
-  The :vlopt:`--inhibit-sim` option is planned for removal no sooner than
-  July 2021.
-
 Configuration File -msg
   The :vlopt:`lint_off` "-msg" option has been replaced with the "-rule"
   option.  "-msg" is planned for removal no sooner than January 2021.

@@ -141,7 +141,7 @@ private:
             // Read-subfile
             // If file not found, make AstNotFoundModule, rather than error out.
             // We'll throw the error when we know the module will really be needed.
-            string prettyName = AstNode::prettyName(modName);
+            const string prettyName = AstNode::prettyName(modName);
             V3Parse parser(v3Global.rootp(), m_filterp, m_parseSymp);
             // true below -> other simulators treat modules in link-found files as library cells
             parser.parseFile(nodep->fileline(), prettyName, true, "");
@@ -173,19 +173,6 @@ private:
                 // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* modp = vvertexp->modp();
                 modp->level(vvertexp->rank() + 1);
-                if (vvertexp == m_topVertexp && modp->level() != 2) {
-                    AstNodeModule* abovep = nullptr;
-                    if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
-                        if (LinkCellsVertex* eFromVertexp
-                            = dynamic_cast<LinkCellsVertex*>(edgep->fromp())) {
-                            abovep = eFromVertexp->modp();
-                        }
-                    }
-                    v3error("Specified --top-module '"
-                            << v3Global.opt.topModule()
-                            << "' isn't at the top level, it's under another instance '"
-                            << (abovep ? abovep->prettyName() : "UNKNOWN") << "'");
-                }
             }
         }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
@@ -193,6 +180,7 @@ private:
                                                << "' was not found in design.");
         }
     }
+    virtual void visit(AstConstPool* nodep) override {}
     virtual void visit(AstNodeModule* nodep) override {
         // Module: Pick up modnames, so we can resolve cells later
         VL_RESTORER(m_modp);
@@ -216,7 +204,7 @@ private:
             if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) {
                 nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
             }
-            bool topMatch = (v3Global.opt.topModule() == nodep->prettyName());
+            const bool topMatch = (v3Global.opt.topModule() == nodep->prettyName());
             if (topMatch) {
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep << endl);
@@ -288,14 +276,14 @@ private:
         // Execute only once.  Complication is that cloning may result in
         // user1 being set (for pre-clone) so check if user1() matches the
         // m_mod, if 0 never did it, if !=, it is an unprocessed clone
-        bool cloned = (nodep->user1p() && nodep->user1p() != m_modp);
+        const bool cloned = (nodep->user1p() && nodep->user1p() != m_modp);
         if (nodep->user1p() == m_modp) return;  // AstBind and AstNodeModule may call a cell twice
-        if (v3Global.opt.hierChild() && nodep->modName() == m_origTopModuleName) {
-            if (nodep->modName() == m_modp->origName()) {
-                // Only the root of the recursive instantiation can be a hierarhcical block.
+        if (nodep->modName() == m_origTopModuleName) {
+            if (v3Global.opt.hierChild() && nodep->modName() == m_modp->origName()) {
+                // Only the root of the recursive instantiation can be a hierarchical block.
                 nodep->modName(m_modp->name());
             } else {
-                // In hierarchical mode, non-top module can be the top module of this run
+                // non-top module will be the top module of this run
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
@@ -431,7 +419,8 @@ private:
             // classes are better supported may remap interfaces to be more
             // like a class.
             if (!nodep->hasIfaceVar()) {
-                string varName = nodep->name() + "__Viftop";  // V3LinkDot looks for this naming
+                const string varName
+                    = nodep->name() + "__Viftop";  // V3LinkDot looks for this naming
                 AstIfaceRefDType* idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(),
                                                                  nodep->modp()->name());
                 idtypep->ifacep(nullptr);  // cellp overrides

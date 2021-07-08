@@ -193,7 +193,7 @@ private:
 
         // We used to backup and split on only .'s but it seems better to be verbose
         // and not assume . is the separator
-        std::string prefix = std::string(a, apre - a);
+        const std::string prefix = std::string(a, apre - a);
 
         // Scan backward to last mismatch
         const char* apost = a + std::strlen(a) - 1;
@@ -251,7 +251,7 @@ private:
 
 public:
     // PUBLIC METHODS
-    void forcePerInstance(bool flag) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    void forcePerInstance(const bool flag) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
         m_forcePerInstance = flag;
@@ -261,7 +261,7 @@ public:
         const VerilatedLockGuard lock(m_mutex);
         clearGuts();
     }
-    void clearNonMatch(const char* matchp) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    void clearNonMatch(const char* const matchp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
         if (matchp && matchp[0]) {
@@ -288,7 +288,7 @@ public:
         assert(!m_insertp);
         m_insertp = itemp;
     }
-    void insertf(const char* filenamep, int lineno) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    void insertf(const char* const filenamep, const int lineno) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         m_insertFilenamep = filenamep;
         m_insertLineno = lineno;
