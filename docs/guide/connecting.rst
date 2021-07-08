@@ -39,12 +39,12 @@ model:
   internals, including :code:`/* verilator public_flat */` items.
 
 
-.. _Porting from pre 4.206:
+.. _Porting from pre 4.210:
 
-Model interface changes in version 4.206
+Model interface changes in version 4.210
 ------------------------------------------
 
-Starting from version 4.206, the model class is an interface object.
+Starting from version 4.210, the model class is an interface object.
 
 Up until Verilator version 4.204 inclusive, the generated model class was
 also the instance of the top level instance in the design hierarchy (what
