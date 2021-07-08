@@ -444,7 +444,6 @@ void EmitCImp::emitTextSection(AstType type) {
     if (last_line > 0) puts("//*** Above code from `systemc in Verilog file\n\n");
 }
 
-
 void EmitCImp::emitIntTop(const AstNodeModule* modp) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
     ofp()->putsGuard();
