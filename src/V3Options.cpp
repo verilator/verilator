@@ -1467,7 +1467,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 i += consumed;
             } else {
                 fl->v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
-                ++i;
+                ++i;  // LCOV_EXCL_LINE
             }
         } else {
             // Filename
@@ -1639,21 +1639,6 @@ string V3Options::parseFileArg(const string& optdir, const string& relfilename) 
     string filename = V3Os::filenameSubstitute(relfilename);
     if (optdir != "." && V3Os::filenameIsRel(filename)) filename = optdir + "/" + filename;
     return filename;
-}
-
-//======================================================================
-
-//! Utility to see if we have a language extension argument and if so add it.
-bool V3Options::parseLangExt(const char* swp,  //!< argument text
-                             const char* langswp,  //!< option to match
-                             const V3LangCode& lc) {  //!< language code
-    const int len = strlen(langswp);
-    if (!strncmp(swp, langswp, len)) {
-        addLangExt(swp + len, lc);
-        return true;
-    } else {
-        return false;
-    }
 }
 
 //======================================================================
