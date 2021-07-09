@@ -83,7 +83,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
                 i += consumed;
             } else {
                 v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
-                ++i;
+                ++i;  // LCOV_EXCL_LINE
             }
         } else {
             addReadFile(argv[i]);

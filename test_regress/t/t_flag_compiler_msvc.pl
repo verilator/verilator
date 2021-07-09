@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+top_filename("t/t_flag_compiler.v");
+
 compile(
     verilator_flags2 => ["--compiler msvc"],  # Bug requires msvc
     );
