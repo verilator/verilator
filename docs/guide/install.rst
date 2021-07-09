@@ -23,6 +23,8 @@ package:
 
    apt-get install verilator   # On Ubuntu
 
+For other distributions refer to `Repology Verilator Distro Packages
+<https://repology.org/project/verilator>`__.
 
 .. _Git Install:
 
