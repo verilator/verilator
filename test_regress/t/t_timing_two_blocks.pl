@@ -13,9 +13,7 @@ scenarios(simulator => 1);
 # FIXME how do we do timing advance in SystemC?
 
 compile(
-    #FIXME
-    #verilator_flags2 => ['--exe --build --main --timing'],
-    verilator_flags2 => ['--exe --build --main --timing -CFLAGS -DVL_DEBUG'],
+    verilator_flags2 => ['--exe --build --main --timing'],
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
     make_main => 0,
@@ -24,8 +22,6 @@ compile(
 
 execute(
     check_finished => 1,
-    #FIXME
-    all_run_flags => ['+verilator+debugi+9'],
     );
 
 ok(1);

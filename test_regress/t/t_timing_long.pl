@@ -38,8 +38,7 @@ sub gen {
         # If statement around the timing is important to make the code scheduling
         # mostly unpredictable
         $fh->printf("    if (cnt == %d) begin\n", $i-1);
-        $fh->printf("      #1; ++cnt; `MSG((\"[%0t] cnt?=${i}\", \$time));"
-                    ." if (cnt != %d) \$stop;\n", $i);
+        $fh->printf("      #1; ++cnt; `MSG((\"[%0t] cnt?=${i}\", \$time)); if (cnt != %d) \$stop;\n", $i);
         $fh->printf("    end\n");
     }
 
@@ -55,8 +54,7 @@ top_filename("$Self->{obj_dir}/t_timing_long.v");
 gen($Self->{top_filename});
 
 compile(
-    #verilator_flags2=>["--exe --build --main --timing"],  # Unsupported
-    verilator_flags2=>["--exe --build --main -Wno-STMTDLY"],
+    verilator_flags2=>["--exe --build --main --timing"],
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
     make_main => 0,

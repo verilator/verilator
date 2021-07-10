@@ -4690,6 +4690,23 @@ public:
     AstJumpLabel* labelp() const { return m_labelp; }
 };
 
+class AstTimedEvent final : public AstNodeStmt {
+    // Schedule event for later time
+    // Parents:  {statement list}
+    // Children: {Math, VarRef lvalue}
+public:
+    AstTimedEvent(FileLine* fl, AstNode* timep, AstNodeVarRef* varrefp)
+        : ASTGEN_SUPER_TimedEvent(fl) {
+        addOp1p(timep);
+        addOp2p(varrefp);
+    }
+    ASTNODE_NODE_FUNCS(TimedEvent)
+    virtual int instrCount() const override { return 100; }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    AstNode* timep() const { return op1p(); }  // op1 = Time to activate
+    AstNode* varrefp() const { return op2p(); }  // op2 = Variable to activate
+};
+
 class AstChangeXor final : public AstNodeBiComAsv {
     // A comparison to determine change detection, common & must be fast.
     // Returns 32-bit or 64-bit value where 0 indicates no change.

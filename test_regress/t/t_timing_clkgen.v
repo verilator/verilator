@@ -7,6 +7,8 @@
 module clkgen(output bit clk);
    initial begin
       #(8.0:5:3) clk = 1;  // Middle is default
+      // FIXME don't need once get jumps in place
+      // verilator lint_off INFINITELOOP
       forever begin
          #5 clk = ~clk;
       end

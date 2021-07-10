@@ -75,12 +75,17 @@ private:
         puts("\n");
 
         puts("// Simulate until $finish\n");
-        puts("while (!contextp->gotFinish()) {\n");
+        puts("while (!contextp->gotFinish()");
+        if (v3Global.opt.timing()) puts(" || topp->timeSlotsEmpty()");
+        puts(") {\n");
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
         puts(/**/ "// Advance time\n");
-        puts(/**/ "contextp->timeInc(1);\n");
-
+        if (v3Global.opt.timing()) {
+            puts(/**/ "contextp->time(topp->timeSlotsEarliestTime());\n");
+        } else {
+            puts(/**/ "contextp->timeInc(1);\n");
+        }
         puts("}\n");
         puts("\n");
 

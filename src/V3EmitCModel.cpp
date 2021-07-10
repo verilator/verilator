@@ -163,6 +163,13 @@ class EmitCModel final : public EmitCFunc {
         }
         ofp()->putsPrivate(false);  // public:
         puts("void final();\n");
+        if (v3Global.opt.timing()) {
+            // Calling this "time slots" matches IEEE nomenclature
+            puts("/// Return true if no more timed work to do. Application uses to exit.\n");
+            puts("bool timeSlotsEmpty() const;\n");
+            puts("/// Return earliest time slot. Application uses to advance time.\n");
+            puts("vluint64_t timeSlotsEarliestTime() const;\n");
+        }
 
         if (v3Global.opt.trace()) {
             puts("/// Trace signals in the model; called by application code\n");
@@ -388,6 +395,11 @@ class EmitCModel final : public EmitCFunc {
         puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) " + protect("_eval_initial_loop")
              + "(vlSymsp);\n");
 
+        putsDecoration("// Activate events\n");
+        // FIXME we should really see if there are any delayed statements,
+        // and only put this out if there are
+        if (v3Global.opt.timing()) puts("Verilated::timedQActivate(vlSymsp, VL_TIME_Q());\n");
+
         if (v3Global.opt.threads() == 1) {
             uint32_t mtaskId = 0;
             putsDecoration("// MTask " + cvtToStr(mtaskId) + " start\n");
@@ -465,6 +477,16 @@ class EmitCModel final : public EmitCFunc {
         puts("}\n");
 
         putSectionDelimiter("Utilities");
+
+        if (v3Global.opt.timing()) {
+            // ::timeSlotsEmpty
+            puts("\nbool " + topClassName() + "::timeSlotsEmpty() const {"
+                 + " return Verilated::timedQEmpty(vlSymsp); }\n");
+            // ::timeSlotsEarliestTime
+            puts("vluint64_t " + topClassName() + "::timeSlotsEarliestTime() const {"
+                 + " return Verilated::timedQEarliestTime(vlSymsp); }\n");
+        }
+
         // ::contextp
         puts("\nVerilatedContext* " + topClassName() + "::contextp() const {\n");
         puts(/**/ "return vlSymsp->_vm_contextp__;\n");

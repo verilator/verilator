@@ -14,6 +14,7 @@ module t(/*AUTOARG*/);
       #10;
       $display("[%0t]%0d -> a", $time, order);
       order++; if (order != 2) $stop;
+      //FIXME broken as sets a but activate loop treats as clock event, then next clock go-through it gets cleared
       -> a;
       #10;
       $display("[%0t]%0d -> b", $time, order);

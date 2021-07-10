@@ -674,6 +674,7 @@ private:
     bool m_inClkAss = false;  // Underneath AstAssign
     bool m_inPre = false;  // Underneath AstAssignPre
     bool m_inPost = false;  // Underneath AstAssignPost
+    bool m_inTimedEvent = false;  // Underneath TimedEvent
     bool m_inPostponed = false;  // Underneath AstAssignPostponed
     OrderLogicVertex* m_activeSenVxp = nullptr;  // Sensitivity vertex
     // STATE... for inside process
@@ -1021,7 +1022,10 @@ private:
         }
     }
     virtual void visit(AstNodeVarRef* nodep) override {
-        if (m_scopep) {
+        if (m_inTimedEvent && nodep->access().isWriteOrRW()) {
+            // Ignore var being set under AstTimedEvent, it is being set in the
+            // "future" not in this time cycle
+        } else if (m_scopep) {
             AstVarScope* varscp = nodep->varScopep();
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
             if (m_inSenTree) {
@@ -1147,6 +1151,12 @@ private:
                 }
             }
         }
+    }
+    virtual void visit(AstTimedEvent* nodep) override {
+        iterateAndNextNull(nodep->timep());
+        m_inTimedEvent = true;
+        iterateAndNextNull(nodep->varrefp());
+        m_inTimedEvent = false;
     }
     virtual void visit(AstSenTree* nodep) override {
         // Having a node derived from the sentree isn't required for

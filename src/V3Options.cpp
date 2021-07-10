@@ -788,6 +788,11 @@ void V3Options::notify() {
                       "--main not usable with SystemC. Suggest see examples for sc_main().");
     }
 
+    if (v3Global.opt.timing() && v3Global.opt.savable()) {
+        // Verilated hasn't implemented save/restore of VerilatedTimingQueue
+        cmdfl->v3error("--timing not supported with --savable.");
+    }
+
     if (coverage() && savable()) {
         cmdfl->v3error("--coverage and --savable not supported together");
     }
@@ -1312,6 +1317,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             m_timeOverridePrec = prec;
         }
     });
+    DECL_OPTION("-timing", Set, &m_timing);  // Undocumented, still experimental
     DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-top", Set, &m_topModule);
     DECL_OPTION("-trace", OnOff, &m_trace);

@@ -1,0 +1,39 @@
+Option to turn on/off timing in a given module/section of code
+
+FIXME change didn't converge to look for reentry with time not going forward e.g. 100 times
+
+//*************************************************************************
+// V3Timing's Transformations:
+// ===
+//    Forks
+//        FORK
+//          a: ...
+//          b: ...
+//      Becomes
+//        ??
+//        need to know what is pending so join will go better
+//        the FSM technique seems better for this
+
+// FIXME if have huge list of statements
+//  #1; transaction;
+//  #1; transaction;
+//  #1; transaction;
+//  #1; transaction;
+// Then we'll make an event for each one.  Less code space use FSM.  Jump technique
+// will result in lots of optimization explosion and work.
+// Note this tradeoff in header of new Visitor.cpp
+
+
+
+Test:  initial, always, if, for, while, break, continue, return
+
+FIXME Optimizations
+            // 2. Remove goto, if code is "flat" (no if/while) then paste in "fsm" if statement.
+            // If code has a "while 1" then circle around
+
+                //7. Remove setting FSM to value it already is
+                //data.fsm = 2;
+
+                //5. If while loop only has single pass with goto out of it, remove while and goto
+                //5: goto bottom;
+

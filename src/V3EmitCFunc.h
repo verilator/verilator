@@ -891,6 +891,13 @@ public:
         iterateAndNextNull(nodep->widthp());
         puts(", vlSymsp->_vm_contextp__);\n");
     }
+    virtual void visit(AstTimedEvent* nodep) override {
+        puts("Verilated::timedQPush(vlSymsp, VL_TIME_Q() + ");
+        iterateAndNextNull(nodep->timep());
+        puts(", &(");
+        iterateAndNextNull(nodep->varrefp());
+        puts("));\n");
+    }
     virtual void visit(AstNodeSimpleText* nodep) override {
         const string text = m_inUC && m_useSelfForThis
                                 ? VString::replaceWord(nodep->text(), "this", "vlSelf")

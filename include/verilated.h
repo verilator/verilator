@@ -83,6 +83,7 @@ class VerilatedFst;
 class VerilatedFstC;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+class VerilatedTimedQueue;
 class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
@@ -107,6 +108,8 @@ using WData = EData;        ///< Data representing >64 packed bits (used as poin
 
 using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
 using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
+
+using VerilatedVoidCb = void (*)(void);
 
 enum VerilatedVarType : vluint8_t {
     VLVT_UNKNOWN = 0,
@@ -563,6 +566,9 @@ public:  // But for internal use only
 #ifdef VL_THREADED
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
 #endif
+#ifdef VL_TIMING
+    VerilatedTimedQueue* _vm_timedQp;
+#endif
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
 };
@@ -845,6 +851,7 @@ public:
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
     static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
+    static void timeBackwardsError() VL_ATTR_NORETURN VL_MT_SAFE;
 
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }
@@ -875,6 +882,16 @@ public:
     }
     // Internal: Called at end of eval loop
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
+#endif
+
+#ifdef VL_TIMING
+    // Internal: Time Queue
+    // FIXME perhaps should be in VerilatedContext instead of under Syms?
+    // FIXME perhaps accessors need not be under Verilated::
+    static bool timedQEmpty(VerilatedSyms* symsp) VL_MT_SAFE;
+    static vluint64_t timedQEarliestTime(VerilatedSyms* symsp) VL_MT_SAFE;
+    static void timedQPush(VerilatedSyms* symsp, vluint64_t time, CData* eventp) VL_MT_SAFE;
+    static void timedQActivate(VerilatedSyms* symsp, vluint64_t time) VL_MT_SAFE;
 #endif
 
 private:
