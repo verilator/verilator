@@ -24,6 +24,7 @@
 #include "V3FileLine.h"
 #include "V3Number.h"
 #include "V3Global.h"
+#include "V3Broken.h"
 
 #include <cmath>
 #include <type_traits>
@@ -1335,21 +1336,29 @@ class AstNode VL_NOT_FINAL {
     // ^ ASTNODE_PREFETCH depends on above ordering of members
 
     // AstType is 2 bytes, so we can stick another 6 bytes after it to utilize what would
-    // otherwise be padding (on a 64-bit system). We stick the attribute flags and the clone
-    // count here.
+    // otherwise be padding (on a 64-bit system). We stick the attribute flags, broken state,
+    // and the clone count here.
 
     struct {
         bool didWidth : 1;  // Did V3Width computation
         bool doingWidth : 1;  // Inside V3Width
         bool protect : 1;  // Protect name if protection is on
-        uint16_t unused : 13;  // Space for more flags here (there must be 16 bits in total)
+        // Space for more flags here (there must be 8 bits in total)
+        uint8_t unused : 5;
     } m_flags;  // Attribute flags
+
+    // State variable used by V3Broken for consistency checking. The top bit of this is byte is a
+    // flag, representing V3Broken is currently proceeding under this node. The bottom 7 bits are
+    // a generation number. This is hot when --debug-checks so we access as a whole to avoid bit
+    // field masking resulting in unnecessary read-modify-write ops.
+    uint8_t m_brokenState = 0;
 
     int m_cloneCnt;  // Sequence number for when last clone was made
 
 #if defined(__x86_64__) && defined(__gnu_linux__)
     // Only assert this on known platforms, as it only affects performance, not correctness
-    static_assert(sizeof(m_type) + sizeof(m_flags) + sizeof(m_cloneCnt) <= sizeof(void*),
+    static_assert(sizeof(m_type) + sizeof(m_flags) + sizeof(m_brokenState) + sizeof(m_cloneCnt)
+                      <= sizeof(void*),
                   "packing requires padding");
 #endif
 
@@ -1466,9 +1475,14 @@ public:
     AstNode* firstAbovep() const {  // Returns nullptr when second or later in list
         return ((backp() && backp()->nextp() != this) ? backp() : nullptr);
     }
-    bool brokeExists() const;
-    bool brokeExistsAbove() const;
-    bool brokeExistsBelow() const;
+    uint8_t brokenState() const { return m_brokenState; }
+    void brokenState(uint8_t value) { m_brokenState = value; }
+
+    // Used by AstNode::broken()
+    bool brokeExists() const { return V3Broken::isLinkable(this); }
+    bool brokeExistsAbove() const { return brokeExists() && (m_brokenState >> 7); }
+    bool brokeExistsBelow() const { return brokeExists() && !(m_brokenState >> 7); }
+    // Note: brokeExistsBelow is not quite precise, as it is true for sibling nodes as well
 
     // CONSTRUCTORS
     virtual ~AstNode() = default;
