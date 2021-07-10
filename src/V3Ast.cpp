@@ -74,9 +74,10 @@ AstNode::AstNode(AstType t, FileLine* fl)
     m_clonep = nullptr;
     m_cloneCnt = 0;
     // Attributes
-    m_didWidth = false;
-    m_doingWidth = false;
-    m_protect = true;
+    m_flags.didWidth = false;
+    m_flags.doingWidth = false;
+    m_flags.protect = true;
+    m_flags.unused = 0;  // Initializing this avoids a read-modify-write on construction
     m_user1u = VNUser(0);
     m_user1Cnt = 0;
     m_user2u = VNUser(0);

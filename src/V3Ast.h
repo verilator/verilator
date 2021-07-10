@@ -1334,8 +1334,24 @@ class AstNode VL_NOT_FINAL {
     const AstType m_type;  // Node sub-type identifier
     // ^ ASTNODE_PREFETCH depends on above ordering of members
 
-    // padding - 2 extra bytes here after m_type
-    int m_cloneCnt;  // Mark of when userp was set
+    // AstType is 2 bytes, so we can stick another 6 bytes after it to utilize what would
+    // otherwise be padding (on a 64-bit system). We stick the attribute flags and the clone
+    // count here.
+
+    struct {
+        bool didWidth : 1;  // Did V3Width computation
+        bool doingWidth : 1;  // Inside V3Width
+        bool protect : 1;  // Protect name if protection is on
+        uint16_t unused : 13;  // Space for more flags here (there must be 16 bits in total)
+    } m_flags;  // Attribute flags
+
+    int m_cloneCnt;  // Sequence number for when last clone was made
+
+#if defined(__x86_64__) && defined(__gnu_linux__)
+    // Only assert this on known platforms, as it only affects performance, not correctness
+    static_assert(sizeof(m_type) + sizeof(m_flags) + sizeof(m_cloneCnt) <= sizeof(void*),
+                  "packing requires padding");
+#endif
 
     AstNodeDType* m_dtypep;  // Data type of output or assignment (etc)
     AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
@@ -1347,12 +1363,6 @@ class AstNode VL_NOT_FINAL {
 
     AstNode* m_clonep;  // Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
     static int s_cloneCntGbl;  // Count of which userp is set
-
-    // Attributes
-    bool m_didWidth : 1;  // Did V3Width computation
-    bool m_doingWidth : 1;  // Inside V3Width
-    bool m_protect : 1;  // Protect name if protection is on
-    //          // Space for more bools here
 
     // This member ordering both allows 64 bit alignment and puts associated data together
     VNUser m_user1u;  // Contains any information the user iteration routine wants
@@ -1512,17 +1522,17 @@ public:
     void fileline(FileLine* fl) { m_fileline = fl; }
     bool width1() const;
     int widthInstrs() const;
-    void didWidth(bool flag) { m_didWidth = flag; }
-    bool didWidth() const { return m_didWidth; }
+    void didWidth(bool flag) { m_flags.didWidth = flag; }
+    bool didWidth() const { return m_flags.didWidth; }
     bool didWidthAndSet() {
         if (didWidth()) return true;
         didWidth(true);
         return false;
     }
-    bool doingWidth() const { return m_doingWidth; }
-    void doingWidth(bool flag) { m_doingWidth = flag; }
-    bool protect() const { return m_protect; }
-    void protect(bool flag) { m_protect = flag; }
+    bool doingWidth() const { return m_flags.doingWidth; }
+    void doingWidth(bool flag) { m_flags.doingWidth = flag; }
+    bool protect() const { return m_flags.protect; }
+    void protect(bool flag) { m_flags.protect = flag; }
 
     // TODO stomp these width functions out, and call via dtypep() instead
     int width() const;
