@@ -361,6 +361,8 @@ private:
     bool        m_oTable;       // main switch: -Oa: lookup table creation
     // clang-format on
 
+    bool m_available = false;  // Set to true at the end of option parsing
+
 private:
     // METHODS
     void addArg(const string& arg);
@@ -402,6 +404,7 @@ public:
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
     void notify();
+    bool available() const { return m_available; }
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }
