@@ -3257,6 +3257,10 @@ private:
         if (!nodep->dtypep() && m_vup->dtypeNullp()) {  // Get it from parent assignment/pin/etc
             nodep->dtypep(m_vup->dtypep());
         }
+        // If the pattern is under a pin, get the type of the pin's module var
+        if (!nodep->dtypep())
+            if (auto* pinp = VN_CAST(nodep->backp(), Pin))
+                if (pinp->modVarp()) nodep->dtypep(pinp->modVarp()->childDTypep());
         AstNodeDType* dtypep = nodep->dtypep();
         if (!dtypep) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported/Illegal: Assignment pattern"
