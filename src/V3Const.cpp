@@ -95,9 +95,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         bool m_polarity;
         int m_bit;
         BitPolarityEntry(const LeafInfo& info, bool pol, int bit)
-            : m_info(info)
-            , m_polarity(pol)
-            , m_bit(bit) {}
+            : m_info{info}
+            , m_polarity{pol}
+            , m_bit{bit} {}
         BitPolarityEntry() = default;
     };
 
@@ -111,12 +111,12 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     public:
         explicit Restorer(ConstBitOpTreeVisitor& visitor)
-            : m_visitor(visitor)
-            , m_polaritiesSize(visitor.m_bitPolarities.size())
-            , m_frozenSize(visitor.m_frozenNodes.size())
-            , m_ops(visitor.m_ops)
-            , m_polarity(visitor.m_polarity)
-            , m_restore(true) {}
+            : m_visitor{visitor}
+            , m_polaritiesSize{visitor.m_bitPolarities.size()}
+            , m_frozenSize{visitor.m_frozenNodes.size()}
+            , m_ops{visitor.m_ops}
+            , m_polarity{visitor.m_polarity}
+            , m_restore{true} {}
         ~Restorer() {
             UASSERT(m_visitor.m_bitPolarities.size() >= m_polaritiesSize,
                     "m_bitPolarities must grow monotorilaclly");
@@ -222,9 +222,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
         // CONSTRUCTORS
         VarInfo(ConstBitOpTreeVisitor* parent, AstVarRef* refp)
-            : m_parentp(parent)
-            , m_refp(refp)
-            , m_bitPolarity(refp, refp->isWide() ? VL_EDATASIZE : refp->width()) {
+            : m_parentp{parent}
+            , m_refp{refp}
+            , m_bitPolarity{refp, refp->isWide() ? VL_EDATASIZE : refp->width()} {
             m_bitPolarity.setAllBitsX();
         }
     };
@@ -482,8 +482,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     // CONSTRUCTORS
     ConstBitOpTreeVisitor(AstNode* nodep, int ops)
-        : m_ops(ops)
-        , m_rootp(nodep) {
+        : m_ops{ops}
+        , m_rootp{nodep} {
         // Fill nullptr at [0] because AstVarScope::user4 is 0 by default
         m_varInfos.push_back(nullptr);
         CONST_BITOP_RETURN_IF(!isAndTree() && !isOrTree() && !isXorTree(), nodep);
@@ -1495,9 +1495,10 @@ private:
         // -> EXTEND(nodep)
         // like a AstExtend{$rhsp}, but we need to set the width correctly from base node
         arg0p->unlinkFrBack();
-        AstNode* newp = (VN_IS(nodep, ExtendS)
-                             ? static_cast<AstNode*>(new AstExtendS(nodep->fileline(), arg0p))
-                             : static_cast<AstNode*>(new AstExtend(nodep->fileline(), arg0p)));
+        AstNode* const newp
+            = (VN_IS(nodep, ExtendS)
+                   ? static_cast<AstNode*>(new AstExtendS{nodep->fileline(), arg0p})
+                   : static_cast<AstNode*>(new AstExtend{nodep->fileline(), arg0p}));
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1713,8 +1714,8 @@ private:
                 // Note only do this (need user4) when m_warn, which is
                 // done as unique visitor
                 AstUser4InUse m_inuser4;
-                ConstVarMarkVisitor mark(nodep->lhsp());
-                ConstVarFindVisitor find(nodep->rhsp());
+                ConstVarMarkVisitor mark{nodep->lhsp()};
+                ConstVarFindVisitor find{nodep->rhsp()};
                 if (find.found()) need_temp = true;
             }
             if (need_temp) {
@@ -3233,7 +3234,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
 
     // Make sure we've sized everything first
     nodep = V3Width::widthParamsEdit(nodep);
-    ConstVisitor visitor(ConstVisitor::PROC_PARAMS);
+    ConstVisitor visitor{ConstVisitor::PROC_PARAMS};
     if (AstVar* varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the
@@ -3263,7 +3264,7 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
 
     // Make sure we've sized everything first
     nodep = V3Width::widthGenerateParamsEdit(nodep);
-    ConstVisitor visitor(ConstVisitor::PROC_GENERATE);
+    ConstVisitor visitor{ConstVisitor::PROC_GENERATE};
     if (AstVar* varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the
@@ -3281,7 +3282,7 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ConstVisitor visitor(ConstVisitor::PROC_V_WARN);
+        ConstVisitor visitor{ConstVisitor::PROC_V_WARN};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
@@ -3290,14 +3291,14 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
 void V3Const::constifyCpp(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ConstVisitor visitor(ConstVisitor::PROC_CPP);
+        ConstVisitor visitor{ConstVisitor::PROC_CPP};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const_cpp", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
-    ConstVisitor visitor(ConstVisitor::PROC_V_NOWARN);
+    ConstVisitor visitor{ConstVisitor::PROC_V_NOWARN};
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
 }
@@ -3308,7 +3309,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
     // IE doesn't prune dead statements, as we need to do some usability checks after this
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ConstVisitor visitor(ConstVisitor::PROC_LIVE);
+        ConstVisitor visitor{ConstVisitor::PROC_LIVE};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
@@ -3318,14 +3319,14 @@ void V3Const::constifyAll(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ConstVisitor visitor(ConstVisitor::PROC_V_EXPENSIVE);
+        ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 AstNode* V3Const::constifyExpensiveEdit(AstNode* nodep) {
-    ConstVisitor visitor(ConstVisitor::PROC_V_EXPENSIVE);
+    ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE};
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
 }

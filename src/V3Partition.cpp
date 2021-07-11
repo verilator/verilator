@@ -624,8 +624,8 @@ public:
     static void dumpCpFilePrefixed(const V3Graph* graphp, const string& nameComment) {
         const string filename = v3Global.debugFilename(nameComment) + ".txt";
         UINFO(1, "Writing " << filename << endl);
-        std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
-        std::ostream* osp = &(*ofp);  // &* needed to deref unique_ptr
+        std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
+        std::ostream* const osp = &(*ofp);  // &* needed to deref unique_ptr
         if (osp->fail()) v3fatalStatic("Can't write " << filename);
 
         // Find start vertex with longest CP
@@ -2077,7 +2077,7 @@ void ThreadSchedule::dumpDotFilePrefixedAlways(const string& nameComment) const 
 
 void ThreadSchedule::dumpDotFile(const string& filename) const {
     // This generates a file used by graphviz, https://www.graphviz.org
-    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
     auto* depGraph = v3Global.rootp()->execGraphp()->depGraphp();
 
@@ -2765,8 +2765,8 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         funcp->argTypes("void* voidSelf, bool even_cycle");
 
         // Setup vlSelf an vlSyms
-        funcp->addStmtsp(new AstCStmt(fl, EmitCBaseVisitor::voidSelfAssign(modp)));
-        funcp->addStmtsp(new AstCStmt(fl, EmitCBaseVisitor::symClassAssign()));
+        funcp->addStmtsp(new AstCStmt{fl, EmitCBaseVisitor::voidSelfAssign(modp)});
+        funcp->addStmtsp(new AstCStmt{fl, EmitCBaseVisitor::symClassAssign()});
 
         // Invoke each mtask scheduled to this thread from the thread function
         for (const ExecMTask* const mtaskp : thread) {

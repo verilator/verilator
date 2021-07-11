@@ -8497,9 +8497,9 @@ private:
 public:
     AstNodeCoverOrAssert(AstType t, FileLine* fl, AstNode* propp, AstNode* passsp, bool immediate,
                          const string& name = "")
-        : AstNodeStmt(t, fl)
-        , m_immediate(immediate)
-        , m_name(name) {
+        : AstNodeStmt{t, fl}
+        , m_immediate{immediate}
+        , m_name{name} {
         addOp1p(propp);
         addNOp4p(passsp);
     }

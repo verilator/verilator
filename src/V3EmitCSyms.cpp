@@ -670,7 +670,7 @@ void EmitCSyms::emitSymImp() {
          + topClassName() + "* modelp)\n");
     puts("    : VerilatedSyms{contextp}\n");
     puts("    // Setup internal state of the Syms class\n");
-    puts("    , __Vm_modelp(modelp)\n");
+    puts("    , __Vm_modelp{modelp}\n");
 
     if (v3Global.opt.mtasks()) {
         // TODO -- For now each model creates its own ThreadPool here,
@@ -694,9 +694,9 @@ void EmitCSyms::emitSymImp() {
         // Note we create N-1 threads in the thread pool. The thread
         // that calls eval() becomes the final Nth thread for the
         // duration of the eval call.
-        puts("    , __Vm_threadPoolp(new VlThreadPool(_vm_contextp__, "
+        puts("    , __Vm_threadPoolp{new VlThreadPool{_vm_contextp__, "
              + cvtToStr(v3Global.opt.threads() - 1) + ", " + cvtToStr(v3Global.opt.profThreads())
-             + "))\n");
+             + "}}\n");
     }
 
     puts("    // Setup module instances\n");

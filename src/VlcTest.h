@@ -112,7 +112,7 @@ public:
         for (const auto& testp : m_tests) testp->dump(bucketsToo);
     }
     VlcTest* newTest(const string& name, vluint64_t testrun, double comp) {
-        VlcTest* testp = new VlcTest(name, testrun, comp);
+        VlcTest* const testp = new VlcTest{name, testrun, comp};
         m_tests.push_back(testp);
         return testp;
     }

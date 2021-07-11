@@ -179,17 +179,17 @@ private:
             }
             if (AstAnd* const andp = VN_CAST(rhsp, And)) {
                 UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
-                return new AstAnd(andp->fileline(), andp->lhsp()->cloneTree(false), resp);
+                return new AstAnd{andp->fileline(), andp->lhsp()->cloneTree(false), resp};
             }
         } else if (AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (andp->lhsp()->sameTree(m_mgCondp)) {
                 return condTrue ? maskLsb(andp->rhsp()->unlinkFrBack())
-                                : new AstConst(rhsp->fileline(), AstConst::BitFalse());
+                                : new AstConst{rhsp->fileline(), AstConst::BitFalse()};
             } else {
                 UASSERT_OBJ(andp->rhsp()->sameTree(m_mgCondp), rhsp,
                             "AstAnd doesn't hold condition expression");
                 return condTrue ? maskLsb(andp->lhsp()->unlinkFrBack())
-                                : new AstConst(rhsp->fileline(), AstConst::BitFalse());
+                                : new AstConst{rhsp->fileline(), AstConst::BitFalse()};
             }
         }
         rhsp->v3fatalSrc("Don't know how to fold expression");
@@ -337,6 +337,6 @@ public:
 
 void V3MergeCond::mergeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { MergeCondVisitor visitor(nodep); }
+    { MergeCondVisitor visitor{nodep}; }
     V3Global::dumpCheckGlobalTree("merge_cond", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

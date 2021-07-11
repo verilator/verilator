@@ -588,8 +588,8 @@ class EmitCModel final : public EmitCFunc {
                                         + "__Dpi_Export_" + cvtToStr(splitFilenumInc() - 1)
                                         + ".cpp";
                 newCFile(filename, /* slow: */ false, /* source: */ true);
-                m_ofp = v3Global.opt.systemC() ? new V3OutScFile(filename)
-                                               : new V3OutCFile(filename);
+                m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename}
+                                               : new V3OutCFile{filename};
                 m_lazyDecls.reset();
                 m_ofp->putsHeader();
                 puts(

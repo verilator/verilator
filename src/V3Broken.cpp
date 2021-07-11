@@ -342,8 +342,8 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         UINFO(1, "Broken called under broken, skipping recursion.\n");  // LCOV_EXCL_LINE
     } else {
         inBroken = true;
-        BrokenMarkVisitor mvisitor(nodep);
-        BrokenCheckVisitor cvisitor(nodep);
+        BrokenMarkVisitor mvisitor{nodep};
+        BrokenCheckVisitor cvisitor{nodep};
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();
         s_brokenCntGlobal.inc();

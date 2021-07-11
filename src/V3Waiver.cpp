@@ -30,7 +30,7 @@ void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename,
 }
 
 void V3Waiver::write(const std::string& filename) {
-    const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
     *ofp << "// DESCR"
