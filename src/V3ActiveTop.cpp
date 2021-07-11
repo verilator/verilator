@@ -136,6 +136,6 @@ public:
 
 void V3ActiveTop::activeTopAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ActiveTopVisitor visitor(nodep); }  // Destruct before checking
+    { ActiveTopVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("activetop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

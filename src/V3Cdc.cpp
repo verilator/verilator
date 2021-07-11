@@ -337,7 +337,7 @@ private:
 
     int filelineWidth() {
         if (!m_filelineWidth) {
-            CdcWidthVisitor visitor(v3Global.rootp());
+            CdcWidthVisitor visitor{v3Global.rootp()};
             m_filelineWidth = visitor.maxWidth();
         }
         return m_filelineWidth;
@@ -508,7 +508,7 @@ private:
 
         const string filename
             = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__cdc_edges.txt";
-        const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
+        const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
         if (ofp->fail()) v3fatal("Can't write " << filename);
         *ofp << "Edge Report for " << v3Global.opt.prefix() << '\n';
 
@@ -758,5 +758,5 @@ public:
 
 void V3Cdc::cdcAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    CdcVisitor visitor(nodep);
+    CdcVisitor visitor{nodep};
 }

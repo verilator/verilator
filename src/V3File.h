@@ -38,7 +38,7 @@ public:
         return new_ifstream_nodepend(filename);
     }
     static std::ifstream* new_ifstream_nodepend(const string& filename) {
-        return new std::ifstream(filename.c_str());
+        return new std::ifstream{filename.c_str()};
     }
     static std::ofstream* new_ofstream(const string& filename, bool append = false) {
         addTgtDepend(filename);
@@ -47,9 +47,9 @@ public:
     static std::ofstream* new_ofstream_nodepend(const string& filename, bool append = false) {
         createMakeDirFor(filename);
         if (append) {
-            return new std::ofstream(filename.c_str(), std::ios::app);
+            return new std::ofstream{filename.c_str(), std::ios::app};
         } else {
-            return new std::ofstream(filename.c_str());
+            return new std::ofstream{filename.c_str()};
         }
     }
     static FILE* new_fopen_w(const string& filename) {

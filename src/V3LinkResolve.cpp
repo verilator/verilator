@@ -573,8 +573,8 @@ public:
 void V3LinkResolve::linkResolve(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     {
-        LinkResolveVisitor visitor(rootp);
-        LinkBotupVisitor visitorb(rootp);
+        LinkResolveVisitor visitor{rootp};
+        LinkBotupVisitor visitorb{rootp};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkresolve", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

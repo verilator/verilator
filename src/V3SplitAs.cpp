@@ -144,11 +144,11 @@ private:
         newp->user1(true);  // So we don't clone it again
         nodep->addNextHere(newp);
         {  // Delete stuff we don't want in old
-            SplitAsCleanVisitor visitor(nodep, m_splitVscp, false);
+            SplitAsCleanVisitor visitor{nodep, m_splitVscp, false};
             if (debug() >= 9) nodep->dumpTree(cout, "-out0: ");
         }
         {  // Delete stuff we don't want in new
-            SplitAsCleanVisitor visitor(newp, m_splitVscp, true);
+            SplitAsCleanVisitor visitor{newp, m_splitVscp, true};
             if (debug() >= 9) newp->dumpTree(cout, "-out1: ");
         }
     }
@@ -159,7 +159,7 @@ private:
         AstVarScope* lastSplitVscp = nullptr;
         while (!nodep->user1()) {
             // Find any splittable variables
-            SplitAsFindVisitor visitor(nodep);
+            SplitAsFindVisitor visitor{nodep};
             m_splitVscp = visitor.splitVscp();
             if (m_splitVscp && m_splitVscp == lastSplitVscp) {
                 // We did this last time!  Something's stuck!
@@ -194,6 +194,6 @@ public:
 
 void V3SplitAs::splitAsAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { SplitAsVisitor visitor(nodep); }  // Destruct before checking
+    { SplitAsVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("splitas", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

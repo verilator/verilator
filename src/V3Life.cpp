@@ -461,12 +461,12 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         if (nodep->entryPoint()) {
             // Usage model 1: Simulate all C code, doing lifetime analysis
-            LifeVisitor visitor(nodep, m_statep);
+            LifeVisitor visitor{nodep, m_statep};
         }
     }
     virtual void visit(AstNodeProcedure* nodep) override {
         // Usage model 2: Cleanup basic blocks
-        LifeVisitor visitor(nodep, m_statep);
+        LifeVisitor visitor{nodep, m_statep};
     }
     virtual void visit(AstVar*) override {}  // Accelerate
     virtual void visit(AstNodeStmt*) override {}  // Accelerate
@@ -489,7 +489,7 @@ void V3Life::lifeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         LifeState state;
-        LifeTopVisitor visitor(nodep, &state);
+        LifeTopVisitor visitor{nodep, &state};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("life", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

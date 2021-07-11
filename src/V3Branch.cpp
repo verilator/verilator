@@ -123,5 +123,5 @@ public:
 
 void V3Branch::branchAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    BranchVisitor visitor(nodep);
+    BranchVisitor visitor{nodep};
 }

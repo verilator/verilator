@@ -97,9 +97,9 @@ public:
         v3Global.rootp()->typeTablep()->addTypesp(tableDTypep);
         // Create table initializer (with default value 0)
         AstConst* const defaultp = elemDType->isString()
-                                       ? new AstConst(m_fl, AstConst::String(), "")
-                                       : new AstConst(m_fl, AstConst::WidthedValue(), width, 0);
-        m_initp = new AstInitArray(m_fl, tableDTypep, defaultp);
+                                       ? new AstConst{m_fl, AstConst::String(), ""}
+                                       : new AstConst{m_fl, AstConst::WidthedValue(), width, 0};
+        m_initp = new AstInitArray{m_fl, tableDTypep, defaultp};
     }
 
     void addValue(unsigned index, const V3Number& value) {
@@ -196,7 +196,7 @@ private:
         m_outVarps.clear();
 
         // Collect stats
-        TableSimulateVisitor chkvis(this);
+        TableSimulateVisitor chkvis{this};
         chkvis.mainTableCheck(nodep);
         m_assignDly = chkvis.isAssignDly();
         // Also sets m_inWidthBits
@@ -280,7 +280,7 @@ private:
         // There may be a simulation path by which the output doesn't change value.
         // We could bail on these cases, or we can have a "change it" boolean.
         // We've chosen the latter route, since recirc is common in large FSMs.
-        TableSimulateVisitor simvis(this);
+        TableSimulateVisitor simvis{this};
         for (uint32_t i = 0; i <= VL_MASK_I(m_inWidthBits); ++i) {
             const uint32_t inValue = i;
             // Make a new simulation structure so we can set new input values
@@ -354,11 +354,11 @@ private:
                              AstVarScope* outputAssignedTableVscp) {
         FileLine* const fl = nodep->fileline();
         for (TableOutputVar& tov : m_outVarps) {
-            AstNode* const alhsp = new AstVarRef(fl, tov.varScopep(), VAccess::WRITE);
+            AstNode* const alhsp = new AstVarRef{fl, tov.varScopep(), VAccess::WRITE};
             AstNode* const arhsp = select(fl, tov.tabeVarScopep(), indexVscp);
             AstNode* outsetp = m_assignDly
-                                   ? static_cast<AstNode*>(new AstAssignDly(fl, alhsp, arhsp))
-                                   : static_cast<AstNode*>(new AstAssign(fl, alhsp, arhsp));
+                                   ? static_cast<AstNode*>(new AstAssignDly{fl, alhsp, arhsp})
+                                   : static_cast<AstNode*>(new AstAssign{fl, alhsp, arhsp});
 
             // If this output is unassigned on some code paths, wrap the assignment in an If
             if (tov.mayBeUnassigned()) {
@@ -425,6 +425,6 @@ void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
 
 void V3Table::tableAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { TableVisitor visitor(nodep); }  // Destruct before checking
+    { TableVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("table", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

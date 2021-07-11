@@ -66,7 +66,8 @@ private:
         AstNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
-        AstCCast* castp = new AstCCast(nodep->fileline(), nodep, needsize, nodep->widthMin());
+        AstCCast* const castp
+            = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
         relinkHandle.relink(castp);
         // if (debug() > 8) castp->dumpTree(cout, "-castins: ");
         //
@@ -103,7 +104,7 @@ private:
         if (!VN_IS(nodep->backp(), NullCheck)) {
             AstNRelinker relinkHandle;
             nodep->unlinkFrBack(&relinkHandle);
-            AstNode* newp = new AstNullCheck(nodep->fileline(), nodep);
+            AstNode* const newp = new AstNullCheck{nodep->fileline(), nodep};
             relinkHandle.relink(newp);
         }
     }
@@ -201,6 +202,6 @@ public:
 
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CastVisitor visitor(nodep); }  // Destruct before checking
+    { CastVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

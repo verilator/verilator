@@ -208,7 +208,7 @@ string V3HierBlock::vFileIfNecessary() const {
 }
 
 void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
-    std::unique_ptr<std::ofstream> of(V3File::new_ofstream(commandArgsFileName(forCMake)));
+    std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFileName(forCMake))};
     *of << "--cc\n";
 
     if (!forCMake) {
@@ -398,7 +398,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
         it->second->writeCommandArgsFile(forCMake);
     }
     // For the top module
-    std::unique_ptr<std::ofstream> of(V3File::new_ofstream(topCommandArgsFileName(forCMake)));
+    std::unique_ptr<std::ofstream> of{V3File::new_ofstream(topCommandArgsFileName(forCMake))};
     if (!forCMake) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {
