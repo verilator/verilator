@@ -495,7 +495,7 @@ private:
         UINFO(3, __FUNCTION__ << ": " << endl);
 
         // Trace all sources and sinks
-        for (int traceDests = 0; traceDests < 2; ++traceDests) {
+        for (const bool& traceDests : {false, true}) {
             UINFO(9, " Trace Direction " << (traceDests ? "dst" : "src") << endl);
             m_graph.userClearVertices();  // user1: bool - was analyzed
             for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
