@@ -118,81 +118,6 @@ INFOS = verilator.html verilator.pdf
 
 INFOS_OLD = README README.html README.pdf
 
-# Files that can be generated, but should be up to date for a distribution.
-DISTDEP = info Makefile
-
-DISTFILES1 = $(INFOS) .gitignore \
-	*.in *.ac \
-	Artistic \
-	Changes \
-	LICENSE \
-	MANIFEST.SKIP \
-	README.rst \
-	verilator-config.cmake.in \
-	verilator-config-version.cmake.in \
-	bin/verilator \
-	bin/verilator_ccache_report \
-	bin/verilator_coverage \
-	bin/verilator_difftree \
-	bin/verilator_gantt \
-	bin/verilator_includer \
-	bin/verilator_profcfunc \
-	docs/.gitignore \
-	docs/CONTRIBUTING.rst \
-	docs/CONTRIBUTORS \
-	docs/Makefile \
-	docs/_static/*.png \
-	docs/_static/css/* \
-	docs/bin/* \
-	docs/gen/* \
-	docs/guide/*.py \
-	docs/guide/*.rst \
-	docs/guide/figures/* \
-	docs/install.rst \
-	docs/internals.rst \
-	docs/internals.rst \
-	docs/verilated.dox \
-	docs/xml.rst \
-	install-sh configure *.pod \
-	include/*.[chv]* \
-	include/*.in \
-	include/.*ignore \
-	include/gtkwave/*.[chv]* \
-	include/vltstd/*.[chv]* \
-	.*attributes */.*attributes  */*/.*attributes \
-	src/.*ignore src/*.in src/*.cpp src/*.[chly] \
-	src/astgen src/bisonpre src/*fix src/cppcheck_filtered \
-	src/config_rev \
-	src/vlcovgen src/mkinstalldirs \
-	src/.gdbinit \
-	src/*.pl src/*.pod \
-	examples/*/.*ignore examples/*/Makefile* \
-	examples/*/*.[chv]* examples/*/vl_* \
-	examples/*/CMakeLists.txt \
-
-DISTFILES2 = \
-	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
-	test_*/*.pl test_*/*.v test_*/*.vc test_*/*.vh \
-	test_regress/*.pl \
-	test_regress/Makefile \
-	test_regress/Makefile_obj \
-	test_regress/input.vc \
-	test_regress/CMakeLists.txt \
-	test_regress/t/t*/*.sv* \
-	test_regress/t/t*/*.v* \
-	test_regress/t/t*/*/*.sv* \
-	test_regress/t/t*/*/*.v* \
-	test_regress/t/t*/*.cpp \
-	test_regress/t/t*/CMakeLists.txt \
-	test_regress/t/*.cpp \
-	test_regress/t/*.h \
-	test_regress/t/*.dat \
-	test_regress/t/*.mem \
-	test_regress/t/*.out \
-	test_regress/t/*.pl \
-	test_regress/t/*.pf \
-	test_regress/t/*.v* \
-
 INST_PROJ_FILES = \
 	bin/verilator \
 	bin/verilator_ccache_report \
@@ -386,44 +311,7 @@ uninstall:
 install: all_nomsg install-all
 install-all: installbin installman installdata install-msg
 
-install-here: installman ftp
-
-ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
-DISTNAMEREV = $(shell sed -e '/DTVERSION/!d' -e 's/.*verilator_\([^"]*\).*/\1/' -e q ${srcdir}/src/config_rev.h)
-
-VERILATOR_CAD_DIR = $(CAD_DIR)/verilator/$(DISTNAMEREV)/$(DIRPROJECT_ARCH)
-INST_PROJ_CVS = cp_if_cvs_diff
-
-install-cadtools: dist
-	@echo "Install-project to $(CAD_DIR)"
-	strip bin/verilator_bin*
-	strip bin/verilator_coverage_bin*
-	$(MAKE) install-cadtools-quick
-	$(MKINSTALLDIRS) $(VERILATOR_CAD_DIR)/man/man1
-	for p in $(VL_INST_MAN_FILES) ; do \
-	  $(INSTALL_DATA) $$p $(VERILATOR_CAD_DIR)/man/man1/$$p; \
-	done
-	$(INST_PROJ_CVS) $(DISTNAME).tgz $(VERILATOR_CAD_DIR)/verilator.tgz
-	rm $(DISTNAME).tgz
-
-install-cadtools-quick:
-ifeq ($(CFG_WITH_DEFENV),yes)
-	@echo "%Error: Reconfigure with './configure --disable-defenv' to avoid hardcoded paths."
-	false
-endif
-	@echo "Install-cadtools-quick (no strip) to $(VERILATOR_CAD_DIR)"
-	$(MKINSTALLDIRS) $(VERILATOR_CAD_DIR)/include/gtkwave
-	$(MKINSTALLDIRS) $(VERILATOR_CAD_DIR)/include/vltstd
-	$(MKINSTALLDIRS) $(VERILATOR_CAD_DIR)/bin
-	for p in $(INST_PROJ_FILES) ; do \
-	  $(INST_PROJ_CVS) $$p $(VERILATOR_CAD_DIR)/$$p; \
-	done
-	for p in $(INST_PROJ_BIN_FILES) ; do \
-	  $(INST_PROJ_CVS) $$p $(VERILATOR_CAD_DIR)/$$p; \
-	done
-
-# VERILATOR_AUTHOR_SITE
-endif
+install-here: installman info
 
 # Use --xml flag to see the cppcheck code to use for suppression
 CPPCHECK_CPP = $(wildcard \
@@ -524,9 +412,6 @@ lint-py:
 format-pl-exec:
 	-chmod a+x test_regress/t/*.pl
 
-
-ftp: info
-
 install-msg:
 	@echo
 	@echo "Installed binaries to $(DESTDIR)$(bindir)/verilator"
@@ -598,45 +483,16 @@ doxygen:
 	$(MAKE) -C docs doxygen
 
 ######################################################################
-# Test targets
-
-dist-file-list:
-	@echo "begin-dist-file-list:";  # Scripts look for this
-	@echo $(wildcard $(DISTFILES1))
-	@echo $(wildcard $(DISTFILES2))
-	@echo "end-dist-file-list:";  # Scripts look for this
-
-######################################################################
 # Distributions
 
 DISTTITLE := Verilator $(word 1,$(PACKAGE_VERSION))
 DISTNAME := verilator-$(word 1,$(PACKAGE_VERSION))
 DISTDATEPRE := $(word 2,$(PACKAGE_VERSION))
 DISTDATE := $(subst /,-,$(DISTDATEPRE))
-
 DISTTAGNAME := $(subst .,_,$(subst -,_,$(DISTNAME)))
 
 tag:
 	svnorcvs tag $(DISTTAGNAME)
-
-# Don't depend on DISTFILES because there's no rule for "standards.info*".
-dist: $(DISTDEP) maintainer-copy
-	-rm -fr $(DISTNAME)
-	for file in $(DISTFILES1); do \
-	  mkdir -p `dirname $(DISTNAME)/$$file` >/dev/null ; \
-	  ln $$file $(DISTNAME)/$$file \
-	  || { echo copying $$file instead; cp -p $$file $(DISTNAME)/$$file;}; \
-	done; true;
-	for file in $(DISTFILES2); do \
-	  mkdir -p `dirname $(DISTNAME)/$$file` >/dev/null ; \
-	  ln $$file $(DISTNAME)/$$file \
-	  || { echo copying $$file instead; cp -p $$file $(DISTNAME)/$$file;}; \
-	done; true;
-	chmod -R a+r $(DISTNAME)
-	tar chf $(DISTNAME).tar $(DISTNAME)
-	gzip --force --best $(DISTNAME).tar
-	mv $(DISTNAME).tar.gz $(DISTNAME).tgz
-	rm -fr $(DISTNAME)
 
 maintainer-diff:
 	svnorcvs diff $(DISTTAGNAME)
@@ -644,5 +500,5 @@ maintainer-diff:
 preexist:
 	svnorcvs nexists $(DISTTAGNAME)
 
-maintainer-dist: preexist dist tag
-	svnorcvs release $(DISTNAME).tgz
+maintainer-dist: preexist tag
+	svnorcvs release $(DISTTAGNAME)
