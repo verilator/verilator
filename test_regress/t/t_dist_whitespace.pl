@@ -14,10 +14,11 @@ my $root = "..";
 my $Debug;
 
 ### Must trim output before and after our file list
-my %files = %{get_manifest_files($root)};
+my %files = %{get_source_files($root)};
 
 foreach my $file (sort keys %files) {
     my $filename = "$root/$file";
+    next if !-f $file;  # git file might be deleted but not yet staged
     my $contents = file_contents($filename);
     if ($file =~ /\.out$/) {
         # Ignore golden files
@@ -79,15 +80,12 @@ if (keys %warns) {
 ok(1);
 1;
 
-sub get_manifest_files {
+sub get_source_files {
     my $root = shift;
-    `cd $root && $ENV{MAKE} dist-file-list`;
-    my $manifest_files = `cd $root && $ENV{MAKE} dist-file-list`;
-    $manifest_files =~ s!.*begin-dist-file-list:!!sg;
-    $manifest_files =~ s!end-dist-file-list:.*$!!sg;
-    print "MF $manifest_files\n" if $Self->{verbose};
+    my $git_files = `cd $root && git ls-files`;
+    print "MF $git_files\n" if $Self->{verbose};
     my %files;
-    foreach my $file (split /\s+/,$manifest_files) {
+    foreach my $file (split /\s+/, $git_files) {
         next if $file eq '';
         $files{$file} |= 1;
     }
