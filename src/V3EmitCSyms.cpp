@@ -631,7 +631,7 @@ void EmitCSyms::emitSymImp() {
     emitSymImpPreamble();
 
     if (v3Global.opt.savable()) {
-        for (int de = 0; de < 2; ++de) {
+        for (const bool& de : {false, true}) {
             const string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
             const string funcname = de ? "__Vdeserialize" : "__Vserialize";
             const string op = de ? ">>" : "<<";

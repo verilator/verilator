@@ -404,11 +404,11 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             VL_RESTORER(m_curOpp);
             VL_RESTORER(m_leafp);
 
-            for (int i = 0; i < 2; ++i) {
+            for (const bool& right : {false, true}) {
                 Restorer restorer{*this};
                 LeafInfo leafInfo;
                 m_leafp = &leafInfo;
-                m_curOpp = i == 0 ? nodep->lhsp() : nodep->rhsp();
+                m_curOpp = right ? nodep->rhsp() : nodep->lhsp();
                 const bool origFailed = m_failed;
                 iterate(m_curOpp);
                 if (leafInfo.m_constp || m_failed) {

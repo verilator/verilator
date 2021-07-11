@@ -80,7 +80,7 @@ public:
 
         of.puts("\n### Object file lists...\n");
         for (int support = 0; support < 3; ++support) {
-            for (int slow = 0; slow < 2; ++slow) {
+            for (const bool& slow : {false, true}) {
                 if (support == 2) {
                     of.puts("# Global classes, need linked once per executable");
                 } else if (support) {

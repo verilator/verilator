@@ -996,8 +996,7 @@ static V3GraphEdge* partBlastEdgep(GraphWay way, V3GraphEdge* edgep) {
 // non-transitive edges only ever increase.
 static void partMergeEdgesFrom(V3Graph* mtasksp, LogicMTask* recipientp, LogicMTask* donorp,
                                V3Scoreboard<MergeCandidate, uint32_t>* sbp) {
-    for (unsigned wi = 0; wi < 2; ++wi) {
-        const GraphWay way = wi ? GraphWay::REVERSE : GraphWay::FORWARD;
+    for (const auto& way : {GraphWay::FORWARD, GraphWay::REVERSE}) {
         for (V3GraphEdge* edgep = donorp->beginp(way); edgep; edgep = partBlastEdgep(way, edgep)) {
             MTaskEdge* tedgep = MTaskEdge::cast(edgep);
             if (sbp && !tedgep->removedFromSb()) sbp->removeElem(tedgep);
