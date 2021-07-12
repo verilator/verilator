@@ -2,7 +2,7 @@
 # This name is key to badges in README.rst, so we use the name build
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-name: build
+name: Tests
 
 on:
   push:
