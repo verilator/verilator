@@ -114,7 +114,6 @@ public:
 
 class EmitCFunc VL_NOT_FINAL : public EmitCBaseVisitor {
 private:
-    bool m_suppressSemi;
     AstVarRef* m_wideTempRefp;  // Variable that _WW macros should be setting
     int m_labelNum;  // Next label number
     int m_splitSize;  // # of cfunc nodes placed into output file
@@ -338,7 +337,7 @@ public:
         iterateAndNextNull(nodep->rhsp());
         if (paren) puts(")");
         if (decind) ofp()->blockDec();
-        if (!m_suppressSemi) puts(";\n");
+        puts(";\n");
     }
     virtual void visit(AstAlwaysPublic*) override {}
     virtual void visit(AstAssocSel* nodep) override {
@@ -355,13 +354,7 @@ public:
     }
     virtual void visit(AstCCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
-        if (AstCMethodCall* ccallp = VN_CAST(nodep, CMethodCall)) {
-            UASSERT_OBJ(!funcp->isLoose(), nodep, "Loose method called via AstCMethodCall");
-            // make this a Ast type for future opt
-            iterate(ccallp->fromp());
-            putbs("->");
-            puts(funcp->nameProtect());
-        } else if (funcp->dpiImportPrototype()) {
+        if (funcp->dpiImportPrototype()) {
             // Calling DPI import
             puts(funcp->name());
         } else if (funcp->isProperMethod() && funcp->isStatic()) {
@@ -1208,30 +1201,19 @@ public:
         m_blkChangeDetVec.push_back(nodep);
     }
 
-    // Just iterate
-    virtual void visit(AstNetlist* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstTopScope* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstScope* nodep) override { iterateChildren(nodep); }
-    // NOPs
-    virtual void visit(AstTypedef*) override {}
-    virtual void visit(AstPragma*) override {}
-    virtual void visit(AstCell*) override {}  // Handled outside the Visit class
-    virtual void visit(AstNodeText*) override {}  // Handled outside the Visit class
-    virtual void visit(AstCFile*) override {}  // Handled outside the Visit class
-    virtual void visit(AstCellInline*) override {}  // Handled outside visit (in EmitCSyms)
-    virtual void visit(AstCUse*) override {}  // Handled outside the Visit class
     // Default
     virtual void visit(AstNode* nodep) override {
         puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
         iterateChildren(nodep);
+        // LCOV_EXCL_START
         if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
             nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
         }
+        // LCOV_EXCL_STOP
     }
 
     EmitCFunc()
         : m_lazyDecls(*this) {
-        m_suppressSemi = false;
         m_wideTempRefp = nullptr;
         m_labelNum = 0;
         m_splitSize = 0;
