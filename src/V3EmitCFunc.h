@@ -172,7 +172,7 @@ public:
     }
     void emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, AstNode* rhsp,
                     AstNode* thsp);
-    void emitCCallArgs(AstNodeCCall* nodep);
+    void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer);
     void emitDereference(const string& pointer);
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
@@ -353,7 +353,7 @@ public:
         }
         puts(")");
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    virtual void visit(AstCCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
         if (AstCMethodCall* ccallp = VN_CAST(nodep, CMethodCall)) {
             UASSERT_OBJ(!funcp->isLoose(), nodep, "Loose method called via AstCMethodCall");
@@ -382,14 +382,22 @@ public:
             }
             puts(funcp->nameProtect());
         }
-        puts("(");
-        emitCCallArgs(nodep);
-        if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)) {
-            // We should have a separate CCall for math and statement usage, but...
-            puts(")");
-        } else {
-            puts(");\n");
-        }
+        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis));
+    }
+    virtual void visit(AstCMethodCall* nodep) override {
+        const AstCFunc* const funcp = nodep->funcp();
+        UASSERT_OBJ(!funcp->isLoose(), nodep, "Loose method called via AstCMethodCall");
+        iterate(nodep->fromp());
+        putbs("->");
+        puts(funcp->nameProtect());
+        emitCCallArgs(nodep, "");
+    }
+    virtual void visit(AstCNew* nodep) override {
+        puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
+        if (nodep->argsp()) puts(", ");
+        iterateAndNextNull(nodep->argsp());
+        puts(")");
     }
     virtual void visit(AstCMethodHard* nodep) override {
         iterate(nodep->fromp());
@@ -1011,13 +1019,6 @@ public:
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(")");
-    }
-    virtual void visit(AstCNew* nodep) override {
-        puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
-        puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
-        if (nodep->argsp()) puts(", ");
-        iterateAndNextNull(nodep->argsp());
         puts(")");
     }
     virtual void visit(AstNewCopy* nodep) override {

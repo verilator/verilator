@@ -8880,10 +8880,17 @@ class AstCCall final : public AstNodeCCall {
     // C++ function call
     // Parents:  Anything above a statement
     // Children: Args to the function
+
+    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
+
 public:
     AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
         : ASTGEN_SUPER_CCall(fl, funcp, argsp) {}
     ASTNODE_NODE_FUNCS(CCall)
+
+    string selfPointer() const { return m_selfPointer; }
+    void selfPointer(const string& value) { m_selfPointer = value; }
+    string selfPointerProtect(bool useSelfForThis) const;
 };
 
 class AstCMethodCall final : public AstNodeCCall {
