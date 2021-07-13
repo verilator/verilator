@@ -1015,7 +1015,7 @@ private:
     virtual void visit(AstVarScope* nodep) override {
         // Create links to all input signals
         UASSERT_OBJ(m_modp, nodep, "Scope not under module");
-        if (m_modp->isTop() && nodep->varp()->isNonOutput()) {
+        if (m_modp->isTop() && nodep->varp()->isPossiblyNonOutput()) {
             OrderVarVertex* varVxp = newVarUserVertex(nodep, WV_STD);
             new OrderEdge(&m_graph, m_inputsVxp, varVxp, WEIGHT_INPUT);
         }
@@ -1431,7 +1431,7 @@ void OrderVisitor::processSensitive() {
     // block.  (Not inputs that go only to clocked blocks.)
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
         if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(itp)) {
-            if (vvertexp->varScp()->varp()->isNonOutput()) {
+            if (vvertexp->varScp()->varp()->isPossiblyNonOutput()) {
                 // UINFO(0, "  scsen " << vvertexp << endl);
                 for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;
                      edgep = edgep->outNextp()) {
@@ -1470,7 +1470,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp);
     AstSenTree* domainp = nullptr;
     UASSERT(m_comboDomainp, "not preset");
-    if (vvertexp && vvertexp->varScp()->varp()->isNonOutput()) domainp = m_comboDomainp;
+    if (vvertexp && vvertexp->varScp()->varp()->isPossiblyNonOutput()) domainp = m_comboDomainp;
     if (vvertexp && vvertexp->varScp()->isCircular()) domainp = m_comboDomainp;
     if (!domainp) {
         for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {

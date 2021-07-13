@@ -2175,6 +2175,7 @@ public:
     bool isSigModPublic() const { return m_sigModPublic; }
     bool isSigUserRdPublic() const { return m_sigUserRdPublic; }
     bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
+    bool isPossiblyNonOutput() const { return m_direction.isNonOutput() || m_sigUserRWPublic; }
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_isRand; }
     bool isConst() const { return m_isConst; }
