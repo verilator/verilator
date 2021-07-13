@@ -433,12 +433,12 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
     displayEmit(nodep, isScan);
 }
 
-void EmitCFunc::emitCCallArgs(AstNodeCCall* nodep) {
+void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer) {
+    puts("(");
     bool comma = false;
     if (nodep->funcp()->isLoose() && !nodep->funcp()->isStatic()) {
-        UASSERT_OBJ(!nodep->selfPointer().empty(), nodep,
-                    "Call to loose method without self pointer");
-        puts(nodep->selfPointerProtect(m_useSelfForThis));
+        UASSERT_OBJ(!selfPointer.empty(), nodep, "Call to loose method without self pointer");
+        puts(selfPointer);
         comma = true;
     }
     if (!nodep->argTypes().empty()) {
@@ -450,6 +450,12 @@ void EmitCFunc::emitCCallArgs(AstNodeCCall* nodep) {
         if (comma) puts(", ");
         iterate(subnodep);
         comma = true;
+    }
+    if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)) {
+        // We should have a separate CCall for math and statement usage, but...
+        puts(")");
+    } else {
+        puts(");\n");
     }
 }
 

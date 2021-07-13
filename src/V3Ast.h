@@ -2612,7 +2612,6 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
-    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
     string m_argTypes;
 
 protected:
@@ -2638,9 +2637,6 @@ public:
     virtual bool isPure() const override;
     virtual bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
-    string selfPointer() const { return m_selfPointer; }
-    void selfPointer(const string& value) { m_selfPointer = value; }
-    string selfPointerProtect(bool useSelfForThis) const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall
