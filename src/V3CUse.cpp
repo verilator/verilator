@@ -201,11 +201,6 @@ class CUseVisitor final : public AstNVisitor {
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        if (v3Global.opt.trace()) {
-            AstCUse* const usep
-                = m_state.newUse(nodep, VUseType::INT_FWD_CLASS, v3Global.opt.traceClassBase());
-            usep->protect(false);
-        }
         makeUseCells(nodep);
         { CUseDTypeVisitor dtypeVisitor{nodep, m_state}; }
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
