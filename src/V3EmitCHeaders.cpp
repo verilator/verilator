@@ -19,7 +19,7 @@
 
 #include "V3Global.h"
 #include "V3EmitC.h"
-#include "V3EmitCFunc.h"
+#include "V3EmitCConstInit.h"
 
 #include <algorithm>
 #include <vector>
@@ -27,8 +27,10 @@
 //######################################################################
 // Internal EmitC implementation
 
-class EmitCHeader final : public EmitCFunc {
+class EmitCHeader final : public EmitCConstInit {
     // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
     void decorateFirst(bool& first, const string& str) {
         if (first) {
             putsDecoration(str);
