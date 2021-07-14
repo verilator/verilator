@@ -3299,14 +3299,37 @@ private:
                     relinkHandle.relink(patp);
                 }
             }
+
+            std::vector<std::pair<AstNodeDType*, AstPatMember*>> type_defaults;
+            for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
+                 ) {
+                if (AstNodeDType* type = VN_CAST(patp->keyp(), NodeDType)) {
+                    auto matching_type_it
+                        = find_if(type_defaults.begin(), type_defaults.end(),
+                                  [&type](auto x) { return type->similarDType(x.first); });
+                    if (matching_type_it == type_defaults.end()) {
+                        type_defaults.push_back({type, patp});
+                        const auto nextp = VN_CAST(patp->nextp(), PatMember);
+                        patp->unlinkFrBack();
+                        patp = nextp;
+                        continue;
+                    }
+                }
+                patp = VN_CAST(patp->nextp(), PatMember);
+            }
+
             AstPatMember* defaultp = nullptr;
             for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
-                 patp = VN_CAST(patp->nextp(), PatMember)) {
+                 ) {
                 if (patp->isDefault()) {
                     if (defaultp) nodep->v3error("Multiple '{ default: } clauses");
                     defaultp = patp;
+                    const auto nextp = VN_CAST(patp->nextp(), PatMember);
                     patp->unlinkFrBack();
+                    patp = nextp;
+                    continue;
                 }
+                patp = VN_CAST(patp->nextp(), PatMember);
             }
             while (const AstConstDType* vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
@@ -3315,7 +3338,7 @@ private:
             userIterate(dtypep, WidthVP(SELF, BOTH).p());
 
             if (auto* vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
-                VL_DO_DANGLING(patternUOrStruct(nodep, vdtypep, defaultp), nodep);
+                VL_DO_DANGLING(patternUOrStruct(nodep, vdtypep, defaultp, type_defaults), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 VL_DO_DANGLING(patternArray(nodep, vdtypep, defaultp), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, AssocArrayDType)) {
@@ -3327,15 +3350,15 @@ private:
             } else if (VN_IS(dtypep, BasicDType) && VN_CAST(dtypep, BasicDType)->isRanged()) {
                 VL_DO_DANGLING(patternBasic(nodep, dtypep, defaultp), nodep);
             } else {
-                nodep->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: Assignment pattern applies against non struct/union data type: "
-                        << dtypep->prettyDTypeNameQ());
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment pattern applies "
+                                             "against non struct/union data type: "
+                                                 << dtypep->prettyDTypeNameQ());
             }
         }
     }
-    void patternUOrStruct(AstPattern* nodep, AstNodeUOrStructDType* vdtypep,
-                          AstPatMember* defaultp) {
+    void
+    patternUOrStruct(AstPattern* nodep, AstNodeUOrStructDType* vdtypep, AstPatMember* defaultp,
+                     const std::vector<std::pair<AstNodeDType*, AstPatMember*>>& type_defaults) {
         // Due to "default" and tagged patterns, we need to determine
         // which member each AstPatMember corresponds to before we can
         // determine the dtypep for that PatMember's value, and then
@@ -3357,6 +3380,8 @@ private:
                                                           << "' not found as member");
                                     break;
                                 }
+                            } else if (AstNodeDType* type = VN_CAST(patp->keyp(), NodeDType)) {
+                                continue;
                             } else {
                                 patp->keyp()->v3error(
                                     "Assignment pattern key not supported/understood: "
@@ -3394,7 +3419,14 @@ private:
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             if (it == patmap.end()) {
-                if (defaultp) {
+                AstNodeDType* type = VN_CAST(memp->subDTypep(), NodeDType);
+                auto matching_type_it
+                    = find_if(type_defaults.begin(), type_defaults.end(),
+                              [&type](auto& x) { return type->similarDType(x.first); });
+                if (matching_type_it != type_defaults.end()) {
+                    newpatp = matching_type_it->second->cloneTree(false);
+                    patp = newpatp;
+                } else if (defaultp) {
                     newpatp = defaultp->cloneTree(false);
                     patp = newpatp;
                 } else {
@@ -3426,7 +3458,8 @@ private:
         } else {
             nodep->v3error("Assignment pattern with no members");
         }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+        VL_DO_DANGLING(pushDeletep(nodep),
+                       nodep);  // Deletes defaultp also, if present
     }
     void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
         const VNumRange range = arrayDtp->declRange();
