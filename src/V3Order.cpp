@@ -1470,6 +1470,8 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp);
     AstSenTree* domainp = nullptr;
     UASSERT(m_comboDomainp, "not preset");
+    //TODO: This is not complete. Probably want to check that this is not being copied to the settle domain and in the combo domain
+    //TODO: We probably only want to set to m_comboDomainp if it is not already descending from some other var
     if (vvertexp && vvertexp->varScp()->varp()->isNonOutput()) domainp = m_comboDomainp;
     if (vvertexp && vvertexp->varScp()->isCircular()) domainp = m_comboDomainp;
     if (!domainp) {
@@ -1527,7 +1529,16 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
         // This is a node which has only constant inputs, or is otherwise indeterminate.
         // It should have already been copied into the settle domain.  Presumably it has
         // inputs which we never trigger, or nothing it's sensitive to, so we can rip it out.
-        if (!domainp && vertexp->scopep()) domainp = m_deleteDomainp;
+        if (!domainp && vertexp->scopep()) {
+            if (vvertexp->varScp()->varp()->isSigUserRWPublic())
+            {
+                domainp = m_comboDomainp;
+            }
+            else
+            {
+                domainp = m_deleteDomainp;
+            }
+        }
     }
     //
     vertexp->domainp(domainp);

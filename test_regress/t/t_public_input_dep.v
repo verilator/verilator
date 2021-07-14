@@ -28,9 +28,5 @@ module t (clk);
 
    always_ff @(posedge clk_3[1]) begin
       count_2 <= count_2 + 1;
-      if (count_1 >= 10 && count_2 >= 10) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
    end
 endmodule
