@@ -118,7 +118,6 @@ private:
     AstVarRef* m_wideTempRefp;  // Variable that _WW macros should be setting
     int m_labelNum;  // Next label number
     int m_splitSize;  // # of cfunc nodes placed into output file
-    int m_splitFilenum;  // File number being created, 0 = primary
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
 
@@ -133,15 +132,11 @@ public:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // ACCESSORS
-    int splitFilenumInc() {
-        m_splitSize = 0;
-        return m_splitFilenum++;
-    }
-    int splitSize() const { return m_splitSize; }
     void splitSizeInc(int count) { m_splitSize += count; }
     void splitSizeInc(AstNode* nodep) { splitSizeInc(EmitCBaseCounterVisitor(nodep).count()); }
+    void splitSizeReset() { m_splitSize = 0; }
     bool splitNeeded() const {
-        return v3Global.opt.outputSplit() && splitSize() >= v3Global.opt.outputSplit();
+        return v3Global.opt.outputSplit() && m_splitSize >= v3Global.opt.outputSplit();
     }
 
     // METHODS
@@ -1220,7 +1215,6 @@ public:
         m_wideTempRefp = nullptr;
         m_labelNum = 0;
         m_splitSize = 0;
-        m_splitFilenum = 0;
     }
     EmitCFunc(AstNode* nodep, V3OutCFile* ofp, bool trackText = false)
         : EmitCFunc{} {

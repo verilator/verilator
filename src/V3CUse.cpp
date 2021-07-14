@@ -59,8 +59,6 @@ class CUseVisitor final : public AstNVisitor {
     virtual void visit(AstClassRefDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         if (!m_impOnly) addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
-        // No class.h, it's inside the class package's h file
-        addNewUse(nodep, VUseType::IMP_INCLUDE, nodep->classp()->classOrPackagep()->name());
         // Need to include extends() when we implement, but no need for pointers to know
         VL_RESTORER(m_impOnly);
         {
