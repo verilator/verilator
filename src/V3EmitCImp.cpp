@@ -19,10 +19,126 @@
 
 #include "V3Global.h"
 #include "V3EmitC.h"
+#include "V3Ast.h"
 #include "V3EmitCFunc.h"
+#include "V3String.h"
+#include "V3UniqueNames.h"
 
+#include <map>
+#include <set>
 #include <vector>
-#include <unordered_set>
+
+//######################################################################
+// Visitor that gathers the headers required by an AstCFunc
+
+class EmitCGatherDependencies final : AstNVisitor {
+    // Ordered set, as it is used as a key in another map.
+    std::set<string> m_dependencies;  // Header names to be included in output C++ file
+
+    // METHODS
+    void addSymsDependency() { m_dependencies.insert(EmitCBaseVisitor::symClassName()); }
+    void addModDependency(const AstNodeModule* modp) {
+        if (const AstClass* const classp = VN_CAST_CONST(modp, Class)) {
+            m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(classp->classOrPackagep()));
+        } else {
+            m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(modp));
+        }
+    }
+    void addDTypeDependency(const AstNodeDType* nodep) {
+        if (const AstClassRefDType* const dtypep = VN_CAST_CONST(nodep, ClassRefDType)) {
+            m_dependencies.insert(
+                EmitCBaseVisitor::prefixNameProtect(dtypep->classp()->classOrPackagep()));
+        }
+    }
+    void addSelfDependency(const string& selfPointer, AstNode* nodep) {
+        if (selfPointer.empty()) {
+            // No self pointer (e.g.: function locals, const pool values, loose static methods),
+            // so no dependency
+        } else if (VString::startsWith(selfPointer, "this")) {
+            // Dereferencing 'this', we need the definition of this module, which is also the
+            // module that contains the variable.
+            addModDependency(EmitCParentModule::get(nodep));
+        } else {
+            // Must be an absolute reference
+            UASSERT_OBJ(selfPointer.find("vlSymsp") != string::npos, nodep,
+                        "Unknown self pointer: '" << selfPointer << "'");
+            // Dereferencing vlSymsp, so we need it's definition...
+            m_dependencies.insert(EmitCBaseVisitor::symClassName());
+        }
+    }
+
+    // VISITORS
+    virtual void visit(AstCCall* nodep) override {
+        addSelfDependency(nodep->selfPointer(), nodep->funcp());
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstCNew* nodep) override {
+        addDTypeDependency(nodep->dtypep());
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstCMethodCall* nodep) override {
+        addDTypeDependency(nodep->fromp()->dtypep());
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstNewCopy* nodep) override {
+        addDTypeDependency(nodep->dtypep());
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstMemberSel* nodep) override {
+        addDTypeDependency(nodep->fromp()->dtypep());
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstNodeVarRef* nodep) override {
+        addSelfDependency(nodep->selfPointer(), nodep->varp());
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstCoverDecl* nodep) override {
+        addSymsDependency();
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstCoverInc* nodep) override {
+        addSymsDependency();
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstDumpCtl* nodep) override {
+        addSymsDependency();
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstScopeName* nodep) override {
+        addSymsDependency();
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstPrintTimeScale* nodep) override {
+        addSymsDependency();
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstTimeFormat* nodep) override {
+        addSymsDependency();
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstNodeSimpleText* nodep) override {
+        if (nodep->text().find("vlSymsp") != string::npos) {
+            m_dependencies.insert(EmitCBaseVisitor::symClassName());
+        }
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    // CONSTRUCTOR
+    explicit EmitCGatherDependencies(AstCFunc* cfuncp) {
+        // Strictly speaking, for loose methods, we could get away with just a forward
+        // declaration of the receiver class, but their body very likely includes at least one
+        // relative reference, so we are probably not loosing much.
+        addModDependency(EmitCParentModule::get(cfuncp));
+        iterate(cfuncp);
+    }
+
+public:
+    static const std::set<std::string> gather(AstCFunc* cfuncp) {
+        EmitCGatherDependencies visitor{cfuncp};
+        return std::move(visitor.m_dependencies);
+    }
+};
 
 //######################################################################
 // Internal EmitC implementation
@@ -31,11 +147,15 @@ class EmitCImp final : EmitCFunc {
     // MEMBERS
     const AstNodeModule* const m_fileModp;  // Files names/headers constructed using this module
     const bool m_slow;  // Creating __Slow file
+    const std::set<string>* m_requiredHeadersp;  // Header files required by output file
+    std::string m_subFileName;  // substring added to output filenames
+    V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
-    void openNextOutputFile() {
+    void openNextOutputFile(const std::set<string>& headers, const string& subFileName) {
         UASSERT(!m_ofp, "Output file already open");
 
+        splitSizeReset();  // Reset file size tracking
         m_lazyDecls.reset();  // Need to emit new lazy declarations
 
         if (v3Global.opt.lintOnly()) {
@@ -46,7 +166,10 @@ class EmitCImp final : EmitCFunc {
             m_ofp = new V3OutCFile(filename);
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
-            if (const int filenum = splitFilenumInc()) filename += "__" + cvtToStr(filenum);
+            if (!subFileName.empty()) {
+                filename += "__" + subFileName;
+                filename = m_uniqueNames.get(filename);
+            }
             if (m_slow) filename += "__Slow";
             filename += ".cpp";
             newCFile(filename, /* slow: */ m_slow, /* source: */ true);
@@ -58,21 +181,26 @@ class EmitCImp final : EmitCFunc {
         puts("// See " + topClassName() + ".h for the primary calling header\n");
 
         // Include files
+        puts("\n#include \"verilated_heavy.h\"\n");
+        if (v3Global.dpi()) puts("#include \"verilated_dpi.h\"\n");
         puts("\n");
-        puts("#include \"" + prefixNameProtect(m_fileModp) + ".h\"\n");
-        puts("#include \"" + symClassName() + ".h\"\n");
-
-        if (v3Global.dpi()) {
-            puts("\n");
-            puts("#include \"verilated_dpi.h\"\n");
-        }
-
-        emitModCUse(m_fileModp, VUseType::IMP_INCLUDE);
-        emitModCUse(m_fileModp, VUseType::IMP_FWD_CLASS);
+        for (const string& name : headers) puts("#include \"" + name + ".h\"\n");
 
         emitTextSection(m_modp, AstType::atScImpHdr);
     }
 
+    void emitStaticVarDefns(const AstNodeModule* modp) {
+        // Emit static variable definitions
+        const string modName = prefixNameProtect(modp);
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+                if (varp->isStatic()) {
+                    puts(varp->vlArgType(true, false, false, modName));
+                    puts(";\n");
+                }
+            }
+        }
+    }
     void emitParamDefns(const AstNodeModule* modp) {
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
@@ -168,8 +296,9 @@ class EmitCImp final : EmitCFunc {
     void emitCoverageImp() {
         if (v3Global.opt.coverage()) {
             puts("\n// Coverage\n");
-            // Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
-            // This gets around gcc slowness constructing all of the template arguments.
+            // Rather than putting out VL_COVER_INSERT calls directly, we do it via this
+            // function. This gets around gcc slowness constructing all of the template
+            // arguments.
             puts("void " + prefixNameProtect(m_modp) + "::__vlCoverInsert(");
             puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
@@ -289,19 +418,23 @@ class EmitCImp final : EmitCFunc {
             }
         }
     }
-    void emitAll(const AstNodeModule* modp) {
+    // Predicate to check if we actually need to emit anything into the common implementation file.
+    // Used to avoid creating empty output files.
+    bool hasCommonImp(const AstNodeModule* modp) const {
+        // Nothing to emit if no module!
+        if (!modp) return false;
+        // We always need the slow file
+        if (m_slow) return true;
+        // The fast file is only required when we have ScImp nodes
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (VN_IS(nodep, ScImp)) return true;
+        }
+        return false;
+    }
+    // Actually emit common implementation contents for given AstNodeModule
+    void doCommonImp(const AstNodeModule* modp) {
         if (m_slow) {
-            // Emit static variable definitions
-            const string modName = prefixNameProtect(modp);
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
-                    if (varp->isStatic()) {
-                        puts(varp->vlArgType(true, false, false, modName));
-                        puts(";\n");
-                    }
-                }
-            }
-
+            emitStaticVarDefns(modp);
             if (!VN_IS(modp, Class)) {
                 emitParamDefns(modp);
                 emitCtorImp(modp);
@@ -311,30 +444,86 @@ class EmitCImp final : EmitCFunc {
             emitSavableImp(modp);
             emitCoverageImp();
         } else {
+            // From `systemc_implementation
             emitTextSection(modp, AstType::atScImp);
         }
+    }
+    void emitCommonImp(const AstNodeModule* modp) {
+        const AstClass* const classp
+            = VN_IS(modp, ClassPackage) ? VN_CAST_CONST(modp, ClassPackage)->classp() : nullptr;
 
-        // Emit all AstCFunc
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) iterate(funcp);
+        if (hasCommonImp(modp) || hasCommonImp(classp)) {
+            std::set<string> headers;
+            headers.insert(prefixNameProtect(m_fileModp));
+            headers.insert(symClassName());
+
+            openNextOutputFile(headers, "");
+
+            doCommonImp(modp);
+            if (classp) {
+                VL_RESTORER(m_modp);
+                m_modp = classp;
+                doCommonImp(classp);
+            }
+
+            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        }
+    }
+    void emitCFuncImp(const AstNodeModule* modp) {
+        // Partition functions based on which module definitions they require, by building a
+        // map from "AstNodeModules whose definitions are required" -> "functions that need
+        // them"
+        std::map<const std::set<string>, std::vector<AstCFunc*>> depSet2funcps;
+
+        const auto gather = [this, &depSet2funcps](const AstNodeModule* modp) {
+            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
+                    // TRACE_* and DPI handled elsewhere
+                    if (funcp->isTrace()) continue;
+                    if (funcp->dpiImportPrototype()) continue;
+                    if (funcp->dpiExportDispatcher()) continue;
+                    if (funcp->slow() != m_slow) continue;
+                    const auto& depSet = EmitCGatherDependencies::gather(funcp);
+                    depSet2funcps[depSet].push_back(funcp);
+                }
+            }
+        };
+
+        gather(modp);
+        if (const AstClassPackage* const packagep = VN_CAST_CONST(modp, ClassPackage)) {
+            gather(packagep->classp());
+        }
+
+        // Emit all functions in each dependency set into separate files
+        for (const auto& pair : depSet2funcps) {
+            m_requiredHeadersp = &pair.first;
+            // Compute the hash of the dependencies, so we can add it to the filenames to
+            // disambiguate them
+            V3Hash hash;
+            for (const string& name : *m_requiredHeadersp) { hash += name; }
+            m_subFileName = "DepSet_" + cvtToHex(hash.value());
+            // Open output file
+            openNextOutputFile(*m_requiredHeadersp, m_subFileName);
+            // Emit functions in this dependency set
+            for (AstCFunc* const funcp : pair.second) {
+                VL_RESTORER(m_modp);
+                m_modp = EmitCParentModule::get(funcp);
+                iterate(funcp);
+            }
+            // Close output file
+            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
         }
     }
 
     // VISITORS
     virtual void visit(AstCFunc* nodep) override {
-        // TRACE_* and DPI handled elsewhere
-        if (nodep->isTrace()) return;
-        if (nodep->dpiImportPrototype()) return;
-        if (nodep->dpiExportDispatcher()) return;
-        if (nodep->slow() != m_slow) return;
-
         if (splitNeeded()) {
             // Splitting file, so using parallel build.
             v3Global.useParallelBuild(true);
             // Close old file
             VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
             // Open a new file
-            openNextOutputFile();
+            openNextOutputFile(*m_requiredHeadersp, m_subFileName);
         }
 
         EmitCFunc::visit(nodep);
@@ -347,20 +536,16 @@ class EmitCImp final : EmitCFunc {
 
         m_modp = modp;
 
-        openNextOutputFile();
+        // Emit implementation of this module, if this is an AstClassPackage, then put the
+        // corresponding AstClass implementation in the same file as often optimziations are
+        // possible when both are seen by the compiler
+        // TODO: is the above comment still true?
 
-        emitAll(modp);
+        // Emit implementations of common parts
+        emitCommonImp(modp);
 
-        if (const AstClassPackage* const packagep = VN_CAST_CONST(modp, ClassPackage)) {
-            // Put the non-static class implementation in same C++ files as
-            // often optimizations are possible when both are seen by the
-            // compiler together
-            m_modp = packagep->classp();
-            emitAll(packagep->classp());
-        }
-
-        // Close output file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        // Emit implementations of all AstCFunc
+        emitCFuncImp(modp);
     }
     virtual ~EmitCImp() override = default;
 
@@ -380,21 +565,24 @@ class EmitCTrace final : EmitCFunc {
     // MEMBERS
     const bool m_slow;  // Making slow file
     int m_enumNum = 0;  // Enumeration number (whole netlist)
+    V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
-    void newOutCFile(int filenum) {
+    void openNextOutputFile() {
+        UASSERT(!m_ofp, "Output file already open");
+
+        splitSizeReset();  // Reset file size tracking
         m_lazyDecls.reset();  // Need to emit new lazy declarations
 
         string filename
             = (v3Global.opt.makeDir() + "/" + topClassName() + "_" + protect("_Trace"));
-        if (filenum) filename += "__" + cvtToStr(filenum);
-        filename += (m_slow ? "__Slow" : "");
+        filename = m_uniqueNames.get(filename);
+        if (m_slow) filename += "__Slow";
         filename += ".cpp";
 
         AstCFile* cfilep = newCFile(filename, m_slow, true /*source*/);
         cfilep->support(true);
 
-        if (m_ofp) v3fatalSrc("Previous file not closed");
         if (optSystemC()) {
             m_ofp = new V3OutScFile(filename);
         } else {
@@ -647,7 +835,7 @@ class EmitCTrace final : EmitCFunc {
             // Close old file
             VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
             // Open a new file
-            newOutCFile(splitFilenumInc());
+            openNextOutputFile();
         }
 
         EmitCFunc::visit(nodep);
@@ -678,7 +866,7 @@ class EmitCTrace final : EmitCFunc {
         : m_slow{slow} {
         m_modp = modp;
         // Open output file
-        newOutCFile(splitFilenumInc());
+        openNextOutputFile();
         // Emit functions
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) { iterate(funcp); }

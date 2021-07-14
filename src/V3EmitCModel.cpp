@@ -20,11 +20,13 @@
 #include "V3Global.h"
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 #include <vector>
 
 class EmitCModel final : public EmitCFunc {
+    V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
     VL_DEBUG_FUNC;
@@ -584,11 +586,13 @@ class EmitCModel final : public EmitCFunc {
             }
 
             if (!m_ofp) {
-                const string filename = v3Global.opt.makeDir() + "/" + topClassName()
-                                        + "__Dpi_Export_" + cvtToStr(splitFilenumInc()) + ".cpp";
+                string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi_Export";
+                filename = m_uniqueNames.get(filename);
+                filename += ".cpp";
                 newCFile(filename, /* slow: */ false, /* source: */ true);
                 m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename}
                                                : new V3OutCFile{filename};
+                splitSizeReset();  // Reset file size tracking
                 m_lazyDecls.reset();
                 m_ofp->putsHeader();
                 puts(
