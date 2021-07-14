@@ -2371,6 +2371,33 @@ sub tries {
     return 2;
 }
 
+sub glob_all {
+    my $self = (ref $_[0]? shift : $Self);
+    my $pattern = shift;
+
+    return glob($pattern);
+}
+
+sub glob_one {
+    my $self = (ref $_[0]? shift : $Self);
+    my $pattern = shift;
+    return if $self->errors || $self->skips || $self->unsupporteds;
+
+    my @files = glob($pattern);
+    my $n = scalar @files;
+    if ($n == 0) {
+      $self->error("glob_one: pattern '$pattern' does not match any files\n");
+    } elsif ($n != 1) {
+      my $msg = "glob_one: pattern '$pattern' matches multiple files:\n";
+      foreach my $file (@files) {
+        $msg .= $file."\n";
+      }
+      $self->error($msg);
+    } else {
+      return $files[0];
+    }
+}
+
 sub file_grep_not {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
@@ -2400,6 +2427,30 @@ sub file_grep {
     } elsif ($expvalue && $expvalue ne $1) {
         $self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
     }
+}
+
+sub file_grep_any {
+    my $self = $Self;
+    my @filenames = @{$_[0]}; shift;
+    my $regexp = shift;
+    my $expvalue = shift;
+    return if $self->errors || $self->skips || $self->unsupporteds;
+
+    foreach my $filename (@filenames) {
+      my $contents = $self->file_contents($filename);
+      return if ($contents eq "_Already_Errored_");
+      if ($contents =~ /$regexp/) {
+        if ($expvalue && $expvalue ne $1) {
+          $self->error("file_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
+        }
+        return;
+      }
+    }
+    my $msg = "file_grep_any: Regexp '$regexp' not found in any of the following files:\n";
+    foreach my $filename (@filenames) {
+      $msg .= $filename."\n";
+    }
+    $self->error($msg);
 }
 
 my %_File_Contents_Cache;

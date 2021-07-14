@@ -61,7 +61,7 @@ while (1) {
 sub check_no_splits {
     foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
         $file =~ s/__024root//;
-        if ($file =~ qr/__\d/) {
+        if ($file =~ qr/__[1-9]/) {
             error("Split file found: $file");
         }
     }
