@@ -264,6 +264,9 @@ class EmitXmlFileVisitor final : public AstNVisitor {
             puts(" left=\"" + cvtToStr(nodep->left()) + "\"");
             puts(" right=\"" + cvtToStr(nodep->right()) + "\"");
         }
+        if (nodep->isSigned()) {
+            puts(" signed=\"true\"");
+        }
         puts("/>\n");
     }
     virtual void visit(AstIfaceRefDType* nodep) override {

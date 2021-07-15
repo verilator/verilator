@@ -205,11 +205,11 @@
       <basicdtype fl="d19" loc="d,19,34,19,39" id="7" name="logic" left="1" right="0"/>
       <basicdtype fl="d9" loc="d,9,11,9,16" id="1" name="logic" left="15" right="0"/>
       <basicdtype fl="d11" loc="d,11,12,11,17" id="2" name="logic" left="6" right="0"/>
-      <basicdtype fl="d17" loc="d,17,5,17,12" id="3" name="integer" left="31" right="0"/>
-      <basicdtype fl="d19" loc="d,19,10,19,11" id="10" name="logic" left="2" right="0"/>
+      <basicdtype fl="d17" loc="d,17,5,17,12" id="3" name="integer" left="31" right="0" signed="true"/>
+      <basicdtype fl="d19" loc="d,19,10,19,11" id="10" name="logic" left="2" right="0" signed="true"/>
       <basicdtype fl="d19" loc="d,19,11,19,12" id="9" name="logic" left="31" right="0"/>
-      <basicdtype fl="d19" loc="d,19,20,19,21" id="8" name="logic" left="3" right="0"/>
-      <basicdtype fl="d18" loc="d,18,12,18,13" id="4" name="logic" left="31" right="0"/>
+      <basicdtype fl="d19" loc="d,19,20,19,21" id="8" name="logic" left="3" right="0" signed="true"/>
+      <basicdtype fl="d18" loc="d,18,12,18,13" id="4" name="logic" left="31" right="0" signed="true"/>
       <basicdtype fl="d18" loc="d,18,18,18,19" id="5" name="logic"/>
     </typetable>
   </netlist>
