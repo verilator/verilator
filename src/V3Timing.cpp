@@ -298,7 +298,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        AstNodeModule* origModp = m_state.m_modp;
+        AstNodeModule* const origModp = m_state.m_modp;
         {
             m_state.m_modp = nodep;
             iterateChildren(nodep);
@@ -307,7 +307,7 @@ private:
         if (!m_state.m_modp) m_state.m_procNum = 0;
     }
     virtual void visit(AstScope* nodep) VL_OVERRIDE {
-        AstScope* oldScopep = m_state.m_scopep;
+        AstScope* const oldScopep = m_state.m_scopep;
         {
             m_state.m_scopep = nodep;
             iterateChildren(nodep);
@@ -337,8 +337,8 @@ private:
                 nodep->addNext(alwaysp);
             }
             // Add Jumps
-            { TimingProcedureVisitor visit(m_state /*ref*/, nodep, false); }
-            { TimingProcedureVisitor visit(m_state /*ref*/, alwaysp, true); }
+            { TimingProcedureVisitor visit{m_state /*ref*/, nodep, false}; }
+            { TimingProcedureVisitor visit{m_state /*ref*/, alwaysp, true}; }
         }
         m_procedurep = nullptr;
     }
@@ -382,6 +382,6 @@ public:
 
 void V3Timing::timingAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { TimingVisitor bvisitor(nodep); }  // Destruct before checking
+    { TimingVisitor bvisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("timing", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

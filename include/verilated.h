@@ -109,8 +109,6 @@ using WData = EData;        ///< Data representing >64 packed bits (used as poin
 using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
 using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
 
-using VerilatedVoidCb = void (*)(void);
-
 enum VerilatedVarType : vluint8_t {
     VLVT_UNKNOWN = 0,
     VLVT_PTR,  // Pointer to something
