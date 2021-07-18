@@ -2792,7 +2792,8 @@ bool Verilated::timedQEmpty(VerilatedSyms* symsp) VL_MT_SAFE {
 vluint64_t Verilated::timedQEarliestTime(VerilatedSyms* symsp) VL_MT_SAFE {
     return symsp->_vm_timedQp->earliestTime();
 }
-void Verilated::timedQPush(VerilatedSyms* symsp, vluint64_t time, CData* eventp) VL_MT_SAFE {
+void Verilated::timedQDeactivateAndPush(VerilatedSyms* symsp, vluint64_t time,
+                                        CData* eventp) VL_MT_SAFE {
     *eventp = 0;  // Deactivate event
     symsp->_vm_timedQp->push(time, eventp);
 }

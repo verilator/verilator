@@ -890,7 +890,8 @@ public:
     // FIXME perhaps accessors need not be under Verilated::
     static bool timedQEmpty(VerilatedSyms* symsp) VL_MT_SAFE;
     static vluint64_t timedQEarliestTime(VerilatedSyms* symsp) VL_MT_SAFE;
-    static void timedQPush(VerilatedSyms* symsp, vluint64_t time, CData* eventp) VL_MT_SAFE;
+    static void timedQDeactivateAndPush(VerilatedSyms* symsp, vluint64_t time,
+                                        CData* eventp) VL_MT_SAFE;
     static void timedQActivate(VerilatedSyms* symsp, vluint64_t time) VL_MT_SAFE;
 #endif
 
