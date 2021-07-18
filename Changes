@@ -13,6 +13,8 @@ Verilator 4.211 devel
 
 **Minor:**
 
+* Fix -G to treat simple integer literals as signed (#3060). [Anikin1610]
+
 
 Verilator 4.210 2021-07-07
 ==========================

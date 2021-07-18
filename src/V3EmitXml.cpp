@@ -392,10 +392,10 @@ void V3EmitXml::emitxml() {
     }
     {
         std::stringstream sstr;
-        ModuleFilesXmlVisitor moduleFilesVisitor(v3Global.rootp(), sstr);
-        HierCellsXmlVisitor cellsVisitor(v3Global.rootp(), sstr);
+        ModuleFilesXmlVisitor moduleFilesVisitor{v3Global.rootp(), sstr};
+        HierCellsXmlVisitor cellsVisitor{v3Global.rootp(), sstr};
         of.puts(sstr.str());
     }
-    EmitXmlFileVisitor visitor(v3Global.rootp(), &of);
+    EmitXmlFileVisitor visitor{v3Global.rootp(), &of};
     of.puts("</verilator_xml>\n");
 }

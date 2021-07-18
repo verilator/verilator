@@ -129,7 +129,7 @@ private:
         AstAssign* initp = new AstAssign(m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
                                          m_varEqnp->cloneTree(true));
         m_statep->m_chgFuncp->addFinalsp(initp);
-        EmitCBaseCounterVisitor visitor(initp);
+        EmitCBaseCounterVisitor visitor{initp};
         m_statep->m_numStmts += visitor.count();
     }
 
@@ -228,7 +228,7 @@ private:
 
     void genChangeDet(AstVarScope* vscp) {
         vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: " << vscp->prettyNameQ());
-        ChangedInsertVisitor visitor(vscp, m_statep);
+        ChangedInsertVisitor visitor{vscp, m_statep};
     }
 
     // VISITORS
@@ -288,7 +288,7 @@ void V3Changed::changedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         ChangedState state;
-        ChangedVisitor visitor(nodep, &state);
+        ChangedVisitor visitor{nodep, &state};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("changed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

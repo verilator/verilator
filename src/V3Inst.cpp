@@ -487,12 +487,12 @@ private:
 
     static AstNode* extendOrSel(FileLine* fl, AstNode* rhsp, AstNode* cmpWidthp) {
         if (cmpWidthp->width() > rhsp->width()) {
-            rhsp = (rhsp->isSigned() ? static_cast<AstNode*>(new AstExtendS(fl, rhsp))
-                                     : static_cast<AstNode*>(new AstExtend(fl, rhsp)));
+            rhsp = (rhsp->isSigned() ? static_cast<AstNode*>(new AstExtendS{fl, rhsp})
+                                     : static_cast<AstNode*>(new AstExtend{fl, rhsp}));
             // Need proper widthMin, which may differ from AstSel created above
             rhsp->dtypeFrom(cmpWidthp);
         } else if (cmpWidthp->width() < rhsp->width()) {
-            rhsp = new AstSel(fl, rhsp, 0, cmpWidthp->width());
+            rhsp = new AstSel{fl, rhsp, 0, cmpWidthp->width()};
             // Need proper widthMin, which may differ from AstSel created above
             rhsp->dtypeFrom(cmpWidthp);
         }
@@ -610,12 +610,12 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
 
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { InstVisitor visitor(nodep); }  // Destruct before checking
+    { InstVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("inst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { InstDeVisitor visitor(nodep); }  // Destruct before checking
+    { InstDeVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("dearray", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

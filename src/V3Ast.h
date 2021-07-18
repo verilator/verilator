@@ -24,6 +24,7 @@
 #include "V3FileLine.h"
 #include "V3Number.h"
 #include "V3Global.h"
+#include "V3Broken.h"
 
 #include <cmath>
 #include <type_traits>
@@ -50,7 +51,7 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 // For broken() function, return error string if have a match
 #define BROKEN_RTN(test) \
     do { \
-        if (VL_UNCOVERABLE(test)) return #test; \
+        if (VL_UNCOVERABLE(test)) return "'" #test "' @ " __FILE__ ":" VL_STRINGIFY(__LINE__); \
     } while (false)
 // For broken() function, return error string if a base of this class has a match
 #define BROKEN_BASE_RTN(test) \
@@ -235,39 +236,6 @@ inline bool operator==(const AstPragmaType& lhs, const AstPragmaType& rhs) {
 }
 inline bool operator==(const AstPragmaType& lhs, AstPragmaType::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(AstPragmaType::en lhs, const AstPragmaType& rhs) { return lhs == rhs.m_e; }
-
-//######################################################################
-
-class AstCFuncType final {
-public:
-    enum en : uint8_t {
-        FT_NORMAL,
-        TRACE_REGISTER,
-        TRACE_INIT,
-        TRACE_INIT_SUB,
-        TRACE_FULL,
-        TRACE_FULL_SUB,
-        TRACE_CHANGE,
-        TRACE_CHANGE_SUB,
-        TRACE_CLEANUP
-    };
-    enum en m_e;
-    inline AstCFuncType()
-        : m_e{FT_NORMAL} {}
-    // cppcheck-suppress noExplicitConstructor
-    inline AstCFuncType(en _e)
-        : m_e{_e} {}
-    explicit inline AstCFuncType(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
-    // METHODS
-    bool isTrace() const { return m_e != FT_NORMAL; }
-};
-inline bool operator==(const AstCFuncType& lhs, const AstCFuncType& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-inline bool operator==(const AstCFuncType& lhs, AstCFuncType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(AstCFuncType::en lhs, const AstCFuncType& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -1367,8 +1335,32 @@ class AstNode VL_NOT_FINAL {
     const AstType m_type;  // Node sub-type identifier
     // ^ ASTNODE_PREFETCH depends on above ordering of members
 
-    // padding - 2 extra bytes here after m_type
-    int m_cloneCnt;  // Mark of when userp was set
+    // AstType is 2 bytes, so we can stick another 6 bytes after it to utilize what would
+    // otherwise be padding (on a 64-bit system). We stick the attribute flags, broken state,
+    // and the clone count here.
+
+    struct {
+        bool didWidth : 1;  // Did V3Width computation
+        bool doingWidth : 1;  // Inside V3Width
+        bool protect : 1;  // Protect name if protection is on
+        // Space for more flags here (there must be 8 bits in total)
+        uint8_t unused : 5;
+    } m_flags;  // Attribute flags
+
+    // State variable used by V3Broken for consistency checking. The top bit of this is byte is a
+    // flag, representing V3Broken is currently proceeding under this node. The bottom 7 bits are
+    // a generation number. This is hot when --debug-checks so we access as a whole to avoid bit
+    // field masking resulting in unnecessary read-modify-write ops.
+    uint8_t m_brokenState = 0;
+
+    int m_cloneCnt;  // Sequence number for when last clone was made
+
+#if defined(__x86_64__) && defined(__gnu_linux__)
+    // Only assert this on known platforms, as it only affects performance, not correctness
+    static_assert(sizeof(m_type) + sizeof(m_flags) + sizeof(m_brokenState) + sizeof(m_cloneCnt)
+                      <= sizeof(void*),
+                  "packing requires padding");
+#endif
 
     AstNodeDType* m_dtypep;  // Data type of output or assignment (etc)
     AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
@@ -1380,12 +1372,6 @@ class AstNode VL_NOT_FINAL {
 
     AstNode* m_clonep;  // Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
     static int s_cloneCntGbl;  // Count of which userp is set
-
-    // Attributes
-    bool m_didWidth : 1;  // Did V3Width computation
-    bool m_doingWidth : 1;  // Inside V3Width
-    bool m_protect : 1;  // Protect name if protection is on
-    //          // Space for more bools here
 
     // This member ordering both allows 64 bit alignment and puts associated data together
     VNUser m_user1u;  // Contains any information the user iteration routine wants
@@ -1489,9 +1475,14 @@ public:
     AstNode* firstAbovep() const {  // Returns nullptr when second or later in list
         return ((backp() && backp()->nextp() != this) ? backp() : nullptr);
     }
-    bool brokeExists() const;
-    bool brokeExistsAbove() const;
-    bool brokeExistsBelow() const;
+    uint8_t brokenState() const { return m_brokenState; }
+    void brokenState(uint8_t value) { m_brokenState = value; }
+
+    // Used by AstNode::broken()
+    bool brokeExists() const { return V3Broken::isLinkable(this); }
+    bool brokeExistsAbove() const { return brokeExists() && (m_brokenState >> 7); }
+    bool brokeExistsBelow() const { return brokeExists() && !(m_brokenState >> 7); }
+    // Note: brokeExistsBelow is not quite precise, as it is true for sibling nodes as well
 
     // CONSTRUCTORS
     virtual ~AstNode() = default;
@@ -1545,17 +1536,17 @@ public:
     void fileline(FileLine* fl) { m_fileline = fl; }
     bool width1() const;
     int widthInstrs() const;
-    void didWidth(bool flag) { m_didWidth = flag; }
-    bool didWidth() const { return m_didWidth; }
+    void didWidth(bool flag) { m_flags.didWidth = flag; }
+    bool didWidth() const { return m_flags.didWidth; }
     bool didWidthAndSet() {
         if (didWidth()) return true;
         didWidth(true);
         return false;
     }
-    bool doingWidth() const { return m_doingWidth; }
-    void doingWidth(bool flag) { m_doingWidth = flag; }
-    bool protect() const { return m_protect; }
-    void protect(bool flag) { m_protect = flag; }
+    bool doingWidth() const { return m_flags.doingWidth; }
+    void doingWidth(bool flag) { m_flags.doingWidth = flag; }
+    bool protect() const { return m_flags.protect; }
+    void protect(bool flag) { m_flags.protect = flag; }
 
     // TODO stomp these width functions out, and call via dtypep() instead
     int width() const;
@@ -2621,7 +2612,6 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
-    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
     string m_argTypes;
 
 protected:
@@ -2647,9 +2637,6 @@ public:
     virtual bool isPure() const override;
     virtual bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
-    string selfPointer() const { return m_selfPointer; }
-    void selfPointer(const string& value) { m_selfPointer = value; }
-    string selfPointerProtect(bool useSelfForThis) const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall

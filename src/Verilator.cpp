@@ -97,6 +97,7 @@
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
+#include "V3VariableOrder.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
 
@@ -514,18 +515,21 @@ static void process() {
         // Must be before V3EmitC
         V3CUse::cUseAll();
 
+        // Order variables
+        V3VariableOrder::orderAll();
+
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();
         V3EmitC::emitcSyms();
         V3EmitC::emitcConstPool();
         V3EmitC::emitcModel();
-        V3EmitC::emitcTrace();
+        V3EmitC::emitcHeaders();
     } else if (v3Global.opt.dpiHdrOnly()) {
         V3EmitC::emitcSyms(true);
     }
     if (!v3Global.opt.xmlOnly()
-        && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitc.
-        V3EmitC::emitc();
+        && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
+        V3EmitC::emitcImp();
     }
     if (v3Global.opt.xmlOnly()
         // Check XML when debugging to make sure no missing node types

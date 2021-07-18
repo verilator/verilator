@@ -53,8 +53,8 @@ template <typename T> class VRestorer {
 
 public:
     explicit VRestorer(T& permr)
-        : m_ref(permr)
-        , m_saved(permr) {}
+        : m_ref{permr}
+        , m_saved{permr} {}
     ~VRestorer() { m_ref = m_saved; }
     VL_UNCOPYABLE(VRestorer);
 };

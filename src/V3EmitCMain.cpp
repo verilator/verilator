@@ -35,14 +35,14 @@ class EmitCMain final : EmitCBaseVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit EmitCMain(AstNetlist*) { emitInt(); }
+    EmitCMain() { emitInt(); }
 
 private:
     // MAIN METHOD
     void emitInt() {
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__main.cpp";
         newCFile(filename, false /*slow*/, true /*source*/);
-        V3OutCFile cf(filename);
+        V3OutCFile cf{filename};
         m_ofp = &cf;
 
         // Not defining main_time/vl_time_stamp, so
@@ -106,5 +106,5 @@ private:
 
 void V3EmitCMain::emit() {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitCMain(v3Global.rootp());
+    { EmitCMain visitor; }
 }

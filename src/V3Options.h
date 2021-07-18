@@ -362,6 +362,8 @@ private:
     bool        m_oTable;       // main switch: -Oa: lookup table creation
     // clang-format on
 
+    bool m_available = false;  // Set to true at the end of option parsing
+
 private:
     // METHODS
     void addArg(const string& arg);
@@ -377,7 +379,6 @@ private:
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
-    bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
     static int stripOptionsForChildRun(const string& opt, bool forTop);
 
@@ -404,6 +405,7 @@ public:
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
     void notify();
+    bool available() const { return m_available; }
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }

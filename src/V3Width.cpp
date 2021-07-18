@@ -5084,9 +5084,9 @@ private:
             case EXTEND_LHS: doSigned = nodep->isSigned(); break;
             default: nodep->v3fatalSrc("bad case");
             }
-            AstNode* newp
-                = (doSigned ? static_cast<AstNode*>(new AstExtendS(nodep->fileline(), nodep))
-                            : static_cast<AstNode*>(new AstExtend(nodep->fileline(), nodep)));
+            AstNode* const newp
+                = (doSigned ? static_cast<AstNode*>(new AstExtendS{nodep->fileline(), nodep})
+                            : static_cast<AstNode*>(new AstExtend{nodep->fileline(), nodep}));
             linker.relink(newp);
             nodep = newp;
         }
@@ -6163,8 +6163,8 @@ void V3Width::width(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         // We should do it in bottom-up module order, but it works in any order.
-        WidthClearVisitor cvisitor(nodep);
-        WidthVisitor visitor(false, false);
+        WidthClearVisitor cvisitor{nodep};
+        WidthVisitor visitor{false, false};
         (void)visitor.mainAcceptEdit(nodep);
         WidthRemoveVisitor rvisitor;
         (void)rvisitor.mainAcceptEdit(nodep);
@@ -6177,7 +6177,7 @@ void V3Width::width(AstNetlist* nodep) {
 AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     UINFO(4, __FUNCTION__ << ": " << nodep << endl);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor(true, false);
+    WidthVisitor visitor{true, false};
     nodep = visitor.mainAcceptEdit(nodep);
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
@@ -6196,7 +6196,7 @@ AstNode* V3Width::widthGenerateParamsEdit(
     AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analysed.
     UINFO(4, __FUNCTION__ << ": " << nodep << endl);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor(true, true);
+    WidthVisitor visitor{true, true};
     nodep = visitor.mainAcceptEdit(nodep);
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
@@ -6204,6 +6204,6 @@ AstNode* V3Width::widthGenerateParamsEdit(
 
 void V3Width::widthCommit(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { WidthCommitVisitor visitor(nodep); }  // Destruct before checking
+    { WidthCommitVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("widthcommit", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

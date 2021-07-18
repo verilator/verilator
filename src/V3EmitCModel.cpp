@@ -90,7 +90,7 @@ class EmitCModel final : public EmitCFunc {
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {  //
-                    emitVarDecl(varp, "", /* asRef: */ true);
+                    emitVarDecl(varp, /* asRef: */ true);
                 }
             }
         }
@@ -506,12 +506,12 @@ class EmitCModel final : public EmitCFunc {
         putSectionDelimiter("Trace configuration");
 
         // Forward declaration
-        puts("\nvoid " + topModNameProtected + "__" + protect("traceInitTop") + "("
+        puts("\nvoid " + topModNameProtected + "__" + protect("trace_init_top") + "("
              + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
              + "* tracep);\n");
 
         // Static helper function
-        puts("\nstatic void " + protect("traceInit") + "(void* voidSelf, "
+        puts("\nstatic void " + protect("trace_init") + "(void* voidSelf, "
              + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) {\n");
         putsDecoration("// Callback from tracep->open()\n");
         puts(voidSelfAssign(modp));
@@ -524,20 +524,20 @@ class EmitCModel final : public EmitCFunc {
         puts("vlSymsp->__Vm_baseCode = code;\n");
         puts("tracep->module(vlSymsp->name());\n");
         puts("tracep->scopeEscape(' ');\n");
-        puts(topModNameProtected + "__" + protect("traceInitTop") + "(vlSelf, tracep);\n");
+        puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
         puts("tracep->scopeEscape('.');\n");  // Restore so later traced files won't break
         puts("}\n");
 
         // Forward declaration
-        puts("\nvoid " + topModNameProtected + "__" + protect("traceRegister") + "("
+        puts("\nvoid " + topModNameProtected + "__" + protect("trace_register") + "("
              + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
              + "* tracep);\n");
 
         // ::trace
         puts("\nvoid " + topClassName() + "::trace(");
         puts(v3Global.opt.traceClassBase() + "C* tfp, int, int) {\n");
-        puts("tfp->spTrace()->addInitCb(&" + protect("traceInit") + ", &(vlSymsp->TOP));\n");
-        puts(topModNameProtected + "__" + protect("traceRegister")
+        puts("tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
+        puts(topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), tfp->spTrace());\n");
         puts("}\n");
     }
@@ -607,11 +607,10 @@ class EmitCModel final : public EmitCFunc {
 
             if (!m_ofp) {
                 const string filename = v3Global.opt.makeDir() + "/" + topClassName()
-                                        + "__Dpi_Export_" + cvtToStr(splitFilenumInc() - 1)
-                                        + ".cpp";
+                                        + "__Dpi_Export_" + cvtToStr(splitFilenumInc()) + ".cpp";
                 newCFile(filename, /* slow: */ false, /* source: */ true);
-                m_ofp = v3Global.opt.systemC() ? new V3OutScFile(filename)
-                                               : new V3OutCFile(filename);
+                m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename}
+                                               : new V3OutCFile{filename};
                 m_lazyDecls.reset();
                 m_ofp->putsHeader();
                 puts(

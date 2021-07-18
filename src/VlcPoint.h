@@ -127,7 +127,7 @@ public:
             m_points[pointnum].countInc(count);
         } else {
             pointnum = m_numPoints++;
-            VlcPoint point(name, pointnum);
+            VlcPoint point{name, pointnum};
             point.countInc(count);
             m_points.push_back(point);
             m_nameMap.emplace(point.name(), point.pointNum());

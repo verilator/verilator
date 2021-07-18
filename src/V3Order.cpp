@@ -1187,13 +1187,13 @@ private:
     virtual void visit(AstAlwaysPublic* nodep) override { iterateNewStmt(nodep); }
     virtual void visit(AstAssignAlias* nodep) override { iterateNewStmt(nodep); }
     virtual void visit(AstAssignW* nodep) override {
-        OrderClkAssVisitor visitor(nodep);
+        OrderClkAssVisitor visitor{nodep};
         m_inClkAss = visitor.isClkAss();
         iterateNewStmt(nodep);
         m_inClkAss = false;
     }
     virtual void visit(AstAssignPre* nodep) override {
-        OrderClkAssVisitor visitor(nodep);
+        OrderClkAssVisitor visitor{nodep};
         m_inClkAss = visitor.isClkAss();
         m_inPre = true;
         iterateNewStmt(nodep);
@@ -1201,7 +1201,7 @@ private:
         m_inClkAss = false;
     }
     virtual void visit(AstAssignPost* nodep) override {
-        OrderClkAssVisitor visitor(nodep);
+        OrderClkAssVisitor visitor{nodep};
         m_inClkAss = visitor.isClkAss();
         m_inPost = true;
         iterateNewStmt(nodep);
@@ -1555,7 +1555,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 void OrderVisitor::processEdgeReport() {
     // Make report of all signal names and what clock edges they have
     const string filename = v3Global.debugFilename("order_edges.txt");
-    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
     // Testing emitter: V3EmitV::verilogForTree(v3Global.rootp(), *logp);
 
@@ -1787,7 +1787,7 @@ AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
                 newFuncpr->addStmtsp(nodep);
                 if (v3Global.opt.outputSplitCFuncs()) {
                     // Add in the number of nodes we're adding
-                    EmitCBaseCounterVisitor visitor(nodep);
+                    EmitCBaseCounterVisitor visitor{nodep};
                     newStmtsr += visitor.count();
                 }
             }
@@ -2015,7 +2015,7 @@ void OrderVisitor::process() {
     if (false && debug()) {
         const string dfilename
             = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_INT_order";
-        const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(dfilename));
+        const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(dfilename)};
         if (logp->fail()) v3fatal("Can't write " << dfilename);
         m_graph.dump(*logp);
     }
@@ -2027,7 +2027,7 @@ void OrderVisitor::process() {
 void V3Order::orderAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        OrderClkMarkVisitor markVisitor(nodep);
+        OrderClkMarkVisitor markVisitor{nodep};
         OrderVisitor visitor;
         visitor.main(nodep);
     }  // Destruct before checking

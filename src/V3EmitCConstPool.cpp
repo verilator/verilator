@@ -18,7 +18,7 @@
 #include "verilatedos.h"
 
 #include "V3EmitC.h"
-#include "V3EmitCBase.h"
+#include "V3EmitCConstInit.h"
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3String.h"
@@ -30,10 +30,8 @@
 //######################################################################
 // Const pool emitter
 
-class EmitCConstPool final : EmitCBaseVisitor {
+class EmitCConstPool final : public EmitCConstInit {
     // MEMBERS
-    bool m_inUnpacked = false;
-    uint32_t m_unpackedWord = 0;
     uint32_t m_outFileCount = 0;
     int m_outFileSize = 0;
     VDouble0 m_tablesEmitted;
@@ -102,77 +100,9 @@ class EmitCConstPool final : EmitCBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-    virtual void visit(AstInitArray* nodep) override {
-        const AstUnpackArrayDType* const dtypep
-            = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
-        UASSERT_OBJ(dtypep, nodep, "Array initializer has non-array dtype");
-        const uint32_t size = dtypep->elementsConst();
-        const uint32_t elemBytes = dtypep->subDTypep()->widthTotalBytes();
-        const uint32_t tabMod = dtypep->subDTypep()->isString() ? 1  // String
-                                : elemBytes <= 2                ? 8  // CData, SData
-                                : elemBytes <= 4                ? 4  // IData
-                                : elemBytes <= 8                ? 2  // QData
-                                                                : 1;
-        VL_RESTORER(m_inUnpacked);
-        VL_RESTORER(m_unpackedWord);
-        m_inUnpacked = true;
-        // Note the double {{ initializer. The first { starts the initializer of the VlUnpacked,
-        // and the second starts the initializer of m_storage within the VlUnpacked.
-        puts("{");
-        ofp()->putsNoTracking("{");
-        puts("\n");
-        for (uint32_t n = 0; n < size; ++n) {
-            m_unpackedWord = n;
-            if (n) puts(n % tabMod ? ", " : ",\n");
-            iterate(nodep->getIndexDefaultedValuep(n));
-        }
-        puts("\n");
-        puts("}");
-        ofp()->putsNoTracking("}");
-    }
-
-    virtual void visit(AstInitItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatal("Handled by AstInitArray");
-    }  // LCOV_EXCL_END
-
     virtual void visit(AstConst* nodep) override {
-        const V3Number& num = nodep->num();
-        UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
-        AstNodeDType* const dtypep = nodep->dtypep();
-        m_outFileSize += 1;
-        if (num.isString()) {
-            // Note: putsQuoted does not track indentation, so we use this instead
-            puts("\"");
-            puts(num.toString());
-            puts("\"");
-            m_outFileSize += 9;
-        } else if (dtypep->isWide()) {
-            const uint32_t size = dtypep->widthWords();
-            m_outFileSize += size - 1;
-            // Note the double {{ initializer. The first { starts the initializer of the VlWide,
-            // and the second starts the initializer of m_storage within the VlWide.
-            puts("{");
-            ofp()->putsNoTracking("{");
-            if (m_inUnpacked) puts(" // VlWide " + cvtToStr(m_unpackedWord));
-            puts("\n");
-            for (uint32_t n = 0; n < size; ++n) {
-                if (n) puts(n % 4 ? ", " : ",\n");
-                ofp()->printf("0x%08" PRIx32, num.edataWord(n));
-            }
-            puts("\n");
-            puts("}");
-            ofp()->putsNoTracking("}");
-        } else if (dtypep->isQuad()) {
-            ofp()->printf("0x%016" PRIx64, static_cast<uint64_t>(num.toUQuad()));
-        } else if (dtypep->widthMin() > 16) {
-            ofp()->printf("0x%08" PRIx32, num.toUInt());
-        } else if (dtypep->widthMin() > 8) {
-            ofp()->printf("0x%04" PRIx32, num.toUInt());
-        } else {
-            ofp()->printf("0x%02" PRIx32, num.toUInt());
-        }
+        m_outFileSize += nodep->num().isString() ? 10 : nodep->isWide() ? nodep->widthWords() : 1;
+        EmitCConstInit::visit(nodep);
     }
 
 public:

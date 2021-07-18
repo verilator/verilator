@@ -314,7 +314,7 @@ private:
             SubstVarEntry* entryp = getEntryp(varrefp);
             if (AstNode* substp = entryp->substWord(nodep, word)) {
                 // Check that the RHS hasn't changed value since we recorded it.
-                SubstUseVisitor visitor(substp, entryp->getWordStep(word));
+                SubstUseVisitor visitor{substp, entryp->getWordStep(word)};
                 if (visitor.ok()) {
                     VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
                 } else {
@@ -341,7 +341,7 @@ private:
                 entryp->assignComplex();
             } else if (AstNode* substp = entryp->substWhole(nodep)) {
                 // Check that the RHS hasn't changed value since we recorded it.
-                SubstUseVisitor visitor(substp, entryp->getWholeStep());
+                SubstUseVisitor visitor{substp, entryp->getWholeStep()};
                 if (visitor.ok()) {
                     UINFO(8, " USEwhole " << nodep << endl);
                     VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
@@ -380,6 +380,6 @@ public:
 
 void V3Subst::substituteAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { SubstVisitor visitor(nodep); }  // Destruct before checking
+    { SubstVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("subst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

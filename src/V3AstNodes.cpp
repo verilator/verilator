@@ -121,7 +121,8 @@ const char* AstNodeCCall::broken() const {
     return nullptr;
 }
 bool AstNodeCCall::isPure() const { return funcp()->pure(); }
-string AstNodeCCall::selfPointerProtect(bool useSelfForThis) const {
+
+string AstCCall::selfPointerProtect(bool useSelfForThis) const {
     const string& sp
         = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
     return VIdProtect::protectWordsIf(sp, protect());
@@ -267,7 +268,7 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
         char* endp;
         int v = strtol(literal.c_str(), &endp, 0);
         if ((v != 0) && (endp[0] == 0)) {  // C literal
-            return new AstConst(fl, AstConst::WidthedValue(), 32, v);
+            return new AstConst(fl, AstConst::Signed32(), v);
         } else {  // Try a Verilog literal (fatals if not)
             return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
         }

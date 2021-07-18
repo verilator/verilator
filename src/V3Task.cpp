@@ -545,7 +545,7 @@ private:
         // Iteration requires a back, so put under temporary node
         {
             AstBegin* tempp = new AstBegin(beginp->fileline(), "[EditWrapper]", beginp);
-            TaskRelinkVisitor visitor(tempp);
+            TaskRelinkVisitor visitor{tempp};
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
@@ -1230,7 +1230,7 @@ private:
         // Iteration requires a back, so put under temporary node
         {
             AstBegin* tempp = new AstBegin(cfuncp->fileline(), "[EditWrapper]", cfuncp);
-            TaskRelinkVisitor visitor(tempp);
+            TaskRelinkVisitor visitor{tempp};
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
@@ -1728,8 +1728,8 @@ const char* V3Task::dpiTemporaryVarSuffix() {
 void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        TaskStateVisitor visitors(nodep);
-        TaskVisitor visitor(nodep, &visitors);
+        TaskStateVisitor visitors{nodep};
+        TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("task", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

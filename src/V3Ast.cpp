@@ -74,9 +74,10 @@ AstNode::AstNode(AstType t, FileLine* fl)
     m_clonep = nullptr;
     m_cloneCnt = 0;
     // Attributes
-    m_didWidth = false;
-    m_doingWidth = false;
-    m_protect = true;
+    m_flags.didWidth = false;
+    m_flags.doingWidth = false;
+    m_flags.protect = true;
+    m_flags.unused = 0;  // Initializing this avoids a read-modify-write on construction
     m_user1u = VNUser(0);
     m_user1Cnt = 0;
     m_user2u = VNUser(0);
@@ -1123,7 +1124,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
     if (doDump) {
         {  // Write log & close
             UINFO(2, "Dumping " << filename << endl);
-            const std::unique_ptr<std::ofstream> logsp(V3File::new_ofstream(filename, append));
+            const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename, append)};
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
             *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
