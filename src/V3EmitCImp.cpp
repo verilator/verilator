@@ -718,7 +718,7 @@ void V3EmitC::emitcImp() {
     }
 
     // Emit trace routines (currently they can only exist in the top module)
-    if (v3Global.opt.trace()) {
+    if (v3Global.opt.trace() && !v3Global.opt.lintOnly()) {
         EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ true);
         EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ false);
     }
