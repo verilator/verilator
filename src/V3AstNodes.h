@@ -9013,8 +9013,8 @@ class AstCUse final : public AstNode {
     // C++ use of a class or #include; indicates need of forward declaration
     // Parents:  NODEMODULE
 private:
-    VUseType m_useType;  // What sort of use this is
-    string m_name;
+    const VUseType m_useType;  // What sort of use this is
+    const string m_name;
 
 public:
     AstCUse(FileLine* fl, VUseType useType, const string& name)
@@ -9022,10 +9022,9 @@ public:
         , m_useType{useType}
         , m_name{name} {}
     ASTNODE_NODE_FUNCS(CUse)
-    virtual string name() const override { return m_name; }
     virtual void dump(std::ostream& str = std::cout) const override;
+    virtual string name() const override { return m_name; }
     VUseType useType() const { return m_useType; }
-    void useType(VUseType useType) { m_useType = useType; }
 };
 
 class AstMTaskBody final : public AstNode {
