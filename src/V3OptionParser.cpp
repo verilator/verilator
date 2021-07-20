@@ -120,14 +120,12 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
     if (it != m_pimpl->m_options.end()) return it->second.get();
     for (auto&& act : m_pimpl->m_options) {
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
-            const char* const nop = std::strncmp(optp, "-no", 3) ? nullptr : (optp + 3);
+            const char* const nop = VString::startsWith(optp, "-no") ? (optp + 3) : nullptr;
             if (nop && (act.first == nop || act.first == (string{"-"} + nop))) {
                 return act.second.get();
             }
         } else if (act.second->isPartialMatchAllowed()) {
-            if (!std::strncmp(optp, act.first.c_str(), act.first.length())) {
-                return act.second.get();
-            }
+            if (VString::startsWith(optp, act.first)) return act.second.get();
         }
     }
     return nullptr;
@@ -148,7 +146,7 @@ V3OptionParser::ActionIfs& V3OptionParser::add(const std::string& opt, ARG arg) 
 bool V3OptionParser::hasPrefixNo(const char* strp) {
     UASSERT(strp[0] == '-', strp << " does not start with '-'");
     if (strp[1] == '-') ++strp;
-    return std::strncmp(strp, "-no", 3) == 0;
+    return VString::startsWith(strp, "-no");
 }
 
 int V3OptionParser::parse(int idx, int argc, char* argv[]) {
