@@ -82,6 +82,7 @@ string EmitCBaseVisitor::cFuncArgs(const AstCFunc* nodep) {
 
 void EmitCBaseVisitor::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
                                        bool withScope) {
+    if (funcp->slow()) puts("VL_ATTR_COLD ");
     if (!funcp->isConstructor() && !funcp->isDestructor()) {
         puts(funcp->rtnTypeVoid());
         puts(" ");
@@ -109,7 +110,6 @@ void EmitCBaseVisitor::emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule*
         puts("virtual ");
     }
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
-    if (funcp->slow()) puts(" VL_ATTR_COLD");
     puts(";\n");
     if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
 }
