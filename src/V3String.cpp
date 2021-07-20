@@ -174,6 +174,10 @@ string VString::replaceWord(const string& str, const string& from, const string&
     return result;
 }
 
+bool VString::startsWith(const string& str, const string& prefix) {
+    return str.rfind(prefix, 0) == 0;  // Faster than .find(_) == 0
+}
+
 //######################################################################
 // VHashSha256
 
