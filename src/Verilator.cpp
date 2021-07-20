@@ -34,6 +34,7 @@
 #include "V3Clean.h"
 #include "V3Clock.h"
 #include "V3Combine.h"
+#include "V3Common.h"
 #include "V3Const.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
@@ -502,15 +503,19 @@ static void process() {
         V3Partition::finalize();
     }
 
-    // Output the text
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
-        // Create AstCUse to determine what class forward declarations/#includes needed in C
-        // Must be before V3EmitC
-        V3CUse::cUseAll();
+        // Add common methods/etc to modules
+        V3Common::commonAll();
 
         // Order variables
         V3VariableOrder::orderAll();
 
+        // Create AstCUse to determine what class forward declarations/#includes needed in C
+        V3CUse::cUseAll();
+    }
+
+    // Output the text
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();
         V3EmitC::emitcSyms();

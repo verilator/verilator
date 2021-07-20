@@ -44,9 +44,6 @@ private:
     std::map<const UseString, AstCUse*> m_didUse;  // What we already used
 
     // NODE STATE
-    // Entire netlist:
-    //  AstClass::user1()     -> bool.  True if class needs to_string dumper
-    AstUser1InUse m_inuser1;
     //  AstClass::user2()     -> bool.  True if iterated
     AstUser2InUse m_inuser2;
 
@@ -129,85 +126,10 @@ class CUseVisitor final : public AstNVisitor {
             }
         }
     }
-    void makeVlToString(AstClass* nodep) {
-        AstCFunc* const funcp
-            = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-        funcp->argTypes("const VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(nodep)
-                        + ">& obj");
-        funcp->isMethod(false);
-        funcp->isConst(false);
-        funcp->isStatic(false);
-        funcp->protect(false);
-        AstNode* const exprp
-            = new AstCMath{nodep->fileline(), "obj ? obj->to_string() : \"null\"", 0};
-        exprp->dtypeSetString();
-        funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-        nodep->addStmtp(funcp);
-    }
-    void makeToString(AstClass* nodep) {
-        AstCFunc* const funcp
-            = new AstCFunc{nodep->fileline(), "to_string", nullptr, "std::string"};
-        funcp->isConst(true);
-        funcp->isStatic(false);
-        funcp->protect(false);
-        AstNode* const exprp = new AstCMath{nodep->fileline(),
-                                            R"(std::string("'{") + to_string_middle() + "}")", 0};
-        exprp->dtypeSetString();
-        funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-        nodep->addStmtp(funcp);
-    }
-    void makeToStringMiddle(AstClass* nodep) {
-        AstCFunc* const funcp
-            = new AstCFunc{nodep->fileline(), "to_string_middle", nullptr, "std::string"};
-        funcp->isConst(true);
-        funcp->isStatic(false);
-        funcp->protect(false);
-        funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;\n"});
-        std::string comma;
-        for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
-            if (auto* const varp = VN_CAST(itemp, Var)) {
-                if (!varp->isParam()) {
-                    string stmt = "out += \"";
-                    stmt += comma;
-                    comma = ", ";
-                    stmt += itemp->origNameProtect();
-                    stmt += ":\" + ";
-                    if (itemp->isWide()) {
-                        stmt += "VL_TO_STRING_W(";
-                        stmt += cvtToStr(itemp->widthWords());
-                        stmt += ", ";
-                    } else {
-                        stmt += "VL_TO_STRING(";
-                    }
-                    stmt += itemp->nameProtect();
-                    stmt += ");\n";
-                    nodep->user1(true);  // So what we extend dumps this
-                    funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
-                }
-            }
-        }
-        if (nodep->extendsp() && nodep->extendsp()->classp()->user1()) {
-            string stmt = "out += \"";
-            if (!comma.empty()) stmt += "\", \"+ ";
-            // comma = ", ";  // Nothing further so not needed
-            stmt += nodep->extendsp()->dtypep()->nameProtect();
-            stmt += "::to_string_middle();\n";
-            nodep->user1(true);  // So what we extend dumps this
-            funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
-        }
-        funcp->addStmtsp(new AstCStmt{nodep->fileline(), "return out;\n"});
-        nodep->addStmtp(funcp);
-    }
-
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         makeUseCells(nodep);
         { CUseDTypeVisitor dtypeVisitor{nodep, m_state}; }
-        if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            makeVlToString(classp);
-            makeToString(classp);
-            makeToStringMiddle(classp);
-        }
     }
     virtual void visit(AstNode*) override {}  // All in AstNodeModule
 
