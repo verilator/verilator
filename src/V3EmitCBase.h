@@ -71,7 +71,7 @@ public:
         return v3Global.opt.prefix();
     }
 
-    static bool isConstPoolMod(AstNode* modp) {
+    static bool isConstPoolMod(const AstNode* modp) {
         return modp == v3Global.rootp()->constPoolp()->modp();
     }
 
