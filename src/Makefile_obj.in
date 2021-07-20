@@ -169,6 +169,7 @@ RAW_OBJS = \
 	V3Clean.o \
 	V3Clock.o \
 	V3Combine.o \
+	V3Common.o \
 	V3Config.o \
 	V3Const__gen.o \
 	V3Coverage.o \
