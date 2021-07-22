@@ -529,6 +529,25 @@ public:
     bool isEventValue() const { return m_e == EVENTVALUE; }
     bool isString() const { return m_e == STRING; }
     bool isMTaskState() const { return m_e == MTASKSTATE; }
+    // Does this represent a C++ LiteralType? (can be constexpr)
+    bool isLiteralType() const {
+        switch (m_e) {
+        case BIT:
+        case BYTE:
+        case CHANDLE:
+        case INT:
+        case INTEGER:
+        case LOGIC:
+        case LONGINT:
+        case DOUBLE:
+        case SHORTINT:
+        case SCOPEPTR:
+        case CHARPTR:
+        case UINT32:
+        case UINT64: return true;
+        default: return false;
+        }
+    }
 };
 inline bool operator==(const AstBasicDTypeKwd& lhs, const AstBasicDTypeKwd& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -2436,6 +2455,7 @@ public:
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
     string cType(const string& name, bool forFunc, bool isRef) const;
+    bool isLiteralType() const;  // Does this represent a C++ LiteralType? (can be constexpr)
 
 private:
     class CTypeRecursed;

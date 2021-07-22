@@ -103,8 +103,7 @@ class EmitCHeader final : public EmitCConstInit {
         // Emit variables in consecutive anon and non-anon batches
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
-                if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
-                    || (varp->isParam() && !VN_IS(varp->valuep(), Const))) {
+                if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()) {
                     const bool anon = isAnonOk(varp);
                     if (anon != lastAnon) emitCurrentList();
                     lastAnon = anon;
@@ -126,31 +125,19 @@ class EmitCHeader final : public EmitCConstInit {
         bool first = true;
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
+                if (varp->isParam()) {
                     decorateFirst(first, "\n// PARAMETERS\n");
                     UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // These should be static const values, however older MSVC++ did't
-                    // support them; should be ok now under C++11, need to refactor.
-                    if (varp->isWide()) {  // Unsupported for output
-                        putsDecoration("// enum WData " + varp->nameProtect() + "  //wide");
-                    } else if (varp->isString()) {
-                        puts("static const std::string " + protect("var_" + varp->name()) + ";\n");
-                    } else if (!VN_IS(varp->valuep(), Const)) {  // Unsupported for output
-                        // putsDecoration("// enum ..... "+varp->nameProtect()
-                        //               +"not simple value, see variable above instead");
-                    } else if (VN_IS(varp->dtypep(), BasicDType)
-                               && VN_CAST(varp->dtypep(), BasicDType)
-                                      ->isOpaque()) {  // Can't put out e.g. doubles
-                    } else {
-                        // enum
-                        puts(varp->isQuad() ? "enum _QData" : "enum _IData");
-                        puts("" + varp->nameProtect() + " { " + varp->nameProtect() + " = ");
-                        iterateAndNextNull(varp->valuep());
-                        puts("};\n");
-                        // var
-                        puts(varp->isQuad() ? "static const QData " : "static const IData ");
-                        puts(protect("var_" + varp->name()) + ";\n");
+                    // Only C++ LiteralTypes can be constexpr
+                    const bool canBeConstexpr = varp->dtypep()->isLiteralType();
+                    puts("static ");
+                    puts(canBeConstexpr ? "constexpr " : "const ");
+                    puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
+                    if (canBeConstexpr) {
+                        puts(" = ");
+                        iterate(varp->valuep());
                     }
+                    puts(";\n");
                 }
             }
         }
