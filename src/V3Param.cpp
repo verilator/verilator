@@ -960,17 +960,6 @@ class ParamVisitor final : public AstNVisitor {
                                << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
             } else {
                 V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
-                if (!VN_IS(nodep->valuep(), Const)
-                    && !VN_IS(nodep->valuep(), Unbounded)) {  // Complex init, like an array
-                    if (nodep->isFuncLocal()) {
-                        // We should move the parameter out of the function and to the
-                        // module, with appropriate dotting, but this confuses LinkDot
-                        // (as then name isn't found later), so punt - probably can
-                        // treat as static function variable when that is supported.
-                        nodep->v3warn(E_UNSUPPORTED,
-                                      "Unsupported: Parameters in functions with complex assign");
-                    }
-                }
             }
         }
     }
