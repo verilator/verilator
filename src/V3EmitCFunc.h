@@ -53,8 +53,7 @@ class EmitCLazyDecls final : public AstNVisitor {
         // Already declared manually
         if (m_emittedManually.count(funcp->nameProtect())) return;
         // Needs lazy declaration, emit one
-        m_emitter.emitCFuncDecl(funcp, VN_CAST_CONST(funcp->user4p(), NodeModule),
-                                funcp->dpiImportPrototype());
+        m_emitter.emitCFuncDecl(funcp, EmitCParentModule::get(funcp), funcp->dpiImportPrototype());
         m_needsBlankLine = true;
     }
 
@@ -82,7 +81,9 @@ class EmitCLazyDecls final : public AstNVisitor {
     virtual void visit(AstVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
         // Only constant pool symbols are lazy declared for now ...
-        if (EmitCBaseVisitor::isConstPoolMod(varp->user4p())) { lazyDeclareConstPoolVar(varp); }
+        if (EmitCBaseVisitor::isConstPoolMod(EmitCParentModule::get(varp))) {
+            lazyDeclareConstPoolVar(varp);
+        }
     }
 
     virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -354,16 +355,17 @@ public:
     }
     virtual void visit(AstCCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
+        const AstNodeModule* const funcModp = EmitCParentModule::get(funcp);
         if (funcp->dpiImportPrototype()) {
             // Calling DPI import
             puts(funcp->name());
         } else if (funcp->isProperMethod() && funcp->isStatic()) {
             // Call static method via the containing class
-            puts(prefixNameProtect(funcp->user4p()) + "::");
+            puts(prefixNameProtect(funcModp) + "::");
             puts(funcp->nameProtect());
-        } else if (VN_IS(funcp->user4p(), Class) && funcp->user4p() != m_modp) {
+        } else if (VN_IS(funcModp, Class) && funcModp != m_modp) {
             // Calling superclass method
-            puts(prefixNameProtect(funcp->user4p()) + "::");
+            puts(prefixNameProtect(funcModp) + "::");
             puts(funcp->nameProtect());
         } else if (funcp->isLoose()) {
             // Calling loose method
@@ -1100,15 +1102,16 @@ public:
     // Terminals
     virtual void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
-        if (isConstPoolMod(varp->user4p())) {
+        const AstNodeModule* const varModp = EmitCParentModule::get(varp);
+        if (isConstPoolMod(varModp)) {
             // Reference to constant pool variable
             puts(topClassName() + "__ConstPool__");
         } else if (varp->isStatic()) {
             // Access static variable via the containing class
-            puts(prefixNameProtect(varp->user4p()) + "::");
-        } else if (VN_IS(varp->user4p(), Class) && varp->user4p() != m_modp) {
+            puts(prefixNameProtect(varModp) + "::");
+        } else if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
-            puts(prefixNameProtect(varp->user4p()) + "::");
+            puts(prefixNameProtect(varModp) + "::");
         } else if (!nodep->selfPointer().empty()) {
             emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
         }
