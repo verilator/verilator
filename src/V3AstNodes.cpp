@@ -776,6 +776,20 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
+bool AstNodeDType::isLiteralType() const {
+    if (auto* const dtypep = VN_CAST_CONST(skipRefp(), BasicDType)) {
+        return dtypep->keyword().isLiteralType();
+    } else if (auto* const dtypep = VN_CAST_CONST(skipRefp(), UnpackArrayDType)) {
+        return dtypep->basicp()->isLiteralType();
+    } else if (auto* const dtypep = VN_CAST_CONST(skipRefp(), StructDType)) {
+        // Currently all structs are packed, later this can be expanded to
+        // 'forall members _.isLiteralType()'
+        return dtypep->packed();
+    } else {
+        return false;
+    }
+}
+
 /// What is the base variable (or const) this dereferences?
 AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
     // Else AstArraySel etc; search for the base

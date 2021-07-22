@@ -16,6 +16,8 @@ Verilator 4.211 devel
 * Fix -G to treat simple integer literals as signed (#3060). [Anikin1610]
 * Output files are split based on the set of headers required
   in order to aid incremental compilation via ccache (#3071). [Geza Lore]
+* Parameter values are now emitted as 'static constexpr' instead of enum.
+  C++ direct references to parameters might require updating (#3077). [Geza Lore]
 
 
 Verilator 4.210 2021-07-07

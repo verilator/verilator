@@ -21,7 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Global.h"
-#include "V3EmitCBase.h"
+#include "V3EmitCConstInit.h"
 
 #include <algorithm>
 #include <map>
@@ -113,13 +113,14 @@ public:
 //######################################################################
 // Emit statements and math operators
 
-class EmitCFunc VL_NOT_FINAL : public EmitCBaseVisitor {
+class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 private:
     AstVarRef* m_wideTempRefp;  // Variable that _WW macros should be setting
     int m_labelNum;  // Next label number
     int m_splitSize;  // # of cfunc nodes placed into output file
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
+    bool m_emitConstInit = false;  // Emitting constant initializer
 
 protected:
     EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
@@ -178,8 +179,16 @@ public:
                                AstNodeDType* dtypep, int depth, const string& suffix);
     void doubleOrDetect(AstChangeDet* changep, bool& gotOne);
     void emitChangeDet();
+    void emitConstInit(AstNode* initp) {
+        // We should refactor emit to produce output into a provided buffer, not go through members
+        // variables. That way we could just invoke the appropriate emitter as needed.
+        VL_RESTORER(m_emitConstInit);
+        m_emitConstInit = true;
+        iterate(initp);
+    }
 
     // VISITORS
+    using EmitCConstInit::visit;
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
@@ -1120,7 +1129,9 @@ public:
         puts(funcNameProtect(funcp));
     }
     virtual void visit(AstConst* nodep) override {
-        if (nodep->isWide()) {
+        if (m_emitConstInit) {
+            EmitCConstInit::visit(nodep);
+        } else if (nodep->isWide()) {
             UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
             emitConstant(nodep, m_wideTempRefp, "");
             m_wideTempRefp = nullptr;  // We used it, barf if set it a second time

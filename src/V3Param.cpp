@@ -962,17 +962,8 @@ class ParamVisitor final : public AstNVisitor {
                 V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
                 if (!VN_IS(nodep->valuep(), Const)
                     && !VN_IS(nodep->valuep(), Unbounded)) {  // Complex init, like an array
-                    // Make a new INITIAL to set the value.
-                    // This allows the normal array/struct handling code to properly
-                    // initialize the parameter.
-                    nodep->addNext(new AstInitial(
-                        nodep->fileline(),
-                        new AstAssign(nodep->fileline(),
-                                      new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
-                                      nodep->valuep()->cloneTree(true))));
                     if (nodep->isFuncLocal()) {
-                        // We put the initial in wrong place under a function.  We
-                        // should move the parameter out of the function and to the
+                        // We should move the parameter out of the function and to the
                         // module, with appropriate dotting, but this confuses LinkDot
                         // (as then name isn't found later), so punt - probably can
                         // treat as static function variable when that is supported.
