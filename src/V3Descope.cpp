@@ -217,6 +217,9 @@ private:
         if (varp->isFuncLocal()) {
             // Reference to function locals need no self pointer
             nodep->selfPointer("");
+        } else if (scopep->modp() == v3Global.rootp()->constPoolp()->modp()) {
+            // Reference to constant pool value need no self pointer
+            nodep->selfPointer("");
         } else if (VN_IS(scopep->modp(), Class)) {
             // Direct reference to class members are from within the class itself, references from
             // outside the class must go via AstMemberSel
