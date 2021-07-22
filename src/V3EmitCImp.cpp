@@ -697,17 +697,8 @@ public:
 
 void V3EmitC::emitcImp() {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    // Set user4p in all CFunc and Var to point to the containing AstNodeModule
-    AstUser4InUse user4InUse;
-    const auto setAll = [](AstNodeModule* modp) -> void {
-        for (AstNode* nodep = VN_CAST(modp, NodeModule)->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var)) nodep->user4p(modp);
-        }
-    };
-    for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
-        setAll(VN_CAST(modp, NodeModule));
-    }
-    setAll(v3Global.rootp()->constPoolp()->modp());
+    // Make parent module pointers available.
+    EmitCParentModule emitCParentModule;
 
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
