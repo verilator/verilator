@@ -4,8 +4,8 @@
 // OS header
 #include "verilatedos.h"
 // Generated header
-#include "Vt_public_clk.h"
-#include "Vt_public_clk___024root.h"
+#include "Vt_public_submodule.h"
+#include "Vt_public_submodule___024root.h"
 // General headers
 #include "verilated.h"
 #include "verilated_vcd_c.h"
@@ -13,14 +13,14 @@
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
 
-std::unique_ptr<Vt_public_clk> topp;
+std::unique_ptr<Vt_public_submodule> topp;
 int main(int argc, char** argv, char** env) {
     vluint64_t sim_time = 1100;
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->commandArgs(argc, argv);
     contextp->debug(0);
     srand48(5);
-    topp.reset(new Vt_public_clk("top"));
+    topp.reset(new Vt_public_submodule("top"));
 
 #if VM_TRACE
     Verilated::traceEverOn(true);

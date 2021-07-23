@@ -555,6 +555,10 @@ public:
                    + (forTristate ? "t" : "") + "__" + cellp->name() + "__" + pinp->name());
             AstVar* newvarp
                 = new AstVar(pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
+            // Make the temporary variable public as well if this is public
+            if (pinVarp->isSigUserRWPublic()) {
+                newvarp->sigUserRWPublic(true);
+            }
             // Important to add statement next to cell, in case there is a
             // generate with same named cell
             cellp->addNextHere(newvarp);
