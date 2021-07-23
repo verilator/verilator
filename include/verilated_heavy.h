@@ -107,15 +107,12 @@ template <std::size_t T_Words> struct VlWide final {
     EData m_storage[T_Words];  // Contents of the packed array
 
     // CONSTRUCTORS
-    // cppcheck-suppress uninitVar
-    VlWide() = default;
-    ~VlWide() = default;
-    VlWide(const VlWide&) = default;
-    VlWide(VlWide&&) = default;
+    // Default constructors and destructor are used. Note however that C++20 requires that
+    // aggregate types do not have a user declared constructor, not even an explicitly defaulted
+    // one.
 
     // OPERATOR METHODS
-    VlWide& operator=(const VlWide&) = default;
-    VlWide& operator=(VlWide&&) = default;
+    // Default copy assignment operators are used.
     operator WDataOutP() { return &m_storage[0]; }  // This also allows []
     operator WDataInP() const { return &m_storage[0]; }  // This also allows []
 
@@ -818,12 +815,12 @@ template <class T_Value, std::size_t T_Depth> struct VlUnpacked final {
     T_Value m_storage[T_Depth];  // Contents of the unpacked array
 
     // CONSTRUCTORS
-    VlUnpacked() = default;
-    ~VlUnpacked() = default;
-    VlUnpacked(const VlUnpacked&) = default;
-    VlUnpacked(VlUnpacked&&) = default;
-    VlUnpacked& operator=(const VlUnpacked&) = default;
-    VlUnpacked& operator=(VlUnpacked&&) = default;
+    // Default constructors and destructor are used. Note however that C++20 requires that
+    // aggregate types do not have a user declared constructor, not even an explicitly defaulted
+    // one.
+
+    // OPERATOR METHODS
+    // Default copy assignment operators are used.
 
     // METHODS
     // Raw access
