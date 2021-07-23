@@ -4736,7 +4736,7 @@ public:
     bool isClockReq() const { return m_clockReq; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs(); }
+    virtual int instrCount() const override { return widthInstrs() * 2; }  // xor, or/logor
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
