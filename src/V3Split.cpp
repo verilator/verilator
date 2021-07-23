@@ -932,7 +932,7 @@ protected:
 
         // Map each AstNodeIf to the set of colors (split always blocks)
         // it must participate in. Also find the whole set of colors.
-        IfColorVisitor ifColor(nodep);
+        IfColorVisitor ifColor{nodep};
 
         if (ifColor.colors().size() > 1) {
             // Counting original always blocks rather than newly-split
@@ -942,7 +942,7 @@ protected:
 
             // Visit through the original always block one more time,
             // and emit the split always blocks into m_replaceBlocks:
-            EmitSplitVisitor emitSplit(nodep, &ifColor, &(m_replaceBlocks[nodep]));
+            EmitSplitVisitor emitSplit{nodep, &ifColor, &(m_replaceBlocks[nodep])};
             emitSplit.go();
         }
     }
@@ -964,11 +964,11 @@ private:
 
 void V3Split::splitReorderAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ReorderVisitor visitor(nodep); }  // Destruct before checking
+    { ReorderVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("reorder", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 void V3Split::splitAlwaysAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { SplitVisitor visitor(nodep); }  // Destruct before checking
+    { SplitVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("split", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -133,10 +133,10 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
         nsstr << endl;
         nsstr << "-vertex: " << this << endl;
     }
-    if (!fileline()) {
-        V3Error::v3errorEnd(nsstr);
+    if (FileLine* const flp = fileline()) {
+        flp->v3errorEnd(nsstr);
     } else {
-        fileline()->v3errorEnd(nsstr);
+        V3Error::v3errorEnd(nsstr);
     }
 }
 void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const {
@@ -314,7 +314,7 @@ void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsS
 void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
-    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
 
     // Header

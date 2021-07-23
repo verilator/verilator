@@ -169,6 +169,7 @@ RAW_OBJS = \
 	V3Clean.o \
 	V3Clock.o \
 	V3Combine.o \
+	V3Common.o \
 	V3Config.o \
 	V3Const__gen.o \
 	V3Coverage.o \
@@ -179,14 +180,16 @@ RAW_OBJS = \
 	V3DepthBlock.o \
 	V3Descope.o \
 	V3DupFinder.o \
-	V3EmitC.o \
 	V3EmitCBase.o \
 	V3EmitCConstPool.o \
 	V3EmitCFunc.o \
+	V3EmitCHeaders.o \
+	V3EmitCImp.o \
 	V3EmitCInlines.o \
-	V3EmitCSyms.o \
-	V3EmitCMake.o \
 	V3EmitCMain.o \
+	V3EmitCMake.o \
+	V3EmitCModel.o \
+	V3EmitCSyms.o \
 	V3EmitMk.o \
 	V3EmitV.o \
 	V3EmitXml.o \
@@ -253,6 +256,7 @@ RAW_OBJS = \
 	V3Undriven.o \
 	V3Unknown.o \
 	V3Unroll.o \
+	V3VariableOrder.o \
 	V3Waiver.o \
 	V3Width.o \
 	V3WidthSel.o \

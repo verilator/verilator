@@ -253,6 +253,7 @@ private:
     bool m_pinsScBigUint = false;   // main switch: --pins-sc-biguint
     bool m_pinsUint8 = false;       // main switch: --pins-uint8
     bool m_ppComments = false;      // main switch: --pp-comments
+    bool m_profC = false;           // main switch: --prof-c
     bool m_profCFuncs = false;      // main switch: --prof-cfuncs
     bool m_profThreads = false;     // main switch: --prof-threads
     bool m_protectIds = false;      // main switch: --protect-ids
@@ -360,6 +361,8 @@ private:
     bool        m_oTable;       // main switch: -Oa: lookup table creation
     // clang-format on
 
+    bool m_available = false;  // Set to true at the end of option parsing
+
 private:
     // METHODS
     void addArg(const string& arg);
@@ -375,7 +378,6 @@ private:
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
-    bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
     static int stripOptionsForChildRun(const string& opt, bool forTop);
 
@@ -402,6 +404,7 @@ public:
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
     void notify();
+    bool available() const { return m_available; }
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }
@@ -462,6 +465,7 @@ public:
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool ppComments() const { return m_ppComments; }
+    bool profC() const { return m_profC; }
     bool profCFuncs() const { return m_profCFuncs; }
     bool profThreads() const { return m_profThreads; }
     bool protectIds() const { return m_protectIds; }

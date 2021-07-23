@@ -39,7 +39,7 @@ private:
         if (m_dataSize < point) m_dataSize = (point + 64) & ~63ULL;  // Keep power of two
         m_dataSize *= 2;
         // UINFO(9, "Realloc "<<allocSize()<<" for "<<point<<"  "<<cvtToHex(m_datap)<<endl);
-        vluint64_t* newp = static_cast<vluint64_t*>(std::realloc(m_datap, allocSize()));
+        vluint64_t* const newp = static_cast<vluint64_t*>(std::realloc(m_datap, allocSize()));
         if (VL_UNCOVERABLE(!newp)) {
             // cppcheck-suppress doubleFree  // cppcheck 1.90 bug - realloc doesn't free on fail
             free(m_datap);  // LCOV_EXCL_LINE

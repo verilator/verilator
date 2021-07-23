@@ -31,7 +31,7 @@
 #include "V3Ast.h"
 
 #include <cmath>
-#include <deque>
+#include <vector>
 
 //######################################################################
 // Table class functions
@@ -97,9 +97,9 @@ public:
         v3Global.rootp()->typeTablep()->addTypesp(tableDTypep);
         // Create table initializer (with default value 0)
         AstConst* const defaultp = elemDType->isString()
-                                       ? new AstConst(m_fl, AstConst::String(), "")
-                                       : new AstConst(m_fl, AstConst::WidthedValue(), width, 0);
-        m_initp = new AstInitArray(m_fl, tableDTypep, defaultp);
+                                       ? new AstConst{m_fl, AstConst::String(), ""}
+                                       : new AstConst{m_fl, AstConst::WidthedValue(), width, 0};
+        m_initp = new AstInitArray{m_fl, tableDTypep, defaultp};
     }
 
     void addValue(unsigned index, const V3Number& value) {
@@ -156,7 +156,6 @@ private:
     //  State cleared on each module
     AstNodeModule* m_modp = nullptr;  // Current MODULE
     int m_modTables = 0;  // Number of tables created in this module
-    std::deque<AstVarScope*> m_modTableVscs;  // All tables created
 
     //  State cleared on each scope
     AstScope* m_scopep = nullptr;  // Current SCOPE
@@ -165,7 +164,7 @@ private:
     bool m_assignDly = false;  // Consists of delayed assignments instead of normal assignments
     unsigned m_inWidthBits = 0;  // Input table width - in bits
     unsigned m_outWidthBytes = 0;  // Output table width - in bytes
-    std::deque<AstVarScope*> m_inVarps;  // Input variable list
+    std::vector<AstVarScope*> m_inVarps;  // Input variable list
     std::vector<TableOutputVar> m_outVarps;  // Output variable list
 
     // METHODS
@@ -197,7 +196,7 @@ private:
         m_outVarps.clear();
 
         // Collect stats
-        TableSimulateVisitor chkvis(this);
+        TableSimulateVisitor chkvis{this};
         chkvis.mainTableCheck(nodep);
         m_assignDly = chkvis.isAssignDly();
         // Also sets m_inWidthBits
@@ -281,7 +280,7 @@ private:
         // There may be a simulation path by which the output doesn't change value.
         // We could bail on these cases, or we can have a "change it" boolean.
         // We've chosen the latter route, since recirc is common in large FSMs.
-        TableSimulateVisitor simvis(this);
+        TableSimulateVisitor simvis{this};
         for (uint32_t i = 0; i <= VL_MASK_I(m_inWidthBits); ++i) {
             const uint32_t inValue = i;
             // Make a new simulation structure so we can set new input values
@@ -355,11 +354,11 @@ private:
                              AstVarScope* outputAssignedTableVscp) {
         FileLine* const fl = nodep->fileline();
         for (TableOutputVar& tov : m_outVarps) {
-            AstNode* const alhsp = new AstVarRef(fl, tov.varScopep(), VAccess::WRITE);
+            AstNode* const alhsp = new AstVarRef{fl, tov.varScopep(), VAccess::WRITE};
             AstNode* const arhsp = select(fl, tov.tabeVarScopep(), indexVscp);
             AstNode* outsetp = m_assignDly
-                                   ? static_cast<AstNode*>(new AstAssignDly(fl, alhsp, arhsp))
-                                   : static_cast<AstNode*>(new AstAssign(fl, alhsp, arhsp));
+                                   ? static_cast<AstNode*>(new AstAssignDly{fl, alhsp, arhsp})
+                                   : static_cast<AstNode*>(new AstAssign{fl, alhsp, arhsp});
 
             // If this output is unassigned on some code paths, wrap the assignment in an If
             if (tov.mayBeUnassigned()) {
@@ -380,11 +379,9 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modTables);
-        VL_RESTORER(m_modTableVscs);
         {
             m_modp = nodep;
             m_modTables = 0;
-            m_modTableVscs.clear();
             iterateChildren(nodep);
         }
     }
@@ -428,6 +425,6 @@ void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
 
 void V3Table::tableAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { TableVisitor visitor(nodep); }  // Destruct before checking
+    { TableVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("table", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

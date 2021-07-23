@@ -121,7 +121,8 @@ const char* AstNodeCCall::broken() const {
     return nullptr;
 }
 bool AstNodeCCall::isPure() const { return funcp()->pure(); }
-string AstNodeCCall::selfPointerProtect(bool useSelfForThis) const {
+
+string AstCCall::selfPointerProtect(bool useSelfForThis) const {
     const string& sp
         = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
     return VIdProtect::protectWordsIf(sp, protect());
@@ -267,7 +268,7 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
         char* endp;
         int v = strtol(literal.c_str(), &endp, 0);
         if ((v != 0) && (endp[0] == 0)) {  // C literal
-            return new AstConst(fl, AstConst::WidthedValue(), 32, v);
+            return new AstConst(fl, AstConst::Signed32(), v);
         } else {  // Try a Verilog literal (fatals if not)
             return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
         }
@@ -337,14 +338,15 @@ string AstVar::verilogKwd() const {
     }
 }
 
-string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc) const {
+string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
+                         bool asRef) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
-    const bool isRef
-        = isDpiOpenArray() || (forFunc && (isWritable() || direction().isRefOrConstRef()));
+    const bool isRef = isDpiOpenArray()
+                       || (forFunc && (isWritable() || direction().isRefOrConstRef())) || asRef;
 
     if (forFunc && isReadOnly() && isRef) ostatic = ostatic + "const ";
 
@@ -641,8 +643,15 @@ public:
     string render(const string& name, bool isRef) const {
         string out;
         out += m_type;
-        if (name != "") out += " ";
-        out += isRef ? "(&" + name + ")" : name;
+        if (!name.empty()) out += " ";
+        if (isRef) {
+            if (!m_dims.empty()) out += "(";
+            out += "&";
+            out += name;
+            if (!m_dims.empty()) out += ")";
+        } else {
+            out += name;
+        }
         out += m_dims;
         return out;
     }
@@ -765,6 +774,20 @@ int AstNodeDType::widthPow2() const {
         if (width > (1UL << p2)) return (1UL << (p2 + 1));
     }
     return 1;
+}
+
+bool AstNodeDType::isLiteralType() const {
+    if (auto* const dtypep = VN_CAST_CONST(skipRefp(), BasicDType)) {
+        return dtypep->keyword().isLiteralType();
+    } else if (auto* const dtypep = VN_CAST_CONST(skipRefp(), UnpackArrayDType)) {
+        return dtypep->basicp()->isLiteralType();
+    } else if (auto* const dtypep = VN_CAST_CONST(skipRefp(), StructDType)) {
+        // Currently all structs are packed, later this can be expanded to
+        // 'forall members _.isLiteralType()'
+        return dtypep->packed();
+    } else {
+        return false;
+    }
 }
 
 /// What is the base variable (or const) this dereferences?
@@ -1450,10 +1473,10 @@ void AstRefDType::dump(std::ostream& str) const {
         if (!s_recursing) {  // Prevent infinite dump if circular typedefs
             s_recursing = true;
             str << " -> ";
-            if (typedefp()) {
-                typedefp()->dump(str);
-            } else if (subDTypep()) {
-                subDTypep()->dump(str);
+            if (const auto subp = typedefp()) {
+                subp->dump(str);
+            } else if (const auto subp = subDTypep()) {
+                subp->dump(str);
             }
             s_recursing = false;
         }
@@ -1498,7 +1521,8 @@ void AstNodeArrayDType::dump(std::ostream& str) const {
 }
 string AstPackArrayDType::prettyDTypeName() const {
     std::ostringstream os;
-    os << subDTypep()->prettyDTypeName() << declRange();
+    if (const auto subp = subDTypep()) os << subp->prettyDTypeName();
+    os << declRange();
     return os.str();
 }
 string AstUnpackArrayDType::prettyDTypeName() const {

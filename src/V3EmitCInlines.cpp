@@ -30,32 +30,20 @@ class EmitCInlines final : EmitCBaseVisitor {
     // STATE
 
     // METHODS
-    void checkHeavy(AstNode* nodep) {
-        if (nodep->isHeavy()) v3Global.needHeavy(true);
-    }
 
     // VISITORS
-    virtual void visit(AstClass* nodep) override {
-        checkHeavy(nodep);
-        iterateChildren(nodep);
-    }
     virtual void visit(AstCNew* nodep) override {
-        checkHeavy(nodep);
         if (v3Global.opt.savable())
             v3warn(E_UNSUPPORTED, "Unsupported: --savable with dynamic new");
         iterateChildren(nodep);
     }
     virtual void visit(AstDumpCtl* nodep) override {
-        checkHeavy(nodep);
         if (v3Global.opt.trace()) v3Global.needTraceDumper(true);
         iterateChildren(nodep);
     }
 
     //---------------------------------------
-    virtual void visit(AstNode* nodep) override {
-        checkHeavy(nodep);
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit EmitCInlines(AstNetlist* nodep) { iterate(nodep); }

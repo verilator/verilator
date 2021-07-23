@@ -318,7 +318,7 @@ private:
                     // And its children may now be killable too; correct counts
                     // Recurse, as cells may not be directly under the module but in a generate
                     if (!modp->dead()) {  // If was dead didn't increment user1's
-                        DeadModVisitor visitor(modp);
+                        DeadModVisitor visitor{modp};
                     }
                     VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
                     retry = true;
@@ -463,31 +463,31 @@ public:
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor visitor(nodep, false, false, false, false); }  // Destruct before checking
+    { DeadVisitor visitor{nodep, false, false, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
 
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor visitor(nodep, false, true, false, false); }  // Destruct before checking
+    { DeadVisitor visitor{nodep, false, true, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypes", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor visitor(nodep, false, true, true, false); }  // Destruct before checking
+    { DeadVisitor visitor{nodep, false, true, true, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0,
                                   v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor visitor(nodep, true, true, false, true); }  // Destruct before checking
+    { DeadVisitor visitor{nodep, true, true, false, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAll", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor visitor(nodep, true, true, true, true); }  // Destruct before checking
+    { DeadVisitor visitor{nodep, true, true, true, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAllScoped", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

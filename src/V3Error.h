@@ -417,7 +417,11 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 #define VL_DEBUG_FUNC \
     static int debug() { \
         static int level = -1; \
-        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__); \
+        if (VL_UNLIKELY(level < 0)) { \
+            const int debugSrcLevel = v3Global.opt.debugSrcLevel(__FILE__); \
+            if (!v3Global.opt.available()) return debugSrcLevel; \
+            level = debugSrcLevel; \
+        } \
         return level; \
     }
 

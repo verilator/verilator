@@ -34,6 +34,7 @@
 #include "V3Clean.h"
 #include "V3Clock.h"
 #include "V3Combine.h"
+#include "V3Common.h"
 #include "V3Const.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
@@ -96,6 +97,7 @@
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
+#include "V3VariableOrder.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
 
@@ -501,23 +503,31 @@ static void process() {
         V3Partition::finalize();
     }
 
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
+        // Add common methods/etc to modules
+        V3Common::commonAll();
+
+        // Order variables
+        V3VariableOrder::orderAll();
+
+        // Create AstCUse to determine what class forward declarations/#includes needed in C
+        V3CUse::cUseAll();
+    }
+
     // Output the text
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
-        // Create AstCUse to determine what class forward declarations/#includes needed in C
-        // Must be before V3EmitC
-        V3CUse::cUseAll();
-
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();
         V3EmitC::emitcSyms();
         V3EmitC::emitcConstPool();
-        V3EmitC::emitcTrace();
+        V3EmitC::emitcModel();
+        V3EmitC::emitcHeaders();
     } else if (v3Global.opt.dpiHdrOnly()) {
         V3EmitC::emitcSyms(true);
     }
     if (!v3Global.opt.xmlOnly()
-        && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitc.
-        V3EmitC::emitc();
+        && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
+        V3EmitC::emitcImp();
     }
     if (v3Global.opt.xmlOnly()
         // Check XML when debugging to make sure no missing node types

@@ -62,7 +62,7 @@ void V3LinkLevel::modSortByLevel() {
                                           "--top-module to select top."
                                        << V3Error::warnContextNone());
             for (AstNode* alsop : tops) {
-                std::cout << secp->warnMore() << "... Top module " << alsop->prettyNameQ() << endl
+                std::cerr << secp->warnMore() << "... Top module " << alsop->prettyNameQ() << endl
                           << alsop->warnContextSecondary();
             }
         }
@@ -139,7 +139,9 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
         UINFO(1, "No module found to wrap\n");
         return;
     }
-    AstNodeModule* newmodp = new AstModule(oldmodp->fileline(), string("TOP"));
+
+    AstNodeModule* newmodp = new AstModule(oldmodp->fileline(), "$root");
+    newmodp->name(AstNode::encodeName(newmodp->name()));  // so origName is nice
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();
     newmodp->addNext(oldmodp);

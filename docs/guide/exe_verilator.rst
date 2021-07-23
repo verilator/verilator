@@ -803,6 +803,13 @@ Summary:
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
 
+.. option:: --prof-c
+
+   When compiling the C++ code, enable the compiler's profiling flag
+   (e.g. :code:`g++ -pg`). See :ref:`Profiling`.
+
+   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`prof-c`.
+
 .. option:: --prof-cfuncs
 
    Modify the created C++ functions to support profiling.  The functions
@@ -812,6 +819,8 @@ Summary:
    with the basename of the Verilog module and line number the statement
    came from.  This allows gprof or oprofile reports to be correlated with
    the original Verilog source statements. See :ref:`Profiling`.
+
+   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`prof-c`.
 
 .. option:: --prof-threads
 

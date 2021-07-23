@@ -389,10 +389,11 @@ private:
             && nodep->level() <= 2) {  // ==2 because we don't add wrapper when in XML mode
             m_os << "<cells>\n";
             m_os << "<cell " << nodep->fileline()->xml() << " "
-                 << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name() << "\""
-                 << " submodname=\"" << nodep->name() << "\""
-                 << " hier=\"" << nodep->name() << "\"";
-            m_hier = nodep->name() + ".";
+                 << nodep->fileline()->xmlDetailedLocation()  //
+                 << " name=\"" << nodep->prettyName() << "\""
+                 << " submodname=\"" << nodep->prettyName() << "\""
+                 << " hier=\"" << nodep->prettyName() << "\"";
+            m_hier = nodep->prettyName() + ".";
             m_hasChildren = false;
             iterateChildren(nodep);
             if (m_hasChildren) {
@@ -456,10 +457,10 @@ void V3EmitXml::emitxml() {
     }
     {
         std::stringstream sstr;
-        ModuleFilesXmlVisitor moduleFilesVisitor(v3Global.rootp(), sstr);
-        HierCellsXmlVisitor cellsVisitor(v3Global.rootp(), sstr);
+        ModuleFilesXmlVisitor moduleFilesVisitor{v3Global.rootp(), sstr};
+        HierCellsXmlVisitor cellsVisitor{v3Global.rootp(), sstr};
         of.puts(sstr.str());
     }
-    EmitXmlFileVisitor visitor(v3Global.rootp(), &of);
+    EmitXmlFileVisitor visitor{v3Global.rootp(), &of};
     of.puts("</verilator_xml>\n");
 }

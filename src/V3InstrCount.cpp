@@ -294,7 +294,7 @@ private:
 };
 
 uint32_t V3InstrCount::count(AstNode* nodep, bool assertNoDups, std::ostream* osp) {
-    InstrCountVisitor visitor(nodep, assertNoDups, osp);
+    InstrCountVisitor visitor{nodep, assertNoDups, osp};
     if (osp) InstrCountDumpVisitor dumper(nodep, osp);
     return visitor.instrCount();
 }

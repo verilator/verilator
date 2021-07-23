@@ -18,7 +18,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep("$Self->{obj_dir}/Vt_flag_comp_limit_parens__Slow.cpp", qr/Vdeeptemp/x);
+file_grep(glob_one("$Self->{obj_dir}/Vt_flag_comp_limit_parens___024root__DepSet_*__0__Slow.cpp"), qr/Vdeeptemp/x);
 
 ok(1);
 1;

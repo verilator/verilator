@@ -27,11 +27,12 @@
 
 class V3EmitC final {
 public:
-    static void emitc();
     static void emitcConstPool();
+    static void emitcHeaders();
+    static void emitcImp();
     static void emitcInlines();
+    static void emitcModel();
     static void emitcSyms(bool dpiHdrOnly = false);
-    static void emitcTrace();
     static void emitcFiles();
 };
 

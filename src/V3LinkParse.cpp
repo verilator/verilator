@@ -656,6 +656,6 @@ public:
 
 void V3LinkParse::linkParse(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
-    { LinkParseVisitor visitor(rootp); }  // Destruct before checking
+    { LinkParseVisitor visitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkparse", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

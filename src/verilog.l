@@ -87,12 +87,9 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 ws      [ \t\f\r]+
 wsnr    [ \t\f]+
 crnl    [\r]*[\n]
-        /* identifier */
 id      [a-zA-Z_][a-zA-Z0-9_$]*
-        /* escaped identifier */
 escid   \\[^ \t\f\r\n]+
 word    [a-zA-Z0-9_]+
-        /* verilog numbers, constructed to not match the ' that begins a '(  or '{ */
 vnum1   [0-9]*?[''][sS]?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
 vnum2   [0-9]*?[''][sS]?[01xXzZ]
 vnum3   [0-9][_0-9]*[ \t\n]*[''][sS]?[bcodhBCODH]?[ \t\n]*[A-Fa-f0-9xXzZ_?]+
@@ -102,7 +99,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 %%
 
-<INITIAL>.|\n           {BEGIN STATE_VERILOG_RECENT; yyless(0); }
+<INITIAL>.|\n           { BEGIN STATE_VERILOG_RECENT; yyless(0); }
 
   /************************************************************************/
   /* Verilator control files */

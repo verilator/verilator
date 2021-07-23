@@ -2059,7 +2059,8 @@ public:
     string dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
-    string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "") const;
+    string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
+                     bool asRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
@@ -4735,7 +4736,7 @@ public:
     bool isClockReq() const { return m_clockReq; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs(); }
+    virtual int instrCount() const override { return widthInstrs() * 2; }  // xor, or/logor
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
@@ -5243,11 +5244,14 @@ class AstTraceInc final : public AstNodeStmt {
 private:
     AstTraceDecl* m_declp;  // Pointer to declaration
     const bool m_full;  // Is this a full vs incremental dump
+    const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
+
 public:
-    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full)
+    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full, uint32_t baseCode = 0)
         : ASTGEN_SUPER_TraceInc(fl)
         , m_declp{declp}
-        , m_full{full} {
+        , m_full{full}
+        , m_baseCode{baseCode} {
         dtypeFrom(declp);
         addOp2p(declp->valuep()->cloneTree(true));
     }
@@ -5275,6 +5279,7 @@ public:
     AstNode* valuep() const { return op2p(); }
     AstTraceDecl* declp() const { return m_declp; }
     bool full() const { return m_full; }
+    uint32_t baseCode() const { return m_baseCode; }
 };
 
 class AstActive final : public AstNode {
@@ -8492,9 +8497,9 @@ private:
 public:
     AstNodeCoverOrAssert(AstType t, FileLine* fl, AstNode* propp, AstNode* passsp, bool immediate,
                          const string& name = "")
-        : AstNodeStmt(t, fl)
-        , m_immediate(immediate)
-        , m_name(name) {
+        : AstNodeStmt{t, fl}
+        , m_immediate{immediate}
+        , m_name{name} {
         addOp1p(propp);
         addNOp4p(passsp);
     }
@@ -8727,7 +8732,6 @@ class AstCFunc final : public AstNode {
     // Parents:  MODULE/SCOPE
     // Children: VAR/statements
 private:
-    AstCFuncType m_funcType;
     AstScope* m_scopep;
     string m_name;
     string m_cname;  // C name, for dpiExports
@@ -8737,6 +8741,7 @@ private:
     string m_ifdef;  // #ifdef symbol around this function
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
+    bool m_isTrace : 1;  // Function is related to tracing
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
     bool m_declPrivate : 1;  // Declare it private
     bool m_formCallTree : 1;  // Make a global function to call entire tree of functions
@@ -8758,12 +8763,12 @@ private:
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
-        m_funcType = AstCFuncType::FT_NORMAL;
         m_isConst = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until analyzed
         m_scopep = scopep;
         m_name = name;
         m_rtnType = rtnType;
         m_isStatic = false;
+        m_isTrace = false;
         m_dontCombine = false;
         m_declPrivate = false;
         m_formCallTree = false;
@@ -8792,7 +8797,7 @@ public:
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual bool same(const AstNode* samep) const override {
         const AstCFunc* asamep = static_cast<const AstCFunc*>(samep);
-        return ((funcType() == asamep->funcType()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
+        return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && (ctorInits() == asamep->ctorInits())
                 && isLoose() == asamep->isLoose()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
@@ -8805,12 +8810,14 @@ public:
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
     bool isStatic() const { return m_isStatic; }
     void isStatic(bool flag) { m_isStatic = flag; }
+    bool isTrace() const { return m_isTrace; }
+    void isTrace(bool flag) { m_isTrace = flag; }
     void cname(const string& name) { m_cname = name; }
     string cname() const { return m_cname; }
     AstScope* scopep() const { return m_scopep; }
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     string rtnTypeVoid() const { return ((m_rtnType == "") ? "void" : m_rtnType); }
-    bool dontCombine() const { return m_dontCombine || funcType() != AstCFuncType::FT_NORMAL; }
+    bool dontCombine() const { return m_dontCombine || isTrace(); }
     void dontCombine(bool flag) { m_dontCombine = flag; }
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
@@ -8827,8 +8834,6 @@ public:
     string ctorInits() const { return m_ctorInits; }
     void ifdef(const string& str) { m_ifdef = str; }
     string ifdef() const { return m_ifdef; }
-    void funcType(AstCFuncType flag) { m_funcType = flag; }
-    AstCFuncType funcType() const { return m_funcType; }
     bool isConstructor() const { return m_isConstructor; }
     void isConstructor(bool flag) { m_isConstructor = flag; }
     bool isDestructor() const { return m_isDestructor; }
@@ -8875,10 +8880,17 @@ class AstCCall final : public AstNodeCCall {
     // C++ function call
     // Parents:  Anything above a statement
     // Children: Args to the function
+
+    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
+
 public:
     AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
         : ASTGEN_SUPER_CCall(fl, funcp, argsp) {}
     ASTNODE_NODE_FUNCS(CCall)
+
+    string selfPointer() const { return m_selfPointer; }
+    void selfPointer(const string& value) { m_selfPointer = value; }
+    string selfPointerProtect(bool useSelfForThis) const;
 };
 
 class AstCMethodCall final : public AstNodeCCall {
@@ -9001,8 +9013,8 @@ class AstCUse final : public AstNode {
     // C++ use of a class or #include; indicates need of forward declaration
     // Parents:  NODEMODULE
 private:
-    VUseType m_useType;  // What sort of use this is
-    string m_name;
+    const VUseType m_useType;  // What sort of use this is
+    const string m_name;
 
 public:
     AstCUse(FileLine* fl, VUseType useType, const string& name)
@@ -9010,10 +9022,9 @@ public:
         , m_useType{useType}
         , m_name{name} {}
     ASTNODE_NODE_FUNCS(CUse)
-    virtual string name() const override { return m_name; }
     virtual void dump(std::ostream& str = std::cout) const override;
+    virtual string name() const override { return m_name; }
     VUseType useType() const { return m_useType; }
-    void useType(VUseType useType) { m_useType = useType; }
 };
 
 class AstMTaskBody final : public AstNode {
@@ -9144,6 +9155,7 @@ private:
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
+    bool m_changeRequest = false;  // Have _change_request method
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
 public:
     AstNetlist();
@@ -9167,6 +9179,8 @@ public:
     AstNode* miscsp() const { return op3p(); }  // op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
+    void changeRequest(bool specified) { m_changeRequest = specified; }
+    bool changeRequest() const { return m_changeRequest; }
     AstConstPool* constPoolp() { return m_constPoolp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp() {

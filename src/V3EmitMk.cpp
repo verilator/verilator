@@ -80,7 +80,7 @@ public:
 
         of.puts("\n### Object file lists...\n");
         for (int support = 0; support < 3; ++support) {
-            for (int slow = 0; slow < 2; ++slow) {
+            for (const bool& slow : {false, true}) {
                 if (support == 2) {
                     of.puts("# Global classes, need linked once per executable");
                 } else if (support) {
@@ -168,6 +168,8 @@ public:
         }
 
         of.puts("\n### Switches...\n");
+        of.puts("# C++ code coverage  0/1 (from --prof-c)\n");
+        of.puts(string("VM_PROFC = ") + ((v3Global.opt.profC()) ? "1" : "0") + "\n");
         of.puts("# SystemC output mode?  0/1 (from --sc)\n");
         of.puts(string("VM_SC = ") + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
         of.puts("# Legacy or SystemC output mode?  0/1 (from --sc)\n");

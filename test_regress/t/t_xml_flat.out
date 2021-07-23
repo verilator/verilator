@@ -11,10 +11,10 @@
     <file id="d" filename="t/t_xml_first.v" language="1800-2017"/>
   </module_files>
   <cells>
-    <cell fl="d7" loc="d,7,8,7,9" name="TOP" submodname="TOP" hier="TOP"/>
+    <cell fl="d7" loc="d,7,8,7,9" name="$root" submodname="$root" hier="$root"/>
   </cells>
   <netlist>
-    <module fl="d7" loc="d,7,8,7,9" name="TOP" origName="TOP" topModule="1" public="true">
+    <module fl="d7" loc="d,7,8,7,9" name="$root" origName="$root" topModule="1" public="true">
       <var fl="d13" loc="d,13,10,13,13" name="clk" dtype_id="1" dir="input" pinIndex="2" vartype="logic" origName="clk" clocker="true" public="true"/>
       <var fl="d14" loc="d,14,16,14,17" name="d" dtype_id="2" dir="input" pinIndex="3" vartype="logic" origName="d" public="true"/>
       <var fl="d15" loc="d,15,22,15,23" name="q" dtype_id="2" dir="output" pinIndex="1" vartype="logic" origName="q" public="true"/>

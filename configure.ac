@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.205 devel],
+AC_INIT([Verilator],[4.211 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -35,7 +35,7 @@ AC_ARG_ENABLE([silent-rules],
 AC_MSG_CHECKING(whether to perform partial static linking of Verilator binary)
 AC_ARG_ENABLE([partial-static],
               [AS_HELP_STRING([--disable-partial-static],
-                              [By default, for Verilation peformance, Verilator
+                              [By default, for Verilation performance, Verilator
                                is linked against some of its dependencies
                                statically. Use this to link the Verilator binary
                                fully dynamically.])],
@@ -339,6 +339,10 @@ if test "$CFG_ENABLE_COVERAGE" = "yes"; then
   # Define-out some impossible stuff
   _MY_CXX_CHECK_OPT(CXX,-DVL_GCOV)
 fi
+
+# Compiler flags to enable profiling
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PROFILE,-pg)
+AC_SUBST(CFG_CXXFLAGS_PROFILE)
 
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take

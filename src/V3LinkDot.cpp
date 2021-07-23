@@ -165,7 +165,7 @@ public:
     void dump(const string& nameComment = "linkdot", bool force = false) {
         if (debug() >= 6 || force) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
-            const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+            const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
             if (logp->fail()) v3fatal("Can't write " << filename);
             std::ostream& os = *logp;
             m_syms.dump(os);
@@ -592,13 +592,10 @@ public:
                 // $root we walk up to Netlist
                 else if (ident == "$root") {
                     lookupSymp = rootEntp();
-                    // We've added TOP module, now everything else is one lower
+                    // We've added the '$root' module, now everything else is one lower
                     if (!m_forPrearray) {
-                        VSymEnt* topSymp = lookupSymp->findIdFlat("TOP");
-                        if (!topSymp) {
-                            topSymp->nodep()->v3fatalSrc("TOP not found under netlist for $root");
-                        }
-                        lookupSymp = topSymp;
+                        lookupSymp = lookupSymp->findIdFlat(ident);
+                        UASSERT(lookupSymp, "Cannot find $root module under netlist");
                     }
                 }
                 // Move up and check cellname + modname
@@ -1769,7 +1766,7 @@ void LinkDotState::computeIfaceModSyms() {
     for (const auto& itr : m_ifaceModSyms) {
         AstIface* nodep = itr.first;
         VSymEnt* symp = itr.second;
-        LinkDotIfaceVisitor(nodep, symp, this);
+        LinkDotIfaceVisitor{nodep, symp, this};
     }
     m_ifaceModSyms.clear();
 }
@@ -3045,13 +3042,13 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
     }
     LinkDotState state(rootp, step);
-    LinkDotFindVisitor visitor(rootp, &state);
+    LinkDotFindVisitor visitor{rootp, &state};
     if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
     }
     if (step == LDS_PRIMARY || step == LDS_PARAMED) {
         // Initial link stage, resolve parameters
-        LinkDotParamVisitor visitors(rootp, &state);
+        LinkDotParamVisitor visitors{rootp, &state};
         if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-param.tree"));
         }
@@ -3059,7 +3056,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     } else if (step == LDS_SCOPED) {
         // Well after the initial link when we're ready to operate on the flat design,
         // process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
-        LinkDotScopeVisitor visitors(rootp, &state);
+        LinkDotScopeVisitor visitors{rootp, &state};
         v3Global.assertScoped(true);
         if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
@@ -3072,5 +3069,5 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     state.computeIfaceVarSyms();
     state.computeScopeAliases();
     state.dump();
-    LinkDotResolveVisitor visitorb(rootp, &state);
+    LinkDotResolveVisitor visitorb{rootp, &state};
 }

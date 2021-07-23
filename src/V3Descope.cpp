@@ -73,6 +73,7 @@ private:
     // module.
     string descopedSelfPointer(const AstScope* scopep) {
         UASSERT(scopep, "Var/Func not scoped");
+        UASSERT(!VN_IS(scopep->modp(), Class), "References to classes handled elsewhere");
 
         // Static functions can't use relative references via 'this->'
         const bool relativeRefOk = !m_funcp->isStatic();
@@ -83,9 +84,7 @@ private:
 
         if (relativeRefOk && scopep == m_scopep) {
             return "this";
-        } else if (VN_IS(scopep->modp(), Class)) {
-            return "this";
-        } else if (!m_modSingleton && relativeRefOk && scopep->aboveScopep() == m_scopep
+        } else if (relativeRefOk && !m_modSingleton && scopep->aboveScopep() == m_scopep
                    && VN_IS(scopep->modp(), Module)) {
             // Reference to scope of instance directly under this module, can just "this->cell",
             // which can potentially be V3Combined, but note this requires one extra pointer
@@ -98,11 +97,7 @@ private:
         } else {
             // Reference to something elsewhere, or relative references are disabled. Use global
             // variable
-            if (scopep->isTop()) {  // Top
-                return "vlSymsp->TOPp";
-            } else {
-                return "(&" + scopep->nameVlSym() + ")";
-            }
+            return "(&" + scopep->nameVlSym() + ")";
         }
     }
 
@@ -219,20 +214,40 @@ private:
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         const AstVar* const varp = nodep->varScopep()->varp();
         const AstScope* const scopep = nodep->varScopep()->scopep();
-        if (!varp->isFuncLocal()) { nodep->selfPointer(descopedSelfPointer(scopep)); }
+        if (varp->isFuncLocal()) {
+            // Reference to function locals need no self pointer
+            nodep->selfPointer("");
+        } else if (scopep->modp() == v3Global.rootp()->constPoolp()->modp()) {
+            // Reference to constant pool value need no self pointer
+            nodep->selfPointer("");
+        } else if (VN_IS(scopep->modp(), Class)) {
+            // Direct reference to class members are from within the class itself, references from
+            // outside the class must go via AstMemberSel
+            nodep->selfPointer("this");
+        } else {
+            nodep->selfPointer(descopedSelfPointer(scopep));
+        }
         nodep->varScopep(nullptr);
         UINFO(9, "  refout " << nodep << endl);
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    virtual void visit(AstCCall* nodep) override {
         // UINFO(9, "       " << nodep << endl);
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         const AstScope* const scopep = nodep->funcp()->scopep();
-        nodep->selfPointer(descopedSelfPointer(scopep));
+        if (VN_IS(scopep->modp(), Class)) {
+            // Direct call to class methods are from within the class itself, method calls from
+            // outside the class must go via AstCMethodCall
+            nodep->selfPointer("this");
+        } else {
+            nodep->selfPointer(descopedSelfPointer(scopep));
+        }
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }
+    virtual void visit(AstCMethodCall* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstCNew* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_funcp);
         if (!nodep->user1()) {
@@ -270,6 +285,6 @@ public:
 
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DescopeVisitor visitor(nodep); }  // Destruct before checking
+    { DescopeVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

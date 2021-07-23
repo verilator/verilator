@@ -74,9 +74,10 @@ AstNode::AstNode(AstType t, FileLine* fl)
     m_clonep = nullptr;
     m_cloneCnt = 0;
     // Attributes
-    m_didWidth = false;
-    m_doingWidth = false;
-    m_protect = true;
+    m_flags.didWidth = false;
+    m_flags.doingWidth = false;
+    m_flags.protect = true;
+    m_flags.unused = 0;  // Initializing this avoids a read-modify-write on construction
     m_user1u = VNUser(0);
     m_user1Cnt = 0;
     m_user2u = VNUser(0);
@@ -932,7 +933,9 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
 void AstNode::cloneRelinkTree() {
     // private: Cleanup clone() operation on whole tree. Publicly call cloneTree() instead.
     for (AstNode* nodep = this; nodep; nodep = nodep->m_nextp) {
-        if (m_dtypep && m_dtypep->clonep()) m_dtypep = m_dtypep->clonep();
+        if (nodep->m_dtypep && nodep->m_dtypep->clonep()) {
+            nodep->m_dtypep = nodep->m_dtypep->clonep();
+        }
         nodep->cloneRelink();
         if (nodep->m_op1p) nodep->m_op1p->cloneRelinkTree();
         if (nodep->m_op2p) nodep->m_op2p->cloneRelinkTree();
@@ -1121,7 +1124,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
     if (doDump) {
         {  // Write log & close
             UINFO(2, "Dumping " << filename << endl);
-            const std::unique_ptr<std::ofstream> logsp(V3File::new_ofstream(filename, append));
+            const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename, append)};
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
             *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";

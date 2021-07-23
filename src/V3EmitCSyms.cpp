@@ -380,8 +380,7 @@ void EmitCSyms::emitSymHdr() {
     }
 
     ofp()->putsHeader();
-    puts("// DESCR"
-         "IPTION: Verilator output: Symbol table internal header\n");
+    puts("// DESCRIPTION: Verilator output: Symbol table internal header\n");
     puts("//\n");
     puts("// Internal details; most calling programs do not need this header,\n");
     puts("// unless using verilator public meta comments.\n");
@@ -390,11 +389,13 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n");
     ofp()->putsIntTopInclude();
-    if (v3Global.needHeavy()) {
-        puts("#include \"verilated_heavy.h\"\n");
-    } else {
-        puts("#include \"verilated.h\"\n");
+    puts("#include \"verilated_heavy.h\"\n");
+    if (v3Global.needTraceDumper()) {
+        puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
     }
+
+    puts("\n// INCLUDE MODEL CLASS\n");
+    puts("\n#include \"" + topClassName() + ".h\"\n");
 
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
@@ -417,41 +418,52 @@ void EmitCSyms::emitSymHdr() {
         for (const auto& i : types) puts(i.first);
     }
 
-    puts("\n// SYMS CLASS\n");
-    puts(string("class ") + symClassName() + " : public VerilatedSyms {\n");
+    puts("\n// SYMS CLASS (contains all model state)\n");
+    puts("class " + symClassName() + " final : public VerilatedSyms {\n");
     ofp()->putsPrivate(false);  // public:
 
-    puts("\n// LOCAL STATE\n");
-    // Must be before subcells, as constructor order needed before _vlCoverInsert.
-    puts("const char* const __Vm_namep;\n");
+    puts("// INTERNAL STATE\n");
+    puts(topClassName() + "* const __Vm_modelp;\n");
 
     if (v3Global.needTraceDumper()) {
         // __Vm_dumperp is local, otherwise we wouldn't know what design's eval()
         // should call a global dumpperp
-        puts("bool __Vm_dumping;  // Dumping is active\n");
+        puts("bool __Vm_dumping = false;  // Dumping is active\n");
         puts("VerilatedMutex __Vm_dumperMutex;  // Protect __Vm_dumperp\n");
         puts(v3Global.opt.traceClassLang()
-             + "* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex);  /// Trace class for $dump*\n");
+             + "* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex) = nullptr;"
+               "  /// Trace class for $dump*\n");
     }
     if (v3Global.opt.trace()) {
-        puts("bool __Vm_activity;  ///< Used by trace routines to determine change occurred\n");
-        puts("uint32_t __Vm_baseCode;  "
-             "///< Used by trace routines when tracing multiple models\n");
+        puts("bool __Vm_activity = false;"
+             "  ///< Used by trace routines to determine change occurred\n");
+        puts("uint32_t __Vm_baseCode = 0;"
+             "  ///< Used by trace routines when tracing multiple models\n");
     }
-    puts("bool __Vm_didInit;\n");
+    puts("bool __Vm_didInit = false;\n");
 
-    puts("\n// SUBCELL STATE\n");
+    if (v3Global.opt.mtasks()) {
+        puts("VlThreadPool* const __Vm_threadPoolp;\n");
+        puts("bool __Vm_even_cycle = false;\n");
+
+        if (v3Global.opt.profThreads()) {
+            // rdtsc() at current cycle start
+            puts("vluint64_t __Vm_profile_cycle_start = 0;\n");
+            // Time we finished analysis
+            puts("vluint64_t __Vm_profile_time_finished = 0;\n");
+            // Track our position in the cache warmup and actual profile window
+            puts("vluint32_t __Vm_profile_window_ct = 0;\n");
+        }
+    }
+
+    puts("\n// MODULE INSTANCE STATE\n");
     for (const auto& i : m_scopes) {
         AstScope* scopep = i.first;
         AstNodeModule* modp = i.second;
         if (VN_IS(modp, Class)) continue;
-        if (modp->isTop()) {
-            ofp()->printf("%-30s ", (prefixNameProtect(modp) + "*").c_str());
-            puts(protectIf(scopep->nameDotless() + "p", scopep->protect()) + ";\n");
-        } else {
-            ofp()->printf("%-30s ", (prefixNameProtect(modp) + "").c_str());
-            puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
-        }
+        const string name = prefixNameProtect(modp);
+        ofp()->printf("%-30s ", name.c_str());
+        puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
     }
 
     if (m_coverBins) {
@@ -474,28 +486,30 @@ void EmitCSyms::emitSymHdr() {
         puts("VerilatedHierarchy __Vhier;\n");
     }
 
-    puts("\n// CREATORS\n");
-    puts(symClassName() + "(VerilatedContext* contextp, " + topClassName()
-         + "* topp, const char* namep);\n");
+    puts("\n// CONSTRUCTORS\n");
+    puts(symClassName() + "(VerilatedContext* contextp, const char* namep, " + topClassName()
+         + "* modelp);\n");
     puts(string("~") + symClassName() + "();\n");
 
     for (const auto& i : m_usesVfinal) {
         puts("void " + symClassName() + "_" + cvtToStr(i.first) + "(");
-        if (i.second) {
-            puts("int __Vfinal");
-        } else {
-            puts(topClassName() + "* topp");
-        }
+        if (i.second) { puts("int __Vfinal"); }
         puts(");\n");
     }
 
     puts("\n// METHODS\n");
-    puts("inline const char* name() { return __Vm_namep; }\n");
+    puts("const char* name() { return TOP.name(); }\n");
+
+    if (v3Global.needTraceDumper()) {
+        if (!optSystemC()) puts("void _traceDump();\n");
+        puts("void _traceDumpOpen();\n");
+        puts("void _traceDumpClose();\n");
+    }
+
     if (v3Global.opt.savable()) {
         puts("void " + protect("__Vserialize") + "(VerilatedSerialize& os);\n");
         puts("void " + protect("__Vdeserialize") + "(VerilatedDeserialize& os);\n");
     }
-    puts("\n");
     puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
     ofp()->putsEndGuard();
@@ -533,20 +547,12 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     }
 
     m_ofpBase->puts(symClassName() + "_" + cvtToStr(m_funcNum) + "(");
-    if (usesVfinal) {
-        m_ofpBase->puts("__Vfinal");
-    } else {
-        m_ofpBase->puts("topp");
-    }
+    if (usesVfinal) { m_ofpBase->puts("__Vfinal"); }
     m_ofpBase->puts(");\n");
 
     emitSymImpPreamble();
     puts("void " + symClassName() + "::" + symClassName() + "_" + cvtToStr(m_funcNum) + "(");
-    if (usesVfinal) {
-        puts("int __Vfinal");
-    } else {
-        puts(topClassName() + "* topp");
-    }
+    if (usesVfinal) { puts("int __Vfinal"); }
     puts(") {\n");
 }
 
@@ -558,6 +564,7 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // Includes
     puts("#include \"" + symClassName() + ".h\"\n");
+    puts("#include \"" + topClassName() + ".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
@@ -624,26 +631,21 @@ void EmitCSyms::emitSymImp() {
     emitSymImpPreamble();
 
     if (v3Global.opt.savable()) {
-        for (int de = 0; de < 2; ++de) {
+        for (const bool& de : {false, true}) {
             const string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
             const string funcname = de ? "__Vdeserialize" : "__Vserialize";
             const string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             puts("void " + symClassName() + "::" + protect(funcname) + "(" + classname
                  + "& os) {\n");
-            puts("// LOCAL STATE\n");
-            // __Vm_namep presumably already correct
+            puts("// Internal state\n");
             if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
-            puts("os" + op + "__Vm_didInit;\n");
-            puts("// SUBCELL STATE\n");
-            for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end();
-                 ++it) {
-                AstScope* scopep = it->first;
-                AstNodeModule* modp = it->second;
-                if (!modp->isTop()) {
-                    puts(protectIf(scopep->nameDotless(), scopep->protect()) + "."
-                         + protect(funcname) + "(os);\n");
-                }
+            puts("os " + op + " __Vm_didInit;\n");
+            puts("// Module instance state\n");
+            for (const auto& pair : m_scopes) {
+                const AstScope* const scopep = pair.first;
+                puts(protectIf(scopep->nameDotless(), scopep->protect()) + "." + protect(funcname)
+                     + "(os);\n");
             }
             puts("}\n");
         }
@@ -651,60 +653,69 @@ void EmitCSyms::emitSymImp() {
     }
 
     puts("// FUNCTIONS\n");
+    // Destructor
     puts(symClassName() + "::~" + symClassName() + "()\n");
     puts("{\n");
     emitScopeHier(true);
-    puts("}\n\n");
-    puts(symClassName() + "::" + symClassName() + "(VerilatedContext* contextp, " + topClassName()
-         + "* topp, const char* namep)\n");
-    puts("    // Setup locals\n");
-    puts("    : VerilatedSyms{contextp}\n");
-    puts("    , __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
     if (v3Global.needTraceDumper()) {
-        puts("    , __Vm_dumping(false)\n");
-        puts("    , __Vm_dumperp(nullptr)\n");
+        puts("#ifdef VM_TRACE\n");
+        puts("if (__Vm_dumping) _traceDumpClose();\n");
+        puts("#endif  // VM_TRACE\n");
     }
-    if (v3Global.opt.trace()) {
-        puts("    , __Vm_activity(false)\n");
-        puts("    , __Vm_baseCode(0)\n");
+    if (v3Global.opt.mtasks()) { puts("delete __Vm_threadPoolp;\n"); }
+    puts("}\n\n");
+
+    // Constructor
+    puts(symClassName() + "::" + symClassName() + "(VerilatedContext* contextp, const char* namep,"
+         + topClassName() + "* modelp)\n");
+    puts("    : VerilatedSyms{contextp}\n");
+    puts("    // Setup internal state of the Syms class\n");
+    puts("    , __Vm_modelp{modelp}\n");
+
+    if (v3Global.opt.mtasks()) {
+        // TODO -- For now each model creates its own ThreadPool here,
+        // and deletes it in the destructor. If A and B are each top level
+        // modules, each creates a separate thread pool.  This allows
+        // A.eval() and B.eval() to run concurrently without any
+        // interference -- so long as the physical machine has enough cores
+        // to support both pools and all testbench threads.
+        //
+        // In the future, we might want to let the client provide a
+        // threadpool to the constructor. This would allow two or more
+        // models to share a single threadpool.
+        //
+        // For example: suppose models A and B are each compiled to run on
+        // 4 threads. The client might create a single thread pool with 3
+        // threads and pass it to both models. If the client can ensure that
+        // A.eval() and B.eval() do NOT run concurrently, there will be no
+        // contention for the threads. This mode is missing for now.  (Is
+        // there demand for such a setup?)
+        //
+        // Note we create N-1 threads in the thread pool. The thread
+        // that calls eval() becomes the final Nth thread for the
+        // duration of the eval call.
+        puts("    , __Vm_threadPoolp{new VlThreadPool{_vm_contextp__, "
+             + cvtToStr(v3Global.opt.threads() - 1) + ", " + cvtToStr(v3Global.opt.profThreads())
+             + "}}\n");
     }
-    puts("    , __Vm_didInit(false)\n");
-    puts("    // Setup submodule names\n");
-    char comma = ',';
+
+    puts("    // Setup module instances\n");
     for (const auto& i : m_scopes) {
-        AstScope* scopep = i.first;
-        AstNodeModule* modp = i.second;
+        const AstScope* const scopep = i.first;
+        const AstNodeModule* const modp = i.second;
+        puts("    , ");
+        puts(protect(scopep->nameDotless()));
         if (modp->isTop()) {
+            puts("(namep)\n");
         } else {
-            puts(string("    ") + comma + " " + protect(scopep->nameDotless()));
-            puts("(Verilated::catName(topp->name(), ");
             // The "." is added by catName
+            puts("(Verilated::catName(namep, ");
             putsQuoted(protectWordsIf(scopep->prettyName(), scopep->protect()));
             puts("))\n");
-            comma = ',';
-            ++m_numStmts;
         }
+        ++m_numStmts;
     }
     puts("{\n");
-
-    puts("// Pointer to top level\n");
-    puts("TOPp = topp;\n");
-    puts("// Setup each module's pointers to their submodules\n");
-    for (const auto& i : m_scopes) {
-        AstScope* scopep = i.first;
-        AstNodeModule* modp = i.second;
-        if (!modp->isTop()) {
-            checkSplit(false);
-            string arrow = scopep->name();
-            string::size_type pos;
-            while ((pos = arrow.find('.')) != string::npos) arrow.replace(pos, 1, "->");
-            if (arrow.substr(0, 5) == "TOP->") arrow.replace(0, 5, "TOPp->");
-            ofp()->puts(protectWordsIf(arrow, scopep->protect()));
-            puts(" = &");
-            puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
-            ++m_numStmts;
-        }
-    }
 
     puts("// Configure time unit / time precision\n");
     if (!v3Global.rootp()->timeunit().isNone()) {
@@ -718,20 +729,38 @@ void EmitCSyms::emitSymImp() {
         puts(");\n");
     }
 
+    puts("// Setup each module's pointers to their submodules\n");
+    for (const auto& i : m_scopes) {
+        const AstScope* const scopep = i.first;
+        const AstNodeModule* const modp = i.second;
+        if (const AstScope* const aboveScopep = scopep->aboveScopep()) {
+            checkSplit(false);
+            const string protName = protectWordsIf(scopep->name(), scopep->protect());
+            if (VN_IS(modp, ClassPackage)) {
+                // ClassPackage modules seem to be a bit out of place, so hard code...
+                puts("TOP");
+            } else {
+                puts(protectIf(aboveScopep->nameDotless(), aboveScopep->protect()));
+            }
+            puts(".");
+            puts(protName.substr(protName.rfind(".") + 1));
+            puts(" = &");
+            puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
+            ++m_numStmts;
+        }
+    }
+
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
-    puts("TOPp->" + protect("__Vconfigure") + "(this, true);\n");
     for (const auto& i : m_scopes) {
         AstScope* scopep = i.first;
         AstNodeModule* modp = i.second;
-        if (!modp->isTop()) {
-            checkSplit(false);
-            // first is used by AstCoverDecl's call to __vlCoverInsert
-            const bool first = !modp->user1();
-            modp->user1(true);
-            puts(protectIf(scopep->nameDotless(), scopep->protect()) + "."
-                 + protect("__Vconfigure") + "(this, " + (first ? "true" : "false") + ");\n");
-            ++m_numStmts;
-        }
+        checkSplit(false);
+        // first is used by AstCoverDecl's call to __vlCoverInsert
+        const bool first = !modp->user1();
+        modp->user1(true);
+        puts(protectIf(scopep->nameDotless(), scopep->protect()) + "." + protect("__Vconfigure")
+             + "(this, " + (first ? "true" : "false") + ");\n");
+        ++m_numStmts;
     }
 
     if (!m_scopeNames.empty()) {  // Setup scope names
@@ -777,7 +806,6 @@ void EmitCSyms::emitSymImp() {
         // Someday.  For now public isn't common.
         for (auto it = m_scopeVars.begin(); it != m_scopeVars.end(); ++it) {
             checkSplit(true);
-            AstNodeModule* modp = it->second.m_modp;
             AstScope* scopep = it->second.m_scopep;
             AstVar* varp = it->second.m_varp;
             //
@@ -829,17 +857,8 @@ void EmitCSyms::emitSymImp() {
             putsQuoted(protect(it->second.m_varBasePretty));
 
             std::string varName;
-            if (modp->isTop()) {
-                varName += (protectIf(scopep->nameDotless() + "p", scopep->protect()) + "->");
-            } else {
-                varName += (protectIf(scopep->nameDotless(), scopep->protect()) + ".");
-            }
-
-            if (varp->isParam()) {
-                varName += protect("var_" + varp->name());
-            } else {
-                varName += protect(varp->name());
-            }
+            varName += protectIf(scopep->nameDotless(), scopep->protect()) + ".";
+            varName += protect(varp->name());
 
             if (varp->isParam()) {
                 if (varp->vlEnumType() == "VLVT_STRING") {
@@ -872,6 +891,34 @@ void EmitCSyms::emitSymImp() {
     }
 
     m_ofpBase->puts("}\n");
+
+    if (v3Global.needTraceDumper()) {
+        if (!optSystemC()) {
+            puts("\nvoid " + symClassName() + "::_traceDump() {\n");
+            // Caller checked for __Vm_dumperp non-nullptr
+            puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+            puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
+            puts("}\n");
+        }
+
+        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
+        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
+        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
+        puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
+        puts("std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
+        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
+        puts("__Vm_dumping = true;\n");
+        puts("}\n");
+        puts("}\n");
+
+        puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
+        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("__Vm_dumping = false;\n");
+        puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
+        puts("}\n");
+    }
+
     closeSplit();
     VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }

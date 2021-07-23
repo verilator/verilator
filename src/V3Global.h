@@ -53,8 +53,8 @@ template <typename T> class VRestorer {
 
 public:
     explicit VRestorer(T& permr)
-        : m_ref(permr)
-        , m_saved(permr) {}
+        : m_ref{permr}
+        , m_saved{permr} {}
     ~VRestorer() { m_ref = m_saved; }
     VL_UNCOPYABLE(VRestorer);
 };
@@ -98,7 +98,6 @@ class V3Global final {
     bool m_assertScoped = false;  // Tree is scoped
     bool m_constRemoveXs = false;  // Const needs to strip any Xs
     // Experimenting with always requiring heavy, see (#2701)
-    bool m_needHeavy = true;  // Need verilated_heavy.h include
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
     bool m_useParallelBuild = false;  // Use parallel build for model
@@ -142,8 +141,6 @@ public:
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
     string debugFilename(const string& nameComment, int newNumber = 0);
     static string digitsFilename(int number);
-    bool needHeavy() const { return m_needHeavy; }
-    void needHeavy(bool flag) { m_needHeavy = flag; }
     bool needTraceDumper() const { return m_needTraceDumper; }
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const { return m_dpi; }

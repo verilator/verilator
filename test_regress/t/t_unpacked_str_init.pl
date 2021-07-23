@@ -10,8 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-# TODO change to compile()
-lint(
+compile(
     );
 
 # No execute, not self-checking

@@ -153,6 +153,6 @@ public:
 
 void V3Class::classAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ClassVisitor visitor(nodep); }  // Destruct before checking
+    { ClassVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("class", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

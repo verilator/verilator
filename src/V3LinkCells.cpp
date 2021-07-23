@@ -173,19 +173,6 @@ private:
                 // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* modp = vvertexp->modp();
                 modp->level(vvertexp->rank() + 1);
-                if (vvertexp == m_topVertexp && modp->level() != 2) {
-                    AstNodeModule* abovep = nullptr;
-                    if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
-                        if (LinkCellsVertex* eFromVertexp
-                            = dynamic_cast<LinkCellsVertex*>(edgep->fromp())) {
-                            abovep = eFromVertexp->modp();
-                        }
-                    }
-                    v3error("Specified --top-module '"
-                            << v3Global.opt.topModule()
-                            << "' isn't at the top level, it's under another instance '"
-                            << (abovep ? abovep->prettyName() : "UNKNOWN") << "'");
-                }
             }
         }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
@@ -291,12 +278,12 @@ private:
         // m_mod, if 0 never did it, if !=, it is an unprocessed clone
         const bool cloned = (nodep->user1p() && nodep->user1p() != m_modp);
         if (nodep->user1p() == m_modp) return;  // AstBind and AstNodeModule may call a cell twice
-        if (v3Global.opt.hierChild() && nodep->modName() == m_origTopModuleName) {
-            if (nodep->modName() == m_modp->origName()) {
-                // Only the root of the recursive instantiation can be a hierarhcical block.
+        if (nodep->modName() == m_origTopModuleName) {
+            if (v3Global.opt.hierChild() && nodep->modName() == m_modp->origName()) {
+                // Only the root of the recursive instantiation can be a hierarchical block.
                 nodep->modName(m_modp->name());
             } else {
-                // In hierarchical mode, non-top module can be the top module of this run
+                // non-top module will be the top module of this run
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
@@ -536,5 +523,5 @@ public:
 
 void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
-    LinkCellsVisitor visitor(nodep, filterp, parseSymp);
+    LinkCellsVisitor visitor{nodep, filterp, parseSymp};
 }
