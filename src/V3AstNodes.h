@@ -9155,6 +9155,7 @@ private:
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
+    bool m_changeRequest = false;  // Have _change_request method
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
 public:
     AstNetlist();
@@ -9178,6 +9179,8 @@ public:
     AstNode* miscsp() const { return op3p(); }  // op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
+    void changeRequest(bool specified) { m_changeRequest = specified; }
+    bool changeRequest() const { return m_changeRequest; }
     AstConstPool* constPoolp() { return m_constPoolp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp() {

@@ -47,11 +47,33 @@ public:
     AstCFunc* m_tlChgFuncp = nullptr;  // Top level change function we're building
     int m_numStmts = 0;  // Number of statements added to m_chgFuncp
     int m_funcNum = 0;  // Number of change functions emitted
+    bool m_madeTopChg = false;
 
     ChangedState() = default;
     ~ChangedState() = default;
 
     void maybeCreateChgFuncp() {
+        maybeCreateTopChg();
+        maybeCreateMidChg();
+    }
+    void maybeCreateTopChg() {
+        if (m_madeTopChg) return;
+        m_madeTopChg = true;
+        v3Global.rootp()->changeRequest(true);
+
+        // Create a wrapper change detection function that calls each change detection function
+        m_tlChgFuncp
+            = new AstCFunc{m_scopetopp->fileline(), "_change_request", m_scopetopp, "QData"};
+        m_tlChgFuncp->isStatic(false);
+        m_tlChgFuncp->isLoose(true);
+        m_tlChgFuncp->declPrivate(true);
+        m_scopetopp->addActivep(m_tlChgFuncp);
+        // Each change detection function needs at least one AstChangeDet
+        // to ensure that V3EmitC outputs the necessary code.
+        maybeCreateMidChg();
+        m_chgFuncp->addStmtsp(new AstChangeDet{m_scopetopp->fileline(), nullptr, nullptr, false});
+    }
+    void maybeCreateMidChg() {
         // Don't create an extra function call if splitting is disabled
         if (!v3Global.opt.outputSplitCFuncs()) {
             m_chgFuncp = m_tlChgFuncp;
@@ -242,23 +264,10 @@ private:
         UINFO(4, " TS " << nodep << endl);
         // Clearing
         AstNode::user1ClearTree();
-        // Create the change detection function
+        // Prep for if make change detection function
         AstScope* const scopep = nodep->scopep();
         UASSERT_OBJ(scopep, nodep, "No scope found on top level, perhaps you have no statements?");
         m_statep->m_scopetopp = scopep;
-
-        // Create a wrapper change detection function that calls each change detection function
-        m_statep->m_tlChgFuncp
-            = new AstCFunc{nodep->fileline(), "_change_request", scopep, "QData"};
-        m_statep->m_tlChgFuncp->isStatic(false);
-        m_statep->m_tlChgFuncp->isLoose(true);
-        m_statep->m_tlChgFuncp->declPrivate(true);
-        m_statep->m_scopetopp->addActivep(m_statep->m_tlChgFuncp);
-        // Each change detection function needs at least one AstChangeDet
-        // to ensure that V3EmitC outputs the necessary code.
-        m_statep->maybeCreateChgFuncp();
-        m_statep->m_chgFuncp->addStmtsp(
-            new AstChangeDet{nodep->fileline(), nullptr, nullptr, false});
 
         iterateChildren(nodep);
     }
