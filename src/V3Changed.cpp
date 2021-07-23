@@ -59,29 +59,29 @@ public:
         }
         if (!m_chgFuncp || v3Global.opt.outputSplitCFuncs() < m_numStmts) {
             m_chgFuncp
-                = new AstCFunc(m_scopetopp->fileline(), "_change_request_" + cvtToStr(++m_funcNum),
-                               m_scopetopp, "QData");
+                = new AstCFunc{m_scopetopp->fileline(), "_change_request_" + cvtToStr(++m_funcNum),
+                               m_scopetopp, "QData"};
             m_chgFuncp->isStatic(false);
             m_chgFuncp->isLoose(true);
             m_chgFuncp->declPrivate(true);
             m_scopetopp->addActivep(m_chgFuncp);
 
             // Add a top call to it
-            AstCCall* callp = new AstCCall(m_scopetopp->fileline(), m_chgFuncp);
+            AstCCall* const callp = new AstCCall{m_scopetopp->fileline(), m_chgFuncp};
 
             if (!m_tlChgFuncp->stmtsp()) {
-                m_tlChgFuncp->addStmtsp(new AstCReturn(m_scopetopp->fileline(), callp));
+                m_tlChgFuncp->addStmtsp(new AstCReturn{m_scopetopp->fileline(), callp});
             } else {
-                AstCReturn* returnp = VN_CAST(m_tlChgFuncp->stmtsp(), CReturn);
+                AstCReturn* const returnp = VN_CAST(m_tlChgFuncp->stmtsp(), CReturn);
                 UASSERT_OBJ(returnp, m_scopetopp, "Lost CReturn in top change function");
                 // This is currently using AstLogOr which will shortcut the
                 // evaluation if any function returns true. This is likely what
                 // we want and is similar to the logic already in use inside
                 // V3EmitC, however, it also means that verbose logging may
                 // miss to print change detect variables.
-                AstNode* newp = new AstCReturn(
+                AstNode* const newp = new AstCReturn{
                     m_scopetopp->fileline(),
-                    new AstLogOr(m_scopetopp->fileline(), callp, returnp->lhsp()->unlinkFrBack()));
+                    new AstLogOr{m_scopetopp->fileline(), callp, returnp->lhsp()->unlinkFrBack()}};
                 returnp->replaceWith(newp);
                 VL_DO_DANGLING(returnp->deleteTree(), returnp);
             }
@@ -123,11 +123,11 @@ private:
         }
         m_statep->maybeCreateChgFuncp();
 
-        AstChangeDet* changep = new AstChangeDet(m_vscp->fileline(), m_varEqnp->cloneTree(true),
-                                                 m_newRvEqnp->cloneTree(true), false);
+        AstChangeDet* const changep = new AstChangeDet{
+            m_vscp->fileline(), m_varEqnp->cloneTree(true), m_newRvEqnp->cloneTree(true), false};
         m_statep->m_chgFuncp->addStmtsp(changep);
-        AstAssign* initp = new AstAssign(m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
-                                         m_varEqnp->cloneTree(true));
+        AstAssign* const initp = new AstAssign{m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
+                                               m_varEqnp->cloneTree(true)};
         m_statep->m_chgFuncp->addFinalsp(initp);
         EmitCBaseCounterVisitor visitor{initp};
         m_statep->m_numStmts += visitor.count();
@@ -145,11 +145,11 @@ private:
             VL_RESTORER(m_newLvEqnp);
             VL_RESTORER(m_newRvEqnp);
             {
-                m_varEqnp = new AstArraySel(nodep->fileline(), m_varEqnp->cloneTree(true), index);
+                m_varEqnp = new AstArraySel{nodep->fileline(), m_varEqnp->cloneTree(true), index};
                 m_newLvEqnp
-                    = new AstArraySel(nodep->fileline(), m_newLvEqnp->cloneTree(true), index);
+                    = new AstArraySel{nodep->fileline(), m_newLvEqnp->cloneTree(true), index};
                 m_newRvEqnp
-                    = new AstArraySel(nodep->fileline(), m_newRvEqnp->cloneTree(true), index);
+                    = new AstArraySel{nodep->fileline(), m_newRvEqnp->cloneTree(true), index};
 
                 iterate(nodep->subDTypep()->skipRefp());
 
@@ -184,22 +184,22 @@ public:
         m_vscp = vscp;
         m_detects = 0;
         {
-            AstVar* varp = m_vscp->varp();
-            string newvarname
-                = ("__Vchglast__" + m_vscp->scopep()->nameDotless() + "__" + varp->shortName());
+            AstVar* const varp = m_vscp->varp();
+            string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"
+                              + varp->shortName()};
             // Create:  VARREF(_last)
             //          ASSIGN(VARREF(_last), VARREF(var))
             //          ...
             //          CHANGEDET(VARREF(_last), VARREF(var))
-            AstVar* newvarp
-                = new AstVar(varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
+            AstVar* const newvarp
+                = new AstVar{varp->fileline(), AstVarType::MODULETEMP, newvarname, varp};
             m_statep->m_topModp->addStmtp(newvarp);
-            m_newvscp = new AstVarScope(m_vscp->fileline(), m_statep->m_scopetopp, newvarp);
+            m_newvscp = new AstVarScope{m_vscp->fileline(), m_statep->m_scopetopp, newvarp};
             m_statep->m_scopetopp->addVarp(m_newvscp);
 
-            m_varEqnp = new AstVarRef(m_vscp->fileline(), m_vscp, VAccess::READ);
-            m_newLvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, VAccess::WRITE);
-            m_newRvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, VAccess::READ);
+            m_varEqnp = new AstVarRef{m_vscp->fileline(), m_vscp, VAccess::READ};
+            m_newLvEqnp = new AstVarRef{m_vscp->fileline(), m_newvscp, VAccess::WRITE};
+            m_newRvEqnp = new AstVarRef{m_vscp->fileline(), m_newvscp, VAccess::READ};
         }
         iterate(vscp->dtypep()->skipRefp());
         m_varEqnp->deleteTree();
@@ -243,13 +243,13 @@ private:
         // Clearing
         AstNode::user1ClearTree();
         // Create the change detection function
-        AstScope* scopep = nodep->scopep();
+        AstScope* const scopep = nodep->scopep();
         UASSERT_OBJ(scopep, nodep, "No scope found on top level, perhaps you have no statements?");
         m_statep->m_scopetopp = scopep;
 
         // Create a wrapper change detection function that calls each change detection function
         m_statep->m_tlChgFuncp
-            = new AstCFunc(nodep->fileline(), "_change_request", scopep, "QData");
+            = new AstCFunc{nodep->fileline(), "_change_request", scopep, "QData"};
         m_statep->m_tlChgFuncp->isStatic(false);
         m_statep->m_tlChgFuncp->isLoose(true);
         m_statep->m_tlChgFuncp->declPrivate(true);
@@ -258,7 +258,7 @@ private:
         // to ensure that V3EmitC outputs the necessary code.
         m_statep->maybeCreateChgFuncp();
         m_statep->m_chgFuncp->addStmtsp(
-            new AstChangeDet(nodep->fileline(), nullptr, nullptr, false));
+            new AstChangeDet{nodep->fileline(), nullptr, nullptr, false});
 
         iterateChildren(nodep);
     }

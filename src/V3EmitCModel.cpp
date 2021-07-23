@@ -274,7 +274,7 @@ class EmitCModel final : public EmitCFunc {
                             const int vecnum = vects++;
                             UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                         "Should have swapped msb & lsb earlier.");
-                            const string ivar = string("__Vi") + cvtToStr(vecnum);
+                            const string ivar = std::string{"__Vi"} + cvtToStr(vecnum);
                             puts("for (int __Vi" + cvtToStr(vecnum) + "="
                                  + cvtToStr(arrayp->lo()));
                             puts("; " + ivar + "<=" + cvtToStr(arrayp->hi()));
