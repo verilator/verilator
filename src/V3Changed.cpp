@@ -151,8 +151,11 @@ private:
         AstAssign* const initp = new AstAssign{m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
                                                m_varEqnp->cloneTree(true)};
         m_statep->m_chgFuncp->addFinalsp(initp);
+
+        // Later code will expand words which adds to GCC compile time,
+        // so add penalty based on word width also
         EmitCBaseCounterVisitor visitor{initp};
-        m_statep->m_numStmts += visitor.count();
+        m_statep->m_numStmts += visitor.count() + m_varEqnp->widthWords();
     }
 
     virtual void visit(AstBasicDType*) override {  //

@@ -122,7 +122,7 @@ private:
     int m_count = 0;  // Number of statements
     // VISITORS
     virtual void visit(AstNode* nodep) override {
-        m_count++;
+        ++m_count;
         iterateChildren(nodep);
     }
 
