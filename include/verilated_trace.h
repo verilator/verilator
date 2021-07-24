@@ -52,21 +52,21 @@ private:
 public:
     // Put an element at the back of the queue
     void put(T value) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         m_queue.push_back(value);
         m_cv.notify_one();
     }
 
     // Put an element at the front of the queue
     void put_front(T value) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         m_queue.push_front(value);
         m_cv.notify_one();
     }
 
     // Get an element from the front of the queue. Blocks if none available
     T get() VL_MT_SAFE_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock(m_mutex);
+        VerilatedLockGuard lock{m_mutex};
         m_cv.wait(lock, [this]() VL_REQUIRES(m_mutex) { return !m_queue.empty(); });
         assert(!m_queue.empty());
         T value = m_queue.front();
@@ -76,7 +76,7 @@ public:
 
     // Non blocking get
     bool tryGet(T& result) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        const VerilatedLockGuard lockGuard(m_mutex);
+        const VerilatedLockGuard lockGuard{m_mutex};
         if (m_queue.empty()) return false;
         result = m_queue.front();
         m_queue.pop_front();

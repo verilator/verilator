@@ -66,11 +66,11 @@ def cwrite(filename):
         fh.write("    auto* gp = &m_graph;\n")
         for ver in sorted(Vertexes, key=lambda ver: ver['num']):
             fh.write(
-                "    auto* %s = new V3GraphTestVertex(gp, \"%s\");  if (%s) {}\n"
+                "    auto* %s = new V3GraphTestVertex{gp, \"%s\"};  if (%s) {}\n"
                 % (ver['name'], ver['name'], ver['name']))
         fh.write("\n")
         for edge in Edges:
-            fh.write("    new V3GraphEdge(gp, %s, %s, %s, %s);\n" %
+            fh.write("    new V3GraphEdge{gp, %s, %s, %s, %s};\n" %
                      (edge['from'], edge['to'], edge['weight'],
                       "true" if edge['cutable'] else "false"))
         fh.write("}\n")

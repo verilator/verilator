@@ -184,7 +184,7 @@ static inline const VerilatedDpiOpenVar* _vl_openhandle_varp(const svOpenArrayHa
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "%%Error: DPI svOpenArrayHandle function called with nullptr handle");
     }
-    const VerilatedDpiOpenVar* varp = reinterpret_cast<const VerilatedDpiOpenVar*>(h);
+    const VerilatedDpiOpenVar* const varp = reinterpret_cast<const VerilatedDpiOpenVar*>(h);
     if (VL_UNLIKELY(!varp->magicOk())) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "%%Error: DPI svOpenArrayHandle function called with non-Verilator handle");
@@ -205,13 +205,13 @@ int svDimensions(const svOpenArrayHandle h) { return _vl_openhandle_varp(h)->udi
 
 // Return pointer to open array data, or nullptr if not in IEEE standard C layout
 void* svGetArrayPtr(const svOpenArrayHandle h) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(h);
     if (VL_UNLIKELY(!varp->isDpiStdLayout())) return nullptr;
     return varp->datap();
 }
 // Return size of open array, or 0 if not in IEEE standard C layout
 int svSizeOfArray(const svOpenArrayHandle h) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(h);
     if (VL_UNLIKELY(!varp->isDpiStdLayout())) return 0;
     // Truncate 64 bits to int; DPI is limited to 4GB
     return static_cast<int>(varp->totalSize());
@@ -264,15 +264,15 @@ static void* _vl_svGetArrElemPtr(const svOpenArrayHandle h, int nargs, int indx1
                                  int indx3) VL_MT_SAFE {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
     if (VL_UNLIKELY(!varp->isDpiStdLayout())) return nullptr;
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     return datap;
 }
 
 // Copy to user bit array from simulator open array
 static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s, int nargs,
                                       int indx1, int indx2, int indx3) VL_MT_SAFE {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: d[0] = *(reinterpret_cast<CData*>(datap)); return;
@@ -299,8 +299,8 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
 // Copy to user logic array from simulator open array
 static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s, int nargs,
                                         int indx1, int indx2, int indx3) VL_MT_SAFE {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8:
@@ -342,8 +342,8 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
 // Copy to simulator open array from from user bit array
 static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s, int nargs,
                                       int indx1, int indx2, int indx3) VL_MT_SAFE {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = s[0]; return;
@@ -364,8 +364,8 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
 // Copy to simulator open array from from user logic array
 static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s,
                                         int nargs, int indx1, int indx2, int indx3) VL_MT_SAFE {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = s[0].aval; return;
@@ -388,8 +388,8 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
 static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1, int indx2,
                                  int indx3, int indx4) VL_MT_SAFE {
     // One extra index supported, as need bit number
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return 0;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: return (*(reinterpret_cast<CData*>(datap))) & 1;
@@ -404,8 +404,8 @@ static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int narg
                                 int indx2, int indx3, int indx4) VL_MT_SAFE {
     // One extra index supported, as need bit number
     value &= 1;  // Make sure clean
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = value; return;
@@ -420,7 +420,7 @@ static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int narg
 // DPI accessors that simply call above functions
 
 void* svGetArrElemPtr(const svOpenArrayHandle h, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(h);
     void* datap;
     va_list ap;
     va_start(ap, indx1);
@@ -454,7 +454,7 @@ void* svGetArrElemPtr3(const svOpenArrayHandle h, int indx1, int indx2, int indx
 }
 
 void svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
@@ -486,7 +486,7 @@ void svPutBitArrElem3VecVal(const svOpenArrayHandle d, const svBitVecVal* s, int
     _vl_svPutBitArrElemVecVal(d, s, 3, indx1, indx2, indx3);
 }
 void svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
@@ -522,7 +522,7 @@ void svPutLogicArrElem3VecVal(const svOpenArrayHandle d, const svLogicVecVal* s,
 // From simulator storage into user space
 
 void svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
@@ -553,7 +553,7 @@ void svGetBitArrElem3VecVal(svBitVecVal* d, const svOpenArrayHandle s, int indx1
     _vl_svGetBitArrElemVecVal(d, s, 3, indx1, indx2, indx3);
 }
 void svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
@@ -585,7 +585,7 @@ void svGetLogicArrElem3VecVal(svLogicVecVal* d, const svOpenArrayHandle s, int i
 }
 
 svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     svBit out;
     va_list ap;
     va_start(ap, indx1);
@@ -618,7 +618,7 @@ svBit svGetBitArrElem3(const svOpenArrayHandle s, int indx1, int indx2, int indx
 }
 svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...) {
     // Verilator doesn't support X/Z so can just call Bit version
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     svBit out;
     va_list ap;
     va_start(ap, indx1);
@@ -654,7 +654,7 @@ svLogic svGetLogicArrElem3(const svOpenArrayHandle s, int indx1, int indx2, int 
 }
 
 void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
@@ -685,7 +685,7 @@ void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1, int ind
 }
 void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1, ...) {
     // Verilator doesn't support X/Z so can just call Bit version
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
@@ -732,15 +732,15 @@ svScope svGetScope() {
 }
 
 svScope svSetScope(const svScope scope) {
-    const VerilatedScope* prevScopep = Verilated::dpiScope();
-    const VerilatedScope* vscopep = reinterpret_cast<const VerilatedScope*>(scope);
+    const VerilatedScope* const prevScopep = Verilated::dpiScope();
+    const VerilatedScope* const vscopep = reinterpret_cast<const VerilatedScope*>(scope);
     Verilated::dpiScope(vscopep);
     // NOLINTNEXTLINE(google-readability-casting)
     return (svScope)(prevScopep);
 }
 
 const char* svGetNameFromScope(const svScope scope) {
-    const VerilatedScope* vscopep = reinterpret_cast<const VerilatedScope*>(scope);
+    const VerilatedScope* const vscopep = reinterpret_cast<const VerilatedScope*>(scope);
     return vscopep->name();
 }
 
