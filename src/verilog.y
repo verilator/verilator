@@ -1457,10 +1457,12 @@ interface_item<nodep>:		// IEEE: interface_item + non_port_interface_item
 	//			// IEEE: generate_region
 	|	interface_generate_region		{ $$ = $1; }
 	|	interface_or_generate_item		{ $$ = $1; }
-	|	program_declaration			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: program decls within interface decls"); }
+	|	program_declaration
+			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: program decls within interface decls"); }
 	//			// IEEE 1800-2017: modport_item
 	//			// See instead old 2012 position in interface_or_generate_item
-	|	interface_declaration			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: interface decls within interface decls"); }
+	|	interface_declaration
+			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: interface decls within interface decls"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// See note in interface_or_generate item
 	|	module_common_item			{ $$ = $1; }
@@ -1483,7 +1485,8 @@ interface_or_generate_item<nodep>:  // ==IEEE: interface_or_generate_item
 
 anonymous_program<nodep>:	// ==IEEE: anonymous_program
 	//			// See the spec - this doesn't change the scope, items still go up "top"
-		yPROGRAM ';' anonymous_program_itemListE yENDPROGRAM	{ BBUNSUP($<fl>1, "Unsupported: Anonymous programs"); $$ = nullptr; }
+		yPROGRAM ';' anonymous_program_itemListE yENDPROGRAM
+			{ BBUNSUP($<fl>1, "Unsupported: Anonymous programs"); $$ = nullptr; }
 	;
 
 anonymous_program_itemListE<nodep>:	// IEEE: { anonymous_program_item }
@@ -1565,9 +1568,12 @@ program_generate_item<nodep>:		// ==IEEE: program_generate_item
 	;
 
 extern_tf_declaration<nodep>:		// ==IEEE: extern_tf_declaration
-		yEXTERN task_prototype ';'		{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: extern task"); }
-	|	yEXTERN function_prototype ';'		{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: extern function"); }
-	|	yEXTERN yFORKJOIN task_prototype ';'	{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: extern forkjoin"); }
+		yEXTERN task_prototype ';'
+			{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: extern task"); }
+	|	yEXTERN function_prototype ';'
+			{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: extern function"); }
+	|	yEXTERN yFORKJOIN task_prototype ';'
+			{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: extern forkjoin"); }
 	;
 
 modport_declaration<nodep>:		// ==IEEE: modport_declaration
@@ -1598,14 +1604,17 @@ modportPortsDecl<nodep>:
 	//			// IEEE: modport_simple_ports_declaration
 		port_direction modportSimplePort	{ $$ = new AstModportVarRef($<fl>2, *$2, GRAMMARP->m_varIO); }
 	//			// IEEE: modport_clocking_declaration
-	|	yCLOCKING idAny/*clocking_identifier*/	{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport clocking"); }
+	|	yCLOCKING idAny/*clocking_identifier*/
+			{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport clocking"); }
 	//			// IEEE: yIMPORT modport_tf_port
 	//			// IEEE: yEXPORT modport_tf_port
 	//			// modport_tf_port expanded here
 	|	yIMPORT id/*tf_identifier*/		{ $$ = new AstModportFTaskRef($<fl>2, *$2, false); }
 	|	yEXPORT id/*tf_identifier*/		{ $$ = new AstModportFTaskRef($<fl>2, *$2, true); }
-	|	yIMPORT method_prototype		{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport import with prototype"); }
-	|	yEXPORT method_prototype		{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport export with prototype"); }
+	|	yIMPORT method_prototype
+			{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport import with prototype"); }
+	|	yEXPORT method_prototype
+			{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport export with prototype"); }
 	// Continuations of above after a comma.
 	//			// IEEE: modport_simple_ports_declaration
 	|	modportSimplePort			{ $$ = new AstModportVarRef($<fl>1,*$1,GRAMMARP->m_varIO); }
@@ -1875,9 +1884,11 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//			// declarations which decode '.' modport themselves, so
 	//			// instead see data_typeVar
 	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/
-			{ $$ = new AstBasicDType($1, AstBasicDTypeKwd::CHANDLE); BBUNSUP($1, "Unsupported: virtual interface"); }
+			{ $$ = new AstBasicDType{$1, AstBasicDTypeKwd::CHANDLE};
+			  BBUNSUP($1, "Unsupported: virtual interface"); }
 	|	yVIRTUAL__anyID                id/*interface*/
-			{ $$ = new AstBasicDType($1, AstBasicDTypeKwd::CHANDLE); BBUNSUP($1, "Unsupported: virtual data type"); }
+			{ $$ = new AstBasicDType{$1, AstBasicDTypeKwd::CHANDLE};
+			  BBUNSUP($1, "Unsupported: virtual data type"); }
 	|	type_reference				{ $$ = $1; }
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
@@ -2016,8 +2027,10 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 	//			// IEEE: associative_dimension (if data_type)
 	//			// Can't tell which until see if expr is data type or not
 	|	'[' exprOrDataType ']'			{ $$ = new AstBracketRange($1, $2); }
-	|	yP_BRASTAR ']'				{ $$ = nullptr; BBUNSUP($1, "Unsupported: [*] wildcard associative arrays"); }
-	|	'[' '*' ']'				{ $$ = nullptr; BBUNSUP($2, "Unsupported: [*] wildcard associative arrays"); }
+	|	yP_BRASTAR ']'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: [*] wildcard associative arrays"); }
+	|	'[' '*' ']'
+			{ $$ = nullptr; BBUNSUP($2, "Unsupported: [*] wildcard associative arrays"); }
 	//			// IEEE: queue_dimension
 	//			// '[' '$' ']' -- $ is part of expr, see '[' constExpr ']'
 	//			// '[' '$' ':' expr ']' -- anyrange:expr:$
@@ -2289,9 +2302,12 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	|	module_or_generate_item 		{ $$ = $1; }
 	|	specify_block 				{ $$ = $1; }
 	|	specparam_declaration			{ $$ = $1; }
-	|	program_declaration			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: program decls within module decls"); }
-	|	module_declaration			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: module decls within module decls"); }
-	|	interface_declaration			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: interface decls within module decls"); }
+	|	program_declaration
+			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: program decls within module decls"); }
+	|	module_declaration
+			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: module decls within module decls"); }
+	|	interface_declaration
+			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: interface decls within module decls"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// Verilator specific
 	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); }
@@ -2327,7 +2343,8 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	|	bind_directive				{ $$ = $1; }
 	|	continuous_assign			{ $$ = $1; }
 	//			// IEEE: net_alias
-	|	yALIAS variable_lvalue aliasEqList ';'	{ $$ = nullptr; BBUNSUP($1, "Unsupported: alias statements"); }
+	|	yALIAS variable_lvalue aliasEqList ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: alias statements"); }
 	|	initial_construct			{ $$ = $1; }
 	|	final_construct				{ $$ = $1; }
 	//			// IEEE: always_construct
@@ -2360,7 +2377,8 @@ module_or_generate_item_declaration<nodep>:	// ==IEEE: module_or_generate_item_d
 		package_or_generate_item_declaration	{ $$ = $1; }
 	| 	genvar_declaration			{ $$ = $1; }
 	|	clocking_declaration			{ $$ = $1; }
-	|	yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'	{ $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
+	|	yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
 	//UNSUP	yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'	{ }
 	;
 
@@ -2693,7 +2711,8 @@ packed_dimensionList<rangep>:	// IEEE: { packed_dimension }
 
 packed_dimension<rangep>:	// ==IEEE: packed_dimension
 		anyrange				{ $$ = $1; }
-	|	'[' ']'					{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: [] dimensions"); }
+	|	'[' ']'
+			{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: [] dimensions"); }
 	;
 
 //************************************************
@@ -3081,9 +3100,12 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// IEEE: procedural_continuous_assignment
 	|	yASSIGN idClassSel '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
 	//UNSUP:			delay_or_event_controlE above
-	|	yDEASSIGN variable_lvalue ';'		{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); }
-	|	yFORCE expr '=' expr ';'		{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 force"); }
-	|	yRELEASE variable_lvalue ';'		{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 release"); }
+	|	yDEASSIGN variable_lvalue ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); }
+	|	yFORCE expr '=' expr ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 force"); }
+	|	yRELEASE variable_lvalue ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 release"); }
 	//
 	//			// IEEE: case_statement
 	|	unique_priorityE caseStart caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
@@ -3205,7 +3227,8 @@ statement_item<nodep>:		// IEEE: statement_item
 	//UNSUP	randsequence_statement			{ $$ = $1; }
 	//
 	//			// IEEE: randcase_statement
-	|	yRANDCASE case_itemList yENDCASE	{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 randcase statements"); }
+	|	yRANDCASE case_itemList yENDCASE
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 randcase statements"); }
 	//
 	//UNSUP	expect_property_statement		{ $$ = $1; }
 	//
@@ -3383,11 +3406,14 @@ caseCondList<nodep>:		// IEEE: part of case_item
 	;
 
 patternNoExpr<nodep>:		// IEEE: pattern **Excluding Expr*
-		'.' id/*variable*/			{ $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
-	|	yP_DOTSTAR				{ $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+		'.' id/*variable*/
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+	|	yP_DOTSTAR
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
 	//			// IEEE: "expr" excluded; expand in callers
 	//			// "yTAGGED id [expr]" Already part of expr
-	//UNSUP	yTAGGED id/*member_identifier*/ patternNoExpr		{ $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+	//UNSUP	yTAGGED id/*member_identifier*/ patternNoExpr
+	//UNSUP		{ $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
 	//			// "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
 	;
 
@@ -3563,7 +3589,8 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// IEEE: randomize_call
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
-	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
+	|	funcRef yWITH__CUR constraint_block
+			{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
 	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWithParse($2, false, $1, nullptr); }
 	;
 
@@ -4274,7 +4301,8 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: '(' mintypmax_expression ')'
 	|	~noPar__IGNORE~'(' expr ')'		{ $$ = $2; }
-	|	~noPar__IGNORE~'(' expr ':' expr ':' expr ')'	{ $$ = $2; BBUNSUP($1, "Unsupported: min typ max expressions"); }
+	|	~noPar__IGNORE~'(' expr ':' expr ':' expr ')'
+			{ $$ = $2; BBUNSUP($1, "Unsupported: min typ max expressions"); }
 	//			// PSL rule
 	|	'_' '(' expr ')'			{ $$ = $3; }	// Arbitrary Verilog inside PSL
 	//
@@ -6160,11 +6188,13 @@ class_item<nodep>:			// ==IEEE: class_item
 	|	class_method				{ $$ = $1; }
 	|	class_constraint			{ $$ = $1; }
 	//
-	|	class_declaration			{ $$ = nullptr; BBUNSUP($1, "Unsupported: class within class"); }
+	|	class_declaration
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: class within class"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
 	//			// local_parameter_declaration under parameter_declaration
-	|	parameter_declaration ';'		{ $$ = $1; BBUNSUP($2, "Unsupported: class parameters"); }  // 1800-2009
+	|	parameter_declaration ';'
+			{ $$ = $1; BBUNSUP($2, "Unsupported: class parameters"); }  // 1800-2009
 	|	';'					{ $$ = nullptr; }
 	//
 	|	error ';'				{ $$ = nullptr; }
@@ -6224,8 +6254,10 @@ class_constraint<nodep>:  // ==IEEE: class_constraint
 		constraintStaticE yCONSTRAINT idAny constraint_block	{ $$ = nullptr; /*UNSUP*/ }
 	//			// IEEE: constraint_prototype + constraint_prototype_qualifier
 	|	constraintStaticE yCONSTRAINT idAny ';'		{ $$ = nullptr; }
-	|	yEXTERN constraintStaticE yCONSTRAINT idAny ';'	{ $$ = nullptr; BBUNSUP($1, "Unsupported: extern constraint"); }
-	|	yPURE constraintStaticE yCONSTRAINT idAny ';'	{ $$ = nullptr; BBUNSUP($1, "Unsupported: pure constraint"); }
+	|	yEXTERN constraintStaticE yCONSTRAINT idAny ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: extern constraint"); }
+	|	yPURE constraintStaticE yCONSTRAINT idAny ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: pure constraint"); }
 	;
 
 constraint_block<nodep>:  // ==IEEE: constraint_block
@@ -6239,7 +6271,8 @@ constraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
 
 constraint_block_item<nodep>:  // ==IEEE: constraint_block_item
 		constraint_expression				{ $$ = $1; }
-	|	ySOLVE solve_before_list yBEFORE solve_before_list ';'	{ $$ = nullptr; BBUNSUP($2, "Unsupported: solve before"); }
+	|	ySOLVE solve_before_list yBEFORE solve_before_list ';'
+			{ $$ = nullptr; BBUNSUP($2, "Unsupported: solve before"); }
 	;
 
 solve_before_list<nodep>:  // ==IEEE: solve_before_list
