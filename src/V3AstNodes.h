@@ -307,7 +307,6 @@ public:
         : ASTGEN_SUPER_Class(fl, name) {}
     ASTNODE_NODE_FUNCS(Class)
     virtual string verilogKwd() const override { return "class"; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
     virtual void dump(std::ostream& str) const override;
     virtual const char* broken() const override {
@@ -556,7 +555,6 @@ public:
     virtual void dumpSmall(std::ostream& str) const override;
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     virtual AstNodeDType* getChild2DTypep() const override { return keyChildDTypep(); }
-    virtual bool isHeavy() const override { return true; }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
@@ -653,7 +651,6 @@ public:
     }
     virtual string prettyDTypeName() const override;
     virtual void dumpSmall(std::ostream& str) const override;
-    virtual bool isHeavy() const override { return true; }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -881,7 +878,6 @@ public:
         BROKEN_RTN(dtypep() != this);
         return nullptr;
     }
-    virtual bool isHeavy() const override { return keyword() == AstBasicDTypeKwd::STRING; }
     AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range of variable
     void rangep(AstRange* nodep) { setNOp1p(nodep); }
     void setSignedState(const VSigning& signst) {
@@ -1141,7 +1137,6 @@ public:
     }
     virtual void dumpSmall(std::ostream& str) const override;
     virtual string prettyDTypeName() const override;
-    virtual bool isHeavy() const override { return true; }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -3882,7 +3877,6 @@ public:
     ASTNODE_NODE_FUNCS(DumpCtl)
     virtual string verilogKwd() const override { return ctlType().ascii(); }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isOutputter() const override { return true; }
     virtual bool cleanOut() const { return true; }
@@ -4038,7 +4032,6 @@ public:
     ASTNODE_NODE_FUNCS(FOpen)
     virtual string verilogKwd() const override { return "$fopen"; }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isPure() const override { return false; }
     virtual bool isOutputter() const override { return true; }
@@ -4060,7 +4053,6 @@ public:
     ASTNODE_NODE_FUNCS(FOpenMcd)
     virtual string verilogKwd() const override { return "$fopen"; }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isPure() const override { return false; }
     virtual bool isOutputter() const override { return true; }
@@ -4284,7 +4276,6 @@ public:
         setNOp4p(msbp);
     }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isPure() const override { return false; }
     virtual bool isOutputter() const override { return true; }
@@ -4395,7 +4386,6 @@ public:
     virtual string emitVerilog() override { return "%f$value$plusargs(%l, %k%r)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool cleanOut() const override { return true; }
     virtual bool same(const AstNode* samep) const override { return true; }
@@ -6534,7 +6524,6 @@ public:
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     FmtType format() const { return m_fmt; }
 };
 
@@ -8152,7 +8141,6 @@ public:
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
     virtual bool sizeMattersThs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstGetcN final : public AstNodeBiop {
@@ -8178,7 +8166,6 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstGetcRefN final : public AstNodeBiop {
@@ -8204,7 +8191,6 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstSubstrN final : public AstNodeTriop {
@@ -8230,7 +8216,6 @@ public:
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
     virtual bool sizeMattersThs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstCompareNN final : public AstNodeBiop {
@@ -8263,7 +8248,6 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstFell final : public AstNodeMath {

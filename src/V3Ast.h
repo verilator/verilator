@@ -1792,8 +1792,6 @@ public:
     virtual bool isGateOptimizable() const { return true; }
     // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
-    // Needs verilated_heavy.h (uses std::string or some others)
-    virtual bool isHeavy() const { return false; }
     // Else creates output or exits, etc, not unconsumed
     virtual bool isOutputter() const { return false; }
     // Else a AstTime etc which output can't be predicted from input
