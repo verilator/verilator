@@ -49,7 +49,7 @@ class EmitCConstPool final : public EmitCConstInit {
         ofp->puts("// DESCRIPTION: Verilator output: Constant pool\n");
         ofp->puts("//\n");
         ofp->puts("\n");
-        ofp->puts("#include \"verilated_heavy.h\"\n");
+        ofp->puts("#include \"verilated.h\"\n");
         return ofp;
     }
 

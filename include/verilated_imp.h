@@ -30,7 +30,6 @@
 
 #include "verilatedos.h"
 #include "verilated.h"
-#include "verilated_heavy.h"
 #include "verilated_syms.h"
 
 #include <deque>

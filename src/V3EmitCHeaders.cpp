@@ -303,7 +303,7 @@ class EmitCHeader final : public EmitCConstInit {
         // Include files
         puts("\n");
         ofp()->putsIntTopInclude();
-        puts("#include \"verilated_heavy.h\"\n");
+        puts("#include \"verilated.h\"\n");
         if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
