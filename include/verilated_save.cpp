@@ -93,8 +93,8 @@ void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, std::strlen(VLTSAVE_HEADER_STR)))) {
         const std::string fn = filename();
         const std::string msg
-            = std::string(
-                  "Can't deserialize; file has wrong header signature, or file not found: ")
+            = std::
+                  string{"Can't deserialize; file has wrong header signature, or file not found: "}
               + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         // Die before we close() as close would infinite loop
@@ -112,7 +112,7 @@ void VerilatedDeserialize::trailer() VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, std::strlen(VLTSAVE_TRAILER_STR)))) {
         const std::string fn = filename();
         const std::string msg
-            = std::string("Can't deserialize; file has wrong end-of-file signature: ")
+            = std::string{"Can't deserialize; file has wrong end-of-file signature: "}
               + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         // Die before we close() as close would infinite loop
@@ -204,7 +204,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string(__FUNCTION__) + ": " + std::strerror(errno);
+                std::string msg = std::string{__FUNCTION__} + ": " + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
@@ -235,7 +235,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                const std::string msg = std::string(__FUNCTION__) + ": " + std::strerror(errno);
+                const std::string msg = std::string{__FUNCTION__} + ": " + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;

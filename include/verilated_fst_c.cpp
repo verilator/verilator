@@ -98,7 +98,7 @@ VerilatedFst::~VerilatedFst() {
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
@@ -130,14 +130,14 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 }
 
 void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     VerilatedTrace<VerilatedFst>::closeBase();
     fstWriterClose(m_fst);
     m_fst = nullptr;
 }
 
 void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     VerilatedTrace<VerilatedFst>::flushBase();
     fstWriterFlushContext(m_fst);
 }
@@ -161,11 +161,11 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
 
-    std::istringstream nameiss(name);
+    std::istringstream nameiss{name};
     std::istream_iterator<std::string> beg(nameiss);
     std::istream_iterator<std::string> end;
     std::list<std::string> tokens(beg, end);  // Split name
-    std::string symbol_name(tokens.back());
+    std::string symbol_name{tokens.back()};
     tokens.pop_back();  // Remove symbol name from hierarchy
     tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
     std::string tmpModName;

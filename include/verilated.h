@@ -1614,14 +1614,14 @@ static inline IData VL_ONEHOT0_W(int words, WDataInP const lwp) VL_MT_SAFE {
 static inline IData VL_CLOG2_I(IData lhs) VL_PURE {
     // There are faster algorithms, or fls GCC4 builtins, but rarely used
     if (VL_UNLIKELY(!lhs)) return 0;
-    lhs--;
+    --lhs;
     int shifts = 0;
     for (; lhs != 0; ++shifts) lhs = lhs >> 1;
     return shifts;
 }
 static inline IData VL_CLOG2_Q(QData lhs) VL_PURE {
     if (VL_UNLIKELY(!lhs)) return 0;
-    lhs--;
+    --lhs;
     int shifts = 0;
     for (; lhs != 0; ++shifts) lhs = lhs >> 1ULL;
     return shifts;

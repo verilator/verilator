@@ -316,7 +316,7 @@ public:
         });
     }
     void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
-    void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG()); }
+    void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG{}); }
     VlQueue unique() const {
         VlQueue out;
         std::unordered_set<T_Value> saw;
@@ -397,12 +397,12 @@ public:
 
     // Reduction operators
     VlQueue min() const {
-        if (m_deque.empty()) return VlQueue();
+        if (m_deque.empty()) return VlQueue{};
         const auto it = std::min_element(m_deque.begin(), m_deque.end());
         return VlQueue::cons(*it);
     }
     VlQueue max() const {
-        if (m_deque.empty()) return VlQueue();
+        if (m_deque.empty()) return VlQueue{};
         const auto it = std::max_element(m_deque.begin(), m_deque.end());
         return VlQueue::cons(*it);
     }
@@ -774,7 +774,7 @@ std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
 template <class T_Key, class T_Value>
 void VL_READMEM_N(bool hex, int bits, const std::string& filename,
                   VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
-    VlReadMem rmem(hex, bits, filename, start, end);
+    VlReadMem rmem{hex, bits, filename, start, end};
     if (VL_UNLIKELY(!rmem.isOpen())) return;
     while (true) {
         QData addr;
@@ -790,7 +790,7 @@ void VL_READMEM_N(bool hex, int bits, const std::string& filename,
 template <class T_Key, class T_Value>
 void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
                    const VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
-    VlWriteMem wmem(hex, bits, filename, start, end);
+    VlWriteMem wmem{hex, bits, filename, start, end};
     if (VL_UNLIKELY(!wmem.isOpen())) return;
     for (const auto& i : obj) {
         const QData addr = i.first;
