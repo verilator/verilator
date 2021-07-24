@@ -1347,7 +1347,6 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
     return got;
 }
 
-// declared in verilated_heavy.h
 IData VL_FGETS_NI(std::string& dest, IData fpi) VL_MT_SAFE {
     return getLine(dest, fpi, std::numeric_limits<size_t>::max());
 }

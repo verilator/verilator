@@ -181,7 +181,7 @@ class EmitCImp final : EmitCFunc {
         puts("// See " + topClassName() + ".h for the primary calling header\n");
 
         // Include files
-        puts("\n#include \"verilated_heavy.h\"\n");
+        puts("\n#include \"verilated.h\"\n");
         if (v3Global.dpi()) puts("#include \"verilated_dpi.h\"\n");
         puts("\n");
         for (const string& name : headers) puts("#include \"" + name + ".h\"\n");

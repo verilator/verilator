@@ -30,7 +30,7 @@
 #define VERILATOR_VERILATED_SYMS_H_
 
 #include "verilatedos.h"
-#include "verilated_heavy.h"
+#include "verilated.h"
 #include "verilated_sym_props.h"
 
 #include <map>

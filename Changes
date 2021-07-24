@@ -18,6 +18,7 @@ Verilator 4.211 devel
   in order to aid incremental compilation via ccache (#3071). [Geza Lore]
 * Parameter values are now emitted as 'static constexpr' instead of enum.
   C++ direct references to parameters might require updating (#3077). [Geza Lore]
+* Refactored Verilated include files; include verilated.h not verilated_heavy.h.
 * Fix -G to treat simple integer literals as signed (#3060). [Anikin1610]
 * Fix emitted string array initializers (#2895). [Iztok Jeras]
 
