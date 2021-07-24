@@ -1952,7 +1952,8 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
 	//
 	//			// IEEE: "[ covergroup_variable_identifier ] '=' class_new
 	//			// Pushed into variable_declExpr:class_new
-	|	'=' class_new				{ nullptr; BBUNSUP($1, "Unsupported: member declaration assignment with new()"); }
+	|	'=' class_new
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: member declaration assignment with new()"); }
 	;
 
 list_of_variable_decl_assignments<varp>:	// ==IEEE: list_of_variable_decl_assignments
@@ -1975,7 +1976,8 @@ variable_decl_assignment<varp>:	// ==IEEE: variable_decl_assignment
 	//
 	//			// IEEE: "[ covergroup_variable_identifier ] '=' class_new
 	//			// Pushed into variable_declExpr:class_new
-	|	'=' class_new				{ nullptr; BBUNSUP($1, "Unsupported: declaration assignment with new()"); }
+	|	'=' class_new
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: declaration assignment with new()"); }
 	;
 
 list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifiers
@@ -2735,8 +2737,7 @@ list_of_defparam_assignments<nodep>:	//== IEEE: list_of_defparam_assignments
 defparam_assignment<nodep>:	// ==IEEE: defparam_assignment
 		idAny '.' idAny '=' expr 		{ $$ = new AstDefParam($4, *$1, *$3, $5); }
 	|	idAny '.' idAny '.'
-	 		{ $$ = nullptr;
-			  BBUNSUP($4, "Unsupported: defparam with more than one dot"); }
+	 		{ $$ = nullptr; BBUNSUP($4, "Unsupported: defparam with more than one dot"); }
 	;
 
 //************************************************
@@ -3457,7 +3458,8 @@ for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declarat
 
 for_initializationItemList<nodep>:	// IEEE: [for_variable_declaration...]
 		for_initializationItem			{ $$ = $1; }
-	|	for_initializationItemList ',' for_initializationItem	{ $$ = $1; BBUNSUP($2, "Unsupported: for loop initialization after the first comma"); }
+	|	for_initializationItemList ',' for_initializationItem
+			{ $$ = $1; BBUNSUP($2, "Unsupported: for loop initialization after the first comma"); }
 	;
 
 for_initializationItem<nodep>:		// IEEE: variable_assignment + for_variable_declaration
