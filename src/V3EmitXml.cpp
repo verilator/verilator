@@ -156,9 +156,9 @@ class EmitXmlFileVisitor final : public AstNVisitor {
     }
     virtual void visit(AstConstPool* nodep) override {
         if (!v3Global.opt.xmlOnly()) {
-          puts("<constpool>\n");
-          iterateChildren(nodep);
-          puts("</constpool>\n");
+            puts("<constpool>\n");
+            iterateChildren(nodep);
+            puts("</constpool>\n");
         }
     }
     virtual void visit(AstInitArray* nodep) override {
@@ -264,9 +264,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
             puts(" left=\"" + cvtToStr(nodep->left()) + "\"");
             puts(" right=\"" + cvtToStr(nodep->right()) + "\"");
         }
-        if (nodep->isSigned()) {
-            puts(" signed=\"true\"");
-        }
+        if (nodep->isSigned()) { puts(" signed=\"true\""); }
         puts("/>\n");
     }
     virtual void visit(AstIfaceRefDType* nodep) override {
