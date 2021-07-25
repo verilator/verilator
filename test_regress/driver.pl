@@ -2185,13 +2185,14 @@ sub files_identical {
                 s/^-V\{t[0-9]+,[0-9]+\}/-V{t#,#}/;  # --vlt vs --vltmt run differences
                 $_;
             } @l1;
-            for (my $l=0; $l<=$#l1; ++$l) {
+            for (my $l = 0; $l <= $#l1; ++$l) {
                 # Don't put control chars into our source repository
                 $l1[$l] =~ s/\r/<#013>/mig;
                 $l1[$l] =~ s/Command Failed[^\n]+/Command Failed/mig;
                 $l1[$l] =~ s/Version: Verilator[^\n]+/Version: Verilator ###/mig;
                 $l1[$l] =~ s/CPU Time: +[0-9.]+ seconds[^\n]+/CPU Time: ###/mig;
                 $l1[$l] =~ s/\?v=[0-9.]+/?v=latest/mig;  # warning URL
+                $l1[$l] =~ s/DepSet_[a-f0-9]+_/DepSet_#_/mg;
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest
                     last;
