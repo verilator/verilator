@@ -1101,6 +1101,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
     DECL_OPTION("-ignc", OnOff, &m_ignc);
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
+    DECL_OPTION("-instr-count-dpi", CbVal, [this, fl](int val) {
+        m_instrCountDpi = val;
+        if (m_instrCountDpi < 0) fl->v3fatal("--instr-count-dpi must be non-negative: " << val);
+    });
 
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
     const auto setLang = [this, fl](const char* valp) {
