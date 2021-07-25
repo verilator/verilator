@@ -8788,7 +8788,9 @@ public:
     }
     //
     virtual void name(const string& name) override { m_name = name; }
-    virtual int instrCount() const override { return dpiImportPrototype() ? INSTR_COUNT_DPI : 0; }
+    virtual int instrCount() const override {
+        return dpiImportPrototype() ? v3Global.opt.instrCountDpi() : 0;
+    }
     VBoolOrUnknown isConst() const { return m_isConst; }
     void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }

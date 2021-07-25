@@ -216,6 +216,12 @@ be done by a "main thread". In most cases the eval thread and main thread
 are the same thread (i.e. the user's top C++ testbench runs on a single
 thread), but this is not required.
 
+When making frequent use of DPI imported functions in a multi-threaded
+model, it may be beneficial to performance to adjust the
+:vlopt:`--instr-count-dpi` option based on some experimentation. This
+influences the partitioning of the model by adjusting the assumed execution
+time of DPI imports.
+
 The :vlopt:`--trace-threads` options can be used to produce trace dumps
 using multiple threads. If :vlopt:`--trace-threads` is set without
 :vlopt:`--threads`, then :vlopt:`--trace-threads` will imply

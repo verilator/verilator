@@ -1524,7 +1524,6 @@ public:
     static constexpr int INSTR_COUNT_STR = 100;  // String ops
     static constexpr int INSTR_COUNT_TIME = INSTR_COUNT_CALL + 5;  // Determine simulation time
     static constexpr int INSTR_COUNT_PLI = 20;  // PLI routines
-    static constexpr int INSTR_COUNT_DPI = 1000;  // DPI import function
 
     // ACCESSORS
     virtual string name() const { return ""; }

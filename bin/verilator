@@ -333,6 +333,7 @@ detailed descriptions of these arguments.
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
     --inline-mult <value>       Tune module inlining
+    --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
