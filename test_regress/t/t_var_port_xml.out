@@ -121,9 +121,9 @@
         </range>
       </unpackarraydtype>
       <basicdtype fl="d38" loc="d,38,17,38,18" id="4" name="logic" left="5" right="0"/>
-      <basicdtype fl="d34" loc="d,34,27,34,28" id="3" name="logic" left="5" right="0"/>
-      <basicdtype fl="d18" loc="d,18,19,18,26" id="1" name="integer" left="31" right="0"/>
-      <basicdtype fl="d40" loc="d,40,37,40,38" id="7" name="logic" left="31" right="0"/>
+      <basicdtype fl="d34" loc="d,34,27,34,28" id="3" name="logic" left="5" right="0" signed="true"/>
+      <basicdtype fl="d18" loc="d,18,19,18,26" id="1" name="integer" left="31" right="0" signed="true"/>
+      <basicdtype fl="d40" loc="d,40,37,40,38" id="7" name="logic" left="31" right="0" signed="true"/>
     </typetable>
   </netlist>
 </verilator_xml>
