@@ -1510,21 +1510,21 @@ public:
     static void operator delete(void* obj, size_t size);
 #endif
 
-    // CONSTANT ACCESSORS
-    static int instrCountBranch() { return 4; }  ///< Instruction cycles to branch
-    static int instrCountDiv() { return 10; }  ///< Instruction cycles to divide
-    static int instrCountDpi() { return 1000; }  ///< Instruction cycles to call user function
-    static int instrCountLd() { return 2; }  ///< Instruction cycles to load memory
-    static int instrCountMul() { return 3; }  ///< Instruction cycles to multiply integers
-    static int instrCountPli() { return 20; }  ///< Instruction cycles to call pli routines
-    static int instrCountDouble() { return 8; }  ///< Instruction cycles to convert or do floats
-    static int instrCountDoubleDiv() { return 40; }  ///< Instruction cycles to divide floats
-    static int instrCountDoubleTrig() { return 200; }  ///< Instruction cycles to do trigonomics
-    static int instrCountString() { return 100; }  ///< Instruction cycles to do string ops
-    /// Instruction cycles to call subroutine
-    static int instrCountCall() { return instrCountBranch() + 10; }
-    /// Instruction cycles to determine simulation time
-    static int instrCountTime() { return instrCountCall() + 5; }
+    // CONSTANTS
+    // The following are relative dynamic costs (~ execution cycle count) of various operations.
+    // They are used by V3InstCount to estimate the relative execution time of code fragments.
+    static constexpr int INSTR_COUNT_BRANCH = 4;  // Branch
+    static constexpr int INSTR_COUNT_CALL = INSTR_COUNT_BRANCH + 10;  // Subroutine call
+    static constexpr int INSTR_COUNT_LD = 2;  // Load memory
+    static constexpr int INSTR_COUNT_INT_MUL = 3;  // Integer multiply
+    static constexpr int INSTR_COUNT_INT_DIV = 10;  // Integer divide
+    static constexpr int INSTR_COUNT_DBL = 8;  // Convert or do float ops
+    static constexpr int INSTR_COUNT_DBL_DIV = 40;  // Double divide
+    static constexpr int INSTR_COUNT_DBL_TRIG = 200;  // Double trigonometric ops
+    static constexpr int INSTR_COUNT_STR = 100;  // String ops
+    static constexpr int INSTR_COUNT_TIME = INSTR_COUNT_CALL + 5;  // Determine simulation time
+    static constexpr int INSTR_COUNT_PLI = 20;  // PLI routines
+    static constexpr int INSTR_COUNT_DPI = 1000;  // DPI import function
 
     // ACCESSORS
     virtual string name() const { return ""; }
@@ -2094,7 +2094,7 @@ public:
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
     virtual bool sizeMattersThs() const override { return false; }
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) = 0;
 };
 
@@ -2229,7 +2229,7 @@ public:
     AstNode* incsp() const { return op3p(); }  // op3 = increment statements
     AstNode* bodysp() const { return op4p(); }  // op4 = body of loop
     virtual bool isGateOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
@@ -2256,7 +2256,7 @@ public:
     void addElsesp(AstNode* newp) { addOp3p(newp); }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isGateDedupable() const override { return true; }
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
     void branchPred(VBranchPred flag) { m_branchPred = flag; }
     VBranchPred branchPred() const { return m_branchPred; }
@@ -2274,7 +2274,7 @@ protected:
 
 public:
     ASTNODE_BASE_FUNCS(NodeCase)
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     AstNode* exprp() const { return op1p(); }  // op1 = case condition <expression>
     AstCaseItem* itemsp() const {
         return VN_CAST(op2p(), CaseItem);
@@ -2644,7 +2644,7 @@ public:
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual void cloneRelink() override;
     virtual const char* broken() const override;
-    virtual int instrCount() const override { return instrCountCall(); }
+    virtual int instrCount() const override { return INSTR_COUNT_CALL; }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeCCall* asamep = static_cast<const AstNodeCCall*>(samep);
         return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());
