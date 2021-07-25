@@ -1716,7 +1716,7 @@ public:
                                       VSigning numeric) const;
     AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin, VSigning numeric) const;
     AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd) const;
-    AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
+    static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error
     void v3errorEnd(std::ostringstream& str) const;

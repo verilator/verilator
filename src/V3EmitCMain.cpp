@@ -93,6 +93,8 @@ private:
         puts("topp->final();\n");
         puts("return 0;\n");
         puts("}\n");
+
+        m_ofp = nullptr;
     }
 };
 

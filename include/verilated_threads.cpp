@@ -48,7 +48,8 @@ VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
 // VlWorkerThread
 
 VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, VerilatedContext* contextp, bool profiling)
-    : m_poolp{poolp}
+    : m_ready_size{0}
+    , m_poolp{poolp}
     , m_profiling{profiling}  // Must init this last -- after setting up fields that it might read:
     , m_exiting{false}
     , m_cthread{startWorker, this}

@@ -53,29 +53,31 @@
 
 //=============================================================================
 // Check that vltscope_t matches fstScopeType
-static_assert((int)FST_ST_VCD_MODULE == (int)VLT_TRACE_SCOPE_MODULE,
+
+static_assert(static_cast<int>(FST_ST_VCD_MODULE) == static_cast<int>(VLT_TRACE_SCOPE_MODULE),
               "VLT_TRACE_SCOPE_MODULE mismatches");
-static_assert((int)FST_ST_VCD_TASK == (int)VLT_TRACE_SCOPE_TASK,
+static_assert(static_cast<int>(FST_ST_VCD_TASK) == static_cast<int>(VLT_TRACE_SCOPE_TASK),
               "VLT_TRACE_SCOPE_TASK mismatches");
-static_assert((int)FST_ST_VCD_FUNCTION == (int)VLT_TRACE_SCOPE_FUNCTION,
+static_assert(static_cast<int>(FST_ST_VCD_FUNCTION) == static_cast<int>(VLT_TRACE_SCOPE_FUNCTION),
               "VLT_TRACE_SCOPE_FUNCTION mismatches");
-static_assert((int)FST_ST_VCD_BEGIN == (int)VLT_TRACE_SCOPE_BEGIN,
+static_assert(static_cast<int>(FST_ST_VCD_BEGIN) == static_cast<int>(VLT_TRACE_SCOPE_BEGIN),
               "VLT_TRACE_SCOPE_BEGIN mismatches");
-static_assert((int)FST_ST_VCD_FORK == (int)VLT_TRACE_SCOPE_FORK,
+static_assert(static_cast<int>(FST_ST_VCD_FORK) == static_cast<int>(VLT_TRACE_SCOPE_FORK),
               "VLT_TRACE_SCOPE_FORK mismatches");
-static_assert((int)FST_ST_VCD_GENERATE == (int)VLT_TRACE_SCOPE_GENERATE,
+static_assert(static_cast<int>(FST_ST_VCD_GENERATE) == static_cast<int>(VLT_TRACE_SCOPE_GENERATE),
               "VLT_TRACE_SCOPE_GENERATE mismatches");
-static_assert((int)FST_ST_VCD_STRUCT == (int)VLT_TRACE_SCOPE_STRUCT,
+static_assert(static_cast<int>(FST_ST_VCD_STRUCT) == static_cast<int>(VLT_TRACE_SCOPE_STRUCT),
               "VLT_TRACE_SCOPE_STRUCT mismatches");
-static_assert((int)FST_ST_VCD_UNION == (int)VLT_TRACE_SCOPE_UNION,
+static_assert(static_cast<int>(FST_ST_VCD_UNION) == static_cast<int>(VLT_TRACE_SCOPE_UNION),
               "VLT_TRACE_SCOPE_UNION mismatches");
-static_assert((int)FST_ST_VCD_CLASS == (int)VLT_TRACE_SCOPE_CLASS,
+static_assert(static_cast<int>(FST_ST_VCD_CLASS) == static_cast<int>(VLT_TRACE_SCOPE_CLASS),
               "VLT_TRACE_SCOPE_CLASS mismatches");
-static_assert((int)FST_ST_VCD_INTERFACE == (int)VLT_TRACE_SCOPE_INTERFACE,
+static_assert(static_cast<int>(FST_ST_VCD_INTERFACE)
+                  == static_cast<int>(VLT_TRACE_SCOPE_INTERFACE),
               "VLT_TRACE_SCOPE_INTERFACE mismatches");
-static_assert((int)FST_ST_VCD_PACKAGE == (int)VLT_TRACE_SCOPE_PACKAGE,
+static_assert(static_cast<int>(FST_ST_VCD_PACKAGE) == static_cast<int>(VLT_TRACE_SCOPE_PACKAGE),
               "VLT_TRACE_SCOPE_PACKAGE mismatches");
-static_assert((int)FST_ST_VCD_PROGRAM == (int)VLT_TRACE_SCOPE_PROGRAM,
+static_assert(static_cast<int>(FST_ST_VCD_PROGRAM) == static_cast<int>(VLT_TRACE_SCOPE_PROGRAM),
               "VLT_TRACE_SCOPE_PROGRAM mismatches");
 
 //=============================================================================
@@ -191,8 +193,8 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
             tmpModName = *new_it;
             tmpModName.pop_back();
             // If the scope ends with a non-ascii character, it will be 0x80 + fstScopeType
-            fstWriterSetScope(m_fst, (fstScopeType)(new_it->back() & 0x7f), tmpModName.c_str(),
-                              nullptr);
+            fstWriterSetScope(m_fst, static_cast<fstScopeType>(new_it->back() & 0x7f),
+                              tmpModName.c_str(), nullptr);
         } else
             fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
 

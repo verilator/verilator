@@ -57,7 +57,7 @@ protected:
         puts("\n");
         for (uint32_t n = 0; n < size; ++n) {
             m_unpackedWord = n;
-            if (n) puts(n % tabMod ? ", " : ",\n");
+            if (n) puts((n % tabMod) ? ", " : ",\n");
             iterate(nodep->getIndexDefaultedValuep(n));
         }
         puts("\n");
@@ -87,7 +87,7 @@ protected:
             if (m_inUnpacked) puts(" // VlWide " + cvtToStr(m_unpackedWord));
             puts("\n");
             for (uint32_t n = 0; n < size; ++n) {
-                if (n) puts(n % 4 ? ", " : ",\n");
+                if (n) puts((n % 4) ? ", " : ",\n");
                 ofp()->printf("0x%08" PRIx32, num.edataWord(n));
             }
             puts("\n");

@@ -422,22 +422,22 @@ V3Number& V3Number::setSingleBits(char value) {
 }
 
 V3Number& V3Number::setAllBits0() {
-    for (int i = 0; i < words(); i++) { m_value[i] = {0, 0}; }
+    for (int i = 0; i < words(); i++) m_value[i] = {0, 0};
     return *this;
 }
 V3Number& V3Number::setAllBits1() {
-    for (int i = 0; i < words(); i++) { m_value[i] = {~0u, 0}; }
+    for (int i = 0; i < words(); i++) m_value[i] = {~0U, 0};
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setAllBitsX() {
     // Use setAllBitsXRemoved if calling this based on a non-X/Z input value such as divide by zero
-    for (int i = 0; i < words(); i++) { m_value[i] = {~0u, ~0u}; }
+    for (int i = 0; i < words(); i++) m_value[i] = {~0U, ~0U};
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setAllBitsZ() {
-    for (int i = 0; i < words(); i++) { m_value[i] = {0, ~0u}; }
+    for (int i = 0; i < words(); i++) m_value[i] = {0, ~0U};
     opCleanThis();
     return *this;
 }

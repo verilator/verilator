@@ -109,7 +109,7 @@ private:
 
 public:
     // Remove marks from AstVars (clear user1)
-    void clear() { AstNode::user1ClearTree(); }
+    static void clear() { AstNode::user1ClearTree(); }
 
     // Mark all AstVars referenced by setting user1
     void mark(AstNode* node) { iterate(node); }
@@ -142,7 +142,7 @@ private:
     // it is in a supported position, which are:
     // - RHS is the Cond
     // - RHS is And(Const, Cond). This And is inserted often by V3Clean.
-    AstNodeCond* extractCond(AstNode* rhsp) {
+    static AstNodeCond* extractCond(AstNode* rhsp) {
         if (AstNodeCond* const condp = VN_CAST(rhsp, NodeCond)) {
             return condp;
         } else if (AstAnd* const andp = VN_CAST(rhsp, And)) {
@@ -160,7 +160,7 @@ private:
     // wide, but working that out here is a bit difficult. As this masking is
     // rarely required (only when trying to merge a "cond & value" with an
     // earlier ternary), we will just always mask it for safety.
-    AstNode* maskLsb(AstNode* nodep) {
+    static AstNode* maskLsb(AstNode* nodep) {
         AstNode* const maskp = new AstConst(nodep->fileline(), AstConst::BitTrue());
         return new AstAnd(nodep->fileline(), nodep, maskp);
     }

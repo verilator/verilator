@@ -1231,9 +1231,10 @@ public:
         } else {
             reason = "its type is unknown";  // LCOV_EXCL_LINE
         }
-        if (reason)
+        if (reason) {
             UINFO(5,
                   "Check " << nodep->prettyNameQ() << " cannot split because" << reason << endl);
+        }
         return reason;
     }
     VL_DEBUG_FUNC;  // Declare debug()

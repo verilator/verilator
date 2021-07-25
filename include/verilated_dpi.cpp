@@ -386,7 +386,7 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
 
 // Return bit from simulator open array
 static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1, int indx2,
-                                 int indx3, int indx4) VL_MT_SAFE {
+                                 int indx3, int) VL_MT_SAFE {
     // One extra index supported, as need bit number
     const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
@@ -401,7 +401,7 @@ static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1
 }
 // Update simulator open array from bit
 static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int nargs, int indx1,
-                                int indx2, int indx3, int indx4) VL_MT_SAFE {
+                                int indx2, int indx3, int) VL_MT_SAFE {
     // One extra index supported, as need bit number
     value &= 1;  // Make sure clean
     const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);

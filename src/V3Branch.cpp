@@ -43,8 +43,8 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    int m_likely;  // Excuses for branch likely taken
-    int m_unlikely;  // Excuses for branch likely not taken
+    int m_likely = false;  // Excuses for branch likely taken
+    int m_unlikely = false;  // Excuses for branch likely not taken
     std::vector<AstCFunc*> m_cfuncsp;  // List of all tasks
 
     // METHODS

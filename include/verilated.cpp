@@ -215,7 +215,7 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     char* const bufp = new char[len + 1];
     VL_VSNPRINTF(bufp, len + 1, formatp, ap);
 
-    const std::string out{bufp, len};
+    std::string out{bufp, len};  // Not const to allow move optimization
     delete[] bufp;
     return out;
 }
@@ -970,14 +970,14 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 }
 
 static inline bool _vl_vsss_eof(FILE* fp, int floc) VL_MT_SAFE {
-    if (fp) {
+    if (VL_LIKELY(fp)) {
         return std::feof(fp) ? true : false;  // true : false to prevent MSVC++ warning
     } else {
         return floc < 0;
     }
 }
 static inline void _vl_vsss_advance(FILE* fp, int& floc) VL_MT_SAFE {
-    if (fp) {
+    if (VL_LIKELY(fp)) {
         std::fgetc(fp);
     } else {
         floc -= 8;
@@ -986,7 +986,7 @@ static inline void _vl_vsss_advance(FILE* fp, int& floc) VL_MT_SAFE {
 static inline int _vl_vsss_peek(FILE* fp, int& floc, const WDataInP fromp,
                                 const std::string& fstr) VL_MT_SAFE {
     // Get a character without advancing
-    if (fp) {
+    if (VL_LIKELY(fp)) {
         const int data = std::fgetc(fp);
         if (data == EOF) return EOF;
         ungetc(data, fp);
@@ -2259,7 +2259,7 @@ VerilatedContext::VerilatedContext()
     Verilated::threadContextp(this);
     m_ns.m_profThreadsFilename = "profile_threads.dat";
     m_fdps.resize(31);
-    std::fill(m_fdps.begin(), m_fdps.end(), (FILE*)0);
+    std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);
     for (std::size_t i = 0, id = 1; i < m_fdFreeMct.size(); ++i, ++id) m_fdFreeMct[i] = id;
 }
@@ -2422,7 +2422,7 @@ void VerilatedContext::internalsDump() const VL_MT_SAFE {
 void VerilatedContextImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex) {
     if (!m_args.m_argVecLoaded) m_args.m_argVec.clear();
     for (int i = 0; i < argc; ++i) {
-        m_args.m_argVec.push_back(argv[i]);
+        m_args.m_argVec.emplace_back(argv[i]);
         commandArgVl(argv[i]);
     }
     m_args.m_argVecLoaded = true;  // Can't just test later for empty vector, no arguments is ok

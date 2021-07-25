@@ -164,10 +164,11 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                             "bit:" << bit << " newWidth:" << newWidth);
                 m_bitPolarity.setAllBitsX();
                 for (int i = 0; i < oldPol.width(); ++i) {
-                    if (oldPol.bitIs0(i))
+                    if (oldPol.bitIs0(i)) {
                         m_bitPolarity.setBit(i, '0');
-                    else if (oldPol.bitIs1(i))
+                    } else if (oldPol.bitIs1(i)) {
                         m_bitPolarity.setBit(i, '1');
+                    }
                 }
             }
             UASSERT_OBJ(bit < m_bitPolarity.width(), m_refp,
@@ -306,19 +307,20 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         }
 
         bool ok = !m_failed;
-        if (expectConst)
+        if (expectConst) {
             ok &= !info.m_refp && info.m_constp;
-        else
+        } else {
             ok &= info.m_refp && !info.m_constp;
+        }
         return ok ? info : LeafInfo{};
     }
     AstNode* combineTree(AstNode* lhsp, AstNode* rhsp) {
         if (!lhsp) return rhsp;
-        if (isAndTree())
+        if (isAndTree()) {
             return new AstAnd(m_rootp->fileline(), lhsp, rhsp);
-        else if (isOrTree())
+        } else if (isOrTree()) {
             return new AstOr(m_rootp->fileline(), lhsp, rhsp);
-        else {
+        } else {
             UASSERT_OBJ(isXorTree(), m_rootp, "must be either Xor or RedXor");
             return new AstXor(m_rootp->fileline(), lhsp, rhsp);
         }
@@ -836,7 +838,8 @@ private:
         } else if (AstShiftL* const shiftp = VN_CAST(nodep->rhsp(), ShiftL)) {
             if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
                 // Check if mask is full over the non-zero bits
-                V3Number maskLo(nodep, nodep->width()), maskHi(nodep, nodep->width());
+                V3Number maskLo(nodep, nodep->width());
+                V3Number maskHi(nodep, nodep->width());
                 maskLo.setMask(nodep->width() - scp->num().toUInt());
                 maskHi.opShiftL(maskLo, scp->num());
                 return checkMask(maskHi);
