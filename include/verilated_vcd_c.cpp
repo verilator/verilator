@@ -271,8 +271,9 @@ void VerilatedVcd::printStr(const char* str) {
 }
 
 void VerilatedVcd::printQuad(vluint64_t n) {
-    char buf[100];
-    VL_SNPRINTF(buf, 100, "%" VL_PRI64 "u", n);
+    constexpr size_t LEN_STR_QUAD = 40;
+    char buf[LEN_STR_QUAD];
+    VL_SNPRINTF(buf, LEN_STR_QUAD, "%" VL_PRI64 "u", n);
     printStr(buf);
 }
 
@@ -355,9 +356,9 @@ void VerilatedVcd::dumpHeader() {
         const time_t tick = time(nullptr);
         tm ticktm;
         VL_LOCALTIME_R(&tick, &ticktm);
-        constexpr int bufsize = 50;
-        char buf[bufsize];
-        std::strftime(buf, bufsize, "%c", &ticktm);
+        constexpr size_t LEN_BUF = 50;
+        char buf[LEN_BUF];
+        std::strftime(buf, LEN_BUF, "%c", &ticktm);
         printStr(buf);
     }
     printStr(" $end\n");

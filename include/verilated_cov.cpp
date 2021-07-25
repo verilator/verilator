@@ -143,8 +143,9 @@ private:
         std::string rtn;
         for (const char* pos = text.c_str(); *pos; ++pos) {
             if (!std::isprint(*pos) || *pos == '%' || *pos == '"') {
-                char hex[10];
-                VL_SNPRINTF(hex, 10, "%%%02X", pos[0]);
+                constexpr size_t LEN_MAX_HEX = 20;
+                char hex[LEN_MAX_HEX];
+                VL_SNPRINTF(hex, LEN_MAX_HEX, "%%%02X", pos[0]);
                 rtn += hex;
             } else {
                 rtn += *pos;

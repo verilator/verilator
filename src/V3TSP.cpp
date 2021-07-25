@@ -499,7 +499,7 @@ public:
         : m_xpos{xpos}
         , m_ypos{ypos}
         , m_serial{++s_serialNext} {}
-    ~TspTestState() = default;
+    virtual ~TspTestState() override = default;
     virtual int cost(const TspStateBase* otherp) const override {
         return cost(dynamic_cast<const TspTestState*>(otherp));
     }

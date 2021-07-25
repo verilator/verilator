@@ -343,8 +343,9 @@ public:
     virtual const VerilatedRange* rangep() const override { return &(varp()->packed()); }
     virtual const char* fullname() const override {
         static VL_THREAD_LOCAL std::string t_out;
-        char num[25];
-        VL_SNPRINTF(num, 25, "%d", m_index);
+        constexpr size_t LEN_MAX_INDEX = 25;
+        char num[LEN_MAX_INDEX];
+        VL_SNPRINTF(num, LEN_MAX_INDEX, "%d", m_index);
         t_out = std::string{scopep()->name()} + "." + name() + "[" + num + "]";
         return t_out.c_str();
     }
@@ -484,7 +485,7 @@ public:
             m_cbData.obj = m_varo.castVpiHandle();
             m_varo.createPrevDatap();
         } else {
-            m_cbData.obj = NULL;
+            m_cbData.obj = nullptr;
         }
     }
     ~VerilatedVpiCbHolder() = default;
@@ -631,12 +632,13 @@ public:
                 void* const prevDatap
                     = varop->prevDatap();  // Was malloced when we added the callback
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p\n",
-                                            varop->fullname(), *((CData*)newDatap),
-                                            *((CData*)prevDatap), newDatap, prevDatap););
+                                            varop->fullname(), *(static_cast<CData*>(newDatap)),
+                                            *(static_cast<CData*>(prevDatap)), newDatap,
+                                            prevDatap););
                 if (std::memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
-                    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" VL_PRI64
-                                                "d %s v[0]=%d\n",
-                                                ho.id(), varop->fullname(), *((CData*)newDatap)););
+                    VL_DEBUG_IF_PLI(
+                        VL_DBG_MSGF("- vpi: value_callback %" VL_PRI64 "d %s v[0]=%d\n", ho.id(),
+                                    varop->fullname(), *(static_cast<CData*>(newDatap))););
                     update.insert(varop);
                     vpi_get_value(ho.cb_datap()->obj, ho.cb_datap()->value);
                     (ho.cb_rtnp())(ho.cb_datap());
@@ -707,7 +709,8 @@ public:
         va_end(args);
         m_errorInfo.state = vpiPLI;
         t_filehold = file;
-        setError((PLI_BYTE8*)m_buff, nullptr, const_cast<PLI_BYTE8*>(t_filehold.c_str()), line);
+        setError(static_cast<PLI_BYTE8*>(m_buff), nullptr,
+                 const_cast<PLI_BYTE8*>(t_filehold.c_str()), line);
     }
     p_vpi_error_info getError() {
         if (m_flag) return &m_errorInfo;
@@ -1109,7 +1112,7 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
 #define SELF_CHECK_RESULT_CSTR(got, exp) \
     if (0 != std::strcmp((got), (exp))) { \
         std::string msg \
-            = std::string{"%Error: "} + "GOT = '" + got + "'" + "  EXP = '" + exp + "'"; \
+            = std::string{"%Error: "} + "GOT = '" + (got) + "'" + "  EXP = '" + (exp) + "'"; \
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str()); \
     }
 

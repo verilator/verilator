@@ -268,7 +268,7 @@ class ParamProcessor final {
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    void makeSmallNames(AstNodeModule* modp) {
+    static void makeSmallNames(AstNodeModule* modp) {
         std::vector<int> usedLetter;
         usedLetter.resize(256);
         // Pass 1, assign first letter to each gparam's name

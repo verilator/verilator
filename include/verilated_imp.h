@@ -178,7 +178,7 @@ public:
 
 // FILE* list constructed from a file-descriptor
 class VerilatedFpList final {
-    FILE* m_fp[31];
+    FILE* m_fp[31] = {};
     std::size_t m_sz = 0;
 
 public:

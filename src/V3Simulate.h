@@ -991,6 +991,7 @@ private:
             }
         }
         SimStackNode stackNode(nodep, &tconnects);
+        // cppcheck-suppress danglingLifetime
         m_callStack.push_back(&stackNode);
         // Clear output variable
         if (auto* const basicp = VN_CAST(funcp->fvarp(), Var)->basicp()) {

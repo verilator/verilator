@@ -91,7 +91,7 @@ class EmitCLazyDecls final : public AstNVisitor {
     VL_DEBUG_FUNC;
 
 public:
-    EmitCLazyDecls(EmitCBaseVisitor& emitter)
+    explicit EmitCLazyDecls(EmitCBaseVisitor& emitter)
         : m_emitter(emitter) {}
     void emit(AstNode* nodep) {
         m_needsBlankLine = false;
