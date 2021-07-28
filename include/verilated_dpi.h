@@ -28,7 +28,6 @@
 
 #include "verilatedos.h"
 #include "verilated.h"  // Also presumably included by caller
-#include "verilated_heavy.h"  // Also presumably included by caller
 #include "verilated_sym_props.h"
 
 #include "svdpi.h"

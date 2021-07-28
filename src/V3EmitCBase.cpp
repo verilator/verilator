@@ -21,10 +21,25 @@
 #include "V3Task.h"
 
 //######################################################################
+// EmitCParentModule implementation
+
+EmitCParentModule::EmitCParentModule() {
+    const auto setAll = [](AstNodeModule* modp) -> void {
+        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var)) { nodep->user4p(modp); }
+        }
+    };
+    for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
+        setAll(VN_CAST(modp, NodeModule));
+    }
+    setAll(v3Global.rootp()->constPoolp()->modp());
+}
+
+//######################################################################
 // EmitCBaseVisitor implementation
 
 string EmitCBaseVisitor::funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp) {
-    modp = modp ? modp : VN_CAST(nodep->user4p(), NodeModule);
+    modp = modp ? modp : EmitCParentModule::get(nodep);
     string name;
     if (nodep->isConstructor()) {
         name += prefixNameProtect(modp);
@@ -54,8 +69,7 @@ string EmitCBaseVisitor::cFuncArgs(const AstCFunc* nodep) {
     string args;
     if (nodep->isLoose() && !nodep->isStatic()) {
         if (nodep->isConst().trueKnown()) args += "const ";
-        AstNodeModule* modp = VN_CAST(nodep->user4p(), NodeModule);
-        args += prefixNameProtect(modp);
+        args += prefixNameProtect(EmitCParentModule::get(nodep));
         args += "* vlSelf";
     }
     if (!nodep->argTypes().empty()) {
@@ -82,6 +96,7 @@ string EmitCBaseVisitor::cFuncArgs(const AstCFunc* nodep) {
 
 void EmitCBaseVisitor::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
                                        bool withScope) {
+    if (funcp->slow()) puts("VL_ATTR_COLD ");
     if (!funcp->isConstructor() && !funcp->isDestructor()) {
         puts(funcp->rtnTypeVoid());
         puts(" ");
@@ -109,7 +124,6 @@ void EmitCBaseVisitor::emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule*
         puts("virtual ");
     }
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
-    if (funcp->slow()) puts(" VL_ATTR_COLD");
     puts(";\n");
     if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
 }

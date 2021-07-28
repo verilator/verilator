@@ -67,8 +67,8 @@ public:
         : V3GraphVertex{graphp}
         , m_name{name}
         , m_type{type} {}
-    virtual string name() const { return m_name + " " + typestr(); }
-    virtual string dotColor() const { return user() ? "green" : "black"; }
+    virtual string name() const override { return m_name + " " + typestr(); }
+    virtual string dotColor() const override { return user() ? "green" : "black"; }
     virtual int type() const { return m_type; }
 };
 
@@ -120,7 +120,7 @@ protected:
 
 public:
     LatchDetectGraph() { clear(); }
-    ~LatchDetectGraph() { clear(); }
+    virtual ~LatchDetectGraph() override { clear(); }
     // ACCESSORS
     LatchDetectGraphVertex* currentp() { return m_curVertexp; }
     void currentp(LatchDetectGraphVertex* vertex) { m_curVertexp = vertex; }

@@ -48,7 +48,8 @@ VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
 // VlWorkerThread
 
 VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, VerilatedContext* contextp, bool profiling)
-    : m_poolp{poolp}
+    : m_ready_size{0}
+    , m_poolp{poolp}
     , m_profiling{profiling}  // Must init this last -- after setting up fields that it might read:
     , m_exiting{false}
     , m_cthread{startWorker, this}
@@ -104,7 +105,7 @@ VlThreadPool::VlThreadPool(VerilatedContext* contextp, int nThreads, bool profil
     }
     // Create'em
     for (int i = 0; i < nThreads; ++i) {
-        m_workers.push_back(new VlWorkerThread(this, contextp, profiling));
+        m_workers.push_back(new VlWorkerThread{this, contextp, profiling});
     }
     // Set up a profile buffer for the current thread too -- on the
     // assumption that it's the same thread that calls eval and may be
@@ -131,13 +132,13 @@ void VlThreadPool::setupProfilingClientThread() VL_MT_SAFE_EXCLUDES(m_mutex) {
     // try not to malloc while collecting profiling.
     t_profilep->reserve(4096);
     {
-        const VerilatedLockGuard lk(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         m_allProfiles.insert(t_profilep);
     }
 }
 
 void VlThreadPool::profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lk(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     for (const auto& profilep : m_allProfiles) {
         // Every thread's profile trace gets a copy of rec.
         profilep->emplace_back(rec);
@@ -146,7 +147,7 @@ void VlThreadPool::profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES
 
 void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lk(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
 
     FILE* const fp = std::fopen(filenamep, "w");

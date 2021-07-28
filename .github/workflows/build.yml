@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
+        os: [ubuntu-20.04, ubuntu-18.04]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
@@ -37,11 +37,9 @@ jobs:
         exclude:
           # Build pull requests only with ubuntu-20.04 and without m32
           - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
-          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-16.04' || 'do-not-exclude' }}
           - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
           # Build -m32 only on ubuntu-20.04
           - {os: ubuntu-18.04, m32: 1}
-          - {os: ubuntu-16.04, m32: 1}
     runs-on: ${{ matrix.os }}
     name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} ${{ matrix.m32 && '| -m32' || '' }}
     env:
@@ -92,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04, ubuntu-16.04]
+        os: [ubuntu-20.04, ubuntu-18.04]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
@@ -101,11 +99,9 @@ jobs:
         exclude:
           # Build pull requests only with ubuntu-20.04 and without m32
           - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
-          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-16.04' || 'do-not-exclude' }}
           - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
           # Build -m32 only on ubuntu-20.04
           - {os: ubuntu-18.04, m32: 1}
-          - {os: ubuntu-16.04, m32: 1}
     runs-on: ${{ matrix.os }}
     name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }} ${{ matrix.m32 && '| -m32' || '' }}
     env:

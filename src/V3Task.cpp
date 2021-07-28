@@ -419,17 +419,22 @@ private:
         return newvscp;
     }
     AstVarScope* createVarScope(AstVar* invarp, const string& name) {
-        // We could create under either the ref's scope or the ftask's scope.
-        // It shouldn't matter, as they are only local variables.
-        // We choose to do it under whichever called this function, which results
-        // in more cache locality.
-        AstVar* newvarp = new AstVar(invarp->fileline(), AstVarType::BLOCKTEMP, name, invarp);
-        newvarp->funcLocal(false);
-        newvarp->propagateAttrFrom(invarp);
-        m_modp->addStmtp(newvarp);
-        AstVarScope* newvscp = new AstVarScope(newvarp->fileline(), m_scopep, newvarp);
-        m_scopep->addVarp(newvscp);
-        return newvscp;
+        if (invarp->isParam() && VN_IS(invarp->valuep(), InitArray)) {
+            // Move array params in functions into constant pool
+            return v3Global.rootp()->constPoolp()->findTable(VN_CAST(invarp->valuep(), InitArray));
+        } else {
+            // We could create under either the ref's scope or the ftask's scope.
+            // It shouldn't matter, as they are only local variables.
+            // We choose to do it under whichever called this function, which results
+            // in more cache locality.
+            AstVar* newvarp = new AstVar{invarp->fileline(), AstVarType::BLOCKTEMP, name, invarp};
+            newvarp->funcLocal(false);
+            newvarp->propagateAttrFrom(invarp);
+            m_modp->addStmtp(newvarp);
+            AstVarScope* newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
+            m_scopep->addVarp(newvscp);
+            return newvscp;
+        }
     }
 
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
@@ -684,13 +689,13 @@ private:
         return dpiproto;
     }
 
-    AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
+    static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
         const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";\n";
         return new AstCStmt(portp->fileline(), stmt);
     }
 
-    AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
-                                       const string& toSuffix) {
+    static AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
+                                              const string& toSuffix) {
         const string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
         return new AstCStmt(portp->fileline(), stmt);
     }
@@ -943,7 +948,7 @@ private:
         }
     }
 
-    void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
+    static void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
@@ -1192,18 +1197,27 @@ private:
         for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
             nextp = stmtp->nextp();
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
-                if (portp->isIO()) {
-                    // Move it to new function
+                if (portp->isParam() && VN_IS(portp->valuep(), InitArray)) {
+                    // Move array parameters in functions into constant pool
                     portp->unlinkFrBack();
-                    portp->funcLocal(true);
-                    cfuncp->addArgsp(portp);
+                    pushDeletep(portp);
+                    AstNode* const tablep = v3Global.rootp()->constPoolp()->findTable(
+                        VN_CAST(portp->valuep(), InitArray));
+                    portp->user2p(tablep);
                 } else {
-                    // "Normal" variable, mark inside function
-                    portp->funcLocal(true);
+                    if (portp->isIO()) {
+                        // Move it to new function
+                        portp->unlinkFrBack();
+                        portp->funcLocal(true);
+                        cfuncp->addArgsp(portp);
+                    } else {
+                        // "Normal" variable, mark inside function
+                        portp->funcLocal(true);
+                    }
+                    AstVarScope* newvscp = new AstVarScope{portp->fileline(), m_scopep, portp};
+                    m_scopep->addVarp(newvscp);
+                    portp->user2p(newvscp);
                 }
-                AstVarScope* newvscp = new AstVarScope(portp->fileline(), m_scopep, portp);
-                m_scopep->addVarp(newvscp);
-                portp->user2p(newvscp);
             }
         }
 

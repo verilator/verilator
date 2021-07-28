@@ -389,7 +389,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n");
     ofp()->putsIntTopInclude();
-    puts("#include \"verilated_heavy.h\"\n");
+    puts("#include \"verilated.h\"\n");
     if (v3Global.needTraceDumper()) {
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
     }
@@ -857,13 +857,8 @@ void EmitCSyms::emitSymImp() {
             putsQuoted(protect(it->second.m_varBasePretty));
 
             std::string varName;
-            varName += (protectIf(scopep->nameDotless(), scopep->protect()) + ".");
-
-            if (varp->isParam()) {
-                varName += protect("var_" + varp->name());
-            } else {
-                varName += protect(varp->name());
-            }
+            varName += protectIf(scopep->nameDotless(), scopep->protect()) + ".";
+            varName += protect(varp->name());
 
             if (varp->isParam()) {
                 if (varp->vlEnumType() == "VLVT_STRING") {

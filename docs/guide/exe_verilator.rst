@@ -536,6 +536,14 @@ Summary:
    times, but potentially faster simulation speed.  This setting is ignored
    for very small modules; they will always be inlined, if allowed.
 
+.. option:: --instr-count-dpi <value>
+
+   Assumed dynamic instruction count of the average DPI import. This is used
+   by the partitioning algorithm when creating a multithread model. The
+   default value is 200. Adjusting this to an appropriate value can yield
+   performance improvements in multithreaded models. Ignored when creating a
+   single threaded model.
+
 .. option:: -j [<value>]
 
    Specify the level of parallelism for :vlopt:`--build`. The <value> must
@@ -1043,6 +1051,8 @@ Summary:
    With "--threads-dpi pure", the default,
      Verilator assumes DPI pure imports are threadsafe, but non-pure DPI
      imports are not.
+
+   See also :vlopt:`--instr-count-dpi` option.
 
 .. option:: --threads-max-mtasks <value>
 

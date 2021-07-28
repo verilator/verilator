@@ -772,7 +772,7 @@ void EmitCFunc::emitChangeDet() {
     puts("QData __req = false;  // Logically a bool\n");  // But not because it results in
     // faster code
     bool gotOne = false;
-    for (AstChangeDet* changep : m_blkChangeDetVec) {
+    for (AstChangeDet* const changep : m_blkChangeDetVec) {
         if (changep->lhsp()) {
             if (!gotOne) {  // Not a clocked block
                 puts("__req |= (");

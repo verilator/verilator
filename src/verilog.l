@@ -60,9 +60,9 @@
 //======================================================================
 
 static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
-    string text = std::string(textp, length);
+    const string text = std::string{textp, length};
     bool success = false;
-    double d = VString::parseDouble(text, &success);
+    const double d = VString::parseDouble(text, &success);
     if (!success) fl->v3error("Syntax error parsing real: '" << textp << "'");
     return d;
 }
@@ -608,7 +608,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Default PLI rule */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,SAX>{
-  "$"[a-zA-Z_$][a-zA-Z0-9_$]*   { string str (yytext, yyleng);
+  "$"[a-zA-Z_$][a-zA-Z0-9_$]*   { const string str (yytext, yyleng);
                                   yylval.strp = PARSEP->newString(AstNode::encodeName(str));
                                   FL; return yaD_PLI;
                                 }
@@ -861,10 +861,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Identifiers and numbers */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
   {escid}               { FL; yylval.strp = PARSEP->newString
-                                (AstNode::encodeName(string(yytext+1)));  // +1 to skip the backslash
+                                  (AstNode::encodeName(std::string{yytext+1}));  // +1 to skip the backslash
                           return yaID__LEX;
                         }
-  {id}                  { FL; yylval.strp = PARSEP->newString(AstNode::encodeName(string(yytext)));
+  {id}                  { FL; yylval.strp = PARSEP->newString(AstNode::encodeName(std::string{yytext}));
                           return yaID__LEX;
                         }
   \"[^\"\\]*\"          { FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
@@ -875,10 +875,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
                               int shortlen = 0;
-                              while (isdigit(yytext[shortlen])) shortlen++;
+                              while (isdigit(yytext[shortlen])) ++shortlen;
                               if (shortlen) {
                                   // Push rest past numbers for later parse
-                                  PARSEP->lexUnputString(yytext+shortlen, yyleng-shortlen);
+                                  PARSEP->lexUnputString(yytext + shortlen, yyleng - shortlen);
                                   // Return is stuff before the tick
                                   yyleng = shortlen;
                                   yytext[yyleng] = '\0';

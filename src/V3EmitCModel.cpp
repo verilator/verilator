@@ -20,11 +20,13 @@
 #include "V3Global.h"
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 #include <vector>
 
 class EmitCModel final : public EmitCFunc {
+    V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
     VL_DEBUG_FUNC;
@@ -54,7 +56,7 @@ class EmitCModel final : public EmitCFunc {
         // Include files
         puts("\n");
         ofp()->putsIntTopInclude();
-        puts("#include \"verilated_heavy.h\"\n");
+        puts("#include \"verilated.h\"\n");
         if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
@@ -279,7 +281,7 @@ class EmitCModel final : public EmitCFunc {
                             const int vecnum = vects++;
                             UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                         "Should have swapped msb & lsb earlier.");
-                            const string ivar = string("__Vi") + cvtToStr(vecnum);
+                            const string ivar = std::string{"__Vi"} + cvtToStr(vecnum);
                             puts("for (int __Vi" + cvtToStr(vecnum) + "="
                                  + cvtToStr(arrayp->lo()));
                             puts("; " + ivar + "<=" + cvtToStr(arrayp->hi()));
@@ -317,8 +319,10 @@ class EmitCModel final : public EmitCFunc {
         const string topModNameProtected = prefixNameProtect(modp);
 
         putsDecoration("// Evaluate till stable\n");
-        puts("int __VclockLoop = 0;\n");
-        puts("QData __Vchange = 1;\n");
+        if (v3Global.rootp()->changeRequest()) {
+            puts("int __VclockLoop = 0;\n");
+            puts("QData __Vchange = 1;\n");
+        }
         if (v3Global.opt.trace()) puts("vlSymsp->__Vm_activity = true;\n");
         puts("do {\n");
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ ");
@@ -327,29 +331,34 @@ class EmitCModel final : public EmitCFunc {
         if (initial)
             puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
         puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
-        puts("if (VL_UNLIKELY(++__VclockLoop > " + cvtToStr(v3Global.opt.convergeLimit())
-             + ")) {\n");
-        puts("// About to fail, so enable debug to see what's not settling.\n");
-        puts("// Note you must run make with OPT=-DVL_DEBUG for debug prints.\n");
-        puts("int __Vsaved_debug = Verilated::debug();\n");
-        puts("Verilated::debug(1);\n");
-        puts("__Vchange = " + topModNameProtected + "__" + protect("_change_request")
-             + "(&(vlSymsp->TOP));\n");
-        puts("Verilated::debug(__Vsaved_debug);\n");
-        puts("VL_FATAL_MT(");
-        putsQuoted(protect(modp->fileline()->filename()));
-        puts(", ");
-        puts(cvtToStr(modp->fileline()->lineno()));
-        puts(", \"\",\n");
-        puts("\"Verilated model didn't ");
-        if (initial) puts("DC ");
-        puts("converge\\n\"\n");
-        puts("\"- See https://verilator.org/warn/DIDNOTCONVERGE\");\n");
-        puts("} else {\n");
-        puts("__Vchange = " + topModNameProtected + "__" + protect("_change_request")
-             + "(&(vlSymsp->TOP));\n");
-        puts("}\n");
-        puts("} while (VL_UNLIKELY(__Vchange));\n");
+        if (v3Global.rootp()->changeRequest()) {
+            puts("if (VL_UNLIKELY(++__VclockLoop > " + cvtToStr(v3Global.opt.convergeLimit())
+                 + ")) {\n");
+            puts("// About to fail, so enable debug to see what's not settling.\n");
+            puts("// Note you must run make with OPT=-DVL_DEBUG for debug prints.\n");
+            puts("int __Vsaved_debug = Verilated::debug();\n");
+            puts("Verilated::debug(1);\n");
+            puts("__Vchange = " + topModNameProtected + "__" + protect("_change_request")
+                 + "(&(vlSymsp->TOP));\n");
+            puts("Verilated::debug(__Vsaved_debug);\n");
+            puts("VL_FATAL_MT(");
+            putsQuoted(protect(modp->fileline()->filename()));
+            puts(", ");
+            puts(cvtToStr(modp->fileline()->lineno()));
+            puts(", \"\",\n");
+            puts("\"Verilated model didn't ");
+            if (initial) puts("DC ");
+            puts("converge\\n\"\n");
+            puts("\"- See https://verilator.org/warn/DIDNOTCONVERGE\");\n");
+            puts("} else {\n");
+            puts("__Vchange = " + topModNameProtected + "__" + protect("_change_request")
+                 + "(&(vlSymsp->TOP));\n");
+            puts("}\n");
+        }
+        puts("} while ("
+             + (v3Global.rootp()->changeRequest() ? std::string{"VL_UNLIKELY(__Vchange)"}
+                                                  : std::string{"0"})
+             + ");\n");
     }
 
     void emitStandardMethods(AstNodeModule* modp) {
@@ -365,8 +374,10 @@ class EmitCModel final : public EmitCFunc {
         puts("void " + topModNameProtected + "__" + protect("_eval_initial") + selfDecl + ";\n");
         puts("void " + topModNameProtected + "__" + protect("_eval_settle") + selfDecl + ";\n");
         puts("void " + topModNameProtected + "__" + protect("_eval") + selfDecl + ";\n");
-        puts("QData " + topModNameProtected + "__" + protect("_change_request") + selfDecl
-             + ";\n");
+        if (v3Global.rootp()->changeRequest()) {
+            puts("QData " + topModNameProtected + "__" + protect("_change_request") + selfDecl
+                 + ";\n");
+        }
         puts("#ifdef VL_DEBUG\n");
         puts("void " + topModNameProtected + "__" + protect("_eval_debug_assertions") + selfDecl
              + ";\n");
@@ -606,11 +617,13 @@ class EmitCModel final : public EmitCFunc {
             }
 
             if (!m_ofp) {
-                const string filename = v3Global.opt.makeDir() + "/" + topClassName()
-                                        + "__Dpi_Export_" + cvtToStr(splitFilenumInc()) + ".cpp";
+                string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi_Export";
+                filename = m_uniqueNames.get(filename);
+                filename += ".cpp";
                 newCFile(filename, /* slow: */ false, /* source: */ true);
                 m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename}
                                                : new V3OutCFile{filename};
+                splitSizeReset();  // Reset file size tracking
                 m_lazyDecls.reset();
                 m_ofp->putsHeader();
                 puts(

@@ -307,7 +307,6 @@ public:
         : ASTGEN_SUPER_Class(fl, name) {}
     ASTNODE_NODE_FUNCS(Class)
     virtual string verilogKwd() const override { return "class"; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
     virtual void dump(std::ostream& str) const override;
     virtual const char* broken() const override {
@@ -556,7 +555,6 @@ public:
     virtual void dumpSmall(std::ostream& str) const override;
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     virtual AstNodeDType* getChild2DTypep() const override { return keyChildDTypep(); }
-    virtual bool isHeavy() const override { return true; }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
@@ -653,7 +651,6 @@ public:
     }
     virtual string prettyDTypeName() const override;
     virtual void dumpSmall(std::ostream& str) const override;
-    virtual bool isHeavy() const override { return true; }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -881,7 +878,6 @@ public:
         BROKEN_RTN(dtypep() != this);
         return nullptr;
     }
-    virtual bool isHeavy() const override { return keyword() == AstBasicDTypeKwd::STRING; }
     AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range of variable
     void rangep(AstRange* nodep) { setNOp1p(nodep); }
     void setSignedState(const VSigning& signst) {
@@ -1141,7 +1137,6 @@ public:
     }
     virtual void dumpSmall(std::ostream& str) const override;
     virtual string prettyDTypeName() const override;
-    virtual bool isHeavy() const override { return true; }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -2405,7 +2400,7 @@ public:
         }
     }
     virtual int instrCount() const override {
-        return widthInstrs() * (access().isReadOrRW() ? instrCountLd() : 1);
+        return widthInstrs() * (access().isReadOrRW() ? INSTR_COUNT_LD : 1);
     }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -3589,7 +3584,7 @@ public:
         if (m_dataDeclp && m_dataDeclp->clonep()) m_dataDeclp = m_dataDeclp->clonep();
     }
     virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return 1 + 2 * instrCountLd(); }
+    virtual int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
     virtual bool maybePointedTo() const override { return true; }
     void binNum(int flag) { m_binNum = flag; }
     int binNum() const { return m_binNum; }
@@ -3632,7 +3627,7 @@ public:
         if (m_declp->clonep()) m_declp = m_declp->clonep();
     }
     virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return 1 + 2 * instrCountLd(); }
+    virtual int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
     virtual bool same(const AstNode* samep) const override {
         return declp() == static_cast<const AstCoverInc*>(samep)->declp();
     }
@@ -3655,7 +3650,7 @@ public:
         setOp3p(changep);
     }
     ASTNODE_NODE_FUNCS(CoverToggle)
-    virtual int instrCount() const override { return 3 + instrCountBranch() + instrCountLd(); }
+    virtual int instrCount() const override { return 3 + INSTR_COUNT_BRANCH + INSTR_COUNT_LD; }
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return true; }
@@ -3748,7 +3743,7 @@ public:
         addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(CaseItem)
-    virtual int instrCount() const override { return widthInstrs() + instrCountBranch(); }
+    virtual int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     AstNode* condsp() const { return op1p(); }  // op1 = list of possible matching expressions
     AstNode* bodysp() const { return op2p(); }  // op2 = what to do
     void condsp(AstNode* nodep) { setOp1p(nodep); }
@@ -3792,7 +3787,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(SFormatF)
     virtual string name() const override { return m_text; }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     virtual bool hasDType() const override { return true; }
     virtual bool same(const AstNode* samep) const override {
         return text() == static_cast<const AstSFormatF*>(samep)->text();
@@ -3857,7 +3852,7 @@ public:
     virtual bool same(const AstNode* samep) const override {
         return displayType() == static_cast<const AstDisplay*>(samep)->displayType();
     }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     AstDisplayType displayType() const { return m_displayType; }
     void displayType(AstDisplayType type) { m_displayType = type; }
     // * = Add a newline for $display
@@ -3882,7 +3877,6 @@ public:
     ASTNODE_NODE_FUNCS(DumpCtl)
     virtual string verilogKwd() const override { return ctlType().ascii(); }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isOutputter() const override { return true; }
     virtual bool cleanOut() const { return true; }
@@ -3922,7 +3916,7 @@ public:
     virtual bool same(const AstNode* samep) const override {
         return displayType() == static_cast<const AstElabDisplay*>(samep)->displayType();
     }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     AstDisplayType displayType() const { return m_displayType; }
     void displayType(AstDisplayType type) { m_displayType = type; }
     void fmtp(AstSFormatF* nodep) { addOp1p(nodep); }  // op1 = To-String formatter
@@ -3956,7 +3950,7 @@ public:
     virtual bool isPure() const override { return true; }
     virtual bool isOutputter() const override { return false; }
     virtual bool cleanOut() const { return false; }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     virtual bool same(const AstNode* samep) const override { return true; }
     void fmtp(AstSFormatF* nodep) { addOp1p(nodep); }  // op1 = To-String formatter
     AstSFormatF* fmtp() const { return VN_CAST(op1p(), SFormatF); }
@@ -4001,7 +3995,7 @@ public:
     }  // Though deleted before opt
     virtual bool isPure() const override { return false; }  // Though deleted before opt
     virtual bool isOutputter() const override { return true; }  // Though deleted before opt
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     AstNode* exprsp() const { return op1p(); }  // op1 = Expressions to output
     void exprsp(AstNode* nodep) { addOp1p(nodep); }  // op1 = Expressions to output
 };
@@ -4038,7 +4032,6 @@ public:
     ASTNODE_NODE_FUNCS(FOpen)
     virtual string verilogKwd() const override { return "$fopen"; }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isPure() const override { return false; }
     virtual bool isOutputter() const override { return true; }
@@ -4060,7 +4053,6 @@ public:
     ASTNODE_NODE_FUNCS(FOpenMcd)
     virtual string verilogKwd() const override { return "$fopen"; }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isPure() const override { return false; }
     virtual bool isOutputter() const override { return true; }
@@ -4284,7 +4276,6 @@ public:
         setNOp4p(msbp);
     }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isPure() const override { return false; }
     virtual bool isOutputter() const override { return true; }
@@ -4335,7 +4326,7 @@ public:
     }  // Though deleted before opt
     virtual bool isPure() const override { return false; }  // Though deleted before opt
     virtual bool isOutputter() const override { return true; }  // Though deleted before opt
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     virtual bool same(const AstNode* samep) const override {
         return m_off == static_cast<const AstMonitorOff*>(samep)->m_off;
     }
@@ -4395,7 +4386,6 @@ public:
     virtual string emitVerilog() override { return "%f$value$plusargs(%l, %k%r)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool cleanOut() const override { return true; }
     virtual bool same(const AstNode* samep) const override { return true; }
@@ -4448,7 +4438,7 @@ public:
     AstNode* arrayp() const { return op1p(); }  // op1 = array and index vars
     AstNode* bodysp() const { return op4p(); }  // op4 = body of loop
     virtual bool isGateOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
@@ -4465,7 +4455,7 @@ public:
     virtual bool isGateOptimizable() const override {
         return false;
     }  // Not relevant - converted to FOR
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
@@ -4498,7 +4488,7 @@ public:
     void addBodysp(AstNode* newp) { addOp3p(newp); }
     void addIncsp(AstNode* newp) { addOp4p(newp); }
     virtual bool isGateOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
     // Stop statement searchback here
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp) override;
@@ -4679,7 +4669,7 @@ public:
         if (m_labelp->clonep()) m_labelp = m_labelp->clonep();
     }
     virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override {
         return labelp() == static_cast<const AstJumpGo*>(samep)->labelp();
     }
@@ -4753,7 +4743,7 @@ public:
     bool isClockReq() const { return m_clockReq; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs(); }
+    virtual int instrCount() const override { return widthInstrs() * 2; }  // xor, or/logor
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
@@ -5092,7 +5082,7 @@ public:
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isPure() const override { return false; }
     virtual bool isOutputter() const override { return true; }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
@@ -5191,7 +5181,7 @@ public:
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool isPure() const override { return false; }
     virtual bool isOutputter() const override { return true; }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     AstNode* unitsp() const { return op1p(); }
     AstNode* precisionp() const { return op2p(); }
     AstNode* suffixp() const { return op3p(); }
@@ -5281,7 +5271,7 @@ public:
         if (m_declp->clonep()) m_declp = m_declp->clonep();
     }
     virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return 10 + 2 * instrCountLd(); }
+    virtual int instrCount() const override { return 10 + 2 * INSTR_COUNT_LD; }
     virtual bool hasDType() const override { return true; }
     virtual bool same(const AstNode* samep) const override {
         return declp() == static_cast<const AstTraceInc*>(samep)->declp();
@@ -5459,7 +5449,7 @@ public:
     virtual bool cleanOut() const override { return true; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     virtual bool same(const AstNode* samep) const override { return true; }
     AstNode* seedp() const { return op1p(); }
     bool reset() const { return m_reset; }
@@ -5489,7 +5479,7 @@ public:
     virtual bool sizeMattersRhs() const override { return false; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
 };
 
 class AstTime final : public AstNodeTermop {
@@ -5506,7 +5496,7 @@ public:
     virtual bool cleanOut() const override { return true; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountTime(); }
+    virtual int instrCount() const override { return INSTR_COUNT_TIME; }
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual void dump(std::ostream& str = std::cout) const override;
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
@@ -5527,7 +5517,7 @@ public:
     virtual bool cleanOut() const override { return true; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountTime(); }
+    virtual int instrCount() const override { return INSTR_COUNT_TIME; }
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual void dump(std::ostream& str = std::cout) const override;
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
@@ -5552,7 +5542,7 @@ public:
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isSubstOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountPli(); }
+    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
@@ -5588,7 +5578,7 @@ public:
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstRedAnd final : public AstNodeUniop {
@@ -5781,7 +5771,7 @@ public:
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return false; }  // Eliminated before matters
     virtual bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstRToIRoundS final : public AstNodeUniop {
     // Convert real to integer, with arbitrary sized output (not just "integer" format)
@@ -5799,7 +5789,7 @@ public:
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstIToRD final : public AstNodeUniop {
     // $itor where lhs is unsigned
@@ -5815,7 +5805,7 @@ public:
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstISToRD final : public AstNodeUniop {
     // $itor where lhs is signed
@@ -5832,7 +5822,7 @@ public:
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstRealToBits final : public AstNodeUniop {
 public:
@@ -5849,7 +5839,7 @@ public:
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return false; }  // Eliminated before matters
     virtual bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstBitsToRealD final : public AstNodeUniop {
 public:
@@ -5866,7 +5856,7 @@ public:
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return false; }  // Eliminated before matters
     virtual bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 
 class AstCLog2 final : public AstNodeUniop {
@@ -6240,7 +6230,7 @@ public:
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDoubleTrig(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     virtual bool doubleFlavor() const override { return true; }
 };
 
@@ -6551,7 +6541,6 @@ public:
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
     FmtType format() const { return m_fmt; }
 };
 
@@ -6579,7 +6568,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() + instrCountBranch(); }
+    virtual int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogAnd final : public AstNodeBiop {
 public:
@@ -6602,7 +6591,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() + instrCountBranch(); }
+    virtual int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogEq final : public AstNodeBiCom {
 public:
@@ -6625,7 +6614,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() + instrCountBranch(); }
+    virtual int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogIf final : public AstNodeBiop {
 public:
@@ -6648,7 +6637,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() + instrCountBranch(); }
+    virtual int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstOr final : public AstNodeBiComAsv {
 public:
@@ -6761,7 +6750,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstEqN final : public AstNodeBiCom {
@@ -6785,7 +6774,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountString(); }
+    virtual int instrCount() const override { return INSTR_COUNT_STR; }
     virtual bool stringFlavor() const override { return true; }
 };
 class AstNeq final : public AstNodeBiCom {
@@ -6831,7 +6820,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstNeqN final : public AstNodeBiCom {
@@ -6855,7 +6844,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountString(); }
+    virtual int instrCount() const override { return INSTR_COUNT_STR; }
     virtual bool stringFlavor() const override { return true; }
 };
 class AstLt final : public AstNodeBiop {
@@ -6901,7 +6890,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstLtS final : public AstNodeBiop {
@@ -6948,7 +6937,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountString(); }
+    virtual int instrCount() const override { return INSTR_COUNT_STR; }
     virtual bool stringFlavor() const override { return true; }
 };
 class AstGt final : public AstNodeBiop {
@@ -6994,7 +6983,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstGtS final : public AstNodeBiop {
@@ -7041,7 +7030,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountString(); }
+    virtual int instrCount() const override { return INSTR_COUNT_STR; }
     virtual bool stringFlavor() const override { return true; }
 };
 class AstGte final : public AstNodeBiop {
@@ -7089,7 +7078,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstGteS final : public AstNodeBiop {
@@ -7136,7 +7125,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountString(); }
+    virtual int instrCount() const override { return INSTR_COUNT_STR; }
     virtual bool stringFlavor() const override { return true; }
 };
 class AstLte final : public AstNodeBiop {
@@ -7184,7 +7173,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstLteS final : public AstNodeBiop {
@@ -7231,7 +7220,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountString(); }
+    virtual int instrCount() const override { return INSTR_COUNT_STR; }
     virtual bool stringFlavor() const override { return true; }
 };
 class AstShiftL final : public AstNodeBiop {
@@ -7352,7 +7341,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstSub final : public AstNodeBiop {
@@ -7398,7 +7387,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstMul final : public AstNodeBiComAsv {
@@ -7422,7 +7411,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return true; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountMul(); }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL; }
 };
 class AstMulD final : public AstNodeBiComAsv {
 public:
@@ -7445,7 +7434,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return true; }
-    virtual int instrCount() const override { return instrCountDouble(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstMulS final : public AstNodeBiComAsv {
@@ -7470,7 +7459,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return true; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountMul(); }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL; }
     virtual bool signedFlavor() const override { return true; }
 };
 class AstDiv final : public AstNodeBiop {
@@ -7493,7 +7482,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return true; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountDiv(); }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
 };
 class AstDivD final : public AstNodeBiop {
 public:
@@ -7516,7 +7505,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDoubleDiv(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL_DIV; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstDivS final : public AstNodeBiop {
@@ -7539,7 +7528,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return true; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountDiv(); }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     virtual bool signedFlavor() const override { return true; }
 };
 class AstModDiv final : public AstNodeBiop {
@@ -7562,7 +7551,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return true; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountDiv(); }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
 };
 class AstModDivS final : public AstNodeBiop {
 public:
@@ -7584,7 +7573,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return true; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountDiv(); }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     virtual bool signedFlavor() const override { return true; }
 };
 class AstPow final : public AstNodeBiop {
@@ -7608,7 +7597,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountMul() * 10; }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL * 10; }
 };
 class AstPowD final : public AstNodeBiop {
 public:
@@ -7630,7 +7619,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDoubleDiv() * 5; }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL_DIV * 5; }
     virtual bool doubleFlavor() const override { return true; }
 };
 class AstPowSU final : public AstNodeBiop {
@@ -7656,7 +7645,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountMul() * 10; }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL * 10; }
     virtual bool signedFlavor() const override { return true; }
 };
 class AstPowSS final : public AstNodeBiop {
@@ -7682,7 +7671,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountMul() * 10; }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL * 10; }
     virtual bool signedFlavor() const override { return true; }
 };
 class AstPowUS final : public AstNodeBiop {
@@ -7708,7 +7697,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return true; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() * instrCountMul() * 10; }
+    virtual int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL * 10; }
     virtual bool signedFlavor() const override { return true; }
 };
 class AstPreAdd final : public AstNodeTriop {
@@ -7949,7 +7938,7 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountString(); }
+    virtual int instrCount() const override { return INSTR_COUNT_STR; }
     virtual bool stringFlavor() const override { return true; }
 };
 class AstReplicate final : public AstNodeBiop {
@@ -8112,7 +8101,7 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return instrCountDoubleTrig(); }
+    virtual int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     virtual bool doubleFlavor() const override { return true; }
 };
 
@@ -8169,7 +8158,6 @@ public:
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
     virtual bool sizeMattersThs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstGetcN final : public AstNodeBiop {
@@ -8195,7 +8183,6 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstGetcRefN final : public AstNodeBiop {
@@ -8221,7 +8208,6 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstSubstrN final : public AstNodeTriop {
@@ -8247,7 +8233,6 @@ public:
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
     virtual bool sizeMattersThs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstCompareNN final : public AstNodeBiop {
@@ -8280,7 +8265,6 @@ public:
     virtual bool cleanRhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-    virtual bool isHeavy() const override { return true; }
 };
 
 class AstFell final : public AstNodeMath {
@@ -8821,7 +8805,9 @@ public:
     }
     //
     virtual void name(const string& name) override { m_name = name; }
-    virtual int instrCount() const override { return dpiImportPrototype() ? instrCountDpi() : 0; }
+    virtual int instrCount() const override {
+        return dpiImportPrototype() ? v3Global.opt.instrCountDpi() : 0;
+    }
     VBoolOrUnknown isConst() const { return m_isConst; }
     void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
@@ -9030,8 +9016,8 @@ class AstCUse final : public AstNode {
     // C++ use of a class or #include; indicates need of forward declaration
     // Parents:  NODEMODULE
 private:
-    VUseType m_useType;  // What sort of use this is
-    string m_name;
+    const VUseType m_useType;  // What sort of use this is
+    const string m_name;
 
 public:
     AstCUse(FileLine* fl, VUseType useType, const string& name)
@@ -9039,10 +9025,9 @@ public:
         , m_useType{useType}
         , m_name{name} {}
     ASTNODE_NODE_FUNCS(CUse)
-    virtual string name() const override { return m_name; }
     virtual void dump(std::ostream& str = std::cout) const override;
+    virtual string name() const override { return m_name; }
     VUseType useType() const { return m_useType; }
-    void useType(VUseType useType) { m_useType = useType; }
 };
 
 class AstMTaskBody final : public AstNode {
@@ -9173,6 +9158,7 @@ private:
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
+    bool m_changeRequest = false;  // Have _change_request method
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
 public:
     AstNetlist();
@@ -9196,6 +9182,8 @@ public:
     AstNode* miscsp() const { return op3p(); }  // op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
+    void changeRequest(bool specified) { m_changeRequest = specified; }
+    bool changeRequest() const { return m_changeRequest; }
     AstConstPool* constPoolp() { return m_constPoolp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp() {

@@ -30,7 +30,6 @@
 
 #include "verilatedos.h"
 #include "verilated.h"
-#include "verilated_heavy.h"
 #include "verilated_syms.h"
 
 #include <deque>
@@ -104,7 +103,7 @@ public:
     // METHODS
     // Add message to queue (called by producer)
     void post(const VerilatedMsg& msg) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         m_queue.insert(msg);  // Pass by value to copy the message into queue
         ++m_depth;
     }
@@ -124,7 +123,7 @@ public:
             const VerilatedMsg msg = *(it);
             m_queue.erase(it);
             m_mutex.unlock();
-            m_depth--;  // Ok if outside critical section as only this code checks the value
+            --m_depth;  // Ok if outside critical section as only this code checks the value
             {
                 VL_DEBUG_IF(VL_DBG_MSGF("Executing callback from mtaskId=%d\n", msg.mtaskId()););
                 msg.run();
@@ -179,7 +178,7 @@ public:
 
 // FILE* list constructed from a file-descriptor
 class VerilatedFpList final {
-    FILE* m_fp[31];
+    FILE* m_fp[31] = {};
     std::size_t m_sz = 0;
 
 public:
@@ -308,11 +307,11 @@ public:  // But only for verilated*.cpp
     int timeFormatWidth() const VL_MT_SAFE { return m_s.m_timeFormatWidth; }
     void timeFormatWidth(int value) VL_MT_SAFE { m_s.m_timeFormatWidth = value; }
     std::string timeFormatSuffix() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
-        const VerilatedLockGuard lock(m_timeDumpMutex);
+        const VerilatedLockGuard lock{m_timeDumpMutex};
         return m_timeFormatSuffix;
     }
     void timeFormatSuffix(const std::string& value) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
-        const VerilatedLockGuard lock(m_timeDumpMutex);
+        const VerilatedLockGuard lock{m_timeDumpMutex};
         m_timeFormatSuffix = value;
     }
 
@@ -328,7 +327,7 @@ public:  // But only for verilated*.cpp
 public:  // But only for verilated*.cpp
     // METHODS - file IO
     IData fdNewMcd(const char* filenamep) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        const VerilatedLockGuard lock(m_fdMutex);
+        const VerilatedLockGuard lock{m_fdMutex};
         if (m_fdFreeMct.empty()) return 0;
         IData idx = m_fdFreeMct.back();
         m_fdFreeMct.pop_back();
@@ -337,10 +336,10 @@ public:  // But only for verilated*.cpp
         return (1 << idx);
     }
     IData fdNew(const char* filenamep, const char* modep) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        FILE* fp = std::fopen(filenamep, modep);
+        FILE* const fp = std::fopen(filenamep, modep);
         if (VL_UNLIKELY(!fp)) return 0;
         // Bit 31 indicates it's a descriptor not a MCD
-        const VerilatedLockGuard lock(m_fdMutex);
+        const VerilatedLockGuard lock{m_fdMutex};
         if (m_fdFree.empty()) {
             // Need to create more space in m_fdps and m_fdFree
             const std::size_t start = std::max<std::size_t>(31UL + 1UL + 3UL, m_fdps.size());
@@ -358,25 +357,25 @@ public:  // But only for verilated*.cpp
         return (idx | (1UL << 31));  // bit 31 indicates not MCD
     }
     void fdFlush(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        const VerilatedLockGuard lock(m_fdMutex);
+        const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
         for (const auto& i : fdlist) std::fflush(i);
     }
     IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        const VerilatedLockGuard lock(m_fdMutex);
+        const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
         return static_cast<IData>(
             std::fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
     }
     IData fdTell(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        const VerilatedLockGuard lock(m_fdMutex);
+        const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
         return static_cast<IData>(std::ftell(*fdlist.begin()));
     }
     void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        const VerilatedLockGuard lock(m_fdMutex);
+        const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
         for (const auto& i : fdlist) {
             if (VL_UNLIKELY(!i)) continue;
@@ -384,7 +383,7 @@ public:  // But only for verilated*.cpp
         }
     }
     void fdClose(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        const VerilatedLockGuard lock(m_fdMutex);
+        const VerilatedLockGuard lock{m_fdMutex};
         if (VL_BITISSET_I(fdi, 31)) {
             // Non-MCD case
             IData idx = VL_MASK_I(31) & fdi;
@@ -408,7 +407,7 @@ public:  // But only for verilated*.cpp
         }
     }
     inline FILE* fdToFp(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        const VerilatedLockGuard lock(m_fdMutex);
+        const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return nullptr;
         return *fdlist.begin();
@@ -515,7 +514,7 @@ public:
     // per map overhead * N scopes would take much more space and cache thrashing.
     // As scopep's are pointers, this implicitly handles multiple Context's
     static inline void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
-        const VerilatedLockGuard lock(s().m_userMapMutex);
+        const VerilatedLockGuard lock{s().m_userMapMutex};
         const auto it = s().m_userMap.find(std::make_pair(scopep, userKey));
         if (it != s().m_userMap.end()) {
             it->second = userData;
@@ -524,7 +523,7 @@ public:
         }
     }
     static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
-        const VerilatedLockGuard lock(s().m_userMapMutex);
+        const VerilatedLockGuard lock{s().m_userMapMutex};
         const auto& it = vlstd::as_const(s().m_userMap).find(std::make_pair(scopep, userKey));
         if (VL_UNLIKELY(it == s().m_userMap.end())) return nullptr;
         return it->second;
@@ -534,7 +533,7 @@ public:  // But only for verilated.cpp
     // Symbol table destruction cleans up the entries for each scope.
     static void userEraseScope(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope on destruction, so we simply iterate.
-        const VerilatedLockGuard lock(s().m_userMapMutex);
+        const VerilatedLockGuard lock{s().m_userMapMutex};
         for (auto it = s().m_userMap.begin(); it != s().m_userMap.end();) {
             if (it->first.first == scopep) {
                 s().m_userMap.erase(it++);
@@ -544,7 +543,7 @@ public:  // But only for verilated.cpp
         }
     }
     static void userDump() VL_MT_SAFE {
-        const VerilatedLockGuard lock(s().m_userMapMutex);  // Avoid it changing in middle of dump
+        const VerilatedLockGuard lock{s().m_userMapMutex};  // Avoid it changing in middle of dump
         bool first = true;
         for (const auto& i : s().m_userMap) {
             if (first) {
@@ -560,13 +559,13 @@ public:  // But only for verilated*.cpp
     // METHODS - hierarchy
     static void hierarchyAdd(const VerilatedScope* fromp, const VerilatedScope* top) VL_MT_SAFE {
         // Slow ok - called at construction for VPI accessible elements
-        const VerilatedLockGuard lock(s().m_hierMapMutex);
+        const VerilatedLockGuard lock{s().m_hierMapMutex};
         s().m_hierMap[fromp].push_back(top);
     }
     static void hierarchyRemove(const VerilatedScope* fromp,
                                 const VerilatedScope* top) VL_MT_SAFE {
         // Slow ok - called at destruction for VPI accessible elements
-        const VerilatedLockGuard lock(s().m_hierMapMutex);
+        const VerilatedLockGuard lock{s().m_hierMapMutex};
         VerilatedHierarchyMap& map = s().m_hierMap;
         if (map.find(fromp) == map.end()) return;
         auto& scopes = map[fromp];
@@ -589,7 +588,7 @@ public:  // But only for verilated*.cpp
     // miss at the cost of a multiply, and all lookups move to slowpath.
     static int exportInsert(const char* namep) VL_MT_SAFE {
         // Slow ok - called once/function at creation
-        const VerilatedLockGuard lock(s().m_exportMutex);
+        const VerilatedLockGuard lock{s().m_exportMutex};
         const auto it = s().m_exportMap.find(namep);
         if (it == s().m_exportMap.end()) {
             s().m_exportMap.emplace(namep, s().m_exportNext++);
@@ -599,24 +598,24 @@ public:  // But only for verilated*.cpp
         }
     }
     static int exportFind(const char* namep) VL_MT_SAFE {
-        const VerilatedLockGuard lock(s().m_exportMutex);
+        const VerilatedLockGuard lock{s().m_exportMutex};
         const auto& it = s().m_exportMap.find(namep);
         if (VL_LIKELY(it != s().m_exportMap.end())) return it->second;
-        std::string msg = (std::string("%Error: Testbench C called ") + namep
+        std::string msg = (std::string{"%Error: Testbench C called "} + namep
                            + " but no such DPI export function name exists in ANY model");
         VL_FATAL_MT("unknown", 0, "", msg.c_str());
         return -1;
     }
     static const char* exportName(int funcnum) VL_MT_SAFE {
         // Slowpath; find name for given export; errors only so no map to reverse-map it
-        const VerilatedLockGuard lock(s().m_exportMutex);
+        const VerilatedLockGuard lock{s().m_exportMutex};
         for (const auto& i : s().m_exportMap) {
             if (i.second == funcnum) return i.first;
         }
         return "*UNKNOWN*";
     }
     static void exportsDump() VL_MT_SAFE {
-        const VerilatedLockGuard lock(s().m_exportMutex);
+        const VerilatedLockGuard lock{s().m_exportMutex};
         bool first = true;
         for (const auto& i : s().m_exportMap) {
             if (first) {

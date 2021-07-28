@@ -23,7 +23,7 @@
 #define VERILATOR_VERILATED_SAVE_C_H_
 
 #include "verilatedos.h"
-#include "verilated_heavy.h"
+#include "verilated.h"
 
 #include <string>
 

@@ -62,7 +62,7 @@ void V3LinkLevel::modSortByLevel() {
                                           "--top-module to select top."
                                        << V3Error::warnContextNone());
             for (AstNode* alsop : tops) {
-                std::cout << secp->warnMore() << "... Top module " << alsop->prettyNameQ() << endl
+                std::cerr << secp->warnMore() << "... Top module " << alsop->prettyNameQ() << endl
                           << alsop->warnContextSecondary();
             }
         }

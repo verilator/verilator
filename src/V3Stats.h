@@ -24,12 +24,6 @@
 
 class AstNetlist;
 
-#define STAT_ADD_UINFO(level, text, value) \
-    do { \
-        UINFO((level), "addStat " << text << " " << value << endl); \
-        V3Stats::addStat(text, value); \
-    } while (0)
-
 //============================================================================
 
 class VDouble0 final {

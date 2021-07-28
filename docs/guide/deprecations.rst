@@ -11,6 +11,11 @@ C++11 compiler support
   require C++14 or newer compilers for both compiling Verilator and
   compiling Verilated models no sooner than January 2022.
 
+Verilated_heavy.h
+  The legacy "verilated_heavy.h" include was replaced with just including
+  "verilated.h". Verilated_heavy.h is planned for removal no sooner than
+  July 2022.
+
 Configuration File -msg
   The :vlopt:`lint_off` "-msg" option has been replaced with the "-rule"
   option.  "-msg" is planned for removal no sooner than January 2021.

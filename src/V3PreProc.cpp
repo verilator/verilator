@@ -395,7 +395,7 @@ string V3PreProcImp::commentCleanup(const string& text) {
 
 bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
     int len = strlen(strg);
-    if (0 == strncmp(cmdr.c_str(), strg, len) && (cmdr[len] == '\0' || isspace(cmdr[len]))) {
+    if (VString::startsWith(cmdr, strg) && (cmdr[len] == '\0' || isspace(cmdr[len]))) {
         if (isspace(cmdr[len])) len++;
         cmdr = cmdr.substr(len);
         return true;
@@ -423,27 +423,27 @@ void V3PreProcImp::comment(const string& text) {
 
     bool synth = false;
     bool vlcomment = false;
-    if ((cp[0] == 'v' || cp[0] == 'V') && 0 == (strncmp(cp + 1, "erilator", 8))) {
+    if ((cp[0] == 'v' || cp[0] == 'V') && VString::startsWith(cp + 1, "erilator")) {
         cp += strlen("verilator");
         if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*verilator {...}*/ not /*verilator_{...}*/");
         }
         vlcomment = true;
-    } else if (0 == (strncmp(cp, "synopsys", strlen("synopsys")))) {
+    } else if (VString::startsWith(cp, "synopsys")) {
         cp += strlen("synopsys");
         synth = true;
         if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*synopsys {...}*/ not /*synopsys_{...}*/");
         }
-    } else if (0 == (strncmp(cp, "cadence", strlen("cadence")))) {
+    } else if (VString::startsWith(cp, "cadence")) {
         cp += strlen("cadence");
         synth = true;
-    } else if (0 == (strncmp(cp, "pragma", strlen("pragma")))) {
+    } else if (VString::startsWith(cp, "pragma")) {
         cp += strlen("pragma");
         synth = true;
-    } else if (0 == (strncmp(cp, "ambit synthesis", strlen("ambit synthesis")))) {
+    } else if (VString::startsWith(cp, "ambit synthesis")) {
         cp += strlen("ambit synthesis");
         synth = true;
     } else {
@@ -1544,7 +1544,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
     // Track `line
     const char* bufp = buf.c_str();
     while (*bufp == '\n') bufp++;
-    if ((tok == VP_TEXT || tok == VP_LINE) && 0 == strncmp(bufp, "`line ", 6)) {
+    if ((tok == VP_TEXT || tok == VP_LINE) && VString::startsWith(bufp, "`line ")) {
         int enter;
         m_finFilelinep->lineDirective(bufp, enter /*ref*/);
     } else {

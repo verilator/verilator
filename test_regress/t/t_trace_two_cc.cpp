@@ -21,12 +21,7 @@
 // clang-format on
 
 // Compile in place
-#include "Vt_trace_two_b.cpp"
-#include "Vt_trace_two_b__Syms.cpp"
-#include "Vt_trace_two_b___024root.cpp"
-#include "Vt_trace_two_b___024root__Slow.cpp"
-#include "Vt_trace_two_b__Trace.cpp"
-#include "Vt_trace_two_b__Trace__Slow.cpp"
+#include "Vt_trace_two_b__ALL.cpp"
 
 VM_PREFIX* ap;
 Vt_trace_two_b* bp;
