@@ -4779,7 +4779,7 @@ gateUnsupPinList<nodep>:
 	;
 
 gatePinExpr<nodep>:
-		expr					{ $$ = GRAMMARP ->createGatePin($1); }
+		expr					{ $$ = GRAMMARP->createGatePin($1); }
 	;
 
 // This list is also hardcoded in VParseLex.l
