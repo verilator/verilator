@@ -148,18 +148,6 @@ public:
         m_pinNum = m_pinStack.top();
         m_pinStack.pop();
     }
-    AstPackage* unitPackage(FileLine* fl) {
-        // Find one made earlier?
-        VSymEnt* symp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName());
-        AstPackage* pkgp;
-        if (!symp) {
-            pkgp = PARSEP->rootp()->dollarUnitPkgAddp();
-            SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
-        } else {
-            pkgp = VN_CAST(symp->nodep(), Package);
-        }
-        return pkgp;
-    }
     AstNodeDType* addRange(AstBasicDType* dtypep, AstNodeRange* rangesp, bool isPacked) {
         // If dtypep isn't basic, don't use this, call createArray() instead
         if (!rangesp) {
@@ -1043,8 +1031,8 @@ description:			// ==IEEE: description
 	|	interface_declaration			{ }
 	|	program_declaration			{ }
 	|	package_declaration			{ }
-	|	package_item				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
-       	|	bind_directive				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
+	|	package_item				{ if ($1) PARSEP->unitPackage($1->fileline())->addStmtp($1); }
+       	|	bind_directive				{ if ($1) PARSEP->unitPackage($1->fileline())->addStmtp($1); }
 	//	unsupported	// IEEE: config_declaration
 	//			// Verilator only
 	|	yaT_RESETALL				{ }  // Else, under design, and illegal based on IEEE 22.3
@@ -6157,7 +6145,7 @@ dollarUnitNextId<nodep>:	// $unit
 	//			//     if not needed must use packageClassScopeNoId
 	//			// Must call nextId without any additional tokens following
 		yD_UNIT
-			{ $$ = new AstClassOrPackageRef($1, "$unit", GRAMMARP->unitPackage($<fl>1), nullptr);
+			{ $$ = new AstClassOrPackageRef{$1, "$unit", PARSEP->unitPackage($<fl>1), nullptr};
                           SYMP->nextId(PARSEP->rootp()); }
 	;
 
@@ -6166,7 +6154,7 @@ localNextId<nodep>:		// local
 	//			//     if not needed must use packageClassScopeNoId
 	//			// Must call nextId without any additional tokens following
 		yLOCAL__COLONCOLON
-			{ $$ = new AstClassOrPackageRef($1, "local::", GRAMMARP->unitPackage($<fl>1), nullptr);
+			{ $$ = new AstClassOrPackageRef{$1, "local::", PARSEP->unitPackage($<fl>1), nullptr};
                           SYMP->nextId(PARSEP->rootp());
 			  BBUNSUP($<fl>1, "Unsupported: Randomize 'local::'"); }
 	;

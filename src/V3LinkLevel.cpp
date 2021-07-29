@@ -100,10 +100,16 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
     if (unit.isNone()) unit = VTimescale(VTimescale::TS_DEFAULT);
     v3Global.rootp()->timeunit(unit);
 
+    bool dunitTimed = false;  // $unit had a timeunit
+    if (const AstPackage* const upkgp = v3Global.rootp()->dollarUnitPkgp()) {
+        if (!upkgp->timeunit().isNone()) dunitTimed = true;
+    }
+
     for (AstNodeModule* nodep : mods) {
         if (!v3Global.opt.timeOverrideUnit().isNone()) nodep->timeunit(unit);
         if (nodep->timeunit().isNone()) {
             if (modTimedp  // Got previous
+                && !dunitTimed
                 && (  // unit doesn't already include an override
                     v3Global.opt.timeOverrideUnit().isNone()
                     && v3Global.opt.timeDefaultUnit().isNone())
