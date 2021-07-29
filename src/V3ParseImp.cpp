@@ -108,10 +108,12 @@ void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, d
         }
     }
     if (!unit.isNone()) {
+        unit = v3Global.opt.timeComputeUnit(unit);
         if (modp) {
-            modp->timeunit(v3Global.opt.timeComputeUnit(unit));
+            modp->timeunit(unit);
         } else {
-            fl->v3error("timeunit/timeprecision not under a module");
+            v3Global.rootp()->timeunit(unit);
+            unitPackage(fl)->timeunit(unit);
         }
     }
     v3Global.rootp()->timeprecisionMerge(fl, prec);
