@@ -259,41 +259,23 @@ private:
     bool m_newClkMarked;  // Flag for deciding whether a new run is needed
     bool m_inAss = false;  // Currently inside of a assignment
     int m_childClkWidth = 0;  // If in hasClk, width of clock signal in child
-    int m_rightClkWidth = 0;  // Clk width on the RHS
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     virtual void visit(AstNodeAssign* nodep) override {
         m_hasClk = false;
-        if (AstVarRef* varrefp = VN_CAST(nodep->rhsp(), VarRef)) {
-            this->visit(varrefp);
-            m_rightClkWidth = varrefp->width();
-            if (varrefp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
-                if (m_inClocked) {
-                    varrefp->v3warn(
-                        CLKDATA, "Clock used as data (on rhs of assignment) in sequential block "
-                                     << varrefp->prettyNameQ());
-                } else {
-                    m_hasClk = true;
-                    UINFO(5, "node is already marked as clocker " << varrefp << endl);
-                }
-            }
-        } else {
-            m_inAss = true;
-            m_childClkWidth = 0;
-            iterateAndNextNull(nodep->rhsp());
-            m_rightClkWidth = m_childClkWidth;
-            m_inAss = false;
-        }
-
-        // do the marking
+        m_inAss = true;
+        m_childClkWidth = 0;
+        iterateAndNextNull(nodep->rhsp());
+        m_inAss = false;
         if (m_hasClk) {
-            if (nodep->lhsp()->width() > m_rightClkWidth) {
+            // do the marking
+            if (nodep->lhsp()->width() > m_childClkWidth) {
                 nodep->v3warn(CLKDATA, "Clock is assigned to part of data signal "
                                            << nodep->lhsp()->prettyNameQ());
                 UINFO(4, "CLKDATA: lhs with width " << nodep->lhsp()->width() << endl);
-                UINFO(4, "     but rhs clock with width " << m_rightClkWidth << endl);
+                UINFO(4, "     but rhs clock with width " << m_childClkWidth << endl);
                 return;  // skip the marking
             }
 
