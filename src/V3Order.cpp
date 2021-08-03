@@ -616,6 +616,39 @@ public:
 };
 
 //######################################################################
+// Gather non-local variables written by an AstCFunc
+
+class OrderGatherWrittenVisitor final : public AstNVisitor {
+    // NODE STATE
+    // AstVarScope::user5 -> Already considered variable
+    AstUser5InUse m_user5InUse;
+
+    std::vector<AstVarScope*> m_writtenVariables;  // Variables written
+
+    virtual void visit(AstVarRef* nodep) override {
+        if (nodep->access().isReadOnly()) return;  // Ignore read reference
+        AstVarScope* const varScopep = nodep->varScopep();
+        if (varScopep->user5()) return;  // Ignore already processed variable
+        varScopep->user5(true);  // Mark as already processed
+        // Note: We are ignoring function locals as they should not be referenced anywhere outside
+        // of the enclosing AstCFunc, and therefore they are irrelevant for code ordering. This is
+        // simply an optimization to avoid adding useless nodes to the ordering graph.
+        if (varScopep->varp()->isFuncLocal()) return;
+        m_writtenVariables.push_back(varScopep);
+    }
+    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    explicit OrderGatherWrittenVisitor(AstNode* nodep) { iterate(nodep); }
+
+public:
+    // Gather all written non-local variables
+    static const std::vector<AstVarScope*> gather(AstCFunc* funcp) {
+        OrderGatherWrittenVisitor visitor{funcp};
+        return std::move(visitor.m_writtenVariables);
+    }
+};
+
+//######################################################################
 // Order class functions
 
 class OrderVisitor final : public AstNVisitor {
@@ -1186,11 +1219,15 @@ private:
         // in user initial blocks.  So use ordering to sort them all out.
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstCFunc*) override {
-        // Ignore for now
-        // We should detect what variables are set in the function, and make
-        // settlement code for them, then set a global flag, so we call "settle"
-        // on the next evaluation loop.
+    virtual void visit(AstCFunc* nodep) override {
+        if (!nodep->dpiExportImpl()) return;  // Only consider DPI exports for now
+
+        // Treat each non-local variable written in the exported function as if it was a top
+        // level input, as it might change when the function is called from outside eval
+        for (AstVarScope* const varScopep : OrderGatherWrittenVisitor::gather(nodep)) {
+            OrderVarVertex* const varVxp = newVarUserVertex(varScopep, WV_STD);
+            new OrderEdge(&m_graph, m_inputsVxp, varVxp, WEIGHT_INPUT);
+        }
     }
     //--------------------
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -1457,7 +1494,10 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     if (!domainp) {
         for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
             OrderEitherVertex* fromVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
-            if (edgep->weight() && fromVertexp->domainMatters()) {
+            if (fromVertexp == m_inputsVxp) {
+                domainp = m_comboDomainp;
+                break;
+            } else if (edgep->weight() && fromVertexp->domainMatters()) {
                 UINFO(9, "     from d=" << cvtToHex(fromVertexp->domainp()) << " " << fromVertexp
                                         << endl);
                 if (!domainp  // First input to this vertex
@@ -1515,7 +1555,10 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     vertexp->domainp(domainp);
     if (vertexp->domainp()) {
         UINFO(5, "      done d=" << cvtToHex(vertexp->domainp())
+                                 << (vertexp->domainp() == m_deleteDomainp ? " [DEL]" : "")
                                  << (vertexp->domainp()->hasCombo() ? " [COMB]" : "")
+                                 << (vertexp->domainp()->hasSettle() ? " [SETL]" : "")
+                                 << (vertexp->domainp()->hasInitial() ? " [INIT]" : "")
                                  << (vertexp->domainp()->isMulti() ? " [MULT]" : "") << " "
                                  << vertexp << endl);
     }

@@ -13,6 +13,8 @@ Verilator 4.211 devel
 
 **Minor:**
 
+* Fix re-evaluation of logic dependent on state set in DPI exports
+  called from outside eval (#3091). [Geza Lore]
 * Support unpacked array localparams in tasks/functions (#3078). [Geza Lore]
 * Support timeunit/timeprecision in $unit.
 * Add --instr-count-dpi to tune assumed DPI import cost for multithreaded
