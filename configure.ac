@@ -346,14 +346,9 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
-# Currently enabled gnu++14/c++14 due to packaged SystemC dependency
-# gnu++17 is the newest that Verilator supports
-# std++03 is the oldest that Verilator supports
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++11)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++03)
+# Currently enabled c++14 due to packaged SystemC dependency
+# c++17 is the newest that Verilator supports
+# c++03 is the oldest that Verilator supports
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++14)
@@ -367,11 +362,6 @@ _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++11)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++14)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++17)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++20)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++03)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++11)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++14)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++17)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++20)
 AC_SUBST(CFG_CXXFLAGS_STD_OLDEST)
 
 # Flags for compiling Verilator internals including parser, and Verilated files
