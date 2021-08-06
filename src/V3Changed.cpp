@@ -205,6 +205,10 @@ private:
 public:
     // CONSTRUCTORS
     ChangedInsertVisitor(AstVarScope* vscp, ChangedState* statep) {
+        // DPI export trigger should never need change detect. See similar assertions in V3Order
+        // (OrderVisitor::nodeMarkCircular), and V3GenClk (GenClkRenameVisitor::genInpClk).
+        UASSERT_OBJ(vscp != v3Global.rootp()->dpiExportTriggerp(), vscp,
+                    "DPI export trigger should not need change detect");
         m_statep = statep;
         m_vscp = vscp;
         m_detects = 0;

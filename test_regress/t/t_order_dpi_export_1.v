@@ -16,13 +16,15 @@ module testbench;
    endfunction;
 
    // Downstream signal dependent on clk demonstrates scheduling issue.
-   wire  gated_clk;
-   assign gated_clk = $c1("1") & clk;
+   // The '$c("1") &' simply ensures that dependent_clk does not get
+   // replaced with clk early and hence hiding the issue
+   wire  dependent_clk = $c1("1") & clk;
 
    int   n = 0;
 
-   always @(posedge gated_clk) begin
-      $display("n=%d", n);
+   always @(posedge dependent_clk) begin
+      $display("t=%t n=%d", $time, n);
+      if ($time != (2*n+1) * 500) $stop;
       if (n == 20) begin
          $write("*-* All Finished *-*\n");
          $finish;

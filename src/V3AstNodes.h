@@ -3479,6 +3479,17 @@ public:
     virtual bool brokeLhsMustBeLvalue() const override { return true; }
 };
 
+class AstDpiExportUpdated final : public AstNodeStmt {
+    // Denotes that the referenced variable may have been updated via a DPI Export
+public:
+    AstDpiExportUpdated(FileLine* fl, AstVarScope* varScopep)
+        : ASTGEN_SUPER_DpiExportUpdated(fl) {
+        addOp1p(new AstVarRef{fl, varScopep, VAccess::WRITE});
+    }
+    ASTNODE_NODE_FUNCS(DpiExportUpdated)
+    AstVarScope* varScopep() const { return VN_CAST(op1p(), VarRef)->varScopep(); }
+};
+
 class AstExprStmt final : public AstNodeMath {
     // Perform a statement, often assignment inside an expression/math node,
     // the parent gets passed the 'resultp()'.
@@ -8744,6 +8755,7 @@ private:
     bool m_dpiExportImpl : 1;  // DPI export implementation (called from DPI dispatcher via lookup)
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
+    bool m_dpiContext : 1;  // Declared as 'context' DPI import/export function
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -8770,6 +8782,7 @@ public:
         m_dpiExportImpl = false;
         m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
+        m_dpiContext = false;
     }
     ASTNODE_NODE_FUNCS(CFunc)
     virtual string name() const override { return m_name; }
@@ -8845,6 +8858,8 @@ public:
     void dpiImportPrototype(bool flag) { m_dpiImportPrototype = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
+    bool dpiContext() const { return m_dpiContext; }
+    void dpiContext(bool flag) { m_dpiContext = flag; }
     //
     // If adding node accessors, see below emptyBody
     AstNode* argsp() const { return op1p(); }
@@ -9139,6 +9154,7 @@ private:
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
+    AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     bool m_changeRequest = false;  // Have _change_request method
@@ -9149,6 +9165,7 @@ public:
     virtual const char* broken() const override {
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
+        BROKEN_RTN(m_dpiExportTriggerp && !m_dpiExportTriggerp->brokeExists());
         return nullptr;
     }
     virtual string name() const override { return "$root"; }
@@ -9184,6 +9201,8 @@ public:
     void evalp(AstCFunc* evalp) { m_evalp = evalp; }
     AstExecGraph* execGraphp() const { return m_execGraphp; }
     void execGraphp(AstExecGraph* graphp) { m_execGraphp = graphp; }
+    AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
+    void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& value) { m_timeunit = value; }
     VTimescale timeprecision() const { return m_timeprecision; }

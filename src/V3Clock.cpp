@@ -257,6 +257,14 @@ private:
         // Process the activates
         iterateChildren(nodep);
         UINFO(4, " TOPSCOPE iter done " << nodep << endl);
+        // Clear the DPI export trigger flag at the end of eval
+        if (AstVarScope* const dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp()) {
+            FileLine* const fl = dpiExportTriggerp->fileline();
+            AstAssign* const assignp
+                = new AstAssign{fl, new AstVarRef{fl, dpiExportTriggerp, VAccess::WRITE},
+                                new AstConst{fl, AstConst::BitFalse{}}};
+            m_evalFuncp->addFinalsp(assignp);
+        }
         // Split large functions
         splitCheck(m_evalFuncp);
         splitCheck(m_initFuncp);

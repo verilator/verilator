@@ -11,36 +11,27 @@
 
 #include <svdpi.h>
 
-#include <Vt_dpi_clock_gen.h>
-#include <Vt_dpi_clock_gen__Dpi.h>
-
-static int current_time = 0;
-
-static Vt_dpi_clock_gen* tb;
-
-static void tick() {
-    // Toggle and set clock
-    svSetScope(svGetScopeFromName("TOP.testbench"));
-    static bool clk = true;
-    clk = !clk;
-    set_clk(clk);
-
-    // Eval
-    tb->eval();
-
-    // Advance time
-    current_time += 500;
-}
+#include <Vt_order_dpi_export_1.h>
+#include <Vt_order_dpi_export_1__Dpi.h>
 
 int main(int argc, char* argv[]) {
-    tb = new Vt_dpi_clock_gen();
+    Vt_order_dpi_export_1* const tb = new Vt_order_dpi_export_1;
+    tb->contextp()->commandArgs(argc, argv);
+    bool clk = true;
 
-    while (!Verilated::gotFinish()) {
-        if (current_time > 100000) break;
-        tick();
+    while (!tb->contextp()->gotFinish()) {
+        // Timeout
+        if (tb->contextp()->time() > 100000) break;
+        // Toggle and set clock
+        svSetScope(svGetScopeFromName("TOP.testbench"));
+        clk = !clk;
+        set_clk(clk);
+        // Eval
+        tb->eval();
+        // Advance time
+        tb->contextp()->timeInc(500);
     }
 
     delete tb;
-
     return 0;
 }

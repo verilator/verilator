@@ -1842,6 +1842,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (dpiExportImpl()) str << " [DPIEI]";
     if (dpiImportPrototype()) str << " [DPIIP]";
     if (dpiImportWrapper()) str << " [DPIIW]";
+    if (dpiContext()) str << " [DPICTX]";
     if (isConstructor()) str << " [CTOR]";
     if (isDestructor()) str << " [DTOR]";
     if (isVirtual()) str << " [VIRT]";
