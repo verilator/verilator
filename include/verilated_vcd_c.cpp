@@ -430,9 +430,9 @@ void VerilatedVcd::dumpHeader() {
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
-                    printStr("(");
+                    printStr("[");
                 } else if (*np == ']') {
-                    printStr(")");
+                    printStr("]");
                 } else if (!(*np & '\x80')) {
                     *m_writep++ = *np;
                 }
@@ -531,7 +531,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     decl += " ";
     decl += basename;
     if (array) {
-        VL_SNPRINTF(buf, bufsize, "(%d)", arraynum);
+        VL_SNPRINTF(buf, bufsize, "[%d]", arraynum);
         decl += buf;
         hiername += buf;
     }

@@ -202,7 +202,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     std::stringstream name_ss;
     name_ss << symbol_name;
-    if (array) name_ss << "(" << arraynum << ")";
+    if (array) name_ss << "[" << arraynum << "]";
     std::string name_str = name_ss.str();
 
     if (dtypenum > 0) {
