@@ -1,5 +1,5 @@
 $date
-	Thu Apr  1 14:28:55 2021
+	Wed Aug 11 02:14:06 2021
 
 $end
 $version
@@ -37,9 +37,9 @@ $var wire 1 ! clk $end
 $var wire 1 # rstn $end
 $var wire 5 5 state $end
 $var logic 5 6 state_w $end
-$var logic 5 7 state_array(0) $end
-$var logic 5 8 state_array(1) $end
-$var logic 5 9 state_array(2) $end
+$var logic 5 7 state_array[0] $end
+$var logic 5 8 state_array[1] $end
+$var logic 5 9 state_array[2] $end
 $scope module unnamedblk2 $end
 $var int 32 : i $end
 $upscope $end
