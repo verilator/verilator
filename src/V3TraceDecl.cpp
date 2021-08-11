@@ -253,7 +253,7 @@ private:
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);
                     {
-                        m_traShowname += string("(") + cvtToStr(i) + string(")");
+                        m_traShowname += string("[") + cvtToStr(i) + string("]");
                         m_traValuep = new AstArraySel(
                             nodep->fileline(), m_traValuep->cloneTree(true), i - nodep->lo());
 
@@ -278,7 +278,7 @@ private:
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);
                     {
-                        m_traShowname += string("(") + cvtToStr(i) + string(")");
+                        m_traShowname += string("[") + cvtToStr(i) + string("]");
                         m_traValuep
                             = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
                                          (i - nodep->lo()) * subtypep->width(), subtypep->width());
