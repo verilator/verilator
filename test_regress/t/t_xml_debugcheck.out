@@ -1501,12 +1501,12 @@
     <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root.h"/>
     <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit.h"/>
     <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__Slow.cpp"/>
-    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_#__0__Slow.cpp"/>
-    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_#__0__Slow.cpp"/>
-    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_#__0.cpp"/>
-    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_#__0.cpp"/>
+    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_h########__0__Slow.cpp"/>
+    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_h########__0__Slow.cpp"/>
+    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_h########__0.cpp"/>
+    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_h########__0.cpp"/>
     <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit__Slow.cpp"/>
-    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit__DepSet_#__0__Slow.cpp"/>
+    <cfile fl="a0" loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit__DepSet_h########__0__Slow.cpp"/>
     <typetable fl="a0" loc="a,0,0,0,0">
       <basicdtype fl="d32" loc="d,32,24,32,27" id="1" name="logic"/>
       <basicdtype fl="d52" loc="d,52,9,52,10" id="6" name="logic" left="31" right="0"/>
