@@ -31,9 +31,9 @@
       <cfunc fl="d60" loc="d,60,4,60,10" name="_sequent__TOP__1">
         <var fl="d22" loc="d,22,13,22,16" name="__Vdly__t.cyc" dtype_id="3" vartype="integer" origName="__Vdly__t__DOT__cyc"/>
         <var fl="d23" loc="d,23,9,23,10" name="__Vdly__t.e" dtype_id="2" vartype="my_t" origName="__Vdly__t__DOT__e"/>
-        <var fl="d67" loc="d,67,119,67,123" name="__Vtemp1" dtype_id="4" vartype="string" origName="__Vtemp1"/>
-        <var fl="d77" loc="d,77,119,77,123" name="__Vtemp2" dtype_id="4" vartype="string" origName="__Vtemp2"/>
-        <var fl="d87" loc="d,87,119,87,123" name="__Vtemp3" dtype_id="4" vartype="string" origName="__Vtemp3"/>
+        <var fl="d67" loc="d,67,119,67,123" name="__Vtemp_h########__0" dtype_id="4" vartype="string" origName="__Vtemp_h########__0"/>
+        <var fl="d77" loc="d,77,119,77,123" name="__Vtemp_h########__1" dtype_id="4" vartype="string" origName="__Vtemp_h########__1"/>
+        <var fl="d87" loc="d,87,119,87,123" name="__Vtemp_h########__2" dtype_id="4" vartype="string" origName="__Vtemp_h########__2"/>
         <assignpre fl="d64" loc="d,64,3,64,4" dtype_id="5">
           <varref fl="d64" loc="d,64,3,64,4" name="t.e" dtype_id="5"/>
           <varref fl="d64" loc="d,64,3,64,4" name="__Vdly__t.e" dtype_id="5"/>
@@ -93,11 +93,11 @@
                           </ccast>
                         </and>
                       </arraysel>
-                      <varref fl="d67" loc="d,67,119,67,123" name="__Vtemp1" dtype_id="4"/>
+                      <varref fl="d67" loc="d,67,119,67,123" name="__Vtemp_h########__0" dtype_id="4"/>
                     </assign>
                     <display fl="d67" loc="d,67,38,67,44" displaytype="$write">
                       <sformatf fl="d67" loc="d,67,38,67,44" name="%%Error: t/t_enum_type_methods.v:67:  got=&apos;%@&apos; exp=&apos;E01&apos;&#10;" dtype_id="4">
-                        <varref fl="d67" loc="d,67,119,67,123" name="__Vtemp1" dtype_id="4"/>
+                        <varref fl="d67" loc="d,67,119,67,123" name="__Vtemp_h########__0" dtype_id="4"/>
                       </sformatf>
                     </display>
                     <stop fl="d67" loc="d,67,136,67,141"/>
@@ -343,11 +343,11 @@
                               </ccast>
                             </and>
                           </arraysel>
-                          <varref fl="d77" loc="d,77,119,77,123" name="__Vtemp2" dtype_id="4"/>
+                          <varref fl="d77" loc="d,77,119,77,123" name="__Vtemp_h########__1" dtype_id="4"/>
                         </assign>
                         <display fl="d77" loc="d,77,38,77,44" displaytype="$write">
                           <sformatf fl="d77" loc="d,77,38,77,44" name="%%Error: t/t_enum_type_methods.v:77:  got=&apos;%@&apos; exp=&apos;E03&apos;&#10;" dtype_id="4">
-                            <varref fl="d77" loc="d,77,119,77,123" name="__Vtemp2" dtype_id="4"/>
+                            <varref fl="d77" loc="d,77,119,77,123" name="__Vtemp_h########__1" dtype_id="4"/>
                           </sformatf>
                         </display>
                         <stop fl="d77" loc="d,77,136,77,141"/>
@@ -593,11 +593,11 @@
                                   </ccast>
                                 </and>
                               </arraysel>
-                              <varref fl="d87" loc="d,87,119,87,123" name="__Vtemp3" dtype_id="4"/>
+                              <varref fl="d87" loc="d,87,119,87,123" name="__Vtemp_h########__2" dtype_id="4"/>
                             </assign>
                             <display fl="d87" loc="d,87,38,87,44" displaytype="$write">
                               <sformatf fl="d87" loc="d,87,38,87,44" name="%%Error: t/t_enum_type_methods.v:87:  got=&apos;%@&apos; exp=&apos;E04&apos;&#10;" dtype_id="4">
-                                <varref fl="d87" loc="d,87,119,87,123" name="__Vtemp3" dtype_id="4"/>
+                                <varref fl="d87" loc="d,87,119,87,123" name="__Vtemp_h########__2" dtype_id="4"/>
                               </sformatf>
                             </display>
                             <stop fl="d87" loc="d,87,136,87,141"/>
@@ -845,7 +845,7 @@
       <cfunc fl="d22" loc="d,22,17,22,18" name="_initial__TOP__2">
         <var fl="d27" loc="d,27,11,27,14" name="t.all" dtype_id="4" vartype="string" origName="t__DOT__all"/>
         <var fl="d51" loc="d,51,17,51,18" name="t.unnamedblk1.e" dtype_id="2" vartype="my_t" origName="t__DOT__unnamedblk1__DOT__e"/>
-        <var fl="d48" loc="d,48,123,48,127" name="__Vtemp4" dtype_id="4" vartype="string" origName="__Vtemp4"/>
+        <var fl="d48" loc="d,48,123,48,127" name="__Vtemp_h########__0" dtype_id="4" vartype="string" origName="__Vtemp_h########__0"/>
         <assign fl="d22" loc="d,22,17,22,18" dtype_id="3">
           <const fl="d22" loc="d,22,17,22,18" name="32&apos;sh0" dtype_id="7"/>
           <varref fl="d22" loc="d,22,17,22,18" name="t.cyc" dtype_id="3"/>
@@ -1298,11 +1298,11 @@
                   </ccast>
                 </and>
               </arraysel>
-              <varref fl="d48" loc="d,48,123,48,127" name="__Vtemp4" dtype_id="4"/>
+              <varref fl="d48" loc="d,48,123,48,127" name="__Vtemp_h########__0" dtype_id="4"/>
             </assign>
             <display fl="d48" loc="d,48,42,48,48" displaytype="$write">
               <sformatf fl="d48" loc="d,48,42,48,48" name="%%Error: t/t_enum_type_methods.v:48:  got=&apos;%@&apos; exp=&apos;E03&apos;&#10;" dtype_id="4">
-                <varref fl="d48" loc="d,48,123,48,127" name="__Vtemp4" dtype_id="4"/>
+                <varref fl="d48" loc="d,48,123,48,127" name="__Vtemp_h########__0" dtype_id="4"/>
               </sformatf>
             </display>
             <stop fl="d48" loc="d,48,140,48,145"/>

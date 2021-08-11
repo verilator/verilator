@@ -30,6 +30,7 @@
 #include "V3Width.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 
@@ -601,6 +602,9 @@ private:
     AstNode* m_scopep = nullptr;  // Current scope
     AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
+    const bool m_globalPass;  // ConstVisitor invoked as a global pass
+    static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
+    V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -1762,14 +1766,16 @@ private:
                 newp = AstNode::addNext(newp, asn2ap);
             } else {
                 UASSERT_OBJ(m_modp, nodep, "Not under module");
+                UASSERT_OBJ(m_globalPass, nodep,
+                            "Should not reach here when not invoked on whole AstNetlist");
                 // We could create just one temp variable, but we'll get better optimization
                 // if we make one per term.
-                string name1 = (string("__Vconcswap") + cvtToStr(m_modp->varNumGetInc()));
-                string name2 = (string("__Vconcswap") + cvtToStr(m_modp->varNumGetInc()));
-                AstVar* temp1p = new AstVar(sel1p->fileline(), AstVarType::BLOCKTEMP, name1,
-                                            VFlagLogicPacked(), msb1 - lsb1 + 1);
-                AstVar* temp2p = new AstVar(sel2p->fileline(), AstVarType::BLOCKTEMP, name2,
-                                            VFlagLogicPacked(), msb2 - lsb2 + 1);
+                AstVar* const temp1p
+                    = new AstVar(sel1p->fileline(), AstVarType::BLOCKTEMP,
+                                 m_concswapNames.get(sel1p), VFlagLogicPacked(), msb1 - lsb1 + 1);
+                AstVar* const temp2p
+                    = new AstVar(sel2p->fileline(), AstVarType::BLOCKTEMP,
+                                 m_concswapNames.get(sel2p), VFlagLogicPacked(), msb2 - lsb2 + 1);
                 m_modp->addStmtp(temp1p);
                 m_modp->addStmtp(temp2p);
                 AstNodeAssign* asn1ap
@@ -1931,6 +1937,7 @@ private:
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
+            m_concswapNames.reset();
             iterateChildren(nodep);
         }
     }
@@ -3197,7 +3204,9 @@ public:
     };
 
     // CONSTRUCTORS
-    explicit ConstVisitor(ProcMode pmode) {
+    ConstVisitor(ProcMode pmode, bool globalPass)
+        : m_globalPass{globalPass}
+        , m_concswapNames{globalPass ? ("__Vconcswap_" + cvtToStr(s_globalPassNum++)) : ""} {
         // clang-format off
         switch (pmode) {
         case PROC_PARAMS:       m_doV = true;  m_doNConst = true; m_params = true;
@@ -3225,6 +3234,8 @@ public:
     }
 };
 
+uint32_t ConstVisitor::s_globalPassNum = 0;
+
 //######################################################################
 // Const class functions
 
@@ -3237,7 +3248,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
 
     // Make sure we've sized everything first
     nodep = V3Width::widthParamsEdit(nodep);
-    ConstVisitor visitor{ConstVisitor::PROC_PARAMS};
+    ConstVisitor visitor{ConstVisitor::PROC_PARAMS, /* globalPass: */ false};
     if (AstVar* varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the
@@ -3267,7 +3278,7 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
 
     // Make sure we've sized everything first
     nodep = V3Width::widthGenerateParamsEdit(nodep);
-    ConstVisitor visitor{ConstVisitor::PROC_GENERATE};
+    ConstVisitor visitor{ConstVisitor::PROC_GENERATE, /* globalPass: */ false};
     if (AstVar* varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the
@@ -3285,7 +3296,7 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ConstVisitor visitor{ConstVisitor::PROC_V_WARN};
+        ConstVisitor visitor{ConstVisitor::PROC_V_WARN, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
@@ -3294,14 +3305,14 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
 void V3Const::constifyCpp(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ConstVisitor visitor{ConstVisitor::PROC_CPP};
+        ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const_cpp", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
-    ConstVisitor visitor{ConstVisitor::PROC_V_NOWARN};
+    ConstVisitor visitor{ConstVisitor::PROC_V_NOWARN, /* globalPass: */ false};
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
 }
@@ -3312,7 +3323,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
     // IE doesn't prune dead statements, as we need to do some usability checks after this
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ConstVisitor visitor{ConstVisitor::PROC_LIVE};
+        ConstVisitor visitor{ConstVisitor::PROC_LIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
@@ -3322,14 +3333,14 @@ void V3Const::constifyAll(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE};
+        ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 AstNode* V3Const::constifyExpensiveEdit(AstNode* nodep) {
-    ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE};
+    ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE, /* globalPass: */ false};
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
 }

@@ -29,6 +29,7 @@
 #include "V3Global.h"
 #include "V3Depth.h"
 #include "V3Ast.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 
@@ -39,11 +40,11 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule* m_modp = nullptr;  // Current module
     AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
     int m_depth = 0;  // How deep in an expression
     int m_maxdepth = 0;  // Maximum depth in an expression
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -51,10 +52,8 @@ private:
     void createDeepTemp(AstNode* nodep) {
         UINFO(6, "  Deep  " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
-
-        const string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
-        AstVar* const varp
-            = new AstVar{nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep()};
+        AstVar* const varp = new AstVar{nodep->fileline(), AstVarType::STMTTEMP,
+                                        m_tempNames.get(nodep), nodep->dtypep()};
         UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
         m_cfuncp->addInitsp(varp);
         // Replace node tree with reference to var
@@ -70,21 +69,13 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
-        UINFO(4, " MOD   " << nodep << endl);
-        VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_cfuncp = nullptr;
-            iterateChildren(nodep);
-        }
-    }
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         {
             m_cfuncp = nodep;
             m_depth = 0;
             m_maxdepth = 0;
+            m_tempNames.reset();
             iterateChildren(nodep);
         }
     }
@@ -149,7 +140,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit DepthVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit DepthVisitor(AstNetlist* nodep)
+        : m_tempNames{"__Vdeeptemp"} {
+        iterate(nodep);
+    }
     virtual ~DepthVisitor() override = default;
 };
 

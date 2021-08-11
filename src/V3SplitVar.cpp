@@ -117,6 +117,7 @@
 #include "V3Global.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>  // sort
 #include <map>
@@ -124,6 +125,10 @@
 #include <vector>
 
 struct SplitVarImpl {
+    // NODE STATE
+    //  AstNodeModule::user1()  -> Block number counter for generating unique names
+    AstUser1InUse m_user1InUse;  // Only used in SplitUnpackedVarVisitor
+
     static AstNodeAssign* newAssign(FileLine* fileline, AstNode* lhsp, AstNode* rhsp,
                                     const AstVar* varp) {
         if (varp->isFuncLocal() || varp->isFuncReturn()) {
@@ -184,27 +189,27 @@ struct SplitVarImpl {
     static const char* cannotSplitPackedVarReason(const AstVar* varp);
 
     template <class T_ALWAYSLIKE>
-    static void insertBeginCore(T_ALWAYSLIKE* ap, AstNodeStmt* stmtp, AstNodeModule* modp) {
+    void insertBeginCore(T_ALWAYSLIKE* ap, AstNodeStmt* stmtp, AstNodeModule* modp) {
         if (ap->isJustOneBodyStmt() && ap->bodysp() == stmtp) {
             stmtp->unlinkFrBack();
             // Insert begin-end because temp value may be inserted to this block later.
-            const std::string name = "__VsplitVarBlk" + cvtToStr(modp->varNumGetInc());
+            const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
             ap->addStmtp(new AstBegin{ap->fileline(), name, stmtp});
         }
     }
 
-    static void insertBeginCore(AstInitial* initp, AstNodeStmt* stmtp, AstNodeModule* modp) {
+    void insertBeginCore(AstInitial* initp, AstNodeStmt* stmtp, AstNodeModule* modp) {
         if (initp->isJustOneBodyStmt() && initp->bodysp() == stmtp) {
             stmtp->unlinkFrBack();
             // Insert begin-end because temp value may be inserted to this block later.
             FileLine* const fl = initp->fileline();
-            const std::string name = "__VsplitVarBlk" + cvtToStr(modp->varNumGetInc());
+            const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
             initp->replaceWith(new AstInitial{fl, new AstBegin{fl, name, stmtp}});
             VL_DO_DANGLING(initp->deleteTree(), initp);
         }
     }
 
-    static void insertBeginIfNecessary(AstNodeStmt* stmtp, AstNodeModule* modp) {
+    void insertBeginIfNecessary(AstNodeStmt* stmtp, AstNodeModule* modp) {
         AstNode* const backp = stmtp->backp();
         if (AstAlways* const ap = VN_CAST(backp, Always)) {
             insertBeginCore(ap, stmtp, modp);
@@ -401,6 +406,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     size_t m_numSplit = 0;
     // List for SplitPackedVarVisitor
     SplitVarRefsMap m_refsForPackedSplit;
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
 
     static AstVarRef* isTargetVref(AstNode* nodep) {
         if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
@@ -457,6 +463,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
         UASSERT_OBJ(!m_modp, m_modp, "Nested module declaration");
         UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
         m_modp = nodep;
+        m_tempNames.reset();
         iterateChildren(nodep);
         split();
         m_modp = nullptr;
@@ -593,7 +600,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
         }
     }
-    static AstNode* toInsertPoint(AstNode* insertp) {
+    AstNode* toInsertPoint(AstNode* insertp) {
         if (AstNodeStmt* const stmtp = VN_CAST(insertp, NodeStmt)) {
             if (!stmtp->isStatement()) insertp = stmtp->backp();
         }
@@ -603,8 +610,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
                              const std::string& name_prefix, std::vector<AstVar*>& vars,
                              int start_idx, bool lvalue, bool ftask) {
         FileLine* const fl = nodep->fileline();
-        const std::string name
-            = "__VsplitVar" + cvtToStr(m_modp->varNumGetInc()) + "__" + name_prefix;
+        const std::string name = m_tempNames.get(nodep) + "__" + name_prefix;
         AstNodeAssign* const assignp = VN_CAST(context, NodeAssign);
         if (assignp) {
             // "always_comb a = b;" to "always_comb begin a = b; end" so that local
@@ -765,7 +771,8 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
 
 public:
     explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
-        : m_refs{} {
+        : m_refs{}
+        , m_tempNames{"__VsplitVar"} {
         iterate(nodep);
     }
     ~SplitUnpackedVarVisitor() override {

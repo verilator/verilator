@@ -30,8 +30,8 @@
 #include "V3Global.h"
 #include "V3Premit.h"
 #include "V3Ast.h"
-#include "V3DupFinder.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 
@@ -92,17 +92,17 @@ private:
     //  AstNodeMath::user()     -> bool.  True if iterated already
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
-    //  *::user4()              -> See PremitAssignVisitor
+    //  *::user3()              -> See PremitAssignVisitor
     AstUser1InUse m_inuser1;
     AstUser2InUse m_inuser2;
 
     // STATE
-    AstNodeModule* m_modp = nullptr;  // Current module
     AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
 
     VDouble0 m_extractedToConstPool;  // Statistic tracking
 
@@ -184,9 +184,8 @@ private:
             nodep->deleteTree();
             ++m_extractedToConstPool;
         } else {
-            // Keep as local temporary
-            const string name = string("__Vtemp") + cvtToStr(m_modp->varNumGetInc());
-            varp = new AstVar(fl, AstVarType::STMTTEMP, name, nodep->dtypep());
+            // Keep as local temporary. Name based on hash of node for output stability.
+            varp = new AstVar(fl, AstVarType::STMTTEMP, m_tempNames.get(nodep), nodep->dtypep());
             m_cfuncp->addInitsp(varp);
             // Put assignment before the referencing statement
             insertBeforeStmt(new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE), nodep));
@@ -202,16 +201,13 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        UASSERT_OBJ(m_modp == nullptr, nodep, "Nested modules ?");
-        m_modp = nodep;
-        m_cfuncp = nullptr;
         iterateChildren(nodep);
-        m_modp = nullptr;
     }
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         {
             m_cfuncp = nodep;
+            m_tempNames.reset();
             iterateChildren(nodep);
         }
     }
@@ -412,7 +408,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit PremitVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit PremitVisitor(AstNetlist* nodep)
+        : m_tempNames{"__Vtemp"} {
+        iterate(nodep);
+    }
     virtual ~PremitVisitor() {
         V3Stats::addStat("Optimizations, Prelim extracted value to ConstPool",
                          m_extractedToConstPool);

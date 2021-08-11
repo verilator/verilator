@@ -2849,7 +2849,6 @@ private:
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
     int m_level = 0;  // 1=top module, 2=cell off top module, ...
-    int m_varNum = 0;  // Incrementing variable number
     int m_typeNum = 0;  // Incrementing implicit type number
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
@@ -2890,7 +2889,6 @@ public:
     void level(int level) { m_level = level; }
     int level() const { return m_level; }
     bool isTop() const { return level() == 1; }
-    int varNumGetInc() { return ++m_varNum; }
     int typeNumGetInc() { return ++m_typeNum; }
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modPublic() const { return m_modPublic; }
