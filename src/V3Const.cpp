@@ -858,12 +858,23 @@ private:
     }
 
     bool matchBitOpTree(AstNode* nodep) {
+        if (nodep->widthMin() != 1) return false;
         if (!v3Global.opt.oConstBitOpTree()) return false;
+
+        string debugPrefix;
+        if (debug() >= 9) {  // LCOV_EXCL_START
+            static int c = 0;
+            debugPrefix = "matchBitOpTree[";
+            debugPrefix += cvtToStr(++c);
+            debugPrefix += "] ";
+            nodep->dumpTree(debugPrefix + "INPUT: ");
+        }  // LCOV_EXCL_STOP
 
         AstNode* newp = nullptr;
         bool tried = false;
-        if (AstAnd* andp = VN_CAST(nodep, And)) {  // 1 & BitOpTree
-            if (AstConst* bitMaskp = VN_CAST(andp->lhsp(), Const)) {
+        if (AstAnd* const andp = VN_CAST(nodep, And)) {  // 1 & BitOpTree
+            AstConst* const bitMaskp = VN_CAST(andp->lhsp(), Const);
+            if (bitMaskp && andp->rhsp()->widthMin() == 1) {
                 if (bitMaskp->num().toUQuad() != 1) return false;
                 newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), 1, m_statBitOpReduction);
                 tried = true;
@@ -876,17 +887,16 @@ private:
         }
         if (newp) {
             UINFO(4, "Transformed leaf of bit tree to " << newp << std::endl);
-            if (debug() >= 9) {  // LCOV_EXCL_START
-                static int c = 0;
-                std::cout << "Call matchBitOpTree[" << c << "]\n";
-                nodep->dumpTree(std::cout);
-                std::cout << "\nResult:\n";
-                newp->dumpTree(std::cout);
-                ++c;
-            }  // LCOV_EXCL_STOP
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
+        if (debug() >= 9) {  // LCOV_EXCL_START
+            if (newp) {
+                newp->dumpTree(debugPrefix + "RESULT: ");
+            } else {
+                cout << debugPrefix << "not replaced" << endl;
+            }
+        }  // LCOV_EXCL_STOP
         return newp;
     }
     static bool operandShiftSame(const AstNode* nodep) {
@@ -3101,7 +3111,7 @@ private:
     TREEOPV("AstRedOr {$lhsp.castExtend}",      "AstRedOr {$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstRedXor{$lhsp.castExtend}",      "AstRedXor{$lhsp->castExtend()->lhsp()}");
     TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_CAST($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^(const ^ a) => (^const)^(^a)
-    TREEOPC("AstAnd {nodep->widthMin() == 1, $lhsp.castConst, $rhsp.castRedXor, matchBitOpTree(nodep)}", "DONE");
+    TREEOPC("AstAnd {$lhsp.castConst, $rhsp.castRedXor, matchBitOpTree(nodep)}", "DONE");
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
@@ -3125,9 +3135,9 @@ private:
     TREEOP ("AstAnd {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstXor {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
-    TREEOPC("AstAnd {nodep->widthMin() == 1, matchBitOpTree(nodep)}", "DONE");
-    TREEOPC("AstOr  {nodep->widthMin() == 1, matchBitOpTree(nodep)}", "DONE");
-    TREEOPC("AstXor {nodep->widthMin() == 1, matchBitOpTree(nodep)}", "DONE");
+    TREEOPC("AstAnd {matchBitOpTree(nodep)}", "DONE");
+    TREEOPC("AstOr  {matchBitOpTree(nodep)}", "DONE");
+    TREEOPC("AstXor {matchBitOpTree(nodep)}", "DONE");
     // Note can't simplify a extend{extends}, extends{extend}, as the sign
     // bits end up in the wrong places
     TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_CAST(nodep->lhsp(), Extend)->lhsp())");

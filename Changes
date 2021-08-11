@@ -25,6 +25,7 @@ Verilator 4.211 devel
 * Refactored Verilated include files; include verilated.h not verilated_heavy.h.
 * Fix -G to treat simple integer literals as signed (#3060). [Anikin1610]
 * Fix emitted string array initializers (#2895). [Iztok Jeras]
+* Fix bitop tree optimization dropping necessary & operator (#3096). [Flavien Solt]
 
 
 Verilator 4.210 2021-07-07
