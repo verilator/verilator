@@ -182,6 +182,10 @@ private:
     }
 
     // VISITORS
+    virtual void visit(AstNetlist* nodep) override {
+        nodep->dpiExportTriggerp(nullptr);
+        iterateChildren(nodep);
+    }
     virtual void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         {

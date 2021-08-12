@@ -365,6 +365,39 @@ struct TaskDpiUtils {
 };
 
 //######################################################################
+// Gather non-local variables written by an AstCFunc
+
+class TaskGatherWrittenVisitor final : public AstNVisitor {
+    // NODE STATE
+    // AstVarScope::user5 -> Already considered variable
+    AstUser5InUse m_user5InUse;
+
+    std::vector<AstVarScope*> m_writtenVariables;  // Variables written
+
+    virtual void visit(AstVarRef* nodep) override {
+        if (nodep->access().isReadOnly()) return;  // Ignore read reference
+        AstVarScope* const varScopep = nodep->varScopep();
+        if (varScopep->user5()) return;  // Ignore already processed variable
+        varScopep->user5(true);  // Mark as already processed
+        // Note: We are ignoring function locals as they should not be referenced anywhere outside
+        // of the enclosing AstCFunc, and therefore they are irrelevant for code ordering. This is
+        // simply an optimization to avoid adding useless nodes to the ordering graph in V3Order.
+        if (varScopep->varp()->isFuncLocal()) return;
+        m_writtenVariables.push_back(varScopep);
+    }
+    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    explicit TaskGatherWrittenVisitor(AstNode* nodep) { iterate(nodep); }
+
+public:
+    // Gather all written non-local variables
+    static const std::vector<AstVarScope*> gather(AstCFunc* funcp) {
+        TaskGatherWrittenVisitor visitor{funcp};
+        return std::move(visitor.m_writtenVariables);
+    }
+};
+
+//######################################################################
 // Task state, as a visitor of each AstNode
 
 class TaskVisitor final : public AstNVisitor {
@@ -768,6 +801,7 @@ private:
         AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep,
                                              (rtnvarp ? rtnvarp->dpiArgType(true, true) : ""));
         funcp->dpiExportDispatcher(true);
+        funcp->dpiContext(nodep->dpiContext());
         funcp->dontCombine(true);
         funcp->entryPoint(true);
         funcp->isStatic(true);
@@ -899,6 +933,7 @@ private:
                                                   : "";
         AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep, rtnType);
         funcp->dpiImportPrototype(true);
+        funcp->dpiContext(nodep->dpiContext());
         funcp->dontCombine(true);
         funcp->entryPoint(false);
         funcp->isMethod(false);
@@ -1062,6 +1097,22 @@ private:
         }
     }
 
+    AstVarScope* makeDpiExporTrigger() {
+        AstVarScope* dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp();
+        if (!dpiExportTriggerp) {
+            // Create the global DPI export trigger flag the first time we encounter a DPI export.
+            // This flag is set any time a DPI export is invoked, and cleared at the end of eval.
+            FileLine* const fl = m_topScopep->fileline();
+            AstVar* const varp
+                = new AstVar{fl, AstVarType::VAR, "__Vdpi_export_trigger", VFlagBitPacked{}, 1};
+            m_topScopep->scopep()->modp()->addStmtp(varp);
+            dpiExportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
+            m_topScopep->scopep()->addVarp(dpiExportTriggerp);
+            v3Global.rootp()->dpiExportTriggerp(dpiExportTriggerp);
+        }
+        return dpiExportTriggerp;
+    }
+
     AstCFunc* makeUserFunc(AstNodeFTask* nodep, bool ftaskNoInline) {
         // Given a already cloned node, make a public C function, or a non-inline C function
         // Probably some of this work should be done later, but...
@@ -1151,6 +1202,7 @@ private:
         cfuncp->funcPublic(nodep->taskPublic());
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
+        cfuncp->dpiContext(nodep->dpiContext());
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
             cfuncp->isLoose(true);
@@ -1248,6 +1300,42 @@ private:
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
+
+        if (cfuncp->dpiExportImpl()) {
+            // Mark all non-local variables written by the DPI exported function as being updated
+            // by DPI exports. This ensures correct ordering and change detection later.
+            const std::vector<AstVarScope*> writtenps = TaskGatherWrittenVisitor::gather(cfuncp);
+            if (!writtenps.empty()) {
+                AstVarScope* const dpiExportTriggerp = makeDpiExporTrigger();
+                FileLine* const fl = cfuncp->fileline();
+
+                // Set DPI export trigger flag every time the DPI export is called.
+                AstAssign* const assignp
+                    = new AstAssign{fl, new AstVarRef{fl, dpiExportTriggerp, VAccess::WRITE},
+                                    new AstConst{fl, AstConst::BitTrue{}}};
+                // Add as first statement (to avoid issues with early returns) to exported function
+                if (cfuncp->stmtsp()) {
+                    cfuncp->stmtsp()->addHereThisAsNext(assignp);
+                } else {
+                    cfuncp->addStmtsp(assignp);
+                }
+
+                // Add an always block sensitive to the DPI export trigger flag, and add an
+                // AstDpiExportUpdated node under it for each variable that are writen by the
+                // exported function.
+                AstAlways* const alwaysp = new AstAlways{
+                    fl, VAlwaysKwd::ALWAYS,
+                    new AstSenTree{
+                        fl, new AstSenItem{fl, VEdgeType::ET_HIGHEDGE,
+                                           new AstVarRef{fl, dpiExportTriggerp, VAccess::READ}}},
+                    nullptr};
+                for (AstVarScope* const varScopep : writtenps) {
+                    alwaysp->addStmtp(new AstDpiExportUpdated{fl, varScopep});
+                }
+                m_scopep->addActivep(alwaysp);
+            }
+        }
+
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         if (debug() >= 9) cfuncp->dumpTree(cout, "-userFunc: ");

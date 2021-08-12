@@ -645,6 +645,7 @@ private:
     AstSenTree* m_comboDomainp = nullptr;  // Combo activation tree
     AstSenTree* m_deleteDomainp = nullptr;  // Delete this from tree
     OrderInputsVertex* m_inputsVxp = nullptr;  // Top level vertex all inputs point from
+    OrderVarVertex* m_dpiExportTriggerVxp = nullptr;  // DPI Export trigger condition vertex
     OrderLogicVertex* m_logicVxp = nullptr;  // Current statement being tracked, nullptr=ignored
     AstTopScope* m_topScopep = nullptr;  // Current top scope being processed
     AstScope* m_scopetopp = nullptr;  // Scope under TOPSCOPE
@@ -756,6 +757,10 @@ private:
     }
 
     void nodeMarkCircular(OrderVarVertex* vertexp, OrderEdge* edgep) {
+        // To be marked circular requires being a clock assigned in a delayed assignment, or
+        // having a cutable in or out edge, none of which is true for the DPI export trigger.
+        UASSERT(vertexp != m_dpiExportTriggerVxp,
+                "DPI expor trigger should not be marked circular");
         AstVarScope* nodep = vertexp->varScp();
         OrderLogicVertex* fromLVtxp = nullptr;
         OrderLogicVertex* toLVtxp = nullptr;
@@ -953,6 +958,9 @@ private:
         // Base vertices
         m_activeSenVxp = nullptr;
         m_inputsVxp = new OrderInputsVertex(&m_graph, nullptr);
+        if (AstVarScope* const dpiExportTrigger = v3Global.rootp()->dpiExportTriggerp()) {
+            m_dpiExportTriggerVxp = newVarUserVertex(dpiExportTrigger, WV_STD);
+        }
         //
         iterateChildren(nodep);
         // Done topscope, erase extra user information
@@ -1130,6 +1138,24 @@ private:
             }
         }
     }
+    virtual void visit(AstDpiExportUpdated* nodep) override {
+        // This is under an AstAlways, sensitive to a change in the DPI export trigger. We just
+        // need to add an edge to the enclosing logic vertex (the vertex for the AstAlways).
+        OrderVarVertex* const varVxp = newVarUserVertex(nodep->varScopep(), WV_STD);
+        new OrderComboCutEdge(&m_graph, m_logicVxp, varVxp);
+        // Only used for ordering, so we can get rid of it here
+        nodep->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    virtual void visit(AstCCall* nodep) override {
+        // Calls to 'context' imported DPI function may call DPI exported functions
+        if (m_dpiExportTriggerVxp && nodep->funcp()->dpiImportWrapper()
+            && nodep->funcp()->dpiContext()) {
+            UASSERT_OBJ(m_logicVxp, nodep, "Call not under logic");
+            new OrderEdge(&m_graph, m_logicVxp, m_dpiExportTriggerVxp, WEIGHT_NORMAL);
+        }
+        iterateChildren(nodep);
+    }
     virtual void visit(AstSenTree* nodep) override {
         // Having a node derived from the sentree isn't required for
         // correctness, it merely makes the graph better connected
@@ -1187,10 +1213,10 @@ private:
         iterateNewStmt(nodep);
     }
     virtual void visit(AstCFunc*) override {
-        // Ignore for now
-        // We should detect what variables are set in the function, and make
-        // settlement code for them, then set a global flag, so we call "settle"
-        // on the next evaluation loop.
+        // Calls to DPI exports handled with AstCCall. /* verlator public */ functions are
+        // ignored for now (and hence potentially mis-ordered), but could use the same or
+        // similar mechanism as DPI exports. Every other impure function (including those
+        // that may set a non-local variable) must have been inlined in V3Task.
     }
     //--------------------
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
