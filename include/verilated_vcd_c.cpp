@@ -430,11 +430,7 @@ void VerilatedVcd::dumpHeader() {
                 printStr("module ");
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
-                if (*np == '[') {
-                    printStr("[");
-                } else if (*np == ']') {
-                    printStr("]");
-                } else if (!(*np & '\x80')) {
+                if (!(*np & '\x80')) {
                     *m_writep++ = *np;
                 }
             }
