@@ -344,7 +344,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     virtual void visit(AstNot* nodep) override {
         CONST_BITOP_RETURN_IF(nodep->widthMin() != 1, nodep);
         AstNode* lhsp = nodep->lhsp();
-        CONST_BITOP_RETURN_IF(VN_IS(lhsp, And) || VN_IS(lhsp, Or) || VN_IS(lhsp, Const), lhsp);
+        if (AstCCast* castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+        CONST_BITOP_RETURN_IF(!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, Xor) && !VN_IS(lhsp, RedXor)
+                                  && !VN_IS(lhsp, ShiftR),
+                              lhsp);
         incrOps(nodep, __LINE__);
         m_polarity = !m_polarity;
         iterateChildren(nodep);
