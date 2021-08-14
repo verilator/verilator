@@ -344,7 +344,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     virtual void visit(AstNot* nodep) override {
         CONST_BITOP_RETURN_IF(nodep->widthMin() != 1, nodep);
         AstNode* lhsp = nodep->lhsp();
-        CONST_BITOP_RETURN_IF(VN_IS(lhsp, And) || VN_IS(lhsp, Or) || VN_IS(lhsp, Const), lhsp);
+        if (AstCCast* castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+        CONST_BITOP_RETURN_IF(!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, Xor) && !VN_IS(lhsp, RedXor)
+                                  && !VN_IS(lhsp, ShiftR),
+                              lhsp);
         incrOps(nodep, __LINE__);
         m_polarity = !m_polarity;
         iterateChildren(nodep);
@@ -522,17 +525,19 @@ public:
         if (visitor.m_failed || visitor.m_varInfos.size() == 1) return nullptr;
 
         // Two ops for each varInfo. (And and Eq)
-        const int vars = visitor.m_varInfos.size() - 1;
+        int vars = 0;
         int constTerms = 0;
         for (auto&& v : visitor.m_varInfos) {
-            if (v && v->hasConstantResult()) ++constTerms;
+            if (!v) continue;
+            ++vars;
+            if (v->hasConstantResult()) ++constTerms;
         }
         // Expected number of ops after this simplification
         // e.g. (comp0 == (mask0 & var0)) & (comp1 == (mask1 & var1)) & ....
         // e.g. redXor(mask1 & var0) ^ redXor(mask1 & var1)
         //  2 ops per variables, numVars - 1 ops among variables
         int expOps = 2 * (vars - constTerms) + vars - 1;
-        expOps += 2 * visitor.m_frozenNodes.size();
+        expOps += visitor.m_frozenNodes.size();
         if (visitor.isXorTree()) {
             ++expOps;  // AstRedXor::cleanOut() == false, so need 1 & redXor
             if (!visitor.m_polarity) ++expOps;  // comparison with 0
