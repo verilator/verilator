@@ -319,12 +319,8 @@ public:
         }
         return false;
     }
-    bool isAllZ() const {
-        for (int i = 0; i < width(); i++) {
-            if (!bitIsZ(i)) return false;
-        }
-        return true;
-    }
+    bool isAllZ() const;
+    bool isAllX() const;
     bool isEqZero() const;
     bool isNeqZero() const;
     bool isBitsZero(int msb, int lsb) const;
