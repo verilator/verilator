@@ -17,6 +17,7 @@ Verilator 4.223 devel
 * Add assert when VerilatedContext is mis-deleted (#3121). [Rupert Swarbrick]
 * Define VM_TRACE_VCD when tracing in VCD format. [Geza Lore, Shunyao CAD]
 * Support non-ANSI interface port declarations (#3439). [Geza Lore, Shunyao CAD]
+* Improve conditional merging optimization (#3125). [Geza Lore, Shunyao CAD]
 * Fix hang with large case statement optimization (#3405). [Mike Urbach]
 * Fix 'with' operator with type casting (#3387). [xiak95]
 * Fix incorrect conditional merging (#3409). [Raynard Qiao]
