@@ -1,0 +1,11 @@
+%Error: t/t_lint_const_func_gen_bad.v:11:30: Constant function may not be declared under generate (IEEE 1800-2017 13.4.3)
+                                           : ... In instance t
+   11 |       function automatic bit constFunc();
+      |                              ^~~~~~~~~
+%Error: t/t_lint_const_func_gen_bad.v:15:26: Expecting expression to be constant, but can't determine constant for FUNCREF 'constFunc'
+                                           : ... In instance t
+        t/t_lint_const_func_gen_bad.v:11:30: ... Location of non-constant FUNC 'constFunc': Constant function called under generate
+        t/t_lint_const_func_gen_bad.v:15:26: ... Called from constFunc() with parameters:
+   15 |       localparam PARAM = constFunc();
+      |                          ^~~~~~~~~
+%Error: Exiting due to

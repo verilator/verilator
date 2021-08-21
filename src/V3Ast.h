@@ -2682,6 +2682,7 @@ private:
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
+    bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
 protected:
@@ -2704,6 +2705,7 @@ protected:
         , m_isHideProtected{false}
         , m_pure{false}
         , m_pureVirtual{false}
+        , m_underGenerate{false}
         , m_virtual{false} {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
@@ -2770,6 +2772,8 @@ public:
     bool pure() const { return m_pure; }
     void pureVirtual(bool flag) { m_pureVirtual = flag; }
     bool pureVirtual() const { return m_pureVirtual; }
+    void underGenerate(bool flag) { m_underGenerate = flag; }
+    bool underGenerate() const { return m_underGenerate; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }

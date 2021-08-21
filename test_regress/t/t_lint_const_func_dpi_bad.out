@@ -1,0 +1,11 @@
+%Error: t/t_lint_const_func_dpi_bad.v:8:32: Constant function may not be DPI import (IEEE 1800-2017 13.4.3)
+                                          : ... In instance t
+    8 |    import "DPI-C" function int dpiFunc();
+      |                                ^~~~~~~
+%Error: t/t_lint_const_func_dpi_bad.v:9:23: Expecting expression to be constant, but can't determine constant for FUNCREF 'dpiFunc'
+                                          : ... In instance t
+        t/t_lint_const_func_dpi_bad.v:8:32: ... Location of non-constant FUNC 'dpiFunc': DPI import functions aren't simulatable
+        t/t_lint_const_func_dpi_bad.v:9:23: ... Called from dpiFunc() with parameters:
+    9 |    localparam PARAM = dpiFunc();
+      |                       ^~~~~~~
+%Error: Exiting due to
