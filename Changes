@@ -24,6 +24,7 @@ Verilator 4.211 devel
   C++ direct references to parameters might require updating (#3077). [Geza Lore]
 * Refactored Verilated include files; include verilated.h not verilated_heavy.h.
 * Add error when constant function under a generate (#3103). [Don Owen]
+* Add header guards on Dpi.h generated files (#2979). [Tood Strader]
 * Fix -G to treat simple integer literals as signed (#3060). [Anikin1610]
 * Fix emitted string array initializers (#2895). [Iztok Jeras]
 * Fix bitop tree optimization dropping necessary & operator (#3096). [Flavien Solt]
