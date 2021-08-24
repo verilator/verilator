@@ -324,6 +324,10 @@ private:
         iterateChildren(nodep);
         checkNode(nodep);
     }
+    virtual void visit(AstRand* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
+    }
     virtual void visit(AstUCFunc* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
