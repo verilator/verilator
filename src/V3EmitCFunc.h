@@ -595,11 +595,11 @@ public:
     }
 
     void checkMaxWords(AstNode* nodep) {
-        if (nodep->widthWords() > VL_TO_STRING_MAX_WORDS) {
+        if (nodep->widthWords() > VL_VALUE_STRING_MAX_WORDS) {
             nodep->v3error(
                 "String of "
                 << nodep->width()
-                << " bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h");
+                << " bits exceeds hardcoded limit VL_VALUE_STRING_MAX_WORDS in verilatedos.h");
         }
     }
     virtual void visit(AstFOpen* nodep) override {

@@ -1338,7 +1338,7 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
 
     if (VL_UNLIKELY(str.empty())) return 0;
 
-    // V3Emit has static check that bytes < VL_TO_STRING_MAX_WORDS, but be safe
+    // V3Emit has static check that bytes < VL_VALUE_STRING_MAX_WORDS, but be safe
     if (VL_UNCOVERABLE(bytes < str.size())) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: fgets buffer overrun");  // LCOV_EXCL_LINE
     }
@@ -1579,7 +1579,7 @@ IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
     return VL_SYSTEM_IW(VL_WQ_WORDS_E, lhsw);
 }
 IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
-    char filenamez[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
+    char filenamez[VL_VALUE_STRING_MAX_CHARS + 1];
     _vl_vint_to_string(lhswords * VL_EDATASIZE, filenamez, lhsp);
     const int code = std::system(filenamez);  // Yes, std::system() is threadsafe
     return code >> 8;  // Want exit status
@@ -1726,7 +1726,7 @@ std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
 
 std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE {
     // See also _vl_vint_to_string
-    char destout[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
+    char destout[VL_VALUE_STRING_MAX_CHARS + 1];
     int obits = lwords * VL_EDATASIZE;
     int lsb = obits - 1;
     bool start = true;

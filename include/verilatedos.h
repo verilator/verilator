@@ -421,7 +421,8 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 // Verilated function size macros
 
 #define VL_MULS_MAX_WORDS 16  ///< Max size in words of MULS operation
-#define VL_TO_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
+#define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
+#define VL_VALUE_STRING_MAX_CHARS (VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE / VL_BYTESIZE)
 
 //=========================================================================
 // Base macros
