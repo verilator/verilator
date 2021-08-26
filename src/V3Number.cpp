@@ -703,17 +703,33 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
             if (issigned) dchars++;  // space for sign
             fmtsize = cvtToStr(int(dchars));
         }
-        if (issigned) {
-            if (width() > 64) {
-                str = toDecimalS();
+        bool hasXZ = false;
+        if (isAllX()) {
+            str = "x";
+            hasXZ = true;
+        } else if (isAllZ()) {
+            str = "z";
+            hasXZ = true;
+        } else if (isAnyX()) {
+            str = "X";
+            hasXZ = true;
+        } else if (isAnyZ()) {
+            str = "Z";
+            hasXZ = true;
+        }
+        if (!hasXZ) {
+            if (issigned) {
+                if (width() > 64) {
+                    str = toDecimalS();
+                } else {
+                    str = cvtToStr(toSQuad());
+                }
             } else {
-                str = cvtToStr(toSQuad());
-            }
-        } else {
-            if (width() > 64) {
-                str = toDecimalU();
-            } else {
-                str = cvtToStr(toUQuad());
+                if (width() > 64) {
+                    str = toDecimalU();
+                } else {
+                    str = cvtToStr(toUQuad());
+                }
             }
         }
         const bool zeropad = fmtsize.length() > 0 && fmtsize[0] == '0';
