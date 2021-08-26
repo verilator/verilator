@@ -605,6 +605,24 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
             while (bit && bitIs0(bit)) bit--;
         while ((bit % 3) != 2) bit++;
         for (; bit > 0; bit -= 3) {
+            const int numX = countX(bit - 2, 3);
+            const int numZ = countZ(bit - 2, 3);
+            if (numX == 3 || numX == width() - (bit - 2)) {
+                str += 'x';
+                continue;
+            }
+            if (numZ == 3 || numZ == width() - (bit - 2)) {
+                str += 'z';
+                continue;
+            }
+            if (numX > 0) {
+                str += 'X';
+                continue;
+            }
+            if (numZ > 0) {
+                str += 'Z';
+                continue;
+            }
             int v = bitsValue(bit - 2, 3);
             str += static_cast<char>('0' + v);
         }
@@ -617,6 +635,24 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
             while (bit && bitIs0(bit)) bit--;
         while ((bit % 4) != 3) bit++;
         for (; bit > 0; bit -= 4) {
+            const int numX = countX(bit - 3, 4);
+            const int numZ = countZ(bit - 3, 4);
+            if (numX == 4 || numX == width() - (bit - 3)) {
+                str += 'x';
+                continue;
+            }
+            if (numZ == 4 || numZ == width() - (bit - 3)) {
+                str += 'z';
+                continue;
+            }
+            if (numX > 0) {
+                str += 'X';
+                continue;
+            }
+            if (numZ > 0) {
+                str += 'Z';
+                continue;
+            }
             int v = bitsValue(bit - 3, 4);
             if (v >= 10) {
                 str += static_cast<char>('a' + v - 10);
@@ -976,6 +1012,22 @@ bool V3Number::isLtXZ(const V3Number& rhs) const {
         if (rhs.bitIsXZ(bit)) return false;
     }
     return false;
+}
+int V3Number::countX(int lsb, int nbits) const {
+    int count = 0;
+    for (int bitn = 0; bitn < nbits; ++bitn) {
+        if (lsb + bitn >= width()) return count;
+        if (bitIsX(lsb + bitn)) ++count;
+    }
+    return count;
+}
+int V3Number::countZ(int lsb, int nbits) const {
+    int count = 0;
+    for (int bitn = 0; bitn < nbits; ++bitn) {
+        if (lsb + bitn >= width()) return count;
+        if (bitIsZ(lsb + bitn)) ++count;
+    }
+    return count;
 }
 
 int V3Number::widthMin() const {
