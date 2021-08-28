@@ -4268,8 +4268,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: "... hierarchical_identifier select"  see below
 	//
 	//			// IEEE: empty_queue (IEEE 1800-2017 empty_unpacked_array_concatenation)
-	|	'{' '}'					{ $$ = new AstConst($1, AstConst::BitFalse());
-							  BBUNSUP($<fl>1, "Unsupported: empty queues (\"{ }\")"); }
+	|	'{' '}'					{ $$ = new AstEmptyQueue($1); }
 	//
 	//			// IEEE: concatenation/constant_concatenation
 	//			// Part of exprOkLvalue below

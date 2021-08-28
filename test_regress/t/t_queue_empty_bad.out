@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_queue_empty_bad.v:11:11: Unsupported/Illegal: empty queue ('{}') in this context
+                                               : ... In instance t
+   11 |       i = {} + 1;
+      |           ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_queue_empty_bad.v:13:9: Unsupported/Illegal: empty queue ('{}') in this assign context
+                                              : ... In instance t
+   13 |       i = {};
+      |         ^
+%Error: Exiting due to

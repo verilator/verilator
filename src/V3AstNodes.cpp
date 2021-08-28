@@ -932,9 +932,18 @@ void AstTypeTable::repairCache() {
     }
 }
 
+AstEmptyQueueDType* AstTypeTable::findEmptyQueueDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_emptyQueuep)) {
+        AstEmptyQueueDType* newp = new AstEmptyQueueDType{fl};
+        addTypesp(newp);
+        m_emptyQueuep = newp;
+    }
+    return m_emptyQueuep;
+}
+
 AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_voidp)) {
-        AstVoidDType* newp = new AstVoidDType(fl);
+        AstVoidDType* newp = new AstVoidDType{fl};
         addTypesp(newp);
         m_voidp = newp;
     }
@@ -1641,6 +1650,10 @@ string AstQueueDType::prettyDTypeName() const {
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[]";
+}
+void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "emptyq";
 }
 void AstVoidDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);

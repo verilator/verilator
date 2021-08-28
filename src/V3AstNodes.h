@@ -183,6 +183,17 @@ public:
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
 };
 
+class AstEmptyQueue final : public AstNodeMath {
+public:
+    AstEmptyQueue(FileLine* fl)
+        : ASTGEN_SUPER_EmptyQueue(fl) {}
+    ASTNODE_NODE_FUNCS(EmptyQueue)
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitVerilog() { return "{}"; }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual bool cleanOut() const { return true; }
+};
+
 class AstRange final : public AstNodeRange {
     // Range specification, for use under variables and cells
 public:
@@ -1352,6 +1363,33 @@ public:
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
     }
+};
+
+class AstEmptyQueueDType final : public AstNodeDType {
+    // For EmptyQueue
+public:
+    explicit AstEmptyQueueDType(FileLine* fl)
+        : ASTGEN_SUPER_EmptyQueueDType(fl) {
+        dtypep(this);
+    }
+    ASTNODE_NODE_FUNCS(EmptyQueueDType)
+    virtual void dumpSmall(std::ostream& str) const override;
+    virtual bool hasDType() const override { return true; }
+    virtual bool maybePointedTo() const override { return true; }
+    virtual AstNodeDType* subDTypep() const override { return nullptr; }
+    virtual AstNodeDType* virtRefDTypep() const override { return nullptr; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) override {}
+    virtual bool similarDType(AstNodeDType* samep) const override { return this == samep; }
+    virtual AstBasicDType* basicp() const override { return nullptr; }
+    // cppcheck-suppress csyleCast
+    virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
+    virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
+    virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const override { return 1; }
+    virtual int widthTotalBytes() const override { return 1; }
+    virtual bool isCompound() const override { return false; }
 };
 
 class AstVoidDType final : public AstNodeDType {
@@ -9088,8 +9126,9 @@ public:
 class AstTypeTable final : public AstNode {
     // Container for hash of standard data types
     // Children:  NODEDTYPEs
-    AstVoidDType* m_voidp = nullptr;
+    AstEmptyQueueDType* m_emptyQueuep = nullptr;
     AstQueueDType* m_queueIndexp = nullptr;
+    AstVoidDType* m_voidp = nullptr;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
     using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
@@ -9100,14 +9139,15 @@ public:
     ASTNODE_NODE_FUNCS(TypeTable)
     AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
-    AstVoidDType* findVoidDType(FileLine* fl);
-    AstQueueDType* findQueueIndexDType(FileLine* fl);
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width, int widthMin,
                                      VSigning numeric);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, const VNumRange& range,
                                      int widthMin, VSigning numeric);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
+    AstEmptyQueueDType* findEmptyQueueDType(FileLine* fl);
+    AstQueueDType* findQueueIndexDType(FileLine* fl);
+    AstVoidDType* findVoidDType(FileLine* fl);
     void clearCache();
     void repairCache();
     virtual void dump(std::ostream& str = std::cout) const override;
