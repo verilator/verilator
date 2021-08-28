@@ -188,10 +188,10 @@ public:
     AstEmptyQueue(FileLine* fl)
         : ASTGEN_SUPER_EmptyQueue(fl) {}
     ASTNODE_NODE_FUNCS(EmptyQueue)
-    virtual string emitC() { V3ERROR_NA_RETURN(""); }
-    virtual string emitVerilog() { return "{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitVerilog() override { return "{}"; }
     virtual bool same(const AstNode* samep) const override { return true; }
-    virtual bool cleanOut() const { return true; }
+    virtual bool cleanOut() const override { return true; }
 };
 
 class AstRange final : public AstNodeRange {
