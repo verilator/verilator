@@ -103,7 +103,7 @@ public:
         return nodep;
     }
     AstNode* createGatePin(AstNode* exprp) {
-        AstRange* rangep = m_gateRangep;
+        AstRange* const rangep = m_gateRangep;
         if (!rangep) {
             return exprp;
         } else {
@@ -112,14 +112,14 @@ public:
     }
     AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
                            AstNodeRange* rangep) {
-        AstNode* nodep = new AstTypedef(fl, name, attrsp, VFlagChildDType(),
-                                        GRAMMARP->createArray(basep, rangep, false));
+        AstNode* const nodep = new AstTypedef{fl, name, attrsp, VFlagChildDType{},
+                                              GRAMMARP->createArray(basep, rangep, false)};
         SYMP->reinsert(nodep);
         PARSEP->tagNodep(nodep);
         return nodep;
     }
     AstNode* createTypedefFwd(FileLine* fl, const string& name) {
-        AstNode* nodep = new AstTypedefFwd(fl, name);
+        AstNode* const nodep = new AstTypedefFwd{fl, name};
         SYMP->reinsert(nodep);
         PARSEP->tagNodep(nodep);
         return nodep;
@@ -166,12 +166,12 @@ public:
                     finalp->unlinkFrBack();
                     rangearraysp = rangesp;
                 }
-                if (AstRange* finalRangep = VN_CAST(finalp, Range)) {  // not an UnsizedRange
+                if (AstRange* const finalRangep = VN_CAST(finalp, Range)) {  // not an UnsizedRange
                     if (dtypep->implicit()) {
                         // It's no longer implicit but a wire logic type
-                        AstBasicDType* newp = new AstBasicDType(
+                        AstBasicDType* const newp = new AstBasicDType{
                             dtypep->fileline(), AstBasicDTypeKwd::LOGIC, dtypep->numeric(),
-                            dtypep->width(), dtypep->widthMin());
+                            dtypep->width(), dtypep->widthMin()};
                         VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
                         dtypep = newp;
                     }
@@ -261,7 +261,7 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
     fileline->v3error(
-        string("Unexpected '") + tokname + "': '" + tokname
+        std::string{"Unexpected '"} + tokname + "': '" + tokname
         + "' is a SystemVerilog keyword misused as an identifier."
         + (!toldonce++ ? "\n" + V3Error::warnMore()
                              + "... Suggest modify the Verilog-2001 code to avoid SV keywords,"
@@ -1127,7 +1127,7 @@ package_import_itemList<nodep>:
 package_import_item<nodep>:	// ==IEEE: package_import_item
 		idCC/*package_identifier*/ yP_COLONCOLON package_import_itemObj
 			{
-			  if (!VN_CAST($<scp>1, Package)) {
+			  if (!VN_IS($<scp>1, Package)) {
 			      $$ = nullptr;
 			      $<fl>1->v3error("Importing from missing package '" << *$<strp>1 << "'");
 			  } else {
@@ -1137,8 +1137,8 @@ package_import_item<nodep>:	// ==IEEE: package_import_item
 	;
 
 package_import_itemObj<strp>:	// IEEE: part of package_import_item
-		idAny/*package_identifier*/		{ $<fl>$=$<fl>1; $$=$1; }
-	|	'*'					{ $<fl>$=$<fl>1; static string star="*"; $$=&star; }
+		idAny/*package_identifier*/		{ $<fl>$ = $<fl>1; $$ = $1; }
+	|	'*'					{ $<fl>$ = $<fl>1; static string star = "*"; $$ = &star; }
 	;
 
 package_export_declaration<nodep>: // IEEE: package_export_declaration
@@ -1166,7 +1166,8 @@ module_declaration:		// ==IEEE: module_declaration
 		modFront importsAndParametersE portsStarE ';'
 	/*cont*/    module_itemListE yENDMODULE endLabelE
 			{ $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
-			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
+			  if ($2) $1->addStmtp($2);
+			  if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
 			  GRAMMARP->m_modp = nullptr;
 			  SYMP->popScope($1);
@@ -1174,7 +1175,8 @@ module_declaration:		// ==IEEE: module_declaration
 	|	udpFront parameter_port_listE portsStarE ';'
 	/*cont*/    module_itemListE yENDPRIMITIVE endLabelE
 			{ $1->modTrace(false);  // Stash for implicit wires, etc
-			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
+			  if ($2) $1->addStmtp($2);
+			  if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
 			  GRAMMARP->m_tracingParse = true;
 			  GRAMMARP->m_modp = nullptr;
@@ -1285,7 +1287,7 @@ list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 portAndTagE<nodep>:
 		/* empty */
 			{ int p = PINNUMINC();
-			   const string name = "__pinNumber" + cvtToStr(p);
+			  const string name = "__pinNumber" + cvtToStr(p);
 			  $$ = new AstPort{CRELINE(), p, name};
 			  AstVar* varp = new AstVar{CRELINE(), AstVarType::PORT, name, VFlagChildDType{},
 			                            new AstBasicDType{CRELINE(), LOGIC_IMPLICIT}};
@@ -1474,7 +1476,7 @@ interface_or_generate_item<nodep>:  // ==IEEE: interface_or_generate_item
 anonymous_program<nodep>:	// ==IEEE: anonymous_program
 	//			// See the spec - this doesn't change the scope, items still go up "top"
 		yPROGRAM ';' anonymous_program_itemListE yENDPROGRAM
-			{ BBUNSUP($<fl>1, "Unsupported: Anonymous programs"); $$ = nullptr; }
+			{ $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Anonymous programs"); }
 	;
 
 anonymous_program_itemListE<nodep>:	// IEEE: { anonymous_program_item }
@@ -1501,7 +1503,8 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 		pgmFront parameter_port_listE portsStarE ';'
 	/*cont*/    program_itemListE yENDPROGRAM endLabelE
 			{ $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
-			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
+			  if ($2) $1->addStmtp($2);
+			  if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
 			  GRAMMARP->m_modp = nullptr;
 			  SYMP->popScope($1);
@@ -1628,7 +1631,8 @@ list_of_genvar_identifiers<nodep>:	// IEEE: list_of_genvar_identifiers (for decl
 
 genvar_identifierDecl<varp>:		// IEEE: genvar_identifier (for declaration)
 		id/*new-genvar_identifier*/ sigAttrListE
-			{ VARRESET_NONLIST(GENVAR); VARDTYPE(new AstBasicDType($<fl>1,AstBasicDTypeKwd::INTEGER));
+			{ VARRESET_NONLIST(GENVAR);
+			  VARDTYPE(new AstBasicDType($<fl>1, AstBasicDTypeKwd::INTEGER));
 			  $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
 	;
 
@@ -1826,7 +1830,7 @@ simple_type<dtypep>:		// ==IEEE: simple_type
 	//			// Even though we looked up the type and have a AstNode* to it,
 	//			// we can't fully resolve it because it may have been just a forward definition.
 	|	packageClassScopeE idType
-			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, $1, nullptr);
+			{ AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
 			  $$ = refp; }
 	//
 	//			// { generate_block_identifer ... } '.'
@@ -1844,10 +1848,10 @@ data_type<dtypep>:		// ==IEEE: data_type
 	//			// IEEE: ps_covergroup_identifier
 	//			// Don't distinguish between types and classes so all these combined
 	|	packageClassScopeE idType packed_dimensionListE
-			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, $1, nullptr);
+			{ AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
 			  $$ = GRAMMARP->createArray(refp, $3, true); }
 	|	packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
-			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, $1, $3);
+			{ AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
 			  $$ = GRAMMARP->createArray(refp, $4, true); }
 	;
 
@@ -2493,13 +2497,14 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			  AstBegin* lowerBegp = VN_CAST($9, Begin);
 			  UASSERT_OBJ(!($9 && !lowerBegp), $9, "Child of GENFOR should have been begin");
 
-			  if (!lowerBegp) lowerBegp = new AstBegin($1, "", nullptr, true, false);  // Empty body
-			  AstNode* lowerNoBegp = lowerBegp->stmtsp();
+			  if (!lowerBegp) lowerBegp = new AstBegin{$1, "", nullptr, true, false};  // Empty body
+			  AstNode* const lowerNoBegp = lowerBegp->stmtsp();
 			  if (lowerNoBegp) lowerNoBegp->unlinkFrBackWithNext();
 			  //
-			  AstBegin* blkp = new AstBegin($1, lowerBegp->name(), nullptr, true, true);
+			  AstBegin* const blkp = new AstBegin{$1, lowerBegp->name(), nullptr, true, true};
 			  // V3LinkDot detects BEGIN(GENFOR(...)) as a special case
-			  AstNode* initp = $3;  AstNode* varp = $3;
+			  AstNode* initp = $3;
+			  AstNode* const varp = $3;
 			  if (VN_IS(varp, Var)) {  // Genvar
 				initp = varp->nextp();
 				initp->unlinkFrBackWithNext();  // Detach 2nd from varp, make 1st init
@@ -2712,12 +2717,13 @@ param_assignment<varp>:		// ==IEEE: param_assignment
 		id/*new-parameter*/ variable_dimensionListE sigAttrListE exprOrDataTypeEqE
 			{ // To handle  #(type A=int, B=A) and properly imply B
                           // as a type (for parsing) we need to detect "A" is a type
-			  if (AstNodeDType* refp = VN_CAST($4, NodeDType)) {
-			    if (VSymEnt* foundp = SYMP->symCurrentp()->findIdFallback(refp->name())) {
+			  if (AstNodeDType* const refp = VN_CAST($4, NodeDType)) {
+			    if (VSymEnt* const foundp = SYMP->symCurrentp()->findIdFallback(refp->name())) {
 				UINFO(9, "declaring type via param assignment" << foundp->nodep() << endl);
-				VARDTYPE(new AstParseTypeDType($<fl>1))
+				VARDTYPE(new AstParseTypeDType{$<fl>1})
 				SYMP->reinsert(foundp->nodep()->cloneTree(false), nullptr, *$1); }}
-			  $$ = VARDONEA($<fl>1, *$1, $2, $3); if ($4) $$->valuep($4); }
+			  $$ = VARDONEA($<fl>1, *$1, $2, $3);
+			  if ($4) $$->valuep($4); }
 	;
 
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
@@ -2765,8 +2771,9 @@ instDecl<nodep>:
 	//      		// Currently disambiguated from data_declaration based on
 	//			// VARs being type, and cells non-type.
 	//			// IEEE requires a '(' to disambiguate, we need TODO force this
-		id parameter_value_assignmentE {INSTPREP($<fl>1,*$1,$2);} instnameList ';'
-			{ $$ = $4; GRAMMARP->m_impliedDecl=false;
+		id parameter_value_assignmentE {INSTPREP($<fl>1, *$1, $2);} instnameList ';'
+			{ $$ = $4;
+			  GRAMMARP->m_impliedDecl = false;
 			  if (GRAMMARP->m_instParamp) {
 			      VL_DO_CLEAR(GRAMMARP->m_instParamp->deleteTree(),
 					  GRAMMARP->m_instParamp = nullptr);
@@ -3101,26 +3108,27 @@ statement_item<nodep>:		// IEEE: statement_item
 							  if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
 							  if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
 	//UNSUP	caseStart caseAttrE yMATCHES case_patternListE yENDCASE	{ }
-	|	unique_priorityE caseStart caseAttrE yINSIDE case_insideListE yENDCASE	{ $$ = $2; if ($5) $2->addItemsp($5);
-							  if (!$2->caseSimple()) $2->v3error("Illegal to have inside on a casex/casez");
-							  $2->caseInsideSet();
-							  if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
-							  if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
-							  if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
+	|	unique_priorityE caseStart caseAttrE yINSIDE case_insideListE yENDCASE
+			{ $$ = $2; if ($5) $2->addItemsp($5);
+			  if (!$2->caseSimple()) $2->v3error("Illegal to have inside on a casex/casez");
+			  $2->caseInsideSet();
+			  if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
+			  if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
+			  if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
 	//
 	//			// IEEE: conditional_statement
 	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
-							{ AstIf* newp = new AstIf($2,$4,$6,nullptr);
-							  $$ = newp;
-							  if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
-							  if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
-							  if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
+			{ AstIf* const newp = new AstIf{$2, $4, $6, nullptr};
+			  $$ = newp;
+			  if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
+			  if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
+			  if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
 	|	unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
-							{ AstIf* newp = new AstIf($2,$4,$6,$8);
-							  $$ = newp;
-							  if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
-							  if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
-							  if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
+			{ AstIf* const newp = new AstIf{$2, $4, $6, $8};
+			  $$ = newp;
+			  if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
+			  if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
+			  if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
 	//
 	|	finc_or_dec_expression ';'		{ $$ = $1; }
 	//			// IEEE: inc_or_dec_expression
@@ -3133,15 +3141,15 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// so parse as if task
 	//			// Alternative would be shim with new AstVoidStmt.
 	|	yVOID yP_TICK '(' task_subroutine_callNoMethod ')' ';'
-							{ $$ = $4;
-							  FileLine* newfl = new FileLine($$->fileline());
-							  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
-							  $$->fileline(newfl); }
+			{ $$ = $4;
+			  FileLine* const newfl = new FileLine{$$->fileline()};
+			  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
+			  $$->fileline(newfl); }
 	|	yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
-							{ $$ = new AstDot($5, false, $4, $6);
-							  FileLine* newfl = new FileLine($6->fileline());
-							  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
-							  $6->fileline(newfl); }
+			{ $$ = new AstDot{$5, false, $4, $6};
+			  FileLine* const newfl = new FileLine{$6->fileline()};
+			  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
+			  $6->fileline(newfl); }
 	//			// Expr included here to resolve our not knowing what is a method call
 	//			// Expr here must result in a subroutine_call
 	|	task_subroutine_callNoMethod ';'	{ $$ = $1; }
@@ -3434,7 +3442,7 @@ patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, ass
 	//			// id/*member*/ is part of constExpr below
 	//UNSUP	constExpr				{ $$ = $1; }
 	//			// IEEE: assignment_pattern_key
-	//UNSUP	simple_type				{ $1->v3error("Unsupported: '{} with data type as key"); $$=$1; }
+	//UNSUP	simple_type				{ $1->v3error("Unsupported: '{} with data type as key"); $$ = $1; }
 	//			// simple_type reference looks like constExpr
 	//			// Verilator:
 	//			//   The above expressions cause problems because "foo" may be a constant identifier
@@ -3704,7 +3712,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1, true,  $3, $5, $7, $9); }
 	//
 	|	yD_CAST '(' expr ',' expr ')'
-			{ FileLine* fl_nowarn = new FileLine($1);
+			{ FileLine* const fl_nowarn = new FileLine{$1};
 			  fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
 			  $$ = new AstAssertIntrinsic(fl_nowarn, new AstCastDynamic(fl_nowarn, $5, $3), nullptr, nullptr, true); }
 	//
@@ -6307,8 +6315,8 @@ dist_list<nodep>:  // ==IEEE: dist_list
 
 dist_item<nodep>:  // ==IEEE: dist_item + dist_weight
 		value_range				{ $$ = $1; /* Same as := 1 */ }
-	|	value_range yP_COLONEQ  expr		{ $$ = $1; nullptr; /*UNSUP-no-UVM*/ }
-	|	value_range yP_COLONDIV expr		{ $$ = $1; nullptr; /*UNSUP-no-UVM*/ }
+	|	value_range yP_COLONEQ  expr		{ $$ = $1; /*UNSUP-no-UVM*/ }
+	|	value_range yP_COLONDIV expr		{ $$ = $1; /*UNSUP-no-UVM*/ }
 	;
 
 //UNSUPextern_constraint_declaration:  // ==IEEE: extern_constraint_declaration
@@ -6416,7 +6424,7 @@ vltDModuleE<strp>:
 	;
 
 vltDFTaskE<strp>:
-		/* empty */				{ static string empty = ""; $$ = &empty; }
+		/* empty */				{ static string empty; $$ = &empty; }
 	|	yVLT_D_FUNCTION str			{ $$ = $2; }
 	|	yVLT_D_TASK str				{ $$ = $2; }
 	;
@@ -6427,7 +6435,7 @@ vltInlineFront<cbool>:
 	;
 
 vltVarAttrVarE<strp>:
-		/* empty */				{ static string empty = ""; $$ = &empty; }
+		/* empty */				{ static string empty; $$ = &empty; }
 	|	yVLT_D_VAR str				{ $$ = $2; }
 	;
 
