@@ -214,12 +214,13 @@ class EmitCSyms final : EmitCBaseVisitor {
                     } else {
                         varBase = whole;
                     }
-                    // UINFO(9,"For "<<scopep->name()<<" - "<<varp->name()<<"  Scp "<<scpName<<"
-                    // Var "<<varBase<<endl);
+                    // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
+                    // << scpName << "Var " << varBase << endl);
                     const string varBasePretty = AstNode::prettyName(varBase);
                     const string scpPretty = AstNode::prettyName(scpName);
                     const string scpSym = scopeSymString(scpName);
-                    // UINFO(9," scnameins sp "<<scpName<<" sp "<<scpPretty<<" ss "<<scpSym<<endl);
+                    // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
+                    // << scpSym << endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
                         m_scopeNames.insert(std::make_pair(
