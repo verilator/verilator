@@ -222,22 +222,22 @@ public:
     bool empty() const { return m_timeq.empty(); }
     // Top/earliest time in the queue; determines when to advance time to
     vluint64_t earliestTime() const VL_EXCLUDES(m_mutex) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock{m_mutex};
+        const VerilatedLockGuard lock{m_mutex};
         if (VL_UNLIKELY(m_timeq.empty())) return VL_ULL(0xFFFFFFFFFFFFFFFF);
-        vluint64_t topTime = m_timeq.top().first;
+        const vluint64_t topTime = m_timeq.top().first;
         return topTime;
     }
     // Push to activate given event at given time
     void push(vluint64_t time, CData* eventp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         VL_DEBUG_IF(if (VL_UNLIKELY(time < VL_TIME_Q())) Verilated::timeBackwardsError(););
-        VerilatedLockGuard lock{m_mutex};
+        const VerilatedLockGuard lock{m_mutex};
         m_timeq.push(std::make_pair(time, eventp));
     }
     // Activate and pop all events earlier than given time
     void activate(vluint64_t time) VL_MT_SAFE_EXCLUDES(m_mutex) {
         VerilatedLockGuard lock{m_mutex};
         while (VL_LIKELY(!m_timeq.empty() && m_timeq.top().first <= time)) {
-            CData* eventp = m_timeq.top().second;
+            CData* const eventp = m_timeq.top().second;
             *eventp = 1;
             VL_DEBUG_IF(VL_DBG_MSGF("+    activate %p\n", eventp););
             m_timeq.pop();
