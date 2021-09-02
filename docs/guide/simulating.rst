@@ -230,7 +230,7 @@ coverage point insertions into the model and collect the coverage data.
 
 To get the coverage data from the model, in the user wrapper code,
 typically at the end once a test passes, call
-:code:`Verilated::coveragep()->write` with an argument of the filename for
+:code:`Verilated::threadContextp()->coveragep()->write` with an argument of the filename for
 the coverage data file to write coverage data to (typically
 "logs/coverage.dat").
 
