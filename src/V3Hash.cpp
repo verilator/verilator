@@ -19,10 +19,17 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 V3Hash::V3Hash(const std::string& val)
     : m_value{static_cast<uint32_t>(std::hash<std::string>{}(val))} {}
 
 std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) {
-    return os << std::hex << std::setw(8) << std::setfill('0') << rhs.value();
+    return os << 'h' << std::hex << std::setw(8) << std::setfill('0') << rhs.value();
+}
+
+std::string V3Hash::toString() const {
+    std::ostringstream os;
+    os << *this;
+    return os.str();
 }

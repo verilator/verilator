@@ -1695,7 +1695,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                   const char* fullname) {
     if (!vl_check_format(varp, valuep, fullname, true)) return;
     // Maximum required size is for binary string, one byte per bit plus null termination
-    static VL_THREAD_LOCAL char t_outStr[1 + VL_MULS_MAX_WORDS * 32];
+    static VL_THREAD_LOCAL char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     // cppcheck-suppress variableScope
     static VL_THREAD_LOCAL int t_outStrSz = sizeof(t_outStr) - 1;
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
@@ -1703,7 +1703,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
     if (valuep->format == vpiVectorVal) {
         // Vector pointer must come from our memory pool
         // It only needs to persist until the next vpi_get_value
-        static VL_THREAD_LOCAL t_vpi_vecval t_out[VL_MULS_MAX_WORDS * 2];
+        static VL_THREAD_LOCAL t_vpi_vecval t_out[VL_VALUE_STRING_MAX_WORDS * 2];
         valuep->value.vector = t_out;
         if (varp->vltype() == VLVT_UINT8) {
             t_out[0].aval = *(reinterpret_cast<CData*>(varDatap));
@@ -1726,10 +1726,10 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             return;
         } else if (varp->vltype() == VLVT_WDATA) {
             int words = VL_WORDS_I(varp->packed().elements());
-            if (VL_UNCOVERABLE(words >= VL_MULS_MAX_WORDS)) {
-                VL_FATAL_MT(
-                    __FILE__, __LINE__, "",
-                    "vpi_get_value with more than VL_MULS_MAX_WORDS; increase and recompile");
+            if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
+                VL_FATAL_MT(__FILE__, __LINE__, "",
+                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
+                            "recompile");
             }
             const WDataInP datap = (reinterpret_cast<EData*>(varDatap));
             for (int i = 0; i < words; ++i) {
@@ -1749,9 +1749,9 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             VL_VPI_WARNING_(
                 __FILE__, __LINE__,
                 "%s: Truncating string value of %s for %s"
-                " as buffer size (%d, VL_MULS_MAX_WORDS=%d) is less than required (%d)",
+                " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than required (%d)",
                 __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
-                VL_MULS_MAX_WORDS, bits);
+                VL_VALUE_STRING_MAX_WORDS, bits);
         }
         for (i = 0; i < bits; ++i) {
             char val = (datap[i >> 3] >> (i & 7)) & 1;
@@ -1770,9 +1770,9 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             VL_VPI_WARNING_(
                 __FILE__, __LINE__,
                 "%s: Truncating string value of %s for %s"
-                " as buffer size (%d, VL_MULS_MAX_WORDS=%d) is less than required (%d)",
+                " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than required (%d)",
                 __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
-                VL_MULS_MAX_WORDS, chars);
+                VL_VALUE_STRING_MAX_WORDS, chars);
             chars = t_outStrSz;
         }
         for (i = 0; i < chars; ++i) {
@@ -1828,9 +1828,9 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             VL_VPI_WARNING_(
                 __FILE__, __LINE__,
                 "%s: Truncating string value of %s for %s"
-                " as buffer size (%d, VL_MULS_MAX_WORDS=%d) is less than required (%d)",
+                " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than required (%d)",
                 __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
-                VL_MULS_MAX_WORDS, chars);
+                VL_VALUE_STRING_MAX_WORDS, chars);
             chars = t_outStrSz;
         }
         for (i = 0; i < chars; ++i) {
@@ -1859,12 +1859,12 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             int i;
             if (bytes > t_outStrSz) {
                 // limit maximum size of output to size of buffer to prevent overrun.
-                VL_VPI_WARNING_(
-                    __FILE__, __LINE__,
-                    "%s: Truncating string value of %s for %s"
-                    " as buffer size (%d, VL_MULS_MAX_WORDS=%d) is less than required (%d)",
-                    __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname,
-                    t_outStrSz, VL_MULS_MAX_WORDS, bytes);
+                VL_VPI_WARNING_(__FILE__, __LINE__,
+                                "%s: Truncating string value of %s for %s"
+                                " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than "
+                                "required (%d)",
+                                __func__, VerilatedVpiError::strFromVpiVal(valuep->format),
+                                fullname, t_outStrSz, VL_VALUE_STRING_MAX_WORDS, bytes);
                 bytes = t_outStrSz;
             }
             for (i = 0; i < bytes; ++i) {

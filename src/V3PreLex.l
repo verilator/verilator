@@ -159,7 +159,7 @@ bom             [\357\273\277]
                           LEXP->curFilelinep()->v3warn(PROTECTED, "A '`pragma protected data_block' encrypted section was detected and will be skipped.");
                           BEGIN(ENCBASE64);
                           return VP_TEXT; }
-<PRAGMAPRT>("begin_protected"|"end_protected")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+<PRAGMAPRT>("begin_protected"|"end_protected"|"end")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
 <PRAGMAPRT>"version="[^\n\r]*[\n\r] {
                           FL_FWDC;
                           linenoInc();
@@ -175,6 +175,10 @@ bom             [\357\273\277]
                           linenoInc();
                           BEGIN(INITIAL);
                           return VP_TEXT; }
+    /* end of `pragma protect */
+<PRAGMAPRT>{wsn}+        { FL_FWDC; return VP_TEXT; }
+<PRAGMAPRT>[\n\r]        { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+
     /* catch-all for unknown '`pragma protect' rules */
 <PRAGMAPRT>.            { yyless(0);
                           BEGIN(PRAGMAPRTERR);
@@ -202,7 +206,7 @@ bom             [\357\273\277]
 
     /* Catch only empty `pragma lines */
 <INITIAL>"`pragma"{wsn}*[\n\r]  {
-                          yyless(yyleng-1); FL_FWDC;
+                          yyless(yyleng - 1); FL_FWDC;
                           if (v3Global.opt.pedantic()) {
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "`pragma is missing a pragma_expression.");
                           }
@@ -210,12 +214,11 @@ bom             [\357\273\277]
 
     /* catch all other nonempty `pragma */
 <INITIAL>"`pragma"{wsn}*[^\n\r]  {
-                          yyless(yyleng-1); FL_FWDC;
+                          yyless(yyleng - 1); FL_FWDC;
                           if (!v3Global.opt.preprocOnly())
                               BEGIN(PRAGMA);
                           return VP_TEXT; }
 <PRAGMA>"protect"{wsn}* { FL_FWDC; BEGIN(PRAGMAPRT); return VP_TEXT;}
-
     /* catch-all for unknown `pragma rules */
 <PRAGMA>.               { yyless(0);
                           BEGIN(PRAGMAERR);

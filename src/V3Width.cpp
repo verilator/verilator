@@ -1083,6 +1083,12 @@ private:
         // We don't size the constant until we commit the widths, as need parameters
         // to remain unsized, and numbers to remain unsized to avoid backp() warnings
     }
+    virtual void visit(AstEmptyQueue* nodep) override {
+        nodep->dtypeSetEmptyQueue();
+        if (!VN_IS(nodep->backp(), Assign))
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported/Illegal: empty queue ('{}') in this context");
+    }
     virtual void visit(AstFell* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
@@ -1178,6 +1184,7 @@ private:
                 return;
             }
         }
+        nodep->backp()->dumpTree(cout, "-FIXME-tr ");
         nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
     }
     virtual void visit(AstIsUnbounded* nodep) override {
@@ -3766,6 +3773,23 @@ private:
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
         }
+        if (VN_IS(nodep->rhsp(), EmptyQueue)) {
+            UINFO(9, "= {} -> .delete(): " << nodep);
+            if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported/Illegal: empty queue ('{}') in this assign context");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+            AstMethodCall* const newp = new AstMethodCall{
+                nodep->fileline(), nodep->lhsp()->unlinkFrBack(), "delete", nullptr};
+            newp->makeStatement();
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // Need to now convert it
+            visit(newp);
+            return;
+        }
         if (AstNewDynamic* dynp = VN_CAST(nodep->rhsp(), NewDynamic)) {
             UINFO(9, "= new[] -> .resize(): " << nodep);
             AstCMethodHard* newp;
@@ -3782,6 +3806,7 @@ private:
             newp->makeStatement();
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // return;
         }
     }
 
@@ -4132,6 +4157,9 @@ private:
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
+            if (auto* patternp = VN_CAST(nodep->exprp(), Pattern))
+                if (auto* modVarp = nodep->modVarp())
+                    patternp->childDTypep(modVarp->childDTypep()->cloneTree(false));
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {

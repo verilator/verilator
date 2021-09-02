@@ -595,11 +595,11 @@ public:
     }
 
     void checkMaxWords(AstNode* nodep) {
-        if (nodep->widthWords() > VL_TO_STRING_MAX_WORDS) {
+        if (nodep->widthWords() > VL_VALUE_STRING_MAX_WORDS) {
             nodep->v3error(
                 "String of "
                 << nodep->width()
-                << " bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h");
+                << " bits exceeds hardcoded limit VL_VALUE_STRING_MAX_WORDS in verilatedos.h");
         }
     }
     virtual void visit(AstFOpen* nodep) override {
@@ -982,8 +982,13 @@ public:
         if (nodep->lhsp()->isWide()) {
             visit(VN_CAST(nodep, NodeUniop));
         } else {
+            AstVarRef* const vrefp = VN_CAST(nodep->lhsp(), VarRef);
+            const int widthPow2 = vrefp ? vrefp->varp()->dtypep()->widthPow2()
+                                        : nodep->lhsp()->dtypep()->widthPow2();
+            UASSERT_OBJ(widthPow2 > 1, nodep,
+                        "Reduction over single bit value should have been folded");
             putbs("VL_REDXOR_");
-            puts(cvtToStr(nodep->lhsp()->dtypep()->widthPow2()));
+            puts(cvtToStr(widthPow2));
             puts("(");
             iterateAndNextNull(nodep->lhsp());
             puts(")");

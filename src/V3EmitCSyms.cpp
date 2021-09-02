@@ -940,6 +940,9 @@ void EmitCSyms::emitDpiHdr() {
     puts("// Verilator includes this file in all generated .cpp files that use DPI functions.\n");
     puts("// Manually include this file where DPI .c import functions are declared to ensure\n");
     puts("// the C functions match the expectations of the DPI imports.\n");
+
+    ofp()->putsGuard();
+
     puts("\n");
     puts("#include \"svdpi.h\"\n");
     puts("\n");
@@ -970,6 +973,8 @@ void EmitCSyms::emitDpiHdr() {
     puts("#ifdef __cplusplus\n");
     puts("}\n");
     puts("#endif\n");
+
+    ofp()->putsEndGuard();
 }
 
 //######################################################################

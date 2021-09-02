@@ -183,6 +183,17 @@ public:
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
 };
 
+class AstEmptyQueue final : public AstNodeMath {
+public:
+    AstEmptyQueue(FileLine* fl)
+        : ASTGEN_SUPER_EmptyQueue(fl) {}
+    ASTNODE_NODE_FUNCS(EmptyQueue)
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitVerilog() override { return "{}"; }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual bool cleanOut() const override { return true; }
+};
+
 class AstRange final : public AstNodeRange {
     // Range specification, for use under variables and cells
 public:
@@ -1352,6 +1363,33 @@ public:
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
     }
+};
+
+class AstEmptyQueueDType final : public AstNodeDType {
+    // For EmptyQueue
+public:
+    explicit AstEmptyQueueDType(FileLine* fl)
+        : ASTGEN_SUPER_EmptyQueueDType(fl) {
+        dtypep(this);
+    }
+    ASTNODE_NODE_FUNCS(EmptyQueueDType)
+    virtual void dumpSmall(std::ostream& str) const override;
+    virtual bool hasDType() const override { return true; }
+    virtual bool maybePointedTo() const override { return true; }
+    virtual AstNodeDType* subDTypep() const override { return nullptr; }
+    virtual AstNodeDType* virtRefDTypep() const override { return nullptr; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) override {}
+    virtual bool similarDType(AstNodeDType* samep) const override { return this == samep; }
+    virtual AstBasicDType* basicp() const override { return nullptr; }
+    // cppcheck-suppress csyleCast
+    virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
+    virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
+    virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const override { return 1; }
+    virtual int widthTotalBytes() const override { return 1; }
+    virtual bool isCompound() const override { return false; }
 };
 
 class AstVoidDType final : public AstNodeDType {
@@ -3477,6 +3515,17 @@ public:
         return new AstAssignPost(this->fileline(), lhsp, rhsp);
     }
     virtual bool brokeLhsMustBeLvalue() const override { return true; }
+};
+
+class AstDpiExportUpdated final : public AstNodeStmt {
+    // Denotes that the referenced variable may have been updated via a DPI Export
+public:
+    AstDpiExportUpdated(FileLine* fl, AstVarScope* varScopep)
+        : ASTGEN_SUPER_DpiExportUpdated(fl) {
+        addOp1p(new AstVarRef{fl, varScopep, VAccess::WRITE});
+    }
+    ASTNODE_NODE_FUNCS(DpiExportUpdated)
+    AstVarScope* varScopep() const { return VN_CAST(op1p(), VarRef)->varScopep(); }
 };
 
 class AstExprStmt final : public AstNodeMath {
@@ -8761,6 +8810,7 @@ private:
     bool m_dpiExportImpl : 1;  // DPI export implementation (called from DPI dispatcher via lookup)
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
+    bool m_dpiContext : 1;  // Declared as 'context' DPI import/export function
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -8787,6 +8837,7 @@ public:
         m_dpiExportImpl = false;
         m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
+        m_dpiContext = false;
     }
     ASTNODE_NODE_FUNCS(CFunc)
     virtual string name() const override { return m_name; }
@@ -8862,6 +8913,8 @@ public:
     void dpiImportPrototype(bool flag) { m_dpiImportPrototype = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
+    bool dpiContext() const { return m_dpiContext; }
+    void dpiContext(bool flag) { m_dpiContext = flag; }
     //
     // If adding node accessors, see below emptyBody
     AstNode* argsp() const { return op1p(); }
@@ -9090,8 +9143,9 @@ public:
 class AstTypeTable final : public AstNode {
     // Container for hash of standard data types
     // Children:  NODEDTYPEs
-    AstVoidDType* m_voidp = nullptr;
+    AstEmptyQueueDType* m_emptyQueuep = nullptr;
     AstQueueDType* m_queueIndexp = nullptr;
+    AstVoidDType* m_voidp = nullptr;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
     using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
@@ -9102,14 +9156,15 @@ public:
     ASTNODE_NODE_FUNCS(TypeTable)
     AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
-    AstVoidDType* findVoidDType(FileLine* fl);
-    AstQueueDType* findQueueIndexDType(FileLine* fl);
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width, int widthMin,
                                      VSigning numeric);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, const VNumRange& range,
                                      int widthMin, VSigning numeric);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
+    AstEmptyQueueDType* findEmptyQueueDType(FileLine* fl);
+    AstQueueDType* findQueueIndexDType(FileLine* fl);
+    AstVoidDType* findVoidDType(FileLine* fl);
     void clearCache();
     void repairCache();
     virtual void dump(std::ostream& str = std::cout) const override;
@@ -9156,6 +9211,7 @@ private:
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
+    AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     bool m_changeRequest = false;  // Have _change_request method
@@ -9166,6 +9222,7 @@ public:
     virtual const char* broken() const override {
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
+        BROKEN_RTN(m_dpiExportTriggerp && !m_dpiExportTriggerp->brokeExists());
         return nullptr;
     }
     virtual string name() const override { return "$root"; }
@@ -9201,6 +9258,8 @@ public:
     void evalp(AstCFunc* evalp) { m_evalp = evalp; }
     AstExecGraph* execGraphp() const { return m_execGraphp; }
     void execGraphp(AstExecGraph* graphp) { m_execGraphp = graphp; }
+    AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
+    void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& value) { m_timeunit = value; }
     VTimescale timeprecision() const { return m_timeprecision; }

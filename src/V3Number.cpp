@@ -895,6 +895,21 @@ uint8_t V3Number::dataByte(int byte) const {
     return (edataWord(byte / (VL_EDATASIZE / 8)) >> ((byte * 8) % VL_EDATASIZE)) & 0xff;
 }
 
+bool V3Number::isAllZ() const {
+    for (int i = 0; i < width(); i++) {
+        if (!bitIsZ(i)) return false;
+    }
+    return true;
+}
+bool V3Number::isAllX() const {
+    uint32_t mask = hiWordMask();
+    for (int i = words() - 1; i >= 0; --i) {
+        const ValueAndX v = m_value[i];
+        if ((v.m_value & v.m_valueX) ^ mask) return false;
+        mask = ~0U;
+    }
+    return true;
+}
 bool V3Number::isEqZero() const {
     for (int i = 0; i < words(); i++) {
         const ValueAndX v = m_value[i];

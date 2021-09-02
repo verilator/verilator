@@ -301,6 +301,18 @@ public:
 
     //==== Symbol tables
     V3ParseSym* symp() { return m_symp; }
+    AstPackage* unitPackage(FileLine* fl) {
+        // Find one made earlier?
+        VSymEnt* const rootSymp = symp()->symRootp()->findIdFlat(AstPackage::dollarUnitName());
+        AstPackage* pkgp;
+        if (!rootSymp) {
+            pkgp = parsep()->rootp()->dollarUnitPkgAddp();
+            symp()->reinsert(pkgp, symp()->symRootp());  // Don't push/pop scope as they're global
+        } else {
+            pkgp = VN_CAST(rootSymp->nodep(), Package);
+        }
+        return pkgp;
+    }
 
 public:
     // CONSTRUCTORS

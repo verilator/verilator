@@ -932,9 +932,18 @@ void AstTypeTable::repairCache() {
     }
 }
 
+AstEmptyQueueDType* AstTypeTable::findEmptyQueueDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_emptyQueuep)) {
+        AstEmptyQueueDType* newp = new AstEmptyQueueDType{fl};
+        addTypesp(newp);
+        m_emptyQueuep = newp;
+    }
+    return m_emptyQueuep;
+}
+
 AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_voidp)) {
-        AstVoidDType* newp = new AstVoidDType(fl);
+        AstVoidDType* newp = new AstVoidDType{fl};
         addTypesp(newp);
         m_voidp = newp;
     }
@@ -1065,8 +1074,8 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
         UASSERT_OBJ(VN_IS(valuep, Const), valuep, "Const pool table entry must be Const");
     }
     // Try to find an existing table with the same content
-    const uint32_t hash = V3Hasher::uncachedHash(initp).value();
-    const auto& er = m_tables.equal_range(hash);
+    const V3Hash hash = V3Hasher::uncachedHash(initp);
+    const auto& er = m_tables.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
         AstVarScope* const varScopep = it->second;
         const AstInitArray* const init2p = VN_CAST(varScopep->varp()->valuep(), InitArray);
@@ -1076,11 +1085,11 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
     }
     // No such table yet, create it.
     string name = "TABLE_";
-    name += cvtToHex(hash);
+    name += hash.toString();
     name += "_";
     name += cvtToStr(std::distance(er.first, er.second));
     AstVarScope* const varScopep = createNewEntry(name, initp);
-    m_tables.emplace(hash, varScopep);
+    m_tables.emplace(hash.value(), varScopep);
     return varScopep;
 }
 
@@ -1094,8 +1103,8 @@ static bool sameInit(const AstConst* ap, const AstConst* bp) {
 
 AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     // Try to find an existing constant with the same value
-    const uint32_t hash = initp->num().toHash().value();
-    const auto& er = m_consts.equal_range(hash);
+    const V3Hash hash = initp->num().toHash();
+    const auto& er = m_consts.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
         AstVarScope* const varScopep = it->second;
         const AstConst* const init2p = VN_CAST(varScopep->varp()->valuep(), Const);
@@ -1106,11 +1115,11 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     }
     // No such constant yet, create it.
     string name = "CONST_";
-    name += cvtToHex(hash);
+    name += hash.toString();
     name += "_";
     name += cvtToStr(std::distance(er.first, er.second));
     AstVarScope* const varScopep = createNewEntry(name, initp);
-    m_consts.emplace(hash, varScopep);
+    m_consts.emplace(hash.value(), varScopep);
     return varScopep;
 }
 
@@ -1642,6 +1651,10 @@ void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[]";
 }
+void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "emptyq";
+}
 void AstVoidDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "void";
@@ -1842,6 +1855,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (dpiExportImpl()) str << " [DPIEI]";
     if (dpiImportPrototype()) str << " [DPIIP]";
     if (dpiImportWrapper()) str << " [DPIIW]";
+    if (dpiContext()) str << " [DPICTX]";
     if (isConstructor()) str << " [CTOR]";
     if (isDestructor()) str << " [DTOR]";
     if (isVirtual()) str << " [VIRT]";

@@ -1698,6 +1698,7 @@ public:
     void dtypeSetSigned32() { dtypep(findSigned32DType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
+    void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
     void dtypeSetVoid() { dtypep(findVoidDType()); }
 
     // Data type locators
@@ -1708,6 +1709,7 @@ public:
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
     AstNodeDType* findCHandleDType() { return findBasicDType(AstBasicDTypeKwd::CHANDLE); }
+    AstNodeDType* findEmptyQueueDType() const;
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
@@ -2682,6 +2684,7 @@ private:
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
+    bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
 protected:
@@ -2704,6 +2707,7 @@ protected:
         , m_isHideProtected{false}
         , m_pure{false}
         , m_pureVirtual{false}
+        , m_underGenerate{false}
         , m_virtual{false} {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
@@ -2770,6 +2774,8 @@ public:
     bool pure() const { return m_pure; }
     void pureVirtual(bool flag) { m_pureVirtual = flag; }
     bool pureVirtual() const { return m_pureVirtual; }
+    void underGenerate(bool flag) { m_underGenerate = flag; }
+    bool underGenerate() const { return m_underGenerate; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
@@ -2849,7 +2855,6 @@ private:
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
     int m_level = 0;  // 1=top module, 2=cell off top module, ...
-    int m_varNum = 0;  // Incrementing variable number
     int m_typeNum = 0;  // Incrementing implicit type number
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
@@ -2890,7 +2895,6 @@ public:
     void level(int level) { m_level = level; }
     int level() const { return m_level; }
     bool isTop() const { return level() == 1; }
-    int varNumGetInc() { return ++m_varNum; }
     int typeNumGetInc() { return ++m_typeNum; }
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modPublic() const { return m_modPublic; }
