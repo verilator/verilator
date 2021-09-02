@@ -204,6 +204,9 @@ private:
         return v;
     }
 
+    int countX(int lsb, int nbits) const;
+    int countZ(int lsb, int nbits) const;
+
     int words() const { return ((width() + 31) / 32); }
     uint32_t hiWordMask() const { return VL_MASK_I(width()); }
 
