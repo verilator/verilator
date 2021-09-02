@@ -16,6 +16,7 @@ Verilator 4.211 devel
 * Fix re-evaluation of logic dependent on state set in DPI exports (#3091). [Geza Lore]
 * Support unpacked array localparams in tasks/functions (#3078). [Geza Lore]
 * Support timeunit/timeprecision in $unit.
+* Support assignment patterns as children of pins (#3041). [Krzysztof Bieganski]
 * Add --instr-count-dpi to tune assumed DPI import cost for multithreaded
   model scheduling. Default value changed to 200 (#3068). [Yinan Xu]
 * Output files are split based on the set of headers required
@@ -23,12 +24,14 @@ Verilator 4.211 devel
 * Parameter values are now emitted as 'static constexpr' instead of enum.
   C++ direct references to parameters might require updating (#3077). [Geza Lore]
 * Refactored Verilated include files; include verilated.h not verilated_heavy.h.
-* Add error when constant function under a generate (#3103). [Don Owen]
 * Add header guards on Dpi.h generated files (#2979). [Tood Strader]
+* Add XML ccall, constpool, initarray, and if/while begins (#3080). [Steven Hugg]
+* Add error when constant function under a generate (#3103). [Don Owen]
 * Fix -G to treat simple integer literals as signed (#3060). [Anikin1610]
 * Fix emitted string array initializers (#2895). [Iztok Jeras]
 * Fix bitop tree optimization dropping necessary & operator (#3096). [Flavien Solt]
 * Fix internal error on wide -x-initial unique (#3106). [Alexandre Joannou]
+* Fix traces to show array instances with brackets (#3092) (#3095). [Pieter Kapsenberg]
 
 
 Verilator 4.210 2021-07-07
