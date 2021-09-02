@@ -4989,9 +4989,7 @@ unsigned int secnum = 0;
 int blocks_skipped = 0;
 fst_off_t blkpos = 0;
 uint64_t seclen, beg_tim;
-#ifdef FST_DEBUG
 uint64_t end_tim;
-#endif
 uint64_t frame_uclen, frame_clen, frame_maxhandle, vc_maxhandle;
 fst_off_t vc_start;
 fst_off_t indx_pntr, indx_pos;
@@ -5058,14 +5056,11 @@ for(;;)
         if(!seclen) break;
 
         beg_tim = fstReaderUint64(xc->f);
-#ifdef FST_DEBUG
-        end_tim =
-#endif
-        fstReaderUint64(xc->f);
+        end_tim = fstReaderUint64(xc->f);
 
         if(xc->limit_range_valid)
                 {
-                if(beg_tim < xc->limit_range_start)
+                if(end_tim < xc->limit_range_start)
                         {
                         blocks_skipped++;
                         blkpos += seclen;
