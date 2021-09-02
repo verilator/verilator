@@ -355,7 +355,7 @@ public:
     void dumpGraphFilePrefixed(const string& nameComment) const {
         if (v3Global.opt.dumpTree()) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
-            const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+            const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
             if (logp->fail()) v3fatal("Can't write " << filename);
             dumpGraph(*logp, nameComment);
         }
@@ -499,7 +499,7 @@ public:
         : m_xpos{xpos}
         , m_ypos{ypos}
         , m_serial{++s_serialNext} {}
-    ~TspTestState() = default;
+    virtual ~TspTestState() override = default;
     virtual int cost(const TspStateBase* otherp) const override {
         return cost(dynamic_cast<const TspTestState*>(otherp));
     }

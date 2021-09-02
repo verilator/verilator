@@ -548,7 +548,7 @@ private:
             // Clear var markings and find cell cross references
             AstNode::user2ClearTree();
             AstNode::user4ClearTree();
-            { InlineCollectVisitor(nodep->modp()); }  // {} to destroy visitor immediately
+            { InlineCollectVisitor{nodep->modp()}; }  // {} to destroy visitor immediately
             // Create data for dotted variable resolution
             AstCellInline* inlinep
                 = new AstCellInline(nodep->fileline(), nodep->name(), nodep->modp()->origName(),
@@ -591,7 +591,7 @@ private:
                                   && pinNewVarp->direction() == VDirection::OUTPUT);
             }
             // Cleanup var names, etc, to not conflict
-            { InlineRelinkVisitor(newmodp, m_modp, nodep); }
+            { InlineRelinkVisitor{newmodp, m_modp, nodep}; }
             // Move statements to top module
             if (debug() >= 9) newmodp->dumpTree(cout, "fixmod:");
             AstNode* stmtsp = newmodp->stmtsp();
@@ -713,8 +713,8 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     AstUser1InUse m_inuser1;  // output of InlineMarkVisitor,
                               // input to InlineVisitor.
     // Scoped to clean up temp userN's
-    { InlineMarkVisitor mvisitor(nodep); }
-    { InlineVisitor visitor(nodep); }
+    { InlineMarkVisitor mvisitor{nodep}; }
+    { InlineVisitor visitor{nodep}; }
     // Remove all modules that were inlined
     // V3Dead will also clean them up, but if we have debug on, it's a good
     // idea to avoid dumping the hugely exploded tree.
@@ -725,6 +725,6 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
             VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
         }
     }
-    { InlineIntfRefVisitor crvisitor(nodep); }
+    { InlineIntfRefVisitor crvisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("inline", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

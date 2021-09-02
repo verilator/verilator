@@ -225,10 +225,10 @@ public:
             }
             VL_CPU_RELAX();
         }
-        VerilatedLockGuard lk(m_mutex);
+        VerilatedLockGuard lock{m_mutex};
         while (m_ready.empty()) {
             m_waiting = true;
-            m_cv.wait(lk);
+            m_cv.wait(lock);
         }
         m_waiting = false;
         // As noted above this is inefficient if our ready list is ever
@@ -242,7 +242,7 @@ public:
         VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
         {
-            const VerilatedLockGuard lk(m_mutex);
+            const VerilatedLockGuard lock{m_mutex};
             m_ready.emplace_back(fnp, selfp, evenCycle);
             m_ready_size.fetch_add(1, std::memory_order_relaxed);
             notify = m_waiting;

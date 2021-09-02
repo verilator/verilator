@@ -23,6 +23,8 @@ package:
 
    apt-get install verilator   # On Ubuntu
 
+For other distributions refer to `Repology Verilator Distro Packages
+<https://repology.org/project/verilator>`__.
 
 .. _Git Install:
 
@@ -44,7 +46,6 @@ In brief, to install from git:
    #sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
 
    git clone https://github.com/verilator/verilator   # Only first time
-   ## Note the URL above is not a page you can see with a browser, it's for git only
 
    # Every time you need to build:
    unsetenv VERILATOR_ROOT  # For csh; ignore error if on bash

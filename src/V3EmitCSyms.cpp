@@ -389,7 +389,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n");
     ofp()->putsIntTopInclude();
-    puts("#include \"verilated_heavy.h\"\n");
+    puts("#include \"verilated.h\"\n");
     if (v3Global.needTraceDumper()) {
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
     }
@@ -631,7 +631,7 @@ void EmitCSyms::emitSymImp() {
     emitSymImpPreamble();
 
     if (v3Global.opt.savable()) {
-        for (int de = 0; de < 2; ++de) {
+        for (const bool& de : {false, true}) {
             const string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
             const string funcname = de ? "__Vdeserialize" : "__Vserialize";
             const string op = de ? ">>" : "<<";
@@ -670,7 +670,7 @@ void EmitCSyms::emitSymImp() {
          + topClassName() + "* modelp)\n");
     puts("    : VerilatedSyms{contextp}\n");
     puts("    // Setup internal state of the Syms class\n");
-    puts("    , __Vm_modelp(modelp)\n");
+    puts("    , __Vm_modelp{modelp}\n");
 
     if (v3Global.opt.mtasks()) {
         // TODO -- For now each model creates its own ThreadPool here,
@@ -694,9 +694,9 @@ void EmitCSyms::emitSymImp() {
         // Note we create N-1 threads in the thread pool. The thread
         // that calls eval() becomes the final Nth thread for the
         // duration of the eval call.
-        puts("    , __Vm_threadPoolp(new VlThreadPool(_vm_contextp__, "
+        puts("    , __Vm_threadPoolp{new VlThreadPool{_vm_contextp__, "
              + cvtToStr(v3Global.opt.threads() - 1) + ", " + cvtToStr(v3Global.opt.profThreads())
-             + "))\n");
+             + "}}\n");
     }
 
     puts("    // Setup module instances\n");
@@ -857,13 +857,8 @@ void EmitCSyms::emitSymImp() {
             putsQuoted(protect(it->second.m_varBasePretty));
 
             std::string varName;
-            varName += (protectIf(scopep->nameDotless(), scopep->protect()) + ".");
-
-            if (varp->isParam()) {
-                varName += protect("var_" + varp->name());
-            } else {
-                varName += protect(varp->name());
-            }
+            varName += protectIf(scopep->nameDotless(), scopep->protect()) + ".";
+            varName += protect(varp->name());
 
             if (varp->isParam()) {
                 if (varp->vlEnumType() == "VLVT_STRING") {
@@ -945,6 +940,9 @@ void EmitCSyms::emitDpiHdr() {
     puts("// Verilator includes this file in all generated .cpp files that use DPI functions.\n");
     puts("// Manually include this file where DPI .c import functions are declared to ensure\n");
     puts("// the C functions match the expectations of the DPI imports.\n");
+
+    ofp()->putsGuard();
+
     puts("\n");
     puts("#include \"svdpi.h\"\n");
     puts("\n");
@@ -975,6 +973,8 @@ void EmitCSyms::emitDpiHdr() {
     puts("#ifdef __cplusplus\n");
     puts("}\n");
     puts("#endif\n");
+
+    ofp()->putsEndGuard();
 }
 
 //######################################################################

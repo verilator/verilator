@@ -28,6 +28,24 @@
 #include <cmath>
 
 //######################################################################
+// Set user4p in all CFunc and Var to point to the containing AstNodeModule
+
+class EmitCParentModule final {
+    // NODE STATE
+    //   AstFunc::user4p()      AstNodeModule* Parent module pointer
+    //   AstVar::user4p()       AstNodeModule* Parent module pointer
+    AstUser4InUse user4InUse;
+
+public:
+    EmitCParentModule();
+    VL_UNCOPYABLE(EmitCParentModule);
+
+    static const AstNodeModule* get(const AstNode* nodep) {
+        return VN_CAST_CONST(nodep->user4p(), NodeModule);
+    }
+};
+
+//######################################################################
 // Base Visitor class -- holds output file pointer
 
 class EmitCBaseVisitor VL_NOT_FINAL : public AstNVisitor {
@@ -71,16 +89,24 @@ public:
         return v3Global.opt.prefix();
     }
 
-    static bool isConstPoolMod(AstNode* modp) {
+    static bool isConstPoolMod(const AstNode* modp) {
         return modp == v3Global.rootp()->constPoolp()->modp();
+    }
+
+    static bool isAnonOk(const AstVar* varp) {
+        return v3Global.opt.compLimitMembers() != 0  // Enabled
+               && !varp->isStatic()  // Not a static variable
+               && !varp->isSc()  // Aggregates can't be anon
+               && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
     }
 
     static AstCFile* newCFile(const string& filename, bool slow, bool source);
     string cFuncArgs(const AstCFunc* nodep);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
-    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp, bool asRef = false);
-    void emitModCUse(AstNodeModule* modp, VUseType useType);
+    void emitVarDecl(const AstVar* nodep, bool asRef = false);
+    void emitModCUse(const AstNodeModule* modp, VUseType useType);
+    void emitTextSection(const AstNodeModule* modp, AstType type);
 
     // CONSTRUCTORS
     EmitCBaseVisitor() = default;
@@ -96,7 +122,7 @@ private:
     int m_count = 0;  // Number of statements
     // VISITORS
     virtual void visit(AstNode* nodep) override {
-        m_count++;
+        ++m_count;
         iterateChildren(nodep);
     }
 

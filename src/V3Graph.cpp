@@ -314,7 +314,7 @@ void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsS
 void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
-    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
 
     // Header

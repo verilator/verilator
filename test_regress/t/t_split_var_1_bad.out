@@ -35,35 +35,35 @@
                                               : ... In instance t.i_sub3
    90 |    assign outwires[12] = inwires[13];   
       |                                  ^~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:17:9: 'should_show_warning0' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:17:9: 'should_show_warning0' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
                                              : ... In instance t
    17 |    real should_show_warning0                  /*verilator split_var*/ ;
       |         ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:18:11: 'should_show_warning1' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:18:11: 'should_show_warning1' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
                                               : ... In instance t
    18 |    string should_show_warning1                /*verilator split_var*/ ;
       |           ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:19:11: 'should_show_warning2' has split_var metacomment but will not be split because its bitwidth is 1
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:19:11: 'should_show_warning2' has split_var metacomment but will not be split because its bitwidth is 1.
                                               : ... In instance t
    19 |    wire   should_show_warning2                /*verilator split_var*/ ;
       |           ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:23:16: 'public_signal' has split_var metacomment but will not be split because it is public
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:23:16: 'public_signal' has split_var metacomment but will not be split because it is public.
                                               : ... In instance t
    23 |    logic [1:0] public_signal /*verilator public*/  /*verilator split_var*/ ;
       |                ^~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:31:44: 'inout_port' has split_var metacomment but will not be split because it is an inout port
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:31:44: 'inout_port' has split_var metacomment but will not be split because it is an inout port.
                                               : ... In instance t
    31 |    function int bad_func(inout logic [3:0] inout_port /*verilator split_var*/ ,
       |                                            ^~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:32:42: 'ref_port' has split_var metacomment but will not be split because it is a ref argument
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:32:42: 'ref_port' has split_var metacomment but will not be split because it is a ref argument.
                                               : ... In instance t
    32 |                          ref logic [7:0] ref_port /*verilator split_var*/ );
       |                                          ^~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:37:19: 'loop_idx' has split_var metacomment but will not be split because it is used as a loop variable
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:37:19: 'loop_idx' has split_var metacomment but will not be split because it is used as a loop variable.
                                               : ... In instance t
    37 |       logic [7:0] loop_idx /*verilator split_var*/ ;
       |                   ^~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:62:11: 'cannot_split_genvar' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:62:11: 'cannot_split_genvar' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
                                               : ... In instance t.i_sub1
    62 |    genvar cannot_split_genvar /*verilator split_var*/ ;
       |           ^~~~~~~~~~~~~~~~~~~

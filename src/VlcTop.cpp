@@ -27,14 +27,14 @@
 void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     UINFO(2, "readCoverage " << filename << endl);
 
-    std::ifstream is(filename.c_str());
+    std::ifstream is{filename.c_str()};
     if (!is) {
         if (!nonfatal) v3fatal("Can't read " << filename);
         return;
     }
 
     // Testrun and computrons argument unsupported as yet
-    VlcTest* testp = tests().newTest(filename, 0, 0);
+    VlcTest* const testp = tests().newTest(filename, 0, 0);
 
     while (!is.eof()) {
         const string line = V3Os::getline(is);
@@ -63,7 +63,7 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
 void VlcTop::writeCoverage(const string& filename) {
     UINFO(2, "writeCoverage " << filename << endl);
 
-    std::ofstream os(filename.c_str());
+    std::ofstream os{filename.c_str()};
     if (!os) {
         v3fatal("Can't write " << filename);
         return;
@@ -79,7 +79,7 @@ void VlcTop::writeCoverage(const string& filename) {
 void VlcTop::writeInfo(const string& filename) {
     UINFO(2, "writeInfo " << filename << endl);
 
-    std::ofstream os(filename.c_str());
+    std::ofstream os{filename.c_str()};
     if (!os) {
         v3fatal("Can't write " << filename);
         return;
@@ -157,7 +157,7 @@ void VlcTop::rank() {
 
     VlcBuckets remaining;
     for (const auto& i : m_points) {
-        VlcPoint* pointp = &points().pointNumber(i.second);
+        VlcPoint* const pointp = &points().pointNumber(i.second);
         // If any tests hit this point, then we'll need to cover it.
         if (pointp->testsCovering()) remaining.addData(pointp->pointNum(), 1);
     }
@@ -182,7 +182,7 @@ void VlcTop::rank() {
                 }
             }
         }
-        if (VlcTest* testp = bestTestp) {
+        if (VlcTest* const testp = bestTestp) {
             testp->rank(nextrank++);
             testp->rankPoints(bestRemain);
             remaining.orData(bestTestp->buckets());
@@ -227,7 +227,7 @@ void VlcTop::annotateCalc() {
                 } else if (*covp == '-') {
                     range = true;
                 } else if (std::isdigit(*covp)) {
-                    const char* digitsp = covp;
+                    const char* const digitsp = covp;
                     while (std::isdigit(*covp)) ++covp;
                     --covp;  // Will inc in for loop
                     if (!range) start = std::atoi(digitsp);
@@ -279,13 +279,13 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 
         UINFO(1, "annotateOutputFile " << filename << " -> " << outfilename << endl);
 
-        std::ifstream is(filename.c_str());
+        std::ifstream is{filename.c_str()};
         if (!is) {
             v3error("Can't read " << filename);
             return;
         }
 
-        std::ofstream os(outfilename.c_str());
+        std::ofstream os{outfilename.c_str()};
         if (!os) {
             v3fatal("Can't write " << outfilename);
             return;

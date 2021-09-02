@@ -102,7 +102,7 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep) {
 }
 
 void VerilatedVcd::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     if (isOpen()) return;
 
     // Set member variables
@@ -120,7 +120,7 @@ void VerilatedVcd::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 void VerilatedVcd::openNext(bool incFilename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     // Open next filename in concat sequence, mangle filename if
     // incFilename is true.
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     openNextImp(incFilename);
 }
 
@@ -195,11 +195,11 @@ void VerilatedVcd::makeNameMap() {
         if (!hiername.empty() && hiername[0] == '\t') nullScope = true;
     }
     if (nullScope) {
-        NameMap* newmapp = new NameMap;
+        NameMap* const newmapp = new NameMap;
         for (const auto& i : *m_namemapp) {
             const std::string& hiername = i.first;
             const std::string& decl = i.second;
-            std::string newname = std::string("top");
+            std::string newname{"top"};
             if (hiername[0] != '\t') newname += ' ';
             newname += hiername;
             newmapp->emplace(newname, decl);
@@ -243,7 +243,7 @@ void VerilatedVcd::closeErr() {
 
 void VerilatedVcd::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     // This function is on the flush() call path
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     if (!isOpen()) return;
     if (m_evcd) {
         printStr("$vcdclose ");
@@ -257,7 +257,7 @@ void VerilatedVcd::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
 }
 
 void VerilatedVcd::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     VerilatedTrace<VerilatedVcd>::flushBase();
     bufferFlush();
 }
@@ -271,8 +271,9 @@ void VerilatedVcd::printStr(const char* str) {
 }
 
 void VerilatedVcd::printQuad(vluint64_t n) {
-    char buf[100];
-    VL_SNPRINTF(buf, 100, "%" VL_PRI64 "u", n);
+    constexpr size_t LEN_STR_QUAD = 40;
+    char buf[LEN_STR_QUAD];
+    VL_SNPRINTF(buf, LEN_STR_QUAD, "%" VL_PRI64 "u", n);
     printStr(buf);
 }
 
@@ -311,7 +312,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
                 std::string msg
-                    = std::string("VerilatedVcd::bufferFlush: ") + std::strerror(errno);
+                    = std::string{"VerilatedVcd::bufferFlush: "} + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 closeErr();
                 break;
@@ -331,7 +332,7 @@ char* VerilatedVcd::writeCode(char* writep, vluint32_t code) {
     *writep++ = static_cast<char>('!' + code % 94);
     code /= 94;
     while (code) {
-        code--;
+        --code;
         *writep++ = static_cast<char>('!' + code % 94);
         code /= 94;
     }
@@ -355,9 +356,9 @@ void VerilatedVcd::dumpHeader() {
         const time_t tick = time(nullptr);
         tm ticktm;
         VL_LOCALTIME_R(&tick, &ticktm);
-        constexpr int bufsize = 50;
-        char buf[bufsize];
-        std::strftime(buf, bufsize, "%c", &ticktm);
+        constexpr size_t LEN_BUF = 50;
+        char buf[LEN_BUF];
+        std::strftime(buf, LEN_BUF, "%c", &ticktm);
         printStr(buf);
     }
     printStr(" $end\n");
@@ -393,8 +394,8 @@ void VerilatedVcd::dumpHeader() {
         // Skip common prefix, it must break at a space or tab
         for (; *np && (*np == *lp); np++, lp++) {}
         while (np != hiername && *np && *np != ' ' && *np != '\t') {
-            np--;
-            lp--;
+            --np;
+            --lp;
         }
         // printf("hier %s\n  lp=%s\n  np=%s\n",hiername,lp,np);
 
@@ -430,9 +431,9 @@ void VerilatedVcd::dumpHeader() {
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
-                    printStr("(");
+                    printStr("[");
                 } else if (*np == ']') {
-                    printStr(")");
+                    printStr("]");
                 } else if (!(*np & '\x80')) {
                     *m_writep++ = *np;
                 }
@@ -531,7 +532,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     decl += " ";
     decl += basename;
     if (array) {
-        VL_SNPRINTF(buf, bufsize, "(%d)", arraynum);
+        VL_SNPRINTF(buf, bufsize, "[%d]", arraynum);
         decl += buf;
         hiername += buf;
     }
@@ -896,9 +897,9 @@ void vcdTestMain(const char* filenamep) {
         VerilatedVcdC* vcdp = new VerilatedVcdC;
         vcdp->evcd(true);
         vcdp->set_time_unit("1ms");
-        vcdp->set_time_unit(std::string("1ms"));
+        vcdp->set_time_unit(std::string{"1ms"});
         vcdp->set_time_resolution("1ns");
-        vcdp->set_time_resolution(std::string("1ns"));
+        vcdp->set_time_resolution(std::string{"1ns"});
         vcdp->spTrace()->addInitCb(&vcdInit, 0);
         vcdp->spTrace()->addFullCb(&vcdFull, 0);
         vcdp->spTrace()->addChgCb(&vcdChange, 0);
@@ -927,7 +928,7 @@ void vcdTestMain(const char* filenamep) {
         vcdp->dump(++timestamp);
         vcdp->dump(++timestamp);
 # ifdef VERILATED_VCD_TEST_64BIT
-        vluint64_t bytesPerDump = 15ULL;
+        const vluint64_t bytesPerDump = 15ULL;
         for (vluint64_t i = 0; i < ((1ULL << 32) / bytesPerDump); i++) {
             v1 = i;
             vcdp->dump(++timestamp);

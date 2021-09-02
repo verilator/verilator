@@ -1,5 +1,5 @@
 $date
-	Thu Apr  1 15:22:14 2021
+	Wed Aug 11 12:41:29 2021
 
 $end
 $version
@@ -37,39 +37,39 @@ $var logic 1 * b0 $end
 $upscope $end
 $upscope $end
 $var logic 2 + v_arrp $end
-$var logic 2 , v_arrp_arrp(3) $end
-$var logic 2 - v_arrp_arrp(4) $end
-$scope struct v_arrp_strp(3) $end
+$var logic 2 , v_arrp_arrp[3] $end
+$var logic 2 - v_arrp_arrp[4] $end
+$scope struct v_arrp_strp[3] $end
 $var logic 1 . b1 $end
 $var logic 1 / b0 $end
 $upscope $end
-$scope struct v_arrp_strp(4) $end
+$scope struct v_arrp_strp[4] $end
 $var logic 1 0 b1 $end
 $var logic 1 1 b0 $end
 $upscope $end
-$var logic 1 2 v_arru(1) $end
-$var logic 1 3 v_arru(2) $end
-$var logic 1 4 v_arru_arru(3)(1) $end
-$var logic 1 5 v_arru_arru(3)(2) $end
-$var logic 1 6 v_arru_arru(4)(1) $end
-$var logic 1 7 v_arru_arru(4)(2) $end
-$var logic 2 8 v_arru_arrp(3) $end
-$var logic 2 9 v_arru_arrp(4) $end
-$scope struct v_arru_strp(3) $end
+$var logic 1 2 v_arru[1] $end
+$var logic 1 3 v_arru[2] $end
+$var logic 1 4 v_arru_arru[3][1] $end
+$var logic 1 5 v_arru_arru[3][2] $end
+$var logic 1 6 v_arru_arru[4][1] $end
+$var logic 1 7 v_arru_arru[4][2] $end
+$var logic 2 8 v_arru_arrp[3] $end
+$var logic 2 9 v_arru_arrp[4] $end
+$scope struct v_arru_strp[3] $end
 $var logic 1 : b1 $end
 $var logic 1 ; b0 $end
 $upscope $end
-$scope struct v_arru_strp(4) $end
+$scope struct v_arru_strp[4] $end
 $var logic 1 < b1 $end
 $var logic 1 = b0 $end
 $upscope $end
 $var real 64 > v_real $end
-$var real 64 ? v_arr_real(0) $end
-$var real 64 @ v_arr_real(1) $end
-$scope struct v_str32x2(0) $end
+$var real 64 ? v_arr_real[0] $end
+$var real 64 @ v_arr_real[1] $end
+$scope struct v_str32x2[0] $end
 $var logic 32 A data $end
 $upscope $end
-$scope struct v_str32x2(1) $end
+$scope struct v_str32x2[1] $end
 $var logic 32 B data $end
 $attrbegin misc 07 t.enumed_t 4 ZERO ONE TWO THREE 00000000000000000000000000000000 00000000000000000000000000000001 00000000000000000000000000000010 00000000000000000000000000000011 1 $end
 $upscope $end
@@ -86,9 +86,9 @@ $var logic 3 F a $end
 $attrbegin misc 07 "" 2 $end
 $var logic 3 G b $end
 $upscope $end
-$var logic 8 H unpacked_array(-2) $end
-$var logic 8 I unpacked_array(-1) $end
-$var logic 8 J unpacked_array(0) $end
+$var logic 8 H unpacked_array[-2] $end
+$var logic 8 I unpacked_array[-1] $end
+$var logic 8 J unpacked_array[0] $end
 $var bit 1 K LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND $end
 $scope module unnamedblk1 $end
 $var integer 32 L b $end

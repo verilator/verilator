@@ -132,7 +132,7 @@ private:
     int valueIndex(const std::string& value) VL_REQUIRES(m_mutex) {
         const auto iter = m_valueIndexes.find(value);
         if (iter != m_valueIndexes.end()) return iter->second;
-        m_nextIndex++;
+        ++m_nextIndex;
         assert(m_nextIndex > 0);  // Didn't rollover
         m_valueIndexes.emplace(value, m_nextIndex);
         m_indexValues.emplace(m_nextIndex, value);
@@ -143,8 +143,9 @@ private:
         std::string rtn;
         for (const char* pos = text.c_str(); *pos; ++pos) {
             if (!std::isprint(*pos) || *pos == '%' || *pos == '"') {
-                char hex[10];
-                VL_SNPRINTF(hex, 10, "%%%02X", pos[0]);
+                constexpr size_t LEN_MAX_HEX = 20;
+                char hex[LEN_MAX_HEX];
+                VL_SNPRINTF(hex, LEN_MAX_HEX, "%%%02X", pos[0]);
                 rtn += hex;
             } else {
                 rtn += *pos;
@@ -165,11 +166,11 @@ private:
                                          const std::string& value) VL_PURE {
         std::string name;
         if (key.length() == 1 && std::isalpha(key[0])) {
-            name += std::string("\001") + key;
+            name += std::string{"\001"} + key;
         } else {
-            name += std::string("\001") + dequote(key);
+            name += std::string{"\001"} + dequote(key);
         }
-        name += std::string("\002") + dequote(value);
+        name += std::string{"\002"} + dequote(value);
         return name;
     }
     static std::string combineHier(const std::string& old, const std::string& add) VL_PURE {
@@ -180,31 +181,32 @@ private:
         if (old.empty()) return add;
         if (add.empty()) return old;
 
-        const char* a = old.c_str();
-        const char* b = add.c_str();
+        const char* const a = old.c_str();
+        const char* const b = add.c_str();
 
         // Scan forward to first mismatch
         const char* apre = a;
         const char* bpre = b;
         while (*apre == *bpre) {
-            apre++;
-            bpre++;
+            ++apre;
+            ++bpre;
         }
 
         // We used to backup and split on only .'s but it seems better to be verbose
         // and not assume . is the separator
-        const std::string prefix = std::string(a, apre - a);
+        const size_t prefix_len = apre - a;
+        const std::string prefix = std::string{a, prefix_len};
 
         // Scan backward to last mismatch
         const char* apost = a + std::strlen(a) - 1;
         const char* bpost = b + std::strlen(b) - 1;
         while (*apost == *bpost && apost > apre && bpost > bpre) {
-            apost--;
-            bpost--;
+            --apost;
+            --bpost;
         }
 
         // Forward to . so we have a whole word
-        std::string suffix = *bpost ? std::string(bpost + 1) : "";
+        std::string suffix = *bpost ? std::string{bpost + 1} : "";
 
         std::string out = prefix + "*" + suffix;
 
@@ -253,17 +255,17 @@ public:
     // PUBLIC METHODS
     void forcePerInstance(const bool flag) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         m_forcePerInstance = flag;
     }
     void clear() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         clearGuts();
     }
     void clearNonMatch(const char* const matchp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         if (matchp && matchp[0]) {
             ItemList newlist;
             for (const auto& itemp : m_items) {
@@ -278,24 +280,24 @@ public:
     }
     void zero() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         for (const auto& itemp : m_items) itemp->zero();
     }
 
     // We assume there's always call to i/f/p in that order
     void inserti(VerilatedCovImpItem* itemp) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         assert(!m_insertp);
         m_insertp = itemp;
     }
     void insertf(const char* const filenamep, const int lineno) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         m_insertFilenamep = filenamep;
         m_insertLineno = lineno;
     }
     void insertp(const char* ckeyps[VerilatedCovConst::MAX_KEYS],
                  const char* valps[VerilatedCovConst::MAX_KEYS]) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
         assert(m_insertp);
         // First two key/vals are filename
         ckeyps[0] = "filename";
@@ -308,7 +310,8 @@ public:
         while (const char* foundp = std::strchr(fnstartp, '/')) fnstartp = foundp + 1;
         const char* fnendp = fnstartp;
         for (; *fnendp && *fnendp != '.'; fnendp++) {}
-        std::string page_default = "sp_user/" + std::string(fnstartp, fnendp - fnstartp);
+        const size_t page_len = fnendp - fnstartp;
+        const std::string page_default = "sp_user/" + std::string{fnstartp, page_len};
         ckeyps[2] = "page";
         valps[2] = page_default.c_str();
 
@@ -337,7 +340,7 @@ public:
                 // cout<<"   "<<__FUNCTION__<<"  "<<key<<" = "<<val<<endl;
                 m_insertp->m_keys[addKeynum] = valueIndex(key);
                 m_insertp->m_vals[addKeynum] = valueIndex(val);
-                addKeynum++;
+                ++addKeynum;
                 if (VL_UNCOVERABLE(!legalKey(key))) {
                     std::string msg
                         = ("%Error: Coverage keys of one character, or letter+digit are illegal: "
@@ -353,15 +356,15 @@ public:
 
     void write(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        const VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock{m_mutex};
 #ifndef VM_COVERAGE
         VL_FATAL_MT("", 0, "", "%Error: Called VerilatedCov::write when VM_COVERAGE disabled\n");
 #endif
         selftest();
 
-        std::ofstream os(filename);
+        std::ofstream os{filename};
         if (os.fail()) {
-            std::string msg = std::string("%Error: Can't write '") + filename + "'";
+            std::string msg = std::string{"%Error: Can't write '"} + filename + "'";
             VL_FATAL_MT("", 0, "", msg.c_str());
             return;
         }
@@ -435,10 +438,10 @@ void VerilatedCovContext::clearNonMatch(const char* matchp) VL_MT_SAFE {
 void VerilatedCovContext::zero() VL_MT_SAFE { impp()->zero(); }
 void VerilatedCovContext::write(const char* filenamep) VL_MT_SAFE { impp()->write(filenamep); }
 void VerilatedCovContext::_inserti(vluint32_t* itemp) VL_MT_SAFE {
-    impp()->inserti(new VerilatedCoverItemSpec<vluint32_t>(itemp));
+    impp()->inserti(new VerilatedCoverItemSpec<vluint32_t>{itemp});
 }
 void VerilatedCovContext::_inserti(vluint64_t* itemp) VL_MT_SAFE {
-    impp()->inserti(new VerilatedCoverItemSpec<vluint64_t>(itemp));
+    impp()->inserti(new VerilatedCoverItemSpec<vluint64_t>{itemp});
 }
 void VerilatedCovContext::_insertf(const char* filename, int lineno) VL_MT_SAFE {
     impp()->insertf(filename, lineno);
@@ -511,7 +514,7 @@ VerilatedCovContext* VerilatedCov::threadCovp() VL_MT_SAFE {
 VerilatedCovContext* VerilatedContext::coveragep() VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     if (VL_UNLIKELY(!m_coveragep)) {
-        const VerilatedLockGuard lock(s_mutex);
+        const VerilatedLockGuard lock{s_mutex};
         if (VL_LIKELY(!m_coveragep)) {  // Not redundant, prevents race
             m_coveragep.reset(new VerilatedCovImp);
         }

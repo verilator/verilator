@@ -56,6 +56,19 @@ private:
         if (vscp->user2p()) {
             return VN_CAST(vscp->user2p(), VarScope);
         } else {
+            // In order to create a __VinpClk* for a signal, it needs to be marked circular.
+            // The DPI export trigger is never marked circular by V3Order (see comments in
+            // OrderVisitor::nodeMarkCircular). The only other place where one might mark
+            // a node circular is in this pass (V3GenClk), if the signal is assigned but was
+            // previously used as a clock. The DPI export trigger is only ever assigned in
+            // a DPI export called from outside eval, or from a DPI import, which are not
+            // discovered by GenClkReadVisitor (note that impure tasks - i.e.: those setting
+            // non-local variables - cannot be no-inline, see V3Task), hence the DPI export
+            // trigger should never be marked circular. Note that ordering should still be
+            // correct as there will be a change detect on any signals set from a DPI export
+            // that might have dependents scheduled earlier.
+            UASSERT_OBJ(vscp != v3Global.rootp()->dpiExportTriggerp(), vscp,
+                        "DPI export trigger should not need __VinpClk");
             AstVar* varp = vscp->varp();
             string newvarname
                 = "__VinpClk__" + vscp->scopep()->nameDotless() + "__" + varp->name();
@@ -147,7 +160,7 @@ private:
         {
             // Make the new clock signals and replace any activate references
             // See rename, it does some AstNode::userClearTree()'s
-            GenClkRenameVisitor visitor(nodep, m_topModp);
+            GenClkRenameVisitor visitor{nodep, m_topModp};
         }
     }
     virtual void visit(AstNodeModule* nodep) override {
@@ -222,6 +235,6 @@ public:
 
 void V3GenClk::genClkAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { GenClkReadVisitor visitor(nodep); }  // Destruct before checking
+    { GenClkReadVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("genclk", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -64,11 +64,11 @@ private:
 
 public:
     LatchDetectGraphVertex(V3Graph* graphp, const string& name, VertexType type = VT_BLOCK)
-        : V3GraphVertex(graphp)
-        , m_name(name)
-        , m_type(type) {}
-    virtual string name() const { return m_name + " " + typestr(); }
-    virtual string dotColor() const { return user() ? "green" : "black"; }
+        : V3GraphVertex{graphp}
+        , m_name{name}
+        , m_type{type} {}
+    virtual string name() const override { return m_name + " " + typestr(); }
+    virtual string dotColor() const override { return user() ? "green" : "black"; }
     virtual int type() const { return m_type; }
 };
 
@@ -120,7 +120,7 @@ protected:
 
 public:
     LatchDetectGraph() { clear(); }
-    ~LatchDetectGraph() { clear(); }
+    virtual ~LatchDetectGraph() override { clear(); }
     // ACCESSORS
     LatchDetectGraphVertex* currentp() { return m_curVertexp; }
     void currentp(LatchDetectGraphVertex* vertex) { m_curVertexp = vertex; }
@@ -142,17 +142,17 @@ public:
     // Add a new control path and connect it to its parent
     LatchDetectGraphVertex* addPathVertex(LatchDetectGraphVertex* parent, const string& name,
                                           bool branch = false) {
-        m_curVertexp = new LatchDetectGraphVertex(this, name,
+        m_curVertexp = new LatchDetectGraphVertex{this, name,
                                                   branch ? LatchDetectGraphVertex::VT_BRANCH
-                                                         : LatchDetectGraphVertex::VT_BLOCK);
-        new V3GraphEdge(this, parent, m_curVertexp, 1);
+                                                         : LatchDetectGraphVertex::VT_BLOCK};
+        new V3GraphEdge{this, parent, m_curVertexp, 1};
         return m_curVertexp;
     }
     // Add a new output variable vertex and store a pointer to it in the user1 field of the
     // variables AstNode
     LatchDetectGraphVertex* addOutputVertex(AstVarRef* nodep) {
         LatchDetectGraphVertex* outVertexp
-            = new LatchDetectGraphVertex(this, nodep->name(), LatchDetectGraphVertex::VT_OUTPUT);
+            = new LatchDetectGraphVertex{this, nodep->name(), LatchDetectGraphVertex::VT_OUTPUT};
         nodep->varp()->user1p(outVertexp);
         m_outputs.push_back(nodep);
         return outVertexp;
@@ -437,7 +437,7 @@ private:
     virtual void visit(AstInitial* nodep) override {
         // Relink to IACTIVE, unless already under it
         UINFO(4, "    INITIAL " << nodep << endl);
-        ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_INITIAL);
+        ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         AstActive* wantactivep = m_namer.getIActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
@@ -470,7 +470,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_INITIAL);
+        ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         if (!m_scopeFinalp) {
             m_scopeFinalp = new AstCFunc(
                 nodep->fileline(), "_final_" + m_namer.scopep()->nameDotless(), m_namer.scopep());
@@ -540,14 +540,14 @@ private:
 
         // Warn and/or convert any delayed assignments
         if (combo && !sequent) {
-            ActiveLatchCheckVisitor latchvisitor(nodep, kwd);
+            ActiveLatchCheckVisitor latchvisitor{nodep, kwd};
             if (kwd == VAlwaysKwd::ALWAYS_LATCH) {
-                ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_LATCH);
+                ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_LATCH};
             } else {
-                ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_COMBO);
+                ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_COMBO};
             }
         } else if (!combo && sequent) {
-            ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_SEQ);
+            ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_SEQ};
         }
     }
     virtual void visit(AstAlways* nodep) override {
@@ -620,6 +620,6 @@ public:
 
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ActiveVisitor visitor(nodep); }  // Destruct before checking
+    { ActiveVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("active", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

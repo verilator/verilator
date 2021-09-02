@@ -78,8 +78,8 @@ class CMakeEmitter final {
     }
 
     static void emitOverallCMake() {
-        const std::unique_ptr<std::ofstream> of(
-            V3File::new_ofstream(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".cmake"));
+        const std::unique_ptr<std::ofstream> of{
+            V3File::new_ofstream(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".cmake")};
         const string name = v3Global.opt.prefix();
 
         *of << "# Verilated -*- CMake -*-\n";

@@ -422,22 +422,22 @@ V3Number& V3Number::setSingleBits(char value) {
 }
 
 V3Number& V3Number::setAllBits0() {
-    for (int i = 0; i < words(); i++) { m_value[i] = {0, 0}; }
+    for (int i = 0; i < words(); i++) m_value[i] = {0, 0};
     return *this;
 }
 V3Number& V3Number::setAllBits1() {
-    for (int i = 0; i < words(); i++) { m_value[i] = {~0u, 0}; }
+    for (int i = 0; i < words(); i++) m_value[i] = {~0U, 0};
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setAllBitsX() {
     // Use setAllBitsXRemoved if calling this based on a non-X/Z input value such as divide by zero
-    for (int i = 0; i < words(); i++) { m_value[i] = {~0u, ~0u}; }
+    for (int i = 0; i < words(); i++) m_value[i] = {~0U, ~0U};
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setAllBitsZ() {
-    for (int i = 0; i < words(); i++) { m_value[i] = {0, ~0u}; }
+    for (int i = 0; i < words(); i++) m_value[i] = {0, ~0U};
     opCleanThis();
     return *this;
 }
@@ -895,6 +895,21 @@ uint8_t V3Number::dataByte(int byte) const {
     return (edataWord(byte / (VL_EDATASIZE / 8)) >> ((byte * 8) % VL_EDATASIZE)) & 0xff;
 }
 
+bool V3Number::isAllZ() const {
+    for (int i = 0; i < width(); i++) {
+        if (!bitIsZ(i)) return false;
+    }
+    return true;
+}
+bool V3Number::isAllX() const {
+    uint32_t mask = hiWordMask();
+    for (int i = words() - 1; i >= 0; --i) {
+        const ValueAndX v = m_value[i];
+        if ((v.m_value & v.m_valueX) ^ mask) return false;
+        mask = ~0U;
+    }
+    return true;
+}
 bool V3Number::isEqZero() const {
     for (int i = 0; i < words(); i++) {
         const ValueAndX v = m_value[i];

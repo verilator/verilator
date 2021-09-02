@@ -268,7 +268,7 @@ class ParamProcessor final {
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    void makeSmallNames(AstNodeModule* modp) {
+    static void makeSmallNames(AstNodeModule* modp) {
         std::vector<int> usedLetter;
         usedLetter.resize(256);
         // Pass 1, assign first letter to each gparam's name
@@ -960,26 +960,6 @@ class ParamVisitor final : public AstNVisitor {
                                << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
             } else {
                 V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
-                if (!VN_IS(nodep->valuep(), Const)
-                    && !VN_IS(nodep->valuep(), Unbounded)) {  // Complex init, like an array
-                    // Make a new INITIAL to set the value.
-                    // This allows the normal array/struct handling code to properly
-                    // initialize the parameter.
-                    nodep->addNext(new AstInitial(
-                        nodep->fileline(),
-                        new AstAssign(nodep->fileline(),
-                                      new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
-                                      nodep->valuep()->cloneTree(true))));
-                    if (nodep->isFuncLocal()) {
-                        // We put the initial in wrong place under a function.  We
-                        // should move the parameter out of the function and to the
-                        // module, with appropriate dotting, but this confuses LinkDot
-                        // (as then name isn't found later), so punt - probably can
-                        // treat as static function variable when that is supported.
-                        nodep->v3warn(E_UNSUPPORTED,
-                                      "Unsupported: Parameters in functions with complex assign");
-                    }
-                }
             }
         }
     }
@@ -1223,6 +1203,6 @@ public:
 
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ParamVisitor visitor(rootp); }  // Destruct before checking
+    { ParamVisitor visitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("param", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

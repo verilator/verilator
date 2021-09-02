@@ -289,6 +289,7 @@ private:
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_ifDepth = 0;      // main switch: --if-depth
     int         m_inlineMult = 2000;   // main switch: --inline-mult
+    int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
@@ -361,6 +362,8 @@ private:
     bool        m_oTable;       // main switch: -Oa: lookup table creation
     // clang-format on
 
+    bool m_available = false;  // Set to true at the end of option parsing
+
 private:
     // METHODS
     void addArg(const string& arg);
@@ -376,7 +379,6 @@ private:
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
-    bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
     static int stripOptionsForChildRun(const string& opt, bool forTop);
 
@@ -403,6 +405,7 @@ public:
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
     void notify();
+    bool available() const { return m_available; }
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }
@@ -487,6 +490,7 @@ public:
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }
+    int instrCountDpi() const { return m_instrCountDpi; }
     VOptionBool makeDepend() const { return m_makeDepend; }
     int maxNumWidth() const { return m_maxNumWidth; }
     int moduleRecursionDepth() const { return m_moduleRecursion; }

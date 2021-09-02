@@ -1078,6 +1078,12 @@ private:
         // We don't size the constant until we commit the widths, as need parameters
         // to remain unsized, and numbers to remain unsized to avoid backp() warnings
     }
+    virtual void visit(AstEmptyQueue* nodep) override {
+        nodep->dtypeSetEmptyQueue();
+        if (!VN_IS(nodep->backp(), Assign))
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported/Illegal: empty queue ('{}') in this context");
+    }
     virtual void visit(AstFell* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
@@ -1173,6 +1179,7 @@ private:
                 return;
             }
         }
+        nodep->backp()->dumpTree(cout, "-FIXME-tr ");
         nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
     }
     virtual void visit(AstIsUnbounded* nodep) override {
@@ -3761,6 +3768,23 @@ private:
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
         }
+        if (VN_IS(nodep->rhsp(), EmptyQueue)) {
+            UINFO(9, "= {} -> .delete(): " << nodep);
+            if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported/Illegal: empty queue ('{}') in this assign context");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+            AstMethodCall* const newp = new AstMethodCall{
+                nodep->fileline(), nodep->lhsp()->unlinkFrBack(), "delete", nullptr};
+            newp->makeStatement();
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // Need to now convert it
+            visit(newp);
+            return;
+        }
         if (AstNewDynamic* dynp = VN_CAST(nodep->rhsp(), NewDynamic)) {
             UINFO(9, "= new[] -> .resize(): " << nodep);
             AstCMethodHard* newp;
@@ -3777,6 +3801,7 @@ private:
             newp->makeStatement();
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // return;
         }
     }
 
@@ -4127,6 +4152,9 @@ private:
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
+            if (auto* patternp = VN_CAST(nodep->exprp(), Pattern))
+                if (auto* modVarp = nodep->modVarp())
+                    patternp->childDTypep(modVarp->childDTypep()->cloneTree(false));
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {
@@ -5079,9 +5107,9 @@ private:
             case EXTEND_LHS: doSigned = nodep->isSigned(); break;
             default: nodep->v3fatalSrc("bad case");
             }
-            AstNode* newp
-                = (doSigned ? static_cast<AstNode*>(new AstExtendS(nodep->fileline(), nodep))
-                            : static_cast<AstNode*>(new AstExtend(nodep->fileline(), nodep)));
+            AstNode* const newp
+                = (doSigned ? static_cast<AstNode*>(new AstExtendS{nodep->fileline(), nodep})
+                            : static_cast<AstNode*>(new AstExtend{nodep->fileline(), nodep}));
             linker.relink(newp);
             nodep = newp;
         }
@@ -6158,8 +6186,8 @@ void V3Width::width(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         // We should do it in bottom-up module order, but it works in any order.
-        WidthClearVisitor cvisitor(nodep);
-        WidthVisitor visitor(false, false);
+        WidthClearVisitor cvisitor{nodep};
+        WidthVisitor visitor{false, false};
         (void)visitor.mainAcceptEdit(nodep);
         WidthRemoveVisitor rvisitor;
         (void)rvisitor.mainAcceptEdit(nodep);
@@ -6172,7 +6200,7 @@ void V3Width::width(AstNetlist* nodep) {
 AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     UINFO(4, __FUNCTION__ << ": " << nodep << endl);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor(true, false);
+    WidthVisitor visitor{true, false};
     nodep = visitor.mainAcceptEdit(nodep);
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
@@ -6191,7 +6219,7 @@ AstNode* V3Width::widthGenerateParamsEdit(
     AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analysed.
     UINFO(4, __FUNCTION__ << ": " << nodep << endl);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor(true, true);
+    WidthVisitor visitor{true, true};
     nodep = visitor.mainAcceptEdit(nodep);
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
@@ -6199,6 +6227,6 @@ AstNode* V3Width::widthGenerateParamsEdit(
 
 void V3Width::widthCommit(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { WidthCommitVisitor visitor(nodep); }  // Destruct before checking
+    { WidthCommitVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("widthcommit", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

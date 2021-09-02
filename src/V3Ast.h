@@ -24,6 +24,7 @@
 #include "V3FileLine.h"
 #include "V3Number.h"
 #include "V3Global.h"
+#include "V3Broken.h"
 
 #include <cmath>
 #include <type_traits>
@@ -50,7 +51,7 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 // For broken() function, return error string if have a match
 #define BROKEN_RTN(test) \
     do { \
-        if (VL_UNCOVERABLE(test)) return #test; \
+        if (VL_UNCOVERABLE(test)) return "'" #test "' @ " __FILE__ ":" VL_STRINGIFY(__LINE__); \
     } while (false)
 // For broken() function, return error string if a base of this class has a match
 #define BROKEN_BASE_RTN(test) \
@@ -235,39 +236,6 @@ inline bool operator==(const AstPragmaType& lhs, const AstPragmaType& rhs) {
 }
 inline bool operator==(const AstPragmaType& lhs, AstPragmaType::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(AstPragmaType::en lhs, const AstPragmaType& rhs) { return lhs == rhs.m_e; }
-
-//######################################################################
-
-class AstCFuncType final {
-public:
-    enum en : uint8_t {
-        FT_NORMAL,
-        TRACE_REGISTER,
-        TRACE_INIT,
-        TRACE_INIT_SUB,
-        TRACE_FULL,
-        TRACE_FULL_SUB,
-        TRACE_CHANGE,
-        TRACE_CHANGE_SUB,
-        TRACE_CLEANUP
-    };
-    enum en m_e;
-    inline AstCFuncType()
-        : m_e{FT_NORMAL} {}
-    // cppcheck-suppress noExplicitConstructor
-    inline AstCFuncType(en _e)
-        : m_e{_e} {}
-    explicit inline AstCFuncType(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
-    // METHODS
-    bool isTrace() const { return m_e != FT_NORMAL; }
-};
-inline bool operator==(const AstCFuncType& lhs, const AstCFuncType& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-inline bool operator==(const AstCFuncType& lhs, AstCFuncType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(AstCFuncType::en lhs, const AstCFuncType& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -561,6 +529,25 @@ public:
     bool isEventValue() const { return m_e == EVENTVALUE; }
     bool isString() const { return m_e == STRING; }
     bool isMTaskState() const { return m_e == MTASKSTATE; }
+    // Does this represent a C++ LiteralType? (can be constexpr)
+    bool isLiteralType() const {
+        switch (m_e) {
+        case BIT:
+        case BYTE:
+        case CHANDLE:
+        case INT:
+        case INTEGER:
+        case LOGIC:
+        case LONGINT:
+        case DOUBLE:
+        case SHORTINT:
+        case SCOPEPTR:
+        case CHARPTR:
+        case UINT32:
+        case UINT64: return true;
+        default: return false;
+        }
+    }
 };
 inline bool operator==(const AstBasicDTypeKwd& lhs, const AstBasicDTypeKwd& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -1367,8 +1354,32 @@ class AstNode VL_NOT_FINAL {
     const AstType m_type;  // Node sub-type identifier
     // ^ ASTNODE_PREFETCH depends on above ordering of members
 
-    // padding - 2 extra bytes here after m_type
-    int m_cloneCnt;  // Mark of when userp was set
+    // AstType is 2 bytes, so we can stick another 6 bytes after it to utilize what would
+    // otherwise be padding (on a 64-bit system). We stick the attribute flags, broken state,
+    // and the clone count here.
+
+    struct {
+        bool didWidth : 1;  // Did V3Width computation
+        bool doingWidth : 1;  // Inside V3Width
+        bool protect : 1;  // Protect name if protection is on
+        // Space for more flags here (there must be 8 bits in total)
+        uint8_t unused : 5;
+    } m_flags;  // Attribute flags
+
+    // State variable used by V3Broken for consistency checking. The top bit of this is byte is a
+    // flag, representing V3Broken is currently proceeding under this node. The bottom 7 bits are
+    // a generation number. This is hot when --debug-checks so we access as a whole to avoid bit
+    // field masking resulting in unnecessary read-modify-write ops.
+    uint8_t m_brokenState = 0;
+
+    int m_cloneCnt;  // Sequence number for when last clone was made
+
+#if defined(__x86_64__) && defined(__gnu_linux__)
+    // Only assert this on known platforms, as it only affects performance, not correctness
+    static_assert(sizeof(m_type) + sizeof(m_flags) + sizeof(m_brokenState) + sizeof(m_cloneCnt)
+                      <= sizeof(void*),
+                  "packing requires padding");
+#endif
 
     AstNodeDType* m_dtypep;  // Data type of output or assignment (etc)
     AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
@@ -1380,12 +1391,6 @@ class AstNode VL_NOT_FINAL {
 
     AstNode* m_clonep;  // Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
     static int s_cloneCntGbl;  // Count of which userp is set
-
-    // Attributes
-    bool m_didWidth : 1;  // Did V3Width computation
-    bool m_doingWidth : 1;  // Inside V3Width
-    bool m_protect : 1;  // Protect name if protection is on
-    //          // Space for more bools here
 
     // This member ordering both allows 64 bit alignment and puts associated data together
     VNUser m_user1u;  // Contains any information the user iteration routine wants
@@ -1489,9 +1494,14 @@ public:
     AstNode* firstAbovep() const {  // Returns nullptr when second or later in list
         return ((backp() && backp()->nextp() != this) ? backp() : nullptr);
     }
-    bool brokeExists() const;
-    bool brokeExistsAbove() const;
-    bool brokeExistsBelow() const;
+    uint8_t brokenState() const { return m_brokenState; }
+    void brokenState(uint8_t value) { m_brokenState = value; }
+
+    // Used by AstNode::broken()
+    bool brokeExists() const { return V3Broken::isLinkable(this); }
+    bool brokeExistsAbove() const { return brokeExists() && (m_brokenState >> 7); }
+    bool brokeExistsBelow() const { return brokeExists() && !(m_brokenState >> 7); }
+    // Note: brokeExistsBelow is not quite precise, as it is true for sibling nodes as well
 
     // CONSTRUCTORS
     virtual ~AstNode() = default;
@@ -1500,21 +1510,20 @@ public:
     static void operator delete(void* obj, size_t size);
 #endif
 
-    // CONSTANT ACCESSORS
-    static int instrCountBranch() { return 4; }  ///< Instruction cycles to branch
-    static int instrCountDiv() { return 10; }  ///< Instruction cycles to divide
-    static int instrCountDpi() { return 1000; }  ///< Instruction cycles to call user function
-    static int instrCountLd() { return 2; }  ///< Instruction cycles to load memory
-    static int instrCountMul() { return 3; }  ///< Instruction cycles to multiply integers
-    static int instrCountPli() { return 20; }  ///< Instruction cycles to call pli routines
-    static int instrCountDouble() { return 8; }  ///< Instruction cycles to convert or do floats
-    static int instrCountDoubleDiv() { return 40; }  ///< Instruction cycles to divide floats
-    static int instrCountDoubleTrig() { return 200; }  ///< Instruction cycles to do trigonomics
-    static int instrCountString() { return 100; }  ///< Instruction cycles to do string ops
-    /// Instruction cycles to call subroutine
-    static int instrCountCall() { return instrCountBranch() + 10; }
-    /// Instruction cycles to determine simulation time
-    static int instrCountTime() { return instrCountCall() + 5; }
+    // CONSTANTS
+    // The following are relative dynamic costs (~ execution cycle count) of various operations.
+    // They are used by V3InstCount to estimate the relative execution time of code fragments.
+    static constexpr int INSTR_COUNT_BRANCH = 4;  // Branch
+    static constexpr int INSTR_COUNT_CALL = INSTR_COUNT_BRANCH + 10;  // Subroutine call
+    static constexpr int INSTR_COUNT_LD = 2;  // Load memory
+    static constexpr int INSTR_COUNT_INT_MUL = 3;  // Integer multiply
+    static constexpr int INSTR_COUNT_INT_DIV = 10;  // Integer divide
+    static constexpr int INSTR_COUNT_DBL = 8;  // Convert or do float ops
+    static constexpr int INSTR_COUNT_DBL_DIV = 40;  // Double divide
+    static constexpr int INSTR_COUNT_DBL_TRIG = 200;  // Double trigonometric ops
+    static constexpr int INSTR_COUNT_STR = 100;  // String ops
+    static constexpr int INSTR_COUNT_TIME = INSTR_COUNT_CALL + 5;  // Determine simulation time
+    static constexpr int INSTR_COUNT_PLI = 20;  // PLI routines
 
     // ACCESSORS
     virtual string name() const { return ""; }
@@ -1545,17 +1554,17 @@ public:
     void fileline(FileLine* fl) { m_fileline = fl; }
     bool width1() const;
     int widthInstrs() const;
-    void didWidth(bool flag) { m_didWidth = flag; }
-    bool didWidth() const { return m_didWidth; }
+    void didWidth(bool flag) { m_flags.didWidth = flag; }
+    bool didWidth() const { return m_flags.didWidth; }
     bool didWidthAndSet() {
         if (didWidth()) return true;
         didWidth(true);
         return false;
     }
-    bool doingWidth() const { return m_doingWidth; }
-    void doingWidth(bool flag) { m_doingWidth = flag; }
-    bool protect() const { return m_protect; }
-    void protect(bool flag) { m_protect = flag; }
+    bool doingWidth() const { return m_flags.doingWidth; }
+    void doingWidth(bool flag) { m_flags.doingWidth = flag; }
+    bool protect() const { return m_flags.protect; }
+    void protect(bool flag) { m_flags.protect = flag; }
 
     // TODO stomp these width functions out, and call via dtypep() instead
     int width() const;
@@ -1689,6 +1698,7 @@ public:
     void dtypeSetSigned32() { dtypep(findSigned32DType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
+    void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
     void dtypeSetVoid() { dtypep(findVoidDType()); }
 
     // Data type locators
@@ -1699,6 +1709,7 @@ public:
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
     AstNodeDType* findCHandleDType() { return findBasicDType(AstBasicDTypeKwd::CHANDLE); }
+    AstNodeDType* findEmptyQueueDType() const;
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
@@ -1707,7 +1718,7 @@ public:
                                       VSigning numeric) const;
     AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin, VSigning numeric) const;
     AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd) const;
-    AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
+    static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error
     void v3errorEnd(std::ostringstream& str) const;
@@ -1782,8 +1793,6 @@ public:
     virtual bool isGateOptimizable() const { return true; }
     // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
-    // Needs verilated_heavy.h (uses std::string or some others)
-    virtual bool isHeavy() const { return false; }
     // Else creates output or exits, etc, not unconsumed
     virtual bool isOutputter() const { return false; }
     // Else a AstTime etc which output can't be predicted from input
@@ -2086,7 +2095,7 @@ public:
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
     virtual bool sizeMattersThs() const override { return false; }
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) = 0;
 };
 
@@ -2221,7 +2230,7 @@ public:
     AstNode* incsp() const { return op3p(); }  // op3 = increment statements
     AstNode* bodysp() const { return op4p(); }  // op4 = body of loop
     virtual bool isGateOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
@@ -2248,7 +2257,7 @@ public:
     void addElsesp(AstNode* newp) { addOp3p(newp); }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isGateDedupable() const override { return true; }
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
     void branchPred(VBranchPred flag) { m_branchPred = flag; }
     VBranchPred branchPred() const { return m_branchPred; }
@@ -2266,7 +2275,7 @@ protected:
 
 public:
     ASTNODE_BASE_FUNCS(NodeCase)
-    virtual int instrCount() const override { return instrCountBranch(); }
+    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     AstNode* exprp() const { return op1p(); }  // op1 = case condition <expression>
     AstCaseItem* itemsp() const {
         return VN_CAST(op2p(), CaseItem);
@@ -2445,6 +2454,7 @@ public:
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
     string cType(const string& name, bool forFunc, bool isRef) const;
+    bool isLiteralType() const;  // Does this represent a C++ LiteralType? (can be constexpr)
 
 private:
     class CTypeRecursed;
@@ -2621,7 +2631,6 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
-    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
     string m_argTypes;
 
 protected:
@@ -2636,7 +2645,7 @@ public:
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual void cloneRelink() override;
     virtual const char* broken() const override;
-    virtual int instrCount() const override { return instrCountCall(); }
+    virtual int instrCount() const override { return INSTR_COUNT_CALL; }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeCCall* asamep = static_cast<const AstNodeCCall*>(samep);
         return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());
@@ -2647,9 +2656,6 @@ public:
     virtual bool isPure() const override;
     virtual bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
-    string selfPointer() const { return m_selfPointer; }
-    void selfPointer(const string& value) { m_selfPointer = value; }
-    string selfPointerProtect(bool useSelfForThis) const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall
@@ -2678,6 +2684,7 @@ private:
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
+    bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
 protected:
@@ -2700,6 +2707,7 @@ protected:
         , m_isHideProtected{false}
         , m_pure{false}
         , m_pureVirtual{false}
+        , m_underGenerate{false}
         , m_virtual{false} {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
@@ -2766,6 +2774,8 @@ public:
     bool pure() const { return m_pure; }
     void pureVirtual(bool flag) { m_pureVirtual = flag; }
     bool pureVirtual() const { return m_pureVirtual; }
+    void underGenerate(bool flag) { m_underGenerate = flag; }
+    bool underGenerate() const { return m_underGenerate; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
@@ -2845,7 +2855,6 @@ private:
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
     int m_level = 0;  // 1=top module, 2=cell off top module, ...
-    int m_varNum = 0;  // Incrementing variable number
     int m_typeNum = 0;  // Incrementing implicit type number
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
@@ -2886,7 +2895,6 @@ public:
     void level(int level) { m_level = level; }
     int level() const { return m_level; }
     bool isTop() const { return level() == 1; }
-    int varNumGetInc() { return ++m_varNum; }
     int typeNumGetInc() { return ++m_typeNum; }
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modPublic() const { return m_modPublic; }

@@ -62,7 +62,6 @@ private:
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
-private:
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
         // See also AstNode::addBeforeStmt; this predates that function
@@ -246,6 +245,6 @@ public:
 
 void V3LinkInc::linkIncrements(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { LinkIncVisitor bvisitor(nodep); }  // Destruct before checking
+    { LinkIncVisitor bvisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkInc", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

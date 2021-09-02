@@ -46,6 +46,7 @@ public:
 
     // METHODS
     uint32_t value() const { return m_value; }
+    std::string toString() const;
 
     // OPERATORS
     // Comparisons

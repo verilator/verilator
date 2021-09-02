@@ -52,6 +52,7 @@ private:
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
+    bool m_underGenerate = false;  // Under GenFor/GenIf
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -111,6 +112,7 @@ private:
 
     virtual void visit(AstNodeFTask* nodep) override {
         // NodeTask: Remember its name for later resolution
+        if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
         if (m_classp) {
             if (nodep->name() == "pre_randomize" || nodep->name() == "post_randomize") {
@@ -520,6 +522,17 @@ private:
     // virtual void visit(AstModport* nodep) override { ... }
     // We keep Modport's themselves around for XML dump purposes
 
+    virtual void visit(AstGenFor* nodep) override {
+        VL_RESTORER(m_underGenerate);
+        m_underGenerate = true;
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstGenIf* nodep) override {
+        VL_RESTORER(m_underGenerate);
+        m_underGenerate = true;
+        iterateChildren(nodep);
+    }
+
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -573,8 +586,8 @@ public:
 void V3LinkResolve::linkResolve(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     {
-        LinkResolveVisitor visitor(rootp);
-        LinkBotupVisitor visitorb(rootp);
+        LinkResolveVisitor visitor{rootp};
+        LinkBotupVisitor visitorb{rootp};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkresolve", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

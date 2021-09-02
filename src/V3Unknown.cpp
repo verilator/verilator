@@ -36,6 +36,7 @@
 #include "V3Ast.h"
 #include "V3Const.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 
@@ -57,6 +58,8 @@ private:
     AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
     bool m_constXCvt = false;  // Convert X's
     VDouble0 m_statUnkVars;  // Statistic tracking
+    V3UniqueNames m_lvboundNames;  // For generating unique temporary variable names
+    V3UniqueNames m_xrandNames;  // For generating unique temporary variable names
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -113,11 +116,10 @@ private:
             UINFO(4, "Edit BOUNDLVALUE " << newp << endl);
             replaceHandle.relink(newp);
         } else {
-            const string name = (string("__Vlvbound") + cvtToStr(m_modp->varNumGetInc()));
-            AstVar* varp = new AstVar(fl, AstVarType::MODULETEMP, name, prep->dtypep());
+            AstVar* const varp
+                = new AstVar(fl, AstVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep());
             m_modp->addStmtp(varp);
-
-            AstNode* abovep = prep->backp();  // Grab above point before lose it w/ next replace
+            AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
             prep->replaceWith(new AstVarRef(fl, varp, VAccess::WRITE));
             AstIf* newp = new AstIf(
                 fl, condp,
@@ -142,6 +144,8 @@ private:
         {
             m_modp = nodep;
             m_constXCvt = true;
+            m_lvboundNames.reset();
+            m_xrandNames.reset();
             iterateChildren(nodep);
         }
     }
@@ -322,15 +326,16 @@ private:
                 // Make a Vxrand variable
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
-                const string newvarname = (string("__Vxrand") + cvtToStr(m_modp->varNumGetInc()));
-                AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::XTEMP, newvarname,
-                                             VFlagLogicPacked(), nodep->width());
+                AstVar* const newvarp
+                    = new AstVar(nodep->fileline(), AstVarType::XTEMP, m_xrandNames.get(nodep),
+                                 VFlagLogicPacked(), nodep->width());
                 ++m_statUnkVars;
                 AstNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
-                AstNodeVarRef* newref1p = new AstVarRef(nodep->fileline(), newvarp, VAccess::READ);
+                AstNodeVarRef* const newref1p
+                    = new AstVarRef(nodep->fileline(), newvarp, VAccess::READ);
                 replaceHandle.relink(newref1p);  // Replace const with varref
-                AstInitial* newinitp = new AstInitial(
+                AstInitial* const newinitp = new AstInitial(
                     nodep->fileline(),
                     new AstAssign(
                         nodep->fileline(),
@@ -342,7 +347,7 @@ private:
                                                          nodep->dtypep(), true)))));
                 // Add inits in front of other statement.
                 // In the future, we should stuff the initp into the module's constructor.
-                AstNode* afterp = m_modp->stmtsp()->unlinkFrBackWithNext();
+                AstNode* const afterp = m_modp->stmtsp()->unlinkFrBackWithNext();
                 m_modp->addStmtp(newvarp);
                 m_modp->addStmtp(newinitp);
                 m_modp->addStmtp(afterp);
@@ -476,7 +481,11 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit UnknownVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit UnknownVisitor(AstNetlist* nodep)
+        : m_lvboundNames{"__Vlvbound"}
+        , m_xrandNames{"__Vxrand"} {
+        iterate(nodep);
+    }
     virtual ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
     }
@@ -487,6 +496,6 @@ public:
 
 void V3Unknown::unknownAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { UnknownVisitor visitor(nodep); }  // Destruct before checking
+    { UnknownVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("unknown", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

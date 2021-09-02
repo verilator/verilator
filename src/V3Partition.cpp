@@ -624,8 +624,8 @@ public:
     static void dumpCpFilePrefixed(const V3Graph* graphp, const string& nameComment) {
         const string filename = v3Global.debugFilename(nameComment) + ".txt";
         UINFO(1, "Writing " << filename << endl);
-        std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
-        std::ostream* osp = &(*ofp);  // &* needed to deref unique_ptr
+        std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
+        std::ostream* const osp = &(*ofp);  // &* needed to deref unique_ptr
         if (osp->fail()) v3fatalStatic("Can't write " << filename);
 
         // Find start vertex with longest CP
@@ -996,8 +996,7 @@ static V3GraphEdge* partBlastEdgep(GraphWay way, V3GraphEdge* edgep) {
 // non-transitive edges only ever increase.
 static void partMergeEdgesFrom(V3Graph* mtasksp, LogicMTask* recipientp, LogicMTask* donorp,
                                V3Scoreboard<MergeCandidate, uint32_t>* sbp) {
-    for (unsigned wi = 0; wi < 2; ++wi) {
-        const GraphWay way = wi ? GraphWay::REVERSE : GraphWay::FORWARD;
+    for (const auto& way : {GraphWay::FORWARD, GraphWay::REVERSE}) {
         for (V3GraphEdge* edgep = donorp->beginp(way); edgep; edgep = partBlastEdgep(way, edgep)) {
             MTaskEdge* tedgep = MTaskEdge::cast(edgep);
             if (sbp && !tedgep->removedFromSb()) sbp->removeElem(tedgep);
@@ -2078,7 +2077,7 @@ void ThreadSchedule::dumpDotFilePrefixedAlways(const string& nameComment) const 
 
 void ThreadSchedule::dumpDotFile(const string& filename) const {
     // This generates a file used by graphviz, https://www.graphviz.org
-    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
     auto* depGraph = v3Global.rootp()->execGraphp()->depGraphp();
 
@@ -2766,8 +2765,8 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         funcp->argTypes("void* voidSelf, bool even_cycle");
 
         // Setup vlSelf an vlSyms
-        funcp->addStmtsp(new AstCStmt(fl, EmitCBaseVisitor::voidSelfAssign(modp)));
-        funcp->addStmtsp(new AstCStmt(fl, EmitCBaseVisitor::symClassAssign()));
+        funcp->addStmtsp(new AstCStmt{fl, EmitCBaseVisitor::voidSelfAssign(modp)});
+        funcp->addStmtsp(new AstCStmt{fl, EmitCBaseVisitor::symClassAssign()});
 
         // Invoke each mtask scheduled to this thread from the thread function
         for (const ExecMTask* const mtaskp : thread) {

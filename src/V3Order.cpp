@@ -259,41 +259,23 @@ private:
     bool m_newClkMarked;  // Flag for deciding whether a new run is needed
     bool m_inAss = false;  // Currently inside of a assignment
     int m_childClkWidth = 0;  // If in hasClk, width of clock signal in child
-    int m_rightClkWidth = 0;  // Clk width on the RHS
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     virtual void visit(AstNodeAssign* nodep) override {
         m_hasClk = false;
-        if (AstVarRef* varrefp = VN_CAST(nodep->rhsp(), VarRef)) {
-            this->visit(varrefp);
-            m_rightClkWidth = varrefp->width();
-            if (varrefp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
-                if (m_inClocked) {
-                    varrefp->v3warn(
-                        CLKDATA, "Clock used as data (on rhs of assignment) in sequential block "
-                                     << varrefp->prettyNameQ());
-                } else {
-                    m_hasClk = true;
-                    UINFO(5, "node is already marked as clocker " << varrefp << endl);
-                }
-            }
-        } else {
-            m_inAss = true;
-            m_childClkWidth = 0;
-            iterateAndNextNull(nodep->rhsp());
-            m_rightClkWidth = m_childClkWidth;
-            m_inAss = false;
-        }
-
-        // do the marking
+        m_inAss = true;
+        m_childClkWidth = 0;
+        iterateAndNextNull(nodep->rhsp());
+        m_inAss = false;
         if (m_hasClk) {
-            if (nodep->lhsp()->width() > m_rightClkWidth) {
+            // do the marking
+            if (nodep->lhsp()->width() > m_childClkWidth) {
                 nodep->v3warn(CLKDATA, "Clock is assigned to part of data signal "
                                            << nodep->lhsp()->prettyNameQ());
                 UINFO(4, "CLKDATA: lhs with width " << nodep->lhsp()->width() << endl);
-                UINFO(4, "     but rhs clock with width " << m_rightClkWidth << endl);
+                UINFO(4, "     but rhs clock with width " << m_childClkWidth << endl);
                 return;  // skip the marking
             }
 
@@ -663,6 +645,7 @@ private:
     AstSenTree* m_comboDomainp = nullptr;  // Combo activation tree
     AstSenTree* m_deleteDomainp = nullptr;  // Delete this from tree
     OrderInputsVertex* m_inputsVxp = nullptr;  // Top level vertex all inputs point from
+    OrderVarVertex* m_dpiExportTriggerVxp = nullptr;  // DPI Export trigger condition vertex
     OrderLogicVertex* m_logicVxp = nullptr;  // Current statement being tracked, nullptr=ignored
     AstTopScope* m_topScopep = nullptr;  // Current top scope being processed
     AstScope* m_scopetopp = nullptr;  // Scope under TOPSCOPE
@@ -774,6 +757,10 @@ private:
     }
 
     void nodeMarkCircular(OrderVarVertex* vertexp, OrderEdge* edgep) {
+        // To be marked circular requires being a clock assigned in a delayed assignment, or
+        // having a cutable in or out edge, none of which is true for the DPI export trigger.
+        UASSERT(vertexp != m_dpiExportTriggerVxp,
+                "DPI expor trigger should not be marked circular");
         AstVarScope* nodep = vertexp->varScp();
         OrderLogicVertex* fromLVtxp = nullptr;
         OrderLogicVertex* toLVtxp = nullptr;
@@ -971,6 +958,9 @@ private:
         // Base vertices
         m_activeSenVxp = nullptr;
         m_inputsVxp = new OrderInputsVertex(&m_graph, nullptr);
+        if (AstVarScope* const dpiExportTrigger = v3Global.rootp()->dpiExportTriggerp()) {
+            m_dpiExportTriggerVxp = newVarUserVertex(dpiExportTrigger, WV_STD);
+        }
         //
         iterateChildren(nodep);
         // Done topscope, erase extra user information
@@ -1148,6 +1138,24 @@ private:
             }
         }
     }
+    virtual void visit(AstDpiExportUpdated* nodep) override {
+        // This is under an AstAlways, sensitive to a change in the DPI export trigger. We just
+        // need to add an edge to the enclosing logic vertex (the vertex for the AstAlways).
+        OrderVarVertex* const varVxp = newVarUserVertex(nodep->varScopep(), WV_STD);
+        new OrderComboCutEdge(&m_graph, m_logicVxp, varVxp);
+        // Only used for ordering, so we can get rid of it here
+        nodep->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    virtual void visit(AstCCall* nodep) override {
+        // Calls to 'context' imported DPI function may call DPI exported functions
+        if (m_dpiExportTriggerVxp && nodep->funcp()->dpiImportWrapper()
+            && nodep->funcp()->dpiContext()) {
+            UASSERT_OBJ(m_logicVxp, nodep, "Call not under logic");
+            new OrderEdge(&m_graph, m_logicVxp, m_dpiExportTriggerVxp, WEIGHT_NORMAL);
+        }
+        iterateChildren(nodep);
+    }
     virtual void visit(AstSenTree* nodep) override {
         // Having a node derived from the sentree isn't required for
         // correctness, it merely makes the graph better connected
@@ -1177,13 +1185,13 @@ private:
     virtual void visit(AstAlwaysPublic* nodep) override { iterateNewStmt(nodep); }
     virtual void visit(AstAssignAlias* nodep) override { iterateNewStmt(nodep); }
     virtual void visit(AstAssignW* nodep) override {
-        OrderClkAssVisitor visitor(nodep);
+        OrderClkAssVisitor visitor{nodep};
         m_inClkAss = visitor.isClkAss();
         iterateNewStmt(nodep);
         m_inClkAss = false;
     }
     virtual void visit(AstAssignPre* nodep) override {
-        OrderClkAssVisitor visitor(nodep);
+        OrderClkAssVisitor visitor{nodep};
         m_inClkAss = visitor.isClkAss();
         m_inPre = true;
         iterateNewStmt(nodep);
@@ -1191,7 +1199,7 @@ private:
         m_inClkAss = false;
     }
     virtual void visit(AstAssignPost* nodep) override {
-        OrderClkAssVisitor visitor(nodep);
+        OrderClkAssVisitor visitor{nodep};
         m_inClkAss = visitor.isClkAss();
         m_inPost = true;
         iterateNewStmt(nodep);
@@ -1205,10 +1213,10 @@ private:
         iterateNewStmt(nodep);
     }
     virtual void visit(AstCFunc*) override {
-        // Ignore for now
-        // We should detect what variables are set in the function, and make
-        // settlement code for them, then set a global flag, so we call "settle"
-        // on the next evaluation loop.
+        // Calls to DPI exports handled with AstCCall. /* verlator public */ functions are
+        // ignored for now (and hence potentially mis-ordered), but could use the same or
+        // similar mechanism as DPI exports. Every other impure function (including those
+        // that may set a non-local variable) must have been inlined in V3Task.
     }
     //--------------------
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -1545,7 +1553,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 void OrderVisitor::processEdgeReport() {
     // Make report of all signal names and what clock edges they have
     const string filename = v3Global.debugFilename("order_edges.txt");
-    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
     // Testing emitter: V3EmitV::verilogForTree(v3Global.rootp(), *logp);
 
@@ -1777,7 +1785,7 @@ AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
                 newFuncpr->addStmtsp(nodep);
                 if (v3Global.opt.outputSplitCFuncs()) {
                     // Add in the number of nodes we're adding
-                    EmitCBaseCounterVisitor visitor(nodep);
+                    EmitCBaseCounterVisitor visitor{nodep};
                     newStmtsr += visitor.count();
                 }
             }
@@ -2005,7 +2013,7 @@ void OrderVisitor::process() {
     if (false && debug()) {
         const string dfilename
             = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_INT_order";
-        const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(dfilename));
+        const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(dfilename)};
         if (logp->fail()) v3fatal("Can't write " << dfilename);
         m_graph.dump(*logp);
     }
@@ -2017,7 +2025,7 @@ void OrderVisitor::process() {
 void V3Order::orderAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        OrderClkMarkVisitor markVisitor(nodep);
+        OrderClkMarkVisitor markVisitor{nodep};
         OrderVisitor visitor;
         visitor.main(nodep);
     }  // Destruct before checking

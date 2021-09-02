@@ -365,6 +365,39 @@ struct TaskDpiUtils {
 };
 
 //######################################################################
+// Gather non-local variables written by an AstCFunc
+
+class TaskGatherWrittenVisitor final : public AstNVisitor {
+    // NODE STATE
+    // AstVarScope::user5 -> Already considered variable
+    AstUser5InUse m_user5InUse;
+
+    std::vector<AstVarScope*> m_writtenVariables;  // Variables written
+
+    virtual void visit(AstVarRef* nodep) override {
+        if (nodep->access().isReadOnly()) return;  // Ignore read reference
+        AstVarScope* const varScopep = nodep->varScopep();
+        if (varScopep->user5()) return;  // Ignore already processed variable
+        varScopep->user5(true);  // Mark as already processed
+        // Note: We are ignoring function locals as they should not be referenced anywhere outside
+        // of the enclosing AstCFunc, and therefore they are irrelevant for code ordering. This is
+        // simply an optimization to avoid adding useless nodes to the ordering graph in V3Order.
+        if (varScopep->varp()->isFuncLocal()) return;
+        m_writtenVariables.push_back(varScopep);
+    }
+    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    explicit TaskGatherWrittenVisitor(AstNode* nodep) { iterate(nodep); }
+
+public:
+    // Gather all written non-local variables
+    static const std::vector<AstVarScope*> gather(AstCFunc* funcp) {
+        TaskGatherWrittenVisitor visitor{funcp};
+        return std::move(visitor.m_writtenVariables);
+    }
+};
+
+//######################################################################
 // Task state, as a visitor of each AstNode
 
 class TaskVisitor final : public AstNVisitor {
@@ -419,17 +452,22 @@ private:
         return newvscp;
     }
     AstVarScope* createVarScope(AstVar* invarp, const string& name) {
-        // We could create under either the ref's scope or the ftask's scope.
-        // It shouldn't matter, as they are only local variables.
-        // We choose to do it under whichever called this function, which results
-        // in more cache locality.
-        AstVar* newvarp = new AstVar(invarp->fileline(), AstVarType::BLOCKTEMP, name, invarp);
-        newvarp->funcLocal(false);
-        newvarp->propagateAttrFrom(invarp);
-        m_modp->addStmtp(newvarp);
-        AstVarScope* newvscp = new AstVarScope(newvarp->fileline(), m_scopep, newvarp);
-        m_scopep->addVarp(newvscp);
-        return newvscp;
+        if (invarp->isParam() && VN_IS(invarp->valuep(), InitArray)) {
+            // Move array params in functions into constant pool
+            return v3Global.rootp()->constPoolp()->findTable(VN_CAST(invarp->valuep(), InitArray));
+        } else {
+            // We could create under either the ref's scope or the ftask's scope.
+            // It shouldn't matter, as they are only local variables.
+            // We choose to do it under whichever called this function, which results
+            // in more cache locality.
+            AstVar* newvarp = new AstVar{invarp->fileline(), AstVarType::BLOCKTEMP, name, invarp};
+            newvarp->funcLocal(false);
+            newvarp->propagateAttrFrom(invarp);
+            m_modp->addStmtp(newvarp);
+            AstVarScope* newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
+            m_scopep->addVarp(newvscp);
+            return newvscp;
+        }
     }
 
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
@@ -545,7 +583,7 @@ private:
         // Iteration requires a back, so put under temporary node
         {
             AstBegin* tempp = new AstBegin(beginp->fileline(), "[EditWrapper]", beginp);
-            TaskRelinkVisitor visitor(tempp);
+            TaskRelinkVisitor visitor{tempp};
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
@@ -684,13 +722,13 @@ private:
         return dpiproto;
     }
 
-    AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
+    static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
         const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";\n";
         return new AstCStmt(portp->fileline(), stmt);
     }
 
-    AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
-                                       const string& toSuffix) {
+    static AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
+                                              const string& toSuffix) {
         const string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
         return new AstCStmt(portp->fileline(), stmt);
     }
@@ -763,6 +801,7 @@ private:
         AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep,
                                              (rtnvarp ? rtnvarp->dpiArgType(true, true) : ""));
         funcp->dpiExportDispatcher(true);
+        funcp->dpiContext(nodep->dpiContext());
         funcp->dontCombine(true);
         funcp->entryPoint(true);
         funcp->isStatic(true);
@@ -894,6 +933,7 @@ private:
                                                   : "";
         AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep, rtnType);
         funcp->dpiImportPrototype(true);
+        funcp->dpiContext(nodep->dpiContext());
         funcp->dontCombine(true);
         funcp->entryPoint(false);
         funcp->isMethod(false);
@@ -943,7 +983,7 @@ private:
         }
     }
 
-    void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
+    static void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
@@ -1057,6 +1097,22 @@ private:
         }
     }
 
+    AstVarScope* makeDpiExporTrigger() {
+        AstVarScope* dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp();
+        if (!dpiExportTriggerp) {
+            // Create the global DPI export trigger flag the first time we encounter a DPI export.
+            // This flag is set any time a DPI export is invoked, and cleared at the end of eval.
+            FileLine* const fl = m_topScopep->fileline();
+            AstVar* const varp
+                = new AstVar{fl, AstVarType::VAR, "__Vdpi_export_trigger", VFlagBitPacked{}, 1};
+            m_topScopep->scopep()->modp()->addStmtp(varp);
+            dpiExportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
+            m_topScopep->scopep()->addVarp(dpiExportTriggerp);
+            v3Global.rootp()->dpiExportTriggerp(dpiExportTriggerp);
+        }
+        return dpiExportTriggerp;
+    }
+
     AstCFunc* makeUserFunc(AstNodeFTask* nodep, bool ftaskNoInline) {
         // Given a already cloned node, make a public C function, or a non-inline C function
         // Probably some of this work should be done later, but...
@@ -1146,6 +1202,7 @@ private:
         cfuncp->funcPublic(nodep->taskPublic());
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
+        cfuncp->dpiContext(nodep->dpiContext());
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
             cfuncp->isLoose(true);
@@ -1192,18 +1249,27 @@ private:
         for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
             nextp = stmtp->nextp();
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
-                if (portp->isIO()) {
-                    // Move it to new function
+                if (portp->isParam() && VN_IS(portp->valuep(), InitArray)) {
+                    // Move array parameters in functions into constant pool
                     portp->unlinkFrBack();
-                    portp->funcLocal(true);
-                    cfuncp->addArgsp(portp);
+                    pushDeletep(portp);
+                    AstNode* const tablep = v3Global.rootp()->constPoolp()->findTable(
+                        VN_CAST(portp->valuep(), InitArray));
+                    portp->user2p(tablep);
                 } else {
-                    // "Normal" variable, mark inside function
-                    portp->funcLocal(true);
+                    if (portp->isIO()) {
+                        // Move it to new function
+                        portp->unlinkFrBack();
+                        portp->funcLocal(true);
+                        cfuncp->addArgsp(portp);
+                    } else {
+                        // "Normal" variable, mark inside function
+                        portp->funcLocal(true);
+                    }
+                    AstVarScope* newvscp = new AstVarScope{portp->fileline(), m_scopep, portp};
+                    m_scopep->addVarp(newvscp);
+                    portp->user2p(newvscp);
                 }
-                AstVarScope* newvscp = new AstVarScope(portp->fileline(), m_scopep, portp);
-                m_scopep->addVarp(newvscp);
-                portp->user2p(newvscp);
             }
         }
 
@@ -1230,10 +1296,46 @@ private:
         // Iteration requires a back, so put under temporary node
         {
             AstBegin* tempp = new AstBegin(cfuncp->fileline(), "[EditWrapper]", cfuncp);
-            TaskRelinkVisitor visitor(tempp);
+            TaskRelinkVisitor visitor{tempp};
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
+
+        if (cfuncp->dpiExportImpl()) {
+            // Mark all non-local variables written by the DPI exported function as being updated
+            // by DPI exports. This ensures correct ordering and change detection later.
+            const std::vector<AstVarScope*> writtenps = TaskGatherWrittenVisitor::gather(cfuncp);
+            if (!writtenps.empty()) {
+                AstVarScope* const dpiExportTriggerp = makeDpiExporTrigger();
+                FileLine* const fl = cfuncp->fileline();
+
+                // Set DPI export trigger flag every time the DPI export is called.
+                AstAssign* const assignp
+                    = new AstAssign{fl, new AstVarRef{fl, dpiExportTriggerp, VAccess::WRITE},
+                                    new AstConst{fl, AstConst::BitTrue{}}};
+                // Add as first statement (to avoid issues with early returns) to exported function
+                if (cfuncp->stmtsp()) {
+                    cfuncp->stmtsp()->addHereThisAsNext(assignp);
+                } else {
+                    cfuncp->addStmtsp(assignp);
+                }
+
+                // Add an always block sensitive to the DPI export trigger flag, and add an
+                // AstDpiExportUpdated node under it for each variable that are writen by the
+                // exported function.
+                AstAlways* const alwaysp = new AstAlways{
+                    fl, VAlwaysKwd::ALWAYS,
+                    new AstSenTree{
+                        fl, new AstSenItem{fl, VEdgeType::ET_HIGHEDGE,
+                                           new AstVarRef{fl, dpiExportTriggerp, VAccess::READ}}},
+                    nullptr};
+                for (AstVarScope* const varScopep : writtenps) {
+                    alwaysp->addStmtp(new AstDpiExportUpdated{fl, varScopep});
+                }
+                m_scopep->addActivep(alwaysp);
+            }
+        }
+
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         if (debug() >= 9) cfuncp->dumpTree(cout, "-userFunc: ");
@@ -1728,8 +1830,8 @@ const char* V3Task::dpiTemporaryVarSuffix() {
 void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        TaskStateVisitor visitors(nodep);
-        TaskVisitor visitor(nodep, &visitors);
+        TaskStateVisitor visitors{nodep};
+        TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("task", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

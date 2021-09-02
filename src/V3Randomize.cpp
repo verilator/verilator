@@ -246,8 +246,8 @@ public:
 void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        RandomizeMarkVisitor markVisitor(nodep);
-        RandomizeVisitor visitor(nodep);
+        RandomizeMarkVisitor markVisitor{nodep};
+        RandomizeVisitor visitor{nodep};
     }
     V3Global::dumpCheckGlobalTree("randomize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

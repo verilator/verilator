@@ -113,6 +113,8 @@ public:
     // to be a consecutive sequence of the characters [a-zA-Z0-9_]. Sub-words are not replaced.
     // e.g.: replaceWords("one apple bad_apple", "apple", "banana") -> "one banana bad_apple"
     static string replaceWord(const string& str, const string& from, const string& to);
+    // Predicate to check if 'str' starts with 'prefix'
+    static bool startsWith(const string& str, const string& prefix);
 };
 
 //######################################################################

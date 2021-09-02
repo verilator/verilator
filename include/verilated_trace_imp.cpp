@@ -246,7 +246,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::closeBase() {
     shutdownWorker();
     while (m_numTraceBuffers) {
         delete[] m_buffersFromWorker.get();
-        m_numTraceBuffers--;
+        --m_numTraceBuffers;
     }
 #endif
 }
@@ -351,7 +351,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     m_traceBufferSize = nextCode() + numSignals() * 2 + 4;
 
     // Start the worker thread
-    m_workerThread.reset(new std::thread(&VerilatedTrace<VL_DERIVED_T>::workerThreadMain, this));
+    m_workerThread.reset(new std::thread{&VerilatedTrace<VL_DERIVED_T>::workerThreadMain, this});
 #endif
 }
 
@@ -398,7 +398,7 @@ void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m
     // Not really VL_MT_SAFE but more VL_MT_UNSAFE_ONE.
     // This does get the mutex, but if multiple threads are trying to dump
     // chances are the data being dumped will have other problems
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
         VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64
                      "u, dump call ignored\n",
@@ -479,9 +479,9 @@ template <>
 void VerilatedTrace<VL_DERIVED_T>::addCallbackRecord(std::vector<CallbackRecord>& cbVec,
                                                      CallbackRecord& cbRec)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     if (VL_UNCOVERABLE(timeLastDump() != 0)) {  // LCOV_EXCL_START
-        std::string msg = (std::string("Internal: ") + __FILE__ + "::" + __FUNCTION__
+        std::string msg = (std::string{"Internal: "} + __FILE__ + "::" + __FUNCTION__
                            + " called with already open file");
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
     }  // LCOV_EXCL_STOP
@@ -489,19 +489,19 @@ void VerilatedTrace<VL_DERIVED_T>::addCallbackRecord(std::vector<CallbackRecord>
 }
 
 template <> void VerilatedTrace<VL_DERIVED_T>::addInitCb(initCb_t cb, void* userp) VL_MT_SAFE {
-    CallbackRecord cbr(cb, userp);
+    CallbackRecord cbr{cb, userp};
     addCallbackRecord(m_initCbs, cbr);
 }
 template <> void VerilatedTrace<VL_DERIVED_T>::addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
-    CallbackRecord cbr(cb, userp);
+    CallbackRecord cbr{cb, userp};
     addCallbackRecord(m_fullCbs, cbr);
 }
 template <> void VerilatedTrace<VL_DERIVED_T>::addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
-    CallbackRecord cbr(cb, userp);
+    CallbackRecord cbr{cb, userp};
     addCallbackRecord(m_chgCbs, cbr);
 }
 template <> void VerilatedTrace<VL_DERIVED_T>::addCleanupCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
-    CallbackRecord cbr(cb, userp);
+    CallbackRecord cbr{cb, userp};
     addCallbackRecord(m_cleanupCbs, cbr);
 }
 template <> void VerilatedTrace<VL_DERIVED_T>::module(const std::string& name) VL_MT_UNSAFE {

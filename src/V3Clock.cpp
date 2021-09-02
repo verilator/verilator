@@ -257,6 +257,14 @@ private:
         // Process the activates
         iterateChildren(nodep);
         UINFO(4, " TOPSCOPE iter done " << nodep << endl);
+        // Clear the DPI export trigger flag at the end of eval
+        if (AstVarScope* const dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp()) {
+            FileLine* const fl = dpiExportTriggerp->fileline();
+            AstAssign* const assignp
+                = new AstAssign{fl, new AstVarRef{fl, dpiExportTriggerp, VAccess::WRITE},
+                                new AstConst{fl, AstConst::BitFalse{}}};
+            m_evalFuncp->addFinalsp(assignp);
+        }
         // Split large functions
         splitCheck(m_evalFuncp);
         splitCheck(m_initFuncp);
@@ -435,6 +443,6 @@ public:
 
 void V3Clock::clockAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ClockVisitor visitor(nodep); }  // Destruct before checking
+    { ClockVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("clock", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

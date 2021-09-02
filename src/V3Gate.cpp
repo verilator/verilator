@@ -570,7 +570,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                 AstNode* logicp = logicVertexp->nodep();
                 if (logicVertexp->reducible()) {
                     // Can we eliminate?
-                    GateOkVisitor okVisitor(logicp, vvertexp->isClock(), false);
+                    GateOkVisitor okVisitor{logicp, vvertexp->isClock(), false};
                     const bool multiInputs = okVisitor.rhsVarRefs().size() > 1;
                     // Was it ok?
                     bool doit = okVisitor.isSimple();
@@ -884,7 +884,7 @@ public:
 
 void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
     if (debug() >= 5) consumerp->dumpTree(cout, "    elimUsePre: ");
-    GateElimVisitor elimVisitor(consumerp, varscp, substp, nullptr);
+    GateElimVisitor elimVisitor{consumerp, varscp, substp, nullptr};
     if (elimVisitor.didReplace()) {
         if (debug() >= 9) consumerp->dumpTree(cout, "    elimUseCns: ");
         // Caution: Can't let V3Const change our handle to consumerp, such as by
@@ -1148,7 +1148,7 @@ private:
                 UASSERT_OBJ(vvertexp->dedupable(), vvertexp->varScp(),
                             "GateLogicVertex* visit should have returned nullptr "
                             "if consumer var vertex is not dedupable.");
-                GateOkVisitor okVisitor(lvertexp->nodep(), false, true);
+                GateOkVisitor okVisitor{lvertexp->nodep(), false, true};
                 if (okVisitor.isSimple()) {
                     AstVarScope* dupVarScopep = dupVarRefp->varScopep();
                     GateVarVertex* dupVvertexp
@@ -1226,7 +1226,7 @@ public:
 
 void GateVisitor::dedupe() {
     AstNode::user2ClearTree();
-    GateDedupeGraphVisitor deduper(&m_graph);
+    GateDedupeGraphVisitor deduper{&m_graph};
     // Traverse starting from each of the clocks
     UINFO(9, "Gate dedupe() clocks:\n");
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
@@ -1367,7 +1367,7 @@ public:
 
 void GateVisitor::mergeAssigns() {
     UINFO(6, "mergeAssigns\n");
-    GateMergeAssignsGraphVisitor merger(&m_graph);
+    GateMergeAssignsGraphVisitor merger{&m_graph};
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
         if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
             merger.mergeAssignsTree(vvertexp);
@@ -1553,7 +1553,7 @@ public:
 void GateVisitor::decomposeClkVectors() {
     UINFO(9, "Starting clock decomposition" << endl);
     AstNode::user2ClearTree();
-    GateClkDecompGraphVisitor decomposer(&m_graph);
+    GateClkDecompGraphVisitor decomposer{&m_graph};
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
         if (GateVarVertex* vertp = dynamic_cast<GateVarVertex*>(itp)) {
             AstVarScope* vsp = vertp->varScp();
@@ -1601,8 +1601,8 @@ public:
 void V3Gate::gateAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        GateVisitor visitor(nodep);
-        GateDeassignVisitor deassign(nodep);
+        GateVisitor visitor{nodep};
+        GateDeassignVisitor deassign{nodep};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("gate", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

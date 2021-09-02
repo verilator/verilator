@@ -523,5 +523,5 @@ public:
 
 void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
-    LinkCellsVisitor visitor(nodep, filterp, parseSymp);
+    LinkCellsVisitor visitor{nodep, filterp, parseSymp};
 }

@@ -208,6 +208,10 @@ ZCBXb3JrIGFzIG==
 
 `pragma protect end_protected
 
+// encoding envelope
+`pragma protect
+`pragma protect end
+
 endmodule
 
 //======================================================================
