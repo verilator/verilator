@@ -11,6 +11,8 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.213 devel
 ==========================
 
+* Fix verilator_profcfunc profile accounting (#3115).
+
 
 Verilator 4.212 2021-09-01
 ==========================
