@@ -52,7 +52,7 @@ def profcfunc(filename):
     # Find modules
     verilated_mods = {}
     for func in funcs:
-        match = re.search(r'(.*)::eval\(', func)
+        match = re.search(r'(.*)::eval(_step)?\(', func)
         if match:
             prefix = match.group(1)
             if Args.debug:
@@ -153,7 +153,7 @@ def profcfunc(filename):
     print()
 
     print("  %   cumulative   self              ")
-    print((" time   seconds   seconds    calls   %-" + str(design_width) +
+    print((" time   seconds   seconds      calls   %-" + str(design_width) +
            "s  type      filename and line number") % "design")
 
     cume = 0
@@ -161,7 +161,7 @@ def profcfunc(filename):
                        key=lambda f: vfuncs[f]['sec'],
                        reverse=True):
         cume += vfuncs[func]['sec']
-        print(("%6.2f %9.2f %8.2f %8d   %-" + str(design_width) + "s  %s") %
+        print(("%6.2f %9.2f %8.2f %10d   %-" + str(design_width) + "s  %s") %
               (vfuncs[func]['pct'], cume, vfuncs[func]['sec'],
                vfuncs[func]['calls'], vfuncs[func]['design'], func))
 
