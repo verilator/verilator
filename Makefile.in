@@ -118,23 +118,6 @@ INFOS = verilator.html verilator.pdf
 
 INFOS_OLD = README README.html README.pdf
 
-INST_PROJ_FILES = \
-	bin/verilator \
-	bin/verilator_ccache_report \
-	bin/verilator_coverage \
-	bin/verilator_gantt \
-	bin/verilator_includer \
-	bin/verilator_profcfunc \
-	include/verilated.mk \
-	include/*.[chv]* \
-	include/gtkwave/*.[chv]* \
-	include/vltstd/*.[chv]* \
-
-INST_PROJ_BIN_FILES = \
-	bin/verilator_bin$(EXEEXT) \
-	bin/verilator_bin_dbg$(EXEEXT) \
-	bin/verilator_coverage_bin_dbg$(EXEEXT) \
-
 EXAMPLES_FIRST = \
 	examples/make_hello_c \
 	examples/make_hello_sc \
@@ -369,6 +352,7 @@ clang-format:
 
 PY_PROGRAMS = \
 	bin/verilator_ccache_report \
+	bin/verilator_difftree \
 	bin/verilator_profcfunc \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
