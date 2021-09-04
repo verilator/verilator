@@ -2179,6 +2179,8 @@ sub files_identical {
                     && !/^dot [^\n]+\n/
                     && !/^In file: .*\/sc_.*:\d+/
                     && !/^libgcov.*/
+                    && !/--- \/tmp\//  # t_difftree.pl
+                    && !/\+\+\+ \/tmp\//  # t_difftree.pl
             } @l1;
             @l1 = map {
                 s/(Internal Error: [^\n]+\.cpp):[0-9]+:/$1:#:/;
