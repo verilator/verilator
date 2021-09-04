@@ -1179,7 +1179,6 @@ private:
                 return;
             }
         }
-        nodep->backp()->dumpTree(cout, "-FIXME-tr ");
         nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
     }
     virtual void visit(AstIsUnbounded* nodep) override {
