@@ -142,7 +142,7 @@ EXAMPLES_FIRST = \
 EXAMPLES = $(EXAMPLES_FIRST) $(filter-out $(EXAMPLES_FIRST), $(sort $(wildcard examples/*)))
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_MAN_FILES = verilator.1 verilator_coverage.1 verilator_gantt.1 verilator_profcfunc.1
+VL_INST_MAN_FILES = verilator.1 verilator_coverage.1
 
 default: all
 all: all_nomsg msg_test
@@ -369,6 +369,7 @@ clang-format:
 
 PY_PROGRAMS = \
 	bin/verilator_ccache_report \
+	bin/verilator_profcfunc \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
 	docs/guide/conf.py \
