@@ -1,0 +1,20 @@
+VLPROFTHREAD 1.0 # Verilator thread profile dump version 1.0
+VLPROF arg --threads 2
+VLPROF arg +verilator+prof+threads+start+2
+VLPROF arg +verilator+prof+threads+window+2
+VLPROF stat yields 1
+VLPROF mtask 6 start 595 end 735 elapsed 140 predict_time 30 cpu 1 on thread 1
+VLPROF mtask 10 start 8120 end 8260 elapsed 140 predict_time 30 cpu 1 on thread 1
+VLPROF mtask 6 start 11970 end 12075 elapsed 105 predict_time 30 cpu 1 on thread 1
+VLPROF mtask 10 start 15925 end 16065 elapsed 140 predict_time 30 cpu 1 on thread 1
+VLPROF mtask 5 start 5110 end 5530 elapsed 420 predict_time 30 cpu 16 on thread 2
+VLPROF mtask 7 start 5740 end 5845 elapsed 105 predict_time 30 cpu 16 on thread 2
+VLPROF mtask 8 start 6125 end 7140 elapsed 1015 predict_time 107 cpu 16 on thread 2
+VLPROF mtask 9 start 8820 end 9380 elapsed 560 predict_time 30 cpu 16 on thread 2
+VLPROF mtask 11 start 9940 end 10045 elapsed 105 predict_time 30 cpu 16 on thread 2
+VLPROF mtask 5 start 14175 end 14595 elapsed 420 predict_time 30 cpu 16 on thread 2
+VLPROF mtask 7 start 15120 end 15190 elapsed 70 predict_time 30 cpu 16 on thread 2
+VLPROF mtask 8 start 15365 end 15435 elapsed 70 predict_time 107 cpu 16 on thread 2
+VLPROF mtask 9 start 15680 end 15750 elapsed 70 predict_time 30 cpu 16 on thread 2
+VLPROF mtask 11 start 15925 end 15995 elapsed 70 predict_time 30 cpu 16 on thread 2
+VLPROF stat ticks 17220

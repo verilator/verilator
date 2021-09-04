@@ -1,0 +1,38 @@
+Verilator Gantt report
+
+Argument settings:
+  +verilator+prof+threads+start+2
+  +verilator+prof+threads+window+2
+  --threads 2
+
+Thread gantt graph:
+  Legend: One character width = 200 rdtsc ticks
+  Legend: '&' = multiple mtasks in this period (character width)
+     <-16065 rdtsc total------------------------------------------------------------>
+  t:   [1]                                   [1]                [1]                 [1]
+  t:                          [xx[x[16--]        [16] [16]                 [16] [[x[[16]
+
+Analysis:
+  Total threads             = 2
+  Total mtasks              = 7
+  Total cpus used           = 2
+  Total yields              = 1
+  Total eval time           = 16065 rdtsc ticks
+  Longest mtask time        = 1085 rdtsc ticks
+  All-thread mtask time     = 3430 rdtsc ticks
+  Longest-thread efficiency = 6.8%
+  All-thread efficiency     = 10.7%
+  All-thread speedup        = 0.2
+
+Statistics:
+  min log(p2e) = -3.332  from mtask 5 (predict 30, elapsed 840)
+  max log(p2e) = -1.764  from mtask 11 (predict 30, elapsed 175)
+  mean = -2.365
+  stddev = 0.562
+  e ^ stddev = 1.754
+
+CPUs:
+  cpu 1: cpu_time=525 socket=0 core=1  AMD Ryzen 9 3950X 16-Core Processor
+  cpu 16: cpu_time=2905 socket=0 core=0  AMD Ryzen 9 3950X 16-Core Processor
+
+Writing profile_threads.vcd

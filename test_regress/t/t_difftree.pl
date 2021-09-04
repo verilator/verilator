@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(vlt_all => 1);
+scenarios(dist => 1);
 
 run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_difftree"
             ." $Self->{t_dir}/t_difftree.a.tree $Self->{t_dir}/t_difftree.b.tree > diff.log"],
