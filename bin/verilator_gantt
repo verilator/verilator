@@ -10,6 +10,7 @@ use Pod::Usage;
 use vars qw($Debug);
 
 $Debug = 0;
+my $Opt_Cpuinfo = "/proc/cpuinfo";
 my $Opt_File;
 my $Opt_Time_Per_Char = 0;  # rdtsc ticks per char in gantt chart, 0=auto
 my $opt_vcd = "profile_threads.vcd";
@@ -23,6 +24,7 @@ autoflush STDERR 1;
 Getopt::Long::config("no_auto_abbrev");
 if (! GetOptions(
           "help"        => \&usage,
+          "cpuinfo=s"   => \$Opt_Cpuinfo,  # Testing, not documented
           "scale=i"     => \$Opt_Time_Per_Char,
           "debug"       => sub { $Debug = 1; },
           "vcd=s"       => \$opt_vcd,
@@ -60,7 +62,7 @@ sub process {
     my $filename = shift;
 
     read_data($filename);
-    read_cpuinfo();
+    read_cpuinfo($Opt_Cpuinfo);
     report();
 }
 
@@ -115,7 +117,7 @@ sub read_data {
 }
 
 sub read_cpuinfo {
-    my $filename = "/proc/cpuinfo";
+    my $filename = shift;
     my $fh = IO::File->new("<$filename") or return;
     my $cpu;
     while (my $line = $fh->getline) {
