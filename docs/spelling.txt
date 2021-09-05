@@ -676,7 +676,6 @@ prev
 printf
 printtimescale
 profcfunc
-profcfuncs
 prototyptes
 ps
 pthread
