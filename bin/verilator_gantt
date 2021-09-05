@@ -10,7 +10,6 @@ use Pod::Usage;
 use vars qw($Debug);
 
 $Debug = 0;
-my $Opt_Cpuinfo = "/proc/cpuinfo";
 my $Opt_File;
 my $Opt_Time_Per_Char = 0;  # rdtsc ticks per char in gantt chart, 0=auto
 my $opt_vcd = "profile_threads.vcd";
@@ -24,7 +23,6 @@ autoflush STDERR 1;
 Getopt::Long::config("no_auto_abbrev");
 if (! GetOptions(
           "help"        => \&usage,
-          "cpuinfo=s"   => \$Opt_Cpuinfo,  # Testing, not documented
           "scale=i"     => \$Opt_Time_Per_Char,
           "debug"       => sub { $Debug = 1; },
           "vcd=s"       => \$opt_vcd,
@@ -62,7 +60,6 @@ sub process {
     my $filename = shift;
 
     read_data($filename);
-    read_cpuinfo($Opt_Cpuinfo);
     report();
 }
 
@@ -74,6 +71,8 @@ sub read_data {
     %Global = (rdtsc_cycle_time => 0);
 
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
+
+    my $cpu;
     while (my $line = $fh->getline) {
         if ($line =~ m/VLPROF mtask\s(\d+)\sstart\s(\d+)\send\s(\d+)\selapsed\s(\d+)\spredict_time\s(\d+)\scpu\s(\d+)\son thread (\d+)/) {
             my $mtask = $1;
@@ -102,6 +101,16 @@ sub read_data {
         elsif ($line =~ m/VLPROF stat\s+(\S+)\s+([0-9.]+)/) {
             $Global{stats}{$1} = $2;
         }
+        elsif ($line =~ m/^VLPROFPROC processor\s*:\s*(\d+)\s*$/) {
+            $cpu = $1;
+        }
+        elsif (defined $cpu && $line =~ m/^VLPROFPROC ([a-z_ ]+)\s*:\s*(.*)$/) {
+            my ($term, $value) = ($1, $2);
+            $term =~ s/\s+$//;
+            $term =~ s/\s+/_/;
+            $value =~ s/\s+$//;
+            $Global{cpuinfo}{$cpu}{$term} = $value;
+        }
         elsif ($line =~ /^#/) {}
         elsif ($Debug) {
             chomp $line;
@@ -112,25 +121,6 @@ sub read_data {
         # if it's useful...
         if ($line =~ m/rdtsc time = (\d+) ticks/) {
             $Global{rdtsc_cycle_time} = $1;
-        }
-    }
-}
-
-sub read_cpuinfo {
-    my $filename = shift;
-    my $fh = IO::File->new("<$filename") or return;
-    my $cpu;
-    while (my $line = $fh->getline) {
-        chomp $line;
-        if ($line =~ m/^processor\s*:\s*(\d+)\s*$/) {
-            $cpu = $1;
-        }
-        if ($cpu && $line =~ m/^([a-z_ ]+)\s*:\s*(.*)$/) {
-            my ($term, $value) = ($1, $2);
-            $term =~ s/\s+$//;
-            $term =~ s/\s+/_/;
-            $value =~ s/\s+$//;
-            $Global{cpuinfo}{$cpu}{$term} = $value;
         }
     }
 }

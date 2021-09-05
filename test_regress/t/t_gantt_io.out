@@ -32,7 +32,7 @@ Statistics:
   e ^ stddev = 1.754
 
 CPUs:
-  cpu 1: cpu_time=525 socket=0 core=1  AMD Ryzen 9 3950X 16-Core Processor
-  cpu 16: cpu_time=2905 socket=0 core=0  AMD Ryzen 9 3950X 16-Core Processor
+  cpu 1: cpu_time=525 socket=0 core=1  Test Ryzen 9 3950X 16-Core Processor
+  cpu 16: cpu_time=2905 socket=0 core=0  Test Ryzen 9 3950X 16-Core Processor
 
 Writing profile_threads.vcd

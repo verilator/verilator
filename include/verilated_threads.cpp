@@ -25,6 +25,7 @@
 #include "verilated_threads.h"
 
 #include <cstdio>
+#include <fstream>
 
 //=============================================================================
 // Globals
@@ -166,6 +167,16 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
     fprintf(fp, "VLPROF arg +verilator+prof+threads+window+%u\n",
             Verilated::threadContextp()->profThreadsWindow());
     fprintf(fp, "VLPROF stat yields %" VL_PRI64 "u\n", VlMTaskVertex::yields());
+
+    // Copy /proc/cpuinfo into this output so verilator_gantt can be run on
+    // a different machine
+    {
+        const std::unique_ptr<std::ifstream> ifp{new std::ifstream("/proc/cpuinfo")};
+        if (!ifp->fail()) {
+            std::string line;
+            while (std::getline(*ifp, line)) { fprintf(fp, "VLPROFPROC %s\n", line.c_str()); }
+        }
+    }
 
     vluint32_t thread_id = 0;
     for (const auto& pi : m_allProfiles) {
