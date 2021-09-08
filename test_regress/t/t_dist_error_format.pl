@@ -68,7 +68,7 @@ sub formats {
     $lnmatch or error("Check line number regexp is correct, no matches");
     if (keys %warns) {
         # First warning lists everything as that's shown in the driver summary
-        error($summary." ",join(' ',sort keys %warns));
+        error($summary . " ", join(' ', sort keys %warns));
         foreach my $file (sort keys %warns) {
             error($warns{$file});
         }

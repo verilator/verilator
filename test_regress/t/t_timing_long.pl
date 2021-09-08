@@ -34,18 +34,18 @@ sub gen {
     $fh->print("  initial begin\n");
 
     my $n = 100;
-    for (my $i=1; $i<$n; ++$i) {
+    for (my $i = 1; $i < $n; ++$i) {
         # If statement around the timing is important to make the code scheduling
         # mostly unpredictable
-        $fh->printf("    if (cnt == %d) begin\n", $i-1);
+        $fh->printf("    if (cnt == %d) begin\n", $i - 1);
         $fh->printf("      #1; ++cnt; `MSG((\"[%0t] cnt?=${i}\", \$time));"
                     ." if (cnt != %d) \$stop;\n", $i);
         $fh->printf("    end\n");
     }
 
     $fh->print("\n");
-    $fh->print('    $write("*-* All Finished *-*\n");',"\n");
-    $fh->print('    $finish;',"\n");
+    $fh->print('    $write("*-* All Finished *-*\n");', "\n");
+    $fh->print('    $finish;', "\n");
     $fh->print("  end\n");
     $fh->print("endmodule\n");
 }
@@ -55,8 +55,8 @@ top_filename("$Self->{obj_dir}/t_timing_long.v");
 gen($Self->{top_filename});
 
 compile(
-    #verilator_flags2=>["--exe --build --main --timing"],  # Unsupported
-    verilator_flags2=>["--exe --build --main -Wno-STMTDLY"],
+    # verilator_flags2 => ["--exe --build --main --timing"],  # Unsupported
+    verilator_flags2 => ["--exe --build --main -Wno-STMTDLY"],
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
     make_main => 0,

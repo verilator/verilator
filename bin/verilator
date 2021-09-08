@@ -34,11 +34,11 @@ my $opt_quiet_exit;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
-    pod2usage(-exitstatus=>2, -verbose=>0);
+    pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
 # Insert debugging options up front
-push @ARGV, (split ' ',$ENV{VERILATOR_TEST_FLAGS}||"");
+push @ARGV, (split ' ', $ENV{VERILATOR_TEST_FLAGS} || "");
 
 # We sneak a look at the flags so we can do some pre-environment checks
 # All flags will hit verilator...
@@ -60,7 +60,7 @@ if (! GetOptions(
           # Additional parameters
           "<>"          => sub {},      # Ignored
     )) {
-    pod2usage(-exitstatus=>2, -verbose=>0);
+    pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
 if ($opt_gdbbt && !gdb_works()) {
@@ -73,12 +73,12 @@ if ($opt_gdbbt && !gdb_works()) {
 # Starting with that, escape all special chars for the shell;
 # The shell will undo the escapes and the verilator binary should
 # then see exactly the contents of @Opt_Verilator_Sw.
-my @quoted_sw = map {sh_escape($_)} @Opt_Verilator_Sw;
+my @quoted_sw = map { sh_escape($_) } @Opt_Verilator_Sw;
 if ($opt_gdb) {
     # Generic GDB interactive
     run (aslr_off()
-         .($ENV{VERILATOR_GDB}||"gdb")
-         ." ".verilator_bin()
+         . ($ENV{VERILATOR_GDB} || "gdb")
+         . " " . verilator_bin()
          # Note, uncomment to set breakpoints before running:
          #  ." -ex 'break main'"
 
@@ -87,42 +87,42 @@ if ($opt_gdb) {
          # escapes as you would expect in a double-quoted string.
          # That's not true for a single-quoted string, where \'
          # actually terminates the string -- not what we want!
-         ." -ex \"run ".join(' ', @quoted_sw)."\""
-         ." -ex 'set width 0'"
-         ." -ex 'bt'");
+         . " -ex \"run " . join(' ', @quoted_sw) . "\""
+         . " -ex 'set width 0'"
+         . " -ex 'bt'");
 } elsif ($opt_rr) {
     # Record with rr
     run (aslr_off()
-         ."rr record ".verilator_bin()
-         ." ".join(' ', @quoted_sw));
+         . "rr record " . verilator_bin()
+         . " " . join(' ', @quoted_sw));
 } elsif ($opt_gdbbt && $Debug) {
     # Run under GDB to get gdbbt
     run (aslr_off()
-         ."gdb"
-         ." ".verilator_bin()
-         ." --batch --quiet --return-child-result"
-         ." -ex \"run ".join(' ', @quoted_sw)."\""
-         ." -ex 'set width 0'"
-         ." -ex 'bt' -ex 'quit'");
+         . "gdb"
+         . " " . verilator_bin()
+         . " --batch --quiet --return-child-result"
+         . " -ex \"run " . join(' ', @quoted_sw)."\""
+         . " -ex 'set width 0'"
+         . " -ex 'bt' -ex 'quit'");
 } elsif ($Debug) {
     # Debug
     run(aslr_off()
-        .verilator_bin()." ".join(' ',@quoted_sw));
+        . verilator_bin() . " " . join(' ',@quoted_sw));
 } else {
     # Normal, non gdb
-    run(verilator_bin()." ".join(' ',@quoted_sw));
+    run(verilator_bin() . " " . join(' ',@quoted_sw));
 }
 
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
+    pod2usage(-verbose => 2, -exitval => 0, -output => \*STDOUT);
 }
 
 sub debug {
     shift;
     my $level = shift;
-    $Debug = $level||3;
+    $Debug = $level || 3;
 }
 
 #######################################################################
@@ -169,7 +169,7 @@ sub gdb_works {
            ." -ex 'bt'"
            ." -ex 'quit'");
     my $status = $?;
-    return $status==0;
+    return $status == 0;
 }
 
 sub aslr_off {
@@ -185,7 +185,7 @@ sub run {
     # Run command, check errors
     my $command = shift;
     $! = undef;  # Cleanup -x
-    print "\t$command\n" if $Debug>=3;
+    print "\t$command\n" if $Debug >= 3;
     system($command);
     my $status = $?;
     if ($status) {
@@ -193,7 +193,7 @@ sub run {
             warn "%Error: verilator: Misinstalled, or VERILATOR_ROOT might need to be in environment\n";
         }
         if ($Debug) {  # For easy rerunning
-            warn "%Error: export VERILATOR_ROOT=".($ENV{VERILATOR_ROOT}||"")."\n";
+            warn "%Error: export VERILATOR_ROOT=" . ($ENV{VERILATOR_ROOT} || "") . "\n";
             warn "%Error: $command\n";
         }
         if ($status & 127) {

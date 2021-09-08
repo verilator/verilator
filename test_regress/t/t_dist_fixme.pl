@@ -32,7 +32,7 @@ if (!-r "$root/.git") {
     }
 
     foreach my $bfiles (@batch) {
-        my $cmd = "cd $root && grep -n -P '(FIX"."ME|BO"."ZO)' $bfiles | sort";
+        my $cmd = "cd $root && grep -n -P '(FIX" . "ME|BO" . "ZO)' $bfiles | sort";
         my $grep = `$cmd`;
         if ($grep ne "") {
             print "$grep\n";
@@ -43,7 +43,7 @@ if (!-r "$root/.git") {
         }
     }
     if (scalar(%names) >= 1) {
-        error("Files with FIX"."MEs: ",join(' ',sort keys %names));
+        error("Files with FIX" . "MEs: ", join(' ', sort keys %names));
     }
 }
 
