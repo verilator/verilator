@@ -31,9 +31,9 @@ sub checkRelativeRefs {
         }
 
         if ($found_relative != $expect_relative) {
-            error("$file " .
-                  ($found_relative ? "has" : "does not have") .
-                  " relative variable references.");
+            error("$file "
+                  . ($found_relative ? "has" : "does not have")
+                  . " relative variable references.");
         }
     }
 }

@@ -16,7 +16,7 @@ top_filename("t/t_gen_alw.v");
 init_benchmarksim();
 
 # As an example, compile and simulate the top file with varying optimization level
-my @l_opt = (1,2,3);
+my @l_opt = (1, 2, 3);
 
 foreach my $l_opt (@l_opt) {
     compile(
@@ -29,7 +29,7 @@ foreach my $l_opt (@l_opt) {
         );
 }
 
-my $fh = IO::File->new("<".benchmarksim_filename()) or error("Benchmark data file not found");
+my $fh = IO::File->new("<" . benchmarksim_filename()) or error("Benchmark data file not found");
 my $lines = 0;
 while (defined(my $line = $fh->getline)) {
     if ($line =~ /^#/) { next; }
@@ -37,16 +37,17 @@ while (defined(my $line = $fh->getline)) {
         error("Expected header but found $line") if $line ne "evals, time[s]\n";
     } else {
         my @data = grep {$_ != ""} ($line =~ /(\d*\.?\d*)/g);
-        error("Expected 2 tokens on line ".$lines." but got ".scalar(@data)) if scalar(@data) != 2;
+        error("Expected 2 tokens on line " . $lines . " but got  " . scalar(@data)) if scalar(@data) != 2;
         my $cycles = $data[0];
         my $time = $data[1];
-        error("Invalid data on line ".$lines) if $cycles <= 0.0 || $time <= 0.0;
+        error("Invalid data on line " . $lines) if $cycles <= 0.0 || $time <= 0.0;
     }
     $lines += 1;
 }
 my $n_lines_expected = scalar(@l_opt) + 1;
 
-error("Expected ".$n_lines_expected." lines but found ".$lines) if int($lines) != int($n_lines_expected);
+error("Expected " . $n_lines_expected . " lines but found " . $lines)
+    if int($lines) != int($n_lines_expected);
 
 1;
 ok(1);

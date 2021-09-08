@@ -33,7 +33,7 @@ if ($Self->{nc}) {
     }
     run(logfile => "$Self->{obj_dir}/${name}__nccover.log",
         tee => 0,
-        cmd => [($ENV{VERILATOR_ICCR}||'iccr'),
+        cmd => [($ENV{VERILATOR_ICCR} || 'iccr'),
                 "-test ${name} ${cf}"]);
 }
 

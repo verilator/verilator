@@ -39,7 +39,7 @@ sub gen {
         # mostly unpredictable
         $fh->printf("    if (cnt == %d) begin\n", $i - 1);
         $fh->printf("      #1; ++cnt; `MSG((\"[%0t] cnt?=${i}\", \$time));"
-                    ." if (cnt != %d) \$stop;\n", $i);
+                    . " if (cnt != %d) \$stop;\n", $i);
         $fh->printf("    end\n");
     }
 

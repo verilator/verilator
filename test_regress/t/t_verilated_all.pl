@@ -55,7 +55,7 @@ foreach my $file (sort keys %hit) {
         && $file !~ /_fst/
         && $file !~ /_heavy/
         && ($file !~ /_thread/ || $Self->cfg_with_threaded)) {
-        error("Include file not covered by t_verilated_all test: ",$file);
+        error("Include file not covered by t_verilated_all test: ", $file);
     }
 }
 

@@ -380,7 +380,7 @@ sub one_test {
                  $self->{unsup_cnt}++;
              } else {
                  $test->oprint("FAILED: $test->{errors}\n");
-                 my $j = ($opt_jobs>1?" -j":"");
+                 my $j = ($opt_jobs > 1 ? " -j" : "");
                  my $makecmd = $ENV{VERILATOR_MAKE} || "$ENV{MAKE}$j &&";
                  my $upperdir = (Cwd::getcwd() =~ /test_regress/
                                  ? 'test_regress/' : '');
@@ -590,9 +590,9 @@ sub new {
                            .($self->{t_dir} !~ m!/test_regress!  # Don't include standard dir, only site's
                              ? " +incdir+$self->{t_dir} -y $self->{t_dir}" : "")
                            . " " . $define_opt . "TEST_OBJ_DIR=$self->{obj_dir}"
-                           .($opt_verbose ? " " . $define_opt . "TEST_VERBOSE=1":"")
-                           .($opt_benchmark ? " " . $define_opt . "TEST_BENCHMARK=$opt_benchmark":"")
-                           .($opt_trace ? " " . $define_opt . "WAVES=1":"")
+                           .($opt_verbose ? " " . $define_opt . "TEST_VERBOSE=1" : "")
+                           .($opt_benchmark ? " " . $define_opt . "TEST_BENCHMARK=$opt_benchmark" : "")
+                           .($opt_trace ? " " . $define_opt . "WAVES=1" : "")
                           ))],
         v_flags2 => [],  # Overridden in some sim files
         v_other_filenames => [],  # After the filename so we can spec multiple files
@@ -601,14 +601,14 @@ sub new {
                       . (($^O eq "darwin" )
                          ? " -Wl,-undefined,dynamic_lookup"
                          : " -export-dynamic")
-                      . ($opt_verbose ? " -DTEST_VERBOSE=1":"")
+                      . ($opt_verbose ? " -DTEST_VERBOSE=1" : "")
                       . (cfg_with_m32() ? " -m32" : "")
                       . " -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
         # ATSIM
         atsim => 0,
         atsim_define => 'ATSIM',
-        atsim_flags => [split(/\s+/,"-c +sv +define+ATSIM"),
+        atsim_flags => [split(/\s+/, "-c +sv +define+ATSIM"),
                         "+sv_dir+$self->{obj_dir}/.athdl_compile"],
         atsim_flags2 => [],  # Overridden in some sim files
         atsim_run_flags => [],
@@ -616,44 +616,44 @@ sub new {
         ghdl => 0,
         ghdl_define => 'GHDL',
         ghdl_work_dir => "$self->{obj_dir}/ghdl_compile",
-        ghdl_flags => [($::Debug?"-v":""),
+        ghdl_flags => [($::Debug ? "-v" : ""),
                        "--workdir=$self->{obj_dir}/ghdl_compile", ],
         ghdl_flags2 => [],  # Overridden in some sim files
         ghdl_run_flags => [],
         # IV
         iv => 0,
         iv_define => 'IVERILOG',
-        iv_flags => [split(/\s+/,"+define+IVERILOG -g2012 -o $self->{obj_dir}/simiv")],
+        iv_flags => [split(/\s+/, "+define+IVERILOG -g2012 -o $self->{obj_dir}/simiv")],
         iv_flags2 => [],  # Overridden in some sim files
         iv_pli => 0,  # need to use pli
         iv_run_flags => [],
         # VCS
         vcs => 0,
         vcs_define => 'VCS',
-        vcs_flags => [split(/\s+/,"+vcs+lic+wait +cli -debug_access +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
+        vcs_flags => [split(/\s+/, "+vcs+lic+wait +cli -debug_access +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
         vcs_flags2 => [],  # Overridden in some sim files
-        vcs_run_flags => [split(/\s+/,"+vcs+lic_wait")],
+        vcs_run_flags => [split(/\s+/, "+vcs+lic_wait")],
         # NC
         nc => 0,
         nc_define => 'NC',
-        nc_flags => [split(/\s+/,("+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c "
-                                  .($opt_trace ? " +access+r":"")))],
+        nc_flags => [split(/\s+/, ("+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c "
+                                   . ($opt_trace ? " +access+r" : "")))],
         nc_flags2 => [],  # Overridden in some sim files
-        nc_run_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
+        nc_run_flags => [split(/\s+/, "+licqueue -q +assert +sv -R")],
         # ModelSim
         ms => 0,
         ms_define => 'MS',
         ms_flags => [split(/\s+/, ("-sv -work $self->{obj_dir}/work +define+MS=1 -ccflags \"-DMS=1\""))],
         ms_flags2 => [],  # Overridden in some sim files
         ms_pli => 1,  # need to use pli
-        ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
+        ms_run_flags => [split(/\s+/, "-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
         # XSim
         xsim => 0,
         xsim_define => 'XSIM',
-        xsim_flags => [split(/\s+/,("--nolog --sv --define XSIM --work $self->{name}=$self->{obj_dir}/xsim"))],
+        xsim_flags => [split(/\s+/, ("--nolog --sv --define XSIM --work $self->{name}=$self->{obj_dir}/xsim"))],
         xsim_flags2 => [],  # Overridden in some sim files
-        xsim_run_flags => [split(/\s+/,("--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim"
-                                        .($opt_trace ? " --debug all":"")))],
+        xsim_run_flags => [split(/\s+/, ("--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim"
+                                         .($opt_trace ? " --debug all" : "")))],
         xsim_run_flags2 => [],  # Overridden in some sim files
         # Verilator
         vlt => 0,
@@ -1040,7 +1040,7 @@ sub compile {
                     cmd=>[($ENV{VERILATOR_VCS} || "vcs"),
                           @{$param{vcs_flags}},
                           @{$param{vcs_flags2}},
-                          ($opt_verbose ? " -CFLAGS -DTEST_VERBOSE=1":""),
+                          ($opt_verbose ? " -CFLAGS -DTEST_VERBOSE=1" : ""),
                           @{$param{v_flags}},
                           @{$param{v_flags2}},
                           $param{top_filename},
@@ -1194,7 +1194,7 @@ sub compile {
                                 "VM_PREFIX=$self->{VM_PREFIX}",
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
                                 "CPPFLAGS_DRIVER=-D" . uc($self->{name}),
-                                ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+                                ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
                                 ($param{benchmark} ? "" : "OPT_FAST=-O0"),
                                 ($param{benchmark} ? "" : "OPT_GLOBAL=-O0"),
                                 "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
@@ -1207,7 +1207,7 @@ sub compile {
             $self->_run(logfile => "$self->{obj_dir}/vlt_cmake_build.log",
                         cmd => ["cmake",
                                 "--build", $self->{obj_dir},
-                                ($self->{verbose}?"--verbose":""),
+                                ($self->{verbose} ? "--verbose" : ""),
                         ]);
         }
     }
@@ -1572,6 +1572,7 @@ sub run {
     my $self = (ref $_[0] ? shift : $Self);
     $self->_run(@_);
 }
+
 sub _run {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
@@ -1803,7 +1804,7 @@ sub _make_main {
         print $fh "extern int sc_main(int argc, char** argv);\n";
         print $fh "int sc_main(int argc, char** argv) {\n";
         print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
-        print $fh "    sc_signal<bool> clk;\n"  if $self->{inputs}{clk};
+        print $fh "    sc_signal<bool> clk;\n" if $self->{inputs}{clk};
         print $fh "    sc_set_time_resolution(1, $Self->{sc_time_resolution});\n";
         print $fh "    sc_time sim_time($self->{sim_time}, $Self->{sc_time_resolution});\n";
     } else {
@@ -1846,6 +1847,7 @@ sub _make_main {
         $fh->print("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n") if $self->{trace_format} eq 'vcd-sc';
         $fh->print("    topp->trace(tfp.get(), 99);\n");
         $fh->print("    tfp->open(\"" . $self->trace_filename . "\");\n");
+
         if ($self->{trace} && !$self->sc) {
             $fh->print("    if (tfp) tfp->dump(contextp->time());\n");
         }
@@ -2331,7 +2333,7 @@ sub _vcd_read {
             push @hier, $hier[$#hier]->{$1};
             $lasthier = $hier[$#hier];
         } elsif ($line =~ /(\$var \S+\s+\d+\s+)\S+\s+(\S+)/) {
-            $hier[$#hier]->{$1.$2} ||= {};
+            $hier[$#hier]->{$1 . $2} ||= {};
             $lasthier = $hier[$#hier];
         } elsif ($line =~ /(\$attrbegin .* \$end)/) {
             if ($lasthier) { $lasthier->{$1} ||= 1; }
@@ -2347,6 +2349,7 @@ sub _vcd_read {
 }
 
 our $_Cxx_Version;
+
 sub cxx_version {
     $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
     return $_Cxx_Version;
@@ -2357,12 +2360,14 @@ sub cfg_with_threaded {
 }
 
 our $_Cfg_with_ccache;
+
 sub cfg_with_ccache {
     $_Cfg_with_ccache ||= `grep "OBJCACHE \?= ccache" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
     return $_Cfg_with_ccache;
 }
 
 our $_Cfg_with_m32;
+
 sub cfg_with_m32 {
     $_Cfg_with_m32 ||= `grep "CXX.*=.*-m32" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
     return $_Cfg_with_m32;
@@ -2506,7 +2511,7 @@ sub file_sed {
 
 sub extract {
     my $self = (ref $_[0] ? shift : $Self);
-    my %param = (#in =>,
+    my %param = (  #in =>,
         #out =>
         regexp => qr/.*/,
         lineno_adjust => -9999,
@@ -2552,6 +2557,7 @@ sub extract {
         $fhw->print("   :linenos:\n") if $lang && $#out > 0;
         $fhw->print("   :emphasize-lines: ${emph}\n") if $emph;
         $fhw->print("\n");
+
         foreach my $line (@out) {
             $fhw->print($line);
         }
@@ -2592,6 +2598,7 @@ sub new {
     bless $self, $class;
     return $self;
 }
+
 sub schedule {
     my $self = shift;
     my %params = (@_);
@@ -2606,12 +2613,12 @@ sub schedule {
     $params{run_on_finish}->($self);
     return $self;
 }
-sub max_proc {}
-sub sig_child {}
-sub kill_tree_all {}
-sub wait_all {}
-sub ready {}
-sub running {}
+sub max_proc { }
+sub sig_child { }
+sub kill_tree_all { }
+sub wait_all { }
+sub ready { }
+sub running { }
 sub is_any_left { return 0; }
 
 #######################################################################

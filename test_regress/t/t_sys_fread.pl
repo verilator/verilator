@@ -18,8 +18,8 @@ sub gen {
     my $filename = shift;
 
     my $fh = IO::File->new(">$filename");
-    for (my $copy=0; $copy<32; ++$copy) {
-        for (my $i=0; $i<=255; ++$i) {
+    for (my $copy = 0; $copy < 32; ++$copy) {
+        for (my $i = 0; $i <= 255; ++$i) {
             $fh->print(chr($i));
         }
     }

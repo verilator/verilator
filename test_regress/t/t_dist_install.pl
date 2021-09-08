@@ -48,7 +48,7 @@ if (!-r "$root/.git") {
         push @files, $file;
     }
     if ($#files >= 0) {
-        error("Uninstall missed files: ", join(' ',@files));
+        error("Uninstall missed files: ", join(' ', @files));
     }
 }
 

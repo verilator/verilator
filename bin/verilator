@@ -46,7 +46,7 @@ foreach my $sw (@ARGV) {
     push @Opt_Verilator_Sw, $sw;
 }
 
-Getopt::Long::config("no_auto_abbrev","pass_through");
+Getopt::Long::config("no_auto_abbrev", "pass_through");
 if (! GetOptions(
           # Major operating modes
           "help"        => \&usage,
@@ -106,11 +106,10 @@ if ($opt_gdb) {
          . " -ex 'bt' -ex 'quit'");
 } elsif ($Debug) {
     # Debug
-    run(aslr_off()
-        . verilator_bin() . " " . join(' ',@quoted_sw));
+    run(aslr_off() . verilator_bin() . " " . join(' ', @quoted_sw));
 } else {
     # Normal, non gdb
-    run(verilator_bin() . " " . join(' ',@quoted_sw));
+    run(verilator_bin() . " " . join(' ', @quoted_sw));
 }
 
 #----------------------------------------------------------------------
@@ -163,11 +162,11 @@ sub verilator_bin {
 sub gdb_works {
     $! = undef;  # Cleanup -x
     system("gdb /bin/echo"
-           ." --batch-silent --quiet --return-child-result"
-           ." -ex 'run -n'"  # `echo -n`
-           ." -ex 'set width 0'"
-           ." -ex 'bt'"
-           ." -ex 'quit'");
+           . " --batch-silent --quiet --return-child-result"
+           . " -ex 'run -n'"  # `echo -n`
+           . " -ex 'set width 0'"
+           . " -ex 'bt'"
+           . " -ex 'quit'");
     my $status = $?;
     return $status == 0;
 }
@@ -201,13 +200,13 @@ sub run {
                 || ($status & 127) == 8  # SIGFPA
                 || ($status & 127) == 11) {  # SIGSEGV
                 warn "%Error: Verilator internal fault, sorry. "
-                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
+                    . "Suggest trying --debug --gdbbt\n" if !$Debug;
             } elsif (($status & 127) == 6) {  # SIGABRT
                 warn "%Error: Verilator aborted. "
-                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
+                    . "Suggest trying --debug --gdbbt\n" if !$Debug;
             } else {
                 warn "%Error: Verilator threw signal $status. "
-                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
+                    . "Suggest trying --debug --gdbbt\n" if !$Debug;
             }
         }
         if (!$opt_quiet_exit && ($status != 256 || $Debug)) {  # i.e. not normal exit(1)

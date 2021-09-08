@@ -49,7 +49,7 @@ for cmd in sys.stdin:
                 pos = newpos + 1
 
             # sys.stderr.write("Line count: %d\n" % lineno)
-            wholefile = ''.join(prefixes) + wholefile
+            wholefile = '' . join(prefixes) + wholefile
 
         print("Content-Length: " + str(len(wholefile)) + "\n" + wholefile)
         sys.stdout.flush()

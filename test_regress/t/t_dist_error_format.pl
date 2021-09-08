@@ -58,7 +58,7 @@ sub formats {
                     }
                     else {
                         #print "FF $file $line\n";
-                        $warns{$file.":".$lineno} =
+                        $warns{$file . ":" . $lineno} =
                             "Non-standard warning/error: $file:$lineno: $line";
                     }
                 }

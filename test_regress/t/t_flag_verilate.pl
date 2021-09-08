@@ -8,7 +8,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-
 scenarios(simulator => 1);
 top_filename("t/t_flag_make_cmake.v");
 
@@ -52,14 +51,13 @@ compile(  # Don't call cmake nor gmake from driver.pl. Just build here
     );
 
 # The previous run must not verilated, only build is expected.
-if ( -e $Self->{obj_dir} . '/Vt_flag_verilate_990_final.tree' ) {
+if (-e $Self->{obj_dir} . '/Vt_flag_verilate_990_final.tree') {
     $Self->error('Unexpectedly verilated.');
 }
 
 execute(
     check_finished => 1,
     );
-
 
 ok(1);
 1;

@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(dist => 1);
 
 run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_gantt"
-            ." $Self->{t_dir}/t_gantt_io.dat > gantt.log"],
+            . " $Self->{t_dir}/t_gantt_io.dat > gantt.log"],
     check_finished => 0);
 
 files_identical("$Self->{obj_dir}/gantt.log", $Self->{golden_filename});

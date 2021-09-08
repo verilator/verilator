@@ -13,13 +13,13 @@ scenarios(vlt => 1);
 my $m32 = $Self->cfg_with_m32 ? "-m32" : "";
 
 run(cmd => ["cd $Self->{obj_dir}"
-            ." && $ENV{CXX} $m32 -c ../../t/t_flag_ldflags_a.cpp"
-            ." && ar -cr t_flag_ldflags_a.a t_flag_ldflags_a.o"
-            ." && ranlib t_flag_ldflags_a.a "],
+            . " && $ENV{CXX} $m32 -c ../../t/t_flag_ldflags_a.cpp"
+            . " && ar -cr t_flag_ldflags_a.a t_flag_ldflags_a.o"
+            . " && ranlib t_flag_ldflags_a.a "],
     check_finished => 0);
 run(cmd => ["cd $Self->{obj_dir}"
-            ." && $ENV{CXX} $m32 -fPIC -c ../../t/t_flag_ldflags_so.cpp"
-            ." && $ENV{CXX} $m32 -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
+            . " && $ENV{CXX} $m32 -fPIC -c ../../t/t_flag_ldflags_so.cpp"
+            . " && $ENV{CXX} $m32 -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
     check_finished => 0);
 
 compile(
@@ -34,12 +34,12 @@ compile(
 # On OS X, LD_LIBRARY_PATH is ignored, so set rpath of the exe to find the .so
 if ($^O eq "darwin") {
   run(cmd => ["cd $Self->{obj_dir}"
-              ." && install_name_tool -add_rpath \@executable_path/."
-              ." $Self->{VM_PREFIX}"],
+              . " && install_name_tool -add_rpath \@executable_path/."
+              . " $Self->{VM_PREFIX}"],
       check_finished => 0);
   run(cmd => ["cd $Self->{obj_dir}"
-              ." && install_name_tool -change t_flag_ldflags_so.so"
-              ." \@rpath/t_flag_ldflags_so.so $Self->{VM_PREFIX}"],
+              . " && install_name_tool -change t_flag_ldflags_so.so"
+              . " \@rpath/t_flag_ldflags_so.so $Self->{VM_PREFIX}"],
       check_finished => 0);
 }
 
