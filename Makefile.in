@@ -353,6 +353,7 @@ clang-format:
 PY_PROGRAMS = \
 	bin/verilator_ccache_report \
 	bin/verilator_difftree \
+	bin/verilator_gantt \
 	bin/verilator_profcfunc \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \

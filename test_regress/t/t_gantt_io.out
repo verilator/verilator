@@ -6,11 +6,11 @@ Argument settings:
   --threads 2
 
 Thread gantt graph:
-  Legend: One character width = 200 rdtsc ticks
+  Legend: One character width = 100 rdtsc ticks
   Legend: '&' = multiple mtasks in this period (character width)
-     <-16065 rdtsc total------------------------------------------------------------>
-  t:   [1]                                   [1]                [1]                 [1]
-  t:                          [xx[x[16--]        [16] [16]                 [16] [[x[[16]
+     <-16065 rdtsc total-------------------------------------------------------------------------------------------------------------------------------------------->
+  t:      [1]                                                                         [1]                                   [1]                                     [1]
+  t:                                                    [16-] [16][16-------]                [16--]     [16]                                      [16-]     [1[] [16[xxx
 
 Analysis:
   Total threads             = 2
@@ -26,7 +26,7 @@ Analysis:
 
 Statistics:
   min log(p2e) = -3.332  from mtask 5 (predict 30, elapsed 840)
-  max log(p2e) = -1.764  from mtask 11 (predict 30, elapsed 175)
+  max log(p2e) = -1.764  from mtask 7 (predict 30, elapsed 175)
   mean = -2.365
   stddev = 0.562
   e ^ stddev = 1.754
