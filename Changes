@@ -13,6 +13,7 @@ Verilator 4.213 devel
 
 * Include processor information in verilator_gantt data file.
 * Fix verilator_profcfunc profile accounting (#3115).
+* Fix display has no time units on class function (#3116). [Damien Pretet]
 
 
 Verilator 4.212 2021-09-01

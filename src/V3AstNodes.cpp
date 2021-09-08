@@ -1338,7 +1338,7 @@ void AstNodeCoverOrAssert::dump(std::ostream& str) const {
 }
 void AstDisplay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    // str<<" "<<displayType().ascii();
+    // str << " " << displayType().ascii();
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
     this->AstNodeMath::dump(str);
