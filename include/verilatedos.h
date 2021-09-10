@@ -511,10 +511,8 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 # define VL_STRCASECMP strcasecmp
 #endif
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(_MSC_VER)
 # define VL_LOCALTIME_R(timep, tmp) localtime_s((tmp), (timep))
-#elif defined(_MSC_VER)
-# define VL_LOCALTIME_R(timep, tmp) localtime_c((tmp), (timep))
 #else
 # define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
 #endif
