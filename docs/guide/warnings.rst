@@ -572,7 +572,7 @@ List Of Warnings
    must end in newline, as otherwise for example :command:`cat` with the
    file as an argument may produce undesirable results.
 
-   Repair by adding a newline to the end of the file.
+   Repair by appending a newline to the end of the file.
 
    Disabled by default as this is a code style warning; it will simulate
    correctly.
@@ -792,8 +792,8 @@ List Of Warnings
    .. TODO better example
 
    Warns that a module has multiple definitions.  Generally this indicates
-   a coding error, or a mistake in a library file and it's good practice to
-   have one module per file (and only put each file once on the command
+   a coding error, or a mistake in a library file, and it's good practice
+   to have one module per file (and only put each file once on the command
    line) to avoid these issues.  For some gate level netlists duplicates
    are sometimes unavoidable, and MODDUP should be disabled.
 
