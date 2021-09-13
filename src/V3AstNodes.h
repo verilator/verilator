@@ -4436,6 +4436,7 @@ public:
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
+    virtual bool isPure() const override { return !outp(); }
     virtual bool cleanOut() const override { return true; }
     virtual bool same(const AstNode* samep) const override { return true; }
     AstNode* searchp() const { return op1p(); }  // op1 = Search expression

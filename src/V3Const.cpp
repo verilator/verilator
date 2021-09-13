@@ -1312,6 +1312,15 @@ private:
         // but for now can disable en-mass until V3Purify takes effect.
         return m_doShort || VN_IS(nodep, VarRef) || VN_IS(nodep, Const);
     }
+    bool isTreePureRecurse(AstNode* nodep) {
+        // Should memoize this if call commonly
+        if (!nodep->isPure()) return false;
+        if (nodep->op1p() && !isTreePureRecurse(nodep->op1p())) return false;
+        if (nodep->op2p() && !isTreePureRecurse(nodep->op2p())) return false;
+        if (nodep->op3p() && !isTreePureRecurse(nodep->op3p())) return false;
+        if (nodep->op4p() && !isTreePureRecurse(nodep->op4p())) return false;
+        return true;
+    }
 
     // Extraction checks
     bool warnSelect(AstSel* nodep) {
@@ -2783,10 +2792,13 @@ private:
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (!afterComment(nodep->ifsp()) && !afterComment(nodep->elsesp())) {
-                // Empty block, remove it
-                // Note if we support more C++ then there might be side
-                // effects in the condition itself
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                if (!isTreePureRecurse(nodep->condp())) {
+                    // Condition has side effect - leave - perhaps in
+                    // future simplify to remove all but side effect terms
+                } else {
+                    // Empty block, remove it
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                }
             } else if (!afterComment(nodep->ifsp())) {
                 UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep << endl);
                 AstNode* condp = nodep->condp();
