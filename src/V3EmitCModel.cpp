@@ -407,45 +407,45 @@ class EmitCModel final : public EmitCFunc {
         }
 
         if (v3Global.opt.mtasks() && v3Global.opt.profThreads()) {
-            puts("if (VL_UNLIKELY((vlSymsp->_vm_contextp__->profThreadsStart() != "
-                 "vlSymsp->__Vm_profile_time_finished)\n");
+            puts("if (VL_UNLIKELY((vlSymsp->_vm_contextp__->profThreadsStart()"
+                 " != vlSymsp->__Vm_profile_time_finished)\n");
             puts(" && (VL_TIME_Q() > vlSymsp->_vm_contextp__->profThreadsStart())\n");
             puts(" && (vlSymsp->_vm_contextp__->profThreadsWindow() >= 1))) {\n");
             // Within a profile (either starting, middle, or end)
-            puts("if (vlSymsp->__Vm_profile_window_ct == 0) {\n");  // Opening file?
+            puts(/**/ "if (vlSymsp->__Vm_profile_window_ct == 0) {\n");  // Opening file?
             // Start profile on this cycle. We'll capture a window worth, then
             // only analyze the next window worth. The idea is that the first window
             // capture will hit some cache-cold stuff (eg printf) but it'll be warm
             // by the time we hit the second window, we hope.
-            puts("vlSymsp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
+            puts(/****/ "vlSymsp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
             // "* 2" as first half is warmup, second half is collection
-            puts("vlSymsp->__Vm_profile_window_ct = vlSymsp->_vm_contextp__->profThreadsWindow() "
-                 "* 2 "
-                 "+ "
-                 "1;\n");
-            puts("}\n");
-            puts("--(vlSymsp->__Vm_profile_window_ct);\n");
-            puts("if (vlSymsp->__Vm_profile_window_ct == "
-                 "vlSymsp->_vm_contextp__->profThreadsWindow()) {\n");
+            puts(/****/ "vlSymsp->__Vm_profile_window_ct"
+                        " = vlSymsp->_vm_contextp__->profThreadsWindow()"
+                        " * 2 + 1;\n");
+            puts(/**/ "}\n");
+            puts(/**/ "--(vlSymsp->__Vm_profile_window_ct);\n");
+            puts(/**/ "if (vlSymsp->__Vm_profile_window_ct"
+                      " == vlSymsp->_vm_contextp__->profThreadsWindow()) {\n");
             // This barrier record in every threads' profile demarcates the
             // cache-warm-up cycles before the barrier from the actual profile
             // cycles afterward.
-            puts("vlSymsp->__Vm_threadPoolp->profileAppendAll(");
-            puts("VlProfileRec(VlProfileRec::Barrier()));\n");
-            puts("vlSymsp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
-            puts("}\n");
-            puts("else if (vlSymsp->__Vm_profile_window_ct == 0) {\n");
+            puts(/****/ "vlSymsp->__Vm_threadPoolp->profileAppendAll(");
+            puts(/****/ "VlProfileRec(VlProfileRec::Barrier()));\n");
+            puts(/****/ "vlSymsp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
+            puts(/**/ "}\n");
+            puts(/**/ "else if (vlSymsp->__Vm_profile_window_ct == 0) {\n");
             // Ending file.
-            puts("vluint64_t elapsed = VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start;\n");
-            puts("vlSymsp->__Vm_threadPoolp->profileDump(vlSymsp->_vm_contextp__->"
-                 "profThreadsFilename().c_str(), elapsed);\n");
+            puts(/****/ "vluint64_t elapsed"
+                        " = VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start;\n");
+            puts(/****/ "vlSymsp->__Vm_threadPoolp->profileDump(vlSymsp->_vm_contextp__->"
+                        "profThreadsFilename().c_str(), elapsed);\n");
             // This turns off the test to enter the profiling code, but still
             // allows the user to collect another profile by changing
             // profThreadsStart
-            puts("vlSymsp->__Vm_profile_time_finished = "
-                 "vlSymsp->_vm_contextp__->profThreadsStart();\n");
-            puts("vlSymsp->__Vm_profile_cycle_start = 0;\n");
-            puts("}\n");
+            puts(/****/ "vlSymsp->__Vm_profile_time_finished"
+                        " = vlSymsp->_vm_contextp__->profThreadsStart();\n");
+            puts(/****/ "vlSymsp->__Vm_profile_cycle_start = 0;\n");
+            puts(/**/ "}\n");
             puts("}\n");
         }
 

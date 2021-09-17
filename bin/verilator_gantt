@@ -58,7 +58,7 @@ def read_data(filename):
                 if 'elapsed' not in Mtasks[mtask]:
                     Mtasks[mtask] = {'end': 0, 'elapsed': 0}
                 Mtasks[mtask]['elapsed'] += elapsed_time
-                Mtasks[mtask]['predict'] = predict_time
+                Mtasks[mtask]['predict_cost'] = predict_time
                 Mtasks[mtask]['end'] = max(Mtasks[mtask]['end'], end)
             elif re.match(r'^VLPROFTHREAD', line):
                 None  # pylint: disable=pointless-statement
@@ -166,9 +166,9 @@ def report():
 
     for mtask in sorted(Mtasks.keys()):
         if Mtasks[mtask]['elapsed'] > 0:
-            if Mtasks[mtask]['predict'] == 0:
-                Mtasks[mtask]['predict'] = 1  # don't log(0) below
-            p2e_ratio = math.log(Mtasks[mtask]['predict'] /
+            if Mtasks[mtask]['predict_cost'] == 0:
+                Mtasks[mtask]['predict_cost'] = 1  # don't log(0) below
+            p2e_ratio = math.log(Mtasks[mtask]['predict_cost'] /
                                  Mtasks[mtask]['elapsed'])
             p2e_ratios.append(p2e_ratio)
 
@@ -182,12 +182,12 @@ def report():
     print("\nStatistics:")
     print("  min log(p2e) = %0.3f" % min_p2e, end="")
     print("  from mtask %d (predict %d," %
-          (min_mtask, Mtasks[min_mtask]['predict']),
+          (min_mtask, Mtasks[min_mtask]['predict_cost']),
           end="")
     print(" elapsed %d)" % Mtasks[min_mtask]['elapsed'])
     print("  max log(p2e) = %0.3f" % max_p2e, end="")
     print("  from mtask %d (predict %d," %
-          (max_mtask, Mtasks[max_mtask]['predict']),
+          (max_mtask, Mtasks[max_mtask]['predict_cost']),
           end="")
     print(" elapsed %d)" % Mtasks[max_mtask]['elapsed'])
 
