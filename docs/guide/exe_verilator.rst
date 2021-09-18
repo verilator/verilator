@@ -816,7 +816,7 @@ Summary:
    When compiling the C++ code, enable the compiler's profiling flag
    (e.g. :code:`g++ -pg`). See :ref:`Profiling`.
 
-   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`prof-c`.
+   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
 
 .. option:: --prof-cfuncs
 
@@ -828,7 +828,7 @@ Summary:
    came from.  This allows gprof or oprofile reports to be correlated with
    the original Verilog source statements. See :ref:`Profiling`.
 
-   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`prof-c`.
+   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
 
 .. option:: --prof-threads
 

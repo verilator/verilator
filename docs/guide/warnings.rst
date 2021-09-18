@@ -130,9 +130,10 @@ List Of Warnings
 
 .. option:: BADSTDPRAGMA
 
-   Error that a pragma is badly formed, when that pragma is defined by IEEE1800-2017.
-   For example, an empty `pragma line, or an incorrect specified '`pragma protect'.
-   Note that 3rd party pragmas not defined by IEEE1800-2017 are ignored.
+   Error that a pragma is badly formed, when that pragma is defined by IEEE
+   1800-2017.  For example, an empty pragma line, or an incorrect specified
+   'pragma protect'.  Note that 3rd party pragmas not defined by IEEE
+   1800-2017 are ignored.
 
 
 .. option:: BLKANDNBLK
@@ -1012,7 +1013,7 @@ List Of Warnings
 
 .. option:: PROTECTED
 
-   Warning that a '`pragma protected' section was encountered. The code
+   Warning that a 'pragma protected' section was encountered. The code
    inside the protected region will be partly checked for correctness, but is
    otherwise ignored.
 
@@ -1628,7 +1629,7 @@ List Of Warnings
    * A part select has a different size then needed to index into the
      packed or unpacked array (etc).
 
-   Verilator for attempts to track the minimum width of unsized constants
+   Verilator attempts to track the minimum width of unsized constants
    and will suppress the warning when the minimum width is appropriate to
    fit the required size.
 
@@ -1637,11 +1638,13 @@ List Of Warnings
 
    The recommendation is to fix these issues by:
 
-   * Resizing the variable or constant.  E.g. :code:`2'd2` instead of :code:`3'd2`.
+   * Resizing the variable or constant to match the needed size for the
+     expression.  E.g. :code:`2'd2` instead of :code:`3'd2`.
 
-   * Using :code:`'0` or :code:`'1`.
+   * Using :code:`'0` or :code:`'1` which automatically resize in an
+     expression.
 
-   * Using part select to narrow a variable. E.g. :code:`too_wide[1:0]`.
+   * Using part selects to narrow a variable. E.g. :code:`too_wide[1:0]`.
 
    * Using concatenate to widen a variable. E.g. :code:`{1'b1, too_narrow}`.
 
