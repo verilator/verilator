@@ -481,38 +481,43 @@ List Of Warnings
 
    Faulty example:
 
-   .. code-block:: sv
+   .. include:: ../../docs/gen/ex_DIDNOTCONVERGE_faulty.rst
 
-         always_comb b = ~a;
-         always_comb a = b
+   Results in at runtime (not when Verilated):
 
-   This code will toggle forever, and thus to prevent an infinite loop, the
-   executable will give the didn't converge error.
+   .. include:: ../../docs/gen/ex_DIDNOTCONVERGE_nodbg_msg.rst
 
-   To debug this, first review any UNOPTFLAT warnings that were ignored.
-   Though typically it is safe to ignore UNOPTFLAT (at a performance cost),
-   at the time of issuing a UNOPTFLAT Verilator did not know if the logic
-   would eventually converge and assumed it would.
+   This is because the signals keep toggling even with out time
+   passing. Thus to prevent an infinite loop, the Verilated executable
+   gives the DIDNOTCONVERGE error.
+
+   To debug this, first review any UNOPT or UNOPTFLAT warnings that were
+   ignored.  Though typically it is safe to ignore UNOPTFLAT (at a
+   performance cost), at the time of issuing a UNOPTFLAT Verilator did not
+   know if the logic would eventually converge and assumed it would.
 
    Next, run Verilator with :vlopt:`--prof-cfuncs -CFLAGS -DVL_DEBUG
    <--prof-cfuncs>`.  Rerun the test.  Now just before the convergence
    error you should see additional output similar to this:
 
-   .. code-block::
+   .. include:: ../../docs/gen/ex_DIDNOTCONVERGE_msg.rst
 
-         CHANGE: filename.v:1: b
-         CHANGE: filename.v:2: a
-
-   This means that signal b and signal a keep changing, inspect the code
-   that modifies these signals.  Note if many signals are getting printed
-   then most likely all of them are oscillating.  It may also be that
-   e.g. "a" may be oscillating, then "a" feeds signal "c" which then is
-   also reported as oscillating.
+   The CHANGE line means that on the given filename and line number that
+   drove a signal, the signal 'a' kept changing. Inspect the code that
+   modifies these signals.  Note if many signals are getting printed then
+   most likely all of them are oscillating.  It may also be that e.g. "a"
+   may be oscillating, then "a" feeds signal "c" which then is also
+   reported as oscillating.
 
    One way DIDNOTCONVERGE may occur is flops are built out of gate
-   primitives.  error. Verilator does not support building flops or latches
-   out of gate primitives, and any such code must change to use behavioral
+   primitives. Verilator does not support building flops or latches out of
+   gate primitives, and any such code must change to use behavioral
    constructs (e.g. always_ff and always_latch).
+
+   Another way DIDNOTCONVERGE may occur is if # delays are used to generate
+   clocks.  Verilator ignores the delays and gives an :option:`ASSIGNDLY`
+   or :option:`STMTDLY` warning.  If these were suppressed, due to the
+   absense of the delay, the code may now oscillate.
 
    Finally, rare, more difficult cases can be debugged like a C++ program;
    either enter :command:`gdb` and use its tracing facilities, or edit the
@@ -1183,9 +1188,25 @@ List Of Warnings
 
    Faulty example:
 
-   .. code-block:: sv
+   .. include:: ../../docs/gen/ex_STMTDLY_faulty.rst
 
-         #100 $finish;  //<--- Warning
+   Results in:
+
+   .. include:: ../../docs/gen/ex_STMTDLY_msg.rst
+
+   This is a warning because Verilator does not support delayed statements.
+   It will simply ignore all such delays.  In many cases ignoring a delay
+   might be harmless, but if the delayed statement is, as in this example,
+   used to cause some important action at a later time, it might be an
+   important difference.
+
+   Some possible work arounds:
+
+   * Move the delayed statement into the C++ wrapper file, where the
+     stimulus and clock generation can be done in C++.
+
+   * Convert the statement into a FSM, or other statement that tests
+     against $time.
 
 
 .. option:: SYMRSVDWORD
@@ -1353,7 +1374,9 @@ List Of Warnings
 
    Often UNOPTFLAT is caused by logic that isn't truly circular as viewed by
    synthesis which analyzes interconnection per-bit, but is circular to
-   simulation which analyzes per-bus:
+   simulation which analyzes per-bus.
+
+   Faulty example:
 
    .. code-block:: sv
 
@@ -1466,9 +1489,16 @@ List Of Warnings
    Error that a construct might be legal according to IEEE but is not
    currently supported by Verilator.
 
+   A typical workaround is to recode the construct into a simpler and more
+   common alternative language construct.
+
+   Alternatively, check if the construct is supported by other tools, and
+   if so please consider submitting a github pull request against the
+   Verilator sources to implement the missing unsupported feature.
+
    This error may be ignored with :vlopt:`--bbox-unsup`, however this will
-   make the design simulate incorrectly; see the details under
-   :vlopt:`--bbox-unsup`.
+   make the design simulate incorrectly and is only intended for lint
+   usage; see the details under :vlopt:`--bbox-unsup`.
 
 
 .. option:: UNUSED
