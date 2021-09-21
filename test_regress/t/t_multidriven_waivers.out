@@ -1,0 +1,17 @@
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:21:22: Signal has multiple driving blocks with different clocking: 't.mem'
+                      t/t_lint_multidriven_bad.v:27:7: ... Location of first driving block
+   27 |       mem[a0] <= d1;   
+      |       ^~~
+                      t/t_lint_multidriven_bad.v:24:7: ... Location of other driving block
+   24 |       mem[a0] <= d0;   
+      |       ^~~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:19:22: Signal has multiple driving blocks with different clocking: 'out2'
+                      t/t_lint_multidriven_bad.v:35:7: ... Location of first driving block
+   35 |       out2[15:8] <= d0;   
+      |       ^~~~
+                      t/t_lint_multidriven_bad.v:32:7: ... Location of other driving block
+   32 |       out2[7:0] <= d0;   
+      |       ^~~~
+%Error: Exiting due to
