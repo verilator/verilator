@@ -74,7 +74,7 @@ For --cc/--sc, it creates:
      - DPI import and export declarations (from --dpi)
    * - *{prefix}*\ __Dpi.cpp
      - Global DPI export wrappers (from --dpi)
-   * - *{prefix}*\ __Dpi_Export\ *{__n}\ .cpp
+   * - *{prefix}*\ __Dpi_Export\ *{__n}*\ .cpp
      - DPI export wrappers scoped to this particular model (from --dpi)
    * - *{prefix}*\ __Inlines.h
      - Inline support functions
