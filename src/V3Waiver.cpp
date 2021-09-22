@@ -23,9 +23,8 @@
 
 void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename,
                         const std::string& str) {
-    size_t pos;
     std::stringstream entry;
-    pos = str.find('\n');
+    const size_t pos = str.find('\n');
     entry << "lint_off -rule " << errorCode.ascii() << " -file \"*" << filename << "\" -match \""
           << str.substr(0, pos);
     if (pos != std::string::npos) entry << "*";
