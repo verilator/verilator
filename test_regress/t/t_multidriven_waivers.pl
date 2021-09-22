@@ -11,15 +11,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 my $out_filename = "$Self->{obj_dir}/$Self->{name}_waiver_gen.vlt";
+my $waiver_filename = "$Self->{obj_dir}/$Self->{name}_waiver.vlt";
 
 compile(
     v_flags2 => ['--waiver-output', $out_filename],
     fails => 1,
     );
 
+file_sed($out_filename, $waiver_filename,
+         sub { s/\/\/ lint_off/lint_off/g; });
 
 compile(
-    v_flags2 => [$out_filename],
+    v_flags2 => [$waiver_filename],
     );
 
 ok(1);
