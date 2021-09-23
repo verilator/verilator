@@ -292,7 +292,8 @@ public:
         return &(t_profilep->back());
     }
     void profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES(m_mutex);
-    void profileDump(const char* filenamep, vluint64_t ticksElapsed) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void profileDump(const char* filenamep, vluint64_t tickStart, vluint64_t tickEnd)
+        VL_MT_SAFE_EXCLUDES(m_mutex);
     // In profiling mode, each executing thread must call
     // this once to setup profiling state:
     void setupProfilingClientThread() VL_MT_SAFE_EXCLUDES(m_mutex);

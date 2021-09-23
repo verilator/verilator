@@ -2711,8 +2711,7 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
         // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
         addStrStmt("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n" +  //
                    recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n" +  //
-                   recName + "->startRecord(VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start,"
-                   +  //
+                   recName + "->startRecord(VL_RDTSC_Q()," +  //
                    " " + cvtToStr(mtaskp->id()) + "," +  //
                    " " + cvtToStr(mtaskp->cost()) + ");\n" +  //
                    "}\n");
@@ -2727,8 +2726,7 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
     if (v3Global.opt.profThreads()) {
         // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
         addStrStmt("if (VL_UNLIKELY(" + recName + ")) {\n" +  //
-                   recName + "->endRecord(VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start);\n"
-                   + "}\n");
+                   recName + "->endRecord(VL_RDTSC_Q());\n" + "}\n");
     }
 
     // Flush message queue

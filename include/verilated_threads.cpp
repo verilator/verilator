@@ -146,7 +146,7 @@ void VlThreadPool::profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES
     }
 }
 
-void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
+void VlThreadPool::profileDump(const char* filenamep, vluint64_t tickStart, vluint64_t tickEnd)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
@@ -194,14 +194,14 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
                         "VLPROF mtask %d"
                         " start %" VL_PRI64 "u end %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
                         " predict_time %u cpu %u on thread %u\n",
-                        ei.m_mtaskId, ei.m_startTime, ei.m_endTime,
+                        ei.m_mtaskId, ei.m_startTime - tickStart, ei.m_endTime - tickStart,
                         (ei.m_endTime - ei.m_startTime), ei.m_predictTime, ei.m_cpu, thread_id);
                 break;
             default: assert(false); break;  // LCOV_EXCL_LINE
             }
         }
     }
-    fprintf(fp, "VLPROF stat ticks %" VL_PRI64 "u\n", ticksElapsed);
+    fprintf(fp, "VLPROF stat ticks %" VL_PRI64 "u\n", tickEnd - tickStart);
 
     std::fclose(fp);
 }

@@ -435,10 +435,11 @@ class EmitCModel final : public EmitCFunc {
             puts(/**/ "}\n");
             puts(/**/ "else if (vlSymsp->__Vm_profile_window_ct == 0) {\n");
             // Ending file.
-            puts(/****/ "vluint64_t elapsed"
-                        " = VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start;\n");
-            puts(/****/ "vlSymsp->__Vm_threadPoolp->profileDump(vlSymsp->_vm_contextp__->"
-                        "profThreadsFilename().c_str(), elapsed);\n");
+            puts(/****/ "vluint64_t tick_end = VL_RDTSC_Q();\n");
+            puts(/****/ "vlSymsp->__Vm_threadPoolp->profileDump("
+                        "vlSymsp->_vm_contextp__->profThreadsFilename().c_str(), "
+                        "vlSymsp->__Vm_profile_cycle_start, "
+                        "tick_end);\n");
             // This turns off the test to enter the profiling code, but still
             // allows the user to collect another profile by changing
             // profThreadsStart
