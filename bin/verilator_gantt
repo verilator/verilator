@@ -174,6 +174,8 @@ def report():
     ncpus = len(Global['cpus'])
     print("  Total cpus used           = %d" % ncpus)
     print("  Total yields              = %d" % int(Global['stats']['yields']))
+    print("  Total evals               = %d" % len(Evals))
+    print("  Total eval loops          = %d" % len(EvalLoops))
     print("  Total eval time           = %d rdtsc ticks" %
           Global['measured_last_end'])
     print("  Longest mtask time        = %d rdtsc ticks" % long_mtask_time)

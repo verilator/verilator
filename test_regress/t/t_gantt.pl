@@ -44,32 +44,9 @@ run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
     verilator_run => 1,
     );
 
-# We should have three lines of gantt chart, each with
-# an even number of mtask-bars (eg "[123--]")
-my $gantt_line_ct = 0;
-my $global_mtask_ct = 0;
-{
-    my $fh = IO::File->new("<$Self->{obj_dir}/gantt.log")
-        or error("$! $Self->{obj_dir}/gantt.log");
-    while (my $line = ($fh && $fh->getline)) {
-        if ($line !~ m/^  t:/) { next; }
-        $gantt_line_ct++;
-        my $this_thread_mtask_ct = 0;
-        my @mtasks = split(/\[/, $line);
-        shift @mtasks;  # throw the '>>  ' away
-        foreach my $mtask (@mtasks) {
-            # Format of each mtask is "[123--]" where the hyphens
-            # number or ] may or may not appear; it depends on exact timing.
-            $this_thread_mtask_ct++;
-            $global_mtask_ct++;
-        }
-        if ($this_thread_mtask_ct % 2 != 0) { error("odd number of mtasks found"); }
-    }
-}
-if ($gantt_line_ct != 2) { error("wrong number of gantt lines"); }
-if ($global_mtask_ct == 0) { error("wrong number of mtasks, should be > 0"); }
-print "Found $gantt_line_ct lines of gantt data with $global_mtask_ct mtasks\n"
-    if $Self->{verbose};
+file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 2/i);
+file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 7/i);
+file_grep("$Self->{obj_dir}/gantt.log", qr/Total evals += 2/i);
 
 # Diff to itself, just to check parsing
 vcd_identical("$Self->{obj_dir}/profile_threads.vcd", "$Self->{obj_dir}/profile_threads.vcd");

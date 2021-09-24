@@ -17,6 +17,8 @@ Analysis:
   Total mtasks              = 7
   Total cpus used           = 2
   Total yields              = 0
+  Total evals               = 2
+  Total eval loops          = 2
   Total eval time           = 21875 rdtsc ticks
   Longest mtask time        = 1190 rdtsc ticks
   All-thread mtask time     = 5495 rdtsc ticks
