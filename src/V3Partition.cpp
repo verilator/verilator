@@ -2237,11 +2237,11 @@ public:
         std::vector<uint32_t> busyUntil(m_nThreads, 0);
 
         // MTasks ready to be assigned next. All their dependencies are already assigned.
-        std::set<const ExecMTask*, MTaskCmp> readyMTasks;
+        std::set<ExecMTask*, MTaskCmp> readyMTasks;
 
         // Build initial ready list
         for (V3GraphVertex* vxp = mtaskGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            const ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(vxp);
+            ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(vxp);
             if (isReady(schedule, mtaskp)) readyMTasks.insert(mtaskp);
         }
 
@@ -2250,9 +2250,9 @@ public:
             // on each thread (in that thread's local time frame.)
             uint32_t bestTime = 0xffffffff;
             uint32_t bestThreadId = 0;
-            const ExecMTask* bestMtaskp = nullptr;  // Todo: const ExecMTask*
+            ExecMTask* bestMtaskp = nullptr;  // Todo: const ExecMTask*
             for (uint32_t threadId = 0; threadId < m_nThreads; ++threadId) {
-                for (const ExecMTask* const mtaskp : readyMTasks) {
+                for (ExecMTask* const mtaskp : readyMTasks) {
                     uint32_t timeBegin = busyUntil[threadId];
                     if (timeBegin > bestTime) {
                         UINFO(6, "th " << threadId << " busy until " << timeBegin
@@ -2287,10 +2287,11 @@ public:
             std::vector<const ExecMTask*>& bestThread = schedule.threads[bestThreadId];
 
             // Update algorithm state
+            bestMtaskp->predictStart(bestTime);  // Only for gantt reporting
             const uint32_t bestEndTime = bestTime + bestMtaskp->cost();
             schedule.mtaskState[bestMtaskp].completionTime = bestEndTime;
             schedule.mtaskState[bestMtaskp].threadId = bestThreadId;
-            if (!bestThread.empty()) { schedule.mtaskState[bestThread.back()].nextp = bestMtaskp; }
+            if (!bestThread.empty()) schedule.mtaskState[bestThread.back()].nextp = bestMtaskp;
             busyUntil[bestThreadId] = bestEndTime;
 
             // Add the MTask to the schedule
@@ -2301,7 +2302,7 @@ public:
             UASSERT_OBJ(erased > 0, bestMtaskp, "Should have erased something?");
             for (V3GraphEdge* edgeOutp = bestMtaskp->outBeginp(); edgeOutp;
                  edgeOutp = edgeOutp->outNextp()) {
-                const ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgeOutp->top());
+                ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgeOutp->top());
                 // Dependent MTask should not yet be assigned to a thread
                 UASSERT(schedule.threadId(nextp) == ThreadSchedule::UNASSIGNED,
                         "Tasks after one being assigned should not be assigned yet");
@@ -2713,6 +2714,7 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
                    recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n" +  //
                    recName + "->startRecord(VL_RDTSC_Q()," +  //
                    " " + cvtToStr(mtaskp->id()) + "," +  //
+                   " " + cvtToStr(mtaskp->predictStart()) + "," +  //
                    " " + cvtToStr(mtaskp->cost()) + ");\n" +  //
                    "}\n");
     }
@@ -2724,9 +2726,8 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
     funcp->addStmtsp(mtaskp->bodyp()->unlinkFrBack());
 
     if (v3Global.opt.profThreads()) {
-        // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-        addStrStmt("if (VL_UNLIKELY(" + recName + ")) {\n" +  //
-                   recName + "->endRecord(VL_RDTSC_Q());\n" + "}\n");
+        addStrStmt("if (VL_UNLIKELY(" + recName + ")) "  //
+                   + recName + "->endRecord(VL_RDTSC_Q());\n");
     }
 
     // Flush message queue

@@ -306,7 +306,7 @@ statistics.
 
    Example verilator_gantt output, as viewed with GTKWave.
 
-   The parallelism shows the number of CPUs being used at a given moment.
+   The measured_parallelism shows the number of CPUs being used at a given moment.
 
    The cpu_thread section shows which thread is executing on each of the physical CPUs.
 

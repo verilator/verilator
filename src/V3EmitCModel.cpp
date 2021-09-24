@@ -323,7 +323,24 @@ class EmitCModel final : public EmitCFunc {
         puts(" loop\\n\"););\n");
         if (initial)
             puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
+
+        const string recName = "__Vprfloop";
+        if (v3Global.opt.profThreads() && !initial) {
+            puts("VlProfileRec* " + recName + " = nullptr;\n");
+            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
+            puts("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n");
+            // Eval start
+            puts(/**/ recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n");
+            puts(/**/ recName + "->startEvalLoop(VL_RDTSC_Q());\n");
+            puts("}\n");
+        }
+
         puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
+
+        if (v3Global.opt.profThreads() && !initial) {
+            puts("if (VL_UNLIKELY(" + recName + ")) " + recName + "->endRecord(VL_RDTSC_Q());\n");
+        }
+
         if (v3Global.rootp()->changeRequest()) {
             puts("if (VL_UNLIKELY(++__VclockLoop > " + cvtToStr(v3Global.opt.convergeLimit())
                  + ")) {\n");
@@ -354,7 +371,7 @@ class EmitCModel final : public EmitCFunc {
              + ");\n");
     }
 
-    void emitStandardMethods(AstNodeModule* modp) {
+    void emitStandardMethods1(AstNodeModule* modp) {
         UASSERT_OBJ(modp->isTop(), modp, "Attempting to emitWrapEval for non-top class");
 
         const string topModNameProtected = prefixNameProtect(modp);
@@ -385,16 +402,21 @@ class EmitCModel final : public EmitCFunc {
         emitSettleLoop(modp, /* initial: */ true);
         ensureNewLine();
         puts("}\n");
+    }
 
+    void emitStandardMethods2(AstNodeModule* modp) {
+        const string topModNameProtected = prefixNameProtect(modp);
         // ::eval_step
         puts("\nvoid " + topClassName() + "::eval_step() {\n");
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate " + topClassName()
              + "::eval_step\\n\"); );\n");
+
         puts("#ifdef VL_DEBUG\n");
         putsDecoration("// Debug assertions\n");
         puts(topModNameProtected + "__" + protect("_eval_debug_assertions")
              + "(&(vlSymsp->TOP));\n");
         puts("#endif  // VL_DEBUG\n");
+
         putsDecoration("// Initialize\n");
         puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) " + protect("_eval_initial_loop")
              + "(vlSymsp);\n");
@@ -406,13 +428,14 @@ class EmitCModel final : public EmitCFunc {
             puts("Verilated::mtaskId(" + cvtToStr(mtaskId) + ");\n");
         }
 
-        if (v3Global.opt.mtasks() && v3Global.opt.profThreads()) {
-            puts("if (VL_UNLIKELY((vlSymsp->_vm_contextp__->profThreadsStart()"
-                 " != vlSymsp->__Vm_profile_time_finished)\n");
+        if (v3Global.opt.profThreads()) {
+            puts("if (VL_UNLIKELY((vlSymsp->_vm_contextp__->profThreadsStart() != "
+                 "vlSymsp->__Vm_profile_time_finished)\n");
             puts(" && (VL_TIME_Q() > vlSymsp->_vm_contextp__->profThreadsStart())\n");
             puts(" && (vlSymsp->_vm_contextp__->profThreadsWindow() >= 1))) {\n");
             // Within a profile (either starting, middle, or end)
             puts(/**/ "if (vlSymsp->__Vm_profile_window_ct == 0) {\n");  // Opening file?
+            puts(/**/ "VL_DEBUG_IF(VL_DBG_MSGF(\"+ profile start warmup\\n\"););\n");
             // Start profile on this cycle. We'll capture a window worth, then
             // only analyze the next window worth. The idea is that the first window
             // capture will hit some cache-cold stuff (eg printf) but it'll be warm
@@ -430,12 +453,13 @@ class EmitCModel final : public EmitCFunc {
             // cache-warm-up cycles before the barrier from the actual profile
             // cycles afterward.
             puts(/****/ "vlSymsp->__Vm_threadPoolp->profileAppendAll(");
-            puts(/****/ "VlProfileRec(VlProfileRec::Barrier()));\n");
+            puts(/****/ "VlProfileRec{VlProfileRec::Barrier{}});\n");
             puts(/****/ "vlSymsp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
             puts(/**/ "}\n");
+            // Ending trace file?
             puts(/**/ "else if (vlSymsp->__Vm_profile_window_ct == 0) {\n");
-            // Ending file.
             puts(/****/ "vluint64_t tick_end = VL_RDTSC_Q();\n");
+            puts(/****/ "VL_DEBUG_IF(VL_DBG_MSGF(\"+ profile end\\n\"););\n");
             puts(/****/ "vlSymsp->__Vm_threadPoolp->profileDump("
                         "vlSymsp->_vm_contextp__->profThreadsFilename().c_str(), "
                         "vlSymsp->__Vm_profile_cycle_start, "
@@ -443,20 +467,41 @@ class EmitCModel final : public EmitCFunc {
             // This turns off the test to enter the profiling code, but still
             // allows the user to collect another profile by changing
             // profThreadsStart
-            puts(/****/ "vlSymsp->__Vm_profile_time_finished"
-                        " = vlSymsp->_vm_contextp__->profThreadsStart();\n");
+            puts(/****/ "vlSymsp->__Vm_profile_time_finished = "
+                        "vlSymsp->_vm_contextp__->profThreadsStart();\n");
             puts(/****/ "vlSymsp->__Vm_profile_cycle_start = 0;\n");
             puts(/**/ "}\n");
             puts("}\n");
         }
 
+        const string recName = "__Vprfeval";
+        if (v3Global.opt.profThreads()) {
+            puts("VlProfileRec* " + recName + " = nullptr;\n");
+            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
+            puts("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n");
+            // Eval start
+            puts(/**/ recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n");
+            puts(/**/ recName + "->startEval(VL_RDTSC_Q());\n");
+            puts("}\n");
+        }
+
         emitSettleLoop(modp, /* initial: */ false);
+
+        putsDecoration("// Evaluate cleanup\n");
         if (v3Global.opt.threads() == 1) {
             puts("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
         }
         if (v3Global.opt.threads()) puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
-        puts("}\n");
 
+        if (v3Global.opt.profThreads()) {
+            // End eval record
+            puts("if (VL_UNLIKELY(" + recName + ")) " + recName + "->endRecord(VL_RDTSC_Q());\n");
+        }
+        puts("}\n");
+    }
+
+    void emitStandardMethods3(AstNodeModule* modp) {
+        const string topModNameProtected = prefixNameProtect(modp);
         // ::eval_end_step
         if (v3Global.needTraceDumper() && !optSystemC()) {
             puts("\nvoid " + topClassName() + "::eval_end_step() {\n");
@@ -573,7 +618,9 @@ class EmitCModel final : public EmitCFunc {
 
         emitConstructorImplementation(modp);
         emitDestructorImplementation();
-        emitStandardMethods(modp);
+        emitStandardMethods1(modp);
+        emitStandardMethods2(modp);
+        emitStandardMethods3(modp);
         if (v3Global.opt.trace()) { emitTraceMethods(modp); }
         if (v3Global.opt.savable()) { emitSerializationFunctions(); }
 

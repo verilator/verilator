@@ -27,25 +27,51 @@ indicates multiple mtasks started at that time position.
 Also creates a value change dump (VCD) format dump file which may be viewed
 in a waveform viewer (e.g. C<GTKWave>).  See below.
 
+.. figure:: figures/fig_gantt_min.png
+
+   Example verilator_gantt output, as viewed with GTKWave.
+
+
 Gantt Chart VCD Signals
 -----------------------
 
-In waveforms there are the following signals. Most signals the "decimal"
-format will remove the leading zeros and make the traces easier to read.
+In waveforms there are the following signals. In GTKWave, using a data
+format of "decimal" will remove the leading zeros and make the traces
+easier to read.
 
-parallelism
+evals
+  Increments each time when eval_step was measured to be active.  This
+  allow visualization of how much time eval_step was active.
+
+eval_loop
+  Increments each time when the evaluation loop within eval_step was
+  measured to be active.  For best performance there is only a single
+  evaluation loop within each eval_step call, that is the eval_loop
+  waveform looks identical to the evals waveform.
+
+measured_parallelism
   The number of mtasks active at this time, for best performance this will
-  match the thread count. You may want to use an "analog step" format to
+  match the thread count. In GTKWave, use a data format of "analog step" to
   view this signal.
 
+predicted_parallelism
+  The number of mtasks Verilator predicted would be active at this time,
+  for best performance this will match the thread count. In GTKWave, use a
+  data format of "analog step" to view this signal.
+
 cpu#_thread
-  For the given CPU number, the thread number executing.
+  For the given CPU number, the thread number measured to be executing.
 
 mtask#_cpu
-  For the given mtask id, the CPU it is executing on.
+  For the given mtask id, the CPU it was measured to execute on.
 
 thread#_mtask
-  For the given thread number, the mtask id executing.
+  For the given thread number, the mtask id it was executing.
+
+predicted_thread#_mtask
+  For the given thread number, the mtask id Verilator predicted would be
+  executing.
+
 
 verilator_gantt Arguments
 -------------------------

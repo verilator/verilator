@@ -160,7 +160,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t tickStart, vlui
 
     // TODO Perhaps merge with verilated_coverage output format, so can
     // have a common merging and reporting tool, etc.
-    fprintf(fp, "VLPROFTHREAD 1.0 # Verilator thread profile dump version 1.0\n");
+    fprintf(fp, "VLPROFTHREAD 1.1 # Verilator thread profile dump version 1.1\n");
     fprintf(fp, "VLPROF arg --threads %" VL_PRI64 "u\n", vluint64_t(m_workers.size() + 1));
     fprintf(fp, "VLPROF arg +verilator+prof+threads+start+%" VL_PRI64 "u\n",
             Verilated::threadContextp()->profThreadsStart());
@@ -188,14 +188,30 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t tickStart, vlui
             case VlProfileRec::TYPE_BARRIER:  //
                 printing = true;
                 break;
+            case VlProfileRec::TYPE_EVAL:
+                if (!printing) break;
+                fprintf(fp,
+                        "VLPROF eval start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
+                        " cpu %u on thread %u\n",
+                        ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime), ei.m_cpu,
+                        thread_id);
+                break;
+            case VlProfileRec::TYPE_EVAL_LOOP:
+                if (!printing) break;
+                fprintf(fp,
+                        "VLPROF eval_loop start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
+                        " cpu %u on thread %u\n",
+                        ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime), ei.m_cpu,
+                        thread_id);
+                break;
             case VlProfileRec::TYPE_MTASK_RUN:
                 if (!printing) break;
                 fprintf(fp,
                         "VLPROF mtask %d"
-                        " start %" VL_PRI64 "u end %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
-                        " predict_time %u cpu %u on thread %u\n",
-                        ei.m_mtaskId, ei.m_startTime - tickStart, ei.m_endTime - tickStart,
-                        (ei.m_endTime - ei.m_startTime), ei.m_predictTime, ei.m_cpu, thread_id);
+                        " start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
+                        " predict_start %u predict_cost %u cpu %u on thread %u\n",
+                        ei.m_mtaskId, ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime),
+                        ei.m_predictStart, ei.m_predictCost, ei.m_cpu, thread_id);
                 break;
             default: assert(false); break;  // LCOV_EXCL_LINE
             }

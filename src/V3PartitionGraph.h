@@ -61,6 +61,7 @@ private:
                               // mtask. In abstract time units.
     uint32_t m_cost = 0;  // Predicted runtime of this mtask, in the same
                           // abstract time units as priority().
+    uint64_t m_predictStart = 0;  // Predicted start time of task
     VL_UNCOPYABLE(ExecMTask);
 
 public:
@@ -74,6 +75,8 @@ public:
     void priority(uint32_t pri) { m_priority = pri; }
     virtual uint32_t cost() const override { return m_cost; }
     void cost(uint32_t cost) { m_cost = cost; }
+    void predictStart(vluint64_t time) { m_predictStart = time; }
+    vluint64_t predictStart() const { return m_predictStart; }
     string cFuncName() const {
         // If this MTask maps to a C function, this should be the name
         return string("__Vmtask") + "__" + cvtToStr(m_id);

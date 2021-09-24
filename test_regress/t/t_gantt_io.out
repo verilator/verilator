@@ -6,33 +6,37 @@ Argument settings:
   --threads 2
 
 Thread gantt graph:
-  Legend: One character width = 100 rdtsc ticks
+  Legend: One character width = 136 rdtsc ticks
   Legend: '&' = multiple mtasks in this period (character width)
-     <-16065 rdtsc total-------------------------------------------------------------------------------------------------------------------------------------------->
-  t:      [1]                                                                         [1]                                   [1]                                     [1]
-  t:                                                    [16-] [16][16-------]                [16--]     [16]                                      [16-]     [1[] [16[xxx
+     <-21875 rdtsc total-------------------------------------------------------------------------------------------------------------------------------------------->
+  t:                    [19]                                                [19]                                       [19]                                         [19]
+  t:                                         [10-] [10-]    [10----]    [10-]   [10---]                                                     [10-][10][10]   [10][10]
 
 Analysis:
   Total threads             = 2
   Total mtasks              = 7
   Total cpus used           = 2
-  Total yields              = 1
-  Total eval time           = 16065 rdtsc ticks
-  Longest mtask time        = 1085 rdtsc ticks
-  All-thread mtask time     = 3430 rdtsc ticks
-  Longest-thread efficiency = 6.8%
-  All-thread efficiency     = 10.7%
-  All-thread speedup        = 0.2
+  Total yields              = 0
+  Total eval time           = 21875 rdtsc ticks
+  Longest mtask time        = 1190 rdtsc ticks
+  All-thread mtask time     = 5495 rdtsc ticks
+  Longest-thread efficiency = 5.4%
+  All-thread efficiency     = 12.6%
+  All-thread speedup        = 0.3
+
+Prediction (what Verilator used for scheduling):
+  All-thread efficiency     = 63.2%
+  All-thread speedup        = 1.3
 
 Statistics:
-  min log(p2e) = -3.332  from mtask 5 (predict 30, elapsed 840)
-  max log(p2e) = -1.764  from mtask 7 (predict 30, elapsed 175)
-  mean = -2.365
-  stddev = 0.562
-  e ^ stddev = 1.754
+  min log(p2e) = -3.681  from mtask 5 (predict 30, elapsed 1190)
+  max log(p2e) = -2.409  from mtask 8 (predict 107, elapsed 1190)
+  mean = -2.992
+  stddev = 0.459
+  e ^ stddev = 1.583
 
 CPUs:
-  cpu 1: cpu_time=525 socket=0 core=1  Test Ryzen 9 3950X 16-Core Processor
-  cpu 16: cpu_time=2905 socket=0 core=0  Test Ryzen 9 3950X 16-Core Processor
+  cpu 10: cpu_time=4725 socket=0 core=10  Test Ryzen 9 3950X 16-Core Processor
+  cpu 19: cpu_time=770 socket=0 core=3  Test Ryzen 9 3950X 16-Core Processor
 
 Writing profile_threads.vcd

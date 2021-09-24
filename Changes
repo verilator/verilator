@@ -11,7 +11,8 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.213 devel
 ==========================
 
-* Include processor information in verilator_gantt data file.
+* Verilator_gantt now shows the predicted mtask times, eval times, and additional statistics.
+* Verilator_gantt data files now include processor information, to allow later processing.
 * Fix verilator_profcfunc profile accounting (#3115).
 * Fix display has no time units on class function (#3116). [Damien Pretet]
 * Fix removing if statement with side effect in condition (#3131). [Alexander Grobman]
