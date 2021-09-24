@@ -20,6 +20,7 @@ Verilator 4.213 devel
 * Fix removing if statement with side effect in condition (#3131). [Alexander Grobman]
 * Fix --waiver-output for multiline warnings (#2429) (#3141). [Keith Colbert]
 
+
 Verilator 4.212 2021-09-01
 ==========================
 
