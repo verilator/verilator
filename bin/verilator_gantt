@@ -179,7 +179,8 @@ def report():
     print("  Longest mtask time        = %d rdtsc ticks" % long_mtask_time)
     print("  All-thread mtask time     = %d rdtsc ticks" %
           measured_mt_mtask_time)
-    long_efficiency = long_mtask_time / (Global.get('measured_last_end', 1) or 1)
+    long_efficiency = long_mtask_time / (Global.get('measured_last_end', 1)
+                                         or 1)
     print("  Longest-thread efficiency = %0.1f%%" % (long_efficiency * 100.0))
     mt_efficiency = measured_mt_mtask_time / (
         Global.get('measured_last_end', 1) * nthreads or 1)
