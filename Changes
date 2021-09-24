@@ -14,10 +14,11 @@ Verilator 4.213 devel
 * Verilator_gantt has removed the ASCII graphics, use the VCD output instead.
 * Verilator_gantt now shows the predicted mtask times, eval times, and additional statistics.
 * Verilator_gantt data files now include processor information, to allow later processing.
+* Support displaying x and z in $display task (#3107) (#3109). [Iru Cai]
 * Fix verilator_profcfunc profile accounting (#3115).
 * Fix display has no time units on class function (#3116). [Damien Pretet]
 * Fix removing if statement with side effect in condition (#3131). [Alexander Grobman]
-
+* Fix --waiver-output for multiline warnings (#2429) (#3141). [Keith Colbert]
 
 Verilator 4.212 2021-09-01
 ==========================
