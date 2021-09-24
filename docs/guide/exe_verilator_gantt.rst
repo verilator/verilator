@@ -10,26 +10,18 @@ starts and ends, and showing when each thread is busy or idle.
 
 For an overview of use of verilator_gantt, see :ref:`Profiling`.
 
-Gantt Chart Contents
---------------------
+Gantt Chart VCD
+---------------
 
-The generated Gantt chart has time on the X-axis. Times shown are to the
-scale printed, i.e. a certain about of time for each character width.  The
-Y-axis shows threads, each thread's execution is shown on one line.  That
-line shows "[" at the position in time when it executes.
-
-Following the "[" is the CPU number the task executed on, followed by zero
-or more "-" to make the width of the characters match the scaled execution
-time, followed by a "]".  If the scale is too small, the CPU number and
-mtask number will not be printed.  If the scale is very small, a "&"
-indicates multiple mtasks started at that time position.
-
-Also creates a value change dump (VCD) format dump file which may be viewed
-in a waveform viewer (e.g. C<GTKWave>).  See below.
+Verilated_gnatt creates a value change dump (VCD) format dump file which
+may be viewed in a waveform viewer (e.g. C<GTKWave>):
 
 .. figure:: figures/fig_gantt_min.png
 
    Example verilator_gantt output, as viewed with GTKWave.
+
+The viewed waveform chart has time on the X-axis, with one unit for each
+time tick of the system's high-performance counter.
 
 
 Gantt Chart VCD Signals
@@ -85,13 +77,6 @@ The filename to read data from, defaults to "profile_threads.dat".
 .. option:: --help
 
 Displays a help summary, the program version, and exits.
-
-.. option:: --scale <n>
-
-Sets the number of time units per character on the X-axis of the generated
-Gantt chart.  (On x86, time units are rdtsc ticks.)  Defaults to 0, which
-will automatically compute a reasonable scale where no two mtasks need to
-fit into same character width's worth of scaled time.
 
 .. option:: --no-vcd
 

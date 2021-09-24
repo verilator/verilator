@@ -11,6 +11,7 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.213 devel
 ==========================
 
+* Verilator_gantt has removed the ASCII graphics, use the VCD output instead.
 * Verilator_gantt now shows the predicted mtask times, eval times, and additional statistics.
 * Verilator_gantt data files now include processor information, to allow later processing.
 * Fix verilator_profcfunc profile accounting (#3115).

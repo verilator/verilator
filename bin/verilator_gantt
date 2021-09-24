@@ -158,8 +158,6 @@ def report():
     Global['measured_last_end'] = measured_last_end
     Global['predict_last_end'] = predict_last_end
 
-    report_graph()
-
     # If we know cycle time in the same (rdtsc) units,
     # this will give us an actual utilization number,
     # (how effectively we keep the cores busy.)
@@ -291,108 +289,6 @@ def report_cpus():
         for scn in Global['cpu_socket_cores'].values():
             if scn > 1:
                 Global['cpu_socket_cores_warning'] = True
-
-
-def report_graph():
-    time_per = Args.scale
-    if time_per == 0:
-        time_per = Global['measured_last_end'] / 40  # Start with 40 columns
-        while time_per > 10:
-            (graph, conflicts) = _make_graph(time_per)
-            if not conflicts:
-                break
-            time_per = int(time_per / 2)
-        # One more step so we can fit more labels
-        time_per = int(time_per / 2)
-        if time_per <= 0:
-            time_per = 1
-
-    (graph, conflicts) = _make_graph(time_per)
-
-    print("\nThread gantt graph:")
-    print("  Legend: One character width = %s rdtsc ticks" % time_per)
-    print("  Legend: '&' = multiple mtasks in this period (character width)")
-
-    scale = "   <-%d rdtsc total" % Global['measured_last_end']
-    for col in range(len(scale),
-                     int(0.99 + (Global['measured_last_end'] / time_per))):  # pylint: disable=unused-variable
-        scale += "-"
-    print("  " + scale + "->")
-
-    for thread in sorted(graph.keys()):
-        print("  t: ", end="")
-        _print_graph_line(graph[thread], '')
-
-
-def _make_graph(time_per):
-
-    # [thread][column] = char or #
-    graph = collections.defaultdict(
-        lambda: collections.defaultdict(lambda: ''))
-
-    conflicts = 0
-    for thread in Threads:
-        # Make potentially multiple characters per column
-        multi_at_col = collections.defaultdict(lambda: '')
-        for start in sorted(Threads[thread].keys()):
-            end = Threads[thread][start]['end']
-            # mtask = Threads[thread][start]['mtask']
-            cpu = Threads[thread][start]['cpu']
-
-            startcol = _time_col(time_per, start)
-            endcol = _time_col(time_per, end)
-
-            label = "["
-            label += str(cpu)  # Maybe make optional in future
-            width = endcol - startcol + 1
-            while len(label) < (width - 1):  # -1 for ']'
-                label += "-"
-            label += "]"
-            multi_at_col[startcol] += label
-
-        # Expand line to one char per column
-        for col in multi_at_col:
-            chars = multi_at_col[col]
-            ok = True
-            for coladd in range(0, len(chars)):
-                if col + coladd in graph[thread]:
-                    ok = False
-                    break
-            if not ok:
-                if re.search(r'\[.*\[', chars):  # Two begins or more
-                    conflicts += 1
-                    graph[thread][col] = "&"
-                else:
-                    graph[thread][col] = "["
-                for coladd in range(1, len(chars)):
-                    if col + coladd in graph[thread]:
-                        break
-                    graph[thread][col + coladd] = 'x'
-            else:
-                coladd = 0
-                for char in chars:
-                    graph[thread][col + coladd] = char
-                    coladd += 1
-
-    if Args.debug:
-        print("# Conflicts %d" % conflicts)
-    return (graph, conflicts)
-
-
-def _print_graph_line(graph_thread, sep):
-    at = 0
-    for col in sorted(graph_thread.keys()):
-        while at < col:
-            print(' ', end="")
-            at += 1
-        c = graph_thread[col]
-        print(c + sep, end="")
-        at += len(c)
-    print()
-
-
-def _time_col(time_per, time):
-    return int(time / time_per)
 
 
 ######################################################################
@@ -573,10 +469,6 @@ Version 2.0.
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
 parser.add_argument('--debug', action='store_true', help='enable debug')
-parser.add_argument('--scale',
-                    help='number of time units per character in graph',
-                    type=int,
-                    default=0)
 parser.add_argument('--no-vcd',
                     help='disable creating vcd',
                     action='store_true')

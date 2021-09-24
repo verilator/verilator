@@ -5,13 +5,6 @@ Argument settings:
   +verilator+prof+threads+window+2
   --threads 2
 
-Thread gantt graph:
-  Legend: One character width = 136 rdtsc ticks
-  Legend: '&' = multiple mtasks in this period (character width)
-     <-21875 rdtsc total-------------------------------------------------------------------------------------------------------------------------------------------->
-  t:                    [19]                                                [19]                                       [19]                                         [19]
-  t:                                         [10-] [10-]    [10----]    [10-]   [10---]                                                     [10-][10][10]   [10][10]
-
 Analysis:
   Total threads             = 2
   Total mtasks              = 7
