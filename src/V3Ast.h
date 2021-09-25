@@ -1437,7 +1437,7 @@ private:
 public:
     static void relinkOneLink(AstNode*& pointpr, AstNode* newp);
     // cppcheck-suppress functionConst
-    void debugTreeChange(const char* prefix, int lineno, bool next);
+    static void debugTreeChange(const AstNode* nodep, const char* prefix, int lineno, bool next);
 
 protected:
     // CONSTRUCTORS

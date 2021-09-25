@@ -19,6 +19,7 @@ Verilator 4.213 devel
 * Fix display has no time units on class function (#3116). [Damien Pretet]
 * Fix removing if statement with side effect in condition (#3131). [Alexander Grobman]
 * Fix --waiver-output for multiline warnings (#2429) (#3141). [Keith Colbert]
+* Fix crash on clang 12/13 (#3148). [Kouping Hsu]
 
 
 Verilator 4.212 2021-09-01

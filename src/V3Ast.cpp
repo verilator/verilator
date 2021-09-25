@@ -230,7 +230,8 @@ string AstNode::prettyTypeName() const {
 //######################################################################
 // Insertion
 
-inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next){
+inline void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno,
+                                     bool next){
 #ifdef VL_DEBUG
 // Called on all major tree changers.
 // Only for use for those really nasty bugs relating to internals
@@ -254,8 +255,8 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next){
 AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
     // Add to m_nextp, returns this
     UDEBUGONLY(UASSERT_OBJ(newp, nodep, "Null item passed to addNext"););
-    nodep->debugTreeChange("-addNextThs: ", __LINE__, false);
-    newp->debugTreeChange("-addNextNew: ", __LINE__, true);
+    debugTreeChange(nodep, "-addNextThs: ", __LINE__, false);
+    debugTreeChange(newp, "-addNextNew: ", __LINE__, true);
     if (!nodep) {  // verilog.y and lots of other places assume this
         return newp;
     } else {
@@ -285,7 +286,7 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
         newp->editCountInc();
         if (oldtailp->m_iterpp) *(oldtailp->m_iterpp) = newp;  // Iterate on new item
     }
-    nodep->debugTreeChange("-addNextOut:", __LINE__, true);
+    debugTreeChange(nodep, "-addNextOut:", __LINE__, true);
     return nodep;
 }
 
@@ -300,8 +301,8 @@ void AstNode::addNextHere(AstNode* newp) {
     //  New  could be head of single node, or list
     UASSERT(newp, "Null item passed to addNext");
     UASSERT(!newp->backp(), "New node (back) already assigned?");
-    this->debugTreeChange("-addHereThs: ", __LINE__, false);
-    newp->debugTreeChange("-addHereNew: ", __LINE__, true);
+    debugTreeChange(this, "-addHereThs: ", __LINE__, false);
+    debugTreeChange(newp, "-addHereNew: ", __LINE__, true);
     newp->editCountInc();
 
     AstNode* addlastp = newp->m_headtailp;  // Last node in list to be added
@@ -339,7 +340,7 @@ void AstNode::addNextHere(AstNode* newp) {
     }
 
     if (this->m_iterpp) *(this->m_iterpp) = newp;  // Iterate on new item
-    this->debugTreeChange("-addHereOut: ", __LINE__, true);
+    debugTreeChange(this, "-addHereOut: ", __LINE__, true);
 }
 
 void AstNode::setOp1p(AstNode* newp) {
@@ -347,12 +348,12 @@ void AstNode::setOp1p(AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(!m_op1p, this, "Adding to non-empty, non-list op1"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op1"););
-    this->debugTreeChange("-setOp1pThs: ", __LINE__, false);
-    newp->debugTreeChange("-setOp1pNew: ", __LINE__, true);
+    debugTreeChange(this, "-setOp1pThs: ", __LINE__, false);
+    debugTreeChange(newp, "-setOp1pNew: ", __LINE__, true);
     m_op1p = newp;
     newp->editCountInc();
     newp->m_backp = this;
-    this->debugTreeChange("-setOp1pOut: ", __LINE__, false);
+    debugTreeChange(this, "-setOp1pOut: ", __LINE__, false);
 }
 
 void AstNode::setOp2p(AstNode* newp) {
@@ -360,12 +361,12 @@ void AstNode::setOp2p(AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(!m_op2p, this, "Adding to non-empty, non-list op2"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op2"););
-    this->debugTreeChange("-setOp2pThs: ", __LINE__, false);
-    newp->debugTreeChange("-setOp2pNew: ", __LINE__, true);
+    debugTreeChange(this, "-setOp2pThs: ", __LINE__, false);
+    debugTreeChange(newp, "-setOp2pNew: ", __LINE__, true);
     m_op2p = newp;
     newp->editCountInc();
     newp->m_backp = this;
-    this->debugTreeChange("-setOp2pOut: ", __LINE__, false);
+    debugTreeChange(this, "-setOp2pOut: ", __LINE__, false);
 }
 
 void AstNode::setOp3p(AstNode* newp) {
@@ -373,12 +374,12 @@ void AstNode::setOp3p(AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(!m_op3p, this, "Adding to non-empty, non-list op3"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op3"););
-    this->debugTreeChange("-setOp3pThs: ", __LINE__, false);
-    newp->debugTreeChange("-setOp3pNew: ", __LINE__, true);
+    debugTreeChange(this, "-setOp3pThs: ", __LINE__, false);
+    debugTreeChange(newp, "-setOp3pNew: ", __LINE__, true);
     m_op3p = newp;
     newp->editCountInc();
     newp->m_backp = this;
-    this->debugTreeChange("-setOp3pOut: ", __LINE__, false);
+    debugTreeChange(this, "-setOp3pOut: ", __LINE__, false);
 }
 
 void AstNode::setOp4p(AstNode* newp) {
@@ -386,12 +387,12 @@ void AstNode::setOp4p(AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(!m_op4p, this, "Adding to non-empty, non-list op4"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op4"););
-    this->debugTreeChange("-setOp4pThs: ", __LINE__, false);
-    newp->debugTreeChange("-setOp4pNew: ", __LINE__, true);
+    debugTreeChange(this, "-setOp4pThs: ", __LINE__, false);
+    debugTreeChange(newp, "-setOp4pNew: ", __LINE__, true);
     m_op4p = newp;
     newp->editCountInc();
     newp->m_backp = this;
-    this->debugTreeChange("-setOp4pOut: ", __LINE__, false);
+    debugTreeChange(this, "-setOp4pOut: ", __LINE__, false);
 }
 
 void AstNode::addOp1p(AstNode* newp) {
@@ -453,7 +454,7 @@ void AstNRelinker::dump(std::ostream& str) const {
 }
 
 AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
-    this->debugTreeChange("-unlinkWNextThs: ", __LINE__, true);
+    debugTreeChange(this, "-unlinkWNextThs: ", __LINE__, true);
     AstNode* oldp = this;
     UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
     oldp->editCountInc();
@@ -508,12 +509,12 @@ AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
     // Iterator fixup
     if (oldp->m_iterpp) *(oldp->m_iterpp) = nullptr;
     oldp->m_iterpp = nullptr;
-    oldp->debugTreeChange("-unlinkWNextOut: ", __LINE__, true);
+    debugTreeChange(oldp, "-unlinkWNextOut: ", __LINE__, true);
     return oldp;
 }
 
 AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
-    this->debugTreeChange("-unlinkFrBkThs: ", __LINE__, true);
+    debugTreeChange(this, "-unlinkFrBkThs: ", __LINE__, true);
     AstNode* oldp = this;
     UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
     oldp->editCountInc();
@@ -572,7 +573,7 @@ AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
     oldp->m_backp = nullptr;
     oldp->m_headtailp = this;
     oldp->m_iterpp = nullptr;
-    oldp->debugTreeChange("-unlinkFrBkOut: ", __LINE__, true);
+    debugTreeChange(oldp, "-unlinkFrBkOut: ", __LINE__, true);
     return oldp;
 }
 
@@ -592,8 +593,8 @@ void AstNode::relink(AstNRelinker* linkerp) {
     }
 
     AstNode* backp = linkerp->m_backp;
-    this->debugTreeChange("-relinkNew: ", __LINE__, true);
-    backp->debugTreeChange("-relinkTre: ", __LINE__, true);
+    debugTreeChange(this, "-relinkNew: ", __LINE__, true);
+    debugTreeChange(backp, "-relinkTre: ", __LINE__, true);
 
     switch (linkerp->m_chg) {
     case AstNRelinker::RELINK_NEXT: backp->addNextHere(newp); break;
@@ -618,7 +619,7 @@ void AstNode::relink(AstNRelinker* linkerp) {
     }
     // Empty the linker so not used twice accidentally
     linkerp->m_backp = nullptr;
-    this->debugTreeChange("-relinkOut: ", __LINE__, true);
+    debugTreeChange(this, "-relinkOut: ", __LINE__, true);
 }
 
 void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set to newp
@@ -700,7 +701,7 @@ AstNode* AstNode::cloneTreeIterList() {
 }
 
 AstNode* AstNode::cloneTree(bool cloneNextLink) {
-    this->debugTreeChange("-cloneThs: ", __LINE__, cloneNextLink);
+    debugTreeChange(this, "-cloneThs: ", __LINE__, cloneNextLink);
     cloneClearTree();
     AstNode* newp;
     if (cloneNextLink && this->m_nextp) {
@@ -712,7 +713,7 @@ AstNode* AstNode::cloneTree(bool cloneNextLink) {
     }
     newp->m_backp = nullptr;
     newp->cloneRelinkTree();
-    newp->debugTreeChange("-cloneOut: ", __LINE__, true);
+    debugTreeChange(newp, "-cloneOut: ", __LINE__, true);
     return newp;
 }
 
@@ -764,7 +765,7 @@ void AstNode::deleteTree() {
     // deleteTree always deletes the next link, because you must have called
     // unlinkFromBack or unlinkFromBackWithNext as appropriate before calling this.
     UASSERT(!m_backp, "Delete called on node with backlink still set");
-    this->debugTreeChange("-delTree:  ", __LINE__, true);
+    debugTreeChange(this, "-delTree:  ", __LINE__, true);
     this->editCountInc();
     // MUST be depth first!
     deleteTreeIter();
