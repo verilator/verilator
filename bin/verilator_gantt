@@ -36,8 +36,8 @@ def read_data(filename):
         re_eval = re.compile(r'^VLPROF eval\sstart\s(\d+)\selapsed\s(\d+)')
         re_loop = re.compile(
             r'^VLPROF eval_loop\sstart\s(\d+)\selapsed\s(\d+)')
-        re_arg1 = re.compile(r'VLPROF arg\s+(\S+)\+([0-9.])\s*')
-        re_arg2 = re.compile(r'VLPROF arg\s+(\S+)\s+([0-9.])\s*$')
+        re_arg1 = re.compile(r'VLPROF arg\s+(\S+)\+([0-9.]*)\s*')
+        re_arg2 = re.compile(r'VLPROF arg\s+(\S+)\s+([0-9.]*)\s*$')
         re_stat = re.compile(r'VLPROF stat\s+(\S+)\s+([0-9.]+)')
         re_time = re.compile(r'rdtsc time = (\d+) ticks')
         re_proc_cpu = re.compile(r'VLPROFPROC processor\s*:\s*(\d+)\s*$')
