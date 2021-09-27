@@ -455,6 +455,9 @@ private:
             iterateNull(nodep->ftaskp());
         });
     }
+    virtual void visit(AstMTaskBody* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
+    }
     virtual void visit(AstNodeProcedure* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }

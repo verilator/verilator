@@ -27,6 +27,7 @@ execute(
     all_run_flags => ["+verilator+prof+threads+start+2",
                       " +verilator+prof+threads+window+2",
                       " +verilator+prof+threads+file+$Self->{obj_dir}/profile_threads.dat",
+                      " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
     check_finished => 1,
     );

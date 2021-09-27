@@ -121,6 +121,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "no_clocker"          { FL; return yVLT_NO_CLOCKER; }
   "no_inline"           { FL; return yVLT_NO_INLINE; }
   "parallel_case"       { FL; return yVLT_PARALLEL_CASE; }
+  "profile_data"        { FL; return yVLT_PROFILE_DATA; }
   "public"              { FL; return yVLT_PUBLIC; }
   "public_flat"         { FL; return yVLT_PUBLIC_FLAT; }
   "public_flat_rd"      { FL; return yVLT_PUBLIC_FLAT_RD; }
@@ -133,12 +134,15 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "tracing_on"          { FL; return yVLT_TRACING_ON; }
 
   -?"-block"            { FL; return yVLT_D_BLOCK; }
+  -?"-cost"             { FL; return yVLT_D_COST; }
   -?"-file"             { FL; return yVLT_D_FILE; }
   -?"-function"         { FL; return yVLT_D_FUNCTION; }
   -?"-lines"            { FL; return yVLT_D_LINES; }
   -?"-match"            { FL; return yVLT_D_MATCH; }
+  -?"-model"            { FL; return yVLT_D_MODEL; }
   -?"-module"           { FL; return yVLT_D_MODULE; }
   -?"-msg"              { FL; return yVLT_D_MSG; }
+  -?"-mtask"            { FL; return yVLT_D_MTASK; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
   -?"-task"             { FL; return yVLT_D_TASK; }
   -?"-var"              { FL; return yVLT_D_VAR; }

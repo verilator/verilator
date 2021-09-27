@@ -110,6 +110,7 @@ public:
         PINNOTFOUND,    // instance port name not found in it's module
         PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
+        PROFOUTOFDATE,  // Profile data out of date
         PROTECTED,      // detected `pragma protected
         RANDC,          // Unsupported: 'randc' converted to 'rand'
         REALCVT,        // Real conversion
@@ -173,7 +174,7 @@ public:
             "LATCH", "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
-            "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
+            "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",

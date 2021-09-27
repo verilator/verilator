@@ -56,12 +56,14 @@ class ExecMTask final : public AbstractMTask {
 private:
     AstMTaskBody* const m_bodyp;  // Task body
     const uint32_t m_id;  // Unique id of this mtask.
+    string m_hashName;  // Hashed name for profile-driven optimization
     uint32_t m_priority = 0;  // Predicted critical path from the start of
                               // this mtask to the ends of the graph that are reachable from this
                               // mtask. In abstract time units.
     uint32_t m_cost = 0;  // Predicted runtime of this mtask, in the same
                           // abstract time units as priority().
     uint64_t m_predictStart = 0;  // Predicted start time of task
+    uint64_t m_profilerId = 0;  // VerilatedCounter number for profiling
     VL_UNCOPYABLE(ExecMTask);
 
 public:
@@ -77,11 +79,15 @@ public:
     void cost(uint32_t cost) { m_cost = cost; }
     void predictStart(vluint64_t time) { m_predictStart = time; }
     vluint64_t predictStart() const { return m_predictStart; }
+    void profilerId(vluint64_t id) { m_profilerId = id; }
+    vluint64_t profilerId() const { return m_profilerId; }
     string cFuncName() const {
         // If this MTask maps to a C function, this should be the name
         return string("__Vmtask") + "__" + cvtToStr(m_id);
     }
     virtual string name() const override { return string("mt") + cvtToStr(id()); }
+    string hashName() const { return m_hashName; }
+    void hashName(const string& name) { m_hashName = name; }
     void dump(std::ostream& str) const {
         str << name() << "." << cvtToHex(this);
         if (priority() || cost()) str << " [pr=" << priority() << " c=" << cvtToStr(cost()) << "]";

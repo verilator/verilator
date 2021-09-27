@@ -405,6 +405,9 @@ routines in the sources to rely more heavily on randomness, and
 generally try harder not to keep input nodes together when we have the
 option to scramble things.
 
+Profile-guided optimization make this a bit better, by adjusting mtask
+scheduling, but this does not yet guide the packing into mtasks.
+
 
 Performance Regression
 """"""""""""""""""""""

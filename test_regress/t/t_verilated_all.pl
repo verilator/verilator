@@ -21,10 +21,15 @@ compile(
                           ? "--threads 2 $root/include/verilated_threads.cpp" : ""),
                          ($Self->cfg_with_threaded
                           ? "--trace-threads 1" : ""),
+                         ($Self->cfg_with_threaded
+                          ? "--prof-threads" : ""),
                          "$root/include/verilated_save.cpp"],
     );
 
 execute(
+    all_run_flags => [" +verilator+prof+threads+file+/dev/null",
+                      " +verilator+prof+vlt+file+/dev/null",
+                      ],
     check_finished => 1,
     );
 

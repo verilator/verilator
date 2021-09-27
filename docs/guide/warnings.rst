@@ -1011,6 +1011,22 @@ List Of Warnings
    a var/reg must be used as the target of procedural assignments.
 
 
+.. option:: PROFOUTOFDATE
+
+   Warns that threads were scheduled using estimated costs, despite the
+   fact that data was provided from profile-guided optimization (see
+   :ref:`Thread PGO`) as fed into Verilator using the
+   :option:`profile_data` configuration file option.  This usually
+   indicates that the profile data was generated from different Verilog
+   source code than Verilator is currently running against.
+
+   It is recommended to create new profiling data, then rerun Verilator
+   with the same input source files and that new profiling data.
+
+   Ignoring this warning may only slow simulations, it will simulate
+   correctly.
+
+
 .. option:: PROTECTED
 
    Warning that a 'pragma protected' section was encountered. The code

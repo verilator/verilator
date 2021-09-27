@@ -833,7 +833,7 @@ Summary:
 .. option:: --prof-threads
 
    Enable gantt chart data collection for threaded builds. See :ref:`Thread
-   Profiling`.
+   Profiling` and :ref:`Thread PGO`.
 
 .. option:: --protect-key <key>
 
@@ -1611,6 +1611,12 @@ The grammar of configuration commands is as follows:
    :option:`/*verilator&32;public*/` or
    :option:`/*verilator&32;public_flat*/`, etc, metacomments. See
    e.g. :ref:`VPI Example`.
+
+.. option:: profile_data -mtask "<mtask_hash>" -cost <cost_value>
+
+   Feeds profile-guided optimization data into the Verilator algorithms in
+   order to improve model runtime performance.  This option is not expected
+   to be used by users directly.  See :ref:`Thread PGO`.
 
 .. option:: sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 

@@ -363,6 +363,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_NO_CLOCKER             "no_clocker"
 %token<fl>              yVLT_NO_INLINE              "no_inline"
 %token<fl>              yVLT_PARALLEL_CASE          "parallel_case"
+%token<fl>              yVLT_PROFILE_DATA           "profile_data"
 %token<fl>              yVLT_PUBLIC                 "public"
 %token<fl>              yVLT_PUBLIC_FLAT            "public_flat"
 %token<fl>              yVLT_PUBLIC_FLAT_RD         "public_flat_rd"
@@ -375,12 +376,15 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_TRACING_ON             "tracing_on"
 
 %token<fl>              yVLT_D_BLOCK    "--block"
+%token<fl>              yVLT_D_COST     "--cost"
 %token<fl>              yVLT_D_FILE     "--file"
 %token<fl>              yVLT_D_FUNCTION "--function"
 %token<fl>              yVLT_D_LINES    "--lines"
-%token<fl>              yVLT_D_MODULE   "--module"
 %token<fl>              yVLT_D_MATCH    "--match"
+%token<fl>              yVLT_D_MODEL    "--model"
+%token<fl>              yVLT_D_MODULE   "--module"
 %token<fl>              yVLT_D_MSG      "--msg"
+%token<fl>              yVLT_D_MTASK    "--mtask"
 %token<fl>              yVLT_D_RULE     "--rule"
 %token<fl>              yVLT_D_TASK     "--task"
 %token<fl>              yVLT_D_VAR      "--var"
@@ -6404,6 +6408,8 @@ vltItem:
 			{ V3Config::addCaseParallel(*$3, 0); }
 	|	yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
 			{ V3Config::addCaseParallel(*$3, $5->toUInt()); }
+	|	yVLT_PROFILE_DATA yVLT_D_MODEL yaSTRING yVLT_D_MTASK yaSTRING yVLT_D_COST yaINTNUM
+			{ V3Config::addProfileData($<fl>1, *$3, *$5, $7->toUQuad()); }
 	;
 
 vltOffFront<errcodeen>:
