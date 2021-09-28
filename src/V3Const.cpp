@@ -1348,9 +1348,13 @@ private:
                 // Must adjust by element width as declRange() is in number of elements
                 string msbLsbProtected;
                 if (nodep->declElWidth() == 0) {
-                    msbLsbProtected = "(nodep->declElWidth() == 0) " + std::to_string(nodep->msbConst()) + ":" + std::to_string(nodep->lsbConst());
+                    msbLsbProtected = "(nodep->declElWidth() == 0) "
+                                      + std::to_string(nodep->msbConst()) + ":"
+                                      + std::to_string(nodep->lsbConst());
                 } else {
-                    msbLsbProtected = std::to_string(nodep->msbConst() / nodep->declElWidth()) + ":" + std::to_string(nodep->lsbConst() / nodep->declElWidth());
+                    msbLsbProtected = std::to_string(nodep->msbConst() / nodep->declElWidth())
+                                      + ":"
+                                      + std::to_string(nodep->lsbConst() / nodep->declElWidth());
                 }
                 nodep->v3warn(SELRANGE,
                               "Selection index out of range: "
