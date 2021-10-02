@@ -271,16 +271,18 @@ def report_cpus():
 
         socket = None
         if cpu in Global['cpuinfo']:
-            socket = int(Global['cpuinfo'][cpu]['physical_id'])
-            Global['cpu_sockets'][socket] += 1
-            print(" socket=%d" % socket, end='')
+            cpuinfo = Global['cpuinfo'][cpu]
+            if 'physical_id' in cpuinfo and 'core_id' in cpuinfo:
+                socket = int(cpuinfo['physical_id'])
+                Global['cpu_sockets'][socket] += 1
+                print(" socket=%d" % socket, end='')
 
-            core = int(Global['cpuinfo'][cpu]['core_id'])
-            Global['cpu_socket_cores'][str(socket) + "__" + str(core)] += 1
-            print(" core=%d" % core, end='')
+                core = int(cpuinfo['core_id'])
+                Global['cpu_socket_cores'][str(socket) + "__" + str(core)] += 1
+                print(" core=%d" % core, end='')
 
-            model = Global['cpuinfo'][cpu]['model_name']
-            if model:
+            if 'model_name' in cpuinfo:
+                model = cpuinfo['model_name']
                 print("  %s" % model, end='')
         print()
 
