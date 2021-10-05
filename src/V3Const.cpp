@@ -923,8 +923,9 @@ private:
         if (ccastp) {
             andp->replaceWith(ccastp);
             VL_DO_DANGLING(andp->deleteTree(), andp);
+            return true;
         }
-        return ccastp;
+        return false;
     }
 
     static bool operandAndOrSame(const AstNode* nodep) {
@@ -2217,8 +2218,8 @@ private:
     void swapSides(AstNodeBiCom* nodep) {
         // COMMUTATIVE({a},CONST) -> COMMUTATIVE(CONST,{a})
         // This simplifies later optimizations
-        AstNode* lhsp = nodep->lhsp()->unlinkFrBackWithNext();
-        AstNode* rhsp = nodep->rhsp()->unlinkFrBackWithNext();
+        AstNode* const lhsp = nodep->lhsp()->unlinkFrBackWithNext();
+        AstNode* const rhsp = nodep->rhsp()->unlinkFrBackWithNext();
         nodep->lhsp(rhsp);
         nodep->rhsp(lhsp);
         iterate(nodep);  // Again?
@@ -2227,8 +2228,8 @@ private:
     int operandConcatMove(AstConcat* nodep) {
         //    CONCAT under concat  (See moveConcat)
         // Return value: true indicates to do it; 2 means move to LHS
-        AstConcat* abConcp = VN_CAST(nodep->lhsp(), Concat);
-        AstConcat* bcConcp = VN_CAST(nodep->rhsp(), Concat);
+        AstConcat* const abConcp = VN_CAST(nodep->lhsp(), Concat);
+        AstConcat* const bcConcp = VN_CAST(nodep->rhsp(), Concat);
         if (!abConcp && !bcConcp) return 0;
         if (bcConcp) {
             AstNode* ap = nodep->lhsp();

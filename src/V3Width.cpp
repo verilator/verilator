@@ -2195,12 +2195,13 @@ private:
     virtual void visit(AstInitArray* nodep) override {
         // InitArray has type of the array; children are array values
         if (m_vup->prelim()) {  // First stage evaluation
-            AstNodeDType* vdtypep = m_vup->dtypep();
+            AstNodeDType* const vdtypep = m_vup->dtypeNullp();
             UASSERT_OBJ(vdtypep, nodep, "InitArray type not assigned by AstPattern/Var visitor");
             nodep->dtypep(vdtypep);
-            if (AstNodeArrayDType* arrayp = VN_CAST(vdtypep->skipRefp(), NodeArrayDType)) {
+            if (AstNodeArrayDType* const arrayp = VN_CAST(vdtypep->skipRefp(), NodeArrayDType)) {
                 userIterateChildren(nodep, WidthVP(arrayp->subDTypep(), BOTH).p());
             } else {
+                UINFO(1, "dtype object " << vdtypep->skipRefp() << endl);
                 nodep->v3fatalSrc("InitArray on non-array");
             }
         }
