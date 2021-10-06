@@ -278,19 +278,6 @@ static void UNSUPREAL(FileLine* fileline) {
 
 void yyerror(const char* errmsg) { PARSEP->bisonLastFileline()->v3error(errmsg); }
 
-void yyerrorf(const char* format, ...) {
-    const int maxlen = 2000;
-    char msg[maxlen];
-
-    va_list ap;
-    va_start(ap, format);
-    VL_VSNPRINTF(msg, maxlen, format, ap);
-    msg[maxlen - 1] = '\0';
-    va_end(ap);
-
-    yyerror(msg);
-}
-
 //======================================================================
 
 class AstSenTree;
