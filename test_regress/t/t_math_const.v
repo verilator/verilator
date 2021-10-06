@@ -106,7 +106,9 @@ module t (/*AUTOARG*/
 	    w32 = 12; w32 |= 15; if (w32 != 15) $stop;
 	    w32 = 12; w32 ^= 15; if (w32 != 3) $stop;
 	    w32 = 12; w32 >>= 1; if (w32 != 6) $stop;
+	    w32 = 12; w32 >>>= 1; if (w32 != 6) $stop;
 	    w32 = 12; w32 <<= 1; if (w32 != 24) $stop;
+	    w32 = 12; w32 %= 5; if (w32 != 2) $stop;
 
 	    // Increments
 	    v32[1] = 12; v32[1]++;  if (v32[1] != 13) $stop;
