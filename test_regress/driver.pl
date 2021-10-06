@@ -1362,7 +1362,6 @@ sub execute {
                     %param,
                     expect=>$param{expect},  # backward compatible name
                     expect_filename=>$param{expect_filename},  # backward compatible name
-                    verilator_run => 1,
                     );
     }
     else {
