@@ -204,7 +204,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string{__FUNCTION__} + ": " + std::strerror(errno);
+                const std::string msg = std::string{__FUNCTION__} + ": " + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
