@@ -26,10 +26,20 @@ class ClsArg;
    endfunction
 endclass
 
+class Cls2Arg;
+   int imembera;
+   int imemberb;
+   function new(int i, int j);
+      imembera = i + 1;
+      imemberb = j + 2;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
    initial begin
       ClsNoArg c1;
-      ClsArg c2;
+      ClsArg   c2;
+      Cls2Arg  c3;
 
       c1 = new;
       if (c1.imembera != 5) $stop;
@@ -41,6 +51,10 @@ module t (/*AUTOARG*/);
       c2 = ClsArg::create6();
       if (c2.imembera != 6) $stop;
       if (c2.geta() != 6) $stop;
+
+      c3 = new(4, 5);
+      if (c3.imembera != 5) $stop;
+      if (c3.imemberb != 7) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
