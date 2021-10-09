@@ -392,10 +392,15 @@ public:
         emitCCallArgs(nodep, "");
     }
     virtual void visit(AstCNew* nodep) override {
+        bool comma = false;
         puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
         puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
-        if (nodep->argsp()) puts(", ");
-        iterateAndNextNull(nodep->argsp());
+        if (nodep->argsp()) comma = true;
+        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (comma) puts(", ");
+            iterate(subnodep);
+            comma = true;
+        }
         puts(")");
     }
     virtual void visit(AstCMethodHard* nodep) override {
