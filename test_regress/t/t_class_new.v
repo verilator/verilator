@@ -33,6 +33,12 @@ class Cls2Arg;
       imembera = i + 1;
       imemberb = j + 2;
    endfunction
+
+   function Cls2Arg clone();
+      Cls2Arg ret;
+      ret = new(imembera, imemberb);
+      return ret;
+   endfunction
 endclass
 
 module t (/*AUTOARG*/);
@@ -40,6 +46,7 @@ module t (/*AUTOARG*/);
       ClsNoArg c1;
       ClsArg   c2;
       Cls2Arg  c3;
+      Cls2Arg  c4;
 
       c1 = new;
       if (c1.imembera != 5) $stop;
@@ -55,6 +62,10 @@ module t (/*AUTOARG*/);
       c3 = new(4, 5);
       if (c3.imembera != 5) $stop;
       if (c3.imemberb != 7) $stop;
+
+      c4 = c3.clone();
+      if (c4.imembera != 6) $stop;
+      if (c4.imemberb != 9) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -3191,7 +3191,7 @@ private:
     }
 
     virtual void visit(AstNew* nodep) override {
-        if (nodep->didWidthAndSet()) return;
+        if (nodep->didWidth()) return;
         AstClassRefDType* refp
             = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
         if (!refp) {  // e.g. int a = new;
