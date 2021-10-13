@@ -207,8 +207,10 @@ VL_INST_INC_SRCDIR_FILES = \
 	include/vltstd/*.[chv]* \
 
 VL_INST_DATA_SRCDIR_FILES = \
-	examples/*/*.[chv]*  examples/*/Makefile* \
-	examples/*/CMakeLists.txt
+	examples/*/*.[chv]* \
+	examples/*/CMakeLists.txt \
+	examples/*/Makefile* \
+	examples/*/vl_* \
 
 installbin:
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)

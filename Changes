@@ -22,6 +22,7 @@ Verilator 4.213 devel
 * Fix --waiver-output for multiline warnings (#2429) (#3141). [Keith Colbert]
 * Fix crash on clang 12/13 (#3148). [Kouping Hsu]
 * Fix cygwin compile error due to missing -std=gnu++14 (#3149). [Sun Kim]
+* Fix missing install of vl_file_copy/vl_hier_graph (#3165). [Popolon]
 
 
 Verilator 4.212 2021-09-01
