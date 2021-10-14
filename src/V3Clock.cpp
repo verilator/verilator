@@ -136,6 +136,7 @@ private:
                           "Unsupported: Complicated event expression in sensitive activity list");
             return nullptr;
         }
+        UASSERT_OBJ(nodep->varrefp(), nodep, "No clock found on sense item");
         AstVarScope* clkvscp = nodep->varrefp()->varScopep();
         if (nodep->edgeType() == VEdgeType::ET_POSEDGE) {
             AstVarScope* lastVscp = getCreateLastClk(clkvscp);
