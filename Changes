@@ -24,6 +24,7 @@ Verilator 4.213 devel
 * Fix cygwin compile error due to missing -std=gnu++14 (#3149). [Sun Kim]
 * Fix missing install of vl_file_copy/vl_hier_graph (#3165). [Popolon]
 * Fix calling new with arguments in same class (#3166). [Matthew Ballance]
+* Fix false EOFNEWLINE warning when DOS carriage returns present (#3171).
 
 
 Verilator 4.212 2021-09-01

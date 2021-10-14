@@ -824,9 +824,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
         for (const char* cp = sp; cp < ep; cp++) {
             if (VL_UNLIKELY(*cp == '\r' || *cp == '\0')) {
                 strip = true;
-                break;
-            }
-            if (VL_UNLIKELY(*cp == '\n')) {
+            } else if (VL_UNLIKELY(*cp == '\n')) {
                 eof_newline = 0;
                 ++eof_lineno;
             } else {
@@ -853,7 +851,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
         FileLine* fl = new FileLine{flsp};
         fl->contentLineno(eof_lineno);
         fl->column(eof_newline + 1, eof_newline + 1);
-        fl->v3warn(EOFNEWLINE, "Missing newline at end of file (POSIX 3.206)."
+        fl->v3warn(EOFNEWLINE, "Missing newline at end of file (POSIX 3.206).\n"
                                    << fl->warnMore() << "... Suggest add newline.");
     }
 }
