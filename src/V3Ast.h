@@ -60,15 +60,21 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
         if (VL_UNCOVERABLE(reasonp)) return reasonp; \
     } while (false)
 
-// (V)erilator (N)ode is: True if AstNode is of a a given AstType
+// (V)erilator (N)ode is: Returns true iff AstNode is of the given AstNode subtype, and not
+// nullptr.
 #define VN_IS(nodep, nodetypename) (AstNode::privateIs<Ast##nodetypename>(nodep))
 
-// (V)erilator (N)ode cast: Cast to given type if can; effectively
-// dynamic_cast<nodetypename>(nodep)
+// (V)erilator (N)ode cast: More efficient but otherwise same as dynamic_cast, use this instead.
+// Cast to given type if node is of such type, otherwise returns nullptr.
 #define VN_CAST(nodep, nodetypename) (AstNode::privateCast<Ast##nodetypename>(nodep))
-#define VN_CAST_CONST(nodep, nodetypename) (AstNode::privateConstCast<Ast##nodetypename>(nodep))
+#define VN_CAST_CONST(nodep, nodetypename) (AstNode::privateCastConst<Ast##nodetypename>(nodep))
 
-// (V)erilator (N)ode deleted: Reference to deleted child (for assertions only)
+// (V)erilator (N)ode as: Assert node is of given type then cast to that type. Node can be nullptr.
+// Use this to downcast instead of VN_CAST when you know the true type of the node.
+#define VN_AS(nodep, nodetypename) (AstNode::privateAs<Ast##nodetypename>(nodep))
+#define VN_AS_CONST(nodep, nodetypename) (AstNode::privateAsConst<Ast##nodetypename>(nodep))
+
+// (V)erilator (N)ode deleted: Pointer to deleted AstNode (for assertions only)
 #define VN_DELETED(nodep) VL_UNLIKELY((vluint64_t)(nodep) == 0x1)
 
 //######################################################################
@@ -1851,8 +1857,22 @@ public:
         return privateIs<T>(nodep) ? reinterpret_cast<T*>(nodep) : nullptr;
     }
     // For use via the VN_CAST_CONST macro only
-    template <typename T> inline static const T* privateConstCast(const AstNode* nodep) {
+    template <typename T> inline static const T* privateCastConst(const AstNode* nodep) {
         return privateIs<T>(nodep) ? reinterpret_cast<const T*>(nodep) : nullptr;
+    }
+    // For use via the VN_AS macro only
+    template <typename T> inline static T* privateAs(AstNode* nodep) {
+        UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
+                    "AstNode is not of expected type, but instead has type '" << nodep->typeName()
+                                                                              << "'");
+        return reinterpret_cast<T*>(nodep);
+    }
+    // For use via the VN_AS_CONST macro only
+    template <typename T> inline static const T* privateAsConst(const AstNode* nodep) {
+        UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
+                    "AstNode is not of expected type, but instead has type '" << nodep->typeName()
+                                                                              << "'");
+        return reinterpret_cast<const T*>(nodep);
     }
 };
 
