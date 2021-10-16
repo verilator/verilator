@@ -516,52 +516,23 @@ def write_visitor(filename):
 def write_impl(filename):
     with open_file(filename) as fh:
         fh.write("\n")
-        fh.write("    // These for use by VN_IS only\n")
+        fh.write("// For internal use. They assume argument is not nullptr.\n")
         for typen in sorted(Classes.keys()):
-            fh.write("template<> inline bool AstNode::privateIs<Ast" + typen +
-                     ">(const AstNode* nodep) { ")
+            fh.write("template<> inline bool AstNode::privateTypeTest<Ast" +
+                     typen + ">(const AstNode* nodep) { ")
             if typen == "Node":
-                fh.write("return nodep != NULL; ")
+                fh.write("return true; ")
             else:
-                fh.write("return nodep && ")
+                fh.write("return ")
                 if re.search(r'^Node', typen):
                     fh.write(
-                        "(static_cast<int>(nodep->type()) >= static_cast<int>(AstType::first"
-                        + typen + ")) && ")
+                        "static_cast<int>(nodep->type()) >= static_cast<int>(AstType::first"
+                        + typen + ") && ")
                     fh.write(
-                        "(static_cast<int>(nodep->type()) <= static_cast<int>(AstType::last"
-                        + typen + ")); ")
+                        "static_cast<int>(nodep->type()) <= static_cast<int>(AstType::last"
+                        + typen + "); ")
                 else:
-                    fh.write(
-                        "(static_cast<int>(nodep->type()) == static_cast<int>(AstType::at"
-                        + typen + ")); ")
-            fh.write("}\n")
-
-        fh.write("    // These for use by VN_CAST macro only\n")
-        for typen in sorted(Classes.keys()):
-            fh.write("template<> inline Ast" + typen +
-                     "* AstNode::privateCast<Ast" + typen +
-                     ">(AstNode* nodep) { ")
-            if typen == "Node":
-                fh.write("return nodep; ")
-            else:
-                fh.write("return AstNode::privateIs<Ast" + typen +
-                         ">(nodep) ? ")
-                fh.write("reinterpret_cast<Ast" + typen + "*>(nodep) : NULL; ")
-            fh.write("}\n")
-
-        fh.write("    // These for use by VN_CAST_CONST macro only\n")
-        for typen in sorted(Classes.keys()):
-            fh.write("template<> inline const Ast" + typen +
-                     "* AstNode::privateConstCast<Ast" + typen +
-                     ">(const AstNode* nodep) { ")
-            if typen == "Node":
-                fh.write("return nodep; ")
-            else:
-                fh.write("return AstNode::privateIs<Ast" + typen +
-                         ">(nodep) ? ")
-                fh.write("reinterpret_cast<const Ast" + typen +
-                         "*>(nodep) : NULL; ")
+                    fh.write("nodep->type() == AstType::at" + typen + "; ")
             fh.write("}\n")
 
 

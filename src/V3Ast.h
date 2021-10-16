@@ -1838,16 +1838,22 @@ protected:
 private:
     void iterateListBackwards(AstNVisitor& v);
 
-    // CONVERSION
+    // For internal use only.
+    template <typename T> inline static bool privateTypeTest(const AstNode* nodep);
+
 public:
-    // These for use by VN_IS macro only
-    template <class T> static bool privateIs(const AstNode* nodep);
-
-    // These for use by VN_CAST macro only
-    template <class T> static T* privateCast(AstNode* nodep);
-
-    // These for use by VN_CAST_CONST macro only
-    template <class T> static const T* privateConstCast(const AstNode* nodep);
+    // For use via the VN_IS macro only
+    template <typename T> inline static bool privateIs(const AstNode* nodep) {
+        return nodep && privateTypeTest<T>(nodep);
+    }
+    // For use via the VN_CAST macro only
+    template <typename T> inline static T* privateCast(AstNode* nodep) {
+        return privateIs<T>(nodep) ? reinterpret_cast<T*>(nodep) : nullptr;
+    }
+    // For use via the VN_CAST_CONST macro only
+    template <typename T> inline static const T* privateConstCast(const AstNode* nodep) {
+        return privateIs<T>(nodep) ? reinterpret_cast<const T*>(nodep) : nullptr;
+    }
 };
 
 // Specialisations of privateIs/privateCast
