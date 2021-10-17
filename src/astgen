@@ -362,21 +362,19 @@ def read_types(filename):
             match = re.search(r'^\s*(class|struct)\s*(\S+)', line)
             if match:
                 classn = match.group(2)
-                inh = ""
                 match = re.search(r':\s*public\s+(\S+)', line)
-                if match:
-                    inh = match.group(1)
-                # print("class "+classn+" : "+inh)
-                if classn == "AstNode":
-                    inh = ""
-                if re.search(r'Ast', inh) or classn == "AstNode":
+                supern = match.group(1) if match else ""
+                assert classn != "AstNode" or supern == "", "AstNode can't have a superclass"
+                if re.search(r'Ast', supern) or classn == "AstNode":
+                    if supern == "AstNDeleter":
+                        continue
                     classn = re.sub(r'^Ast', '', classn)
-                    inh = re.sub(r'^Ast', '', inh)
-                    Classes[classn] = inh
-                    if inh != '':
-                        if inh not in Children:
-                            Children[inh] = {}
-                        Children[inh][classn] = 1
+                    supern = re.sub(r'^Ast', '', supern)
+                    Classes[classn] = supern
+                    if supern != '':
+                        if supern not in Children:
+                            Children[supern] = {}
+                        Children[supern][classn] = 1
 
 
 def read_stages(filename):

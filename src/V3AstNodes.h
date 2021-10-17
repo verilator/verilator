@@ -2300,9 +2300,9 @@ class AstScope final : public AstNode {
 private:
     // An AstScope->name() is special: . indicates an uninlined scope, __DOT__ an inlined scope
     string m_name;  // Name
-    AstScope* m_aboveScopep;  // Scope above this one in the hierarchy (nullptr if top)
-    AstCell* m_aboveCellp;  // Cell above this in the hierarchy (nullptr if top)
-    AstNodeModule* m_modp;  // Module scope corresponds to
+    AstScope* const m_aboveScopep;  // Scope above this one in the hierarchy (nullptr if top)
+    AstCell* const m_aboveCellp;  // Cell above this in the hierarchy (nullptr if top)
+    AstNodeModule* const m_modp;  // Module scope corresponds to
 public:
     AstScope(FileLine* fl, AstNodeModule* modp, const string& name, AstScope* aboveScopep,
              AstCell* aboveCellp)
@@ -2321,8 +2321,8 @@ public:
     string nameDotless() const;
     string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
     AstNodeModule* modp() const { return m_modp; }
-    void addVarp(AstNode* nodep) { addOp1p(nodep); }
-    AstNode* varsp() const { return op1p(); }  // op1 = AstVarScope's
+    void addVarp(AstVarScope* nodep) { addOp1p((AstNode*)nodep); }
+    AstVarScope* varsp() const { return VN_AS(op1p(), VarScope); }  // op1 = AstVarScope's
     void addActivep(AstNode* nodep) { addOp2p(nodep); }
     AstNode* blocksp() const { return op2p(); }  // op2 = Block names
     void addFinalClkp(AstNode* nodep) { addOp3p(nodep); }
@@ -2367,6 +2367,8 @@ public:
         : ASTGEN_SUPER_VarScope(fl)
         , m_scopep{scopep}
         , m_varp{varp} {
+        UASSERT_OBJ(scopep, fl, "Scope must be non-null");
+        UASSERT_OBJ(varp, fl, "Var must be non-null");
         m_circular = false;
         m_trace = true;
         dtypeFrom(varp);

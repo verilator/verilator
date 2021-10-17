@@ -1251,31 +1251,39 @@ public:
 // clang-format on
 
 //######################################################################
-// AstNVisitor -- Allows new functions to be called on each node
-// type without changing the base classes.  See "Modern C++ Design".
+// Node deleter, deletes all enqueued AstNode* on destruction, or when
+// explicitly told to do so. This is useful when the deletion of removed
+// nodes needs to be deferred to a later time, because pointers to the
+// removed nodes might still exist.
 
-class AstNVisitor VL_NOT_FINAL {
-private:
+class AstNDeleter VL_NOT_FINAL {
     // MEMBERS
-    std::vector<AstNode*> m_deleteps;  // Nodes to delete when doDeletes() called
-protected:
-    friend class AstNode;
+    std::vector<AstNode*> m_deleteps;  // Nodes to delete
 
 public:
     // METHODS
-    /// At the end of the visitor (or doDeletes()), delete this pushed node
-    /// along with all children and next(s). This is often better to use
-    /// than an immediate deleteTree, as any pointers into this node will
-    /// persist for the lifetime of the visitor
+
+    // Enqueue node for deletion on next 'doDelete' (or destruction)
     void pushDeletep(AstNode* nodep) {
         UASSERT_STATIC(nodep, "Cannot delete nullptr node");
         m_deleteps.push_back(nodep);
     }
-    /// Call deleteTree on all previously pushDeletep()'ed nodes
+
+    // Delete all previously pushed nodes (by callint deleteTree)
     void doDeletes();
 
+    // Do the deletions on destruction
+    virtual ~AstNDeleter() { doDeletes(); }
+};
+
+//######################################################################
+// AstNVisitor -- Allows new functions to be called on each node
+// type without changing the base classes.  See "Modern C++ Design".
+
+class AstNVisitor VL_NOT_FINAL : public AstNDeleter {
+    friend class AstNode;
+
 public:
-    virtual ~AstNVisitor() { doDeletes(); }
     /// Call visit()s on nodep
     void iterate(AstNode* nodep);
     /// Call visit()s on nodep

@@ -82,27 +82,40 @@ private:
 public:
     // CONSTRUCTORS
     SenTreeFinder()
-        : m_topScopep{v3Global.rootp()->topScopep()} {
+        : SenTreeFinder(v3Global.rootp()) {}
+
+    explicit SenTreeFinder(AstNetlist* netlistp)
+        : m_topScopep{netlistp->topScopep()} {
         // Gather existing global SenTrees
-        for (AstSenTree* nodep = m_topScopep->senTreesp(); nodep;
-             nodep = VN_AS(nodep->nextp(), SenTree)) {
-            m_trees.add(nodep);
+        for (AstNode* nodep = m_topScopep->senTreesp(); nodep; nodep = nodep->nextp()) {
+            m_trees.add(VN_AS(nodep, SenTree));
         }
     }
 
     // METHODS
+
+    // Return a global AstSenTree that matches given SenTree.
+    // If no such global AstSenTree exists create one and add it to the stored AstTopScope.
     AstSenTree* getSenTree(AstSenTree* senTreep) {
-        // Return a global SenTree that matches given SenTree. If no such global
-        // SenTree exists, create one and add it to the stored TopScope.
         AstSenTree* treep = m_trees.find(senTreep);
-        // Not found, form a new one
         if (!treep) {
+            // Not found, form a new one
             treep = senTreep->cloneTree(false);
             m_topScopep->addSenTreep(treep);
             UINFO(8, "    New SENTREE " << treep << endl);
             m_trees.add(treep);
         }
         return treep;
+    }
+
+    // Return the global combinational AstSenTree.
+    // If no such global SenTree exists create one and add it to the stored AstTopScope.
+    AstSenTree* getComb() {
+        FileLine* const fl = m_topScopep->fileline();
+        AstSenTree* const combp = new AstSenTree{fl, new AstSenItem{fl, AstSenItem::Combo()}};
+        AstSenTree* const resultp = getSenTree(combp);
+        VL_DO_DANGLING(combp->deleteTree(), combp);  // getSenTree clones, so can delete
+        return resultp;
     }
 };
 

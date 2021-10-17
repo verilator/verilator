@@ -167,6 +167,7 @@ public:
     virtual string name() const override { return "*INPUTS*"; }
     virtual string dotColor() const override { return "green"; }
     virtual string dotName() const override { return ""; }
+    virtual string dotShape() const override { return "invhouse"; }
     virtual bool domainMatters() override { return false; }
 };
 
@@ -193,7 +194,9 @@ public:
         return (cvtToHex(m_nodep) + "\\n " + cvtToStr(nodep()->typeName()));
     }
     AstNode* nodep() const { return m_nodep; }
-    virtual string dotColor() const override { return "yellow"; }
+    virtual string dotShape() const override {
+        return VN_IS(m_nodep, Active) ? "doubleoctagon" : "rect";
+    }
 };
 
 class OrderVarVertex VL_NOT_FINAL : public OrderEitherVertex {
@@ -221,6 +224,7 @@ public:
     bool isClock() const { return m_isClock; }
     void isDelayed(bool flag) { m_isDelayed = flag; }
     bool isDelayed() const { return m_isDelayed; }
+    virtual string dotShape() const override { return "ellipse"; }
 };
 
 class OrderVarStdVertex final : public OrderVarVertex {
@@ -238,7 +242,7 @@ public:
     virtual string name() const override {
         return (cvtToHex(varScp()) + "\\n " + varScp()->name());
     }
-    virtual string dotColor() const override { return "skyblue"; }
+    virtual string dotColor() const override { return "grey"; }
     virtual bool domainMatters() override { return true; }
 };
 class OrderVarPreVertex final : public OrderVarVertex {
@@ -256,7 +260,7 @@ public:
     virtual string name() const override {
         return (cvtToHex(varScp()) + " PRE\\n " + varScp()->name());
     }
-    virtual string dotColor() const override { return "lightblue"; }
+    virtual string dotColor() const override { return "green"; }
     virtual bool domainMatters() override { return false; }
 };
 class OrderVarPostVertex final : public OrderVarVertex {
@@ -274,7 +278,7 @@ public:
     virtual string name() const override {
         return (cvtToHex(varScp()) + " POST\\n " + varScp()->name());
     }
-    virtual string dotColor() const override { return "CadetBlue"; }
+    virtual string dotColor() const override { return "red"; }
     virtual bool domainMatters() override { return false; }
 };
 class OrderVarPordVertex final : public OrderVarVertex {
@@ -292,7 +296,7 @@ public:
     virtual string name() const override {
         return (cvtToHex(varScp()) + " PORD\\n " + varScp()->name());
     }
-    virtual string dotColor() const override { return "NavyBlue"; }
+    virtual string dotColor() const override { return "blue"; }
     virtual bool domainMatters() override { return false; }
 };
 
@@ -307,7 +311,7 @@ class OrderMoveVertex final : public V3GraphVertex {
     OrderMoveDomScope* m_domScopep;  // Domain/scope list information
 
 protected:
-    friend class OrderVisitor;
+    friend class OrderProcess;
     friend class OrderMoveVertexMaker;
     // These only contain the "next" item,
     // for the head of the list, see the same var name under OrderVisitor
