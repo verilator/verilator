@@ -423,7 +423,7 @@ private:
     // STATE
     TaskStateVisitor* m_statep;  // Common state between visitors
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstTopScope* m_topScopep = nullptr;  // Current top scope
+    AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
     InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
@@ -1391,10 +1391,6 @@ private:
             m_modNCalls = 0;
             iterateChildren(nodep);
         }
-    }
-    virtual void visit(AstTopScope* nodep) override {
-        m_topScopep = nodep;
-        iterateChildren(nodep);
     }
     virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;

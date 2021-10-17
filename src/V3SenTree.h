@@ -74,14 +74,21 @@ private:
 class SenTreeFinder final {
 private:
     // STATE
-    AstTopScope* m_topScopep = nullptr;  // Top scope to add global SenTrees to
+    AstTopScope* const m_topScopep;  // Top scope to add global SenTrees to
     SenTreeSet m_trees;  // Set of global SenTrees
 
     VL_UNCOPYABLE(SenTreeFinder);
 
 public:
     // CONSTRUCTORS
-    SenTreeFinder() = default;
+    SenTreeFinder()
+        : m_topScopep{v3Global.rootp()->topScopep()} {
+        // Gather existing global SenTrees
+        for (AstSenTree* nodep = m_topScopep->senTreesp(); nodep;
+             nodep = VN_AS(nodep->nextp(), SenTree)) {
+            m_trees.add(nodep);
+        }
+    }
 
     // METHODS
     AstSenTree* getSenTree(AstSenTree* senTreep) {
@@ -90,22 +97,12 @@ public:
         AstSenTree* treep = m_trees.find(senTreep);
         // Not found, form a new one
         if (!treep) {
-            UASSERT(m_topScopep, "Never called init()");
             treep = senTreep->cloneTree(false);
-            m_topScopep->addStmtsp(treep);
+            m_topScopep->addSenTreep(treep);
             UINFO(8, "    New SENTREE " << treep << endl);
             m_trees.add(treep);
         }
         return treep;
-    }
-
-    void init(AstTopScope* topScopep) {
-        // Keep hold of top scope so we can add global SenTrees later
-        m_topScopep = topScopep;
-        // Gather existing global SenTrees
-        for (AstNode* nodep = topScopep->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (AstSenTree* senTreep = VN_CAST(nodep, SenTree)) m_trees.add(senTreep);
-        }
     }
 };
 

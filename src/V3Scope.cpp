@@ -132,8 +132,7 @@ private:
         AstNode::user1ClearTree();
         m_modp = nodep;
         if (m_modp->isTop()) {
-            AstTopScope* topscp = new AstTopScope(nodep->fileline(), m_scopep);
-            m_modp->addStmtp(topscp);
+            v3Global.rootp()->createTopScope(m_scopep);
         } else {
             m_modp->addStmtp(m_scopep);
         }

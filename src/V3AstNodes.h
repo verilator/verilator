@@ -2333,19 +2333,22 @@ public:
 };
 
 class AstTopScope final : public AstNode {
-    // In the top level netlist, a complete scope tree
-    // There may be two of these, when we support "rare" and "usual" splitting
-    // Parents: topMODULE
-    // Children: SCOPEs
-public:
+    // A singleton, held under the top level AstModule. Holds the top level AstScope,
+    // and after V3ActiveTop, the global list of AstSenTrees (list of unique sensitivity lists).
+    // Parent: Top level AstModule
+    // Children: AstSenTree, AstScope
+    friend class AstNetlist;  // Only the AstNetlist can create one
     AstTopScope(FileLine* fl, AstScope* ascopep)
         : ASTGEN_SUPER_TopScope(fl) {
-        addNOp2p(ascopep);
+        addOp2p(ascopep);
     }
+
+public:
     ASTNODE_NODE_FUNCS(TopScope)
-    AstNode* stmtsp() const { return op1p(); }
-    void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
-    AstScope* scopep() const { return VN_AS(op2p(), Scope); }  // op1 = AstVarScope's
+    virtual bool maybePointedTo() const override { return true; }
+    AstSenTree* senTreesp() const { return VN_AS(op1p(), SenTree); }
+    void addSenTreep(AstSenTree* nodep) { addOp1p((AstNode*)nodep); }
+    AstScope* scopep() const { return VN_AS(op2p(), Scope); }
 };
 
 class AstVarScope final : public AstNode {
@@ -9191,6 +9194,7 @@ private:
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
+    AstTopScope* m_topScopep = nullptr;  // The singleton AstTopScope under the top module
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     bool m_changeRequest = false;  // Have _change_request method
@@ -9202,6 +9206,7 @@ public:
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
         BROKEN_RTN(m_dpiExportTriggerp && !m_dpiExportTriggerp->brokeExists());
+        BROKEN_RTN(m_topScopep && !m_topScopep->brokeExists());
         return nullptr;
     }
     virtual string name() const override { return "$root"; }
@@ -9239,6 +9244,13 @@ public:
     void execGraphp(AstExecGraph* graphp) { m_execGraphp = graphp; }
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
+    AstTopScope* topScopep() const { return m_topScopep; }
+    void createTopScope(AstScope* scopep) {
+        UASSERT(scopep, "Must not be nullptr");
+        UASSERT_OBJ(!m_topScopep, scopep, "TopScope already exits");
+        m_topScopep = new AstTopScope{scopep->modp()->fileline(), scopep};
+        scopep->modp()->addStmtp(v3Global.rootp()->topScopep());
+    }
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& value) { m_timeunit = value; }
     VTimescale timeprecision() const { return m_timeprecision; }

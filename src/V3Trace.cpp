@@ -169,7 +169,7 @@ private:
 
     // STATE
     AstNodeModule* m_topModp = nullptr;  // Module to add variables to
-    AstScope* m_topScopep = nullptr;  // Scope to add variables to
+    AstScope* const m_topScopep = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
     AstCFunc* m_cfuncp = nullptr;  // C function adding to graph
     AstCFunc* m_regFuncp = nullptr;  // Trace registration function
     AstTraceDecl* m_tracep = nullptr;  // Trace function adding to graph
@@ -806,12 +806,6 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->isTop()) m_topModp = nodep;
-        iterateChildren(nodep);
-    }
-    virtual void visit(AstTopScope* nodep) override {
-        AstScope* const scopep = nodep->scopep();
-        UASSERT_OBJ(scopep, nodep, "No scope found on top level");
-        m_topScopep = scopep;
         iterateChildren(nodep);
     }
     virtual void visit(AstCCall* nodep) override {

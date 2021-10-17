@@ -49,7 +49,7 @@ private:
     // STATE
     AstActive* m_activep = nullptr;  // Inside activate statement
     AstNodeModule* m_topModp;  // Top module
-    AstScope* m_scopetopp = nullptr;  // Scope under TOPSCOPE
+    AstScope* const m_scopetopp = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
 
     // METHODS
     AstVarScope* genInpClk(AstVarScope* vscp) {
@@ -93,11 +93,6 @@ private:
     // VISITORS
     virtual void visit(AstTopScope* nodep) override {
         AstNode::user2ClearTree();  // user2p() used on entire tree
-
-        AstScope* scopep = nodep->scopep();
-        UASSERT_OBJ(scopep, nodep, "No scope found on top level");
-        m_scopetopp = scopep;
-
         iterateChildren(nodep);
     }
     //----

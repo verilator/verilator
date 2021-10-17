@@ -45,19 +45,12 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstTopScope* m_topscopep = nullptr;  // Top scope for adding sentrees under
-    SenTreeFinder m_finder;  // Find global sentree's and add them
+    SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) override {
-        m_topscopep = nodep;
-        m_finder.init(m_topscopep);
-        iterateChildren(nodep);
-        m_topscopep = nullptr;
-    }
     virtual void visit(AstNodeModule* nodep) override {
         // Create required actives and add to module
         // We can start ordering at a module, or a scope

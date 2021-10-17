@@ -37,7 +37,7 @@ private:
     // NODE STATE
 
     // STATE
-    AstScope* m_topScopep = nullptr;  // Current top scope
+    AstScope* const m_topScopep = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
     AstCFunc* m_initFuncp = nullptr;  // Trace function being built
     AstCFunc* m_initSubFuncp = nullptr;  // Trace function being built (under m_init)
     int m_initSubStmts = 0;  // Number of statements in function
@@ -136,7 +136,6 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) override {
-        m_topScopep = nodep->scopep();
         // Create the trace init function
         m_initFuncp = newCFunc("trace_init_top");
         // Create initial sub function
