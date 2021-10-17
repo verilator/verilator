@@ -103,6 +103,11 @@ module t;
       $display("i='%d'",p_i);
       if (p_i !== 32'd1234) $stop;
 
+      // bug3131 - really "if" side effect test
+      p_i = 0;
+      if ($value$plusargs("INT=%d", p_i)) ;
+      if (p_i !== 32'd1234) $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

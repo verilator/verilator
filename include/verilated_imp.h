@@ -549,8 +549,8 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock{s().m_exportMutex};
         const auto& it = s().m_exportMap.find(namep);
         if (VL_LIKELY(it != s().m_exportMap.end())) return it->second;
-        std::string msg = (std::string{"%Error: Testbench C called "} + namep
-                           + " but no such DPI export function name exists in ANY model");
+        const std::string msg = (std::string{"%Error: Testbench C called "} + namep
+                                 + " but no such DPI export function name exists in ANY model");
         VL_FATAL_MT("unknown", 0, "", msg.c_str());
         return -1;
     }

@@ -21,6 +21,5 @@ if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, Gate sigs deduped\s+(\d+)/i, 4);
 }
 
-
 ok(1);
 1;

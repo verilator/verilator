@@ -62,6 +62,12 @@ Summary:
    makes sense for a single-clock-domain module where it's typical to want
    to capture one posedge eval() and one negedge eval().
 
+.. option:: +verilator+prof+vlt+file+<filename>
+
+   When a model was Verilated using :vlopt:`--prof-threads`, sets the
+   profile-guided optimization data runtime filename to dump to.  Defaults
+   to :file:`profile.vlt`.
+
 .. option:: +verilator+rand+reset+<value>
 
    When a model was Verilated using :vlopt:`--x-initial unique

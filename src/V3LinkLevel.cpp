@@ -132,6 +132,8 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
         v3Global.rootp()->timeprecisionMerge(v3Global.rootp()->fileline(),
                                              VTimescale(VTimescale::TS_DEFAULT));
     }
+
+    // Classes under package have timescale propaged in V3LinkParse
 }
 
 //######################################################################

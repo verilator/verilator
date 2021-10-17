@@ -8,3 +8,23 @@
 `define BAR(aa,bb) aa bb
 `FOO
 `BAR(aa,bb)
+
+`ifdef FOO
+`else
+`endif
+`ifndef FOO
+`elsif FOO
+`endif
+
+`define STRINGIFY(x) `"x`"
+`define CONCAT(a, b) a``b
+`STRINGIFY(x)
+`CONCAT(x,y)
+
+`undef FOO
+
+`undefineall
+
+`ifdef NEVER
+`error "should not get"
+`endif

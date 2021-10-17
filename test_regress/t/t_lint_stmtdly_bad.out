@@ -1,0 +1,7 @@
+%Warning-STMTDLY: t/t_lint_stmtdly_bad.v:10:8: Unsupported: Ignoring delay on this delayed statement.
+                                             : ... In instance t
+   10 |       #100 $finish;   
+      |        ^~~
+                  ... For warning description see https://verilator.org/warn/STMTDLY?v=latest
+                  ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
+%Error: Exiting due to

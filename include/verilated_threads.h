@@ -131,21 +131,36 @@ public:
 class VlProfileRec final {
 protected:
     friend class VlThreadPool;
-    enum VlProfileE { TYPE_MTASK_RUN, TYPE_BARRIER };
-    VlProfileE m_type = TYPE_BARRIER;  // Record type
-    vluint32_t m_mtaskId = 0;  // Mtask we're logging
-    vluint32_t m_predictTime = 0;  // How long scheduler predicted would take
-    vluint64_t m_startTime = 0;  // Tick at start of execution
+    enum VlProfileE { TYPE_MTASK_RUN, TYPE_EVAL, TYPE_EVAL_LOOP, TYPE_BARRIER };
+    // Layout below allows efficient packing.
+    // Leave endTime first, so no math needed to calculate address in endRecord
     vluint64_t m_endTime = 0;  // Tick at end of execution
+    vluint64_t m_startTime = 0;  // Tick at start of execution
+    vluint32_t m_mtaskId = 0;  // Mtask we're logging
+    vluint32_t m_predictStart = 0;  // Time scheduler predicted would start
+    vluint32_t m_predictCost = 0;  // How long scheduler predicted would take
+    VlProfileE m_type = TYPE_BARRIER;  // Record type
     unsigned m_cpu;  // Execution CPU number (at start anyways)
 public:
     class Barrier {};
     VlProfileRec() = default;
     explicit VlProfileRec(Barrier) { m_cpu = getcpu(); }
-    void startRecord(vluint64_t time, uint32_t mtask, uint32_t predict) {
+    void startEval(vluint64_t time) {
+        m_type = VlProfileRec::TYPE_EVAL;
+        m_startTime = time;
+        m_cpu = getcpu();
+    }
+    void startEvalLoop(vluint64_t time) {
+        m_type = VlProfileRec::TYPE_EVAL_LOOP;
+        m_startTime = time;
+        m_cpu = getcpu();
+    }
+    void startRecord(vluint64_t time, vluint32_t mtask, vluint32_t predictStart,
+                     vluint32_t predictCost) {
         m_type = VlProfileRec::TYPE_MTASK_RUN;
         m_mtaskId = mtask;
-        m_predictTime = predict;
+        m_predictStart = predictStart;
+        m_predictCost = predictCost;
         m_startTime = time;
         m_cpu = getcpu();
     }
@@ -292,7 +307,8 @@ public:
         return &(t_profilep->back());
     }
     void profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES(m_mutex);
-    void profileDump(const char* filenamep, vluint64_t ticksElapsed) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void profileDump(const char* filenamep, vluint64_t tickStart, vluint64_t tickEnd)
+        VL_MT_SAFE_EXCLUDES(m_mutex);
     // In profiling mode, each executing thread must call
     // this once to setup profiling state:
     void setupProfilingClientThread() VL_MT_SAFE_EXCLUDES(m_mutex);

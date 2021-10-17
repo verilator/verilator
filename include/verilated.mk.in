@@ -23,8 +23,6 @@ CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 CFG_CXXFLAGS_PROFILE = @CFG_CXXFLAGS_PROFILE@
 # Select newest language
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
-# Select oldest language (for Verilator internal testing only)
-CFG_CXXFLAGS_STD_OLDEST = @CFG_CXXFLAGS_STD_OLDEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Compiler flags that turn on extra warnings

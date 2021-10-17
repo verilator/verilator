@@ -14,7 +14,7 @@ $Self->{clean_command} = 'rm -rf ../examples/*/build ../examples/*/obj*';
 
 my @examples = sort(glob("../examples/*"));
 for my $example (@examples) {
-    run(cmd=>["$ENV{MAKE} -C $example"]);
+    run(cmd => ["$ENV{MAKE} -C $example"]);
 }
 
 ok(1);

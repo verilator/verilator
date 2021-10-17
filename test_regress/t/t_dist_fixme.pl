@@ -21,16 +21,29 @@ if (!-r "$root/.git") {
     ### Must trim output before and after our file list
     my $files = `cd $root && git ls-files --exclude-standard`;
     print "ST $files\n" if $Debug;
+    my %names;
+
     $files =~ s/\s+/ /g;
-    my $cmd = "cd $root && grep -n -P '(FIX"."ME|BO"."ZO)' $files | sort";
-    my $grep = `$cmd`;
-    print "$grep\n";
-    if ($grep ne "") {
-        my %names;
-        foreach my $line (split /\n/, $grep) {
-            $names{$1} = 1 if $line =~ /^([^:]+)/;
+    my @batch;
+    my $n = 0;
+    foreach my $file (split /\s+/, $files) {
+        $batch[$n] .= $file . " ";
+        ++$n if (length($batch[$n]) > 10000);
+    }
+
+    foreach my $bfiles (@batch) {
+        my $cmd = "cd $root && grep -n -P '(FIX" . "ME|BO" . "ZO)' $bfiles | sort";
+        my $grep = `$cmd`;
+        if ($grep ne "") {
+            print "$grep\n";
+            foreach my $line (split /\n/, $grep) {
+                print "L $line\n";
+                $names{$1} = 1 if $line =~ /^([^:]+)/;
+            }
         }
-        error("Files with FIX"."MEs: ",join(' ',sort keys %names));
+    }
+    if (scalar(%names) >= 1) {
+        error("Files with FIX" . "MEs: ", join(' ', sort keys %names));
     }
 }
 

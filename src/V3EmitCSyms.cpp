@@ -21,6 +21,7 @@
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3LanguageWords.h"
+#include "V3PartitionGraph.h"
 
 #include <algorithm>
 #include <map>
@@ -214,12 +215,13 @@ class EmitCSyms final : EmitCBaseVisitor {
                     } else {
                         varBase = whole;
                     }
-                    // UINFO(9,"For "<<scopep->name()<<" - "<<varp->name()<<"  Scp "<<scpName<<"
-                    // Var "<<varBase<<endl);
+                    // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
+                    // << scpName << "Var " << varBase << endl);
                     const string varBasePretty = AstNode::prettyName(varBase);
                     const string scpPretty = AstNode::prettyName(scpName);
                     const string scpSym = scopeSymString(scpName);
-                    // UINFO(9," scnameins sp "<<scpName<<" sp "<<scpPretty<<" ss "<<scpSym<<endl);
+                    // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
+                    // << scpSym << endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
                         m_scopeNames.insert(std::make_pair(
@@ -393,6 +395,7 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.needTraceDumper()) {
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
     }
+    if (v3Global.opt.profThreads()) puts("#include \"verilated_profiler.h\"\n");
 
     puts("\n// INCLUDE MODEL CLASS\n");
     puts("\n#include \"" + topClassName() + ".h\"\n");
@@ -472,6 +475,21 @@ void EmitCSyms::emitSymHdr() {
         puts(" __Vcoverage[");
         puts(cvtToStr(m_coverBins));
         puts("];\n");
+    }
+
+    if (v3Global.opt.profThreads()) {
+        puts("\n// PROFILING\n");
+        vluint64_t maxProfilerId = 0;
+        if (v3Global.opt.mtasks()) {
+            for (const V3GraphVertex* vxp
+                 = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
+                 vxp; vxp = vxp->verticesNextp()) {
+                ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+                if (maxProfilerId < mtp->profilerId()) maxProfilerId = mtp->profilerId();
+            }
+        }
+        ++maxProfilerId;  // As size must include 0
+        puts("VerilatedProfiler<" + cvtToStr(maxProfilerId) + "> _vm_profiler;\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names
@@ -653,6 +671,7 @@ void EmitCSyms::emitSymImp() {
     }
 
     puts("// FUNCTIONS\n");
+
     // Destructor
     puts(symClassName() + "::~" + symClassName() + "()\n");
     puts("{\n");
@@ -662,7 +681,11 @@ void EmitCSyms::emitSymImp() {
         puts("if (__Vm_dumping) _traceDumpClose();\n");
         puts("#endif  // VM_TRACE\n");
     }
-    if (v3Global.opt.mtasks()) { puts("delete __Vm_threadPoolp;\n"); }
+    if (v3Global.opt.profThreads()) {
+        puts("_vm_profiler.write(\"" + topClassName()
+             + "\", _vm_contextp__->profVltFilename());\n");
+    }
+    if (v3Global.opt.mtasks()) puts("delete __Vm_threadPoolp;\n");
     puts("}\n\n");
 
     // Constructor
@@ -716,6 +739,19 @@ void EmitCSyms::emitSymImp() {
         ++m_numStmts;
     }
     puts("{\n");
+
+    if (v3Global.opt.profThreads()) {
+        puts("// Configure profiling\n");
+        if (v3Global.opt.mtasks()) {
+            for (const V3GraphVertex* vxp
+                 = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
+                 vxp; vxp = vxp->verticesNextp()) {
+                ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+                puts("_vm_profiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
+                     + mtp->hashName() + "\");\n");
+            }
+        }
+    }
 
     puts("// Configure time unit / time precision\n");
     if (!v3Global.rootp()->timeunit().isNone()) {

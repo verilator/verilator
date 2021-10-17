@@ -82,9 +82,12 @@ extern IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     vluint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {
+        // (hi - lo + 1) can be zero when hi is UINT_MAX and lo is zero
+        if (VL_UNLIKELY(hi - lo + 1 == 0)) return rnd;
         // Modulus isn't very fast but it's common that hi-low is power-of-two
         return (rnd % (hi - lo + 1)) + lo;
     } else {
+        if (VL_UNLIKELY(lo - hi + 1 == 0)) return rnd;
         return (rnd % (lo - hi + 1)) + hi;
     }
 }

@@ -504,7 +504,8 @@ private:
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
-            //
+            // Classes inherit from upper package
+            if (m_modp && nodep->timeunit().isNone()) nodep->timeunit(m_modp->timeunit());
             m_modp = nodep;
             m_genblkAbove = 0;
             m_genblkNum = 0;

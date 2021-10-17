@@ -923,8 +923,9 @@ private:
         if (ccastp) {
             andp->replaceWith(ccastp);
             VL_DO_DANGLING(andp->deleteTree(), andp);
+            return true;
         }
-        return ccastp;
+        return false;
     }
 
     static bool operandAndOrSame(const AstNode* nodep) {
@@ -1312,6 +1313,15 @@ private:
         // but for now can disable en-mass until V3Purify takes effect.
         return m_doShort || VN_IS(nodep, VarRef) || VN_IS(nodep, Const);
     }
+    bool isTreePureRecurse(AstNode* nodep) {
+        // Should memoize this if call commonly
+        if (!nodep->isPure()) return false;
+        if (nodep->op1p() && !isTreePureRecurse(nodep->op1p())) return false;
+        if (nodep->op2p() && !isTreePureRecurse(nodep->op2p())) return false;
+        if (nodep->op3p() && !isTreePureRecurse(nodep->op3p())) return false;
+        if (nodep->op4p() && !isTreePureRecurse(nodep->op4p())) return false;
+        return true;
+    }
 
     // Extraction checks
     bool warnSelect(AstSel* nodep) {
@@ -1337,10 +1347,19 @@ private:
                        && (nodep->msbConst() > maxDeclBit || nodep->lsbConst() > maxDeclBit)) {
                 // See also warning in V3Width
                 // Must adjust by element width as declRange() is in number of elements
+                string msbLsbProtected;
+                if (nodep->declElWidth() == 0) {
+                    msbLsbProtected = "(nodep->declElWidth() == 0) "
+                                      + std::to_string(nodep->msbConst()) + ":"
+                                      + std::to_string(nodep->lsbConst());
+                } else {
+                    msbLsbProtected = std::to_string(nodep->msbConst() / nodep->declElWidth())
+                                      + ":"
+                                      + std::to_string(nodep->lsbConst() / nodep->declElWidth());
+                }
                 nodep->v3warn(SELRANGE,
                               "Selection index out of range: "
-                                  << (nodep->msbConst() / nodep->declElWidth()) << ":"
-                                  << (nodep->lsbConst() / nodep->declElWidth()) << " outside "
+                                  << msbLsbProtected << " outside "
                                   << nodep->declRange().hiMaxSelect() << ":0"
                                   << (nodep->declRange().lo() >= 0
                                           ? ""
@@ -2199,8 +2218,8 @@ private:
     void swapSides(AstNodeBiCom* nodep) {
         // COMMUTATIVE({a},CONST) -> COMMUTATIVE(CONST,{a})
         // This simplifies later optimizations
-        AstNode* lhsp = nodep->lhsp()->unlinkFrBackWithNext();
-        AstNode* rhsp = nodep->rhsp()->unlinkFrBackWithNext();
+        AstNode* const lhsp = nodep->lhsp()->unlinkFrBackWithNext();
+        AstNode* const rhsp = nodep->rhsp()->unlinkFrBackWithNext();
         nodep->lhsp(rhsp);
         nodep->rhsp(lhsp);
         iterate(nodep);  // Again?
@@ -2209,8 +2228,8 @@ private:
     int operandConcatMove(AstConcat* nodep) {
         //    CONCAT under concat  (See moveConcat)
         // Return value: true indicates to do it; 2 means move to LHS
-        AstConcat* abConcp = VN_CAST(nodep->lhsp(), Concat);
-        AstConcat* bcConcp = VN_CAST(nodep->rhsp(), Concat);
+        AstConcat* const abConcp = VN_CAST(nodep->lhsp(), Concat);
+        AstConcat* const bcConcp = VN_CAST(nodep->rhsp(), Concat);
         if (!abConcp && !bcConcp) return 0;
         if (bcConcp) {
             AstNode* ap = nodep->lhsp();
@@ -2783,10 +2802,13 @@ private:
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (!afterComment(nodep->ifsp()) && !afterComment(nodep->elsesp())) {
-                // Empty block, remove it
-                // Note if we support more C++ then there might be side
-                // effects in the condition itself
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                if (!isTreePureRecurse(nodep->condp())) {
+                    // Condition has side effect - leave - perhaps in
+                    // future simplify to remove all but side effect terms
+                } else {
+                    // Empty block, remove it
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                }
             } else if (!afterComment(nodep->ifsp())) {
                 UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep << endl);
                 AstNode* condp = nodep->condp();

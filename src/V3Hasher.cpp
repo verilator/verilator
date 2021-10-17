@@ -81,7 +81,7 @@ private:
 
     virtual void visit(AstNode* nodep) override {
 #if VL_DEBUG
-        UINFO(0, "%Warning: Hashing node as AstNode: " << nodep);
+        UINFO(0, "%Warning: Hashing node as AstNode: " << nodep << endl);
 #endif
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
@@ -454,6 +454,9 @@ private:
             m_hash += nodep->name();
             iterateNull(nodep->ftaskp());
         });
+    }
+    virtual void visit(AstMTaskBody* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
     virtual void visit(AstNodeProcedure* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});

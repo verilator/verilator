@@ -18,6 +18,7 @@
 #include "verilatedos.h"
 
 #include "V3EmitCBase.h"
+#include "V3Config.h"
 #include "V3Os.h"
 #include "V3File.h"
 #include "V3GraphAlg.h"
@@ -27,6 +28,7 @@
 #include "V3PartitionGraph.h"
 #include "V3Scoreboard.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <list>
 #include <memory>
@@ -2237,11 +2239,11 @@ public:
         std::vector<uint32_t> busyUntil(m_nThreads, 0);
 
         // MTasks ready to be assigned next. All their dependencies are already assigned.
-        std::set<const ExecMTask*, MTaskCmp> readyMTasks;
+        std::set<ExecMTask*, MTaskCmp> readyMTasks;
 
         // Build initial ready list
         for (V3GraphVertex* vxp = mtaskGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            const ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(vxp);
+            ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(vxp);
             if (isReady(schedule, mtaskp)) readyMTasks.insert(mtaskp);
         }
 
@@ -2250,9 +2252,9 @@ public:
             // on each thread (in that thread's local time frame.)
             uint32_t bestTime = 0xffffffff;
             uint32_t bestThreadId = 0;
-            const ExecMTask* bestMtaskp = nullptr;  // Todo: const ExecMTask*
+            ExecMTask* bestMtaskp = nullptr;  // Todo: const ExecMTask*
             for (uint32_t threadId = 0; threadId < m_nThreads; ++threadId) {
-                for (const ExecMTask* const mtaskp : readyMTasks) {
+                for (ExecMTask* const mtaskp : readyMTasks) {
                     uint32_t timeBegin = busyUntil[threadId];
                     if (timeBegin > bestTime) {
                         UINFO(6, "th " << threadId << " busy until " << timeBegin
@@ -2287,10 +2289,11 @@ public:
             std::vector<const ExecMTask*>& bestThread = schedule.threads[bestThreadId];
 
             // Update algorithm state
+            bestMtaskp->predictStart(bestTime);  // Only for gantt reporting
             const uint32_t bestEndTime = bestTime + bestMtaskp->cost();
             schedule.mtaskState[bestMtaskp].completionTime = bestEndTime;
             schedule.mtaskState[bestMtaskp].threadId = bestThreadId;
-            if (!bestThread.empty()) { schedule.mtaskState[bestThread.back()].nextp = bestMtaskp; }
+            if (!bestThread.empty()) schedule.mtaskState[bestThread.back()].nextp = bestMtaskp;
             busyUntil[bestThreadId] = bestEndTime;
 
             // Add the MTask to the schedule
@@ -2301,7 +2304,7 @@ public:
             UASSERT_OBJ(erased > 0, bestMtaskp, "Should have erased something?");
             for (V3GraphEdge* edgeOutp = bestMtaskp->outBeginp(); edgeOutp;
                  edgeOutp = edgeOutp->outNextp()) {
-                const ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgeOutp->top());
+                ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgeOutp->top());
                 // Dependent MTask should not yet be assigned to a thread
                 UASSERT(schedule.threadId(nextp) == ThreadSchedule::UNASSIGNED,
                         "Tasks after one being assigned should not be assigned yet");
@@ -2614,15 +2617,152 @@ void V3Partition::go(V3Graph* mtasksp) {
     }
 }
 
+void add(std::unordered_map<int, vluint64_t>& cmap, int id, vluint64_t cost) { cmap[id] += cost; }
+
+using EstimateAndProfiled = std::pair<uint64_t, vluint64_t>;  // cost est, cost profiled
+using Costs = std::unordered_map<uint32_t, EstimateAndProfiled>;
+
+static void normalizeCosts(Costs& costs) {
+    const auto scaleCost = [](vluint64_t value, double multiplier) {
+        double scaled = static_cast<double>(value) * multiplier;
+        if (value && scaled < 1) scaled = 1;
+        return static_cast<uint64_t>(scaled);
+    };
+
+    // For all costs with a profile, compute sum
+    vluint64_t sumCostProfiled = 0;  // For data with estimate and profile
+    vluint64_t sumCostEstimate = 0;  // For data with estimate and profile
+    for (const auto& est : costs) {
+        if (est.second.second) {
+            sumCostEstimate += est.second.first;
+            sumCostProfiled += est.second.second;
+        }
+    }
+
+    if (sumCostEstimate) {
+        // For data where we don't have profiled data, compute how much to
+        // scale up/down the estimate to make on same relative scale as
+        // profiled data.  (Improves results if only a few profiles missing.)
+        double estToProfile
+            = static_cast<double>(sumCostProfiled) / static_cast<double>(sumCostEstimate);
+        UINFO(5, "Estimated data needs scaling by "
+                     << estToProfile << ", sumCostProfiled=" << sumCostProfiled
+                     << " sumCostEstimate=" << sumCostEstimate << endl);
+        for (auto& est : costs) {
+            uint64_t& costEstimate = est.second.first;
+            costEstimate = scaleCost(costEstimate, estToProfile);
+        }
+    }
+
+    // COSTS can overflow a uint32.  Using maximum value of costs, scale all down
+    vluint64_t maxCost = 0;
+    for (auto& est : costs) {
+        const uint64_t& costEstimate = est.second.first;
+        const uint64_t& costProfiled = est.second.second;
+        if (maxCost < costEstimate) maxCost = costEstimate;
+        if (maxCost < costProfiled) maxCost = costProfiled;
+        UINFO(9,
+              "Post uint scale: ce = " << est.second.first << " cp=" << est.second.second << endl);
+    }
+    vluint64_t scaleDownTo = 10000000;  // Extra room for future algorithms to add costs
+    if (maxCost > scaleDownTo) {
+        const double scaleup = static_cast<double>(scaleDownTo) / static_cast<double>(maxCost);
+        UINFO(5, "Scaling data to within 32-bits by multiply by=" << scaleup << ", maxCost="
+                                                                  << maxCost << endl);
+        for (auto& est : costs) {
+            est.second.first = scaleCost(est.second.first, scaleup);
+            est.second.second = scaleCost(est.second.second, scaleup);
+        }
+    }
+}
+
+void V3Partition::selfTestNormalizeCosts() {
+    {  // Test that omitted profile data correctly scales estimates
+        Costs costs({// id  est  prof
+                     {1, {10, 1000}},
+                     {2, {20, 0}},  // Note no profile
+                     {3, {30, 3000}}});
+        normalizeCosts(costs);
+        UASSERT_SELFTEST(uint64_t, costs[1].first, 1000);
+        UASSERT_SELFTEST(uint64_t, costs[1].second, 1000);
+        UASSERT_SELFTEST(uint64_t, costs[2].first, 2000);
+        UASSERT_SELFTEST(uint64_t, costs[2].second, 0);
+        UASSERT_SELFTEST(uint64_t, costs[3].first, 3000);
+        UASSERT_SELFTEST(uint64_t, costs[3].second, 3000);
+    }
+    {  // Test that very large profile data properly scales
+        Costs costs({// id  est  prof
+                     {1, {10, 100000000000}},
+                     {2, {20, 200000000000}},
+                     {3, {30, 1}}});  // Make sure doesn't underflow
+        normalizeCosts(costs);
+        UASSERT_SELFTEST(uint64_t, costs[1].first, 2500000);
+        UASSERT_SELFTEST(uint64_t, costs[1].second, 5000000);
+        UASSERT_SELFTEST(uint64_t, costs[2].first, 5000000);
+        UASSERT_SELFTEST(uint64_t, costs[2].second, 10000000);
+        UASSERT_SELFTEST(uint64_t, costs[3].first, 7500000);
+        UASSERT_SELFTEST(uint64_t, costs[3].second, 1);
+    }
+}
+
+static void fillinCosts(V3Graph* execMTaskGraphp) {
+    V3UniqueNames m_uniqueNames;  // For generating unique mtask profile hash names
+
+    // Pass 1: See what profiling data applies
+    Costs costs;  // For each mtask, costs
+
+    for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
+         vxp = vxp->verticesNextp()) {
+        ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+        // Compute name of mtask, for hash lookup
+        mtp->hashName(m_uniqueNames.get(mtp->bodyp()));
+
+        // This estimate is 64 bits, but the final mtask graph algorithm needs 32 bits
+        vluint64_t costEstimate = V3InstrCount::count(mtp->bodyp(), false);
+        vluint64_t costProfiled = V3Config::getProfileData(v3Global.opt.prefix(), mtp->hashName());
+        if (costProfiled) {
+            UINFO(5, "Profile data for mtask " << mtp->id() << " " << mtp->hashName()
+                                               << " cost override " << costProfiled << endl);
+        }
+        costs[mtp->id()] = std::make_pair(costEstimate, costProfiled);
+    }
+
+    normalizeCosts(costs /*ref*/);
+
+    int totalEstimates = 0;
+    int missingProfiles = 0;
+    for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
+         vxp = vxp->verticesNextp()) {
+        ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+        const uint32_t costEstimate = costs[mtp->id()].first;
+        const uint64_t costProfiled = costs[mtp->id()].second;
+        UINFO(9, "ce = " << costEstimate << " cp=" << costProfiled << endl);
+        UASSERT(costEstimate <= (1UL << 31), "cost scaling math would overflow uint32");
+        UASSERT(costProfiled <= (1UL << 31), "cost scaling math would overflow uint32");
+        const uint64_t costProfiled32 = static_cast<uint32_t>(costProfiled);
+        uint32_t costToUse = costProfiled32;
+        if (!costProfiled32) {
+            costToUse = costEstimate;
+            if (costEstimate != 0) ++missingProfiles;
+        }
+        if (costEstimate != 0) ++totalEstimates;
+        mtp->cost(costToUse);
+        mtp->priority(costToUse);
+    }
+
+    if (missingProfiles) {
+        if (FileLine* fl = V3Config::getProfileDataFileLine()) {
+            fl->v3warn(PROFOUTOFDATE, "Profile data for mtasks may be out of date. "
+                                          << missingProfiles << " of " << totalEstimates
+                                          << " mtasks had no data");
+        }
+    }
+}
+
 static void finalizeCosts(V3Graph* execMTaskGraphp) {
     GraphStreamUnordered ser(execMTaskGraphp, GraphWay::REVERSE);
-
     while (const V3GraphVertex* vxp = ser.nextp()) {
         ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
-        uint32_t costCount = V3InstrCount::count(mtp->bodyp(), false);
-        mtp->cost(costCount);
-        mtp->priority(costCount);
-
         // "Priority" is the critical path from the start of the mtask, to
         // the end of the graph reachable from this mtask.  Given the
         // choice among several ready mtasks, we'll want to start the
@@ -2659,6 +2799,14 @@ static void finalizeCosts(V3Graph* execMTaskGraphp) {
             // keep a dangling pointer to the ExecMTask.
             VL_DO_DANGLING(bodyp->unlinkFrBack()->deleteTree(), bodyp);
         }
+    }
+
+    // Assign profiler IDs
+    vluint64_t profilerId = 0;
+    for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
+         vxp = vxp->verticesNextp()) {
+        ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+        mtp->profilerId(profilerId++);
     }
 
     // Removing tasks may cause edges that were formerly non-transitive to
@@ -2711,11 +2859,16 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
         // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
         addStrStmt("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n" +  //
                    recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n" +  //
-                   recName + "->startRecord(VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start,"
-                   +  //
+                   recName + "->startRecord(VL_RDTSC_Q()," +  //
                    " " + cvtToStr(mtaskp->id()) + "," +  //
+                   " " + cvtToStr(mtaskp->predictStart()) + "," +  //
                    " " + cvtToStr(mtaskp->cost()) + ");\n" +  //
                    "}\n");
+    }
+    if (v3Global.opt.profThreads()) {
+        // No lock around startCounter, as counter numbers are unique per thread
+        addStrStmt("vlSymsp->_vm_profiler.startCounter(" + cvtToStr(mtaskp->profilerId())
+                   + ");\n");
     }
 
     //
@@ -2725,10 +2878,12 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
     funcp->addStmtsp(mtaskp->bodyp()->unlinkFrBack());
 
     if (v3Global.opt.profThreads()) {
-        // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-        addStrStmt("if (VL_UNLIKELY(" + recName + ")) {\n" +  //
-                   recName + "->endRecord(VL_RDTSC_Q() - vlSymsp->__Vm_profile_cycle_start);\n"
-                   + "}\n");
+        // No lock around stopCounter, as counter numbers are unique per thread
+        addStrStmt("vlSymsp->_vm_profiler.stopCounter(" + cvtToStr(mtaskp->profilerId()) + ");\n");
+    }
+    if (v3Global.opt.profThreads()) {
+        addStrStmt("if (VL_UNLIKELY(" + recName + ")) "  //
+                   + recName + "->endRecord(VL_RDTSC_Q());\n");
     }
 
     // Flush message queue
@@ -2852,9 +3007,10 @@ void V3Partition::finalize() {
     // V3LifePost) that can change the cost of logic within each mtask.
     // Now that logic is final, recompute the cost and priority of each
     // ExecMTask.
+    fillinCosts(execGraphp->mutableDepGraphp());
     finalizeCosts(execGraphp->mutableDepGraphp());
 
-    // Replace the graph body with it's multi-threaded implementation.
+    // Replace the graph body with its multi-threaded implementation.
     implementExecGraph(execGraphp);
 }
 

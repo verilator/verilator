@@ -1,0 +1,6 @@
+-V{t#,#}- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.
+-V{t#,#}+    Vt_lint_didnotconverge_bad___024root___change_request
+-V{t#,#}+    Vt_lint_didnotconverge_bad___024root___change_request_1
+-V{t#,#}        CHANGE: t/t_lint_didnotconverge_bad.v:14: a
+%Error: t/t_lint_didnotconverge_bad.v:7: Verilated model didn't converge
+Aborting...

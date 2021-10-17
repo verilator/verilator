@@ -590,6 +590,7 @@ static void verilate(const string& argString) {
         V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Partition::selfTest();
+        V3Partition::selfTestNormalizeCosts();
         V3Broken::selfTest();
     }
 

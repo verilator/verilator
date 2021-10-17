@@ -10,42 +10,60 @@ starts and ends, and showing when each thread is busy or idle.
 
 For an overview of use of verilator_gantt, see :ref:`Profiling`.
 
-Gantt Chart Contents
---------------------
+Gantt Chart VCD
+---------------
 
-The generated Gantt chart has time on the X-axis. Times shown are to the
-scale printed, i.e. a certain about of time for each character width.  The
-Y-axis shows threads, each thread's execution is shown on one line.  That
-line shows "[" at the position in time when it executes.
+Verilated_gnatt creates a value change dump (VCD) format dump file which
+may be viewed in a waveform viewer (e.g. C<GTKWave>):
 
-Following the "[" is the CPU number the task executed on, followed by zero
-or more "-" to make the width of the characters match the scaled execution
-time, followed by a "]".  If the scale is too small, the CPU number and
-mtask number will not be printed.  If the scale is very small, a "&"
-indicates multiple mtasks started at that time position.
+.. figure:: figures/fig_gantt_min.png
 
-Also creates a value change dump (VCD) format dump file which may be viewed
-in a waveform viewer (e.g. C<GTKWave>).  See below.
+   Example verilator_gantt output, as viewed with GTKWave.
+
+The viewed waveform chart has time on the X-axis, with one unit for each
+time tick of the system's high-performance counter.
+
 
 Gantt Chart VCD Signals
 -----------------------
 
-In waveforms there are the following signals. Most signals the "decimal"
-format will remove the leading zeros and make the traces easier to read.
+In waveforms there are the following signals. In GTKWave, using a data
+format of "decimal" will remove the leading zeros and make the traces
+easier to read.
 
-parallelism
+evals
+  Increments each time when eval_step was measured to be active.  This
+  allow visualization of how much time eval_step was active.
+
+eval_loop
+  Increments each time when the evaluation loop within eval_step was
+  measured to be active.  For best performance there is only a single
+  evaluation loop within each eval_step call, that is the eval_loop
+  waveform looks identical to the evals waveform.
+
+measured_parallelism
   The number of mtasks active at this time, for best performance this will
-  match the thread count. You may want to use an "analog step" format to
+  match the thread count. In GTKWave, use a data format of "analog step" to
   view this signal.
 
+predicted_parallelism
+  The number of mtasks Verilator predicted would be active at this time,
+  for best performance this will match the thread count. In GTKWave, use a
+  data format of "analog step" to view this signal.
+
 cpu#_thread
-  For the given CPU number, the thread number executing.
+  For the given CPU number, the thread number measured to be executing.
 
 mtask#_cpu
-  For the given mtask id, the CPU it is executing on.
+  For the given mtask id, the CPU it was measured to execute on.
 
 thread#_mtask
-  For the given thread number, the mtask id executing.
+  For the given thread number, the mtask id it was executing.
+
+predicted_thread#_mtask
+  For the given thread number, the mtask id Verilator predicted would be
+  executing.
+
 
 verilator_gantt Arguments
 -------------------------
@@ -59,13 +77,6 @@ The filename to read data from, defaults to "profile_threads.dat".
 .. option:: --help
 
 Displays a help summary, the program version, and exits.
-
-.. option:: --scale <n>
-
-Sets the number of time units per character on the X-axis of the generated
-Gantt chart.  (On x86, time units are rdtsc ticks.)  Defaults to 0, which
-will automatically compute a reasonable scale where no two mtasks need to
-fit into same character width's worth of scaled time.
 
 .. option:: --no-vcd
 

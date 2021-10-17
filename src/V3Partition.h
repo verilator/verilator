@@ -50,6 +50,7 @@ public:
     void go(V3Graph* mtasksp);
 
     static void selfTest();
+    static void selfTestNormalizeCosts();
 
     // Print out a hash of the shape of graphp.  Only needed to debug the
     // origin of some nondeterminism; otherwise this is pretty useless.

@@ -66,10 +66,10 @@ foreach my $file (sort keys %files) {
 if (keys %warns) {
     # First warning lists everything as that's shown in the driver summary
     if ($ENV{HARNESS_UPDATE_GOLDEN}) {
-        error("Updated files with whitespace errors: ",join(' ',sort keys %warns));
+        error("Updated files with whitespace errors: ", join(' ', sort keys %warns));
         error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
     } else {
-        error("Files have whitespace errors: ",join(' ',sort keys %warns));
+        error("Files have whitespace errors: ", join(' ', sort keys %warns));
         error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
     }
     foreach my $file (sort keys %warns) {

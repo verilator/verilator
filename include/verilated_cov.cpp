@@ -364,7 +364,7 @@ public:
 
         std::ofstream os{filename};
         if (os.fail()) {
-            std::string msg = std::string{"%Error: Can't write '"} + filename + "'";
+            const std::string msg = std::string{"%Error: Can't write '"} + filename + "'";
             VL_FATAL_MT("", 0, "", msg.c_str());
             return;
         }

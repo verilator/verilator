@@ -472,7 +472,12 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
         (val) = ((vluint64_t)lo) | (((vluint64_t)hi) << 32); \
     }
 #elif defined(__aarch64__)
-# define VL_RDTSC(val) asm volatile("mrs %[rt],PMCCNTR_EL0" : [rt] "=r"(val));
+// 1 GHz virtual system timer on SBSA level 5 compliant systems, else often 100 MHz
+# define VL_RDTSC(val) \
+    { \
+        asm volatile("isb" : : : "memory"); \
+        asm volatile("mrs %[rt],CNTVCT_EL0" : [rt] "=r"(val)); \
+    }
 #else
 // We just silently ignore unknown OSes, as only leads to missing statistics
 # define VL_RDTSC(val) (val) = 0;
