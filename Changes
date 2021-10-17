@@ -20,8 +20,11 @@ Verilator 4.213 devel
 * Fix display has no time units on class function (#3116). [Damien Pretet]
 * Fix removing if statement with side effect in condition (#3131). [Alexander Grobman]
 * Fix --waiver-output for multiline warnings (#2429) (#3141). [Keith Colbert]
+* Fix internal error on bad widths (#3140) (#3145). [Zhanglei Wang]
 * Fix crash on clang 12/13 (#3148). [Kouping Hsu]
 * Fix cygwin compile error due to missing -std=gnu++14 (#3149). [Sun Kim]
+* Fix $urandom_range when the range is 0 ... UINT_MAX (#3161). [Iru Cai]
+* Fix constructor-parameter argument comma-separation in C++ (#3162). [Matthew Ballance]
 * Fix missing install of vl_file_copy/vl_hier_graph (#3165). [Popolon]
 * Fix calling new with arguments in same class (#3166). [Matthew Ballance]
 * Fix false EOFNEWLINE warning when DOS carriage returns present (#3171).
