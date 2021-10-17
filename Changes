@@ -11,11 +11,19 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.215 devel
 ==========================
 
+**Minor:**
+
+
 
 Verilator 4.214 2021-10-17
 ==========================
 
+**Major:**
+
 * Add profile-guided optmization of mtasks (#3150).
+
+**Minor:**
+
 * Verilator_gantt has removed the ASCII graphics, use the VCD output instead.
 * Verilator_gantt now shows the predicted mtask times, eval times, and additional statistics.
 * Verilator_gantt data files now include processor information, to allow later processing.
