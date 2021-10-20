@@ -78,10 +78,10 @@ OS Requirements
 
 Verilator is developed and has primary testing on Ubuntu, with additional
 testing on FreeBSD and Apple OS-X. Versions have also built on Redhat
-Linux, HPUX and Solaris. It should run with minor porting on any
-GNU/Linux-ish platform. Verilator also works on Windows under Cygwin, and
-Windows under MinGW (gcc -mno-cygwin). Verilated output (not Verilator
-itself) compiles under all the options above, plus using MSVC++.
+Linux, and other flavors of GNU/Linux-ish platforms. Verilator also works
+on Windows Subsystem for Linux (WSL2), Windows under Cygwin, and Windows
+under MinGW (gcc -mno-cygwin). Verilated output (not Verilator itself)
+compiles under all the options above, plus using MSVC++.
 
 
 Install Prerequisites
