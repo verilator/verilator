@@ -20,7 +20,7 @@ compile(
 # WSL2 gives a warning and we must skip the test:
 #  "physcpubind: 0 1 2 3 ...\n No NUMA support available on this system."
 my $nout = `numactl --show`;
-if ($nout !~ /cpu/ || $nout =~ /system does not support NUMA/i) {
+if ($nout !~ /cpu/ || $nout =~ /No NUMA support available/i) {
     skip("No numactl available");
 } else {
     execute(
