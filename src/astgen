@@ -598,7 +598,8 @@ def write_types(filename):
 def write_yystype(filename):
     with open_file(filename) as fh:
         for typen in sorted(Classes.keys()):
-            fh.write("Ast{t}* {m}p;\n".format(t=typen, m=typen[0].lower() + typen[1:]))
+            fh.write("Ast{t}* {m}p;\n".format(t=typen,
+                                              m=typen[0].lower() + typen[1:]))
 
 
 def write_macros(filename):
