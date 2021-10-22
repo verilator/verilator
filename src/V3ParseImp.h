@@ -122,35 +122,7 @@ struct V3ParseBisonYYSType {
         AstAttrType::en attrtypeen;
         VLifetime::en lifetime;
 
-        AstNode* nodep;
-
-        AstBasicDType* bdtypep;
-        AstBegin* beginp;
-        AstCase* casep;
-        AstCaseItem* caseitemp;
-        AstCell* cellp;
-        AstClass* classp;
-        AstConst* constp;
-        AstFork* forkp;
-        AstFunc* funcp;
-        AstMemberDType* memberp;
-        AstNodeModule* modulep;
-        AstNodeUOrStructDType* uorstructp;
-        AstNodeDType* dtypep;
-        AstNodeFTask* ftaskp;
-        AstNodeFTaskRef* ftaskrefp;
-        AstNodeRange* rangep;
-        AstSenItem* senitemp;
-        AstNodeVarRef* varnodep;
-        AstPackage* packagep;
-        AstParseRef* parserefp;
-        AstPatMember* patmemberp;
-        AstPattern* patternp;
-        AstPin* pinp;
-        AstRefDType* refdtypep;
-        AstSenTree* sentreep;
-        AstVar* varp;
-        AstVarRef* varrefp;
+#include "V3Ast__gen_yystype.h"
     };
 };
 std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs);

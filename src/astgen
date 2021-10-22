@@ -592,6 +592,12 @@ def write_types(filename):
         fh.write("    }\n")
 
 
+def write_yystype(filename):
+    with open_file(filename) as fh:
+        for typen in sorted(Classes.keys()):
+            fh.write("Ast{t}* {m}p;\n".format(t=typen, m=typen[0].lower() + typen[1:]))
+
+
 def write_macros(filename):
     with open_file(filename) as fh:
         typen = "None"
@@ -683,6 +689,7 @@ if Args.classes:
     write_visitor("V3Ast__gen_visitor.h")
     write_impl("V3Ast__gen_impl.h")
     write_types("V3Ast__gen_types.h")
+    write_yystype("V3Ast__gen_yystype.h")
     write_macros("V3AstNodes__gen_macros.h")
 
 for cpt in Args.infiles:
