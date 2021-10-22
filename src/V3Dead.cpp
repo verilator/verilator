@@ -310,7 +310,7 @@ private:
             retry = false;
             AstNodeModule* nextmodp;
             for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp = nextmodp) {
-                nextmodp = VN_CAST(modp->nextp(), NodeModule);
+                nextmodp = VN_AS(modp->nextp(), NodeModule);
                 if (modp->dead()
                     || (modp->level() > 2 && modp->user1() == 0 && !modp->internal())) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
@@ -418,7 +418,7 @@ private:
                 if ((classp = VN_CAST((*it), NodeUOrStructDType))) {
                     bool cont = true;
                     for (AstMemberDType* memberp = classp->membersp(); memberp;
-                         memberp = VN_CAST(memberp->nextp(), MemberDType)) {
+                         memberp = VN_AS(memberp->nextp(), MemberDType)) {
                         if (memberp->user1() != 0) {
                             cont = false;
                             break;

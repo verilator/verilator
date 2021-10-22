@@ -280,7 +280,7 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
-            AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
+            AstTypedef* typep = VN_AS(nodep->backp(), Typedef);
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

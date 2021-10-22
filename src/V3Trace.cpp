@@ -221,7 +221,7 @@ private:
                     const auto dupit = dupFinder.findDuplicate(nodep->valuep());
                     if (dupit != dupFinder.end()) {
                         const AstTraceDecl* const dupDeclp
-                            = VN_CAST_CONST(dupit->second->backp(), TraceDecl);
+                            = VN_AS_CONST(dupit->second->backp(), TraceDecl);
                         UASSERT_OBJ(dupDeclp, nodep, "Trace duplicate of wrong type");
                         TraceTraceVertex* const dupvertexp
                             = dynamic_cast<TraceTraceVertex*>(dupDeclp->user1u().toGraphVertex());

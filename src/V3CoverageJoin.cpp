@@ -64,7 +64,7 @@ private:
                     // Note hashed will point to the original variable (what's
                     // duplicated), not the covertoggle, but we need to get back to the
                     // covertoggle which is immediately above, so:
-                    AstCoverToggle* removep = VN_CAST(duporigp->backp(), CoverToggle);
+                    AstCoverToggle* removep = VN_AS(duporigp->backp(), CoverToggle);
                     UASSERT_OBJ(removep, nodep, "CoverageJoin duplicate of wrong type");
                     UINFO(8, "  Orig " << nodep << " -->> " << nodep->incp()->declp() << endl);
                     UINFO(8, "   dup " << removep << " -->> " << removep->incp()->declp() << endl);

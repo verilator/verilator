@@ -164,7 +164,7 @@ private:
                 // be unlinked as we go
                 while (nextIrp) {
                     AstIntfRef* const irp = nextIrp;
-                    nextIrp = VN_CAST(irp->nextp(), IntfRef);
+                    nextIrp = VN_AS(irp->nextp(), IntfRef);
 
                     const string irpName = irp->prettyName();
                     if (scopeLen > irpName.length()) continue;
@@ -301,7 +301,7 @@ private:
                 addIgnore("Unsupported: Unpacked struct/union");
             } else {
                 for (const AstMemberDType* itemp = nodep->membersp(); itemp;
-                     itemp = VN_CAST_CONST(itemp->nextp(), MemberDType)) {
+                     itemp = VN_AS_CONST(itemp->nextp(), MemberDType)) {
                     AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);

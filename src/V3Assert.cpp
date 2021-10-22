@@ -147,7 +147,7 @@ private:
                 selfDestruct = true;
             } else {
                 // V3Coverage assigned us a bucket to increment.
-                AstCoverInc* covincp = VN_CAST(snodep->coverincp(), CoverInc);
+                AstCoverInc* covincp = VN_AS(snodep->coverincp(), CoverInc);
                 UASSERT_OBJ(covincp, snodep, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
@@ -258,7 +258,7 @@ private:
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
             for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 if (itemp->isDefault()) has_default = true;
             }
             if (nodep->fullPragma() || nodep->priorityPragma()) {
@@ -279,7 +279,7 @@ private:
                 } else {
                     AstNode* propp = nullptr;
                     for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                         itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+                         itemp = VN_AS(itemp->nextp(), CaseItem)) {
                         for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
                             AstNode* onep;
                             if (AstInsideRange* rcondp = VN_CAST(icondp, InsideRange)) {
@@ -329,7 +329,7 @@ private:
         if (nodep->ticksp()) {
             UASSERT_OBJ(VN_IS(nodep->ticksp(), Const), nodep,
                         "Expected constant ticks, checked in V3Width");
-            ticks = VN_CAST(nodep->ticksp(), Const)->toUInt();
+            ticks = VN_AS(nodep->ticksp(), Const)->toUInt();
         }
         UASSERT_OBJ(ticks >= 1, nodep, "0 tick should have been checked in V3Width");
         AstNode* inp = nodep->exprp()->unlinkFrBack();

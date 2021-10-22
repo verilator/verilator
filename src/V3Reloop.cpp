@@ -68,7 +68,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstVar* findCreateVarTemp(FileLine* fl, AstCFunc* cfuncp) {
-        AstVar* varp = VN_CAST(cfuncp->user1p(), Var);
+        AstVar* varp = VN_AS(cfuncp->user1p(), Var);
         if (!varp) {
             const string newvarname = string("__Vilp");
             varp = new AstVar(fl, AstVarType::STMTTEMP, newvarname, VFlagLogicPacked(), 32);

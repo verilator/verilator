@@ -416,7 +416,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     }
     static int outerMostSizeOfUnpackedArray(const AstVar* nodep) {
         const AstUnpackArrayDType* const dtypep
-            = VN_CAST_CONST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+            = VN_AS_CONST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         UASSERT_OBJ(dtypep, nodep, "Must be unapcked array");
         return dtypep->elementsConst();
     }
@@ -585,7 +585,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     virtual void visit(AstSliceSel* nodep) override {
         if (AstVarRef* const refp = isTargetVref(nodep->fromp())) {
             const AstUnpackArrayDType* const dtypep
-                = VN_CAST(refp->varp()->dtypep()->skipRefp(), UnpackArrayDType);
+                = VN_AS(refp->varp()->dtypep()->skipRefp(), UnpackArrayDType);
             // declRange() of AstSliceSel is shifted by dtypep->declRange().lo() in V3WidthSel.cpp
             // restore the original decl range here.
             const VNumRange selRange{nodep->declRange().hi() + dtypep->declRange().lo(),
@@ -690,7 +690,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             AstVar* const varp = pair.first;
             AstNode* insertp = varp;
             const AstUnpackArrayDType* const dtypep
-                = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType);
+                = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType);
             AstNodeDType* const subTypep = dtypep->subDTypep();
             const bool needNext = VN_IS(subTypep, UnpackArrayDType);  // Still unpacked array.
             std::vector<AstVar*> vars;
@@ -719,13 +719,13 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
                     AstUnpackArrayDType* adtypep;
                     int lsb = 0;
                     if (refp) {
-                        adtypep = VN_CAST(refp->dtypep()->skipRefp(), UnpackArrayDType);
+                        adtypep = VN_AS(refp->dtypep()->skipRefp(), UnpackArrayDType);
                     } else {
-                        AstSliceSel* selp = VN_CAST(ref.nodep(), SliceSel);
+                        AstSliceSel* selp = VN_AS(ref.nodep(), SliceSel);
                         UASSERT_OBJ(selp, ref.nodep(), "Unexpected op is registered");
-                        refp = VN_CAST(selp->fromp(), VarRef);
+                        refp = VN_AS(selp->fromp(), VarRef);
                         UASSERT_OBJ(refp, selp, "Unexpected op is registered");
-                        adtypep = VN_CAST(selp->dtypep()->skipRefp(), UnpackArrayDType);
+                        adtypep = VN_AS(selp->dtypep()->skipRefp(), UnpackArrayDType);
                         lsb = adtypep->lo();
                     }
                     AstVarRef* const newrefp

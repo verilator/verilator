@@ -97,7 +97,7 @@ public:
         m_assignp = assp;
         m_constp = nullptr;
         m_everSet = true;
-        if (VN_IS(assp->rhsp(), Const)) m_constp = VN_CAST(assp->rhsp(), Const);
+        if (VN_IS(assp->rhsp(), Const)) m_constp = VN_AS(assp->rhsp(), Const);
     }
     inline void complexAssign() {  // A[x]=... or some complicated assignment
         m_assignp = nullptr;
@@ -313,7 +313,7 @@ private:
         }
         // Has to be direct assignment without any EXTRACTing.
         if (VN_IS(nodep->lhsp(), VarRef) && !m_sideEffect && !m_noopt) {
-            AstVarScope* vscp = VN_CAST(nodep->lhsp(), VarRef)->varScopep();
+            AstVarScope* vscp = VN_AS(nodep->lhsp(), VarRef)->varScopep();
             UASSERT_OBJ(vscp, nodep, "Scope lost on variable");
             m_lifep->simpleAssign(vscp, nodep);
         } else {

@@ -58,19 +58,19 @@ private:
     AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
         // Put label under given node, and if WHILE optionally at end of iteration
         UINFO(4, "Create label for " << nodep << endl);
-        if (VN_IS(nodep, JumpLabel)) return VN_CAST(nodep, JumpLabel);  // Done
+        if (VN_IS(nodep, JumpLabel)) return VN_AS(nodep, JumpLabel);  // Done
 
         AstNode* underp = nullptr;
         bool under_and_next = true;
         if (VN_IS(nodep, NodeBlock)) {
-            underp = VN_CAST(nodep, NodeBlock)->stmtsp();
+            underp = VN_AS(nodep, NodeBlock)->stmtsp();
         } else if (VN_IS(nodep, NodeFTask)) {
-            underp = VN_CAST(nodep, NodeFTask)->stmtsp();
+            underp = VN_AS(nodep, NodeFTask)->stmtsp();
         } else if (VN_IS(nodep, While)) {
             if (endOfIter) {
                 // Note we jump to end of bodysp; a FOR loop has its
                 // increment under incsp() which we don't skip
-                underp = VN_CAST(nodep, While)->bodysp();
+                underp = VN_AS(nodep, While)->bodysp();
             } else {
                 underp = nodep;
                 under_and_next = false;  // IE we skip the entire while
@@ -87,7 +87,7 @@ private:
         UINFO(5, "  Underpoint is " << underp << endl);
 
         if (VN_IS(underp, JumpLabel)) {
-            return VN_CAST(underp, JumpLabel);
+            return VN_AS(underp, JumpLabel);
         } else {  // Move underp stuff to be under a new label
             AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), nullptr);
             AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), blockp);
@@ -210,7 +210,7 @@ private:
                 // Set output variable to return value
                 nodep->addPrev(new AstAssign(
                     nodep->fileline(),
-                    new AstVarRef(nodep->fileline(), VN_CAST(funcp->fvarp(), Var), VAccess::WRITE),
+                    new AstVarRef(nodep->fileline(), VN_AS(funcp->fvarp(), Var), VAccess::WRITE),
                     nodep->lhsp()->unlinkFrBackWithNext()));
             }
             // Jump to the end of the function call

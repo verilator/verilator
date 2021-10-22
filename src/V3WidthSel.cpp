@@ -75,7 +75,7 @@ private:
         VNumRange fromRange;  // constructs to isRanged(false)
         while (basefromp) {
             if (VN_IS(basefromp, AttrOf)) {
-                basefromp = VN_CAST(basefromp, AttrOf)->fromp();
+                basefromp = VN_AS(basefromp, AttrOf)->fromp();
                 continue;
             }
             break;
@@ -120,7 +120,7 @@ private:
         } else if (VN_IS(lhsp, Const)) {
             // Optional vs just making add/sub below, but saves constification some work
             V3Number num(lhsp, lhsp->width());
-            num.opSub(VN_CAST(lhsp, Const)->num(), V3Number(lhsp, 32, rhs));
+            num.opSub(VN_AS(lhsp, Const)->num(), V3Number(lhsp, 32, rhs));
             num.isSigned(lhsp->isSigned());
             AstNode* newp = new AstConst(lhsp->fileline(), num);
             return newp;
@@ -189,7 +189,7 @@ private:
     }
 
     void warnTri(AstNode* nodep) {
-        if (VN_IS(nodep, Const) && VN_CAST(nodep, Const)->num().isFourState()) {
+        if (VN_IS(nodep, Const) && VN_AS(nodep, Const)->num().isFourState()) {
             nodep->v3error(
                 "Selection index is constantly unknown or tristated: " << nodep->name());
         }
@@ -332,8 +332,8 @@ private:
         AstNode* fromp = nodep->fromp()->unlinkFrBack();
         AstNode* msbp = nodep->rhsp()->unlinkFrBack();
         AstNode* lsbp = nodep->thsp()->unlinkFrBack();
-        vlsint32_t msb = VN_CAST(msbp, Const)->toSInt();
-        vlsint32_t lsb = VN_CAST(lsbp, Const)->toSInt();
+        vlsint32_t msb = VN_AS(msbp, Const)->toSInt();
+        vlsint32_t lsb = VN_AS(lsbp, Const)->toSInt();
         vlsint32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
         const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* ddtypep = fromdata.m_dtypep;
@@ -479,7 +479,7 @@ private:
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* widthp = nodep->thsp()->unlinkFrBack();
         warnTri(rhsp);
-        const int width = VN_CAST(widthp, Const)->toSInt();
+        const int width = VN_AS(widthp, Const)->toSInt();
         if (width > (1 << 28)) {
             nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "
                            << widthp->prettyName());
@@ -491,7 +491,7 @@ private:
         if (VN_IS(ddtypep, UnpackArrayDType)) {
             // Slice +: and -: extraction
             if (fromRange.elements() == width && VN_IS(rhsp, Const)
-                && VN_CAST(rhsp, Const)->toSInt()
+                && VN_AS(rhsp, Const)->toSInt()
                        == fromRange.lo()) {  // Extracting whole of original array
                 nodep->replaceWith(fromp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -500,7 +500,7 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (VN_IS(rhsp, Const)) {  // Slice
-                vlsint32_t rhs = VN_CAST(rhsp, Const)->toSInt();
+                vlsint32_t rhs = VN_AS(rhsp, Const)->toSInt();
                 // down array: lsb/lo +: width
                 // down array: msb/hi -: width
                 // up array:   msb/lo +: width
@@ -516,7 +516,7 @@ private:
             }
         } else if (VN_IS(ddtypep, BasicDType) || VN_IS(ddtypep, PackArrayDType)
                    || (VN_IS(ddtypep, NodeUOrStructDType)
-                       && VN_CAST(ddtypep, NodeUOrStructDType)->packedUnsup())) {
+                       && VN_AS(ddtypep, NodeUOrStructDType)->packedUnsup())) {
             int elwidth = 1;
             AstNode* newwidthp = widthp;
             if (const AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {

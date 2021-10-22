@@ -370,7 +370,7 @@ private:
         if (nodep->classOrPackagep()) {
             // Point to the clone
             UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
-            AstNodeFTask* newp = VN_CAST(nodep->taskp()->user2p(), NodeFTask);
+            AstNodeFTask* newp = VN_AS(nodep->taskp()->user2p(), NodeFTask);
             UASSERT_OBJ(newp, nodep, "No clone for package function");
             nodep->taskp(newp);
             UINFO(9, "   New pkg-taskref " << nodep << endl);

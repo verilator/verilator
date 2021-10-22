@@ -313,7 +313,7 @@ private:
                     // Cleanup
                     VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
                 } else {
-                    AstNodeIf* const ifp = VN_CAST(currp, NodeIf);
+                    AstNodeIf* const ifp = VN_AS(currp, NodeIf);
                     UASSERT_OBJ(ifp, currp, "Must be AstNodeIf");
                     // Move branch contents under new if
                     if (AstNode* const listp = ifp->ifsp()) {

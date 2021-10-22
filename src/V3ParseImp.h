@@ -69,7 +69,7 @@ struct VMemberQualifiers {
         return q;
     }
     void applyToNodes(AstNodeFTask* nodesp) const {
-        for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), NodeFTask)) {
+        for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), NodeFTask)) {
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
             if (m_virtual) nodep->isVirtual(true);
@@ -82,7 +82,7 @@ struct VMemberQualifiers {
         }
     }
     void applyToNodes(AstVar* nodesp) const {
-        for (AstVar* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), Var)) {
+        for (AstVar* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), Var)) {
             if (m_randc) {
                 nodep->v3warn(RANDC, "Unsupported: Converting 'randc' to 'rand'");
                 nodep->isRand(true);
@@ -309,7 +309,7 @@ public:
             pkgp = parsep()->rootp()->dollarUnitPkgAddp();
             symp()->reinsert(pkgp, symp()->symRootp());  // Don't push/pop scope as they're global
         } else {
-            pkgp = VN_CAST(rootSymp->nodep(), Package);
+            pkgp = VN_AS(rootSymp->nodep(), Package);
         }
         return pkgp;
     }

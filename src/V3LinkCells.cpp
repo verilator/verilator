@@ -131,7 +131,7 @@ private:
         if (!foundp) {
             return nullptr;
         } else {
-            return VN_CAST(foundp->nodep(), NodeModule);
+            return VN_AS(foundp->nodep(), NodeModule);
         }
     }
 
@@ -233,7 +233,7 @@ private:
             if (VN_IS(modp, Iface)) {
                 // Track module depths, so can sort list from parent down to children
                 new V3GraphEdge(&m_graph, vertex(m_modp), vertex(modp), 1, false);
-                if (!nodep->cellp()) nodep->ifacep(VN_CAST(modp, Iface));
+                if (!nodep->cellp()) nodep->ifacep(VN_AS(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {
                 nodep->v3error("Non-interface used as an interface: " << nodep->prettyNameQ());
@@ -349,7 +349,7 @@ private:
         // Convert .* to list of pins
         bool pinStar = false;
         for (AstPin *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
-            nextp = VN_CAST(pinp->nextp(), Pin);
+            nextp = VN_AS(pinp->nextp(), Pin);
             if (pinp->dotStar()) {
                 if (pinStar) pinp->v3error("Duplicate .* in an instance");
                 pinStar = true;
@@ -358,10 +358,10 @@ private:
             }
         }
         // Convert unnamed pins to pin number based assignments
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (pinp->name() == "") pinp->name("__pinNumber" + cvtToStr(pinp->pinNum()));
         }
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
@@ -369,7 +369,7 @@ private:
             nodep->modName(nodep->modp()->name());
             // Note what pins exist
             std::unordered_set<string> ports;  // Symbol table of all connected port names
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (pinp->name() == "")
                     pinp->v3error("Connect by position is illegal in .* connected instances");
                 if (!pinp->exprp()) {
@@ -449,7 +449,7 @@ private:
     }
 
     virtual void visit(AstRefDType* nodep) override {
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
@@ -469,7 +469,7 @@ private:
                 "information of the top module must exist if --hierarchical-child is set");
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
-            nextp = VN_CAST(nodep->nextp(), NodeModule);
+            nextp = VN_AS(nodep->nextp(), NodeModule);
             if (v3Global.opt.hierChild() && nodep->name() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter

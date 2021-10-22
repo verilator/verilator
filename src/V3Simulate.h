@@ -123,7 +123,7 @@ private:
                 std::ostringstream out;
                 out << "'{";
                 for (AstMemberDType* itemp = stp->membersp(); itemp;
-                     itemp = VN_CAST(itemp->nextp(), MemberDType)) {
+                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
                     const int width = itemp->width();
                     const int lsb = itemp->lsb();
                     const int msb = lsb + width - 1;
@@ -661,7 +661,7 @@ private:
             clearOptimizable(nodep, "Array select LHS isn't simple variable");
             return;
         }
-        AstUnpackArrayDType* arrayp = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType);
+        AstUnpackArrayDType* arrayp = VN_AS(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType);
         UASSERT_OBJ(arrayp, nodep, "Array select of non-array dtype");
         AstBasicDType* basicp = VN_CAST(arrayp->subDTypep()->skipRefp(), BasicDType);
         if (!basicp) {
@@ -815,7 +815,7 @@ private:
             iterateAndNextNull(nodep->exprp());
             bool hit = false;
             for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 if (!itemp->isDefault()) {
                     for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
                         if (hit) break;
@@ -833,7 +833,7 @@ private:
             }
             // Else default match
             for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 if (hit) break;
                 if (!hit && itemp->isDefault()) {
                     iterateAndNextNull(itemp->bodysp());
@@ -966,11 +966,11 @@ private:
             badNodeType(nodep);
             return;
         }
-        AstNodeFTask* funcp = VN_CAST(nodep->taskp(), NodeFTask);
+        AstNodeFTask* funcp = VN_AS(nodep->taskp(), NodeFTask);
         UASSERT_OBJ(funcp, nodep, "Not linked");
         if (m_params) V3Width::widthParamsEdit(funcp);
         VL_DANGLING(funcp);  // Make sure we've sized the function
-        funcp = VN_CAST(nodep->taskp(), NodeFTask);
+        funcp = VN_AS(nodep->taskp(), NodeFTask);
         UASSERT_OBJ(funcp, nodep, "Not linked");
         // Apply function call values to function
         V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());

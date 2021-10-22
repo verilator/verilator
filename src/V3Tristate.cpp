@@ -392,7 +392,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             }
             invarp->user1p(newp);  // find envar given invarp
         }
-        return VN_CAST(invarp->user1p(), Var);
+        return VN_AS(invarp->user1p(), Var);
     }
 
     AstVar* getCreateOutVarp(AstVar* invarp) {
@@ -410,7 +410,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             }
             invarp->user4p(newp);  // find outvar given invarp
         }
-        return VN_CAST(invarp->user4p(), Var);
+        return VN_AS(invarp->user4p(), Var);
     }
 
     AstVar* getCreateUnconnVarp(AstNode* fromp, AstNodeDType* dtypep) {
@@ -554,7 +554,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 outvarp->user3p(invarp->user3p());  // AstPull* propagation
                 if (invarp->user3p()) UINFO(9, "propagate pull to " << outvarp << endl);
             } else if (invarp->user1p()) {
-                envarp = VN_CAST(invarp->user1p(), Var);  // From CASEEQ, foo === 1'bz
+                envarp = VN_AS(invarp->user1p(), Var);  // From CASEEQ, foo === 1'bz
             }
 
             AstNode* orp = nullptr;
@@ -948,7 +948,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // 3'b1z0 -> ((3'b101 == in__en) && (3'b100 == in))
                 varrefp->unlinkFrBack();
                 FileLine* fl = nodep->fileline();
-                V3Number oneIfEn = VN_CAST(constp->user1p(), Const)
+                V3Number oneIfEn = VN_AS(constp->user1p(), Const)
                                        ->num();  // visit(AstConst) already split into en/ones
                 const V3Number& oneIfEnOne = constp->num();
                 AstVar* envarp = getCreateEnVarp(varrefp->varp());
@@ -989,11 +989,11 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     virtual void visit(AstCountBits* nodep) override {
         std::array<bool, 3> dropop;
-        dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_CAST(nodep->rhsp(), Const)->num().isAnyZ();
-        dropop[1] = VN_IS(nodep->thsp(), Const) && VN_CAST(nodep->thsp(), Const)->num().isAnyZ();
-        dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_CAST(nodep->fhsp(), Const)->num().isAnyZ();
+        dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->num().isAnyZ();
+        dropop[1] = VN_IS(nodep->thsp(), Const) && VN_AS(nodep->thsp(), Const)->num().isAnyZ();
+        dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_AS(nodep->fhsp(), Const)->num().isAnyZ();
         UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
-        AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);  // Input variable
+        AstVarRef* varrefp = VN_AS(nodep->lhsp(), VarRef);  // Input variable
         if (m_graphing) {
             iterateAndNextNull(nodep->lhsp());
             if (!dropop[0]) iterateAndNextNull(nodep->rhsp());
@@ -1050,10 +1050,10 @@ class TristateVisitor final : public TristateBaseVisitor {
         UINFO(9, dbgState() << nodep << endl);
         AstVarRef* varrefp = nullptr;
         if (VN_IS(nodep->lhsp(), VarRef)) {
-            varrefp = VN_CAST(nodep->lhsp(), VarRef);
+            varrefp = VN_AS(nodep->lhsp(), VarRef);
         } else if (VN_IS(nodep->lhsp(), Sel)
-                   && VN_IS(VN_CAST(nodep->lhsp(), Sel)->fromp(), VarRef)) {
-            varrefp = VN_CAST(VN_CAST(nodep->lhsp(), Sel)->fromp(), VarRef);
+                   && VN_IS(VN_AS(nodep->lhsp(), Sel)->fromp(), VarRef)) {
+            varrefp = VN_AS(VN_AS(nodep->lhsp(), Sel)->fromp(), VarRef);
         }
         if (!varrefp) {
             if (debug() >= 4) nodep->dumpTree(cout, "- ");

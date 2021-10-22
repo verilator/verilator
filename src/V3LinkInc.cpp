@@ -74,7 +74,7 @@ private:
         } else if (m_insMode == IM_AFTER) {
             m_insStmtp->addNextHere(newp);
         } else if (m_insMode == IM_WHILE_PRECOND) {
-            AstWhile* whilep = VN_CAST(m_insStmtp, While);
+            AstWhile* whilep = VN_AS(m_insStmtp, While);
             UASSERT_OBJ(whilep, nodep, "Insert should be under WHILE");
             whilep->addPrecondsp(newp);
         } else {
@@ -151,7 +151,7 @@ private:
     void prepost_non_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
 
-        AstConst* constp = VN_CAST(nodep->lhsp(), Const);
+        AstConst* constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
         AstConst* newconstp = constp->cloneTree(true);
 
@@ -181,7 +181,7 @@ private:
             return;
         }
 
-        AstConst* constp = VN_CAST(nodep->lhsp(), Const);
+        AstConst* constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
         AstNode* backp = nodep->backp();
         AstConst* newconstp = constp->cloneTree(true);

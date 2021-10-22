@@ -59,13 +59,13 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     virtual void visit(AstNodeCase* nodep) override {
-        if (VN_IS(nodep, Case) && VN_CAST(nodep, Case)->casex()) {
+        if (VN_IS(nodep, Case) && VN_AS(nodep, Case)->casex()) {
             nodep->v3warn(CASEX, "Suggest casez (with ?'s) in place of casex (with X's)");
         }
         // Detect multiple defaults
         bool hitDefault = false;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (itemp->isDefault()) {
                 if (hitDefault) {
                     itemp->v3error("Multiple default statements in case statement.");
@@ -79,7 +79,7 @@ private:
             m_caseExprp = nodep;
             iterate(nodep->exprp());
             for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 iterateAndNextNull(itemp->condsp());
             }
             m_caseExprp = nullptr;
@@ -91,11 +91,11 @@ private:
             if (VN_IS(m_caseExprp, GenCase)) {
                 nodep->v3error("Use of x/? constant in generate case statement, "
                                "(no such thing as 'generate casez')");
-            } else if (VN_IS(m_caseExprp, Case) && VN_CAST(m_caseExprp, Case)->casex()) {
+            } else if (VN_IS(m_caseExprp, Case) && VN_AS(m_caseExprp, Case)->casex()) {
                 // Don't sweat it, we already complained about casex in general
             } else if (VN_IS(m_caseExprp, Case)
-                       && (VN_CAST(m_caseExprp, Case)->casez()
-                           || VN_CAST(m_caseExprp, Case)->caseInside())) {
+                       && (VN_AS(m_caseExprp, Case)->casez()
+                           || VN_AS(m_caseExprp, Case)->caseInside())) {
                 if (nodep->num().isAnyX()) {
                     nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, "
                                              "(perhaps intended ?/z in constant)");
@@ -145,7 +145,7 @@ private:
         m_caseItems = 0;
         m_caseNoOverlapsAllCovered = true;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
                 if (icondp->width() > width) width = icondp->width();
                 if (icondp->isDouble()) opaque = true;
@@ -167,10 +167,10 @@ private:
         bool reportedOverlap = false;
         bool reportedSubcase = false;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
                 // if (debug() >= 9) icondp->dumpTree(cout, " caseitem: ");
-                AstConst* iconstp = VN_CAST(icondp, Const);
+                AstConst* iconstp = VN_AS(icondp, Const);
                 UASSERT_OBJ(iconstp, nodep, "above 'can't parse' should have caught this");
                 if (neverItem(nodep, iconstp)) {
                     // X in casez can't ever be executed
@@ -244,7 +244,7 @@ private:
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
-            m_valueItem[i] = VN_CAST(m_valueItem[i], CaseItem)->bodysp();
+            m_valueItem[i] = VN_AS(m_valueItem[i], CaseItem)->bodysp();
         }
         return true;  // All is fine
     }
@@ -341,7 +341,7 @@ private:
         if (debug() >= 9) nodep->dumpTree(cout, "    _comp_IN:   ");
         bool hadDefault = false;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (!itemp->condsp()) {
                 // Default clause.  Just make true, we'll optimize it away later
                 itemp->condsp(new AstConst(itemp->fileline(), AstConst::BitTrue()));
@@ -416,7 +416,7 @@ private:
         AstIf* groupnextp = nullptr;
         AstIf* itemnextp = nullptr;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             AstNode* istmtsp = itemp->bodysp();  // Maybe null -- no action.
             if (istmtsp) istmtsp->unlinkFrBackWithNext();
             // Expressioned clause

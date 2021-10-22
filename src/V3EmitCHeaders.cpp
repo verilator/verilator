@@ -191,7 +191,7 @@ class EmitCHeader final : public EmitCConstInit {
             } else {
                 puts("enum " + tdefp->name() + " {\n");
                 for (const AstEnumItem* itemp = edtypep->itemsp(); itemp;
-                     itemp = VN_CAST(itemp->nextp(), EnumItem)) {
+                     itemp = VN_AS(itemp->nextp(), EnumItem)) {
                     puts(itemp->nameProtect());
                     puts(" = ");
                     iterate(itemp->valuep());
@@ -335,6 +335,6 @@ void V3EmitC::emitcHeaders() {
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (VN_IS(nodep, Class)) continue;  // Declared with the ClassPackage
-        EmitCHeader::main(VN_CAST_CONST(nodep, NodeModule));
+        EmitCHeader::main(VN_AS_CONST(nodep, NodeModule));
     }
 }

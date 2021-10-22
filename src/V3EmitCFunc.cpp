@@ -629,15 +629,14 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
             if (initarp->defaultp()) {
                 puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
                 puts("; ++__Vi) {\n");
-                emitSetVarConstant(varNameProtected + "[__Vi]",
-                                   VN_CAST(initarp->defaultp(), Const));
+                emitSetVarConstant(varNameProtected + "[__Vi]", VN_AS(initarp->defaultp(), Const));
                 puts("}\n");
             }
             const AstInitArray::KeyItemMap& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* valuep = itr.second->valuep();
                 emitSetVarConstant(varNameProtected + "[" + cvtToStr(itr.first) + "]",
-                                   VN_CAST(valuep, Const));
+                                   VN_AS(valuep, Const));
             }
         } else {
             varp->v3fatalSrc("InitArray under non-arrayed var");
@@ -692,7 +691,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
             if (varp->valuep()) {
-                AstConst* const constp = VN_CAST(varp->valuep(), Const);
+                AstConst* const constp = VN_AS(varp->valuep(), Const);
                 if (!constp) varp->v3fatalSrc("non-const initializer for variable");
                 for (int w = 0; w < varp->widthWords(); ++w) {
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
@@ -792,7 +791,7 @@ void EmitCFunc::emitChangeDet() {
                 doubleOrDetect(nodep, gotOneIgnore);
                 string varname;
                 if (VN_IS(nodep->lhsp(), VarRef)) {
-                    varname = ": " + VN_CAST(nodep->lhsp(), VarRef)->varp()->prettyName();
+                    varname = ": " + VN_AS(nodep->lhsp(), VarRef)->varp()->prettyName();
                 }
                 puts(")) VL_DBG_MSGF(\"        CHANGE: ");
                 puts(protect(nodep->fileline()->filename()));

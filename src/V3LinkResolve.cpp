@@ -449,8 +449,8 @@ private:
             UASSERT_OBJ(nodep->text() == "", nodep,
                         "Non-format $sformatf should have \"\" format");
             if (VN_IS(nodep->exprsp(), Const)
-                && VN_CAST(nodep->exprsp(), Const)->num().isFromString()) {
-                AstConst* fmtp = VN_CAST(nodep->exprsp()->unlinkFrBack(), Const);
+                && VN_AS(nodep->exprsp(), Const)->num().isFromString()) {
+                AstConst* fmtp = VN_AS(nodep->exprsp()->unlinkFrBack(), Const);
                 nodep->text(fmtp->num().toString());
                 VL_DO_DANGLING(pushDeletep(fmtp), fmtp);
             }
@@ -459,7 +459,7 @@ private:
         const string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
         nodep->text(newFormat);
         if ((VN_IS(nodep->backp(), Display)
-             && VN_CAST(nodep->backp(), Display)->displayType().needScopeTracking())
+             && VN_AS(nodep->backp(), Display)->displayType().needScopeTracking())
             || nodep->formatScopeTracking()) {
             nodep->scopeNamep(new AstScopeName(nodep->fileline()));
         }

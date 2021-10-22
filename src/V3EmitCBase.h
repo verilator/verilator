@@ -41,7 +41,7 @@ public:
     VL_UNCOPYABLE(EmitCParentModule);
 
     static const AstNodeModule* get(const AstNode* nodep) {
-        return VN_CAST_CONST(nodep->user4p(), NodeModule);
+        return VN_AS_CONST(nodep->user4p(), NodeModule);
     }
 };
 

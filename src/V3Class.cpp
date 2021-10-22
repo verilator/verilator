@@ -141,7 +141,7 @@ public:
             if (VN_IS(moved.first, NodeFTask)) {
                 moved.second->addActivep(moved.first->unlinkFrBack());
             } else if (VN_IS(moved.first, Var)) {
-                AstVarScope* scopep = VN_CAST(moved.first->user1p(), VarScope);
+                AstVarScope* scopep = VN_AS(moved.first->user1p(), VarScope);
                 moved.second->addVarp(scopep->unlinkFrBack());
             }
         }

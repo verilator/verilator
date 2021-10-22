@@ -382,7 +382,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         }
     }
     virtual void visit(AstTextBlock* nodep) override {
-        visit(VN_CAST(nodep, NodeSimpleText));
+        visit(VN_AS(nodep, NodeSimpleText));
         {
             VL_RESTORER(m_suppressSemi);
             m_suppressVarSemi = nodep->commas();
@@ -538,15 +538,15 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         if (VN_IS(nodep->lsbp(), Const)) {
             if (nodep->widthp()->isOne()) {
                 if (VN_IS(nodep->lsbp(), Const)) {
-                    puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()));
+                    puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()));
                 } else {
                     iterateAndNextNull(nodep->lsbp());
                 }
             } else {
-                puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()
-                              + VN_CAST(nodep->widthp(), Const)->toSInt() - 1));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()
+                              + VN_AS(nodep->widthp(), Const)->toSInt() - 1));
                 puts(":");
-                puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()));
             }
         } else {
             iterateAndNextNull(nodep->lsbp());
@@ -837,7 +837,7 @@ void V3EmitV::verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string
 void V3EmitV::emitvFiles() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
-         filep = VN_CAST(filep->nextp(), NodeFile)) {
+         filep = VN_AS(filep->nextp(), NodeFile)) {
         AstVFile* vfilep = VN_CAST(filep, VFile);
         if (vfilep && vfilep->tblockp()) {
             V3OutVFile of(vfilep->name());

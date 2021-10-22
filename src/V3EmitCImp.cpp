@@ -446,7 +446,7 @@ class EmitCImp final : EmitCFunc {
     }
     void emitCommonImp(const AstNodeModule* modp) {
         const AstClass* const classp
-            = VN_IS(modp, ClassPackage) ? VN_CAST_CONST(modp, ClassPackage)->classp() : nullptr;
+            = VN_IS(modp, ClassPackage) ? VN_AS_CONST(modp, ClassPackage)->classp() : nullptr;
 
         if (hasCommonImp(modp) || hasCommonImp(classp)) {
             std::set<string> headers;
@@ -724,7 +724,7 @@ class EmitCTrace final : EmitCFunc {
                     puts("const char* " + protect("__VenumItemNames") + "[]\n");
                     puts("= {");
                     for (AstEnumItem* itemp = enump->itemsp(); itemp;
-                         itemp = VN_CAST(itemp->nextp(), EnumItem)) {
+                         itemp = VN_AS(itemp->nextp(), EnumItem)) {
                         if (++nvals > 1) puts(", ");
                         putbs("\"" + itemp->prettyName() + "\"");
                     }
@@ -733,8 +733,8 @@ class EmitCTrace final : EmitCFunc {
                     puts("const char* " + protect("__VenumItemValues") + "[]\n");
                     puts("= {");
                     for (AstEnumItem* itemp = enump->itemsp(); itemp;
-                         itemp = VN_CAST(itemp->nextp(), EnumItem)) {
-                        AstConst* constp = VN_CAST(itemp->valuep(), Const);
+                         itemp = VN_AS(itemp->nextp(), EnumItem)) {
+                        AstConst* constp = VN_AS(itemp->valuep(), Const);
                         if (++nvals > 1) puts(", ");
                         putbs("\"" + constp->num().displayed(nodep, "%0b") + "\"");
                     }
@@ -887,7 +887,7 @@ void V3EmitC::emitcImp() {
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
-        const AstNodeModule* const modp = VN_CAST_CONST(nodep, NodeModule);
+        const AstNodeModule* const modp = VN_AS_CONST(nodep, NodeModule);
         EmitCImp::main(modp, /* slow: */ true);
         EmitCImp::main(modp, /* slow: */ false);
     }
@@ -902,7 +902,7 @@ void V3EmitC::emitcImp() {
 void V3EmitC::emitcFiles() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
-         filep = VN_CAST(filep->nextp(), NodeFile)) {
+         filep = VN_AS(filep->nextp(), NodeFile)) {
         AstCFile* cfilep = VN_CAST(filep, CFile);
         if (cfilep && cfilep->tblockp()) {
             V3OutCFile of(cfilep->name());

@@ -352,7 +352,7 @@ private:
         } else if (AstStructDType* adtypep = VN_CAST(dtypep, StructDType)) {
             // For now it's packed, so similar to array
             for (AstMemberDType* itemp = adtypep->membersp(); itemp;
-                 itemp = VN_CAST(itemp->nextp(), MemberDType)) {
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
                 const int index_code = itemp->lsb();
                 ToggleEnt newent(above.m_comment + string(".") + itemp->name(),
@@ -387,7 +387,7 @@ private:
             // An else-if.  When we iterate the if, use "elsif" marking
             const bool elsif
                 = nodep->ifsp() && VN_IS(nodep->elsesp(), If) && !nodep->elsesp()->nextp();
-            if (elsif) VN_CAST(nodep->elsesp(), If)->user1(true);
+            if (elsif) VN_AS(nodep->elsesp(), If)->user1(true);
             const bool first_elsif = !nodep->user1() && elsif;
             const bool cont_elsif = nodep->user1() && elsif;
             const bool final_elsif = nodep->user1() && !elsif && nodep->elsesp();

@@ -276,7 +276,7 @@ private:
         } else if (AstWordSel* wordp = VN_CAST(nodep->lhsp(), WordSel)) {
             if (AstVarRef* varrefp = VN_CAST(wordp->lhsp(), VarRef)) {
                 if (VN_IS(wordp->rhsp(), Const) && isSubstVar(varrefp->varp())) {
-                    const int word = VN_CAST(wordp->rhsp(), Const)->toUInt();
+                    const int word = VN_AS(wordp->rhsp(), Const)->toUInt();
                     SubstVarEntry* entryp = getEntryp(varrefp);
                     hit = true;
                     if (m_ops > SUBST_MAX_OPS_SUBST) {

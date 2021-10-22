@@ -92,7 +92,7 @@ AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
     // Remove any UnsizedRange's from list
     for (AstNodeRange *nodep = nrangep, *nextp; nodep; nodep = nextp) {
-        nextp = VN_CAST(nodep->nextp(), NodeRange);
+        nextp = VN_AS(nodep->nextp(), NodeRange);
         if (!VN_IS(nodep, Range)) {
             nodep->v3error(
                 "Unsupported or syntax error: Unsized range in instance or other declaration");
@@ -115,9 +115,9 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
     // into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3), RANGE), RANGE)
     AstNodeDType* arrayp = basep;
     if (nrangep) {  // Maybe no range - return unmodified base type
-        while (nrangep->nextp()) nrangep = VN_CAST(nrangep->nextp(), NodeRange);
+        while (nrangep->nextp()) nrangep = VN_AS(nrangep->nextp(), NodeRange);
         while (nrangep) {
-            AstNodeRange* prevp = VN_CAST(nrangep->backp(), NodeRange);
+            AstNodeRange* prevp = VN_AS(nrangep->backp(), NodeRange);
             if (prevp) nrangep->unlinkFrBack();
             AstRange* rangep = VN_CAST(nrangep, Range);
             if (rangep && isPacked) {
@@ -134,7 +134,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
             } else if (VN_IS(nrangep, UnsizedRange)) {
                 arrayp = new AstUnsizedArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp);
             } else if (VN_IS(nrangep, BracketRange)) {
-                AstBracketRange* arangep = VN_CAST(nrangep, BracketRange);
+                AstBracketRange* arangep = VN_AS(nrangep, BracketRange);
                 AstNode* keyp = arangep->elementsp()->unlinkFrBack();
                 arrayp = new AstBracketArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp,
                                                   keyp);

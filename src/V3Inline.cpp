@@ -359,7 +359,7 @@ private:
             // Each inlined cell that contain an interface variable need to
             // copy the IfaceRefDType and point it to the newly cloned
             // interface cell.
-            AstIfaceRefDType* newdp = VN_CAST(ifacerefp->cloneTree(false), IfaceRefDType);
+            AstIfaceRefDType* newdp = VN_AS(ifacerefp->cloneTree(false), IfaceRefDType);
             nodep->dtypep(newdp);
             ifacerefp->addNextHere(newdp);
             // Relink to point to newly cloned cell
@@ -536,7 +536,7 @@ private:
             // Better off before, as if module has multiple instantiations
             // we'll save work, and we can't call pinReconnectSimple in
             // this loop as it clone()s itself.
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 V3Inst::pinReconnectSimple(pinp, nodep, false);
             }
 
@@ -555,7 +555,7 @@ private:
                                     nodep->modp()->timeunit());
             m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
             // Create assignments to the pins
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (!pinp->exprp()) continue;
                 UINFO(6, "     Pin change from " << pinp->modVarp() << endl);
                 // Make new signal; even though we'll optimize the interconnect, we
@@ -574,7 +574,7 @@ private:
                 // Propagate any attributes across the interconnect
                 pinNewVarp->propagateAttrFrom(pinOldVarp);
                 if (VN_IS(connectRefp, VarRef)) {
-                    VN_CAST(connectRefp, VarRef)->varp()->propagateAttrFrom(pinOldVarp);
+                    VN_AS(connectRefp, VarRef)->varp()->propagateAttrFrom(pinOldVarp);
                 }
 
                 // One to one interconnect won't make a temporary variable.
@@ -648,7 +648,7 @@ private:
 
         if (AstModule* modp = VN_CAST(nodep->modp(), Module)) {
             // Pass Cell pointers down to the next module
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 AstVar* varp = pinp->modVarp();
                 AstVarRef* varrefp = VN_CAST(pinp->exprp(), VarRef);
                 if (!varrefp) continue;
@@ -720,7 +720,7 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     // idea to avoid dumping the hugely exploded tree.
     AstNodeModule* nextmodp;
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp = nextmodp) {
-        nextmodp = VN_CAST(modp->nextp(), NodeModule);
+        nextmodp = VN_AS(modp->nextp(), NodeModule);
         if (modp->user1()) {  // Was inlined
             VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
         }

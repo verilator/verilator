@@ -109,7 +109,7 @@ private:
     static void fixCloneLvalue(AstNode* nodep) {
         // In AstSel transforms, we call clone() on VarRefs that were lvalues,
         // but are now being used on the RHS of the assignment
-        if (VN_IS(nodep, VarRef)) VN_CAST(nodep, VarRef)->access(VAccess::READ);
+        if (VN_IS(nodep, VarRef)) VN_AS(nodep, VarRef)->access(VAccess::READ);
         // Iterate
         if (nodep->op1p()) fixCloneLvalue(nodep->op1p());
         if (nodep->op2p()) fixCloneLvalue(nodep->op2p());
@@ -183,8 +183,7 @@ private:
             AstNode* wordp;
             FileLine* const lfl = lsbp->fileline();
             if (VN_IS(lsbp, Const)) {
-                wordp
-                    = new AstConst{lfl, wordOffset + VL_BITWORD_E(VN_CAST(lsbp, Const)->toUInt())};
+                wordp = new AstConst{lfl, wordOffset + VL_BITWORD_E(VN_AS(lsbp, Const)->toUInt())};
             } else {
                 wordp = new AstShiftR{lfl, lsbp->cloneTree(true),
                                       new AstConst{lfl, VL_EDATASIZE_LOG2}, VL_EDATASIZE};
@@ -202,8 +201,8 @@ private:
         //  If there's a CONDBOUND safety to keep arrays in bounds,
         //  we're going to AND it to a value that always fits inside a
         //  word, so we don't need it.
-        // if (VN_IS(nodep, CondBound) && VN_IS(VN_CAST(nodep, CondBound)->lhsp(), Lte)) {
-        //    nodep = VN_CAST(nodep, CondBound)->rhsp();
+        // if (VN_IS(nodep, CondBound) && VN_IS(VN_AS(nodep, CondBound)->lhsp(), Lte)) {
+        //    nodep = VN_AS(nodep, CondBound)->rhsp();
         //}
         return nodep;
     }
@@ -212,7 +211,7 @@ private:
         // Return equation to get the VL_BITBIT of a constant or non-constant
         FileLine* const fl = lsbp->fileline();
         if (VN_IS(lsbp, Const)) {
-            return new AstConst{fl, VL_BITBIT_E(VN_CAST(lsbp, Const)->toUInt())};
+            return new AstConst{fl, VL_BITBIT_E(VN_AS(lsbp, Const)->toUInt())};
         } else {
             return new AstAnd{fl, new AstConst{fl, VL_EDATASIZE - 1},
                               dropCondBound(lsbp)->cloneTree(true)};
@@ -346,7 +345,7 @@ private:
         // Remember, Sel's may have non-integer rhs, so need to optimize for that!
         UASSERT_OBJ(nodep->widthMin() == nodep->widthConst(), nodep, "Width mismatch");
         if (VN_IS(nodep->backp(), NodeAssign)
-            && nodep == VN_CAST(nodep->backp(), NodeAssign)->lhsp()) {
+            && nodep == VN_AS(nodep->backp(), NodeAssign)->lhsp()) {
             // Sel is an LHS assignment select
         } else if (nodep->isWide()) {
             // See under ASSIGN(WIDE)
@@ -679,7 +678,7 @@ private:
                 newp = new AstNegate{fl, lhsp};
             } else {
                 UINFO(8, "    REPLICATE " << nodep << endl);
-                const AstConst* constp = VN_CAST(nodep->rhsp(), Const);
+                const AstConst* constp = VN_AS(nodep->rhsp(), Const);
                 UASSERT_OBJ(constp, nodep,
                             "Replication value isn't a constant.  Checked earlier!");
                 uint32_t times = constp->toUInt();
@@ -707,7 +706,7 @@ private:
         FileLine* const fl = nodep->fileline();
         AstNode* const lhsp = rhsp->lhsp();
         const int lhswidth = lhsp->widthMin();
-        const AstConst* const constp = VN_CAST(rhsp->rhsp(), Const);
+        const AstConst* const constp = VN_AS(rhsp->rhsp(), Const);
         UASSERT_OBJ(constp, rhsp, "Replication value isn't a constant.  Checked earlier!");
         const uint32_t times = constp->toUInt();
         for (int w = 0; w < rhsp->widthWords(); ++w) {

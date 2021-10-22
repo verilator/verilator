@@ -118,7 +118,7 @@ private:
 public:
     // METHODS
     AstScope* getScope(AstNodeFTask* nodep) {
-        AstScope* scopep = VN_CAST(nodep->user3p(), Scope);
+        AstScope* scopep = VN_AS(nodep->user3p(), Scope);
         UASSERT_OBJ(scopep, nodep, "No scope for function");
         return scopep;
     }
@@ -300,7 +300,7 @@ private:
         if (nodep->varp()->user2p()) {  // It's being converted to an alias.
             UINFO(9,
                   "    relinkVar " << cvtToHex(nodep->varp()->user2p()) << " " << nodep << endl);
-            AstVarScope* newvscp = VN_CAST(nodep->varp()->user2p(), VarScope);
+            AstVarScope* newvscp = VN_AS(nodep->varp()->user2p(), VarScope);
             UASSERT_OBJ(newvscp, nodep, "not linked");
             nodep->varScopep(newvscp);
             nodep->varp(nodep->varScopep()->varp());
@@ -454,7 +454,7 @@ private:
     AstVarScope* createVarScope(AstVar* invarp, const string& name) {
         if (invarp->isParam() && VN_IS(invarp->valuep(), InitArray)) {
             // Move array params in functions into constant pool
-            return v3Global.rootp()->constPoolp()->findTable(VN_CAST(invarp->valuep(), InitArray));
+            return v3Global.rootp()->constPoolp()->findTable(VN_AS(invarp->valuep(), InitArray));
         } else {
             // We could create under either the ref's scope or the ftask's scope.
             // It shouldn't matter, as they are only local variables.
@@ -686,7 +686,7 @@ private:
         for (AstNode* pinp = refp->pinsp(); pinp; pinp = nextpinp) {
             nextpinp = pinp->nextp();
             // Move pin to the CCall, removing all Arg's
-            AstNode* exprp = VN_CAST(pinp, Arg)->exprp();
+            AstNode* exprp = VN_AS(pinp, Arg)->exprp();
             exprp->unlinkFrBack();
             ccallp->addArgsp(exprp);
         }
@@ -1015,7 +1015,7 @@ private:
         for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
                 AstVarScope* portvscp
-                    = VN_CAST(portp->user2p(), VarScope);  // Remembered when we created it earlier
+                    = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
                 if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
                     && portp->name() != "__Vscopep"  // Passed to dpiContext, not callee
                     && portp->name() != "__Vfilenamep" && portp->name() != "__Vlineno") {
@@ -1088,7 +1088,7 @@ private:
                 portp->protect(false);  // No additional exposure - already part of shown proto
                 if (portp->isIO() && (portp->isWritable() || portp->isFuncReturn())
                     && !portp->isDpiOpenArray()) {
-                    AstVarScope* portvscp = VN_CAST(
+                    AstVarScope* portvscp = VN_AS(
                         portp->user2p(), VarScope);  // Remembered when we created it earlier
                     cfuncp->addStmtsp(
                         createAssignDpiToInternal(portvscp, portp->name() + tmpSuffixp));
@@ -1120,7 +1120,7 @@ private:
         AstNode::user2ClearTree();
         AstVar* rtnvarp = nullptr;
         if (nodep->isFunction()) {
-            AstVar* portp = VN_CAST(nodep->fvarp(), Var);
+            AstVar* portp = VN_AS(nodep->fvarp(), Var);
             UASSERT_OBJ(portp, nodep, "function without function output variable");
             if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
             if (nodep->dpiImport() || nodep->dpiExport()) {
@@ -1254,7 +1254,7 @@ private:
                     portp->unlinkFrBack();
                     pushDeletep(portp);
                     AstNode* const tablep = v3Global.rootp()->constPoolp()->findTable(
-                        VN_CAST(portp->valuep(), InitArray));
+                        VN_AS(portp->valuep(), InitArray));
                     portp->user2p(tablep);
                 } else {
                     if (portp->isIO()) {
@@ -1369,7 +1369,7 @@ private:
             m_insStmtp->addNextHere(newp);
         } else if (m_insMode == IM_WHILE_PRECOND) {
             UINFO(5, "     IM_While_Precond " << m_insStmtp << endl);
-            AstWhile* whilep = VN_CAST(m_insStmtp, While);
+            AstWhile* whilep = VN_AS(m_insStmtp, While);
             UASSERT_OBJ(whilep, nodep, "Insert should be under WHILE");
             whilep->addPrecondsp(newp);
             visitp = newp;
@@ -1416,7 +1416,7 @@ private:
         if (nodep->taskp()->isFunction()) {
             // Not that it's a FUNCREF, but that we're calling a function (perhaps as a task)
             outvscp
-                = createVarScope(VN_CAST(nodep->taskp()->fvarp(), Var), namePrefix + "__Vfuncout");
+                = createVarScope(VN_AS(nodep->taskp()->fvarp(), Var), namePrefix + "__Vfuncout");
         }
         // Create cloned statements
         AstNode* beginp;
@@ -1605,7 +1605,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     bool reorganize = false;
     for (AstNode *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
         nextp = pinp->nextp();
-        AstArg* argp = VN_CAST(pinp, Arg);
+        AstArg* argp = VN_AS(pinp, Arg);
         UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
         if (argp->name() != "") {
             // By name

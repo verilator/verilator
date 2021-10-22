@@ -2166,7 +2166,7 @@ public:
     AstNode* fromp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
     AstNode* thsp() const { return op3p(); }
-    AstAttrOf* attrp() const { return VN_CAST(op4p(), AttrOf); }
+    AstAttrOf* attrp() const { return VN_AS(op4p(), AttrOf); }
     void fromp(AstNode* nodep) { return setOp1p(nodep); }
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
@@ -2304,7 +2304,7 @@ public:
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     AstNode* exprp() const { return op1p(); }  // op1 = case condition <expression>
     AstCaseItem* itemsp() const {
-        return VN_CAST(op2p(), CaseItem);
+        return VN_AS(op2p(), CaseItem);
     }  // op2 = list of case expressions
     AstNode* notParallelp() const { return op3p(); }  // op3 = assertion code for non-full case's
     void addItemsp(AstNode* nodep) { addOp2p(nodep); }
@@ -2518,10 +2518,10 @@ public:
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const override {
         return (isFourstate()
-                    ? VN_CAST(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
-                              BasicDType)
-                    : VN_CAST(findBitRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
-                              BasicDType));
+                    ? VN_AS(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
+                            BasicDType)
+                    : VN_AS(findBitRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
+                            BasicDType));
     }
     virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
@@ -2537,7 +2537,7 @@ public:
     virtual string name() const override { return m_name; }
     virtual void name(const string& flag) override { m_name = flag; }
     AstMemberDType* membersp() const {
-        return VN_CAST(op1p(), MemberDType);
+        return VN_AS(op1p(), MemberDType);
     }  // op1 = AstMember list
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
@@ -2591,7 +2591,7 @@ public:
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
+    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const override {
         return m_refDTypep ? m_refDTypep : childDTypep();
@@ -2599,7 +2599,7 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
-    AstRange* rangep() const { return VN_CAST(op2p(), Range); }  // op2 = Array(s) of variable
+    AstRange* rangep() const { return VN_AS(op2p(), Range); }  // op2 = Array(s) of variable
     void rangep(AstRange* nodep);
     // METHODS
     virtual AstBasicDType* basicp() const override {
@@ -2762,7 +2762,7 @@ public:
     AstNode* stmtsp() const { return op3p(); }  // op3 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
     // op4 = scope name
-    AstScopeName* scopeNamep() const { return VN_CAST(op4p(), ScopeName); }
+    AstScopeName* scopeNamep() const { return VN_AS(op4p(), ScopeName); }
     // MORE ACCESSORS
     void dpiOpenParentInc() { ++m_dpiOpenParent; }
     void dpiOpenParentClear() { m_dpiOpenParent = 0; }
@@ -2860,7 +2860,7 @@ public:
     AstNode* pinsp() const { return op3p(); }
     void addPinsp(AstNode* nodep) { addOp3p(nodep); }
     // op4 = scope tracking
-    AstScopeName* scopeNamep() const { return VN_CAST(op4p(), ScopeName); }
+    AstScopeName* scopeNamep() const { return VN_AS(op4p(), ScopeName); }
     void scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
 };
 
@@ -2906,7 +2906,7 @@ public:
     virtual string name() const override { return m_name; }
     virtual bool timescaleMatters() const = 0;
     AstNode* stmtsp() const { return op2p(); }  // op2 = List of statements
-    AstActive* activesp() const { return VN_CAST(op3p(), Active); }  // op3 = List of i/sblocks
+    AstActive* activesp() const { return VN_AS(op3p(), Active); }  // op3 = List of i/sblocks
     // METHODS
     void addInlinesp(AstNode* nodep) { addOp1p(nodep); }
     void addStmtp(AstNode* nodep) { addNOp2p(nodep); }

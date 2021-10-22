@@ -38,7 +38,7 @@ protected:
     // VISITORS
     virtual void visit(AstInitArray* nodep) override {
         const AstUnpackArrayDType* const dtypep
-            = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         UASSERT_OBJ(dtypep, nodep, "Array initializer has non-array dtype");
         const uint32_t size = dtypep->elementsConst();
         const uint32_t elemBytes = dtypep->subDTypep()->widthTotalBytes();

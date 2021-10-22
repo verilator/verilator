@@ -175,7 +175,7 @@ void V3CCtors::cctorsAll() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     evalAsserts();
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-         modp = VN_CAST(modp->nextp(), NodeModule)) {
+         modp = VN_AS(modp->nextp(), NodeModule)) {
         // Process each module in turn
         {
             V3CCtorsBuilder var_reset{modp, "_ctor_var_reset",

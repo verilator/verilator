@@ -115,8 +115,8 @@ private:
         if (!incAssp) return cantUnroll(nodep, "no increment assignment");
         if (incAssp->nextp()) return cantUnroll(nodep, "multiple increments");
 
-        m_forVarp = VN_CAST(initAssp->lhsp(), VarRef)->varp();
-        m_forVscp = VN_CAST(initAssp->lhsp(), VarRef)->varScopep();
+        m_forVarp = VN_AS(initAssp->lhsp(), VarRef)->varp();
+        m_forVscp = VN_AS(initAssp->lhsp(), VarRef)->varScopep();
         if (VN_IS(nodep, GenFor) && !m_forVarp->isGenVar()) {
             nodep->v3error("Non-genvar used in generate for: " << m_forVarp->prettyNameQ());
         } else if (!VN_IS(nodep, GenFor) && m_forVarp->isGenVar()) {
@@ -155,7 +155,7 @@ private:
         if (debug() >= 9) nodep->dumpTree(cout, "-   for: ");
 
         if (!m_generate) {
-            AstAssign* incpAssign = VN_CAST(incp, Assign);
+            AstAssign* incpAssign = VN_AS(incp, Assign);
             if (!canSimulate(incpAssign->rhsp())) {
                 return cantUnroll(incp, "Unable to simulate increment");
             }
@@ -255,7 +255,7 @@ private:
             outLoopsr++;
 
             // Run inc
-            AstAssign* incpass = VN_CAST(incp, Assign);
+            AstAssign* incpass = VN_AS(incp, Assign);
             V3Number newLoopValue = V3Number(initp);
             if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
                 return false;
@@ -345,7 +345,7 @@ private:
                     }
 
                     // loopValue += valInc
-                    AstAssign* incpass = VN_CAST(incp, Assign);
+                    AstAssign* incpass = VN_AS(incp, Assign);
                     V3Number newLoopValue = V3Number(nodep);
                     if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
                         nodep->v3error("Loop unrolling failed");

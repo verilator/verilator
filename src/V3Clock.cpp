@@ -172,7 +172,7 @@ private:
     AstNode* createSenseEquation(AstSenItem* nodesp) {
         // Nodep may be a list of elements; we need to walk it
         AstNode* senEqnp = nullptr;
-        for (AstSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+        for (AstSenItem* senp = nodesp; senp; senp = VN_AS(senp->nextp(), SenItem)) {
             AstNode* const senOnep = createSenItemEquation(senp);
             if (senEqnp) {
                 // Add new OR to the sensitivity list equation
@@ -412,8 +412,8 @@ private:
         }
     }
     virtual void visit(AstExecGraph* nodep) override {
-        for (m_mtaskBodyp = VN_CAST(nodep->op1p(), MTaskBody); m_mtaskBodyp;
-             m_mtaskBodyp = VN_CAST(m_mtaskBodyp->nextp(), MTaskBody)) {
+        for (m_mtaskBodyp = VN_AS(nodep->op1p(), MTaskBody); m_mtaskBodyp;
+             m_mtaskBodyp = VN_AS(m_mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
             iterate(m_mtaskBodyp);
         }

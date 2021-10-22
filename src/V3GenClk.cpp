@@ -54,7 +54,7 @@ private:
     // METHODS
     AstVarScope* genInpClk(AstVarScope* vscp) {
         if (vscp->user2p()) {
-            return VN_CAST(vscp->user2p(), VarScope);
+            return VN_AS(vscp->user2p(), VarScope);
         } else {
             // In order to create a __VinpClk* for a signal, it needs to be marked circular.
             // The DPI export trigger is never marked circular by V3Order (see comments in

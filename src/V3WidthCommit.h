@@ -203,7 +203,7 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         if (nodep->classMethod() && nodep->pureVirtual() && VN_IS(m_modp, Class)
-            && !VN_CAST(m_modp, Class)->isVirtual()) {
+            && !VN_AS(m_modp, Class)->isVirtual()) {
             nodep->v3error(
                 "Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2017 8.21)");
         }

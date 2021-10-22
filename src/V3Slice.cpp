@@ -185,12 +185,12 @@ class SliceVisitor final : public AstNVisitor {
                     for (int index = 0; index < adtypep->rangep()->elementsConst(); ++index) {
                         // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
                         AstNodeBiop* clonep
-                            = VN_CAST(nodep->cloneType(
-                                          new AstArraySel(nodep->fileline(),
-                                                          nodep->lhsp()->cloneTree(false), index),
-                                          new AstArraySel(nodep->fileline(),
-                                                          nodep->rhsp()->cloneTree(false), index)),
-                                      NodeBiop);
+                            = VN_AS(nodep->cloneType(
+                                        new AstArraySel(nodep->fileline(),
+                                                        nodep->lhsp()->cloneTree(false), index),
+                                        new AstArraySel(nodep->fileline(),
+                                                        nodep->rhsp()->cloneTree(false), index)),
+                                    NodeBiop);
                         if (!logp) {
                             logp = clonep;
                         } else {

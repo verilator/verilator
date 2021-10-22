@@ -91,9 +91,9 @@ private:
                 if (debug() >= 9) assp->dumpTree(cout, "     _new: ");
             } else if (nodep->modVarp()->isIfaceRef()
                        || (VN_IS(nodep->modVarp()->subDTypep(), UnpackArrayDType)
-                           && VN_IS(VN_CAST(nodep->modVarp()->subDTypep(), UnpackArrayDType)
-                                        ->subDTypep(),
-                                    IfaceRefDType))) {
+                           && VN_IS(
+                               VN_AS(nodep->modVarp()->subDTypep(), UnpackArrayDType)->subDTypep(),
+                               IfaceRefDType))) {
                 // Create an AstAssignVarScope for Vars to Cells so we can
                 // link with their scope later
                 AstNode* lhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
@@ -202,16 +202,16 @@ private:
     // VISITORS
     virtual void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)
-            && VN_IS(VN_CAST(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
+            && VN_IS(VN_AS(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
             UINFO(8, "   dv-vec-VAR    " << nodep << endl);
-            AstUnpackArrayDType* arrdtype = VN_CAST(nodep->dtypep(), UnpackArrayDType);
+            AstUnpackArrayDType* arrdtype = VN_AS(nodep->dtypep(), UnpackArrayDType);
             AstNode* prevp = nullptr;
             for (int i = arrdtype->lo(); i <= arrdtype->hi(); ++i) {
                 const string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 UINFO(8, "VAR name insert " << varNewName << "  " << nodep << endl);
                 if (!m_deModVars.find(varNewName)) {
                     AstIfaceRefDType* ifaceRefp
-                        = VN_CAST(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
+                        = VN_AS(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
                     arrdtype->addNextHere(ifaceRefp);
                     ifaceRefp->cellp(nullptr);
 
@@ -248,7 +248,7 @@ private:
             AstVar* ifaceVarp = VN_CAST(nodep->nextp(), Var);
             const bool isIface
                 = ifaceVarp && VN_IS(ifaceVarp->dtypep(), UnpackArrayDType)
-                  && VN_IS(VN_CAST(ifaceVarp->dtypep(), UnpackArrayDType)->subDTypep(),
+                  && VN_IS(VN_AS(ifaceVarp->dtypep(), UnpackArrayDType)->subDTypep(),
                            IfaceRefDType);
 
             // Make all of the required clones
@@ -271,9 +271,8 @@ private:
                 // If this AstCell is actually an interface instantiation, also clone the IfaceRef
                 // within the same parent module as the cell
                 if (isIface) {
-                    AstUnpackArrayDType* arrdtype = VN_CAST(ifaceVarp->dtypep(), UnpackArrayDType);
-                    AstIfaceRefDType* origIfaceRefp
-                        = VN_CAST(arrdtype->subDTypep(), IfaceRefDType);
+                    AstUnpackArrayDType* arrdtype = VN_AS(ifaceVarp->dtypep(), UnpackArrayDType);
+                    AstIfaceRefDType* origIfaceRefp = VN_AS(arrdtype->subDTypep(), IfaceRefDType);
                     origIfaceRefp->cellp(nullptr);
                     AstVar* varNewp = ifaceVarp->cloneTree(false);
                     AstIfaceRefDType* ifaceRefp = origIfaceRefp->cloneTree(false);
@@ -328,7 +327,7 @@ private:
                                        << pinDim.second << endl);
             if (expDim.first == pinDim.first && expDim.second == pinDim.second + 1) {
                 // Connection to array, where array dimensions match the instant dimension
-                AstRange* rangep = VN_CAST(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();
+                AstRange* rangep = VN_AS(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();
                 const int arraySelNum = rangep->littleEndian()
                                             ? (rangep->elementsConst() - 1 - m_instSelNum)
                                             : m_instSelNum;
@@ -405,7 +404,7 @@ private:
                 if (!pinVarp->backp()) {
                     varNewp = m_deModVars.find(varNewName);
                 } else {
-                    AstIfaceRefDType* ifaceRefp = VN_CAST(pinArrp->subDTypep(), IfaceRefDType);
+                    AstIfaceRefDType* ifaceRefp = VN_AS(pinArrp->subDTypep(), IfaceRefDType);
                     ifaceRefp->cellp(nullptr);
                     varNewp = pinVarp->cloneTree(false);
                     varNewp->name(varNewName);
@@ -433,11 +432,11 @@ private:
                 const AstVarRef* varrefp = VN_CAST(newp->exprp(), VarRef);  // Maybe null
                 int expr_i = i;
                 if (AstSliceSel* slicep = VN_CAST(newp->exprp(), SliceSel)) {
-                    varrefp = VN_CAST(slicep->fromp(), VarRef);
+                    varrefp = VN_AS(slicep->fromp(), VarRef);
                     UASSERT(VN_IS(slicep->rhsp(), Const), "Slices should be constant");
                     int slice_index
                         = slicep->declRange().left() + in * slicep->declRange().leftToRightInc();
-                    auto* exprArrp = VN_CAST(varrefp->dtypep(), UnpackArrayDType);
+                    auto* exprArrp = VN_AS(varrefp->dtypep(), UnpackArrayDType);
                     UASSERT_OBJ(exprArrp, slicep, "Slice of non-array");
                     expr_i = slice_index + exprArrp->lo();
                 } else if (!varrefp) {
@@ -597,7 +596,7 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
     if (nodep->modVarp()->direction() == VDirection::OUTPUT) {
         if (VN_IS(nodep->exprp(), Const) || VN_IS(nodep->exprp(), Extend)
             || (VN_IS(nodep->exprp(), Concat)
-                && (VN_IS(VN_CAST(nodep->exprp(), Concat)->lhsp(), Const)))) {
+                && (VN_IS(VN_AS(nodep->exprp(), Concat)->lhsp(), Const)))) {
             // Uses v3warn for error, as might be found multiple times
             nodep->v3warn(E_PORTSHORT, "Output port is connected to a constant pin,"
                                        " electrical short");

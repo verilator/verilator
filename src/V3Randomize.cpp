@@ -52,7 +52,7 @@ private:
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
             for (auto* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
                 // If member is rand and of class type, mark its class
-                if (VN_IS(memberp, Var) && VN_CAST(memberp, Var)->isRand()) {
+                if (VN_IS(memberp, Var) && VN_AS(memberp, Var)->isRand()) {
                     if (auto* classRefp = VN_CAST(memberp->dtypep(), ClassRefDType)) {
                         auto* rclassp = classRefp->classp();
                         markMembers(rclassp);
@@ -127,7 +127,7 @@ private:
     VL_DEBUG_FUNC;
 
     AstVar* enumValueTabp(AstEnumDType* nodep) {
-        if (nodep->user2p()) return VN_CAST(nodep->user2p(), Var);
+        if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
         AstNodeArrayDType* vardtypep
             = new AstUnpackArrayDType(nodep->fileline(), nodep->dtypep(),
@@ -143,8 +143,8 @@ private:
         v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), EnumItem)) {
-            AstConst* vconstp = VN_CAST(itemp->valuep(), Const);
+             itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            AstConst* vconstp = VN_AS(itemp->valuep(), Const);
             UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
             initp->addValuep(vconstp->cloneTree(false));
         }
@@ -159,7 +159,7 @@ private:
             AstNodeStmt* stmtsp = nullptr;
             offset += memberp ? memberp->lsb() : 0;
             for (auto* smemberp = structDtp->membersp(); smemberp;
-                 smemberp = VN_CAST(smemberp->nextp(), MemberDType)) {
+                 smemberp = VN_AS(smemberp->nextp(), MemberDType)) {
                 auto* randp = newRandStmtsp(fl, stmtsp ? varrefp->cloneTree(false) : varrefp,
                                             offset, smemberp);
                 if (stmtsp) {
@@ -198,7 +198,7 @@ private:
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep << endl);
         auto* funcp = V3Randomize::newRandomizeFunc(nodep);
-        auto* fvarp = VN_CAST(funcp->fvarp(), Var);
+        auto* fvarp = VN_AS(funcp->fvarp(), Var);
         funcp->addStmtsp(new AstAssign(
             nodep->fileline(), new AstVarRef(nodep->fileline(), fvarp, VAccess::WRITE),
             new AstConst(nodep->fileline(), AstConst::WidthedValue(), 32, 1)));
@@ -253,7 +253,7 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
 }
 
 AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {
-    auto* funcp = VN_CAST(nodep->findMember("randomize"), Func);
+    auto* funcp = VN_AS(nodep->findMember("randomize"), Func);
     if (!funcp) {
         auto* dtypep
             = nodep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says int return of 0/1

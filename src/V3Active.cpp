@@ -355,7 +355,7 @@ private:
             } else if (m_check == CT_LATCH) {
                 // Suppress. Shouldn't matter that the interior of the latch races
             } else if (!(VN_IS(nodep->lhsp(), VarRef)
-                         && VN_CAST(nodep->lhsp(), VarRef)->varp()->isLatched())) {
+                         && VN_AS(nodep->lhsp(), VarRef)->varp()->isLatched())) {
                 nodep->v3warn(COMBDLY, "Delayed assignments (<=) in non-clocked"
                                        " (non flop or latch) block\n"
                                            << nodep->warnMore()
@@ -490,7 +490,7 @@ private:
     void visitAlways(AstNode* nodep, AstSenTree* oldsensesp, VAlwaysKwd kwd) {
         // Move always to appropriate ACTIVE based on its sense list
         if (oldsensesp && oldsensesp->sensesp() && VN_IS(oldsensesp->sensesp(), SenItem)
-            && VN_CAST(oldsensesp->sensesp(), SenItem)->isNever()) {
+            && VN_AS(oldsensesp->sensesp(), SenItem)->isNever()) {
             // Never executing.  Kill it.
             UASSERT_OBJ(!oldsensesp->sensesp()->nextp(), nodep,
                         "Never senitem should be alone, else the never should be eliminated.");

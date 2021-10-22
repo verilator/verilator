@@ -107,7 +107,7 @@ public:
             m_modParams.insert({hierOpt.second.origName(), {}});
         }
         for (AstNodeModule* modp = nodep->modulesp(); modp;
-             modp = VN_CAST(modp->nextp(), NodeModule)) {
+             modp = VN_AS(modp->nextp(), NodeModule)) {
             if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
                 m_hierBlockMod.emplace(modp->name(), modp);
             }
@@ -138,12 +138,12 @@ public:
             size_t paramIdx = 0;
             const ParamConstMap& params = m_hierParams[hierIt->second];
             UASSERT(params.size() == hierIt->second->params().size(), "not match");
-            for (AstPin* pinp = firstPinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = firstPinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (!pinp->exprp()) continue;
                 UASSERT_OBJ(!pinp->modPTypep(), pinp,
                             "module with type parameter must not be a hierarchical block");
                 if (AstVar* modvarp = pinp->modVarp()) {
-                    AstConst* constp = VN_CAST(pinp->exprp(), Const);
+                    AstConst* constp = VN_AS(pinp->exprp(), Const);
                     UASSERT_OBJ(constp, pinp,
                                 "parameter for a hierarchical block must have been constified");
                     const auto paramIt = paramsIt->second.find(modvarp->name());
@@ -402,19 +402,19 @@ class ParamProcessor final {
         }
     }
     void relinkPins(const CloneMap* clonemapp, AstPin* startpinp) {
-        for (AstPin* pinp = startpinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = startpinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (pinp->modVarp()) {
                 // Find it in the clone structure
                 // UINFO(8,"Clone find 0x"<<hex<<(uint32_t)pinp->modVarp()<<endl);
                 const auto cloneiter = clonemapp->find(pinp->modVarp());
                 UASSERT_OBJ(cloneiter != clonemapp->end(), pinp,
                             "Couldn't find pin in clone list");
-                pinp->modVarp(VN_CAST(cloneiter->second, Var));
+                pinp->modVarp(VN_AS(cloneiter->second, Var));
             } else if (pinp->modPTypep()) {
                 const auto cloneiter = clonemapp->find(pinp->modPTypep());
                 UASSERT_OBJ(cloneiter != clonemapp->end(), pinp,
                             "Couldn't find pin in clone list");
-                pinp->modPTypep(VN_CAST(cloneiter->second, ParamTypeDType));
+                pinp->modPTypep(VN_AS(cloneiter->second, ParamTypeDType));
             } else {
                 pinp->v3fatalSrc("Not linked?");
             }
@@ -429,7 +429,7 @@ class ParamProcessor final {
                 }
             }
         }
-        for (AstPin* pinp = startpinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = startpinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (AstVar* varp = pinp->modVarp()) {
                 const auto varIt = vlstd::as_const(nameToPin).find(varp->name());
                 UASSERT_OBJ(varIt != nameToPin.end(), varp,
@@ -471,7 +471,7 @@ class ParamProcessor final {
         UASSERT_OBJ(modp->hierBlock(), modp, "should be used for hierarchical block");
 
         std::map<string, AstConst*> pins;
-        for (AstPin* pinp = paramPinsp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = paramPinsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             checkSupportedParam(modp, pinp);
             if (AstVar* varp = pinp->modVarp()) {
                 if (!pinp->exprp()) continue;
@@ -558,8 +558,8 @@ class ParamProcessor final {
         // Keep tree sorted by level
         AstNodeModule* insertp = srcModp;
         while (VN_IS(insertp->nextp(), NodeModule)
-               && VN_CAST(insertp->nextp(), NodeModule)->level() < newmodp->level()) {
-            insertp = VN_CAST(insertp->nextp(), NodeModule);
+               && VN_AS(insertp->nextp(), NodeModule)->level() < newmodp->level()) {
+            insertp = VN_AS(insertp->nextp(), NodeModule);
         }
         insertp->addNextHere(newmodp);
 
@@ -588,7 +588,7 @@ class ParamProcessor final {
         }
         // Assign parameters to the constants specified
         // DOES clone() so must be finished with module clonep() before here
-        for (AstPin* pinp = paramsp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (pinp->exprp()) {
                 if (AstVar* modvarp = pinp->modVarp()) {
                     AstNode* newp = pinp->exprp();  // Const or InitArray
@@ -603,7 +603,7 @@ class ParamProcessor final {
                     modvarp->valuep(newp->cloneTree(false));
                     modvarp->overriddenParam(overridden);
                 } else if (AstParamTypeDType* modptp = pinp->modPTypep()) {
-                    AstNodeDType* dtypep = VN_CAST(pinp->exprp(), NodeDType);
+                    AstNodeDType* dtypep = VN_AS(pinp->exprp(), NodeDType);
                     UASSERT_OBJ(dtypep, pinp, "unlinked param dtype");
                     if (modptp->childDTypep()) modptp->childDTypep()->unlinkFrBack()->deleteTree();
                     // Set this parameter to value requested by cell
@@ -694,7 +694,7 @@ class ParamProcessor final {
 
     void cellInterfaceCleanup(AstCell* nodep, AstNodeModule* srcModp, string& longnamer,
                               bool& any_overridesr, IfaceRefRefs& ifaceRefRefs) {
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             AstVar* modvarp = pinp->modVarp();
             if (modvarp->isIfaceRef()) {
                 AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
@@ -704,9 +704,9 @@ class ParamProcessor final {
                 AstIfaceRefDType* pinIrefp = nullptr;
                 AstNode* exprp = pinp->exprp();
                 AstVar* varp
-                    = (exprp && VN_IS(exprp, VarRef)) ? VN_CAST(exprp, VarRef)->varp() : nullptr;
+                    = (exprp && VN_IS(exprp, VarRef)) ? VN_AS(exprp, VarRef)->varp() : nullptr;
                 if (varp && varp->subDTypep() && VN_IS(varp->subDTypep(), IfaceRefDType)) {
-                    pinIrefp = VN_CAST(varp->subDTypep(), IfaceRefDType);
+                    pinIrefp = VN_AS(varp->subDTypep(), IfaceRefDType);
                 } else if (varp && varp->subDTypep() && arraySubDTypep(varp->subDTypep())
                            && VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType)) {
                     pinIrefp = VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType);
@@ -717,9 +717,9 @@ class ParamProcessor final {
                            && VN_CAST(
                                arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
                                IfaceRefDType)) {
-                    pinIrefp = VN_CAST(
-                        arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                        IfaceRefDType);
+                    pinIrefp
+                        = VN_AS(arraySubDTypep(VN_AS(exprp->op1p(), VarRef)->varp()->subDTypep()),
+                                IfaceRefDType);
                 }
 
                 UINFO(9, "     portIfaceRef " << portIrefp << endl);
@@ -781,7 +781,7 @@ public:
             longname = parameterizedHierBlockName(srcModp, nodep->paramsp());
             any_overrides = longname != srcModp->name();
         } else {
-            for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 cellPinCleanup(nodep, pinp, srcModp, longname /*ref*/, any_overrides /*ref*/);
             }
         }
@@ -824,7 +824,7 @@ public:
     explicit ParamProcessor(AstNetlist* nodep)
         : m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
         for (AstNodeModule* modp = nodep->modulesp(); modp;
-             modp = VN_CAST(modp->nextp(), NodeModule)) {
+             modp = VN_AS(modp->nextp(), NodeModule)) {
             m_allModuleNames.insert(modp->name());
         }
     }
@@ -995,8 +995,8 @@ class ParamVisitor final : public AstNVisitor {
                     UINFO(9, "Hit module boundary, done looking for interface" << endl);
                     break;
                 }
-                if (VN_IS(backp, Var) && VN_CAST(backp, Var)->isIfaceRef()
-                    && VN_CAST(backp, Var)->childDTypep()
+                if (VN_IS(backp, Var) && VN_AS(backp, Var)->isIfaceRef()
+                    && VN_AS(backp, Var)->childDTypep()
                     && (VN_CAST(VN_CAST(backp, Var)->childDTypep(), IfaceRefDType)
                         || (VN_CAST(VN_CAST(backp, Var)->childDTypep(), UnpackArrayDType)
                             && VN_CAST(VN_CAST(backp, Var)->childDTypep()->getChildDTypep(),
@@ -1101,7 +1101,7 @@ class ParamVisitor final : public AstNVisitor {
     //!       move to more generic constant expressions, such code will be needed here.
     virtual void visit(AstBegin* nodep) override {
         if (nodep->genforp()) {
-            AstGenFor* forp = VN_CAST(nodep->genforp(), GenFor);
+            AstGenFor* forp = VN_AS(nodep->genforp(), GenFor);
             UASSERT_OBJ(forp, nodep, "Non-GENFOR under generate-for BEGIN");
             // We should have a GENFOR under here.  We will be replacing the begin,
             // so process here rather than at the generate to avoid iteration problems
@@ -1142,10 +1142,10 @@ class ParamVisitor final : public AstNVisitor {
         V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body,
                                           // don't trigger errors yet.
         V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
-        AstConst* exprp = VN_CAST(nodep->exprp(), Const);
+        AstConst* exprp = VN_AS(nodep->exprp(), Const);
         // Constify
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* ep = itemp->condsp(); ep;) {
                 AstNode* nextp = ep->nextp();  // May edit list
                 iterateAndNextNull(ep);
@@ -1155,7 +1155,7 @@ class ParamVisitor final : public AstNVisitor {
         }
         // Item match
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (!itemp->isDefault()) {
                 for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
                     if (const AstConst* ccondp = VN_CAST(ep, Const)) {
@@ -1170,7 +1170,7 @@ class ParamVisitor final : public AstNVisitor {
         }
         // Else default match
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (itemp->isDefault()) {
                 if (!keepp) keepp = itemp->bodysp();
             }

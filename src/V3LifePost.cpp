@@ -187,8 +187,8 @@ private:
     void squashAssignposts() {
         for (auto& itr : m_assignposts) {
             LifePostLocation* app = &itr.second;
-            AstVarRef* lhsp = VN_CAST(app->nodep->lhsp(), VarRef);  // original var
-            AstVarRef* rhsp = VN_CAST(app->nodep->rhsp(), VarRef);  // dly var
+            AstVarRef* lhsp = VN_AS(app->nodep->lhsp(), VarRef);  // original var
+            AstVarRef* rhsp = VN_AS(app->nodep->rhsp(), VarRef);  // dly var
             AstVarScope* dlyVarp = rhsp->varScopep();
             AstVarScope* origVarp = lhsp->varScopep();
 

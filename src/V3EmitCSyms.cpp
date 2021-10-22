@@ -124,8 +124,8 @@ class EmitCSyms final : EmitCBaseVisitor {
         // Prevent GCC compile time error; name check all things that reach C++ code
         if (nodep->name() != ""
             && !(VN_IS(nodep, CFunc)
-                 && (VN_CAST(nodep, CFunc)->isConstructor()
-                     || VN_CAST(nodep, CFunc)->isDestructor()))) {
+                 && (VN_AS(nodep, CFunc)->isConstructor()
+                     || VN_AS(nodep, CFunc)->isDestructor()))) {
             const string rsvd = V3LanguageWords::isKeyword(nodep->name());
             if (rsvd != "") {
                 // Generally V3Name should find all of these and throw SYMRSVDWORD.
@@ -402,7 +402,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+         nodep = VN_AS(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
         puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
@@ -584,7 +584,7 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("#include \"" + symClassName() + ".h\"\n");
     puts("#include \"" + topClassName() + ".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+         nodep = VN_AS(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
         puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }

@@ -44,7 +44,7 @@ const char* AstIfaceRefDType::broken() const {
 }
 
 AstIface* AstIfaceRefDType::ifaceViaCellp() const {
-    return ((m_cellp && m_cellp->modp()) ? VN_CAST(m_cellp->modp(), Iface) : m_ifacep);
+    return ((m_cellp && m_cellp->modp()) ? VN_AS(m_cellp->modp(), Iface) : m_ifacep);
 }
 
 const char* AstNodeVarRef::broken() const {
@@ -73,13 +73,13 @@ const char* AstAddrOfCFunc::broken() const {
 }
 
 int AstNodeSel::bitConst() const {
-    AstConst* constp = VN_CAST(bitp(), Const);
+    AstConst* constp = VN_AS(bitp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
 
 void AstNodeUOrStructDType::repairMemberCache() {
     clearCache();
-    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_CAST(itemp->nextp(), MemberDType)) {
+    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
         if (m_members.find(itemp->name()) != m_members.end()) {
             itemp->v3error("Duplicate declaration of member name: " << itemp->prettyNameQ());
         } else {
@@ -90,7 +90,7 @@ void AstNodeUOrStructDType::repairMemberCache() {
 
 const char* AstNodeUOrStructDType::broken() const {
     std::unordered_set<AstMemberDType*> exists;
-    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_CAST(itemp->nextp(), MemberDType)) {
+    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
         exists.insert(itemp);
     }
     for (MemberNameMap::const_iterator it = m_members.begin(); it != m_members.end(); ++it) {
@@ -614,8 +614,8 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
             return nullptr;
         }
     } else if (VN_IS(nodep, VarRef)) {
-        if (VN_CAST(nodep, VarRef)->varp()->isSc()) {
-            return VN_CAST(nodep, VarRef)->varp();
+        if (VN_AS(nodep, VarRef)->varp()->isSc()) {
+            return VN_AS(nodep, VarRef)->varp();
         } else {
             return nullptr;
         }
@@ -795,25 +795,25 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
     // Else AstArraySel etc; search for the base
     while (nodep) {
         if (VN_IS(nodep, ArraySel)) {
-            nodep = VN_CAST(nodep, ArraySel)->fromp();
+            nodep = VN_AS(nodep, ArraySel)->fromp();
             continue;
         } else if (VN_IS(nodep, Sel)) {
-            nodep = VN_CAST(nodep, Sel)->fromp();
+            nodep = VN_AS(nodep, Sel)->fromp();
             continue;
         } else if (overMembers && VN_IS(nodep, MemberSel)) {
-            nodep = VN_CAST(nodep, MemberSel)->fromp();
+            nodep = VN_AS(nodep, MemberSel)->fromp();
             continue;
         }
         // AstNodeSelPre stashes the associated variable under an ATTROF
         // of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
         else if (VN_IS(nodep, AttrOf)) {
-            nodep = VN_CAST(nodep, AttrOf)->fromp();
+            nodep = VN_AS(nodep, AttrOf)->fromp();
             continue;
         } else if (VN_IS(nodep, NodePreSel)) {
-            if (VN_CAST(nodep, NodePreSel)->attrp()) {
-                nodep = VN_CAST(nodep, NodePreSel)->attrp();
+            if (VN_AS(nodep, NodePreSel)->attrp()) {
+                nodep = VN_AS(nodep, NodePreSel)->attrp();
             } else {
-                nodep = VN_CAST(nodep, NodePreSel)->fromp();
+                nodep = VN_AS(nodep, NodePreSel)->fromp();
             }
             continue;
         } else {
@@ -854,7 +854,7 @@ string AstScope::nameDotless() const {
 
 string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
     string out;
-    for (AstText* textp = scopeTextp; textp; textp = VN_CAST(textp->nextp(), Text)) {
+    for (AstText* textp = scopeTextp; textp; textp = VN_AS(textp->nextp(), Text)) {
         out += textp->text();
     }
     // TOP will be replaced by top->name()
@@ -865,7 +865,7 @@ string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
 }
 string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
     string out;
-    for (AstText* textp = scopeTextp; textp; textp = VN_CAST(textp->nextp(), Text)) {
+    for (AstText* textp = scopeTextp; textp; textp = VN_AS(textp->nextp(), Text)) {
         out += textp->text();
     }
     if (out.substr(0, 10) == "__DOT__TOP") out.replace(0, 10, "");
@@ -879,28 +879,28 @@ string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
 
 bool AstSenTree::hasClocked() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isClocked()) return true;
     }
     return false;
 }
 bool AstSenTree::hasSettle() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isSettle()) return true;
     }
     return false;
 }
 bool AstSenTree::hasInitial() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isInitial()) return true;
     }
     return false;
 }
 bool AstSenTree::hasCombo() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isCombo()) return true;
     }
     return false;
@@ -1041,10 +1041,8 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
     // - the default/inititem children might be in different order yet still yield the same table
     // See note in AstInitArray::same about the same. This function instead compares by initializer
     // value, rather than by tree structure.
-    const AstUnpackArrayDType* const aDTypep = VN_CAST(ap->dtypep(), UnpackArrayDType);
-    const AstUnpackArrayDType* const bDTypep = VN_CAST(bp->dtypep(), UnpackArrayDType);
-    UASSERT_STATIC(aDTypep, "Bad type in array initializer");
-    UASSERT_STATIC(bDTypep, "Bad type in array initializer");
+    const AstUnpackArrayDType* const aDTypep = VN_AS(ap->dtypep(), UnpackArrayDType);
+    const AstUnpackArrayDType* const bDTypep = VN_AS(bp->dtypep(), UnpackArrayDType);
     if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) {  // Element types differ
         return false;
     }
@@ -1070,7 +1068,7 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
     UASSERT_OBJ(!defaultp || VN_IS(defaultp, Const), initp,
                 "Const pool table default must be Const");
     for (AstNode* nodep = initp->initsp(); nodep; nodep = nodep->nextp()) {
-        AstNode* const valuep = VN_CAST(nodep, InitItem)->valuep();
+        AstNode* const valuep = VN_AS(nodep, InitItem)->valuep();
         UASSERT_OBJ(VN_IS(valuep, Const), valuep, "Const pool table entry must be Const");
     }
     // Try to find an existing table with the same content
@@ -1078,7 +1076,7 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
     const auto& er = m_tables.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
         AstVarScope* const varScopep = it->second;
-        const AstInitArray* const init2p = VN_CAST(varScopep->varp()->valuep(), InitArray);
+        const AstInitArray* const init2p = VN_AS(varScopep->varp()->valuep(), InitArray);
         if (sameInit(initp, init2p)) {
             return varScopep;  // Found identical table
         }
@@ -1107,7 +1105,7 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     const auto& er = m_consts.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
         AstVarScope* const varScopep = it->second;
-        const AstConst* const init2p = VN_CAST(varScopep->varp()->valuep(), Const);
+        const AstConst* const init2p = VN_AS(varScopep->varp()->valuep(), Const);
         if (sameInit(initp, init2p)
             && (mergeDType || varScopep->dtypep()->sameTree(initp->dtypep()))) {
             return varScopep;  // Found identical constant
@@ -1284,9 +1282,8 @@ const char* AstClassPackage::broken() const {
     return nullptr;
 }
 void AstClass::insertCache(AstNode* nodep) {
-    const bool doit
-        = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
-           || (VN_IS(nodep, NodeFTask) && !VN_CAST(nodep, NodeFTask)->isExternProto()));
+    const bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
+                       || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto()));
     if (doit) {
         if (m_members.find(nodep->name()) != m_members.end()) {
             nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
@@ -1314,7 +1311,7 @@ void AstClass::dump(std::ostream& str) const {
 AstClass* AstClassExtends::classp() const {
     AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
     if (VL_UNLIKELY(!refp)) {  // LinkDot uses this for 'super.'
-        refp = VN_CAST(childDTypep(), ClassRefDType);
+        refp = VN_AS(childDTypep(), ClassRefDType);
     }
     UASSERT_OBJ(refp, this, "class extends non-ref");
     return refp->classp();

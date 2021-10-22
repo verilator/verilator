@@ -327,7 +327,7 @@ private:
         if (m_inAss) {
             iterateChildren(nodep);
             if (VN_IS(nodep->rhsp(), Const)) {
-                m_childClkWidth = m_childClkWidth * VN_CAST(nodep->rhsp(), Const)->toUInt();
+                m_childClkWidth = m_childClkWidth * VN_AS(nodep->rhsp(), Const)->toUInt();
             } else {
                 m_childClkWidth = nodep->width();  // can not check in this case.
             }
@@ -1262,8 +1262,8 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     const bool fromInitial = fromp->hasInitial() || fromp->hasSettle();
     if (toInitial != fromInitial) return true;
 
-    const AstSenItem* fromSenListp = VN_CAST(fromp->sensesp(), SenItem);
-    const AstSenItem* toSenListp = VN_CAST(top->sensesp(), SenItem);
+    const AstSenItem* fromSenListp = VN_AS(fromp->sensesp(), SenItem);
+    const AstSenItem* toSenListp = VN_AS(top->sensesp(), SenItem);
 
     UASSERT_OBJ(fromSenListp, fromp, "sensitivity list item is not an AstSenItem");
     UASSERT_OBJ(toSenListp, top, "sensitivity list item is not an AstSenItem");
@@ -1728,7 +1728,7 @@ AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
     AstScope* const scopep = lvertexp->scopep();
     AstSenTree* const domainp = lvertexp->domainp();
     AstNode* nodep = lvertexp->nodep();
-    AstNodeModule* const modp = VN_CAST(scopep->user1p(), NodeModule);  // Stashed by visitor func
+    AstNodeModule* const modp = VN_AS(scopep->user1p(), NodeModule);  // Stashed by visitor func
     UASSERT(modp, "nullptr");
     if (VN_IS(nodep, SenTree)) {
         // Just ignore sensitivities, we'll deal with them when we move statements that need them

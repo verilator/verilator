@@ -249,14 +249,12 @@ private:
         // This avoids a mess in computing what exactly a POSEDGE is
         // V3Const cleans up any NOTs by flipping the edges for us
         if (m_buffersOnly
-            && !(VN_IS(nodep->rhsp(), VarRef)
-                 // Avoid making non-clocked logic into clocked,
-                 // as it slows down the verilator_sim_benchmark
-                 || (VN_IS(nodep->rhsp(), Not)
-                     && VN_IS(VN_CAST(nodep->rhsp(), Not)->lhsp(), VarRef)
-                     && VN_CAST(VN_CAST(nodep->rhsp(), Not)->lhsp(), VarRef)
-                            ->varp()
-                            ->isUsedClock()))) {
+            && !(
+                VN_IS(nodep->rhsp(), VarRef)
+                // Avoid making non-clocked logic into clocked,
+                // as it slows down the verilator_sim_benchmark
+                || (VN_IS(nodep->rhsp(), Not) && VN_IS(VN_AS(nodep->rhsp(), Not)->lhsp(), VarRef)
+                    && VN_AS(VN_AS(nodep->rhsp(), Not)->lhsp(), VarRef)->varp()->isUsedClock()))) {
             clearSimple("Not a buffer (goes to a clock)");
         }
     }
@@ -512,7 +510,7 @@ private:
     }
     virtual void visit(AstConcat* nodep) override {
         UASSERT_OBJ(!(VN_IS(nodep->backp(), NodeAssign)
-                      && VN_CAST(nodep->backp(), NodeAssign)->lhsp() == nodep),
+                      && VN_AS(nodep->backp(), NodeAssign)->lhsp() == nodep),
                     nodep, "Concat on LHS of assignment; V3Const should have deleted it");
         iterateChildren(nodep);
     }
@@ -996,7 +994,7 @@ public:
         // So dupit is either a different, duplicate rhsp, or the end of the hash.
         if (dupit != m_dupFinder.end()) {
             m_dupFinder.erase(inserted);
-            return VN_CAST(dupit->second->user2p(), NodeAssign);
+            return VN_AS(dupit->second->user2p(), NodeAssign);
         }
         // Retain new inserted information
         return nullptr;
@@ -1285,8 +1283,8 @@ private:
                 if (AstNodeAssign* assignp = VN_CAST(lvertexp->nodep(), NodeAssign)) {
                     // if (lvertexp->outSize1() && VN_IS(assignp->lhsp(), Sel)) {
                     if (VN_IS(assignp->lhsp(), Sel) && lvertexp->outSize1()) {
-                        UINFO(9, "assing to the nodep["
-                                     << VN_CAST(assignp->lhsp(), Sel)->lsbConst() << "]" << endl);
+                        UINFO(9, "assing to the nodep[" << VN_AS(assignp->lhsp(), Sel)->lsbConst()
+                                                        << "]" << endl);
                         // first assign with Sel-lhs
                         if (!m_activep) m_activep = lvertexp->activep();
                         if (!m_logicvp) m_logicvp = lvertexp;
