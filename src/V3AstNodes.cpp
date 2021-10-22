@@ -413,7 +413,7 @@ string AstVar::vlPropDecl(const string& propName) const {
     std::vector<int> ulims;  // Unpacked dimension limits
     for (const AstNodeDType* dtp = dtypep(); dtp;) {
         dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-        if (const AstNodeArrayDType* const adtypep = VN_CAST_CONST(dtp, NodeArrayDType)) {
+        if (const AstNodeArrayDType* const adtypep = VN_CAST(dtp, NodeArrayDType)) {
             ulims.push_back(adtypep->declRange().left());
             ulims.push_back(adtypep->declRange().right());
             dtp = adtypep->subDTypep();
@@ -667,22 +667,22 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
     CTypeRecursed info;
 
     const AstNodeDType* dtypep = this->skipRefp();
-    if (const auto* adtypep = VN_CAST_CONST(dtypep, AssocArrayDType)) {
+    if (const auto* adtypep = VN_CAST(dtypep, AssocArrayDType)) {
         const CTypeRecursed key = adtypep->keyDTypep()->cTypeRecurse(true);
         const CTypeRecursed val = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlAssocArray<" + key.m_type + ", " + val.m_type + ">";
-    } else if (const auto* adtypep = VN_CAST_CONST(dtypep, DynArrayDType)) {
+    } else if (const auto* adtypep = VN_CAST(dtypep, DynArrayDType)) {
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlQueue<" + sub.m_type + ">";
-    } else if (const auto* adtypep = VN_CAST_CONST(dtypep, QueueDType)) {
+    } else if (const auto* adtypep = VN_CAST(dtypep, QueueDType)) {
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlQueue<" + sub.m_type;
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
-    } else if (const auto* adtypep = VN_CAST_CONST(dtypep, ClassRefDType)) {
+    } else if (const auto* adtypep = VN_CAST(dtypep, ClassRefDType)) {
         info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
-    } else if (const auto* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
+    } else if (const auto* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         if (adtypep->isCompound()) compound = true;
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
         info.m_type = "VlUnpacked<" + sub.m_type;
@@ -777,11 +777,11 @@ int AstNodeDType::widthPow2() const {
 }
 
 bool AstNodeDType::isLiteralType() const {
-    if (auto* const dtypep = VN_CAST_CONST(skipRefp(), BasicDType)) {
+    if (auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
-    } else if (auto* const dtypep = VN_CAST_CONST(skipRefp(), UnpackArrayDType)) {
+    } else if (auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {
         return dtypep->basicp()->isLiteralType();
-    } else if (auto* const dtypep = VN_CAST_CONST(skipRefp(), StructDType)) {
+    } else if (auto* const dtypep = VN_CAST(skipRefp(), StructDType)) {
         // Currently all structs are packed, later this can be expanded to
         // 'forall members _.isLiteralType()'
         return dtypep->packed();
@@ -1512,7 +1512,7 @@ void AstNodeDType::dumpSmall(std::ostream& str) const {
 }
 void AstNodeArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
-    if (auto* adtypep = VN_CAST_CONST(this, UnpackArrayDType)) {
+    if (auto* adtypep = VN_CAST(this, UnpackArrayDType)) {
         // uc = packed compound object, u = unpacked POD
         str << (adtypep->isCompound() ? "uc" : "u");
     } else {

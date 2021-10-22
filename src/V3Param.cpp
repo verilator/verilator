@@ -301,11 +301,9 @@ class ParamProcessor final {
     }
 
     static string paramValueKey(const AstNode* nodep) {
-        if (const AstRefDType* const refp = VN_CAST_CONST(nodep, RefDType)) {
-            nodep = refp->skipRefp();
-        }
+        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) { nodep = refp->skipRefp(); }
         string key = nodep->name();
-        if (const AstIfaceRefDType* const ifrtp = VN_CAST_CONST(nodep, IfaceRefDType)) {
+        if (const AstIfaceRefDType* const ifrtp = VN_CAST(nodep, IfaceRefDType)) {
             if (ifrtp->cellp() && ifrtp->cellp()->modp()) {
                 key = ifrtp->cellp()->modp()->name();
             } else if (ifrtp->ifacep()) {
@@ -314,7 +312,7 @@ class ParamProcessor final {
                 nodep->v3fatalSrc("Can't parameterize interface without module name");
             }
         } else if (const AstNodeUOrStructDType* const dtypep
-                   = VN_CAST_CONST(nodep, NodeUOrStructDType)) {
+                   = VN_CAST(nodep, NodeUOrStructDType)) {
             key += " ";
             key += dtypep->verilogKwd();
             key += " {";
@@ -324,10 +322,10 @@ class ParamProcessor final {
                 key += ";";
             }
             key += "}";
-        } else if (const AstMemberDType* const dtypep = VN_CAST_CONST(nodep, MemberDType)) {
+        } else if (const AstMemberDType* const dtypep = VN_CAST(nodep, MemberDType)) {
             key += " ";
             key += paramValueKey(dtypep->subDTypep());
-        } else if (const AstBasicDType* const dtypep = VN_CAST_CONST(nodep, BasicDType)) {
+        } else if (const AstBasicDType* const dtypep = VN_CAST(nodep, BasicDType)) {
             if (dtypep->isRanged()) {
                 key += "[" + cvtToStr(dtypep->left()) + ":" + cvtToStr(dtypep->right()) + "]";
             }

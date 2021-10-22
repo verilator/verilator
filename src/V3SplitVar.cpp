@@ -416,7 +416,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     }
     static int outerMostSizeOfUnpackedArray(const AstVar* nodep) {
         const AstUnpackArrayDType* const dtypep
-            = VN_AS_CONST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         UASSERT_OBJ(dtypep, nodep, "Must be unapcked array");
         return dtypep->elementsConst();
     }

@@ -60,22 +60,22 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
         if (VL_UNCOVERABLE(reasonp)) return reasonp; \
     } while (false)
 
-// (V)erilator (N)ode is: Returns true iff AstNode is of the given AstNode subtype, and not
-// nullptr.
+// (V)erilator (N)ode is: Returns true if and only if AstNode is of the given AstNode subtype,
+// and not nullptr.
 #define VN_IS(nodep, nodetypename) (AstNode::privateIs<Ast##nodetypename, decltype(nodep)>(nodep))
 
-// (V)erilator (N)ode cast: More efficient but otherwise same as dynamic_cast, use this instead.
-// Cast to given type if node is of such type, otherwise returns nullptr.
+// (V)erilator (N)ode cast: Similar to dynamic_cast, but more efficient, use this instead.
+// Cast to given type if node is of such type, otherwise returns nullptr. If 'nodep' is nullptr,
+// return nullptr. Pointer constness is preserved, i.e.: given a 'const AstNode*',
+// a 'const Ast<nodetypename>*' is returned.
 #define VN_CAST(nodep, nodetypename) \
     (AstNode::privateCast<Ast##nodetypename, decltype(nodep)>(nodep))
-#define VN_CAST_CONST(nodep, nodetypename) \
-    (AstNode::privateCastConst<Ast##nodetypename, decltype(nodep)>(nodep))
 
-// (V)erilator (N)ode as: Assert node is of given type then cast to that type. Node can be nullptr.
-// Use this to downcast instead of VN_CAST when you know the true type of the node.
+// (V)erilator (N)ode as: Assert node is of given type then cast to that type. Use this to
+// downcast instead of VN_CAST when you know the true type of the node. If 'nodep' is nullptr,
+// return nullptr. Pointer constness is preserved, i.e.: given a 'const AstNode*', a 'const
+// Ast<nodetypename>*' is returned.
 #define VN_AS(nodep, nodetypename) (AstNode::privateAs<Ast##nodetypename, decltype(nodep)>(nodep))
-#define VN_AS_CONST(nodep, nodetypename) \
-    (AstNode::privateAsConst<Ast##nodetypename, decltype(nodep)>(nodep))
 
 // (V)erilator (N)ode deleted: Pointer to deleted AstNode (for assertions only)
 #define VN_DELETED(nodep) VL_UNLIKELY((vluint64_t)(nodep) == 0x1)
@@ -1871,6 +1871,7 @@ public:
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_IS, node cannot be this type.");
         return nodep && privateTypeTest<T>(nodep);
     }
+
     // For use via the VN_CAST macro only
     template <typename T, typename E> inline static T* privateCast(AstNode* nodep) {
         static_assert(!uselessCast<T, E>(),
@@ -1878,15 +1879,13 @@ public:
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_CAST, node cannot be this type.");
         return nodep && privateTypeTest<T>(nodep) ? reinterpret_cast<T*>(nodep) : nullptr;
     }
-    // For use via the VN_CAST_CONST macro only
-    template <typename T, typename E>
-    inline static const T* privateCastConst(const AstNode* nodep) {
+    template <typename T, typename E> inline static const T* privateCast(const AstNode* nodep) {
         static_assert(!uselessCast<T, E>(),
-                      "Unnecessary VN_CAST_CONST, node known to have target type.");
-        static_assert(!impossibleCast<T, E>(),
-                      "Unnecessary VN_CAST_CONST, node cannot be this type.");
+                      "Unnecessary VN_CAST, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_CAST, node cannot be this type.");
         return nodep && privateTypeTest<T>(nodep) ? reinterpret_cast<const T*>(nodep) : nullptr;
     }
+
     // For use via the VN_AS macro only
     template <typename T, typename E> inline static T* privateAs(AstNode* nodep) {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
@@ -1896,12 +1895,9 @@ public:
                                                                               << "'");
         return reinterpret_cast<T*>(nodep);
     }
-    // For use via the VN_AS_CONST macro only
-    template <typename T, typename E> inline static const T* privateAsConst(const AstNode* nodep) {
-        static_assert(!uselessCast<T, E>(),
-                      "Unnecessary VN_AS_CONST, node known to have target type.");
-        static_assert(!impossibleCast<T, E>(),
-                      "Unnecessary VN_AS_CONST, node cannot be this type.");
+    template <typename T, typename E> inline static const T* privateAs(const AstNode* nodep) {
+        static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
                     "AstNode is not of expected type, but instead has type '" << nodep->typeName()
                                                                               << "'");

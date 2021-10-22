@@ -42,19 +42,19 @@ inline bool AstNode::isString() const {
 inline bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
 
 inline bool AstNode::isZero() const {
-    return (VN_IS(this, Const) && VN_AS_CONST(this, Const)->num().isEqZero());
+    return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqZero());
 }
 inline bool AstNode::isNeqZero() const {
-    return (VN_IS(this, Const) && VN_AS_CONST(this, Const)->num().isNeqZero());
+    return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNeqZero());
 }
 inline bool AstNode::isOne() const {
-    return (VN_IS(this, Const) && VN_AS_CONST(this, Const)->num().isEqOne());
+    return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqOne());
 }
 inline bool AstNode::isAllOnes() const {
-    return (VN_IS(this, Const) && VN_AS_CONST(this, Const)->isEqAllOnes());
+    return (VN_IS(this, Const) && VN_AS(this, Const)->isEqAllOnes());
 }
 inline bool AstNode::isAllOnesV() const {
-    return (VN_IS(this, Const) && VN_AS_CONST(this, Const)->isEqAllOnesV());
+    return (VN_IS(this, Const) && VN_AS(this, Const)->isEqAllOnesV());
 }
 inline bool AstNode::sameTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, false);

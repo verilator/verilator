@@ -78,7 +78,7 @@ string EmitCBaseVisitor::cFuncArgs(const AstCFunc* nodep) {
     }
     // Might be a user function with argument list.
     for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (const AstVar* portp = VN_CAST_CONST(stmtp, Var)) {
+        if (const AstVar* portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO() && !portp->isFuncReturn()) {
                 if (args != "") args += ", ";
                 if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
@@ -134,9 +134,8 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, bool asRef) {
 
     const auto emitDeclArrayBrackets = [this](const AstVar* nodep) -> void {
         // This isn't very robust and may need cleanup for other data types
-        for (const AstUnpackArrayDType* arrayp
-             = VN_CAST_CONST(nodep->dtypeSkipRefp(), UnpackArrayDType);
-             arrayp; arrayp = VN_CAST_CONST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
+        for (const AstUnpackArrayDType* arrayp = VN_CAST(nodep->dtypeSkipRefp(), UnpackArrayDType);
+             arrayp; arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
             puts("[" + cvtToStr(arrayp->elementsConst()) + "]");
         }
     };
