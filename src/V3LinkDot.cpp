@@ -99,7 +99,7 @@ public:
 class LinkNodeMatcherVarIO final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
-        const AstVar* varp = VN_CAST_CONST(nodep, Var);
+        const AstVar* varp = VN_CAST(nodep, Var);
         if (!varp) return false;
         return varp->isIO();
     }
@@ -107,7 +107,7 @@ public:
 class LinkNodeMatcherVarParam final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
-        const AstVar* varp = VN_CAST_CONST(nodep, Var);
+        const AstVar* varp = VN_CAST(nodep, Var);
         if (!varp) return false;
         return varp->isParam();
     }

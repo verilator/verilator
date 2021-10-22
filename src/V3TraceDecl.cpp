@@ -301,7 +301,7 @@ private:
                 addIgnore("Unsupported: Unpacked struct/union");
             } else {
                 for (const AstMemberDType* itemp = nodep->membersp(); itemp;
-                     itemp = VN_AS_CONST(itemp->nextp(), MemberDType)) {
+                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
                     AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);

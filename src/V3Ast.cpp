@@ -1164,7 +1164,7 @@ string AstNode::locationStr() const {
             return "";  // LCOV_EXCL_LINE
         }
         const AstScope* scopep;
-        if ((scopep = VN_CAST_CONST(backp, Scope))) {
+        if ((scopep = VN_CAST(backp, Scope))) {
             // The design is flattened and there are no useful scopes
             // This is probably because of inlining
             if (scopep->isTop()) break;
@@ -1178,10 +1178,10 @@ string AstNode::locationStr() const {
     while (backp) {
         const AstModule* modp;
         const AstNodeVarRef* nvrp;
-        if ((modp = VN_CAST_CONST(backp, Module)) && !modp->hierName().empty()) {
+        if ((modp = VN_CAST(backp, Module)) && !modp->hierName().empty()) {
             str += modp->hierName();
             return str;
-        } else if ((nvrp = VN_CAST_CONST(backp, NodeVarRef))) {
+        } else if ((nvrp = VN_CAST(backp, NodeVarRef))) {
             const string prettyName = nvrp->prettyName();
             // VarRefs have not been flattened yet and do not contain location information
             if (prettyName != nvrp->name()) {

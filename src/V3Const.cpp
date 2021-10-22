@@ -79,7 +79,7 @@ public:
 };
 
 static bool isConst(const AstNode* nodep, uint64_t v) {
-    const AstConst* const constp = VN_CAST_CONST(nodep, Const);
+    const AstConst* const constp = VN_CAST(nodep, Const);
     return constp && constp->toUQuad() == v;
 }
 
@@ -841,10 +841,10 @@ private:
     bool operandConst(AstNode* nodep) { return VN_IS(nodep, Const); }
     bool operandAsvConst(const AstNode* nodep) {
         // BIASV(CONST, BIASV(CONST,...)) -> BIASV( BIASV_CONSTED(a,b), ...)
-        const AstNodeBiComAsv* bnodep = VN_CAST_CONST(nodep, NodeBiComAsv);
+        const AstNodeBiComAsv* bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
         if (!VN_IS(bnodep->lhsp(), Const)) return false;
-        const AstNodeBiComAsv* rnodep = VN_CAST_CONST(bnodep->rhsp(), NodeBiComAsv);
+        const AstNodeBiComAsv* rnodep = VN_CAST(bnodep->rhsp(), NodeBiComAsv);
         if (!rnodep) return false;
         if (rnodep->type() != bnodep->type()) return false;
         if (rnodep->width() != bnodep->width()) return false;
@@ -854,9 +854,9 @@ private:
     }
     bool operandAsvSame(const AstNode* nodep) {
         // BIASV(SAMEa, BIASV(SAMEb,...)) -> BIASV( BIASV(SAMEa,SAMEb), ...)
-        const AstNodeBiComAsv* bnodep = VN_CAST_CONST(nodep, NodeBiComAsv);
+        const AstNodeBiComAsv* bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
-        const AstNodeBiComAsv* rnodep = VN_CAST_CONST(bnodep->rhsp(), NodeBiComAsv);
+        const AstNodeBiComAsv* rnodep = VN_CAST(bnodep->rhsp(), NodeBiComAsv);
         if (!rnodep) return false;
         if (rnodep->type() != bnodep->type()) return false;
         if (rnodep->width() != bnodep->width()) return false;
@@ -873,9 +873,9 @@ private:
         // BIASV(CONST_a_c,BIASV(c...,d...)))
         //
         // Idea for the future: All BiComAsvs could be lists, sorted by if they're constant
-        const AstNodeBiComAsv* bnodep = VN_CAST_CONST(nodep, NodeBiComAsv);
+        const AstNodeBiComAsv* bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
-        const AstNodeBiComAsv* lnodep = VN_CAST_CONST(bnodep->lhsp(), NodeBiComAsv);
+        const AstNodeBiComAsv* lnodep = VN_CAST(bnodep->lhsp(), NodeBiComAsv);
         if (!lnodep) return false;
         if (lnodep->type() != bnodep->type()) return false;
         if (lnodep->width() != bnodep->width()) return false;
@@ -883,9 +883,9 @@ private:
     }
     bool operandAsvRUp(const AstNode* nodep) {
         // BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr)) ?
-        const AstNodeBiComAsv* bnodep = VN_CAST_CONST(nodep, NodeBiComAsv);
+        const AstNodeBiComAsv* bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
-        const AstNodeBiComAsv* rnodep = VN_CAST_CONST(bnodep->rhsp(), NodeBiComAsv);
+        const AstNodeBiComAsv* rnodep = VN_CAST(bnodep->rhsp(), NodeBiComAsv);
         if (!rnodep) return false;
         if (rnodep->type() != bnodep->type()) return false;
         if (rnodep->width() != bnodep->width()) return false;
@@ -893,8 +893,8 @@ private:
     }
     static bool operandSubAdd(const AstNode* nodep) {
         // SUB( ADD(CONSTx,y), CONSTz) -> ADD(SUB(CONSTx,CONSTz), y)
-        const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
-        const AstNodeBiop* lp = VN_CAST_CONST(np->lhsp(), NodeBiop);
+        const AstNodeBiop* np = VN_CAST(nodep, NodeBiop);
+        const AstNodeBiop* lp = VN_CAST(np->lhsp(), NodeBiop);
         return (lp && VN_IS(lp->lhsp(), Const) && VN_IS(np->rhsp(), Const)
                 && lp->width() == np->width());
     }
@@ -931,9 +931,9 @@ private:
     static bool operandAndOrSame(const AstNode* nodep) {
         // OR( AND(VAL,x), AND(VAL,y)) -> AND(VAL,OR(x,y))
         // OR( AND(x,VAL), AND(y,VAL)) -> AND(OR(x,y),VAL)
-        const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
-        const AstNodeBiop* lp = VN_CAST_CONST(np->lhsp(), NodeBiop);
-        const AstNodeBiop* rp = VN_CAST_CONST(np->rhsp(), NodeBiop);
+        const AstNodeBiop* np = VN_CAST(nodep, NodeBiop);
+        const AstNodeBiop* lp = VN_CAST(np->lhsp(), NodeBiop);
+        const AstNodeBiop* rp = VN_CAST(np->rhsp(), NodeBiop);
         return (lp && rp && lp->width() == rp->width() && lp->type() == rp->type()
                 && (operandsSame(lp->lhsp(), rp->lhsp()) || operandsSame(lp->rhsp(), rp->rhsp())));
     }
@@ -1015,8 +1015,8 @@ private:
         // Predicate for checking whether the bottom 'significantBits' bits of the given expression
         // are all zeroes.
         const auto checkBottomClear = [=](const AstNode* nodep) -> bool {
-            if (const AstShiftL* const shiftp = VN_CAST_CONST(nodep, ShiftL)) {
-                if (const AstConst* const scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+            if (const AstShiftL* const shiftp = VN_CAST(nodep, ShiftL)) {
+                if (const AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                     return scp->num().toUInt() >= significantBits;
                 }
             }
@@ -1063,14 +1063,14 @@ private:
 
         // Check if masking is redundant
         if (AstShiftR* const shiftp = VN_CAST(nodep->rhsp(), ShiftR)) {
-            if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+            if (const AstConst* scp = VN_CAST(shiftp->rhsp(), Const)) {
                 // Check if mask is full over the non-zero bits
                 V3Number maskLo(nodep, nodep->width());
                 maskLo.setMask(nodep->width() - scp->num().toUInt());
                 return checkMask(maskLo);
             }
         } else if (AstShiftL* const shiftp = VN_CAST(nodep->rhsp(), ShiftL)) {
-            if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+            if (const AstConst* scp = VN_CAST(shiftp->rhsp(), Const)) {
                 // Check if mask is full over the non-zero bits
                 V3Number maskLo(nodep, nodep->width());
                 V3Number maskHi(nodep, nodep->width());
@@ -1121,18 +1121,18 @@ private:
         return newp;
     }
     static bool operandShiftSame(const AstNode* nodep) {
-        const AstNodeBiop* np = VN_AS_CONST(nodep, NodeBiop);
+        const AstNodeBiop* np = VN_AS(nodep, NodeBiop);
         {
-            const AstShiftL* lp = VN_CAST_CONST(np->lhsp(), ShiftL);
-            const AstShiftL* rp = VN_CAST_CONST(np->rhsp(), ShiftL);
+            const AstShiftL* lp = VN_CAST(np->lhsp(), ShiftL);
+            const AstShiftL* rp = VN_CAST(np->rhsp(), ShiftL);
             if (lp && rp) {
                 return (lp->width() == rp->width() && lp->lhsp()->width() == rp->lhsp()->width()
                         && operandsSame(lp->rhsp(), rp->rhsp()));
             }
         }
         {
-            const AstShiftR* lp = VN_CAST_CONST(np->lhsp(), ShiftR);
-            const AstShiftR* rp = VN_CAST_CONST(np->rhsp(), ShiftR);
+            const AstShiftR* lp = VN_CAST(np->lhsp(), ShiftR);
+            const AstShiftR* rp = VN_CAST(np->rhsp(), ShiftR);
             if (lp && rp) {
                 return (lp->width() == rp->width() && lp->lhsp()->width() == rp->lhsp()->width()
                         && operandsSame(lp->rhsp(), rp->rhsp()));
@@ -1141,29 +1141,26 @@ private:
         return false;
     }
     bool operandHugeShiftL(const AstNodeBiop* nodep) {
-        return (VN_IS(nodep->rhsp(), Const)
-                && !VN_AS_CONST(nodep->rhsp(), Const)->num().isFourState()
-                && (VN_AS_CONST(nodep->rhsp(), Const)->toUInt()
-                    >= static_cast<uint32_t>(nodep->width()))
+        return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
+                && (VN_AS(nodep->rhsp(), Const)->toUInt() >= static_cast<uint32_t>(nodep->width()))
                 && isTPure(nodep->lhsp()));
     }
     bool operandHugeShiftR(const AstNodeBiop* nodep) {
-        return (VN_IS(nodep->rhsp(), Const)
-                && !VN_AS_CONST(nodep->rhsp(), Const)->num().isFourState()
-                && (VN_AS_CONST(nodep->rhsp(), Const)->toUInt()
+        return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
+                && (VN_AS(nodep->rhsp(), Const)->toUInt()
                     >= static_cast<uint32_t>(nodep->lhsp()->width()))
                 && isTPure(nodep->lhsp()));
     }
     bool operandIsTwo(const AstNode* nodep) {
-        return (VN_IS(nodep, Const) && !VN_AS_CONST(nodep, Const)->num().isFourState()
-                && nodep->width() <= VL_QUADSIZE && VN_AS_CONST(nodep, Const)->toUQuad() == 2);
+        return (VN_IS(nodep, Const) && !VN_AS(nodep, Const)->num().isFourState()
+                && nodep->width() <= VL_QUADSIZE && VN_AS(nodep, Const)->toUQuad() == 2);
     }
     bool operandIsTwostate(const AstNode* nodep) {
-        return (VN_IS(nodep, Const) && !VN_AS_CONST(nodep, Const)->num().isFourState());
+        return (VN_IS(nodep, Const) && !VN_AS(nodep, Const)->num().isFourState());
     }
     bool operandIsPowTwo(const AstNode* nodep) {
         if (!operandIsTwostate(nodep)) return false;
-        return (1 == VN_AS_CONST(nodep, Const)->num().countOnes());
+        return (1 == VN_AS(nodep, Const)->num().countOnes());
     }
     bool operandShiftOp(const AstNodeBiop* nodep) {
         if (!VN_IS(nodep->rhsp(), Const)) return false;
@@ -1181,8 +1178,8 @@ private:
         // We can only get rid of a<<b>>c or a<<b<<c, with constant b & c
         // because bits may be masked in that process, or (b+c) may exceed the word width.
         if (!(VN_IS(nodep->rhsp(), Const) && VN_IS(lhsp->rhsp(), Const))) return false;
-        if (VN_AS_CONST(nodep->rhsp(), Const)->num().isFourState()
-            || VN_AS_CONST(lhsp->rhsp(), Const)->num().isFourState())
+        if (VN_AS(nodep->rhsp(), Const)->num().isFourState()
+            || VN_AS(lhsp->rhsp(), Const)->num().isFourState())
             return false;
         if (nodep->width() != lhsp->width()) return false;
         if (nodep->width() != lhsp->lhsp()->width()) return false;
@@ -1193,8 +1190,8 @@ private:
         // It was an expression, then got constified.  In reality, the WordSel
         // must be wrapped in a Cond, that will be false.
         return (VN_IS(nodep->rhsp(), Const) && VN_IS(nodep->fromp(), NodeVarRef)
-                && VN_AS_CONST(nodep->fromp(), NodeVarRef)->access().isReadOnly()
-                && (static_cast<int>(VN_AS_CONST(nodep->rhsp(), Const)->toUInt())
+                && VN_AS(nodep->fromp(), NodeVarRef)->access().isReadOnly()
+                && (static_cast<int>(VN_AS(nodep->rhsp(), Const)->toUInt())
                     >= VN_AS(nodep->fromp(), NodeVarRef)->varp()->widthWords()));
     }
     bool operandSelFull(const AstSel* nodep) {
@@ -1289,11 +1286,11 @@ private:
         // EQ(const{width32}, EXTEND(xx{width3})) -> constant
         // When the constant has non-zero bits above the extend it's a constant.
         // Avoids compiler warning
-        const AstExtend* extendp = VN_CAST_CONST(nodep->rhsp(), Extend);
+        const AstExtend* extendp = VN_CAST(nodep->rhsp(), Extend);
         if (!extendp) return false;
         AstNode* smallerp = extendp->lhsp();
         const int subsize = smallerp->width();
-        const AstConst* constp = VN_CAST_CONST(nodep->lhsp(), Const);
+        const AstConst* constp = VN_CAST(nodep->lhsp(), Const);
         if (!constp) return false;
         if (constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
         return true;
@@ -1387,8 +1384,8 @@ private:
         }
     }
     bool ifSameAssign(const AstNodeIf* nodep) {
-        const AstNodeAssign* ifp = VN_CAST_CONST(nodep->ifsp(), NodeAssign);
-        const AstNodeAssign* elsep = VN_CAST_CONST(nodep->elsesp(), NodeAssign);
+        const AstNodeAssign* ifp = VN_CAST(nodep->ifsp(), NodeAssign);
+        const AstNodeAssign* elsep = VN_CAST(nodep->elsesp(), NodeAssign);
         if (!ifp || ifp->nextp()) return false;  // Must be SINGLE statement
         if (!elsep || elsep->nextp()) return false;
         if (ifp->type() != elsep->type()) return false;  // Can't mix an assigndly and an assign
@@ -1399,7 +1396,7 @@ private:
     }
     bool operandIfIf(const AstNodeIf* nodep) {
         if (nodep->elsesp()) return false;
-        const AstNodeIf* lowerIfp = VN_CAST_CONST(nodep->ifsp(), NodeIf);
+        const AstNodeIf* lowerIfp = VN_CAST(nodep->ifsp(), NodeIf);
         if (!lowerIfp || lowerIfp->nextp()) return false;
         if (nodep->type() != lowerIfp->type()) return false;
         if (afterComment(lowerIfp->elsesp())) return false;
@@ -1414,10 +1411,10 @@ private:
         const AstNode* lfromp = lhsp->fromp();
         const AstNode* rfromp = rhsp->fromp();
         if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
-        const AstConst* lstart = VN_CAST_CONST(lhsp->lsbp(), Const);
-        const AstConst* rstart = VN_CAST_CONST(rhsp->lsbp(), Const);
-        const AstConst* lwidth = VN_CAST_CONST(lhsp->widthp(), Const);
-        const AstConst* rwidth = VN_CAST_CONST(rhsp->widthp(), Const);
+        const AstConst* lstart = VN_CAST(lhsp->lsbp(), Const);
+        const AstConst* rstart = VN_CAST(rhsp->lsbp(), Const);
+        const AstConst* lwidth = VN_CAST(lhsp->widthp(), Const);
+        const AstConst* rwidth = VN_CAST(rhsp->widthp(), Const);
         if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
         const int rend = (rstart->toSInt() + rwidth->toSInt());
         return (rend == lstart->toSInt());
@@ -1465,8 +1462,8 @@ private:
         if (lhsp->type() != rhsp->type()) return false;
         if (!ifConcatMergeableBiop(lhsp)) return false;
 
-        const AstNodeBiop* lp = VN_CAST_CONST(lhsp, NodeBiop);
-        const AstNodeBiop* rp = VN_CAST_CONST(rhsp, NodeBiop);
+        const AstNodeBiop* lp = VN_CAST(lhsp, NodeBiop);
+        const AstNodeBiop* rp = VN_CAST(rhsp, NodeBiop);
         if (!lp || !rp) return false;
         // {a[]&b[], a[]&b[]}
         const bool lad = ifMergeAdjacent(lp->lhsp(), rp->lhsp());
@@ -2128,12 +2125,11 @@ private:
     bool operandBoolShift(const AstNode* nodep) {
         // boolean test of AND(const,SHIFTR(x,const)) -> test of AND(SHIFTL(x,const), x)
         if (!VN_IS(nodep, And)) return false;
-        if (!VN_IS(VN_AS_CONST(nodep, And)->lhsp(), Const)) return false;
-        if (!VN_IS(VN_AS_CONST(nodep, And)->rhsp(), ShiftR)) return false;
-        const AstShiftR* shiftp = VN_AS(VN_AS_CONST(nodep, And)->rhsp(), ShiftR);
+        if (!VN_IS(VN_AS(nodep, And)->lhsp(), Const)) return false;
+        if (!VN_IS(VN_AS(nodep, And)->rhsp(), ShiftR)) return false;
+        const AstShiftR* shiftp = VN_AS(VN_AS(nodep, And)->rhsp(), ShiftR);
         if (!VN_IS(shiftp->rhsp(), Const)) return false;
-        if (static_cast<uint32_t>(nodep->width())
-            <= VN_AS_CONST(shiftp->rhsp(), Const)->toUInt()) {
+        if (static_cast<uint32_t>(nodep->width()) <= VN_AS(shiftp->rhsp(), Const)->toUInt()) {
             return false;
         }
         return true;

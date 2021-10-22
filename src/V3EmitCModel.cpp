@@ -90,7 +90,7 @@ class EmitCModel final : public EmitCFunc {
              "// The application code writes and reads these signals to\n"
              "// propagate new values into/out from the Verilated model.\n");
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {  //
                     emitVarDecl(varp, /* asRef: */ true);
                 }
@@ -102,7 +102,7 @@ class EmitCModel final : public EmitCFunc {
              "// Public to allow access to /* verilator public */ items.\n"
              "// Otherwise the application code can consider these internals.\n");
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstCell* const cellp = VN_CAST_CONST(nodep, Cell)) {
+            if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 puts(prefixNameProtect(cellp->modp()) + "* const " + cellp->nameProtect() + ";\n");
             }
         }
@@ -237,7 +237,7 @@ class EmitCModel final : public EmitCFunc {
 
         // Set up IO references
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {
                     const string protName = varp->nameProtect();
                     puts("    , " + protName + "{vlSymsp->TOP." + protName + "}\n");
@@ -247,7 +247,7 @@ class EmitCModel final : public EmitCFunc {
 
         // Setup cell pointers
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstCell* const cellp = VN_CAST_CONST(nodep, Cell)) {
+            if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 const string protName = cellp->nameProtect();
                 puts("    , " + protName + "{vlSymsp->TOP." + protName + "}\n");
             }

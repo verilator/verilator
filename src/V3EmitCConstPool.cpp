@@ -68,7 +68,7 @@ class EmitCConstPool final : public EmitCConstInit {
     void emitVars(const AstConstPool* poolp) {
         std::vector<const AstVar*> varps;
         for (AstNode* nodep = poolp->modp()->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) { varps.push_back(varp); }
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) { varps.push_back(varp); }
         }
 
         if (varps.empty()) return;  // Constant pool is empty, so we are done

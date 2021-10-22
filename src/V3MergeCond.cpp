@@ -169,17 +169,17 @@ private:
     // Predicate to check if an expression yields only 0 or 1 (i.e.: a 1-bit value)
     static bool yieldsOneOrZero(const AstNode* nodep) {
         UASSERT_OBJ(!nodep->isWide(), nodep, "Cannot handle wide nodes");
-        if (const AstConst* const constp = VN_CAST_CONST(nodep, Const)) {
+        if (const AstConst* const constp = VN_CAST(nodep, Const)) {
             return constp->num().toUQuad() <= 1;
         }
-        if (const AstVarRef* const vrefp = VN_CAST_CONST(nodep, VarRef)) {
+        if (const AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
             AstVar* const varp = vrefp->varp();
             return varp->widthMin() == 1 && !varp->dtypep()->isSigned();
         }
-        if (const AstShiftR* const shiftp = VN_CAST_CONST(nodep, ShiftR)) {
+        if (const AstShiftR* const shiftp = VN_CAST(nodep, ShiftR)) {
             // Shift right by width - 1 or more
-            if (const AstConst* const constp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
-                const AstVarRef* const vrefp = VN_CAST_CONST(shiftp->lhsp(), VarRef);
+            if (const AstConst* const constp = VN_CAST(shiftp->rhsp(), Const)) {
+                const AstVarRef* const vrefp = VN_CAST(shiftp->lhsp(), VarRef);
                 const int width = vrefp && !vrefp->varp()->dtypep()->isSigned()
                                       ? vrefp->varp()->widthMin()
                                       : shiftp->width();
@@ -191,17 +191,17 @@ private:
             || VN_IS(nodep, Gt) || VN_IS(nodep, Gte)) {
             return true;
         }
-        if (const AstNodeBiop* const biopp = VN_CAST_CONST(nodep, NodeBiop)) {
+        if (const AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
             if (VN_IS(nodep, And))
                 return yieldsOneOrZero(biopp->lhsp()) || yieldsOneOrZero(biopp->rhsp());
             if (VN_IS(nodep, Or) || VN_IS(nodep, Xor))
                 return yieldsOneOrZero(biopp->lhsp()) && yieldsOneOrZero(biopp->rhsp());
             return false;
         }
-        if (const AstNodeCond* const condp = VN_CAST_CONST(nodep, NodeCond)) {
+        if (const AstNodeCond* const condp = VN_CAST(nodep, NodeCond)) {
             return yieldsOneOrZero(condp->expr1p()) && yieldsOneOrZero(condp->expr2p());
         }
-        if (const AstCCast* const castp = VN_CAST_CONST(nodep, CCast)) {
+        if (const AstCCast* const castp = VN_CAST(nodep, CCast)) {
             // Cast never sign extends
             return yieldsOneOrZero(castp->lhsp());
         }

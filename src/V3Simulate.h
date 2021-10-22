@@ -245,7 +245,7 @@ private:
 
 public:
     void newValue(AstNode* nodep, const AstNode* valuep) {
-        if (const AstConst* constp = VN_CAST_CONST(valuep, Const)) {
+        if (const AstConst* constp = VN_CAST(valuep, Const)) {
             newConst(nodep)->num().opAssign(constp->num());
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
@@ -253,7 +253,7 @@ public:
         }
     }
     void newOutValue(AstNode* nodep, const AstNode* valuep) {
-        if (const AstConst* constp = VN_CAST_CONST(valuep, Const)) {
+        if (const AstConst* constp = VN_CAST(valuep, Const)) {
             newOutConst(nodep)->num().opAssign(constp->num());
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care

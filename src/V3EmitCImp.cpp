@@ -38,14 +38,14 @@ class EmitCGatherDependencies final : AstNVisitor {
     // METHODS
     void addSymsDependency() { m_dependencies.insert(EmitCBaseVisitor::symClassName()); }
     void addModDependency(const AstNodeModule* modp) {
-        if (const AstClass* const classp = VN_CAST_CONST(modp, Class)) {
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
             m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(classp->classOrPackagep()));
         } else {
             m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(modp));
         }
     }
     void addDTypeDependency(const AstNodeDType* nodep) {
-        if (const AstClassRefDType* const dtypep = VN_CAST_CONST(nodep, ClassRefDType)) {
+        if (const AstClassRefDType* const dtypep = VN_CAST(nodep, ClassRefDType)) {
             m_dependencies.insert(
                 EmitCBaseVisitor::prefixNameProtect(dtypep->classp()->classOrPackagep()));
         }
@@ -193,7 +193,7 @@ class EmitCImp final : EmitCFunc {
         // Emit static variable definitions
         const string modName = prefixNameProtect(modp);
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isStatic()) {
                     puts(varp->vlArgType(true, false, false, modName));
                     puts(";\n");
@@ -205,7 +205,7 @@ class EmitCImp final : EmitCFunc {
         const string modName = prefixNameProtect(modp);
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     if (first) {
                         puts("\n");
@@ -241,7 +241,7 @@ class EmitCImp final : EmitCFunc {
 
         ofp()->indentInc();
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (const AstBasicDType* const dtypep
                     = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
                     if (dtypep->keyword().isMTaskState()) {
@@ -446,7 +446,7 @@ class EmitCImp final : EmitCFunc {
     }
     void emitCommonImp(const AstNodeModule* modp) {
         const AstClass* const classp
-            = VN_IS(modp, ClassPackage) ? VN_AS_CONST(modp, ClassPackage)->classp() : nullptr;
+            = VN_IS(modp, ClassPackage) ? VN_AS(modp, ClassPackage)->classp() : nullptr;
 
         if (hasCommonImp(modp) || hasCommonImp(classp)) {
             std::set<string> headers;
@@ -486,7 +486,7 @@ class EmitCImp final : EmitCFunc {
         };
 
         gather(modp);
-        if (const AstClassPackage* const packagep = VN_CAST_CONST(modp, ClassPackage)) {
+        if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
             gather(packagep->classp());
         }
 
@@ -887,7 +887,7 @@ void V3EmitC::emitcImp() {
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
-        const AstNodeModule* const modp = VN_AS_CONST(nodep, NodeModule);
+        const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
         EmitCImp::main(modp, /* slow: */ true);
         EmitCImp::main(modp, /* slow: */ false);
     }
