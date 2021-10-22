@@ -1456,13 +1456,9 @@ public:
     ASTNODE_NODE_FUNCS(EnumItemRef)
     virtual void dump(std::ostream& str) const override;
     virtual string name() const override { return itemp()->name(); }
-    virtual const char* broken() const override {
-        BROKEN_RTN(!VN_IS(itemp(), EnumItem));
-        return nullptr;
-    }
     virtual int instrCount() const override { return 0; }
     virtual void cloneRelink() override {
-        if (m_itemp->clonep()) m_itemp = VN_AS(m_itemp->clonep(), EnumItem);
+        if (m_itemp->clonep()) m_itemp = m_itemp->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstEnumItemRef* sp = static_cast<const AstEnumItemRef*>(samep);
@@ -4976,7 +4972,7 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual const char* broken() const override {
         for (KeyItemMap::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
-            BROKEN_RTN(!VN_IS(it->second, InitItem));
+            BROKEN_RTN(!it->second);
             BROKEN_RTN(!it->second->brokeExists());
         }
         return nullptr;

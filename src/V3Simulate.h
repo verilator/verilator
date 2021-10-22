@@ -966,11 +966,11 @@ private:
             badNodeType(nodep);
             return;
         }
-        AstNodeFTask* funcp = VN_AS(nodep->taskp(), NodeFTask);
+        AstNodeFTask* funcp = nodep->taskp();
         UASSERT_OBJ(funcp, nodep, "Not linked");
         if (m_params) V3Width::widthParamsEdit(funcp);
         VL_DANGLING(funcp);  // Make sure we've sized the function
-        funcp = VN_AS(nodep->taskp(), NodeFTask);
+        funcp = nodep->taskp();
         UASSERT_OBJ(funcp, nodep, "Not linked");
         // Apply function call values to function
         V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());

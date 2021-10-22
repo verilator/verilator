@@ -70,8 +70,7 @@ private:
         V3Const::constifyExpensiveEdit(nodep);
         AstSenTree* sensesp = nodep->sensesp();
         UASSERT_OBJ(sensesp, nodep, "nullptr");
-        if (sensesp->sensesp() && VN_IS(sensesp->sensesp(), SenItem)
-            && VN_AS(sensesp->sensesp(), SenItem)->isNever()) {
+        if (sensesp->sensesp() && sensesp->sensesp()->isNever()) {
             // Never executing.  Kill it.
             UASSERT_OBJ(!sensesp->sensesp()->nextp(), nodep,
                         "Never senitem should be alone, else the never should be eliminated.");

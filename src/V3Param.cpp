@@ -452,7 +452,7 @@ class ParamProcessor final {
                               << " has hier_block metacomment, hierarchical verilation"
                               << " supports only integer/floating point/string parameters");
             }
-        } else if (VN_IS(pinp->modPTypep(), ParamTypeDType)) {
+        } else {
             pinp->v3error(AstNode::prettyNameQ(modp->origName())
                           << " has hier_block metacomment, but 'parameter type' is not supported");
         }

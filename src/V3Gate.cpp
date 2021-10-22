@@ -843,10 +843,9 @@ private:
             UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                         "Can't replace lvalue assignments with const var");
             AstNode* substp = m_replaceTreep->cloneTree(false);
-            UASSERT_OBJ(
-                !(VN_IS(nodep, NodeVarRef) && VN_IS(substp, NodeVarRef) && nodep->same(substp)),
-                // Prevent an infinite loop...
-                substp, "Replacing node with itself; perhaps circular logic?");
+            UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->same(substp)),
+                        // Prevent an infinite loop...
+                        substp, "Replacing node with itself; perhaps circular logic?");
             // Which fileline() to use?
             // If replacing with logic, an error/warning is likely to want to point to the logic
             // IE what we're replacing with.

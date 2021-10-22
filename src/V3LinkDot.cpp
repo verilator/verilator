@@ -2093,7 +2093,7 @@ private:
                         nodep->v3error("'super' used on non-extended class (IEEE 1800-2017 8.15)");
                         m_ds.m_dotErr = true;
                     } else {
-                        const auto cextp = VN_AS(classp->extendsp(), ClassExtends);
+                        const auto cextp = classp->extendsp();
                         UASSERT_OBJ(cextp, nodep, "Bad super extends link");
                         const auto sclassp = cextp->classp();
                         UASSERT_OBJ(sclassp, nodep, "Bad superclass");
@@ -2311,8 +2311,7 @@ private:
                                 refp->dotted(dotted.substr(0, pos));
                                 newp = refp;
                             } else {
-                                newp = new AstUnlinkedRef(nodep->fileline(), VN_AS(refp, VarXRef),
-                                                          refp->name(),
+                                newp = new AstUnlinkedRef(nodep->fileline(), refp, refp->name(),
                                                           m_ds.m_unlinkedScopep->unlinkFrBack());
                                 m_ds.m_unlinkedScopep = nullptr;
                                 m_ds.m_unresolved = false;

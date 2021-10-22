@@ -333,12 +333,11 @@ class Cpt:
                     "      iterateAndNextNull(nodep->lhsp());\n" +
                     "".join(out_for_type_sc))
                 if out_for_type[0]:
-                    self.print(
-                        "      iterateAndNextNull(nodep->rhsp());\n" +
-                        "      AstNodeTriop *tnp = VN_CAST(nodep, NodeTriop);\n"
-                        +
-                        "      if (tnp && tnp->thsp()) iterateAndNextNull(tnp->thsp());\n"
-                        + "".join(out_for_type) + "    }\n")
+                    self.print("      iterateAndNextNull(nodep->rhsp());\n")
+                    if is_subclass_of(typen, "NodeTriop"):
+                        self.print(
+                            "      iterateAndNextNull(nodep->thsp());\n")
+                    self.print("".join(out_for_type) + "    }\n")
             elif len(out_for_type) > 0:  # Other types with something to print
                 skip = typen in self.tree_skip_visit
                 gen = "Gen" if skip else ""
@@ -448,6 +447,10 @@ def children_of(typen):
                 cllist.append(child)
 
     return cllist
+
+
+def is_subclass_of(typen, what):
+    return typen == what or (typen in children_of(what))
 
 
 # ---------------------------------------------------------------------

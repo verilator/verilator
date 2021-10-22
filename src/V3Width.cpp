@@ -4365,7 +4365,7 @@ private:
     }
 
     virtual void visit(AstFuncRef* nodep) override {
-        visit(VN_AS(nodep, NodeFTaskRef));
+        visit(static_cast<AstNodeFTaskRef*>(nodep));
         nodep->dtypeFrom(nodep->taskp());
         // if (debug()) nodep->dumpTree(cout, "  FuncOut: ");
     }

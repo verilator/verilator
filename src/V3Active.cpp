@@ -489,8 +489,7 @@ private:
     // METHODS
     void visitAlways(AstNode* nodep, AstSenTree* oldsensesp, VAlwaysKwd kwd) {
         // Move always to appropriate ACTIVE based on its sense list
-        if (oldsensesp && oldsensesp->sensesp() && VN_IS(oldsensesp->sensesp(), SenItem)
-            && VN_AS(oldsensesp->sensesp(), SenItem)->isNever()) {
+        if (oldsensesp && oldsensesp->sensesp() && oldsensesp->sensesp()->isNever()) {
             // Never executing.  Kill it.
             UASSERT_OBJ(!oldsensesp->sensesp()->nextp(), nodep,
                         "Never senitem should be alone, else the never should be eliminated.");

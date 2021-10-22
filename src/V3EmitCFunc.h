@@ -898,7 +898,7 @@ public:
         }
     }
     virtual void visit(AstTextBlock* nodep) override {
-        visit(VN_AS(nodep, NodeSimpleText));
+        visit(static_cast<AstNodeSimpleText*>(nodep));
         for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
             iterate(childp);
             if (nodep->commas() && childp->nextp()) puts(", ");
@@ -978,7 +978,7 @@ public:
     }
     virtual void visit(AstRedXor* nodep) override {
         if (nodep->lhsp()->isWide()) {
-            visit(VN_AS(nodep, NodeUniop));
+            visit(static_cast<AstNodeUniop*>(nodep));
         } else {
             AstVarRef* const vrefp = VN_CAST(nodep->lhsp(), VarRef);
             const int widthPow2 = vrefp ? vrefp->varp()->dtypep()->widthPow2()

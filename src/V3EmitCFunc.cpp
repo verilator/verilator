@@ -533,13 +533,11 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             puts(",");
             if (!assigntop) {
                 puts(assignString);
-            } else if (VN_IS(assigntop, VarRef)) {
+            } else {
                 if (!assigntop->selfPointer().empty()) {
                     emitDereference(assigntop->selfPointerProtect(m_useSelfForThis));
                 }
                 puts(assigntop->varp()->nameProtect());
-            } else {
-                iterateAndNextNull(assigntop);
             }
             for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
@@ -558,13 +556,11 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             puts(",");
             if (!assigntop) {
                 puts(assignString);
-            } else if (VN_IS(assigntop, VarRef)) {
+            } else {
                 if (!assigntop->selfPointer().empty()) {
                     emitDereference(assigntop->selfPointerProtect(m_useSelfForThis));
                 }
                 puts(assigntop->varp()->nameProtect());
-            } else {
-                iterateAndNextNull(assigntop);
             }
             for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning

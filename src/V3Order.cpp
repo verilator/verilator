@@ -1262,11 +1262,11 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     const bool fromInitial = fromp->hasInitial() || fromp->hasSettle();
     if (toInitial != fromInitial) return true;
 
-    const AstSenItem* fromSenListp = VN_AS(fromp->sensesp(), SenItem);
-    const AstSenItem* toSenListp = VN_AS(top->sensesp(), SenItem);
+    const AstSenItem* fromSenListp = fromp->sensesp();
+    const AstSenItem* toSenListp = top->sensesp();
 
-    UASSERT_OBJ(fromSenListp, fromp, "sensitivity list item is not an AstSenItem");
-    UASSERT_OBJ(toSenListp, top, "sensitivity list item is not an AstSenItem");
+    UASSERT_OBJ(fromSenListp, fromp, "sensitivity list empty");
+    UASSERT_OBJ(toSenListp, top, "sensitivity list empty");
 
     if (fromSenListp->nextp()) return false;
     if (toSenListp->nextp()) return false;

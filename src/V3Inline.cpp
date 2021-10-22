@@ -359,7 +359,7 @@ private:
             // Each inlined cell that contain an interface variable need to
             // copy the IfaceRefDType and point it to the newly cloned
             // interface cell.
-            AstIfaceRefDType* newdp = VN_AS(ifacerefp->cloneTree(false), IfaceRefDType);
+            AstIfaceRefDType* newdp = ifacerefp->cloneTree(false);
             nodep->dtypep(newdp);
             ifacerefp->addNextHere(newdp);
             // Relink to point to newly cloned cell

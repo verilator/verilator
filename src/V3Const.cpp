@@ -2671,7 +2671,7 @@ private:
             {
                 AstUser4InUse m_inuse4;
                 // Mark x in SENITEM(x)
-                for (AstSenItem* senp = VN_AS(nodep->sensesp(), SenItem); senp;
+                for (AstSenItem* senp = nodep->sensesp(); senp;
                      senp = VN_AS(senp->nextp(), SenItem)) {
                     if (senp->varrefp() && senp->varrefp()->varScopep()) {
                         senp->varrefp()->varScopep()->user4(1);
@@ -2682,7 +2682,7 @@ private:
             // Sort the sensitivity names so "posedge a or b" and "posedge b or a" end up together.
             // Also, remove duplicate assignments, and fold POS&NEGs into ANYEDGEs
             // Make things a little faster; check first if we need a sort
-            for (AstSenItem *nextp, *senp = VN_AS(nodep->sensesp(), SenItem); senp; senp = nextp) {
+            for (AstSenItem *nextp, *senp = nodep->sensesp(); senp; senp = nextp) {
                 nextp = VN_AS(senp->nextp(), SenItem);
                 // cppcheck-suppress unassignedVariable  // cppcheck bug
                 SenItemCmp cmp;
@@ -2690,7 +2690,7 @@ private:
                     // Something's out of order, sort it
                     senp = nullptr;
                     std::vector<AstSenItem*> vec;
-                    for (AstSenItem* senp = VN_AS(nodep->sensesp(), SenItem); senp;
+                    for (AstSenItem* senp = nodep->sensesp(); senp;
                          senp = VN_AS(senp->nextp(), SenItem)) {
                         vec.push_back(senp);
                     }
@@ -2702,7 +2702,7 @@ private:
             }
 
             // Pass2, remove dup edges
-            for (AstSenItem *nextp, *senp = VN_AS(nodep->sensesp(), SenItem); senp; senp = nextp) {
+            for (AstSenItem *nextp, *senp = nodep->sensesp(); senp; senp = nextp) {
                 nextp = VN_AS(senp->nextp(), SenItem);
                 AstSenItem* const litemp = senp;
                 AstSenItem* const ritemp = nextp;

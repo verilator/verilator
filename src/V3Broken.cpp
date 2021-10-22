@@ -197,7 +197,7 @@ private:
         if (nodep->dtypep()) {
             UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
                         "Broken link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
-            UASSERT_OBJ(VN_IS(nodep->dtypep(), NodeDType), nodep,
+            UASSERT_OBJ(nodep->dtypep(), nodep,
                         "Non-dtype link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
         }
         if (v3Global.assertDTypesResolved()) {

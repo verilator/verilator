@@ -382,7 +382,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         }
     }
     virtual void visit(AstTextBlock* nodep) override {
-        visit(VN_AS(nodep, NodeSimpleText));
+        visit(static_cast<AstNodeSimpleText*>(nodep));
         {
             VL_RESTORER(m_suppressSemi);
             m_suppressVarSemi = nodep->commas();
