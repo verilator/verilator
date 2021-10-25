@@ -1911,6 +1911,8 @@ private:
         // assignment.  For speed, we only look 3 deep, then give up.
         if (!varNotReferenced(nodep->rhsp(), varref1p->varp())) return false;
         if (!varNotReferenced(nextp->rhsp(), varref2p->varp())) return false;
+        // If a variable is marked split_var, access to the variable should not be merged.
+        if (varref1p->varp()->attrSplitVar() || varref2p->varp()->attrSplitVar()) return false;
         // Swap?
         if ((con1p->toSInt() != con2p->toSInt() + sel2p->width())
             && (con2p->toSInt() != con1p->toSInt() + sel1p->width())) {
