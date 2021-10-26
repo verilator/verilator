@@ -4117,7 +4117,7 @@ array_methodNoRoot<nodeFTaskRefp>:
 	;
 
 array_methodWith<nodep>:
-		array_methodNoRoot			{ $$ = $1; }
+		array_methodNoRoot parenE		{ $$ = $1; }
 	|	array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
 			{ $$ = new AstWithParse($3, false, $1, $5); }
 	|	array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
