@@ -115,7 +115,7 @@ private:
     virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
         UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
-        iterateChildren(nodep->sensesp());  // iterateAndNext?
+        iterate(nodep->sensesp());
         m_activep = nullptr;
         iterateChildren(nodep);
     }
@@ -210,7 +210,7 @@ private:
         UINFO(8, "ACTIVE " << nodep << endl);
         m_activep = nodep;
         UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
-        iterateChildren(nodep->sensesp());  // iterateAndNext?
+        iterate(nodep->sensesp());
         m_activep = nullptr;
         iterateChildren(nodep);
     }
