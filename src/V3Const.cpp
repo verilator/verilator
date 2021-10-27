@@ -537,7 +537,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                     if (leafInfo.m_lsb < leafInfo.width()) {
                         m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.m_polarity,
                                                      leafInfo.m_lsb);
-                    } else if (isAndTree()) {
+                    } else if (isAndTree() && leafInfo.m_polarity) {
                         // If there is a constant 0 term in an And tree, we must include it. Fudge
                         // this by adding a bit with both polarities, which will simplify to zero
                         m_bitPolarities.emplace_back(leafInfo, true, 0);
