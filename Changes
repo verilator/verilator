@@ -13,6 +13,9 @@ Verilator 4.215 devel
 
 **Minor:**
 
+* Internal code cleanups and improvements. [Geza Lore]
+* Fix array method names with parens (#3181) (#3183). [Teng Huang]
+* Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
 
 
 Verilator 4.214 2021-10-17
