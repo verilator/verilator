@@ -105,6 +105,21 @@ private:
         }
     }
 
+    bool nestedIfBegin(AstBegin* nodep) {  // Point at begin inside the GenIf
+        // IEEE says directly nested item is not a new block
+        // The genblk name will get attached to the if true/false LOWER begin block(s)
+        //    1: GENIF
+        // -> 1:3: BEGIN [GEN] [IMPLIED]  // nodep passed to this function
+        //    1:3:1: GENIF
+        //    1:3:1:2: BEGIN genblk1 [GEN] [IMPLIED]
+        AstNode* const backp = nodep->backp();
+        return (nodep->implied()  // User didn't provide begin/end
+                && VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep
+                && !nodep->nextp()  // No other statements under upper genif else
+                && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
+                && !nodep->stmtsp()->nextp());  // Has only one item
+    }
+
     // VISITs
     virtual void visit(AstNodeFTask* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
@@ -539,12 +554,10 @@ private:
     virtual void visit(AstBegin* nodep) override {
         V3Config::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
-        AstNode* backp = nodep->backp();
+        AstNode* const backp = nodep->backp();
         // IEEE says directly nested item is not a new block
-        const bool nestedIf = (nodep->implied()  // User didn't provide begin/end
-                               && (VN_IS(nodep->stmtsp(), GenIf)
-                                   || VN_IS(nodep->stmtsp(), GenCase))  // Has an if/case
-                               && !nodep->stmtsp()->nextp());  // Has only one item
+        // The genblk name will get attached to the if true/false LOWER begin block(s)
+        const bool nestedIf = nestedIfBegin(nodep);
         // It's not FOR(BEGIN(...)) but we earlier changed it to BEGIN(FOR(...))
         if (nodep->genforp()) {
             ++m_genblkNum;
@@ -576,9 +589,13 @@ private:
         }
     }
     virtual void visit(AstGenIf* nodep) override {
-        ++m_genblkNum;
         cleanFileline(nodep);
-        {
+        bool nestedIf
+            = (VN_IS(nodep->backp(), Begin) && nestedIfBegin(VN_CAST(nodep->backp(), Begin)));
+        if (nestedIf) {
+            iterateChildren(nodep);
+        } else {
+            ++m_genblkNum;
             VL_RESTORER(m_genblkAbove);
             VL_RESTORER(m_genblkNum);
             m_genblkAbove = m_genblkNum;
