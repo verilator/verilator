@@ -714,6 +714,7 @@ public:
         ++serial;
         m_id = serial;
     }
+    virtual ~MergeCandidate() = default;
     virtual bool mergeWouldCreateCycle() const = 0;
     // METHODS
     bool removedFromSb() const { return m_removedFromSb; }
@@ -908,15 +909,18 @@ static void partInitHalfCriticalPaths(GraphWay way, V3Graph* mtasksp, bool check
         const LogicMTask* const mtaskcp = dynamic_cast<const LogicMTask*>(vertexp);
         LogicMTask* const mtaskp = const_cast<LogicMTask*>(mtaskcp);
         uint32_t cpCost = 0;
+#if VL_DEBUG
         std::unordered_set<V3GraphVertex*> relatives;
+#endif
         for (V3GraphEdge* edgep = vertexp->beginp(rev); edgep; edgep = edgep->nextp(rev)) {
+#if VL_DEBUG
             // Run a few asserts on the initial mtask graph,
             // while we're iterating through...
             UASSERT_OBJ(edgep->weight() != 0, mtaskp, "Should be no cut edges in mtasks graph");
             UASSERT_OBJ(relatives.find(edgep->furtherp(rev)) == relatives.end(), mtaskp,
                         "Should be no redundant edges in mtasks graph");
             relatives.insert(edgep->furtherp(rev));
-
+#endif
             LogicMTask* const relativep = dynamic_cast<LogicMTask*>(edgep->furtherp(rev));
             cpCost = std::max(cpCost, (relativep->critPathCost(way)
                                        + static_cast<uint32_t>(relativep->stepCost())));
@@ -1091,8 +1095,10 @@ public:
             std::unordered_set<const V3GraphVertex*> neighbors;
             for (V3GraphEdge* edgep = itp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 m_sb.addElem(MTaskEdge::cast(edgep));
-                UASSERT_OBJ(neighbors.find(edgep->top()) == neighbors.end(), itp,
-                            "Redundant edge found in input to PartContraction()");
+                if (m_slowAsserts) {
+                    UASSERT_OBJ(neighbors.find(edgep->top()) == neighbors.end(), itp,
+                                "Redundant edge found in input to PartContraction()");
+                }
                 neighbors.insert(edgep->top());
             }
             siblingPairFromRelatives(GraphWay::REVERSE, itp, true);
@@ -1403,15 +1409,15 @@ private:
     }
 
     static uint32_t mergeCandidateScore(const MergeCandidate* pairp) {
-        const MTaskEdge* edgep = dynamic_cast<const MTaskEdge*>(pairp);
-        if (edgep) {
+        if (const MTaskEdge* const edgep = dynamic_cast<const MTaskEdge*>(pairp)) {
             // The '1 +' favors merging a SiblingMC over an otherwise-
             // equal-scoring MTaskEdge. The comment on selfTest() talks
             // about why.
             return 1 + edgeScore(edgep);
         }
-        const SiblingMC* sibsp = dynamic_cast<const SiblingMC*>(pairp);
-        if (sibsp) return siblingScore(sibsp);
+        if (const SiblingMC* const sibsp = dynamic_cast<const SiblingMC*>(pairp)) {
+            return siblingScore(sibsp);
+        }
         v3fatalSrc("Failed to cast pairp to either MTaskEdge or SiblingMC in mergeCandidateScore");
         return 0;
     }
