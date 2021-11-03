@@ -252,7 +252,7 @@ public:
         return iterator(valIt, keyIt, this);
     }
     const_iterator begin() const {
-        SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
+        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
         const auto valIt = mutp->m_vals.begin();
         if (valIt == mutp->m_vals.end()) return end();
         const auto keyIt = valIt->second.begin();
@@ -278,7 +278,7 @@ public:
         return iterator(valIt, keyIt, this);
     }
     const_iterator find(const T_Key& k) const {
-        SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
+        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
         const auto kvit = mutp->m_keys.find(k);
         if (kvit == mutp->m_keys.end()) return end();
 
