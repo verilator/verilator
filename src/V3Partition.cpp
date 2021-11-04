@@ -705,8 +705,11 @@ public:
 // Information associated with scoreboarding an MTask
 class MergeCandidate VL_NOT_FINAL {
 private:
-    bool m_removedFromSb = false;  // Not on scoreboard, generally ignore
-    vluint64_t m_id;  // Serial number for ordering
+    // This structure is extremely hot. To save 8 bytes we pack
+    // one bit indicating removedFromSb with the id.
+    vluint64_t m_id;  // <63> removed, <62:0> Serial number for ordering
+    static constexpr vluint64_t REMOVED_MASK = 1ULL << 63;
+
 public:
     // CONSTRUCTORS
     MergeCandidate() {
@@ -717,9 +720,11 @@ public:
     virtual ~MergeCandidate() = default;
     virtual bool mergeWouldCreateCycle() const = 0;
     // METHODS
-    bool removedFromSb() const { return m_removedFromSb; }
-    void removedFromSb(bool removed) { m_removedFromSb = removed; }
-    bool operator<(const MergeCandidate& other) const { return m_id < other.m_id; }
+    bool removedFromSb() const { return (m_id & REMOVED_MASK) != 0; }
+    void removedFromSb(bool removed) { m_id |= REMOVED_MASK; }
+    bool operator<(const MergeCandidate& other) const {
+        return (m_id & ~REMOVED_MASK) < (other.m_id & ~REMOVED_MASK);
+    }
 };
 
 // A pair of associated LogicMTask's that are merge candidates for sibling
