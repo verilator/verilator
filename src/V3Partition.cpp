@@ -707,14 +707,15 @@ class MergeCandidate VL_NOT_FINAL {
 private:
     // This structure is extremely hot. To save 8 bytes we pack
     // one bit indicating removedFromSb with the id.
+    // By using bit zero, we can still use < to compare IDs without masking.
     vluint64_t m_id;  // <63> removed, <62:0> Serial number for ordering
-    static constexpr vluint64_t REMOVED_MASK = 1ULL << 63;
+    static constexpr vluint64_t REMOVED_MASK = 1ULL;
 
 public:
     // CONSTRUCTORS
     MergeCandidate() {
         static vluint64_t serial = 0;
-        ++serial;
+        serial += 2;  // +2 so doesn't set REMOVED_MASK bit
         m_id = serial;
     }
     virtual ~MergeCandidate() = default;
@@ -722,9 +723,7 @@ public:
     // METHODS
     bool removedFromSb() const { return (m_id & REMOVED_MASK) != 0; }
     void removedFromSb(bool removed) { m_id |= REMOVED_MASK; }
-    bool operator<(const MergeCandidate& other) const {
-        return (m_id & ~REMOVED_MASK) < (other.m_id & ~REMOVED_MASK);
-    }
+    bool operator<(const MergeCandidate& other) const { return m_id < other.m_id; }
 };
 
 // A pair of associated LogicMTask's that are merge candidates for sibling
@@ -860,7 +859,7 @@ public:
         std::unordered_map<const V3GraphVertex*, uint32_t> critPaths;
         GraphStreamUnordered serialize(m_graphp);
         for (const V3GraphVertex* vertexp; (vertexp = serialize.nextp());) {
-            m_vertexCount++;
+            ++m_vertexCount;
             uint32_t cpCostToHere = 0;
             for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 ++m_edgeCount;
@@ -1371,7 +1370,7 @@ private:
         // Delete the donorp mtask from the graph
         VL_DO_CLEAR(donorp->unlinkDelete(m_mtasksp), donorp = nullptr);
 
-        m_mergesSinceRescore++;
+        ++m_mergesSinceRescore;
 
         // Do an expensive check, confirm we haven't botched the CP
         // updates.
@@ -1388,14 +1387,14 @@ private:
         for (V3GraphEdge* edgep = recipientp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             LogicMTask* const postreqp = dynamic_cast<LogicMTask*>(edgep->top());
             siblingPairFromRelatives(GraphWay::REVERSE, postreqp, false);
-            edges++;
+            ++edges;
             if (edges > PART_SIBLING_EDGE_LIMIT) break;
         }
         edges = 0;
         for (V3GraphEdge* edgep = recipientp->inBeginp(); edgep; edgep = edgep->inNextp()) {
             LogicMTask* const prereqp = dynamic_cast<LogicMTask*>(edgep->fromp());
             siblingPairFromRelatives(GraphWay::FORWARD, prereqp, false);
-            edges++;
+            ++edges;
             if (edges > PART_SIBLING_EDGE_LIMIT) break;
         }
     }
@@ -1843,7 +1842,7 @@ private:
                 partMergeEdgesFrom(m_mtasksp, mergedp, donorp, nullptr);
                 // Remove donorp from the graph
                 VL_DO_DANGLING(donorp->unlinkDelete(m_mtasksp), donorp);
-                m_mergesDone++;
+                ++m_mergesDone;
             }
 
             if (lastMergedp) {
