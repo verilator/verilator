@@ -29,9 +29,9 @@
 
 #include "V3Error.h"
 
+#include <set>
 #include <map>
 #include <unordered_map>
-#include <unordered_set>
 
 //######################################################################
 // SortByValueMap
@@ -363,7 +363,11 @@ private:
     using UserScoreFnp = T_Score (*)(const T_Elem*);
 
     // MEMBERS
-    std::unordered_set<const T_Elem*> m_unknown;  // Elements with unknown scores
+    // Below uses set<> not an unordered_set<>. unordered_set::clear() and
+    // construction results in a 491KB clear operation to zero all the
+    // buckets. Since the set size is generally small, and we iterate the
+    // set members, set is better performant.
+    std::set<const T_Elem*> m_unknown;  // Elements with unknown scores
     SortedMap m_sorted;  // Set of elements with known scores
     UserScoreFnp m_scoreFnp;  // Scoring function
     bool m_slowAsserts;  // Do some asserts that require extra lookups

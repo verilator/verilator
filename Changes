@@ -14,6 +14,7 @@ Verilator 4.215 devel
 **Minor:**
 
 * Internal code cleanups and improvements. [Geza Lore]
+* Improve --thread verilation-time performance.
 * Fix array method names with parens (#3181) (#3183). [Teng Huang]
 * Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
 * Fix nested generate if genblk naming (#3189). [yanx21]
