@@ -702,29 +702,52 @@ public:
     }
 };
 
+class SiblingMC;
+class MTaskEdge;
+
 // Information associated with scoreboarding an MTask
 class MergeCandidate VL_NOT_FINAL {
 private:
+    // Only the known subclasses can create or delete one of these
+    friend class SiblingMC;
+    friend class MTaskEdge;
+
     // This structure is extremely hot. To save 8 bytes we pack
-    // one bit indicating removedFromSb with the id.
-    // By using bit zero, we can still use < to compare IDs without masking.
-    vluint64_t m_id;  // <63> removed, <62:0> Serial number for ordering
-    static constexpr vluint64_t REMOVED_MASK = 1ULL;
+    // one bit indicating removedFromSb with the id. To save another
+    // 8 bytes by not having a virtual function table, we implement the
+    // few polymorphic methods over the two known subclasses explicitly,
+    // using another bit of the id to denote the actual subtype.
+
+    // By using the bottom bits for flags, we can still use < to compare IDs without masking.
+    vluint64_t m_id;  // <63:2> Serial number for ordering, <1> subtype (SiblingMC), <0> removed
+    static constexpr vluint64_t REMOVED_MASK = 1ULL << 0;
+    static constexpr vluint64_t IS_SIBLING_MASK = 1ULL << 1;
+    static constexpr vluint64_t ID_INCREMENT = 1ULL << 2;
+
+    bool isSiblingMC() const { return m_id & IS_SIBLING_MASK; }
+
+    // CONSTRUCTORS
+    explicit MergeCandidate(bool isSiblingMC) {
+        static vluint64_t serial = 0;
+        serial += ID_INCREMENT;  // +ID_INCREMENT so doesn't set the special bottom bits
+        m_id = serial | (isSiblingMC * IS_SIBLING_MASK);
+    }
+    ~MergeCandidate() = default;
 
 public:
-    // CONSTRUCTORS
-    MergeCandidate() {
-        static vluint64_t serial = 0;
-        serial += 2;  // +2 so doesn't set REMOVED_MASK bit
-        m_id = serial;
-    }
-    virtual ~MergeCandidate() = default;
-    virtual bool mergeWouldCreateCycle() const = 0;
     // METHODS
+    SiblingMC* toSiblingMC();  // Instead of dynamic_cast
+    const SiblingMC* toSiblingMC() const;  // Instead of dynamic_cast
+    MTaskEdge* toMTaskEdge();  // Instead of dynamic_cast
+    const MTaskEdge* toMTaskEdge() const;  // Instead of dynamic_cast
+    bool mergeWouldCreateCycle() const;  // Instead of virtual method
+
     bool removedFromSb() const { return (m_id & REMOVED_MASK) != 0; }
     void removedFromSb(bool removed) { m_id |= REMOVED_MASK; }
     bool operator<(const MergeCandidate& other) const { return m_id < other.m_id; }
 };
+
+static_assert(sizeof(MergeCandidate) == sizeof(vluint64_t), "Should not have a vtable");
 
 // A pair of associated LogicMTask's that are merge candidates for sibling
 // contraction
@@ -736,7 +759,8 @@ private:
 public:
     // CONSTRUCTORS
     SiblingMC() = delete;
-    SiblingMC(LogicMTask* ap, LogicMTask* bp) {
+    SiblingMC(LogicMTask* ap, LogicMTask* bp)
+        : MergeCandidate{/* isSiblingMC: */ true} {
         // Assign 'ap' and 'bp' in a canonical order, so we can more easily
         // compare pairs of SiblingMCs
         if (ap->id() > bp->id()) {
@@ -747,11 +771,11 @@ public:
             m_bp = ap;
         }
     }
-    virtual ~SiblingMC() = default;
+    ~SiblingMC() = default;
     // METHODS
     LogicMTask* ap() const { return m_ap; }
     LogicMTask* bp() const { return m_bp; }
-    bool mergeWouldCreateCycle() const override {
+    bool mergeWouldCreateCycle() const {
         return (LogicMTask::pathExistsFrom(m_ap, m_bp, nullptr)
                 || LogicMTask::pathExistsFrom(m_bp, m_ap, nullptr));
     }
@@ -762,12 +786,16 @@ public:
     }
 };
 
+static_assert(sizeof(SiblingMC) == sizeof(MergeCandidate) + 2 * sizeof(LogicMTask*),
+              "Should not have a vtable");
+
 // GraphEdge for the MTask graph
 class MTaskEdge final : public V3GraphEdge, public MergeCandidate {
 public:
     // CONSTRUCTORS
     MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int weight)
-        : V3GraphEdge{graphp, fromp, top, weight} {
+        : V3GraphEdge{graphp, fromp, top, weight}
+        , MergeCandidate{/* isSiblingMC: */ false} {
         fromp->addRelative(GraphWay::FORWARD, top);
         top->addRelative(GraphWay::REVERSE, fromp);
     }
@@ -781,7 +809,7 @@ public:
     }
     LogicMTask* fromMTaskp() const { return dynamic_cast<LogicMTask*>(fromp()); }
     LogicMTask* toMTaskp() const { return dynamic_cast<LogicMTask*>(top()); }
-    virtual bool mergeWouldCreateCycle() const override {
+    bool mergeWouldCreateCycle() const {
         return LogicMTask::pathExistsFrom(fromMTaskp(), toMTaskp(), this);
     }
     static MTaskEdge* cast(V3GraphEdge* edgep) {
@@ -805,6 +833,30 @@ public:
 private:
     VL_UNCOPYABLE(MTaskEdge);
 };
+
+// Instead of dynamic cast
+SiblingMC* MergeCandidate::toSiblingMC() {
+    return isSiblingMC() ? static_cast<SiblingMC*>(this) : nullptr;
+}
+
+MTaskEdge* MergeCandidate::toMTaskEdge() {
+    return isSiblingMC() ? nullptr : static_cast<MTaskEdge*>(this);
+}
+
+const SiblingMC* MergeCandidate::toSiblingMC() const {
+    return isSiblingMC() ? static_cast<const SiblingMC*>(this) : nullptr;
+}
+
+const MTaskEdge* MergeCandidate::toMTaskEdge() const {
+    return isSiblingMC() ? nullptr : static_cast<const MTaskEdge*>(this);
+}
+
+// Normally this would be a virtual function, but we save space by not having a vtable,
+// and we know we only have 2 possible subclasses.
+bool MergeCandidate::mergeWouldCreateCycle() const {
+    return isSiblingMC() ? static_cast<const SiblingMC*>(this)->mergeWouldCreateCycle()
+                         : static_cast<const MTaskEdge*>(this)->mergeWouldCreateCycle();
+}
 
 //######################################################################
 // Vertex utility classes
@@ -1271,13 +1323,13 @@ private:
     void contract(MergeCandidate* mergeCanp) {
         LogicMTask* top = nullptr;
         LogicMTask* fromp = nullptr;
-        MTaskEdge* mergeEdgep = dynamic_cast<MTaskEdge*>(mergeCanp);
+        MTaskEdge* mergeEdgep = mergeCanp->toMTaskEdge();
         SiblingMC* mergeSibsp = nullptr;
         if (mergeEdgep) {
             top = dynamic_cast<LogicMTask*>(mergeEdgep->top());
             fromp = dynamic_cast<LogicMTask*>(mergeEdgep->fromp());
         } else {
-            mergeSibsp = dynamic_cast<SiblingMC*>(mergeCanp);
+            mergeSibsp = mergeCanp->toSiblingMC();
             UASSERT(mergeSibsp, "Failed to cast mergeCanp to either MTaskEdge or SiblingMC");
             top = mergeSibsp->ap();
             fromp = mergeSibsp->bp();
@@ -1413,14 +1465,13 @@ private:
     }
 
     static uint32_t mergeCandidateScore(const MergeCandidate* pairp) {
-        if (const MTaskEdge* const edgep = dynamic_cast<const MTaskEdge*>(pairp)) {
+        if (const MTaskEdge* const edgep = pairp->toMTaskEdge()) {
             // The '1 +' favors merging a SiblingMC over an otherwise-
             // equal-scoring MTaskEdge. The comment on selfTest() talks
             // about why.
             return 1 + edgeScore(edgep);
-        }
-        if (const SiblingMC* const sibsp = dynamic_cast<const SiblingMC*>(pairp)) {
-            return siblingScore(sibsp);
+        } else {
+            return siblingScore(pairp->toSiblingMC());
         }
         v3fatalSrc("Failed to cast pairp to either MTaskEdge or SiblingMC in mergeCandidateScore");
         return 0;
