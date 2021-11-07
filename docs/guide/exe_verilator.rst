@@ -1165,9 +1165,9 @@ Summary:
 
 .. option:: --trace-underscore
 
-   Enable tracing of signals that start with an underscore. Normally, these
-   signals are not output during tracing.  See also
-   :vlopt:`--coverage-underscore` option.
+   Enable tracing of signals or modules that start with an
+   underscore. Normally, these signals are not output during tracing.  See
+   also :vlopt:`--coverage-underscore` option.
 
 .. option:: -U<var>
 
