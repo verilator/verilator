@@ -190,7 +190,7 @@ private:
                             if (!m_valueItem[i]) {
                                 m_valueItem[i] = itemp;
                                 foundHit = true;
-                            } else if (!foundOverlap && !itemp->ignoreOverlap()) {
+                            } else if (!foundOverlap) {
                                 firstOverlap = i;
                                 foundOverlap = true;
                                 m_caseNoOverlapsAllCovered = false;

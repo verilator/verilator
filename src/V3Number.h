@@ -359,12 +359,8 @@ public:
     // STATICS
     static int log2b(uint32_t num);
 
-    using UniopFuncp = V3Number& (*)(V3Number&);
-    using BiopFuncp = V3Number& (*)(V3Number&, V3Number&);
-
     // MATH
     // "this" is the output, as we need the output width before some computations
-    V3Number& isTrue(const V3Number& lhs);
     V3Number& opBitsNonX(const V3Number& lhs);  // 0/1->1, X/Z->0
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1

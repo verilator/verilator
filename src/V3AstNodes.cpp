@@ -197,30 +197,6 @@ AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     }
 }
 
-AstNodeBiop* AstGte::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
-    if (lhsp->isString() && rhsp->isString()) {
-        return new AstGteN(fl, lhsp, rhsp);
-    } else if (lhsp->isDouble() && rhsp->isDouble()) {
-        return new AstGteD(fl, lhsp, rhsp);
-    } else if (lhsp->isSigned() && rhsp->isSigned()) {
-        return new AstGteS(fl, lhsp, rhsp);
-    } else {
-        return new AstGte(fl, lhsp, rhsp);
-    }
-}
-
-AstNodeBiop* AstLte::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
-    if (lhsp->isString() && rhsp->isString()) {
-        return new AstLteN(fl, lhsp, rhsp);
-    } else if (lhsp->isDouble() && rhsp->isDouble()) {
-        return new AstLteD(fl, lhsp, rhsp);
-    } else if (lhsp->isSigned() && rhsp->isSigned()) {
-        return new AstLteS(fl, lhsp, rhsp);
-    } else {
-        return new AstLte(fl, lhsp, rhsp);
-    }
-}
-
 AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
         return new AstEqN(fl, lhsp, rhsp);

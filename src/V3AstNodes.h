@@ -365,7 +365,6 @@ public:
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNode* classOrPkgsp() const { return op2p(); }
-    void classOrPkgsp(AstNode* nodep) { setOp2p(nodep); }
     AstClass* classp() const;  // Class being extended (after link)
 };
 
@@ -917,7 +916,6 @@ public:
     bool isEventValue() const { return keyword().isEventValue(); }
     bool isOpaque() const { return keyword().isOpaque(); }
     bool isString() const { return keyword().isString(); }
-    bool isSloppy() const { return keyword().isSloppy(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
     bool isRanged() const { return rangep() || m.m_nrange.ranged(); }
     bool isDpiBitVec() const {  // DPI uses svBitVecVal
@@ -1096,7 +1094,6 @@ public:
     string ifaceName() const { return m_ifaceName; }
     void ifaceName(const string& name) { m_ifaceName = name; }
     string modportName() const { return m_modportName; }
-    void modportName(const string& name) { m_modportName = name; }
     AstIface* ifaceViaCellp() const;  // Use cellp or ifacep
     AstIface* ifacep() const { return m_ifacep; }
     void ifacep(AstIface* nodep) { m_ifacep = nodep; }
@@ -2464,7 +2461,6 @@ public:
     virtual void dump(std::ostream& str) const override;
     string dotted() const { return m_dotted; }
     void dotted(const string& dotted) { m_dotted = dotted; }
-    string prettyDotted() const { return prettyName(dotted()); }
     string inlinedDots() const { return m_inlinedDots; }
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -3783,8 +3779,6 @@ class AstCaseItem final : public AstNode {
     // Parents:  CASE
     // condsp Children: MATH  (Null condition used for default block)
     // bodysp Children: Statements
-private:
-    bool m_ignoreOverlap = false;  // Default created by assertions; ignore overlaps
 public:
     AstCaseItem(FileLine* fl, AstNode* condsp, AstNode* bodysp)
         : ASTGEN_SUPER_CaseItem(fl) {
@@ -3798,8 +3792,6 @@ public:
     void condsp(AstNode* nodep) { setOp1p(nodep); }
     void addBodysp(AstNode* newp) { addOp2p(newp); }
     bool isDefault() const { return condsp() == nullptr; }
-    bool ignoreOverlap() const { return m_ignoreOverlap; }
-    void ignoreOverlap(bool flag) { m_ignoreOverlap = flag; }
 };
 
 class AstSFormatF final : public AstNode {
@@ -4760,20 +4752,16 @@ public:
 
 class AstChangeDet final : public AstNodeStmt {
     // A comparison to determine change detection, common & must be fast.
-private:
-    bool m_clockReq;  // Type of detection
 public:
     // Null lhs+rhs used to indicate change needed with no spec vars
-    AstChangeDet(FileLine* fl, AstNode* lhsp, AstNode* rhsp, bool clockReq)
+    AstChangeDet(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_ChangeDet(fl) {
         setNOp1p(lhsp);
         setNOp2p(rhsp);
-        m_clockReq = clockReq;
     }
     ASTNODE_NODE_FUNCS(ChangeDet)
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
-    bool isClockReq() const { return m_clockReq; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual int instrCount() const override { return widthInstrs() * 2; }  // xor, or/logor
@@ -7076,8 +7064,6 @@ public:
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGte(this->fileline(), lhsp, rhsp);
     }
-    static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp,
-                                 AstNode* rhsp);  // Return AstGte/AstGteS/AstGteD
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGte(lhs, rhs);
     }
@@ -7171,8 +7157,6 @@ public:
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLte(this->fileline(), lhsp, rhsp);
     }
-    static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp,
-                                 AstNode* rhsp);  // Return AstLte/AstLteS/AstLteD
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLte(lhs, rhs);
     }
@@ -9222,7 +9206,6 @@ public:
     void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
     AstNodeFile* filesp() const { return VN_AS(op2p(), NodeFile); }  // op2 = List of files
     void addFilesp(AstNodeFile* filep) { addOp2p(filep); }
-    AstNode* miscsp() const { return op3p(); }  // op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
     void changeRequest(bool specified) { m_changeRequest = specified; }

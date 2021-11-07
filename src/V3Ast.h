@@ -517,9 +517,6 @@ public:
         return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
                 || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
     }
-    bool isSloppy() const {  // Don't be as anal about width warnings
-        return !(m_e == LOGIC || m_e == BIT);
-    }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
         return (m_e == LOGIC || m_e == BIT);
     }
@@ -1029,9 +1026,6 @@ public:
     int hiMaxSelect() const {
         return (lo() < 0 ? hi() - lo() : hi());
     }  // Maximum value a [] select may index
-    bool representableByWidth() const {  // Could be represented by just width=1, or [width-1:0]
-        return (!m_ranged || (m_right == 0 && m_left >= 1));
-    }
     void dump(std::ostream& str) const {
         if (ranged()) {
             str << "[" << left() << ":" << right() << "]";
@@ -2879,7 +2873,6 @@ public:
         return m_taskp && m_taskp->isGateOptimizable();
     }
     string dotted() const { return m_dotted; }  // * = Scope name or ""
-    string prettyDotted() const { return prettyName(dotted()); }
     string inlinedDots() const { return m_inlinedDots; }
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
     AstNodeFTask* taskp() const { return m_taskp; }  // [After Link] Pointer to variable
@@ -2918,7 +2911,6 @@ private:
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
     int m_level = 0;  // 1=top module, 2=cell off top module, ...
-    int m_typeNum = 0;  // Incrementing implicit type number
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
@@ -2958,7 +2950,6 @@ public:
     void level(int level) { m_level = level; }
     int level() const { return m_level; }
     bool isTop() const { return level() == 1; }
-    int typeNumGetInc() { return ++m_typeNum; }
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modPublic() const { return m_modPublic; }
     void modTrace(bool flag) { m_modTrace = flag; }
