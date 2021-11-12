@@ -1248,10 +1248,7 @@ private:
         }
     }
     virtual void visit(AstCLog2* nodep) override {
-        if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-            nodep->dtypeSetSigned32();
-        }
+        if (m_vup->prelim()) { iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH); }
     }
     virtual void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but

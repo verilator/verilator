@@ -6139,7 +6139,9 @@ public:
 class AstCLog2 final : public AstNodeUniop {
 public:
     AstCLog2(FileLine* fl, AstNode* lhsp)
-        : ASTGEN_SUPER_CLog2(fl, lhsp) {}
+        : ASTGEN_SUPER_CLog2(fl, lhsp) {
+        dtypeSetSigned32();
+    }
     ASTNODE_NODE_FUNCS(CLog2)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCLog2(lhs); }
     virtual string emitVerilog() override { return "%f$clog2(%l)"; }
