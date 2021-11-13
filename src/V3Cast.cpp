@@ -155,7 +155,7 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) override {
-        AstNode* const backp = nodep->backp();
+        const AstNode* const backp = nodep->backp();
         if (nodep->access().isReadOnly() && !VN_IS(backp, CCast) && VN_IS(backp, NodeMath)
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, RedXor) && backp->width()
             && castSize(nodep) != castSize(nodep->varp())) {
