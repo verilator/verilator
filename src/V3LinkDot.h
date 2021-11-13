@@ -41,7 +41,8 @@ public:
     static void linkDotParamed(AstNetlist* nodep) {
         UINFO(2, __FUNCTION__ << ": " << endl);
         linkDotGuts(nodep, LDS_PARAMED);
-        V3Global::dumpCheckGlobalTree("paramlink", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+        V3Global::dumpCheckGlobalTree("linkdotparam", 0,
+                                      v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
     }
     static void linkDotArrayed(AstNetlist* nodep) {
         UINFO(2, __FUNCTION__ << ": " << endl);
