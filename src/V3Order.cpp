@@ -130,8 +130,8 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     const bool fromInitial = fromp->hasInitial() || fromp->hasSettle();
     if (toInitial != fromInitial) return true;
 
-    const AstSenItem* fromSenListp = fromp->sensesp();
-    const AstSenItem* toSenListp = top->sensesp();
+    const AstSenItem* const fromSenListp = fromp->sensesp();
+    const AstSenItem* const toSenListp = top->sensesp();
 
     UASSERT_OBJ(fromSenListp, fromp, "sensitivity list empty");
     UASSERT_OBJ(toSenListp, top, "sensitivity list empty");
@@ -139,8 +139,8 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     if (fromSenListp->nextp()) return false;
     if (toSenListp->nextp()) return false;
 
-    const AstNodeVarRef* fromVarrefp = fromSenListp->varrefp();
-    const AstNodeVarRef* toVarrefp = toSenListp->varrefp();
+    const AstNodeVarRef* const fromVarrefp = fromSenListp->varrefp();
+    const AstNodeVarRef* const toVarrefp = toSenListp->varrefp();
     if (!fromVarrefp || !toVarrefp) return false;
 
     // We know nothing about the relationship between different clocks here,

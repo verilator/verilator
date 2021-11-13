@@ -97,7 +97,7 @@ public:
 };
 
 class TraceCFuncVertex final : public V3GraphVertex {
-    AstCFunc* m_nodep;
+    AstCFunc* const m_nodep;
 
 public:
     TraceCFuncVertex(V3Graph* graphp, AstCFunc* nodep)
@@ -134,7 +134,7 @@ public:
 };
 
 class TraceVarVertex final : public V3GraphVertex {
-    AstVarScope* m_nodep;
+    AstVarScope* const m_nodep;
 
 public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)

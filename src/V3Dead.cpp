@@ -102,9 +102,9 @@ private:
 
     void checkAll(AstNode* nodep) {
         if (nodep != nodep->dtypep()) {  // NodeDTypes reference themselves
-            if (AstNode* subnodep = nodep->dtypep()) subnodep->user1Inc();
+            if (AstNode* const subnodep = nodep->dtypep()) subnodep->user1Inc();
         }
-        if (AstNode* subnodep = nodep->getChildDTypep()) subnodep->user1Inc();
+        if (AstNode* const subnodep = nodep->getChildDTypep()) subnodep->user1Inc();
     }
     void checkVarRef(AstNodeVarRef* nodep) {
         if (nodep->classOrPackagep() && m_elimCells) nodep->classOrPackagep(nullptr);
@@ -116,8 +116,8 @@ private:
         ) {
             m_dtypesp.push_back(nodep);
         }
-        if (AstNode* subnodep = nodep->virtRefDTypep()) subnodep->user1Inc();
-        if (AstNode* subnodep = nodep->virtRefDType2p()) subnodep->user1Inc();
+        if (AstNode* const subnodep = nodep->virtRefDTypep()) subnodep->user1Inc();
+        if (AstNode* const subnodep = nodep->virtRefDType2p()) subnodep->user1Inc();
     }
 
     // VISITORS
@@ -129,7 +129,7 @@ private:
             if (!nodep->dead()) {
                 iterateChildren(nodep);
                 checkAll(nodep);
-                if (AstClass* classp = VN_CAST(nodep, Class)) {
+                if (AstClass* const classp = VN_CAST(nodep, Class)) {
                     if (classp->extendsp()) classp->extendsp()->user1Inc();
                     if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
                     m_classesp.push_back(classp);
@@ -282,7 +282,7 @@ private:
             iterateAndNextNull(nodep->rhsp());
             checkAll(nodep);
             // Has to be direct assignment without any EXTRACTing.
-            AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
+            AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);
             if (varrefp && !m_sideEffect
                 && varrefp->varScopep()) {  // For simplicity, we only remove post-scoping
                 m_assignMap.emplace(varrefp->varScopep(), nodep);
@@ -338,7 +338,7 @@ private:
             retry = false;
             for (std::vector<AstScope*>::iterator it = m_scopesp.begin(); it != m_scopesp.end();
                  ++it) {
-                AstScope* scp = *it;
+                AstScope* const scp = *it;
                 if (!scp) continue;
                 if (scp->user1() == 0) {
                     UINFO(4, "  Dead AstScope " << scp << endl);
@@ -364,7 +364,7 @@ private:
         for (bool retry = true; retry;) {
             retry = false;
             for (auto& itr : m_classesp) {
-                if (AstClass* nodep = itr) {  // nullptr if deleted earlier
+                if (AstClass* const nodep = itr) {  // nullptr if deleted earlier
                     if (nodep->user1() == 0) {
                         if (nodep->extendsp()) nodep->extendsp()->user1Inc(-1);
                         if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc(-1);
@@ -385,7 +385,7 @@ private:
                 std::pair<AssignMap::iterator, AssignMap::iterator> eqrange
                     = m_assignMap.equal_range(vscp);
                 for (AssignMap::iterator itr = eqrange.first; itr != eqrange.second; ++itr) {
-                    AstNodeAssign* assp = itr->second;
+                    AstNodeAssign* const assp = itr->second;
                     UINFO(4, "    Dead assign " << assp << endl);
                     assp->dtypep()->user1Inc(-1);
                     VL_DO_DANGLING(assp->unlinkFrBack()->deleteTree(), assp);
@@ -398,7 +398,7 @@ private:
         for (bool retry = true; retry;) {
             retry = false;
             for (std::vector<AstVar*>::iterator it = m_varsp.begin(); it != m_varsp.end(); ++it) {
-                AstVar* varp = *it;
+                AstVar* const varp = *it;
                 if (!varp) continue;
                 if (varp->user1() == 0) {
                     UINFO(4, "  Dead " << varp << endl);
@@ -411,7 +411,7 @@ private:
         }
         for (std::vector<AstNode*>::iterator it = m_dtypesp.begin(); it != m_dtypesp.end(); ++it) {
             if ((*it)->user1() == 0) {
-                AstNodeUOrStructDType* classp;
+                const AstNodeUOrStructDType* classp;
                 // It's possible that there if a reference to each individual member, but
                 // not to the dtype itself.  Check and don't remove the parent dtype if
                 // members are still alive.

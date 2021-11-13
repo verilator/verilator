@@ -57,7 +57,7 @@ string EmitCBaseVisitor::funcNameProtect(const AstCFunc* nodep, const AstNodeMod
 }
 
 AstCFile* EmitCBaseVisitor::newCFile(const string& filename, bool slow, bool source) {
-    AstCFile* cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
+    AstCFile* const cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
     cfilep->slow(slow);
     cfilep->source(source);
     v3Global.rootp()->addFilesp(cfilep);
@@ -78,7 +78,7 @@ string EmitCBaseVisitor::cFuncArgs(const AstCFunc* nodep) {
     }
     // Might be a user function with argument list.
     for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (const AstVar* portp = VN_CAST(stmtp, Var)) {
+        if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO() && !portp->isFuncReturn()) {
                 if (args != "") args += ", ";
                 if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {

@@ -65,7 +65,7 @@ struct V3OptionParser::Impl {
 
 #define V3OPTION_PARSER_DEF_ACT_CLASS(className, type, body, enType) \
     template <> class V3OptionParser::Impl::className<type> final : public ActionBase<enType> { \
-        type* m_valp; /* Pointer to a option variable*/ \
+        type* const m_valp; /* Pointer to a option variable*/ \
 \
     public: \
         explicit className(type* valp) \

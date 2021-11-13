@@ -234,7 +234,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
 
     const char* cp = textp;
     for (; isspace(*cp); ++cp) {}
-    const char* unitp = cp;
+    const char* const unitp = cp;
     for (; *cp && *cp != '/'; ++cp) {}
     string unitStr(unitp, cp - unitp);
     for (; isspace(*cp); ++cp) {}
@@ -242,7 +242,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
     if (*cp == '/') {
         ++cp;
         for (; isspace(*cp); ++cp) {}
-        const char* precp = cp;
+        const char* const precp = cp;
         for (; *cp && *cp != '/'; ++cp) {}
         precStr = string(precp, cp - precp);
     }
@@ -442,7 +442,7 @@ void V3Options::fileNfsFlush(const string& filename) {
     // NFS caches stat() calls so to get up-to-date information must
     // do a open or opendir on the filename.
     // Faster to just try both rather than check if a file is a dir.
-    if (DIR* dirp = opendir(filename.c_str())) {  // LCOV_EXCL_BR_LINE
+    if (DIR* const dirp = opendir(filename.c_str())) {  // LCOV_EXCL_BR_LINE
         closedir(dirp);  // LCOV_EXCL_LINE
     } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
         if (fd > 0) ::close(fd);
@@ -465,7 +465,7 @@ string V3Options::fileExists(const string& filename) {
 
         std::set<string>* setp = &(diriter->second);
 
-        if (DIR* dirp = opendir(dir.c_str())) {
+        if (DIR* const dirp = opendir(dir.c_str())) {
             while (struct dirent* direntp = readdir(dirp)) setp->insert(direntp->d_name);
             closedir(dirp);
         }
@@ -710,7 +710,7 @@ bool V3Options::systemCFound() {
 // V3 Options notification methods
 
 void V3Options::notify() {
-    FileLine* cmdfl = new FileLine(FileLine::commandLineFilename());
+    FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
 
     // Notify that all arguments have been passed and final modification can be made.
     if (!outFormatOk() && !cdc() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {

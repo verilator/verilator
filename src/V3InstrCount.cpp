@@ -38,7 +38,7 @@ private:
 
     // MEMBERS
     uint32_t m_instrCount = 0;  // Running count of instructions
-    const AstNode* m_startNodep;  // Start node of count
+    const AstNode* const m_startNodep;  // Start node of count
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_inCFunc = false;  // Inside AstCFunc
     bool m_assertNoDups;  // Check for duplicates
@@ -50,8 +50,8 @@ private:
     private:
         // MEMBERS
         uint32_t m_savedCount;
-        AstNode* m_nodep;
-        InstrCountVisitor* m_visitor;
+        AstNode* const m_nodep;
+        InstrCountVisitor* const m_visitor;
 
     public:
         // CONSTRUCTORS

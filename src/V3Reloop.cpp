@@ -168,7 +168,7 @@ private:
             return;
         }
         // Of a constant index
-        AstConst* const lbitp = VN_CAST(lselp->bitp(), Const);
+        const AstConst* const lbitp = VN_CAST(lselp->bitp(), Const);
         if (!lbitp) {
             mergeEnd();
             return;
@@ -192,7 +192,7 @@ private:
         uint32_t rindex = lindex;
         if (rconstp) {  // Ok
         } else if (rselp) {
-            AstConst* const rbitp = VN_CAST(rselp->bitp(), Const);
+            const AstConst* const rbitp = VN_CAST(rselp->bitp(), Const);
             rvarrefp = VN_CAST(rselp->fromp(), NodeVarRef);
             if (!rbitp || !rvarrefp || lvarrefp->varp() == rvarrefp->varp()) {
                 mergeEnd();

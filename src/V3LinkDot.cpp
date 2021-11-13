@@ -99,7 +99,7 @@ public:
 class LinkNodeMatcherVarIO final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
-        const AstVar* varp = VN_CAST(nodep, Var);
+        const AstVar* const varp = VN_CAST(nodep, Var);
         if (!varp) return false;
         return varp->isIO();
     }
@@ -107,7 +107,7 @@ public:
 class LinkNodeMatcherVarParam final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
-        const AstVar* varp = VN_CAST(nodep, Var);
+        const AstVar* const varp = VN_CAST(nodep, Var);
         if (!varp) return false;
         return varp->isParam();
     }
@@ -249,8 +249,8 @@ public:
         //
         // Note we only check for conflicts at the same level; it's ok if one block hides another
         // We also wouldn't want to not insert it even though it's lower down
-        VSymEnt* foundp = lookupSymp->findIdFlat(name);
-        AstNode* fnodep = foundp ? foundp->nodep() : nullptr;
+        VSymEnt* const foundp = lookupSymp->findIdFlat(name);
+        AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
         } else if (nodep == fnodep) {  // Already inserted.
@@ -284,7 +284,7 @@ public:
     }
     void insertDUnit(AstNetlist* nodep) {
         // $unit on top scope
-        VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+        VSymEnt* const symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTdunit se" << cvtToHex(symp) << endl);
         symp->parentp(rootEntp());  // Needed so backward search can find name of top module
         symp->fallbackp(nullptr);
@@ -295,7 +295,7 @@ public:
     }
     VSymEnt* insertTopCell(AstNodeModule* nodep, const string& scopename) {
         // Only called on the module at the very top of the hierarchy
-        VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+        VSymEnt* const symp = new VSymEnt(&m_syms, nodep);
         UINFO(9,
               "      INSERTtop se" << cvtToHex(symp) << "  " << scopename << " " << nodep << endl);
         symp->parentp(rootEntp());  // Needed so backward search can find name of top module
@@ -309,7 +309,7 @@ public:
     VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp, AstCell* nodep,
                         const string& scopename) {
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
-        VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+        VSymEnt* const symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTcel se" << cvtToHex(symp) << "  " << scopename << " above=se"
                                       << cvtToHex(abovep) << " mods=se" << cvtToHex(modSymp)
                                       << " node=" << nodep << endl);
@@ -337,7 +337,7 @@ public:
         // A fake point in the hierarchy, corresponding to an inlined module
         // This references to another Sym, and eventually resolves to a module with a prefix
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
-        VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+        VSymEnt* const symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTinl se" << cvtToHex(symp) << "  " << basename << " above=se"
                                       << cvtToHex(abovep) << " mods=se" << cvtToHex(modSymp)
                                       << " node=" << nodep << endl);
@@ -360,7 +360,7 @@ public:
         // Note we fallback to the symbol table of the parent, as we want to find variables there
         // However, cells walk the graph, so cells will appear under the begin/ftask itself
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
-        VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+        VSymEnt* const symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTblk se" << cvtToHex(symp) << "  above=se" << cvtToHex(abovep)
                                       << " pkg=" << cvtToHex(classOrPackagep) << "  node=" << nodep
                                       << endl);
@@ -376,7 +376,7 @@ public:
     VSymEnt* insertSym(VSymEnt* abovep, const string& name, AstNode* nodep,
                        AstNodeModule* classOrPackagep) {
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
-        VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+        VSymEnt* const symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTsym se" << cvtToHex(symp) << "  name='" << name << "' above=se"
                                       << cvtToHex(abovep) << " pkg=" << cvtToHex(classOrPackagep)
                                       << "  node=" << nodep << endl);
@@ -394,7 +394,7 @@ public:
     static VSymEnt* getNodeSym(AstNode* nodep) {
         // Don't use this in ResolveVisitor, as we need to pick up the proper
         // reference under each SCOPE
-        VSymEnt* symp = nodep->user1u().toSymEnt();
+        VSymEnt* const symp = nodep->user1u().toSymEnt();
         UASSERT_OBJ(symp, nodep, "Module/etc never assigned a symbol entry?");
         return symp;
     }
@@ -431,7 +431,7 @@ public:
     static AstIfaceRefDType* ifaceRefFromArray(AstNodeDType* nodep) {
         AstIfaceRefDType* ifacerefp = VN_CAST(nodep, IfaceRefDType);
         if (!ifacerefp) {
-            if (AstBracketArrayDType* arrp = VN_CAST(nodep, BracketArrayDType)) {
+            if (AstBracketArrayDType* const arrp = VN_CAST(nodep, BracketArrayDType)) {
                 ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
             } else if (AstUnpackArrayDType* arrp = VN_CAST(nodep, UnpackArrayDType)) {
                 ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
@@ -441,9 +441,9 @@ public:
     }
     void computeIfaceVarSyms() {
         for (VSymEnt* varSymp : m_ifaceVarSyms) {
-            AstVar* varp = varSymp ? VN_AS(varSymp->nodep(), Var) : nullptr;
+            AstVar* const varp = varSymp ? VN_AS(varSymp->nodep(), Var) : nullptr;
             UINFO(9, "  insAllIface se" << cvtToHex(varSymp) << " " << varp << endl);
-            AstIfaceRefDType* ifacerefp = ifaceRefFromArray(varp->subDTypep());
+            AstIfaceRefDType* const ifacerefp = ifaceRefFromArray(varp->subDTypep());
             UASSERT_OBJ(ifacerefp, varp, "Non-ifacerefs on list!");
             if (!ifacerefp->ifaceViaCellp()) {
                 if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if
@@ -461,14 +461,14 @@ public:
                                    << AstNode::prettyNameQ(ifacerefp->ifaceName()));
                 continue;
             }
-            VSymEnt* ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
+            VSymEnt* const ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
             VSymEnt* ifOrPortSymp = ifaceSymp;
             // Link Modport names to the Modport Node under the Interface
             if (ifacerefp->isModport()) {
-                VSymEnt* foundp = ifaceSymp->findIdFallback(ifacerefp->modportName());
+                VSymEnt* const foundp = ifaceSymp->findIdFallback(ifacerefp->modportName());
                 bool ok = false;
                 if (foundp) {
-                    if (AstModport* modportp = VN_CAST(foundp->nodep(), Modport)) {
+                    if (AstModport* const modportp = VN_CAST(foundp->nodep(), Modport)) {
                         UINFO(4, "Link Modport: " << modportp << endl);
                         ifacerefp->modportp(modportp);
                         ifOrPortSymp = foundp;
@@ -506,7 +506,7 @@ public:
         for (int samn = 0; samn < SAMN__MAX; ++samn) {
             for (ScopeAliasMap::iterator it = m_scopeAliasMap[samn].begin();
                  it != m_scopeAliasMap[samn].end(); ++it) {
-                VSymEnt* lhsp = it->first;
+                VSymEnt* const lhsp = it->first;
                 VSymEnt* srcp = lhsp;
                 while (true) {  // Follow chain of aliases up to highest level non-alias
                     const auto it2 = m_scopeAliasMap[samn].find(srcp);
@@ -582,7 +582,7 @@ public:
                                             : nullptr;  // Replicated below
                 AstCellInline* inlinep = lookupSymp ? VN_CAST(lookupSymp->nodep(), CellInline)
                                                     : nullptr;  // Replicated below
-                if (VSymEnt* findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
+                if (VSymEnt* const findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
                     lookupSymp = findSymp;
                 }
                 // Check this module - cur modname
@@ -629,15 +629,15 @@ public:
                     if (!lookupSymp) return nullptr;  // Not found
                 }
             } else {  // Searching for middle submodule, must be a cell name
-                if (VSymEnt* findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
+                if (VSymEnt* const findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
                     lookupSymp = findSymp;
                 } else {
                     return nullptr;  // Not found
                 }
             }
             if (lookupSymp) {
-                if (AstCell* cellp = VN_CAST(lookupSymp->nodep(), Cell)) {
-                    if (AstNodeModule* modp = cellp->modp()) {
+                if (AstCell* const cellp = VN_CAST(lookupSymp->nodep(), Cell)) {
+                    if (AstNodeModule* const modp = cellp->modp()) {
                         if (modp->hierBlock()) {
                             refLocationp->v3error("Cannot access inside hierarchical block");
                         } else if (VN_IS(modp, NotFoundModule)) {
@@ -708,7 +708,7 @@ LinkDotState* LinkDotState::s_errorThisp = nullptr;
 
 class LinkDotFindVisitor final : public AstNVisitor {
     // STATE
-    LinkDotState* m_statep;  // State to pass between visitors, including symbol table
+    LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     AstNodeModule* m_classOrPackagep = nullptr;  // Current package
     VSymEnt* m_modSymp = nullptr;  // Symbol Entry for current module
     VSymEnt* m_curSymp = nullptr;  // Symbol Entry for current table, where to lookup/insert
@@ -725,7 +725,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
     static int debug() { return LinkDotState::debug(); }
 
     void makeImplicitNew(AstClass* nodep) {
-        AstFunc* newp = new AstFunc(nodep->fileline(), "new", nullptr, nullptr);
+        AstFunc* const newp = new AstFunc(nodep->fileline(), "new", nullptr, nullptr);
         newp->isConstructor(true);
         nodep->addMembersp(newp);
         UINFO(8, "Made implicit new for " << nodep->name() << ": " << nodep << endl);
@@ -793,8 +793,8 @@ class LinkDotFindVisitor final : public AstNVisitor {
         } else if (doit) {
             UINFO(4, "     Link Module: " << nodep << endl);
             UASSERT_OBJ(!nodep->dead(), nodep, "Module in instance tree mislabeled as dead?");
-            VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
-            AstPackage* pkgp = VN_CAST(nodep, Package);
+            VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
+            AstPackage* const pkgp = VN_CAST(nodep, Package);
             m_classOrPackagep = pkgp;
             if (standalonePkg) {
                 if (pkgp->isDollarUnit()) {
@@ -818,13 +818,13 @@ class LinkDotFindVisitor final : public AstNVisitor {
             nodep->user2(false);
             nodep->user4(true);
             // Interfaces need another pass when signals are resolved
-            if (AstIface* ifacep = VN_CAST(nodep, Iface)) {
+            if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
                 m_statep->insertIfaceModSym(ifacep, m_curSymp);
             }
         } else if (isHierBlockWrapper(nodep->name())) {
             UINFO(5, "Module is hierarchical block, must not be dead: " << nodep << endl);
             m_scope = nodep->name();
-            VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
+            VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
             m_curSymp = m_modSymp
                 = m_statep->insertBlock(upperSymp, nodep->name() + "::", nodep, m_classOrPackagep);
             iterateChildren(nodep);
@@ -847,7 +847,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
         VL_RESTORER(m_modWithNum);
         {
             UINFO(4, "     Link Class: " << nodep << endl);
-            VSymEnt* upperSymp = m_curSymp;
+            VSymEnt* const upperSymp = m_curSymp;
             m_scope = m_scope + "." + nodep->name();
             m_classOrPackagep = nodep;
             m_curSymp = m_modSymp
@@ -1180,8 +1180,8 @@ class LinkDotFindVisitor final : public AstNVisitor {
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
         if (m_statep->forPrimary() && nodep->isGParam()) {
             ++m_paramNum;
-            VSymEnt* symp = m_statep->insertSym(m_curSymp, "__paramNumber" + cvtToStr(m_paramNum),
-                                                nodep, m_classOrPackagep);
+            VSymEnt* const symp = m_statep->insertSym(
+                m_curSymp, "__paramNumber" + cvtToStr(m_paramNum), nodep, m_classOrPackagep);
             symp->exported(false);
         }
     }

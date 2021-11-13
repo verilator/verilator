@@ -54,7 +54,7 @@ void V3LinkLevel::modSortByLevel() {
         mods.push_back(nodep);
     }
     if (tops.size() >= 2) {
-        AstNode* secp = tops[1];  // Complain about second one, as first often intended
+        const AstNode* const secp = tops[1];  // Complain about second one, as first often intended
         if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
             secp->v3warn(MULTITOP, "Multiple top level modules\n"
                                        << secp->warnMore()
@@ -86,7 +86,7 @@ void V3LinkLevel::modSortByLevel() {
 
 void V3LinkLevel::timescaling(const ModVec& mods) {
     // Timescale determination
-    AstNodeModule* modTimedp = nullptr;
+    const AstNodeModule* modTimedp = nullptr;
     VTimescale unit(VTimescale::NONE);
     // Use highest level module as default unit - already sorted in proper order
     for (const auto& modp : mods) {

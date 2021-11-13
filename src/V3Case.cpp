@@ -170,7 +170,7 @@ private:
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
                 // if (debug() >= 9) icondp->dumpTree(cout, " caseitem: ");
-                AstConst* iconstp = VN_AS(icondp, Const);
+                AstConst* const iconstp = VN_AS(icondp, Const);
                 UASSERT_OBJ(iconstp, nodep, "above 'can't parse' should have caught this");
                 if (neverItem(nodep, iconstp)) {
                     // X in casez can't ever be executed
@@ -289,10 +289,11 @@ private:
             // V3Number nummask (cexprp, cexprp->width(), (1UL<<msb));
             // AstNode* and1p = new AstAnd(cexprp->fileline(), cexprp->cloneTree(false),
             //                            new AstConst(cexprp->fileline(), nummask));
-            AstNode* and1p = new AstSel(cexprp->fileline(), cexprp->cloneTree(false), msb, 1);
-            AstNode* eqp
+            AstNode* const and1p
+                = new AstSel(cexprp->fileline(), cexprp->cloneTree(false), msb, 1);
+            AstNode* const eqp
                 = new AstNeq(cexprp->fileline(), new AstConst(cexprp->fileline(), 0), and1p);
-            AstIf* ifp = new AstIf(cexprp->fileline(), eqp, tree1p, tree0p);
+            AstIf* const ifp = new AstIf(cexprp->fileline(), eqp, tree1p, tree0p);
             ifp->user3(1);  // So we don't bother to clone it
             return ifp;
         }
@@ -302,11 +303,11 @@ private:
         // CASEx(cexpr,....
         // ->  tree of IF(msb,  IF(msb-1, 11, 10)
         //                      IF(msb-1, 01, 00))
-        AstNode* cexprp = nodep->exprp()->unlinkFrBack();
+        AstNode* const cexprp = nodep->exprp()->unlinkFrBack();
 
         if (debug() >= 9) {  // LCOV_EXCL_START
             for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
-                if (AstNode* itemp = m_valueItem[i]) {
+                if (const AstNode* const itemp = m_valueItem[i]) {
                     UINFO(9, "Value " << std::hex << i << " " << itemp << endl);
                 }
             }
@@ -335,7 +336,7 @@ private:
         // ->  IF((cexpr==icond1),istmts1,
         //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
         //                              ,istmts2, istmts3
-        AstNode* cexprp = nodep->exprp()->unlinkFrBack();
+        AstNode* const cexprp = nodep->exprp()->unlinkFrBack();
         // We'll do this in two stages.  First stage, convert the conditions to
         // the appropriate IF AND terms.
         if (debug() >= 9) nodep->dumpTree(cout, "    _comp_IN:   ");
@@ -355,7 +356,7 @@ private:
                     icondp->unlinkFrBack();
 
                     AstNode* condp = nullptr;  // Default is to use and1p/and2p
-                    AstConst* iconstp = VN_CAST(icondp, Const);
+                    AstConst* const iconstp = VN_CAST(icondp, Const);
                     if (iconstp && neverItem(nodep, iconstp)) {
                         // X in casez can't ever be executed
                         VL_DO_DANGLING(icondp->deleteTree(), icondp);
@@ -373,18 +374,19 @@ private:
                         nummask.opBitsNonX(iconstp->num());
                         V3Number numval(itemp, iconstp->width());
                         numval.opBitsOne(iconstp->num());
-                        AstNode* and1p = new AstAnd(itemp->fileline(), cexprp->cloneTree(false),
-                                                    new AstConst(itemp->fileline(), nummask));
-                        AstNode* and2p = new AstAnd(itemp->fileline(),
-                                                    new AstConst(itemp->fileline(), numval),
-                                                    new AstConst(itemp->fileline(), nummask));
+                        AstNode* const and1p
+                            = new AstAnd(itemp->fileline(), cexprp->cloneTree(false),
+                                         new AstConst(itemp->fileline(), nummask));
+                        AstNode* const and2p = new AstAnd(
+                            itemp->fileline(), new AstConst(itemp->fileline(), numval),
+                            new AstConst(itemp->fileline(), nummask));
                         VL_DO_DANGLING(icondp->deleteTree(), icondp);
                         VL_DANGLING(iconstp);
                         condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
                     } else {
                         // Not a caseX mask, we can simply build CASEEQ(cexpr icond)
-                        AstNode* and1p = cexprp->cloneTree(false);
-                        AstNode* and2p = icondp;
+                        AstNode* const and1p = cexprp->cloneTree(false);
+                        AstNode* const and2p = icondp;
                         condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
                     }
                     if (!ifexprp) {
@@ -417,15 +419,15 @@ private:
         AstIf* itemnextp = nullptr;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            AstNode* istmtsp = itemp->bodysp();  // Maybe null -- no action.
+            AstNode* const istmtsp = itemp->bodysp();  // Maybe null -- no action.
             if (istmtsp) istmtsp->unlinkFrBackWithNext();
             // Expressioned clause
-            AstNode* ifexprp = itemp->condsp()->unlinkFrBack();
+            AstNode* const ifexprp = itemp->condsp()->unlinkFrBack();
             {  // Prepare for next group
                 if (++depth > CASE_ENCODER_GROUP_DEPTH) depth = 1;
                 if (depth == 1) {  // First group or starting new group
                     itemnextp = nullptr;
-                    AstIf* newp
+                    AstIf* const newp
                         = new AstIf(itemp->fileline(), ifexprp->cloneTree(true), nullptr, nullptr);
                     if (groupnextp) {
                         groupnextp->addElsesp(newp);
@@ -434,7 +436,7 @@ private:
                     }
                     groupnextp = newp;
                 } else {  // Continue group, modify if condition to OR in this new condition
-                    AstNode* condp = groupnextp->condp()->unlinkFrBack();
+                    AstNode* const condp = groupnextp->condp()->unlinkFrBack();
                     groupnextp->condp(
                         new AstOr(ifexprp->fileline(), condp, ifexprp->cloneTree(true)));
                 }
@@ -446,7 +448,7 @@ private:
                     VL_DO_DANGLING(itemexprp->deleteTree(), itemexprp);
                     itemexprp = new AstConst(itemp->fileline(), AstConst::BitTrue());
                 }
-                AstIf* newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, nullptr);
+                AstIf* const newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, nullptr);
                 if (itemnextp) {
                     itemnextp->addElsesp(newp);
                 } else {
@@ -474,7 +476,7 @@ private:
         // covered, we're done with it.
         // Else, convert to a normal statement parallel with the case statement.
         if (nodep->notParallelp() && !noOverlapsAllCovered) {
-            AstNode* parp = nodep->notParallelp()->unlinkFrBackWithNext();
+            AstNode* const parp = nodep->notParallelp()->unlinkFrBackWithNext();
             nodep->addNextHere(parp);
         }
     }

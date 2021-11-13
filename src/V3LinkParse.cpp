@@ -80,7 +80,7 @@ private:
 
     string nameFromTypedef(AstNode* nodep) {
         // Try to find a name for a typedef'ed enum/struct
-        if (AstTypedef* typedefp = VN_CAST(nodep->backp(), Typedef)) {
+        if (const AstTypedef* const typedefp = VN_CAST(nodep->backp(), Typedef)) {
             // Create a name for the enum, to aid debug and tracing
             // This name is not guaranteed to be globally unique (due to later parameterization)
             string above;
@@ -112,7 +112,7 @@ private:
         // -> 1:3: BEGIN [GEN] [IMPLIED]  // nodep passed to this function
         //    1:3:1: GENIF
         //    1:3:1:2: BEGIN genblk1 [GEN] [IMPLIED]
-        AstNode* const backp = nodep->backp();
+        const AstNode* const backp = nodep->backp();
         return (nodep->implied()  // User didn't provide begin/end
                 && VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep
                 && !nodep->nextp()  // No other statements under upper genif else
@@ -554,7 +554,7 @@ private:
     virtual void visit(AstBegin* nodep) override {
         V3Config::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
-        AstNode* const backp = nodep->backp();
+        const AstNode* const backp = nodep->backp();
         // IEEE says directly nested item is not a new block
         // The genblk name will get attached to the if true/false LOWER begin block(s)
         const bool nestedIf = nestedIfBegin(nodep);

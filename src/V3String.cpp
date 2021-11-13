@@ -140,7 +140,7 @@ bool VString::isWhitespace(const string& str) {
 }
 
 double VString::parseDouble(const string& str, bool* successp) {
-    char* strgp = new char[str.size() + 1];
+    char* const strgp = new char[str.size() + 1];
     char* dp = strgp;
     if (successp) *successp = true;
     for (const char* sp = str.c_str(); *sp; ++sp) {

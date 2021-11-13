@@ -60,18 +60,18 @@ private:
                     const auto dupit = dupFinder.findDuplicate(nodep->origp());
                     if (dupit == dupFinder.end()) break;
                     //
-                    AstNode* duporigp = dupit->second;
+                    const AstNode* const duporigp = dupit->second;
                     // Note hashed will point to the original variable (what's
                     // duplicated), not the covertoggle, but we need to get back to the
                     // covertoggle which is immediately above, so:
-                    AstCoverToggle* removep = VN_AS(duporigp->backp(), CoverToggle);
+                    AstCoverToggle* const removep = VN_AS(duporigp->backp(), CoverToggle);
                     UASSERT_OBJ(removep, nodep, "CoverageJoin duplicate of wrong type");
                     UINFO(8, "  Orig " << nodep << " -->> " << nodep->incp()->declp() << endl);
                     UINFO(8, "   dup " << removep << " -->> " << removep->incp()->declp() << endl);
                     // The CoverDecl the duplicate pointed to now needs to point to the
                     // original's data. I.e. the duplicate will get the coverage number
                     // from the non-duplicate
-                    AstCoverDecl* datadeclp = nodep->incp()->declp()->dataDeclThisp();
+                    AstCoverDecl* const datadeclp = nodep->incp()->declp()->dataDeclThisp();
                     removep->incp()->declp()->dataDeclp(datadeclp);
                     UINFO(8, "   new " << removep->incp()->declp() << endl);
                     // Mark the found node as a duplicate of the first node

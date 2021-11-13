@@ -262,11 +262,11 @@ private:
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         AstNode* pinp = nodep->pinsp();
-        AstNodeFTask* taskp = nodep->taskp();
+        const AstNodeFTask* const taskp = nodep->taskp();
         // We'll deal with mismatching pins later
         if (!taskp) return;
         for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp = stmtp->nextp()) {
-            if (const AstVar* portp = VN_CAST(stmtp, Var)) {
+            if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO()) {
                     if (portp->isWritable()) {
                         m_setRefLvalue = VAccess::WRITE;

@@ -67,16 +67,16 @@ private:
     }
     void setCppWidth(AstNode* nodep) {
         nodep->user2(true);  // Don't resize it again
-        AstNodeDType* old_dtypep = nodep->dtypep();
+        AstNodeDType* const old_dtypep = nodep->dtypep();
         const int width = cppWidth(nodep);  // widthMin is unchanged
         if (old_dtypep->width() != width) {
             // Since any given dtype's cppWidth() is the same, we can just
             // remember one conversion for each, and reuse it
-            if (AstNodeDType* new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
+            if (AstNodeDType* const new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
                 nodep->dtypep(new_dtypep);
             } else {
                 nodep->dtypeChgWidth(width, nodep->widthMin());
-                AstNodeDType* new_dtypep2 = nodep->dtypep();
+                AstNodeDType* const new_dtypep2 = nodep->dtypep();
                 UASSERT_OBJ(new_dtypep2 != old_dtypep, nodep,
                             "Dtype didn't change when width changed");
                 old_dtypep->user3p(new_dtypep2);  // Remember for next time
@@ -126,7 +126,7 @@ private:
         computeCppWidth(nodep);
         V3Number mask(nodep, cppWidth(nodep));
         mask.setMask(nodep->widthMin());
-        AstNode* cleanp
+        AstNode* const cleanp
             = new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), mask), nodep);
         cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
         relinkHandle.relink(cleanp);
@@ -138,7 +138,7 @@ private:
     void ensureCleanAndNext(AstNode* nodep) {
         // Editing list, careful looping!
         for (AstNode* exprp = nodep; exprp;) {
-            AstNode* nextp = exprp->nextp();
+            AstNode* const nextp = exprp->nextp();
             ensureClean(exprp);
             exprp = nextp;
         }

@@ -65,7 +65,7 @@ GraphPathChecker::GraphPathChecker(const V3Graph* graphp, V3EdgeFuncP edgeFuncp)
 GraphPathChecker::~GraphPathChecker() {
     // Free every GraphPCNode
     for (V3GraphVertex* vxp = m_graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        GraphPCNode* nodep = static_cast<GraphPCNode*>(vxp->userp());
+        const GraphPCNode* const nodep = static_cast<GraphPCNode*>(vxp->userp());
         VL_DO_DANGLING(delete nodep, nodep);
         vxp->userp(nullptr);
     }
@@ -80,11 +80,11 @@ void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
             if (!m_edgeFuncp(edgep)) continue;
 
             V3GraphVertex* wrelativep = edgep->furtherp(rev);
-            GraphPCNode* wrelUserp = static_cast<GraphPCNode*>(wrelativep->userp());
+            const GraphPCNode* const wrelUserp = static_cast<GraphPCNode*>(wrelativep->userp());
             critPathCost = std::max(critPathCost, wrelUserp->m_cp[way] + 1);
         }
 
-        GraphPCNode* ourUserp = static_cast<GraphPCNode*>(vertexp->userp());
+        GraphPCNode* const ourUserp = static_cast<GraphPCNode*>(vertexp->userp());
         if (checkOnly) {
             UASSERT_OBJ(ourUserp->m_cp[way] == critPathCost, vertexp,
                         "Validation of critical paths failed");
@@ -96,8 +96,8 @@ void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
 
 bool GraphPathChecker::pathExistsInternal(const V3GraphVertex* ap, const V3GraphVertex* bp,
                                           unsigned* costp) {
-    GraphPCNode* auserp = static_cast<GraphPCNode*>(ap->userp());
-    GraphPCNode* buserp = static_cast<GraphPCNode*>(bp->userp());
+    GraphPCNode* const auserp = static_cast<GraphPCNode*>(ap->userp());
+    const GraphPCNode* const buserp = static_cast<GraphPCNode*>(bp->userp());
 
     // If have already searched this node on the current search, don't
     // recurse through it again. Since we're still searching, we must not

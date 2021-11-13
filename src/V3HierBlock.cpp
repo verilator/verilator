@@ -108,7 +108,7 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
 V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, bool forGOption) {
     StrGParams strParams;
     for (const auto& gparam : gparams) {
-        if (const AstConst* constp = VN_CAST(gparam->valuep(), Const)) {
+        if (const AstConst* const constp = VN_CAST(gparam->valuep(), Const)) {
             string s;
             // Only constant parameter needs to be set to -G because already checked in
             // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.

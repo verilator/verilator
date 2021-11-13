@@ -86,7 +86,7 @@ private:
                     msb = bit;
                 }
             } else if (prev) {
-                AstBasicDType* bdtypep = m_varp->basicp();
+                const AstBasicDType* const bdtypep = m_varp->basicp();
                 const int lsb = bit + 1;
                 if (bits != "") bits += ",";
                 if (lsb == msb) {
@@ -148,7 +148,7 @@ public:
     }
     void reportViolations() {
         // Combine bits into overall state
-        AstVar* nodep = m_varp;
+        AstVar* const nodep = m_varp;
         {
             bool allU = true;
             bool allD = true;

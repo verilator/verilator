@@ -48,7 +48,7 @@ private:
 
     // STATE
     AstActive* m_activep = nullptr;  // Inside activate statement
-    AstNodeModule* m_topModp;  // Top module
+    AstNodeModule* const m_topModp;  // Top module
     AstScope* const m_scopetopp = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
 
     // METHODS
@@ -69,18 +69,18 @@ private:
             // that might have dependents scheduled earlier.
             UASSERT_OBJ(vscp != v3Global.rootp()->dpiExportTriggerp(), vscp,
                         "DPI export trigger should not need __VinpClk");
-            AstVar* varp = vscp->varp();
+            AstVar* const varp = vscp->varp();
             string newvarname
                 = "__VinpClk__" + vscp->scopep()->nameDotless() + "__" + varp->name();
             // Create:  VARREF(inpclk)
             //          ...
             //          ASSIGN(VARREF(inpclk), VARREF(var))
-            AstVar* newvarp
+            AstVar* const newvarp
                 = new AstVar(varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
             m_topModp->addStmtp(newvarp);
-            AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
+            AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
             m_scopetopp->addVarp(newvscp);
-            AstAssign* asninitp = new AstAssign(
+            AstAssign* const asninitp = new AstAssign(
                 vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
                 new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
             m_scopetopp->addFinalClkp(asninitp);
@@ -98,15 +98,16 @@ private:
     //----
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
-        AstVarScope* vscp = nodep->varScopep();
+        AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (m_activep && !nodep->user3()) {
             nodep->user3(true);
             if (vscp->isCircular()) {
                 UINFO(8, "  VarActReplace " << nodep << endl);
                 // Replace with the new variable
-                AstVarScope* newvscp = genInpClk(vscp);
-                AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
+                AstVarScope* const newvscp = genInpClk(vscp);
+                AstVarRef* const newrefp
+                    = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
                 nodep->replaceWith(newrefp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
@@ -187,7 +188,7 @@ private:
 
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
-        AstVarScope* vscp = nodep->varScopep();
+        AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (m_activep) {
             UINFO(8, "  VarAct " << nodep << endl);

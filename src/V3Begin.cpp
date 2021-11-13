@@ -59,7 +59,7 @@ public:
 class BeginVisitor final : public AstNVisitor {
 private:
     // STATE
-    BeginState* m_statep;  // Current global state
+    BeginState* const m_statep;  // Current global state
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNode* m_liftedp = nullptr;  // Local  nodes we are lifting into m_ftaskp

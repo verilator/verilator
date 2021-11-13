@@ -50,9 +50,9 @@ class EmitCSyms final : EmitCBaseVisitor {
             , m_type{type} {}
     };
     struct ScopeFuncData {
-        AstScopeName* m_scopep;
-        AstCFunc* m_cfuncp;
-        AstNodeModule* m_modp;
+        AstScopeName* const m_scopep;
+        AstCFunc* const m_cfuncp;
+        AstNodeModule* const m_modp;
         ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
             : m_scopep{scopep}
             , m_cfuncp{funcp}
@@ -61,9 +61,9 @@ class EmitCSyms final : EmitCBaseVisitor {
     struct ScopeVarData {
         string m_scopeName;
         string m_varBasePretty;
-        AstVar* m_varp;
-        AstNodeModule* m_modp;
-        AstScope* m_scopep;
+        AstVar* const m_varp;
+        AstNodeModule* const m_modp;
+        AstScope* const m_scopep;
         ScopeVarData(const string& scopeName, const string& varBasePretty, AstVar* varp,
                      AstNodeModule* modp, AstScope* scopep)
             : m_scopeName{scopeName}
@@ -193,12 +193,12 @@ class EmitCSyms final : EmitCBaseVisitor {
         // Someday.  For now public isn't common.
         for (std::vector<ScopeModPair>::iterator itsc = m_scopes.begin(); itsc != m_scopes.end();
              ++itsc) {
-            AstScope* scopep = itsc->first;
-            AstNodeModule* smodp = itsc->second;
+            AstScope* const scopep = itsc->first;
+            const AstNodeModule* const smodp = itsc->second;
             for (std::vector<ModVarPair>::iterator it = m_modVars.begin(); it != m_modVars.end();
                  ++it) {
-                AstNodeModule* modp = it->first;
-                AstVar* varp = it->second;
+                AstNodeModule* const modp = it->first;
+                AstVar* const varp = it->second;
                 if (modp == smodp) {
                     // Need to split the module + var name into the
                     // original-ish full scope and variable name under that scope.
@@ -411,7 +411,7 @@ void EmitCSyms::emitSymHdr() {
         puts("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
         std::map<const string, int> types;  // Remove duplicates and sort
         for (const auto& itr : m_scopeFuncs) {
-            AstCFunc* funcp = itr.second.m_cfuncp;
+            const AstCFunc* const funcp = itr.second.m_cfuncp;
             if (funcp->dpiExportImpl()) {
                 const string cbtype
                     = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
@@ -461,8 +461,8 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// MODULE INSTANCE STATE\n");
     for (const auto& i : m_scopes) {
-        AstScope* scopep = i.first;
-        AstNodeModule* modp = i.second;
+        const AstScope* const scopep = i.first;
+        const AstNodeModule* const modp = i.second;
         if (VN_IS(modp, Class)) continue;
         const string name = prefixNameProtect(modp);
         ofp()->printf("%-30s ", name.c_str());
@@ -484,7 +484,8 @@ void EmitCSyms::emitSymHdr() {
             for (const V3GraphVertex* vxp
                  = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
                  vxp; vxp = vxp->verticesNextp()) {
-                ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+                const ExecMTask* const mtp
+                    = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
                 if (maxProfilerId < mtp->profilerId()) maxProfilerId = mtp->profilerId();
             }
         }
@@ -553,7 +554,7 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     m_numStmts = 0;
     string filename
         = v3Global.opt.makeDir() + "/" + symClassName() + "__" + cvtToStr(++m_funcNum) + ".cpp";
-    AstCFile* cfilep = newCFile(filename, true /*slow*/, true /*source*/);
+    AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
     m_usesVfinal[m_funcNum] = usesVfinal;
     closeSplit();

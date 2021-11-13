@@ -191,7 +191,7 @@ private:
 
     void processEnter(AstNode* nodep) {
         nodep->brokenState(m_brokenCntCurrentUnder);
-        const char* whyp = nodep->broken();
+        const char* const whyp = nodep->broken();
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
         if (nodep->dtypep()) {
@@ -210,7 +210,8 @@ private:
             }
             UASSERT_OBJ(!nodep->getChildDTypep(), nodep,
                         "childDTypep() non-null on node after should have removed");
-            if (const AstNodeDType* dnodep = VN_CAST(nodep, NodeDType)) checkWidthMin(dnodep);
+            if (const AstNodeDType* const dnodep = VN_CAST(nodep, NodeDType))
+                checkWidthMin(dnodep);
         }
         checkWidthMin(nodep);
     }

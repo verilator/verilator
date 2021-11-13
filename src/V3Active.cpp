@@ -108,9 +108,10 @@ protected:
             }
             break;
         case LatchDetectGraphVertex::VT_BRANCH:  // (AND of both sibling)
-            // A BRANCH vertex always has exactly 2 siblings
-            LatchDetectGraphVertex* ifp = castVertexp(vertexp->outBeginp()->top());
-            LatchDetectGraphVertex* elsp = castVertexp(vertexp->outBeginp()->outNextp()->top());
+                                                 // A BRANCH vertex always has exactly 2 siblings
+            LatchDetectGraphVertex* const ifp = castVertexp(vertexp->outBeginp()->top());
+            LatchDetectGraphVertex* const elsp
+                = castVertexp(vertexp->outBeginp()->outNextp()->top());
             result = latchCheckInternal(ifp) && latchCheckInternal(elsp);
             break;
         }
@@ -151,7 +152,7 @@ public:
     // Add a new output variable vertex and store a pointer to it in the user1 field of the
     // variables AstNode
     LatchDetectGraphVertex* addOutputVertex(AstVarRef* nodep) {
-        LatchDetectGraphVertex* outVertexp
+        LatchDetectGraphVertex* const outVertexp
             = new LatchDetectGraphVertex{this, nodep->name(), LatchDetectGraphVertex::VT_OUTPUT};
         nodep->varp()->user1p(outVertexp);
         m_outputs.push_back(nodep);
@@ -172,7 +173,7 @@ public:
     void latchCheck(AstNode* nodep, bool latch_expected) {
         bool latch_detected = false;
         for (const auto& vrp : m_outputs) {
-            LatchDetectGraphVertex* vertp = castVertexp(vrp->varp()->user1p());
+            LatchDetectGraphVertex* const vertp = castVertexp(vrp->varp()->user1p());
             vertp->user(true);  // Identify the output vertex we are checking paths _to_
             if (!latchCheckInternal(castVertexp(verticesBeginp()))) latch_detected = true;
             if (latch_detected && !latch_expected) {
@@ -262,7 +263,7 @@ public:
         // Return a sentree in this scope that matches given sense list.
 
         AstActive* activep = nullptr;
-        AstSenTree* activeSenp = m_activeSens.find(sensesp);
+        AstSenTree* const activeSenp = m_activeSens.find(sensesp);
         if (activeSenp) {
             const auto it = m_activeMap.find(activeSenp);
             UASSERT(it != m_activeMap.end(), "Corrupt active map");
@@ -271,7 +272,7 @@ public:
 
         // Not found, form a new one
         if (!activep) {
-            AstSenTree* newsenp = sensesp->cloneTree(false);
+            AstSenTree* const newsenp = sensesp->cloneTree(false);
             activep = new AstActive(fl, "sequent", newsenp);
             activep->sensesStorep(activep->sensesp());
             UINFO(8, "    New ACTIVE " << activep << endl);
@@ -303,15 +304,15 @@ private:
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
-        AstVar* varp = nodep->varp();
+        const AstVar* const varp = nodep->varp();
         if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()) {
             m_graph.addAssignment(nodep);
         }
     }
     virtual void visit(AstNodeIf* nodep) {
         if (!nodep->isBoundsCheck()) {
-            LatchDetectGraphVertex* parentp = m_graph.currentp();
-            LatchDetectGraphVertex* branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
+            LatchDetectGraphVertex* const parentp = m_graph.currentp();
+            LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
             m_graph.addPathVertex(branchp, "IF");
             iterateAndNextNull(nodep->ifsp());
             m_graph.addPathVertex(branchp, "ELSE");
@@ -340,8 +341,8 @@ public:
     enum CheckType : uint8_t { CT_SEQ, CT_COMBO, CT_INITIAL, CT_LATCH };
 
 private:
-    CheckType m_check;  // Combo logic or other
-    AstNode* m_alwaysp;  // Always we're under
+    const CheckType m_check;  // Combo logic or other
+    AstNode* const m_alwaysp;  // Always we're under
     AstNode* m_assignp = nullptr;  // In assign
     // VISITORS
     virtual void visit(AstAssignDly* nodep) override {
@@ -363,8 +364,8 @@ private:
                 // Conversely, we could also suggest latches use delayed assignments, as
                 // recommended by Cliff Cummings?
             }
-            AstNode* newp = new AstAssign(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                          nodep->rhsp()->unlinkFrBack());
+            AstNode* const newp = new AstAssign(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                                nodep->rhsp()->unlinkFrBack());
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
@@ -377,7 +378,7 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) override {
-        AstVar* varp = nodep->varp();
+        const AstVar* const varp = nodep->varp();
         if (m_check == CT_SEQ && m_assignp && !varp->isUsedLoopIdx()  // Ignore loop indices
             && !varp->isTemp()) {
             // Allow turning off warnings on the always, or the variable also
@@ -438,28 +439,28 @@ private:
         // Relink to IACTIVE, unless already under it
         UINFO(4, "    INITIAL " << nodep << endl);
         ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
-        AstActive* wantactivep = m_namer.getIActive(nodep->fileline());
+        AstActive* const wantactivep = m_namer.getIActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
     virtual void visit(AstAssignAlias* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    ASSIGNW " << nodep << endl);
-        AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
+        AstActive* const wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
     virtual void visit(AstAssignW* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    ASSIGNW " << nodep << endl);
-        AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
+        AstActive* const wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
     virtual void visit(AstCoverToggle* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    COVERTOGGLE " << nodep << endl);
-        AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
+        AstActive* const wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
@@ -577,7 +578,7 @@ private:
     }
     virtual void visit(AstSenItem* nodep) override {
         if (nodep->varrefp()) {
-            if (AstBasicDType* basicp = nodep->varrefp()->dtypep()->basicp()) {
+            if (const AstBasicDType* const basicp = nodep->varrefp()->dtypep()->basicp()) {
                 if (basicp->isEventValue()) {
                     // Events need to be treated as active high so we only activate on event being
                     // 1

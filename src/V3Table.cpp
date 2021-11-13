@@ -54,7 +54,7 @@ class TableVisitor;
 
 class TableSimulateVisitor final : public SimulateVisitor {
     // MEMBERS
-    TableVisitor* m_cbthis;  ///< Class for callback
+    TableVisitor* const m_cbthis;  ///< Class for callback
 
 public:
     ///< Call other-this function on all new var references

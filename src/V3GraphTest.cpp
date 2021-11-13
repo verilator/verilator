@@ -277,17 +277,17 @@ class V3GraphTestDfa final : public V3GraphTest {
 public:
     virtual string name() override { return "dfa"; }
     virtual void runTest() override {
-        DfaGraph* gp = &m_graph;
+        DfaGraph* const gp = &m_graph;
 
         // NFA Pattern for ( (LR) | (L*R)) Z
-        DfaTestVertex* st = new DfaTestVertex(gp, "*START*");
+        DfaTestVertex* const st = new DfaTestVertex(gp, "*START*");
         st->start(true);
-        DfaTestVertex* sl = new DfaTestVertex(gp, "sL");
-        DfaTestVertex* srs = new DfaTestVertex(gp, "sR*");
-        DfaTestVertex* sls = new DfaTestVertex(gp, "sL*");
-        DfaTestVertex* sr = new DfaTestVertex(gp, "sR");
-        DfaTestVertex* sz = new DfaTestVertex(gp, "sZ");
-        DfaTestVertex* sac = new DfaTestVertex(gp, "*ACCEPT*");
+        DfaTestVertex* const sl = new DfaTestVertex(gp, "sL");
+        DfaTestVertex* const srs = new DfaTestVertex(gp, "sR*");
+        DfaTestVertex* const sls = new DfaTestVertex(gp, "sL*");
+        DfaTestVertex* const sr = new DfaTestVertex(gp, "sR");
+        DfaTestVertex* const sz = new DfaTestVertex(gp, "sZ");
+        DfaTestVertex* const sac = new DfaTestVertex(gp, "*ACCEPT*");
         sac->accepting(true);
 
         VNUser L = VNUser::fromInt(0xaa);
@@ -332,7 +332,7 @@ class V3GraphTestImport final : public V3GraphTest {
 public:
     virtual string name() override { return "import"; }
     virtual void runTest() override {
-        DfaGraph* gp = &m_graph;
+        DfaGraph* const gp = &m_graph;
         if (V3GraphTest::debug()) DfaGraph::debug(9);
         dotImport();
         dump();

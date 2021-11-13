@@ -33,7 +33,7 @@ DfaVertex* DfaGraph::findStart() {
     DfaVertex* startp = nullptr;
     for (V3GraphVertex* vertexp = this->verticesBeginp(); vertexp;
          vertexp = vertexp->verticesNextp()) {
-        if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
+        if (DfaVertex* const vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
             if (vvertexp->start()) {
                 UASSERT_OBJ(!startp, vertexp, "Multiple start points in NFA graph");
                 startp = vvertexp;
@@ -84,7 +84,7 @@ private:
     }
 
     DfaVertex* newDfaVertex(DfaVertex* nfaTemplatep = nullptr) {
-        DfaVertex* vertexp = new DfaVertex(graphp());
+        DfaVertex* const vertexp = new DfaVertex(graphp());
         vertexp->color(1);  // Mark as dfa
         if (nfaTemplatep && nfaTemplatep->start()) vertexp->start(true);
         if (nfaTemplatep && nfaTemplatep->accepting()) vertexp->accepting(true);
@@ -95,7 +95,7 @@ private:
     // Hashing
     static uint32_t hashVertex(V3GraphVertex* vertexp) {
         union {
-            void* up;
+            const void* up;
             struct {
                 uint32_t upper;
                 uint32_t lower;
@@ -118,7 +118,7 @@ private:
         for (V3GraphEdge* dfaEdgep = dfaStatep->outBeginp(); dfaEdgep;
              dfaEdgep = dfaEdgep->outNextp()) {
             if (nfaState(dfaEdgep->top())) {
-                DfaVertex* nfaStatep = static_cast<DfaVertex*>(dfaEdgep->top());
+                DfaVertex* const nfaStatep = static_cast<DfaVertex*>(dfaEdgep->top());
                 hash ^= hashVertex(nfaStatep);
                 if (debug()) {
                     UASSERT_OBJ(nfaStatep->user() != m_step, nfaStatep,
@@ -178,7 +178,7 @@ private:
 
         const auto eqrange = m_hashMap.equal_range(hash);
         for (auto it = eqrange.first; it != eqrange.second; ++it) {
-            DfaVertex* testp = it->second;
+            DfaVertex* const testp = it->second;
             if (compareDfaOrigins(nfasWithInput, testp)) {
                 UINFO(9, "              DFA match for set: " << testp << endl);
                 return testp;  // Identical
@@ -197,13 +197,13 @@ private:
         for (V3GraphEdge* dfaEdgep = dfaStatep->outBeginp(); dfaEdgep;
              dfaEdgep = dfaEdgep->outNextp()) {
             if (nfaState(dfaEdgep->top())) {
-                DfaVertex* nfaStatep = static_cast<DfaVertex*>(dfaEdgep->top());
+                const DfaVertex* const nfaStatep = static_cast<DfaVertex*>(dfaEdgep->top());
                 // Foreach input transition (on this nfaStatep)
                 for (V3GraphEdge* nfaEdgep = nfaStatep->outBeginp(); nfaEdgep;
                      nfaEdgep = nfaEdgep->outNextp()) {
-                    DfaEdge* cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
+                    const DfaEdge* const cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
                     if (cNfaEdgep->input().toNodep() == input.toNodep()) {
-                        DfaVertex* nextStatep = static_cast<DfaVertex*>(cNfaEdgep->top());
+                        DfaVertex* const nextStatep = static_cast<DfaVertex*>(cNfaEdgep->top());
                         if (unseenNfaThisStep(nextStatep)) {  // Not processed?
                             nfasWithInput.push_back(nextStatep);
                             nextStatep->user(m_step);
@@ -220,15 +220,15 @@ private:
             DfaStates nfasTodo = nfasWithInput;
             nfasWithInput.clear();  // Now the completed list
             while (!nfasTodo.empty()) {
-                DfaVertex* nfaStatep = nfasTodo.front();
+                DfaVertex* const nfaStatep = nfasTodo.front();
                 nfasTodo.pop_front();
                 nfasWithInput.push_back(nfaStatep);
                 // Foreach epsilon-reachable (on this nfaStatep)
                 for (V3GraphEdge* nfaEdgep = nfaStatep->outBeginp(); nfaEdgep;
                      nfaEdgep = nfaEdgep->outNextp()) {
-                    DfaEdge* cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
+                    const DfaEdge* const cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
                     if (cNfaEdgep->epsilon()) {
-                        DfaVertex* nextStatep = static_cast<DfaVertex*>(cNfaEdgep->top());
+                        DfaVertex* const nextStatep = static_cast<DfaVertex*>(cNfaEdgep->top());
                         if (unseenNfaThisStep(nextStatep)) {  // Not processed?
                             nfasTodo.push_back(nextStatep);
                             nextStatep->user(m_step);
@@ -250,10 +250,10 @@ private:
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("dfa_nfa");
 
         // Find NFA start
-        DfaVertex* nfaStartp = graphp()->findStart();
+        DfaVertex* const nfaStartp = graphp()->findStart();
 
         // Create new DFA State (start state) from the NFA states
-        DfaVertex* dfaStartp = newDfaVertex(nfaStartp);
+        DfaVertex* const dfaStartp = newDfaVertex(nfaStartp);
 
         DfaStates dfaUnprocps;  // Unprocessed DFA nodes
         dfaUnprocps.push_back(dfaStartp);
@@ -265,7 +265,7 @@ private:
         workps.push_back(nfaStartp);
 
         while (!workps.empty()) {  // While work
-            DfaVertex* nfaStatep = workps.back();
+            DfaVertex* const nfaStatep = workps.back();
             workps.pop_back();
             // UINFO(9," Processing "<<nfaStatep<<endl);
             nfaStatep->user(m_step);  // Mark as processed
@@ -275,8 +275,8 @@ private:
             // Find epsilon closure of this nfa node, and destinations to work list
             for (V3GraphEdge* nfaEdgep = nfaStatep->outBeginp(); nfaEdgep;
                  nfaEdgep = nfaEdgep->outNextp()) {
-                DfaEdge* cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
-                DfaVertex* ecNfaStatep = static_cast<DfaVertex*>(nfaEdgep->top());
+                const DfaEdge* const cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
+                DfaVertex* const ecNfaStatep = static_cast<DfaVertex*>(nfaEdgep->top());
                 // UINFO(9,"   Consider "<<nfaEdgep->top()<<" EP "<<cNfaEdgep->epsilon()<<endl);
                 if (cNfaEdgep->epsilon() && unseenNfaThisStep(ecNfaStatep)) {  // Not processed?
                     workps.push_back(ecNfaStatep);
@@ -289,7 +289,7 @@ private:
         int i = 0;
         UINFO(5, "Main state conversion...\n");
         while (!dfaUnprocps.empty()) {
-            DfaVertex* dfaStatep = dfaUnprocps.back();
+            DfaVertex* const dfaStatep = dfaUnprocps.back();
             dfaUnprocps.pop_back();
             UINFO(9, "  On dfaState " << dfaStatep << endl);
 
@@ -299,11 +299,11 @@ private:
             for (V3GraphEdge* dfaEdgep = dfaStatep->outBeginp(); dfaEdgep;
                  dfaEdgep = dfaEdgep->outNextp()) {
                 if (nfaState(dfaEdgep->top())) {
-                    DfaVertex* nfaStatep = static_cast<DfaVertex*>(dfaEdgep->top());
+                    const DfaVertex* const nfaStatep = static_cast<DfaVertex*>(dfaEdgep->top());
                     // Foreach input on this nfaStatep
                     for (V3GraphEdge* nfaEdgep = nfaStatep->outBeginp(); nfaEdgep;
                          nfaEdgep = nfaEdgep->outNextp()) {
-                        DfaEdge* cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
+                        const DfaEdge* const cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
                         if (!cNfaEdgep->epsilon()) {
                             if (inputs.find(cNfaEdgep->input().toInt()) == inputs.end()) {
                                 inputs.insert(cNfaEdgep->input().toInt());
@@ -403,7 +403,7 @@ private:
         // (As once we've accepted, we no longer care about anything else.)
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = vertexp->verticesNextp()) {
-            if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
+            if (const DfaVertex* const vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
                 if (vvertexp->accepting()) {
                     for (V3GraphEdge *nextp, *edgep = vertexp->outBeginp(); edgep; edgep = nextp) {
                         nextp = edgep->outNextp();
@@ -422,7 +422,7 @@ private:
         // (Otherwise we might have nodes on the list twice, and reference after deleting them.)
         m_graphp->userClearVertices();
 
-        DfaVertex* startp = graphp()->findStart();
+        DfaVertex* const startp = graphp()->findStart();
         std::stack<V3GraphVertex*> workps;
         workps.push(startp);
 
@@ -462,7 +462,7 @@ private:
         std::stack<DfaVertex*> workps;
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = vertexp->verticesNextp()) {
-            if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
+            if (DfaVertex* const vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
                 workps.push(vvertexp);
                 vertexp->user(1);
             } else {
@@ -473,13 +473,13 @@ private:
 
         // While deadness... Delete and find new dead nodes.
         while (!workps.empty()) {
-            DfaVertex* vertexp = workps.top();
+            DfaVertex* const vertexp = workps.top();
             workps.pop();
             vertexp->user(0);
             if (isDead(vertexp)) {
                 // Add nodes that go here to the work list
                 for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                    DfaVertex* fromvertexp = static_cast<DfaVertex*>(edgep->fromp());
+                    DfaVertex* const fromvertexp = static_cast<DfaVertex*>(edgep->fromp());
                     if (fromvertexp != vertexp && !fromvertexp->user()) {
                         workps.push(fromvertexp);
                         fromvertexp->user(1);
@@ -541,7 +541,7 @@ private:
         DfaVertex* acceptp = nullptr;
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = vertexp->verticesNextp()) {
-            if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
+            if (DfaVertex* const vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
                 if (vvertexp->accepting()) {
                     acceptp = vvertexp;
                     break;
@@ -553,15 +553,16 @@ private:
         // Remap edges
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = vertexp->verticesNextp()) {
-            if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
+            if (DfaVertex* const vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
                 // UINFO(9, "   on vertex "<<vvertexp->name()<<endl);
                 if (!vvertexp->accepting() && vvertexp != m_tempNewerReject) {
                     for (V3GraphEdge *nextp, *edgep = vertexp->outBeginp(); edgep; edgep = nextp) {
                         nextp = edgep->outNextp();
                         if (!edgep->user()) {  // Not processed
                             // Old edges to accept now go to new reject
-                            DfaEdge* vedgep = static_cast<DfaEdge*>(edgep);
-                            DfaVertex* tovertexp = static_cast<DfaVertex*>(edgep->top());
+                            const DfaEdge* const vedgep = static_cast<DfaEdge*>(edgep);
+                            const DfaVertex* const tovertexp
+                                = static_cast<DfaVertex*>(edgep->top());
                             if (tovertexp->accepting()) {
                                 new DfaEdge(graphp(), vvertexp, m_tempNewerReject, vedgep);
                                 VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
@@ -572,7 +573,8 @@ private:
                             // edge(complemented,a) edge(complemented,b) means !(a | b)
                             if (!tovertexp->accepting()) {
                                 // Note we must include edges moved above to reject
-                                DfaEdge* newp = new DfaEdge(graphp(), vvertexp, acceptp, vedgep);
+                                DfaEdge* const newp
+                                    = new DfaEdge(graphp(), vvertexp, acceptp, vedgep);
                                 newp->complement(!newp->complement());
                                 newp->user(1);
                             }

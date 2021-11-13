@@ -91,9 +91,9 @@ private:
         if (m_assigndlyp) {
             // Delayed assignments become normal assignments,
             // then the temp created becomes the delayed assignment
-            AstNode* newp = new AstAssign(m_assigndlyp->fileline(),
-                                          m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
-                                          m_assigndlyp->rhsp()->unlinkFrBackWithNext());
+            AstNode* const newp = new AstAssign(m_assigndlyp->fileline(),
+                                                m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
+                                                m_assigndlyp->rhsp()->unlinkFrBackWithNext());
             m_assigndlyp->replaceWith(newp);
             VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = nullptr);
         }
@@ -103,16 +103,16 @@ private:
         while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)) {
             prep = prep->backp();
         }
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         VL_DANGLING(nodep);  // Zap it so we don't use it by mistake - use prep
 
         // Already exists; rather than IF(a,... IF(b... optimize to IF(a&&b,
         // Saves us teaching V3Const how to optimize, and it won't be needed again.
-        if (AstIf* ifp = VN_AS(prep->user2p(), If)) {
+        if (const AstIf* const ifp = VN_AS(prep->user2p(), If)) {
             UASSERT_OBJ(!needDly, prep, "Should have already converted to non-delay");
             AstNRelinker replaceHandle;
-            AstNode* earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
-            AstNode* newp = new AstLogAnd(condp->fileline(), condp, earliercondp);
+            AstNode* const earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
+            AstNode* const newp = new AstLogAnd(condp->fileline(), condp, earliercondp);
             UINFO(4, "Edit BOUNDLVALUE " << newp << endl);
             replaceHandle.relink(newp);
         } else {
@@ -363,7 +363,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
-            AstNode* basefromp = AstArraySel::baseFromp(nodep, true);
+            const AstNode* basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();

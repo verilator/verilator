@@ -73,7 +73,7 @@ const char* AstAddrOfCFunc::broken() const {
 }
 
 int AstNodeSel::bitConst() const {
-    AstConst* constp = VN_AS(bitp(), Const);
+    const AstConst* const constp = VN_AS(bitp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
 
@@ -214,11 +214,11 @@ AstExecGraph::AstExecGraph(FileLine* fileline)
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
 AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp) {
-    AstNode* ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
-    AstNode* bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);
+    AstNode* const ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
+    AstNode* const bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-    AstNode* newp = new AstAnd(fileline(), ap, bp);
+    AstNode* const newp = new AstAnd(fileline(), ap, bp);
     return newp;
 }
 
@@ -336,7 +336,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 
 string AstVar::vlEnumType() const {
     string arg;
-    AstBasicDType* bdtypep = basicp();
+    const AstBasicDType* const bdtypep = basicp();
     const bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
         return "VLVT_PTR";
@@ -377,7 +377,7 @@ string AstVar::vlEnumDir() const {
         out += "|VLVF_PUB_RD";
     }
     //
-    if (AstBasicDType* bdtypep = basicp()) {
+    if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
     }
     return out;

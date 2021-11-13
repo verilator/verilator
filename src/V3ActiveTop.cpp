@@ -61,7 +61,7 @@ private:
         UINFO(4, "   ACTIVE " << nodep << endl);
         // Remove duplicate clocks and such; sensesp() may change!
         V3Const::constifyExpensiveEdit(nodep);
-        AstSenTree* sensesp = nodep->sensesp();
+        AstSenTree* const sensesp = nodep->sensesp();
         UASSERT_OBJ(sensesp, nodep, "nullptr");
         if (sensesp->sensesp() && sensesp->sensesp()->isNever()) {
             // Never executing.  Kill it.
@@ -72,16 +72,16 @@ private:
         }
         // Copy combo tree to settlement tree with duplicated statements
         if (sensesp->hasCombo()) {
-            AstSenTree* newsentreep = new AstSenTree(
+            AstSenTree* const newsentreep = new AstSenTree(
                 nodep->fileline(), new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
-            AstActive* newp = new AstActive(nodep->fileline(), "settle", newsentreep);
+            AstActive* const newp = new AstActive(nodep->fileline(), "settle", newsentreep);
             newp->sensesStorep(newsentreep);
             if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->cloneTree(true));
             nodep->addNextHere(newp);
         }
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
-        AstSenTree* wantp = m_finder.getSenTree(sensesp);
+        AstSenTree* const wantp = m_finder.getSenTree(sensesp);
         UINFO(4, "   lookdone\n");
         if (wantp != sensesp) {
             // Move the active's contents to the other active

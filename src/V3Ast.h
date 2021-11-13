@@ -56,7 +56,7 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 // For broken() function, return error string if a base of this class has a match
 #define BROKEN_BASE_RTN(test) \
     do { \
-        const char* reasonp = (test); \
+        const char* const reasonp = (test); \
         if (VL_UNCOVERABLE(reasonp)) return reasonp; \
     } while (false)
 

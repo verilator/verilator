@@ -56,7 +56,7 @@ public:
 
 class TaskFTaskVertex final : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
-    AstNodeFTask* m_nodep;
+    AstNodeFTask* const m_nodep;
     AstCFunc* m_cFuncp = nullptr;
 
 public:
@@ -118,7 +118,7 @@ private:
 public:
     // METHODS
     AstScope* getScope(AstNodeFTask* nodep) {
-        AstScope* scopep = VN_AS(nodep->user3p(), Scope);
+        AstScope* const scopep = VN_AS(nodep->user3p(), Scope);
         UASSERT_OBJ(scopep, nodep, "No scope for function");
         return scopep;
     }
@@ -128,7 +128,7 @@ public:
         return iter->second;
     }
     AstClass* getClassp(AstNodeFTask* nodep) {
-        AstClass* classp = m_funcToClassMap[nodep];
+        AstClass* const classp = m_funcToClassMap[nodep];
         UASSERT_OBJ(classp, nodep, "No class for ctor func");
         return classp;
     }
@@ -171,7 +171,7 @@ private:
         // However, to create variables, we need to track the scopes involved.
         // Find all var->varscope mappings, for later cleanup
         for (AstNode* stmtp = nodep->varsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVarScope* vscp = VN_CAST(stmtp, VarScope)) {
+            if (AstVarScope* const vscp = VN_CAST(stmtp, VarScope)) {
                 if (vscp->varp()->isFuncLocal()) {
                     UINFO(9, "   funcvsc " << vscp << endl);
                     m_varToScopeMap.insert(
@@ -181,7 +181,7 @@ private:
         }
         // Likewise, all FTask->scope mappings
         for (AstNode* stmtp = nodep->blocksp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstNodeFTask* taskp = VN_CAST(stmtp, NodeFTask)) taskp->user3p(nodep);
+            if (AstNodeFTask* const taskp = VN_CAST(stmtp, NodeFTask)) taskp->user3p(nodep);
         }
         iterateChildren(nodep);
     }
@@ -248,7 +248,7 @@ private:
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
         for (AstInitial* initialp : m_initialps) {
-            if (AstNode* newp = initialp->bodysp()) {
+            if (AstNode* const newp = initialp->bodysp()) {
                 newp->unlinkFrBackWithNext();
                 if (!m_ctorp->stmtsp()) {
                     m_ctorp->addStmtsp(newp);
@@ -300,7 +300,7 @@ private:
         if (nodep->varp()->user2p()) {  // It's being converted to an alias.
             UINFO(9,
                   "    relinkVar " << cvtToHex(nodep->varp()->user2p()) << " " << nodep << endl);
-            AstVarScope* newvscp = VN_AS(nodep->varp()->user2p(), VarScope);
+            AstVarScope* const newvscp = VN_AS(nodep->varp()->user2p(), VarScope);
             UASSERT_OBJ(newvscp, nodep, "not linked");
             nodep->varScopep(newvscp);
             nodep->varp(nodep->varScopep()->varp());
@@ -327,7 +327,7 @@ struct TaskDpiUtils {
     static std::vector<std::pair<AstUnpackArrayDType*, int>>
     unpackDimsAndStrides(AstNodeDType* dtypep) {
         std::vector<std::pair<AstUnpackArrayDType*, int>> dimStrides;
-        if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
+        if (AstUnpackArrayDType* const unpackp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
             const std::vector<AstUnpackArrayDType*> dims = unpackp->unpackDimensions();
             dimStrides.resize(dims.size(), {nullptr, 0});
             dimStrides.back() = {dims.back(), 1};
@@ -353,7 +353,7 @@ struct TaskDpiUtils {
                 frstmt = "VL_SET_W_" + frSvType + "(" + cvtToStr(portp->width()) + ",";
                 return true;
             } else {
-                const AstNodeDType* dtypep = portp->dtypep()->skipRefp();
+                const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
                 frstmt = "VL_SET_" + string(dtypep->charIQWN()) + "_" + frSvType + "(";
                 if (VN_IS(dtypep, UnpackArrayDType)) frstmt += "&";
                 frstmt += frName;

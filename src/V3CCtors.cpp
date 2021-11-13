@@ -139,7 +139,7 @@ void V3CCtors::evalAsserts() {
     for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
         if (AstVar* const varp = VN_CAST(np, Var)) {
             if (varp->isPrimaryInish() && !varp->isSc()) {
-                if (AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
+                if (const AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
                     const int storedWidth = basicp->widthAlignBytes() * 8;
                     const int lastWordWidth = varp->width() % storedWidth;
                     if (lastWordWidth != 0) {
@@ -200,7 +200,7 @@ void V3CCtors::cctorsAll() {
                 }
             }
         }
-        if (AstClass* const classp = VN_CAST(modp, Class)) {
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
             AstCFunc* const funcp = new AstCFunc{modp->fileline(), "~", nullptr, ""};
             funcp->isDestructor(true);
             funcp->isStatic(false);

@@ -53,11 +53,11 @@ protected:
         // Create the implementation pointer
         if (env) {}
         if (!s_preprocp) {
-            FileLine* cmdfl = new FileLine(FileLine::commandLineFilename());
+            FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
             s_preprocp = V3PreProc::createPreProc(cmdfl);
             s_preprocp->debug(debug());
             // Default defines
-            FileLine* prefl = new FileLine(FileLine::builtInFilename());
+            FileLine* const prefl = new FileLine(FileLine::builtInFilename());
             s_preprocp->defineCmdLine(prefl, "VERILATOR", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator3", "1");  // LEAK_OK
@@ -104,7 +104,7 @@ protected:
             // from the V3LangCode to the various Lex BEGIN states. The language
             // of this source file is updated here, in case there have been any
             // intervening +<lang>ext+ options since it was first encountered.
-            FileLine* modfileline = new FileLine(modfilename);
+            FileLine* const modfileline = new FileLine(modfilename);
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
             V3Parse::ppPushText(
                 parsep, (string("`begin_keywords \"") + modfileline->language().ascii() + "\"\n"));
@@ -171,7 +171,7 @@ void V3PreShell::preprocInclude(FileLine* fl, const string& modname) {
     V3PreShellImp::s_preImp.preprocInclude(fl, modname);
 }
 void V3PreShell::defineCmdLine(const string& name, const string& value) {
-    FileLine* prefl = new FileLine(FileLine::commandLineFilename());
+    FileLine* const prefl = new FileLine(FileLine::commandLineFilename());
     V3PreShellImp::s_preprocp->defineCmdLine(prefl, name, value);
 }
 void V3PreShell::undef(const string& name) { V3PreShellImp::s_preprocp->undef(name); }

@@ -165,7 +165,7 @@ private:
     GraphWay m_way;  // CPs oriented in this direction: either FORWARD
     //               // from graph-start to current node, or REVERSE
     //               // from graph-end to current node.
-    T_CostAccessor* m_accessp;  // Access cost and CPs on V3GraphVertex's.
+    T_CostAccessor* const m_accessp;  // Access cost and CPs on V3GraphVertex's.
     vluint64_t m_generation = 0;  // Mark each vertex with this number;
     //                        // confirm we only process each vertex once.
     bool m_slowAsserts;  // Enable nontrivial asserts

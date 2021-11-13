@@ -197,7 +197,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
     } else {
         // Format
         bool isStmt = false;
-        if (const AstFScanF* dispp = VN_CAST(nodep, FScanF)) {
+        if (const AstFScanF* const dispp = VN_CAST(nodep, FScanF)) {
             isStmt = false;
             puts("VL_FSCANF_IX(");
             iterate(dispp->filep());
@@ -238,7 +238,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
         // Arguments
         for (unsigned i = 0; i < emitDispState.m_argsp.size(); i++) {
             const char fmt = emitDispState.m_argsChar[i];
-            AstNode* argp = emitDispState.m_argsp[i];
+            AstNode* const argp = emitDispState.m_argsp[i];
             const string func = emitDispState.m_argsFunc[i];
             if (func != "" || argp) {
                 puts(",");
@@ -316,7 +316,7 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         emitDispState.pushArg(fmtLetter, argp, "");
         if (fmtLetter == 't' || fmtLetter == '^') {
             AstSFormatF* fmtp = nullptr;
-            if (AstDisplay* nodep = VN_CAST(dispp, Display))
+            if (AstDisplay* const nodep = VN_CAST(dispp, Display))
                 fmtp = nodep->fmtp();
             else if (AstSFormat* nodep = VN_CAST(dispp, SFormat))
                 fmtp = nodep->fmtp();
@@ -472,7 +472,7 @@ void EmitCFunc::emitDereference(const string& pointer) {
 }
 
 void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
-    if (const AstConst* constp = VN_CAST(nodep, Const)) {
+    if (const AstConst* const constp = VN_CAST(nodep, Const)) {
         putbs("std::string(");
         putsQuoted(constp->num().toString());
         puts(")");

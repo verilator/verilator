@@ -103,7 +103,7 @@ public:
     // Apply all attributes to the variable
     void apply(AstVar* varp) {
         for (const_iterator it = begin(); it != end(); ++it) {
-            AstNode* newp = new AstAttrOf(varp->fileline(), it->m_type);
+            AstNode* const newp = new AstAttrOf(varp->fileline(), it->m_type);
             varp->addAttrsp(newp);
             if (it->m_type == AstAttrType::VAR_PUBLIC_FLAT_RW && it->m_sentreep) {
                 newp->addNext(new AstAlwaysPublic(varp->fileline(), it->m_sentreep, nullptr));
@@ -192,11 +192,11 @@ public:
         if (m_inline) {
             AstPragmaType type
                 = m_inlineValue ? AstPragmaType::INLINE_MODULE : AstPragmaType::NO_INLINE_MODULE;
-            AstNode* nodep = new AstPragma(modp->fileline(), type);
+            AstNode* const nodep = new AstPragma(modp->fileline(), type);
             modp->addStmtp(nodep);
         }
         for (auto it = m_modPragmas.cbegin(); it != m_modPragmas.cend(); ++it) {
-            AstNode* nodep = new AstPragma(modp->fileline(), *it);
+            AstNode* const nodep = new AstPragma(modp->fileline(), *it);
             modp->addStmtp(nodep);
         }
     }

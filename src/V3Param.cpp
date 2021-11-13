@@ -142,7 +142,7 @@ public:
                 if (!pinp->exprp()) continue;
                 UASSERT_OBJ(!pinp->modPTypep(), pinp,
                             "module with type parameter must not be a hierarchical block");
-                if (AstVar* modvarp = pinp->modVarp()) {
+                if (const AstVar* modvarp = pinp->modVarp()) {
                     AstConst* const constp = VN_AS(pinp->exprp(), Const);
                     UASSERT_OBJ(constp, pinp,
                                 "parameter for a hierarchical block must have been constified");
