@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] result=%x %x\n",$time, au, as);
+      $write("[%0t] result=%x %x\n", $time, au, as);
 `endif
       if (au != 'h12) $stop;
       if (as != 'h02) $stop;

@@ -30,7 +30,7 @@ module sub (/*AUTOARG*/
    input clk;
    /*verilator no_inline_module*/   // So we'll get hiearachy we can test
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    reg [127:0] 	save128;
    reg [47:0] 	save48;
@@ -48,7 +48,7 @@ module sub (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d\n",$time, cyc);
+      $write("[%0t] cyc==%0d\n", $time, cyc);
 `endif
       si = "siimmed";
       cyc <= cyc + 1;

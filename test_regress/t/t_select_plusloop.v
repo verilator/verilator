@@ -15,12 +15,12 @@ module t (/*AUTOARG*/
    reg [63:0] quad;
    reg [127:0] wide;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    reg [7:0] crc;
    reg [6:0] index;
 
    always @ (posedge clk) begin
-      //$write("[%0t] cyc==%0d crc=%b n=%x\n",$time, cyc, crc, narrow);
+      //$write("[%0t] cyc==%0d crc=%b n=%x\n", $time, cyc, crc, narrow);
       cyc <= cyc + 1;
       if (cyc==0) begin
 	 // Setup
@@ -54,7 +54,7 @@ module t (/*AUTOARG*/
 	 wide[81] <=1'b1;
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%b n=%x q=%x w=%x\n",$time, cyc, crc, narrow, quad, wide);
+	 $write("[%0t] cyc==%0d crc=%b n=%x q=%x w=%x\n", $time, cyc, crc, narrow, quad, wide);
 	 if (crc != 8'b01111001) $stop;
 	 if (narrow != 32'h001661c7) $stop;
 	 if (quad !=   64'h16d49b6f64266039) $stop;

@@ -16,7 +16,7 @@ module t (/*AUTOARG*/
 
    string s;
 
-   integer      cyc=0;
+   integer      cyc = 0;
 
    // Check constification
    initial begin

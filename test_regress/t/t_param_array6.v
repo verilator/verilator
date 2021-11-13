@@ -49,7 +49,7 @@ module t import test_pkg::*; (clk);
       $display("rand: %h / Values -> val_1: %d / val_2: %d", random, temp.val_1, temp.val_2);
 `endif
       if (cyc > 10 && cyc < 90) begin
-         sum <= {48'h0, temp} ^ {sum[62:0],sum[63]^sum[2]^sum[0]};
+         sum <= {48'h0, temp} ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
       end
       else if (cyc == 99) begin
          $displayh(sum);

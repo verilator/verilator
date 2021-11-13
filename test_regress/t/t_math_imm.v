@@ -17,7 +17,7 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    reg [7:0] crc;
    reg [63:0] sum;
 
@@ -48,7 +48,7 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       crc <= {crc[6:0], ~^ {crc[7],crc[5],crc[4],crc[3]}};
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%b %d.%d,%d.%d -> %x.%x -> %x\n",$time, cyc, crc,
+      $write("[%0t] cyc==%0d crc=%b %d.%d,%d.%d -> %x.%x -> %x\n", $time, cyc, crc,
 	     LowMaskSel_Top, HighMaskSel_Top, LowMaskSel_Bot, HighMaskSel_Bot,
 	     LowLogicImm, HighLogicImm, LogicImm);
 `endif
@@ -66,7 +66,7 @@ module t (/*AUTOARG*/
 	 sum <= {sum[62:0],sum[63]} ^ LogicImm;
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%b %x\n",$time, cyc, crc, sum);
+	 $write("[%0t] cyc==%0d crc=%b %x\n", $time, cyc, crc, sum);
 	 if (crc !== 8'b00111000) $stop;
 	 if (sum !== 64'h58743ffa61e41075) $stop;
 	 $write("*-* All Finished *-*\n");

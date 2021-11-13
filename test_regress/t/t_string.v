@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    reg [1*8:1] 	vstr1;
    reg [2*8:1] 	vstr2;

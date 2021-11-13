@@ -38,7 +38,7 @@ module t (/*AUTOARG*/
 
    always @ (fastclk) begin // surefire lint_off_line ALWLTR ALWMTR
       if (_mode==1) begin
-	 //$write("[%0t] t_chg: %d: Values: %x %x %x %x %x %x %x\n",$time,fastclk,ord1,ord2,ord3,ord4,ord5,ord6,ord7);
+	 //$write("[%0t] t_chg: %d: Values: %x %x %x %x %x %x %x\n", $time,fastclk,ord1,ord2,ord3,ord4,ord5,ord6,ord7);
 	 //if (ord2 == 2 && ord7 != 7) $stop;
       end
    end

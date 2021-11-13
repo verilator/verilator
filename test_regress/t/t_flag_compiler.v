@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    reg [89:0]	in;
 
@@ -33,7 +33,7 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d in=%x out=%x\n",$time, cyc, in, out);
+      $write("[%0t] cyc==%0d in=%x out=%x\n", $time, cyc, in, out);
 `endif
       cyc <= cyc + 1;
       if (cyc==0) begin

@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    reg [7:0] crc;
    reg [223:0] sum;
 
@@ -42,11 +42,11 @@ module t (/*AUTOARG*/
 	 sum <= 224'h0;
       end
       else if (cyc<90) begin
-	 //$write("[%0t] cyc==%0d BXI=%x\n",$time, cyc, bxiouf);
+	 //$write("[%0t] cyc==%0d BXI=%x\n", $time, cyc, bxiouf);
 	 sum <= {sum[222:0],sum[223]} ^ bxiouf;
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%b %x\n",$time, cyc, crc, sum);
+	 $write("[%0t] cyc==%0d crc=%b %x\n", $time, cyc, crc, sum);
 	 if (crc !== 8'b01110000) $stop;
 	 if (sum !== 224'h1fdff998855c3c38d467e28124847831f9ad6d4a09f2801098f032a8) $stop;
 	 $write("*-* All Finished *-*\n");

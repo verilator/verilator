@@ -16,7 +16,7 @@ module t (/*AUTOARG*/
    wire [7:0] arrayNoColon [2][3];
    // verilator lint_on LITENDIAN
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    integer    i0,i1,i2;
    genvar     g0,g1,g2;
 

@@ -72,7 +72,7 @@ module t_clk (/*AUTOARG*/
 	 if (!_ranit) begin
 	    _ranit <= 1;
 `ifdef TEST_VERBOSE
-	    $write("[%0t] t_clk: Running\n",$time);
+	    $write("[%0t] t_clk: Running\n", $time);
 `endif
 	    reset_int_ <= 1;
 	 end

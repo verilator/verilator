@@ -9,7 +9,7 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    reg [6:0] mem1d;
    reg [6:0] mem2d [5:0];
@@ -57,7 +57,7 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d reg2d[%0d]=%0x wd=%0x\n",$time, cyc, wi[2:0], reg2d[wi[2:0]], wd);
+      $write("[%0t] cyc==%0d reg2d[%0d]=%0x wd=%0x\n", $time, cyc, wi[2:0], reg2d[wi[2:0]], wd);
 `endif
       cyc <= cyc + 1;
       if (cyc<10) begin

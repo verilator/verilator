@@ -9,7 +9,7 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    reg [7:0] crc;
    genvar g;
@@ -28,7 +28,7 @@ module t (/*AUTOARG*/
    enflop  #(.WIDTH(8))            enf (.a(crc), .q(out_ef), .oe_e1(1'b1), .clk(clk));
 
    always @ (posedge clk) begin
-      //$write("[%0t] cyc==%0d crc=%b %x %x %x %x %x\n",$time, cyc, crc, out_p1, out_p2, out_p3, out_p4, out_ef);
+      //$write("[%0t] cyc==%0d crc=%b %x %x %x %x %x\n", $time, cyc, crc, out_p1, out_p2, out_p3, out_p4, out_ef);
       cyc <= cyc + 1;
       crc <= {crc[6:0], ~^ {crc[7],crc[5],crc[4],crc[3]}};
       if (cyc==0) begin

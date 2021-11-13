@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
    wire [7:0]		o_subfrom_clk_lev2;	// From b of t_order_b.v
    // End of automatics
 
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
 
    t_order_a a (
 		.one			(8'h1),
@@ -89,7 +89,7 @@ module t (/*AUTOARG*/
       end
       if (cyc == 8'd3) begin
 
-	 $display("%d %d %d %d",m_from_clk_lev1_r,
+	 $display("%d %d %d %d", m_from_clk_lev1_r,
 		  n_from_clk_lev2,
 		  o_from_com_levs11,
 		  o_from_comandclk_levs12);

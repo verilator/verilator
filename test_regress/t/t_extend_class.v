@@ -10,14 +10,14 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
 
    reg [31:0] in;
    wire [31:0] out;
    t_extend_class_v sub (.in(in), .out(out));
 
    always @ (posedge clk) begin
-      cyc <= cyc+8'd1;
+      cyc <= cyc + 8'd1;
       if (cyc == 8'd1) begin
 	 in <= 32'h10;
       end
@@ -43,7 +43,7 @@ module t_extend_class_v (/*AUTOARG*/
 
    always @* begin
       // When "in" changes, call my method
-      out = $c("this->m_myobjp->my_math(",in,")");
+      out = $c("this->m_myobjp->my_math(", in, ")");
    end
 
  `systemc_header

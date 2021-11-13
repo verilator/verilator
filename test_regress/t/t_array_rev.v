@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
    // verilator lint_off LITENDIAN
    logic arrd [0:1] = '{ 1'b1, 1'b0 };
    // verilator lint_on LITENDIAN

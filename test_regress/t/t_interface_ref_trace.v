@@ -23,7 +23,7 @@ module t (/*AUTOARG*/
 	  );
 
    input clk;
-   integer cyc=0;
+   integer cyc = 0;
 
    ifc intf_1(.*);
    ifc intf_2(.*);

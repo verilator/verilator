@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
       if ((runner & 32'hf)!=0) begin
 	 runcount = runcount + 1;
 	 runner = runnerm1;
-	 $write ("     seq runcount=%0d  runner =%0x\n",runcount, runnerm1);
+	 $write("     seq runcount=%0d  runner =%0x\n", runcount, runnerm1);
       end
       run0 = (runner[8:4]!=0 && runner[3:0]==0);
    end
@@ -42,9 +42,9 @@ module t (/*AUTOARG*/
       $write ("[%0t]   posedge runner=%0x\n", $time, runner);
    end
 
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
    always @ (posedge clk) begin
-      $write("[%0t] %x  counts %0x %0x\n",$time,cyc,runcount,clkcount);
+      $write("[%0t] %x  counts %0x %0x\n", $time, cyc, runcount, clkcount);
       cyc <= cyc + 8'd1;
       case (cyc)
 	8'd00: begin

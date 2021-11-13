@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       in <= in + 1;
 `ifdef TEST_VERBOSE
-      $write("[%0t] in=%d out32=%d out10=%d\n",$time, in, out32, out10);
+      $write("[%0t] in=%d out32=%d out10=%d\n", $time, in, out32, out10);
 `endif
       if (in==3) begin
          $write("*-* All Finished *-*\n");

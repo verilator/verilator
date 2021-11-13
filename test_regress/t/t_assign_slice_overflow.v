@@ -29,7 +29,7 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
    // Non-constant offsets
    reg        varoffset1;
    reg [6:0]  varoffset2;
