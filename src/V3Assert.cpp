@@ -20,7 +20,6 @@
 #include "V3Global.h"
 #include "V3Assert.h"
 #include "V3Ast.h"
-#include "V3GraphDfa.h"
 #include "V3Stats.h"
 
 //######################################################################

@@ -19,7 +19,6 @@
 
 #include "V3Global.h"
 #include "V3Graph.h"
-#include "V3GraphDfa.h"
 
 //######################################################################
 //######################################################################
@@ -28,7 +27,7 @@
 class V3GraphTest VL_NOT_FINAL {
 protected:
     // MEMBERS
-    DfaGraph m_graph;
+    V3Graph m_graph;
 
     // METHODS - for children
     virtual void runTest() = 0;  // Run the test
@@ -260,67 +259,6 @@ public:
 
 //======================================================================
 
-class DfaTestVertex final : public DfaVertex {
-    string m_name;
-
-public:
-    DfaTestVertex(DfaGraph* graphp, const string& name)
-        : DfaVertex{graphp}
-        , m_name{name} {}
-    virtual ~DfaTestVertex() override = default;
-    // ACCESSORS
-    virtual string name() const override { return m_name; }
-};
-
-class V3GraphTestDfa final : public V3GraphTest {
-
-public:
-    virtual string name() override { return "dfa"; }
-    virtual void runTest() override {
-        DfaGraph* const gp = &m_graph;
-
-        // NFA Pattern for ( (LR) | (L*R)) Z
-        DfaTestVertex* const st = new DfaTestVertex(gp, "*START*");
-        st->start(true);
-        DfaTestVertex* const sl = new DfaTestVertex(gp, "sL");
-        DfaTestVertex* const srs = new DfaTestVertex(gp, "sR*");
-        DfaTestVertex* const sls = new DfaTestVertex(gp, "sL*");
-        DfaTestVertex* const sr = new DfaTestVertex(gp, "sR");
-        DfaTestVertex* const sz = new DfaTestVertex(gp, "sZ");
-        DfaTestVertex* const sac = new DfaTestVertex(gp, "*ACCEPT*");
-        sac->accepting(true);
-
-        VNUser L = VNUser::fromInt(0xaa);
-        VNUser R = VNUser::fromInt(0xbb);
-        VNUser Z = VNUser::fromInt(0xcc);
-
-        new DfaEdge(gp, st, sl, DfaEdge::EPSILON());
-        new DfaEdge(gp, sl, srs, L);
-        new DfaEdge(gp, srs, srs, R);
-        new DfaEdge(gp, srs, sz, Z);
-        new DfaEdge(gp, sz, sac, DfaEdge::EPSILON());
-
-        new DfaEdge(gp, st, sls, DfaEdge::EPSILON());
-        new DfaEdge(gp, sls, sls, L);
-        new DfaEdge(gp, sls, sr, R);
-        new DfaEdge(gp, sr, sz, Z);
-        new DfaEdge(gp, sz, sac, DfaEdge::EPSILON());
-
-        dump();
-        gp->nfaToDfa();
-        dump();
-        gp->dfaReduce();
-        dump();
-
-        gp->dfaComplement();
-        dump();
-        gp->dfaReduce();
-        dump();
-    }
-};
-
-//======================================================================
-
 class V3GraphTestImport final : public V3GraphTest {
 
 #ifdef GRAPH_IMPORT
@@ -332,8 +270,7 @@ class V3GraphTestImport final : public V3GraphTest {
 public:
     virtual string name() override { return "import"; }
     virtual void runTest() override {
-        DfaGraph* const gp = &m_graph;
-        if (V3GraphTest::debug()) DfaGraph::debug(9);
+        V3Graph* const gp = &m_graph;
         dotImport();
         dump();
         gp->acyclic(&V3GraphEdge::followAlwaysTrue);
@@ -358,7 +295,6 @@ void V3Graph::selfTest() {
     { V3GraphTestStrong test; test.run(); }
     { V3GraphTestAcyc test; test.run(); }
     { V3GraphTestVars test; test.run(); }
-    { V3GraphTestDfa test; test.run(); }
     { V3GraphTestImport test; test.run(); }
     // clang-format on
 }
