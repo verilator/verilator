@@ -115,7 +115,7 @@ public:
             if (defParamIt != m_modParams.end()) {
                 // modp is the original of parameterized hierarchical block
                 for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                    if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                    if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                         if (varp->isGParam()) defParamIt->second.emplace(varp->name(), varp);
                     }
                 }
@@ -143,12 +143,12 @@ public:
                 UASSERT_OBJ(!pinp->modPTypep(), pinp,
                             "module with type parameter must not be a hierarchical block");
                 if (AstVar* modvarp = pinp->modVarp()) {
-                    AstConst* constp = VN_AS(pinp->exprp(), Const);
+                    AstConst* const constp = VN_AS(pinp->exprp(), Const);
                     UASSERT_OBJ(constp, pinp,
                                 "parameter for a hierarchical block must have been constified");
                     const auto paramIt = paramsIt->second.find(modvarp->name());
                     UASSERT_OBJ(paramIt != paramsIt->second.end(), modvarp, "must be registered");
-                    AstConst* defValuep = VN_CAST(paramIt->second->valuep(), Const);
+                    AstConst* const defValuep = VN_CAST(paramIt->second->valuep(), Const);
                     if (defValuep && areSame(constp, defValuep)) {
                         UINFO(5, "Setting default value of " << constp << " to " << modvarp
                                                              << std::endl);
@@ -273,7 +273,7 @@ class ParamProcessor final {
         usedLetter.resize(256);
         // Pass 1, assign first letter to each gparam's name
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->isGParam() || varp->isIfaceRef()) {
                     char ch = varp->name()[0];
                     ch = std::toupper(ch);
@@ -281,7 +281,7 @@ class ParamProcessor final {
                     varp->user4(usedLetter[static_cast<int>(ch)] * 256 + ch);
                     usedLetter[static_cast<int>(ch)]++;
                 }
-            } else if (AstParamTypeDType* typep = VN_CAST(stmtp, ParamTypeDType)) {
+            } else if (AstParamTypeDType* const typep = VN_CAST(stmtp, ParamTypeDType)) {
                 const char ch = 'T';
                 typep->user4(usedLetter[static_cast<int>(ch)] * 256 + ch);
                 usedLetter[static_cast<int>(ch)]++;
@@ -369,13 +369,13 @@ class ParamProcessor final {
     }
     AstNodeDType* arraySubDTypep(AstNodeDType* nodep) {
         // If an unpacked array, return the subDTypep under it
-        if (AstUnpackArrayDType* adtypep = VN_CAST(nodep, UnpackArrayDType)) {
+        if (const AstUnpackArrayDType* const adtypep = VN_CAST(nodep, UnpackArrayDType)) {
             return adtypep->subDTypep();
         }
         // We have not resolved parameter of the child yet, so still
         // have BracketArrayDType's. We'll presume it'll end up as assignment
         // compatible (or V3Width will complain).
-        if (AstBracketArrayDType* adtypep = VN_CAST(nodep, BracketArrayDType)) {
+        if (const AstBracketArrayDType* const adtypep = VN_CAST(nodep, BracketArrayDType)) {
             return adtypep->subDTypep();
         }
         return nullptr;
@@ -383,17 +383,17 @@ class ParamProcessor final {
     void collectPins(CloneMap* clonemapp, AstNodeModule* modp) {
         // Grab all I/O so we can remap our pins later
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
                     // Cloning saved a pointer to the new node for us, so just follow that link.
-                    AstVar* oldvarp = varp->clonep();
+                    AstVar* const oldvarp = varp->clonep();
                     // UINFO(8,"Clone list 0x"<<hex<<(uint32_t)oldvarp
                     // <<" -> 0x"<<(uint32_t)varp<<endl);
                     clonemapp->emplace(oldvarp, varp);
                 }
             } else if (AstParamTypeDType* ptp = VN_CAST(stmtp, ParamTypeDType)) {
                 if (ptp->isGParam()) {
-                    AstParamTypeDType* oldptp = ptp->clonep();
+                    AstParamTypeDType* const oldptp = ptp->clonep();
                     clonemapp->emplace(oldptp, ptp);
                 }
             }
@@ -421,14 +421,14 @@ class ParamProcessor final {
     void relinkPinsByName(AstPin* startpinp, AstNodeModule* modp) {
         std::map<const string, AstVar*> nameToPin;
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
                     nameToPin.emplace(varp->name(), varp);
                 }
             }
         }
         for (AstPin* pinp = startpinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            if (AstVar* varp = pinp->modVarp()) {
+            if (AstVar* const varp = pinp->modVarp()) {
                 const auto varIt = vlstd::as_const(nameToPin).find(varp->name());
                 UASSERT_OBJ(varIt != nameToPin.end(), varp,
                             "Not found in " << modp->prettyNameQ());
@@ -442,7 +442,7 @@ class ParamProcessor final {
         // option.
         if (pinp->modVarp()) {
             bool supported = false;
-            if (AstConst* constp = VN_CAST(pinp->exprp(), Const)) {
+            if (const AstConst* const constp = VN_CAST(pinp->exprp(), Const)) {
                 supported = !constp->isOpaque();
             }
             if (!supported) {
@@ -471,7 +471,7 @@ class ParamProcessor final {
         std::map<string, AstConst*> pins;
         for (AstPin* pinp = paramPinsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             checkSupportedParam(modp, pinp);
-            if (AstVar* varp = pinp->modVarp()) {
+            if (AstVar* const varp = pinp->modVarp()) {
                 if (!pinp->exprp()) continue;
                 if (varp->isGParam()) {
                     AstConst* constp = VN_CAST(pinp->exprp(), Const);
@@ -485,9 +485,9 @@ class ParamProcessor final {
             // Using map with key=string so that we can scan it in deterministic order
             DefaultValueMap params;
             for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                     if (varp->isGParam()) {
-                        AstConst* constp = VN_CAST(varp->valuep(), Const);
+                        AstConst* const constp = VN_CAST(varp->valuep(), Const);
                         // constp can be nullptr if the parameter is not used to instantiate sub
                         // module. varp->valuep() is not contified yet in the case.
                         // nullptr means that the parameter is using some default value.
@@ -502,7 +502,8 @@ class ParamProcessor final {
         string longname = modp->name();
         for (auto&& defaultValue : paramsIt->second) {
             const auto pinIt = pins.find(defaultValue.first);
-            AstConst* constp = pinIt == pins.end() ? defaultValue.second : pinIt->second;
+            const AstConst* const constp
+                = pinIt == pins.end() ? defaultValue.second : pinIt->second;
             // This longname is not valid as verilog symbol, but ok, because it will be hashed
             longname += "_" + defaultValue.first + "=";
             // constp can be nullptr
@@ -540,7 +541,7 @@ class ParamProcessor final {
         // Deep clone of new module
         // Note all module internal variables will be re-linked to the new modules by clone
         // However links outside the module (like on the upper cells) will not.
-        AstNodeModule* newmodp = srcModp->cloneTree(false);
+        AstNodeModule* const newmodp = srcModp->cloneTree(false);
         newmodp->name(newname);
         newmodp->user5(false);  // We need to re-recurse this module once changed
         newmodp->recursive(false);
@@ -563,7 +564,7 @@ class ParamProcessor final {
 
         m_modNameMap.emplace(newmodp->name(), ModInfo(newmodp));
         const auto iter = m_modNameMap.find(newname);
-        CloneMap* clonemapp = &(iter->second.m_cloneMap);
+        CloneMap* const clonemapp = &(iter->second.m_cloneMap);
         UINFO(4, "     De-parameterize to new: " << newmodp << endl);
 
         // Grab all I/O so we can remap our pins later
@@ -574,9 +575,9 @@ class ParamProcessor final {
         relinkPins(clonemapp, paramsp);
         // Fix any interface references
         for (auto it = ifaceRefRefs.cbegin(); it != ifaceRefRefs.cend(); ++it) {
-            AstIfaceRefDType* portIrefp = it->first;
-            AstIfaceRefDType* pinIrefp = it->second;
-            AstIfaceRefDType* cloneIrefp = portIrefp->clonep();
+            AstIfaceRefDType* const portIrefp = it->first;
+            AstIfaceRefDType* const pinIrefp = it->second;
+            AstIfaceRefDType* const cloneIrefp = portIrefp->clonep();
             UINFO(8, "     IfaceOld " << portIrefp << endl);
             UINFO(8, "     IfaceTo  " << pinIrefp << endl);
             UASSERT_OBJ(cloneIrefp, portIrefp, "parameter clone didn't hit AstIfaceRefDType");
@@ -589,9 +590,9 @@ class ParamProcessor final {
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (pinp->exprp()) {
                 if (AstVar* modvarp = pinp->modVarp()) {
-                    AstNode* newp = pinp->exprp();  // Const or InitArray
-                    AstConst* exprp = VN_CAST(newp, Const);
-                    AstConst* origp = VN_CAST(modvarp->valuep(), Const);
+                    AstNode* const newp = pinp->exprp();  // Const or InitArray
+                    AstConst* const exprp = VN_CAST(newp, Const);
+                    AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                     const bool overridden
                         = !(origp && ParameterizedHierBlocks::areSame(exprp, origp));
                     // Remove any existing parameter
@@ -600,8 +601,8 @@ class ParamProcessor final {
                     UINFO(9, "       set param " << modvarp << " = " << newp << endl);
                     modvarp->valuep(newp->cloneTree(false));
                     modvarp->overriddenParam(overridden);
-                } else if (AstParamTypeDType* modptp = pinp->modPTypep()) {
-                    AstNodeDType* dtypep = VN_AS(pinp->exprp(), NodeDType);
+                } else if (AstParamTypeDType* const modptp = pinp->modPTypep()) {
+                    AstNodeDType* const dtypep = VN_AS(pinp->exprp(), NodeDType);
                     UASSERT_OBJ(dtypep, pinp, "unlinked param dtype");
                     if (modptp->childDTypep()) modptp->childDTypep()->unlinkFrBack()->deleteTree();
                     // Set this parameter to value requested by cell
@@ -623,25 +624,25 @@ class ParamProcessor final {
             it = m_modNameMap.find(newname);
             UASSERT(it != m_modNameMap.end(), "should find just-made module");
         }
-        const ModInfo* modInfop = &(it->second);
+        const ModInfo* const modInfop = &(it->second);
         return modInfop;
     }
 
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
-        if (AstVar* modvarp = pinp->modVarp()) {
+        if (AstVar* const modvarp = pinp->modVarp()) {
             if (!modvarp->isGParam()) {
                 pinp->v3error("Attempted parameter setting of non-parameter: Param "
                               << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
             } else if (VN_IS(pinp->exprp(), InitArray) && arraySubDTypep(modvarp->subDTypep())) {
                 // Array assigned to array
-                AstNode* exprp = pinp->exprp();
+                AstNode* const exprp = pinp->exprp();
                 longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                 any_overridesr = true;
             } else {
-                AstConst* exprp = VN_CAST(pinp->exprp(), Const);
-                AstConst* origp = VN_CAST(modvarp->valuep(), Const);
+                AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
+                const AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
                     // if (debug()) pinp->dumpTree(cout, "error:");
                     pinp->v3error("Can't convert defparam value to constant: Param "
@@ -663,9 +664,9 @@ class ParamProcessor final {
                     any_overridesr = true;
                 }
             }
-        } else if (AstParamTypeDType* modvarp = pinp->modPTypep()) {
-            AstNodeDType* exprp = VN_CAST(pinp->exprp(), NodeDType);
-            AstNodeDType* origp = modvarp->subDTypep();
+        } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
+            AstNodeDType* const exprp = VN_CAST(pinp->exprp(), NodeDType);
+            const AstNodeDType* const origp = modvarp->subDTypep();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
                               << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
@@ -693,15 +694,15 @@ class ParamProcessor final {
     void cellInterfaceCleanup(AstCell* nodep, AstNodeModule* srcModp, string& longnamer,
                               bool& any_overridesr, IfaceRefRefs& ifaceRefRefs) {
         for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            AstVar* modvarp = pinp->modVarp();
+            AstVar* const modvarp = pinp->modVarp();
             if (modvarp->isIfaceRef()) {
                 AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
                 if (!portIrefp && arraySubDTypep(modvarp->subDTypep())) {
                     portIrefp = VN_CAST(arraySubDTypep(modvarp->subDTypep()), IfaceRefDType);
                 }
                 AstIfaceRefDType* pinIrefp = nullptr;
-                AstNode* exprp = pinp->exprp();
-                AstVar* varp
+                AstNode* const exprp = pinp->exprp();
+                AstVar* const varp
                     = (exprp && VN_IS(exprp, VarRef)) ? VN_AS(exprp, VarRef)->varp() : nullptr;
                 if (varp && varp->subDTypep() && VN_IS(varp->subDTypep(), IfaceRefDType)) {
                     pinIrefp = VN_AS(varp->subDTypep(), IfaceRefDType);
@@ -763,7 +764,7 @@ public:
         if (debug() >= 10) nodep->dumpTree(cout, "-cell: ");
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
-        AstNodeModule* srcModp = nodep->modp();
+        AstNodeModule* const srcModp = nodep->modp();
         srcModp->hierName(hierName + "." + nodep->name());
 
         // Make sure constification worked
@@ -789,7 +790,7 @@ public:
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
-        } else if (AstNodeModule* paramedModp
+        } else if (AstNodeModule* const paramedModp
                    = m_hierBlocks.findByParams(srcModp->name(), nodep->paramsp(), m_modp)) {
             nodep->modp(paramedModp);
             nodep->modName(paramedModp->name());
@@ -799,7 +800,7 @@ public:
         } else {
             const string newname
                 = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
-            const ModInfo* modInfop
+            const ModInfo* const modInfop
                 = moduleFindOrClone(srcModp, nodep, nodep->paramsp(), newname, ifaceRefRefs);
             // Have child use this module instead.
             nodep->modp(modInfop->m_modp);
@@ -862,7 +863,7 @@ class ParamVisitor final : public AstNVisitor {
         // so since cells originally exist top->bottom we process in top->bottom order too.
         while (!m_todoModps.empty()) {
             const auto itm = m_todoModps.cbegin();
-            AstNodeModule* nodep = itm->second;
+            AstNodeModule* const nodep = itm->second;
             m_todoModps.erase(itm);
             if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it
                                            // again
@@ -874,11 +875,11 @@ class ParamVisitor final : public AstNVisitor {
                 //
                 // Process interface cells, then non-interface which may ref an interface cell
                 for (int nonIf = 0; nonIf < 2; ++nonIf) {
-                    for (AstCell* cellp : m_cellps) {
+                    for (AstCell* const cellp : m_cellps) {
                         if ((nonIf == 0 && VN_IS(cellp->modp(), Iface))
                             || (nonIf == 1 && !VN_IS(cellp->modp(), Iface))) {
                             string fullName(m_modp->hierName());
-                            if (const string* genHierNamep = (string*)cellp->user5p()) {
+                            if (const string* const genHierNamep = (string*)cellp->user5p()) {
                                 fullName += *genHierNamep;
                                 cellp->user5p(nullptr);
                                 VL_DO_DANGLING(delete genHierNamep, genHierNamep);
@@ -908,7 +909,7 @@ class ParamVisitor final : public AstNVisitor {
         //
         if (!nodep->dead() && VN_IS(nodep, Class)) {
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                     if (varp->isParam()) {
                         varp->v3warn(E_UNSUPPORTED, "Unsupported: class parameters");
                     }
@@ -935,7 +936,7 @@ class ParamVisitor final : public AstNVisitor {
     }
     virtual void visit(AstCell* nodep) override {
         // Must do ifaces first, so push to list and do in proper order
-        string* genHierNamep = new string(m_generateHierName);
+        string* const genHierNamep = new string(m_generateHierName);
         nodep->user5p(genHierNamep);
         m_cellps.push_back(nodep);
     }
@@ -969,11 +970,11 @@ class ParamVisitor final : public AstNVisitor {
     bool ifaceParamReplace(AstVarXRef* nodep, AstNode* candp) {
         for (; candp; candp = candp->nextp()) {
             if (nodep->name() == candp->name()) {
-                if (AstVar* varp = VN_CAST(candp, Var)) {
+                if (AstVar* const varp = VN_CAST(candp, Var)) {
                     UINFO(9, "Found interface parameter: " << varp << endl);
                     nodep->varp(varp);
                     return true;
-                } else if (AstPin* pinp = VN_CAST(candp, Pin)) {
+                } else if (AstPin* const pinp = VN_CAST(candp, Pin)) {
                     UINFO(9, "Found interface parameter: " << pinp << endl);
                     UASSERT_OBJ(pinp->exprp(), pinp, "Interface parameter pin missing expression");
                     VL_DO_DANGLING(nodep->replaceWith(pinp->exprp()->cloneTree(false)), nodep);
@@ -1006,7 +1007,7 @@ class ParamVisitor final : public AstNVisitor {
                                             IfaceRefDType);
                     }
                     // Interfaces passed in on the port map have ifaces
-                    if (AstIface* ifacep = ifacerefp->ifacep()) {
+                    if (AstIface* const ifacep = ifacerefp->ifacep()) {
                         if (dotted == backp->name()) {
                             UINFO(9, "Iface matching scope:  " << ifacep << endl);
                             if (ifaceParamReplace(nodep, ifacep->stmtsp())) {  //
@@ -1015,7 +1016,7 @@ class ParamVisitor final : public AstNVisitor {
                         }
                     }
                     // Interfaces declared in this module have cells
-                    else if (AstCell* cellp = ifacerefp->cellp()) {
+                    else if (AstCell* const cellp = ifacerefp->cellp()) {
                         if (dotted == cellp->name()) {
                             UINFO(9, "Iface matching scope:  " << cellp << endl);
                             if (ifaceParamReplace(nodep, cellp->paramsp())) {  //
@@ -1030,8 +1031,8 @@ class ParamVisitor final : public AstNVisitor {
     }
 
     virtual void visit(AstUnlinkedRef* nodep) override {
-        AstVarXRef* varxrefp = VN_CAST(nodep->op1p(), VarXRef);
-        AstNodeFTaskRef* taskrefp = VN_CAST(nodep->op1p(), NodeFTaskRef);
+        AstVarXRef* const varxrefp = VN_CAST(nodep->op1p(), VarXRef);
+        AstNodeFTaskRef* const taskrefp = VN_CAST(nodep->op1p(), NodeFTaskRef);
         if (varxrefp) {
             m_unlinkedTxt = varxrefp->dotted();
         } else if (taskrefp) {
@@ -1052,7 +1053,7 @@ class ParamVisitor final : public AstNVisitor {
     }
     virtual void visit(AstCellArrayRef* nodep) override {
         V3Const::constifyParamsEdit(nodep->selp());
-        if (const AstConst* constp = VN_CAST(nodep->selp(), Const)) {
+        if (const AstConst* const constp = VN_CAST(nodep->selp(), Const)) {
             const string index = AstNode::encodeNumber(constp->toSInt());
             const string replacestr = nodep->name() + "__BRA__??__KET__";
             const size_t pos = m_unlinkedTxt.find(replacestr);
@@ -1078,9 +1079,8 @@ class ParamVisitor final : public AstNVisitor {
         V3Width::widthGenerateParamsEdit(nodep);  // Param typed widthing will
                                                   // NOT recurse the body.
         V3Const::constifyGenerateParamsEdit(nodep->condp());  // condp may change
-        if (const AstConst* constp = VN_CAST(nodep->condp(), Const)) {
-            AstNode* keepp = (constp->isZero() ? nodep->elsesp() : nodep->ifsp());
-            if (keepp) {
+        if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
+            if (AstNode* const keepp = (constp->isZero() ? nodep->elsesp() : nodep->ifsp())) {
                 keepp->unlinkFrBackWithNext();
                 nodep->replaceWith(keepp);
             } else {
@@ -1099,7 +1099,7 @@ class ParamVisitor final : public AstNVisitor {
     //!       move to more generic constant expressions, such code will be needed here.
     virtual void visit(AstBegin* nodep) override {
         if (nodep->genforp()) {
-            AstGenFor* forp = VN_AS(nodep->genforp(), GenFor);
+            AstGenFor* const forp = VN_AS(nodep->genforp(), GenFor);
             UASSERT_OBJ(forp, nodep, "Non-GENFOR under generate-for BEGIN");
             // We should have a GENFOR under here.  We will be replacing the begin,
             // so process here rather than at the generate to avoid iteration problems
@@ -1118,7 +1118,7 @@ class ParamVisitor final : public AstNVisitor {
             VL_DO_DANGLING(m_unroller.unrollGen(forp, beginName), forp);
             // Blocks were constructed under the special begin, move them up
             // Note forp is null, so grab statements again
-            if (AstNode* stmtsp = nodep->genforp()) {
+            if (AstNode* const stmtsp = nodep->genforp()) {
                 stmtsp->unlinkFrBackWithNext();
                 nodep->addNextHere(stmtsp);
                 // Note this clears nodep->genforp(), so begin is no longer special
@@ -1140,12 +1140,12 @@ class ParamVisitor final : public AstNVisitor {
         V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body,
                                           // don't trigger errors yet.
         V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
-        AstConst* exprp = VN_AS(nodep->exprp(), Const);
+        AstConst* const exprp = VN_AS(nodep->exprp(), Const);
         // Constify
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* ep = itemp->condsp(); ep;) {
-                AstNode* nextp = ep->nextp();  // May edit list
+                AstNode* const nextp = ep->nextp();  // May edit list
                 iterateAndNextNull(ep);
                 VL_DO_DANGLING(V3Const::constifyParamsEdit(ep), ep);  // ep may change
                 ep = nextp;
@@ -1156,7 +1156,7 @@ class ParamVisitor final : public AstNVisitor {
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (!itemp->isDefault()) {
                 for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
-                    if (const AstConst* ccondp = VN_CAST(ep, Const)) {
+                    if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
                         V3Number match(nodep, 1);
                         match.opEq(ccondp->num(), exprp->num());
                         if (!keepp && match.isNeqZero()) keepp = itemp->bodysp();

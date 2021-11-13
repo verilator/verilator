@@ -1954,7 +1954,7 @@ public:
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
-    bool isOpaque() { return VN_IS(this, CvtPackString); }
+    bool isOpaque() const { return VN_IS(this, CvtPackString); }
 };
 
 class AstNodeTermop VL_NOT_FINAL : public AstNodeMath {
