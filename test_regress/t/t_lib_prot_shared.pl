@@ -16,7 +16,7 @@ scenarios(
     vltmt => 1,
     xsim => 1,
     );
-top_filename("t/t_prot_lib.v");
+top_filename("t/t_lib_prot.v");
 
 $Self->{sim_time} = $Self->{benchmark} * 100 if $Self->{benchmark};
 
@@ -33,7 +33,7 @@ while (1) {
                 "$ENV{VERILATOR_ROOT}/bin/verilator",
                 ($Self->{vltmt} ? ' --threads 6' : ''),
                 "--prefix",
-                "Vt_prot_lib_secret",
+                "Vt_lib_prot_secret",
                 "-cc",
                 "-Mdir",
                 $secret_dir,
@@ -41,7 +41,7 @@ while (1) {
                 $secret_prefix,
                 "--protect-key",
                 "secret-key",
-                "t/t_prot_lib_secret.v"],
+                "t/t_lib_prot_secret.v"],
         verilator_run => 1,
         );
     last if $Self->{errors};
@@ -51,7 +51,7 @@ while (1) {
               "-C",
               $secret_dir,
               "-f",
-              "Vt_prot_lib_secret.mk"]);
+              "Vt_lib_prot_secret.mk"]);
     last if $Self->{errors};
 
     compile(

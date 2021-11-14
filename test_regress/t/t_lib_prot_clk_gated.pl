@@ -18,6 +18,7 @@ scenarios(
 
 $Self->{sim_time} = $Self->{benchmark} * 100 if $Self->{benchmark};
 
+top_filename("t/t_lib_prot.v");
 my $secret_prefix = "secret";
 my $secret_dir = "$Self->{obj_dir}/$secret_prefix";
 mkdir $secret_dir;
@@ -29,15 +30,16 @@ while (1) {
         cmd => ["perl",
                 "$ENV{VERILATOR_ROOT}/bin/verilator",
                 "--prefix",
-                "Vt_prot_lib_secret",
+                "Vt_lib_prot_secret",
                 "-cc",
                 "-Mdir",
                 $secret_dir,
+                "-GGATED_CLK=1",
                 "--protect-lib",
                 $secret_prefix,
                 "--protect-key",
                 "secret-key",
-                "t/t_prot_lib_secret.v"],
+                "t/t_lib_prot_secret.v"],
         verilator_run => 1,
         );
     last if $Self->{errors};
@@ -47,11 +49,12 @@ while (1) {
               "-C",
               $secret_dir,
               "-f",
-              "Vt_prot_lib_secret.mk"]);
+              "Vt_lib_prot_secret.mk"]);
     last if $Self->{errors};
 
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
+                             "-GGATED_CLK=1",
                              "-LDFLAGS",
                              "$secret_prefix/libsecret.a"],
         xsim_flags2 => ["$secret_dir/secret.sv"],

@@ -17,12 +17,12 @@ scenarios(
     );
 
 $Self->{sim_time} = $Self->{benchmark} * 100 if $Self->{benchmark};
-top_filename("t/t_prot_lib.v");
+top_filename("t/t_lib_prot.v");
 
-# Tests the same code as t_prot_lib.pl but without --protect-lib
+# Tests the same code as t_lib_prot.pl but without --protect-lib
 compile(
-    verilator_flags2 => ["t/t_prot_lib_secret.v"],
-    xsim_flags2 => ["t/t_prot_lib_secret.v"],
+    verilator_flags2 => ["t/t_lib_prot_secret.v"],
+    xsim_flags2 => ["t/t_lib_prot_secret.v"],
     );
 
 execute(
