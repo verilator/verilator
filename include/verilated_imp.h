@@ -223,7 +223,7 @@ public:
     // Top/earliest time in the queue; determines when to advance time to
     vluint64_t earliestTime() const VL_EXCLUDES(m_mutex) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock{m_mutex};
-        if (VL_UNLIKELY(m_timeq.empty())) return VL_ULL(0xFFFFFFFFFFFFFFFF);
+        if (VL_UNLIKELY(m_timeq.empty())) return 0xFFFFFFFFFFFFFFFFULL;
         const vluint64_t topTime = m_timeq.top().first;
         return topTime;
     }
