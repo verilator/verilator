@@ -235,7 +235,7 @@ public:
     }
     // Activate and pop all events earlier than given time
     void activate(vluint64_t time) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock{m_mutex};
+        const VerilatedLockGuard lock{m_mutex};
         while (VL_LIKELY(!m_timeq.empty() && m_timeq.top().first <= time)) {
             CData* const eventp = m_timeq.top().second;
             *eventp = 1;
