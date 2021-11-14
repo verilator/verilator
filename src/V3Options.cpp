@@ -500,9 +500,9 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 1: Delete the option which has no argument
 // 2: Delete the option and its argument
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
-    if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
-        || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
-        || opt == "threads" || opt == "top-module" || opt == "v") {
+    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "j"
+        || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib"
+        || opt == "protect-key" || opt == "threads" || opt == "top-module" || opt == "v") {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
@@ -731,11 +731,6 @@ void V3Options::notify() {
     }
     if (m_hierChild && m_hierBlocks.empty()) {
         cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
-    }
-    if (m_hierarchical && m_protectLib.empty() && m_protectKey.empty()) {
-        // Key for hierarchical Verilation is fixed to be ccache friendly when the aim of this run
-        // is not to create protec-lib.
-        m_protectKey = "VL-KEY-HIERARCHICAL";
     }
 
     if (protectIds()) {
@@ -1121,6 +1116,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     };
     DECL_OPTION("-default-language", CbVal, setLang);
     DECL_OPTION("-language", CbVal, setLang);
+    DECL_OPTION("-lib-create", Set, &m_libCreate);
     DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
     DECL_OPTION("-l2-name", Set, &m_l2Name);
     DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
@@ -1237,7 +1233,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {
-        m_protectLib = valp;
+        m_libCreate = valp;
         m_protectIds = true;
     });
     DECL_OPTION("-public", OnOff, &m_public);

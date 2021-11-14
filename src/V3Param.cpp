@@ -127,7 +127,7 @@ public:
         if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
             return nullptr;
         }
-        // This module is a hierarchical block. Need to replace it by the protect-lib wrapper.
+        // This module is a hierarchical block. Need to replace it by the --lib-create wrapper.
         const std::pair<HierMapIt, HierMapIt> candidates
             = m_hierBlockOptsByOrigName.equal_range(origName);
         const auto paramsIt = m_modParams.find(origName);
@@ -168,7 +168,7 @@ public:
             }
             if (found && paramIdx == hierIt->second->params().size()) break;
         }
-        UASSERT_OBJ(hierIt != candidates.second, firstPinp, "No protect-lib wrapper found");
+        UASSERT_OBJ(hierIt != candidates.second, firstPinp, "No --lib-create wrapper found");
         // parameter settings will be removed in the bottom of caller visitCell().
         const HierBlockModMap::const_iterator modIt
             = m_hierBlockMod.find(hierIt->second->mangledName());
@@ -258,7 +258,7 @@ class ParamProcessor final {
 
     AstNodeModule* m_modp = nullptr;  // Current module being processed
 
-    // Database to get protect-lib wrapper that matches parameters in hierarchical Verilation
+    // Database to get lib-create wrapper that matches parameters in hierarchical Verilation
     ParameterizedHierBlocks m_hierBlocks;
     // Default parameter values key:parameter name, value:default value (can be nullptr)
     using DefaultValueMap = std::map<std::string, AstConst*>;

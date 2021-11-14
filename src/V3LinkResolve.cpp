@@ -263,9 +263,9 @@ private:
     virtual void visit(AstPragma* nodep) override {
         if (nodep->pragType() == AstPragmaType::HIER_BLOCK) {
             UASSERT_OBJ(m_modp, nodep, "HIER_BLOCK not under a module");
-            // If this is hierarchical mode which is to create protect-lib,
+            // If this is hierarchical mode which is to lib-create,
             // sub modules do not have hier_block meta comment in the source code.
-            // But .vlt files may still mark a module which is actually a protect-lib wrapper
+            // But .vlt files may still mark a module which is actually a lib-create wrapper
             // hier_block. AstNodeModule::hierBlock() can be true only when --hierarchical is
             // specified.
             m_modp->hierBlock(v3Global.opt.hierarchical());

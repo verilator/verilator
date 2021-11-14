@@ -11,11 +11,15 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.215 devel
 ==========================
 
+**Major:**
+
+* Add --lib-create, similar to --protect-lib but without protections.
+
 **Minor:**
 
 * Internal code cleanups and improvements. [Geza Lore]
 * Improve --thread verilation-time performance.
-* Fix array method names with parens (#3181) (#3183). [Teng Huang]
+* Fix array method names with parenthesis (#3181) (#3183). [Teng Huang]
 * Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
 * Fix nested generate if genblk naming (#3189). [yanx21]
 

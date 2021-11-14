@@ -57,8 +57,8 @@ private:
     AstTextBlock* m_cSeqClksp = nullptr;  // Sequential clock copy list
     AstTextBlock* m_cSeqOutsp = nullptr;  // Sequential output copy list
     AstTextBlock* m_cIgnoreParamsp = nullptr;  // Combo ignore parameter list
-    string m_libName;
-    string m_topName;
+    const string m_libName;
+    const string m_topName;
     bool m_foundTop = false;  // Have seen the top module
     bool m_hasClk = false;  // True if the top module has sequential logic
 
@@ -396,7 +396,7 @@ private:
         } else if (nodep->direction() == VDirection::OUTPUT) {
             handleOutput(nodep);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: protect-lib port direction: "
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: --lib-create port direction: "
                                              << nodep->direction().ascii());
         }
     }
@@ -484,7 +484,7 @@ private:
 
 public:
     explicit ProtectVisitor(AstNode* nodep)
-        : m_libName{v3Global.opt.protectLib()}
+        : m_libName{v3Global.opt.libCreate()}
         , m_topName{v3Global.opt.prefix()} {
         iterate(nodep);
     }

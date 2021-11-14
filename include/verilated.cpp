@@ -25,7 +25,7 @@
 //=========================================================================
 // Internal note:
 //
-// verilated.o may exist both in protect-lib (incrementally linked .a/.so)
+// verilated.o may exist both in --lib-create (incrementally linked .a/.so)
 // and the main module.  Both refer the same instance of static
 // variables/VL_THREAD_LOCAL in verilated.o such as Verilated, or
 // VerilatedImpData.  This is important to share that state, but the

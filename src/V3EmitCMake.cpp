@@ -178,8 +178,8 @@ class CMakeEmitter final {
         if (v3Global.opt.mtasks()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
         }
-        if (!v3Global.opt.protectLib().empty()) {
-            global.emplace_back(v3Global.opt.makeDir() + "/" + v3Global.opt.protectLib() + ".cpp");
+        if (!v3Global.opt.libCreate().empty()) {
+            global.emplace_back(v3Global.opt.makeDir() + "/" + v3Global.opt.libCreate() + ".cpp");
         }
 
         *of << "# Global classes, need linked once per executable\n";
@@ -238,7 +238,7 @@ class CMakeEmitter final {
                                          // with .so
                     << ")\n";
             }
-            *of << "\n# Verilate the top module that refers protect-lib wrappers of above\n";
+            *of << "\n# Verilate the top module that refers to lib-create wrappers of above\n";
             *of << "verilate(${TOP_TARGET_NAME} PREFIX " << v3Global.opt.prefix() << " TOP_MODULE "
                 << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
                 << deslash(v3Global.opt.makeDir()) << " SOURCES ";

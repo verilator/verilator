@@ -336,6 +336,7 @@ detailed descriptions of these arguments.
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
+    --lib-create <name>         Create a DPI library
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
      -MAKEFLAGS <flags>         Arguments to pass to make during --build
