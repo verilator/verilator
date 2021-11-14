@@ -531,7 +531,7 @@ class EmitCModel final : public EmitCFunc {
         putSectionDelimiter("Invoke final blocks");
         // ::final
         puts("\nVL_ATTR_COLD void " + topClassName() + "::final() {\n");
-        puts(topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
+        puts(/**/ topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
         puts("}\n");
     }
 
@@ -564,15 +564,15 @@ class EmitCModel final : public EmitCFunc {
         puts("}\n");
 
         // Forward declaration
-        puts("\nvoid " + topModNameProtected + "__" + protect("trace_register") + "("
+        puts("\nVL_ATTR_COLD void " + topModNameProtected + "__" + protect("trace_register") + "("
              + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
              + "* tracep);\n");
 
         // ::trace
         puts("\nVL_ATTR_COLD void " + topClassName() + "::trace(");
         puts(v3Global.opt.traceClassBase() + "C* tfp, int, int) {\n");
-        puts("tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
-        puts(topModNameProtected + "__" + protect("trace_register")
+        puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
+        puts(/**/ topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), tfp->spTrace());\n");
         puts("}\n");
     }
@@ -582,16 +582,16 @@ class EmitCModel final : public EmitCFunc {
 
         puts("\nVerilatedSerialize& operator<<(VerilatedSerialize& os, " + topClassName()
              + "& rhs) {\n");
-        puts("Verilated::quiesce();\n");
-        puts("rhs.vlSymsp->" + protect("__Vserialize") + "(os);\n");
-        puts("return os;\n");
+        puts(/**/ "Verilated::quiesce();\n");
+        puts(/**/ "rhs.vlSymsp->" + protect("__Vserialize") + "(os);\n");
+        puts(/**/ "return os;\n");
         puts("}\n");
 
         puts("\nVerilatedDeserialize& operator>>(VerilatedDeserialize& os, " + topClassName()
              + "& rhs) {\n");
-        puts("Verilated::quiesce();\n");
-        puts("rhs.vlSymsp->" + protect("__Vdeserialize") + "(os);\n");
-        puts("return os;\n");
+        puts(/**/ "Verilated::quiesce();\n");
+        puts(/**/ "rhs.vlSymsp->" + protect("__Vdeserialize") + "(os);\n");
+        puts(/**/ "return os;\n");
         puts("}\n");
     }
 

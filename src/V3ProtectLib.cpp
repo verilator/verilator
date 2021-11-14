@@ -102,9 +102,9 @@ private:
     }
 
     void initialComment(AstTextBlock* txtp, FileLine* fl) {
-        addComment(txtp, fl, "Creates an instance of the secret module at initial-time");
+        addComment(txtp, fl, "Creates an instance of the library module at initial-time");
         addComment(txtp, fl, "(one for each instance in the user's design) also evaluates");
-        addComment(txtp, fl, "the secret module's initial process");
+        addComment(txtp, fl, "the library module's initial process");
     }
 
     void comboComment(AstTextBlock* txtp, FileLine* fl) {
@@ -121,7 +121,7 @@ private:
     }
 
     void finalComment(AstTextBlock* txtp, FileLine* fl) {
-        addComment(txtp, fl, "Evaluates the secret module's final process");
+        addComment(txtp, fl, "Evaluates the library module's final process");
     }
 
     void createSvFile(FileLine* fl, AstNodeModule* modp) {
@@ -192,6 +192,7 @@ private:
         m_comboIgnorePortsp->addText(fl, "chandle handle__V\n");
         txtp->addNodep(m_comboIgnorePortsp);
         txtp->addText(fl, ");\n\n");
+
         finalComment(txtp, fl);
         txtp->addText(fl, "import \"DPI-C\" function void " + m_libName
                               + "_protectlib_final(chandle handle__V);\n\n");
@@ -287,7 +288,7 @@ private:
 
     void castPtr(FileLine* fl, AstTextBlock* txtp) {
         txtp->addText(fl, m_topName
-                              + "_container* handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
+                              + "_container* const handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
                                 "static_cast<"
                               + m_topName + "_container*>(vhandlep__V);\n");
     }
@@ -320,23 +321,23 @@ private:
         txtp->addText(fl, "void " + m_libName
                               + "_protectlib_check_hash"
                                 "(int protectlib_hash__V) {\n");
-        m_cHashValuep = new AstTextBlock(fl, "int expected_hash__V = ");
+        m_cHashValuep = new AstTextBlock(fl, "const int expected_hash__V = ");
         txtp->addNodep(m_cHashValuep);
-        txtp->addText(fl, "if (protectlib_hash__V != expected_hash__V) {\n");
-        txtp->addText(fl, "fprintf(stderr, \"%%Error: cannot use " + m_libName
+        txtp->addText(fl, /**/ "if (protectlib_hash__V != expected_hash__V) {\n");
+        txtp->addText(fl, /****/ "fprintf(stderr, \"%%Error: cannot use " + m_libName
                               + " library, "
                                 "Verliog (%u) and library (%u) hash values do not "
                                 "agree\\n\", protectlib_hash__V, expected_hash__V);\n");
-        txtp->addText(fl, "std::exit(EXIT_FAILURE);\n");
-        txtp->addText(fl, "}\n");
+        txtp->addText(fl, /****/ "std::exit(EXIT_FAILURE);\n");
+        txtp->addText(fl, /**/ "}\n");
         txtp->addText(fl, "}\n\n");
 
         // Initial
         initialComment(txtp, fl);
         txtp->addText(fl, "void* " + m_libName + "_protectlib_create(const char* scopep__V) {\n");
-        txtp->addText(fl, m_topName + "_container* handlep__V = new " + m_topName
+        txtp->addText(fl, /**/ m_topName + "_container* const handlep__V = new " + m_topName
                               + "_container(scopep__V);\n");
-        txtp->addText(fl, "return handlep__V;\n");
+        txtp->addText(fl, /**/ "return handlep__V;\n");
         txtp->addText(fl, "}\n\n");
 
         // Updates
@@ -382,8 +383,8 @@ private:
         finalComment(txtp, fl);
         txtp->addText(fl, "void " + m_libName + "_protectlib_final(void* vhandlep__V) {\n");
         castPtr(fl, txtp);
-        txtp->addText(fl, "handlep__V->final();\n");
-        txtp->addText(fl, "delete handlep__V;\n");
+        txtp->addText(fl, /**/ "handlep__V->final();\n");
+        txtp->addText(fl, /**/ "delete handlep__V;\n");
         txtp->addText(fl, "}\n\n");
 
         txtp->addText(fl, "}\n");
