@@ -515,12 +515,6 @@ class EmitCModel final : public EmitCFunc {
             puts("}\n");
         }
 
-        putSectionDelimiter("Invoke final blocks");
-        // ::final
-        puts("\nvoid " + topClassName() + "::final() {\n");
-        puts(topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
-        puts("}\n");
-
         putSectionDelimiter("Utilities");
         // ::contextp
         puts("\nVerilatedContext* " + topClassName() + "::contextp() const {\n");
@@ -533,6 +527,12 @@ class EmitCModel final : public EmitCFunc {
             puts(/**/ "return vlSymsp->name();\n");
             puts("}\n");
         }
+
+        putSectionDelimiter("Invoke final blocks");
+        // ::final
+        puts("\nVL_ATTR_COLD void " + topClassName() + "::final() {\n");
+        puts(topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
+        puts("}\n");
     }
 
     void emitTraceMethods(AstNodeModule* modp) {
@@ -546,7 +546,7 @@ class EmitCModel final : public EmitCFunc {
              + "* tracep);\n");
 
         // Static helper function
-        puts("\nstatic void " + protect("trace_init") + "(void* voidSelf, "
+        puts("\nVL_ATTR_COLD static void " + protect("trace_init") + "(void* voidSelf, "
              + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) {\n");
         putsDecoration("// Callback from tracep->open()\n");
         puts(voidSelfAssign(modp));
@@ -569,7 +569,7 @@ class EmitCModel final : public EmitCFunc {
              + "* tracep);\n");
 
         // ::trace
-        puts("\nvoid " + topClassName() + "::trace(");
+        puts("\nVL_ATTR_COLD void " + topClassName() + "::trace(");
         puts(v3Global.opt.traceClassBase() + "C* tfp, int, int) {\n");
         puts("tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
         puts(topModNameProtected + "__" + protect("trace_register")
