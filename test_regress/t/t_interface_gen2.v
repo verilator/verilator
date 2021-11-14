@@ -24,7 +24,7 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d result=%b  %b\n",$time, cyc, itopa.valueo, itopb.valueo);
+      $write("[%0t] cyc==%0d result=%b  %b\n", $time, cyc, itopa.valueo, itopb.valueo);
 `endif
       cyc <= cyc + 1;
       itopa.valuei <= cyc[1:0];

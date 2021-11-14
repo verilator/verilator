@@ -48,7 +48,7 @@ sub uint {
         }
     }
     if (keys %names) {
-        error("Files with uint32*_t instead of vluint32s: ",join(' ',sort keys %names));
+        error("Files with uint32*_t instead of vluint32s: ", join(' ', sort keys %names));
     }
 }
 
@@ -69,7 +69,7 @@ sub printfll {
         }
     }
     if (keys %names) {
-        error("Files with %ll instead of VL_PRI64: ",join(' ',sort keys %names));
+        error("Files with %ll instead of VL_PRI64: ", join(' ', sort keys %names));
     }
 }
 
@@ -87,7 +87,7 @@ sub cstr {
         }
     }
     if (keys %names) {
-        error("Files with potential c_str() lifetime issue: ",join(' ',sort keys %names));
+        error("Files with potential c_str() lifetime issue: ", join(' ', sort keys %names));
     }
 }
 
@@ -106,7 +106,7 @@ sub vsnprintf {
         }
     }
     if (keys %names) {
-        error("Files with vsnprintf, use VL_VSNPRINTF: ",join(' ',sort keys %names));
+        error("Files with vsnprintf, use VL_VSNPRINTF: ", join(' ', sort keys %names));
     }
 }
 
@@ -127,7 +127,7 @@ sub final {
         }
     }
     if (keys %names) {
-        error("Files with classes without final/VL_NOT_FINAL: ",join(' ',sort keys %names));
+        error("Files with classes without final/VL_NOT_FINAL: ", join(' ', sort keys %names));
     }
 }
 

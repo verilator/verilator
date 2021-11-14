@@ -11,13 +11,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 if (!$Self->cfg_with_ccache) {
-  skip("Requires configuring with ccache");
+    skip("Requires configuring with ccache");
 }
 
 top_filename("t_a1_first_cc.v");
 
 # This test requires rebuilding the object files to check the ccache log
-foreach my $filename (glob ("$Self->{obj_dir}/*.o")) {
+foreach my $filename (glob("$Self->{obj_dir}/*.o")) {
     print "rm $filename\n" if $Self->{verbose};
     unlink $filename;
 }

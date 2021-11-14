@@ -135,7 +135,7 @@ private:
         if (m_nodeDepth == 0) {
             // Check if simple "VARREF = ..." assignment, i.e.: this assignment sets the whole
             // variable (and in particular, it is not assigned only in part).
-            if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
+            if (const AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
                 // Mark this VarScope as assigned in this function
                 refp->varScopep()->user2(1);
             }

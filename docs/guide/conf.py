@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0114,C0116,E0402,W0622
+# pylint: disable=C0103,C0114,C0116,C0301,E0402,W0622
 #
 # Configuration file for Verilator's Sphinx documentation builder.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0

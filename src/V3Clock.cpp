@@ -92,30 +92,30 @@ private:
 
     AstVarScope* getCreateLastClk(AstVarScope* vscp) {
         if (vscp->user1p()) return static_cast<AstVarScope*>(vscp->user1p());
-        AstVar* varp = vscp->varp();
+        const AstVar* const varp = vscp->varp();
         if (!varp->width1()) {
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Clock edge on non-single bit signal: "
                                             << varp->prettyNameQ());
         }
         string newvarname
             = (string("__Vclklast__") + vscp->scopep()->nameDotless() + "__" + varp->name());
-        AstVar* newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname,
-                                     VFlagLogicPacked(), 1);
+        AstVar* const newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname,
+                                           VFlagLogicPacked(), 1);
         newvarp->noReset(true);  // Reset by below assign
         m_modp->addStmtp(newvarp);
-        AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
+        AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
         vscp->user1p(newvscp);
         m_scopep->addVarp(newvscp);
         // Add init
         AstNode* fromp = new AstVarRef(newvarp->fileline(), vscp, VAccess::READ);
         if (v3Global.opt.xInitialEdge()) fromp = new AstNot(fromp->fileline(), fromp);
-        AstNode* newinitp = new AstAssign(
+        AstNode* const newinitp = new AstAssign(
             vscp->fileline(), new AstVarRef(newvarp->fileline(), newvscp, VAccess::WRITE), fromp);
         addToInitial(newinitp);
         // At bottom, assign them
-        AstAssign* finalp = new AstAssign(vscp->fileline(),
-                                          new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
-                                          new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
+        AstAssign* const finalp = new AstAssign(
+            vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
+            new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
         m_evalFuncp->addFinalsp(finalp);
         //
         UINFO(4, "New Last: " << newvscp << endl);
@@ -136,16 +136,17 @@ private:
                           "Unsupported: Complicated event expression in sensitive activity list");
             return nullptr;
         }
-        AstVarScope* clkvscp = nodep->varrefp()->varScopep();
+        UASSERT_OBJ(nodep->varrefp(), nodep, "No clock found on sense item");
+        AstVarScope* const clkvscp = nodep->varrefp()->varScopep();
         if (nodep->edgeType() == VEdgeType::ET_POSEDGE) {
-            AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+            AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(
                 nodep->fileline(),
                 new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), VAccess::READ),
                 new AstNot(nodep->fileline(),
                            new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ)));
         } else if (nodep->edgeType() == VEdgeType::ET_NEGEDGE) {
-            AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+            AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(
                 nodep->fileline(),
                 new AstNot(nodep->fileline(),
@@ -153,7 +154,7 @@ private:
                                          VAccess::READ)),
                 new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ));
         } else if (nodep->edgeType() == VEdgeType::ET_BOTHEDGE) {
-            AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+            AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
             newp = new AstXor(
                 nodep->fileline(),
                 new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), VAccess::READ),
@@ -171,7 +172,7 @@ private:
     AstNode* createSenseEquation(AstSenItem* nodesp) {
         // Nodep may be a list of elements; we need to walk it
         AstNode* senEqnp = nullptr;
-        for (AstSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+        for (AstSenItem* senp = nodesp; senp; senp = VN_AS(senp->nextp(), SenItem)) {
             AstNode* const senOnep = createSenItemEquation(senp);
             if (senEqnp) {
                 // Add new OR to the sensitivity list equation
@@ -411,8 +412,8 @@ private:
         }
     }
     virtual void visit(AstExecGraph* nodep) override {
-        for (m_mtaskBodyp = VN_CAST(nodep->op1p(), MTaskBody); m_mtaskBodyp;
-             m_mtaskBodyp = VN_CAST(m_mtaskBodyp->nextp(), MTaskBody)) {
+        for (m_mtaskBodyp = VN_AS(nodep->op1p(), MTaskBody); m_mtaskBodyp;
+             m_mtaskBodyp = VN_AS(m_mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
             iterate(m_mtaskBodyp);
         }

@@ -190,7 +190,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
          iter != m_filenameList.end(); ++iter) {
         // Read stats of files we create after we're done making them
         // (except for this file, of course)
-        DependFile* dfp = const_cast<DependFile*>(&(*iter));
+        DependFile* const dfp = const_cast<DependFile*>(&(*iter));
         V3Options::fileNfsFlush(dfp->filename());
         dfp->loadStats();
         off_t showSize = iter->size();

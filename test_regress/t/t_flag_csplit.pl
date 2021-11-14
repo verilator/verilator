@@ -29,13 +29,13 @@ while (1) {
     run(logfile => "$Self->{obj_dir}/vlt_gcc.log",
         tee => $self->{verbose},
         cmd=>[$ENV{MAKE},
-              "-C ".$Self->{obj_dir},
+              "-C " . $Self->{obj_dir},
               "-f $Self->{VM_PREFIX}.mk",
               "-j 4",
               "VM_PREFIX=$Self->{VM_PREFIX}",
               "TEST_OBJ_DIR=$Self->{obj_dir}",
               "CPPFLAGS_DRIVER=-D".uc($Self->{name}),
-              ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+              ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
               "OPT_FAST=-O2",
               "OPT_SLOW=-O0",
               "OPT_GLOBAL=-Os",
@@ -86,7 +86,7 @@ sub check_cpp {
     printf "  File %6d  %s\n", $size, $filename if $Self->{verbose};
     my $fh = IO::File->new("<$filename") or error("$! $filenme");
     my @funcs;
-    while (defined (my $line = $fh->getline)) {
+    while (defined(my $line = $fh->getline)) {
         if ($line =~ /^(void|IData)\s+(.*::.*)/) {
             my $func = $2;
             $func =~ s/\(.*$//;
@@ -103,19 +103,19 @@ sub check_cpp {
         }
     }
     if ($#funcs > 0) {
-        error("Split had multiple functions in $filename\n\t".join("\n\t",@funcs));
+        error("Split had multiple functions in $filename\n\t" . join("\n\t", @funcs));
     }
 }
 
 sub check_gcc_flags {
     my $filename = shift;
     my $fh = IO::File->new("<$filename") or error("$! $filenme");
-    while (defined (my $line = $fh->getline)) {
+    while (defined(my $line = $fh->getline)) {
         chomp $line;
         print ":log: $line\n" if $Self->{verbose};
         if ($line =~ /$Self->{VM_PREFIX}\S*\.cpp/) {
-            my $filetype = ($line =~ /Slow|Syms/) ? "slow":"fast";
-            my $opt = ($line !~ /-O2/) ? "slow":"fast";
+            my $filetype = ($line =~ /Slow|Syms/) ? "slow" : "fast";
+            my $opt = ($line !~ /-O2/) ? "slow" : "fast";
             print "$filetype, $opt, $line\n" if $Self->{verbose};
             if ($filetype ne $opt) {
                 error("${filetype} file compiled as if was ${opt}: $line");

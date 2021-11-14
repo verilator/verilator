@@ -157,7 +157,7 @@ void VlcTop::rank() {
 
     VlcBuckets remaining;
     for (const auto& i : m_points) {
-        VlcPoint* const pointp = &points().pointNumber(i.second);
+        const VlcPoint* const pointp = &points().pointNumber(i.second);
         // If any tests hit this point, then we'll need to cover it.
         if (pointp->testsCovering()) remaining.addData(pointp->pointNum(), 1);
     }

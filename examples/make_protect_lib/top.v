@@ -4,7 +4,8 @@
 // any use, without warranty, 2019 by Todd Strader.
 // SPDX-License-Identifier: CC0-1.0
 
-// See also the EXAMPLE section in the verilator manpage/document.
+// See also https://verilator.org/guide/latest/examples.html"
+
 module top (input clk);
 
    integer cyc = 0;

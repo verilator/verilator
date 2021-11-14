@@ -12,7 +12,7 @@ module t (/*AUTOARG*/
 
    wire  b;
    reg 	 reset;
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    Testit testit (/*AUTOINST*/
 		  // Outputs

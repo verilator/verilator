@@ -177,14 +177,14 @@ private:
         // Iterate through all modules in bottom-up order.
         // Make a final inlining decision for each.
         for (auto it = m_allMods.rbegin(); it != m_allMods.rend(); ++it) {
-            AstNodeModule* modp = *it;
+            AstNodeModule* const modp = *it;
 
             // If we're going to inline some modules into this one,
             // update user4 (statement count) to reflect that:
             int statements = modp->user4();
             LocalInstanceMap& localsr = m_instances[modp];
             for (LocalInstanceMap::iterator iti = localsr.begin(); iti != localsr.end(); ++iti) {
-                AstNodeModule* childp = iti->first;
+                const AstNodeModule* const childp = iti->first;
                 if (childp->user1()) {  // inlining child
                     statements += (childp->user4() * iti->second);
                 }
@@ -270,8 +270,8 @@ private:
 
     // STATE
     std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
-    AstNodeModule* m_modp;  // Current module
-    AstCell* m_cellp;  // Cell being cloned
+    AstNodeModule* const m_modp;  // Current module
+    AstCell* const m_cellp;  // Cell being cloned
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -307,8 +307,8 @@ private:
         if (nodep->user2p()) {
             // Make an assignment, so we'll trace it properly
             // user2p is either a const or a var.
-            AstConst* exprconstp = VN_CAST(nodep->user2p(), Const);
-            AstVarRef* exprvarrefp = VN_CAST(nodep->user2p(), VarRef);
+            AstConst* const exprconstp = VN_CAST(nodep->user2p(), Const);
+            const AstVarRef* const exprvarrefp = VN_CAST(nodep->user2p(), VarRef);
             UINFO(8, "connectto: " << nodep->user2p() << endl);
             UASSERT_OBJ(exprconstp || exprvarrefp, nodep,
                         "Unknown interconnect type; pinReconnectSimple should have cleared up");
@@ -339,7 +339,7 @@ private:
                 m_modp->addStmtp(new AstAssignVarScope(
                     nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
                     new AstVarRef(nodep->fileline(), exprvarrefp->varp(), VAccess::READ)));
-                AstNode* nodebp = exprvarrefp->varp();
+                const AstNode* const nodebp = exprvarrefp->varp();
                 nodep->fileline()->modifyStateInherit(nodebp->fileline());
                 nodebp->fileline()->modifyStateInherit(nodep->fileline());
             } else {
@@ -348,23 +348,23 @@ private:
                 m_modp->addStmtp(new AstAssignAlias(
                     nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
                     new AstVarRef(nodep->fileline(), exprvarrefp->varp(), VAccess::READ)));
-                AstNode* nodebp = exprvarrefp->varp();
+                const AstNode* const nodebp = exprvarrefp->varp();
                 nodep->fileline()->modifyStateInherit(nodebp->fileline());
                 nodebp->fileline()->modifyStateInherit(nodep->fileline());
             }
         }
         // Iterate won't hit AstIfaceRefDType directly as it is no longer underneath the module
-        if (AstIfaceRefDType* ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
+        if (AstIfaceRefDType* const ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
             m_renamedInterfaces.insert(nodep->name());
             // Each inlined cell that contain an interface variable need to
             // copy the IfaceRefDType and point it to the newly cloned
             // interface cell.
-            AstIfaceRefDType* newdp = VN_CAST(ifacerefp->cloneTree(false), IfaceRefDType);
+            AstIfaceRefDType* const newdp = ifacerefp->cloneTree(false);
             nodep->dtypep(newdp);
             ifacerefp->addNextHere(newdp);
             // Relink to point to newly cloned cell
             if (newdp->cellp()) {
-                if (AstCell* newcellp = VN_CAST(newdp->cellp()->user4p(), Cell)) {
+                if (AstCell* const newcellp = VN_CAST(newdp->cellp()->user4p(), Cell)) {
                     newdp->cellp(newcellp);
                     newdp->cellName(newcellp->name());
                     // Tag the old ifacerefp to ensure it leaves no stale
@@ -398,8 +398,8 @@ private:
             && !nodep->varp()->user3()
             // Don't constant propagate aliases (we just made)
             && !VN_IS(nodep->backp(), AssignAlias)) {
-            AstConst* exprconstp = VN_CAST(nodep->varp()->user2p(), Const);
-            AstVarRef* exprvarrefp = VN_CAST(nodep->varp()->user2p(), VarRef);
+            AstConst* const exprconstp = VN_CAST(nodep->varp()->user2p(), Const);
+            const AstVarRef* const exprvarrefp = VN_CAST(nodep->varp()->user2p(), VarRef);
             if (exprconstp) {
                 nodep->replaceWith(exprconstp->cloneTree(true));
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -536,36 +536,36 @@ private:
             // Better off before, as if module has multiple instantiations
             // we'll save work, and we can't call pinReconnectSimple in
             // this loop as it clone()s itself.
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 V3Inst::pinReconnectSimple(pinp, nodep, false);
             }
 
             // Clone original module
             if (debug() >= 9) nodep->dumpTree(cout, "inlcell:");
             // if (debug() >= 9) nodep->modp()->dumpTree(cout, "oldmod:");
-            AstNodeModule* newmodp = nodep->modp()->cloneTree(false);
+            AstNodeModule* const newmodp = nodep->modp()->cloneTree(false);
             if (debug() >= 9) newmodp->dumpTree(cout, "newmod:");
             // Clear var markings and find cell cross references
             AstNode::user2ClearTree();
             AstNode::user4ClearTree();
             { InlineCollectVisitor{nodep->modp()}; }  // {} to destroy visitor immediately
             // Create data for dotted variable resolution
-            AstCellInline* inlinep
+            AstCellInline* const inlinep
                 = new AstCellInline(nodep->fileline(), nodep->name(), nodep->modp()->origName(),
                                     nodep->modp()->timeunit());
             m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
             // Create assignments to the pins
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (!pinp->exprp()) continue;
                 UINFO(6, "     Pin change from " << pinp->modVarp() << endl);
                 // Make new signal; even though we'll optimize the interconnect, we
                 // need an alias to trace correctly.  If tracing is disabled, we'll
                 // delete it in later optimizations.
-                AstVar* pinOldVarp = pinp->modVarp();
-                AstVar* pinNewVarp = pinOldVarp->clonep();
+                AstVar* const pinOldVarp = pinp->modVarp();
+                AstVar* const pinNewVarp = pinOldVarp->clonep();
                 UASSERT_OBJ(pinNewVarp, pinOldVarp, "Cloning failed");
 
-                AstNode* connectRefp = pinp->exprp();
+                AstNode* const connectRefp = pinp->exprp();
                 UASSERT_OBJ(
                     VN_IS(connectRefp, Const) || VN_IS(connectRefp, VarRef), pinp,
                     "Unknown interconnect type; pinReconnectSimple should have cleared up");
@@ -574,7 +574,7 @@ private:
                 // Propagate any attributes across the interconnect
                 pinNewVarp->propagateAttrFrom(pinOldVarp);
                 if (VN_IS(connectRefp, VarRef)) {
-                    VN_CAST(connectRefp, VarRef)->varp()->propagateAttrFrom(pinOldVarp);
+                    VN_AS(connectRefp, VarRef)->varp()->propagateAttrFrom(pinOldVarp);
                 }
 
                 // One to one interconnect won't make a temporary variable.
@@ -594,7 +594,7 @@ private:
             { InlineRelinkVisitor{newmodp, m_modp, nodep}; }
             // Move statements to top module
             if (debug() >= 9) newmodp->dumpTree(cout, "fixmod:");
-            AstNode* stmtsp = newmodp->stmtsp();
+            AstNode* const stmtsp = newmodp->stmtsp();
             if (stmtsp) stmtsp->unlinkFrBackWithNext();
             if (stmtsp) m_modp->addStmtp(stmtsp);
             // Remove the cell
@@ -646,14 +646,14 @@ private:
             m_scope += "__DOT__" + nodep->name();
         }
 
-        if (AstModule* modp = VN_CAST(nodep->modp(), Module)) {
+        if (AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
             // Pass Cell pointers down to the next module
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
-                AstVar* varp = pinp->modVarp();
-                AstVarRef* varrefp = VN_CAST(pinp->exprp(), VarRef);
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                AstVar* const varp = pinp->modVarp();
+                const AstVarRef* const varrefp = VN_CAST(pinp->exprp(), VarRef);
                 if (!varrefp) continue;
-                AstVar* fromVarp = varrefp->varp();
-                AstIfaceRefDType* irdtp = VN_CAST(fromVarp->dtypep(), IfaceRefDType);
+                const AstVar* const fromVarp = varrefp->varp();
+                const AstIfaceRefDType* const irdtp = VN_CAST(fromVarp->dtypep(), IfaceRefDType);
                 if (!irdtp) continue;
 
                 AstCell* cellp;
@@ -672,18 +672,18 @@ private:
     }
     virtual void visit(AstAssignVarScope* nodep) override {
         // Reference
-        AstVarRef* reflp = VN_CAST(nodep->lhsp(), VarRef);
+        const AstVarRef* const reflp = VN_CAST(nodep->lhsp(), VarRef);
         // What the reference refers to
-        AstVarRef* refrp = VN_CAST(nodep->rhsp(), VarRef);
+        const AstVarRef* const refrp = VN_CAST(nodep->rhsp(), VarRef);
         if (!(reflp && refrp)) return;
 
-        AstVar* varlp = reflp->varp();
-        AstVar* varrp = refrp->varp();
+        const AstVar* const varlp = reflp->varp();
+        const AstVar* const varrp = refrp->varp();
         if (!(varlp && varrp)) return;
 
         AstCell* cellp = VN_CAST(varrp->user1p(), Cell);
         if (!cellp) {
-            AstIfaceRefDType* irdtp = VN_CAST(varrp->dtypep(), IfaceRefDType);
+            const AstIfaceRefDType* const irdtp = VN_CAST(varrp->dtypep(), IfaceRefDType);
             if (!irdtp) return;
 
             cellp = irdtp->cellp();
@@ -720,7 +720,7 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     // idea to avoid dumping the hugely exploded tree.
     AstNodeModule* nextmodp;
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp = nextmodp) {
-        nextmodp = VN_CAST(modp->nextp(), NodeModule);
+        nextmodp = VN_AS(modp->nextp(), NodeModule);
         if (modp->user1()) {  // Was inlined
             VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
         }

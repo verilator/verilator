@@ -94,7 +94,7 @@ private:
         if (m_depth > v3Global.opt.compLimitBlocks()
             && !VN_IS(nodep, NodeCCall)) {  // Already done
             UINFO(4, "DeepBlocks " << m_depth << " " << nodep << endl);
-            AstNode* backp = nodep->backp();  // Only for debug
+            const AstNode* backp = nodep->backp();  // Only for debug
             if (debug() >= 9) backp->dumpTree(cout, "-   pre : ");
             AstCFunc* funcp = createDeepFunc(nodep);
             iterate(funcp);

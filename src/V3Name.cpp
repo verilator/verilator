@@ -51,7 +51,7 @@ private:
                 const string newname = string("__PVT__") + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
-            } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
+            } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
             } else {
                 const string rsvd = V3LanguageWords::isKeyword(nodep->name());
                 if (rsvd != "") {

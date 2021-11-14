@@ -74,7 +74,7 @@ private:
         } else if (m_insMode == IM_AFTER) {
             m_insStmtp->addNextHere(newp);
         } else if (m_insMode == IM_WHILE_PRECOND) {
-            AstWhile* whilep = VN_CAST(m_insStmtp, While);
+            AstWhile* const whilep = VN_AS(m_insStmtp, While);
             UASSERT_OBJ(whilep, nodep, "Insert should be under WHILE");
             whilep->addPrecondsp(newp);
         } else {
@@ -151,12 +151,12 @@ private:
     void prepost_non_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
 
-        AstConst* constp = VN_CAST(nodep->lhsp(), Const);
+        AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
-        AstConst* newconstp = constp->cloneTree(true);
+        AstConst* const newconstp = constp->cloneTree(true);
 
-        AstNode* storetop = nodep->thsp();
-        AstNode* valuep = nodep->rhsp();
+        AstNode* const storetop = nodep->thsp();
+        AstNode* const valuep = nodep->rhsp();
 
         storetop->unlinkFrBack();
         valuep->unlinkFrBack();
@@ -175,22 +175,22 @@ private:
     void prepost_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
 
-        AstNodeVarRef* varrefp = nullptr;
+        const AstNodeVarRef* varrefp = nullptr;
         if (m_unsupportedHere || !(varrefp = VN_CAST(nodep->rhsp(), VarRef))) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Incrementation in this context.");
             return;
         }
 
-        AstConst* constp = VN_CAST(nodep->lhsp(), Const);
+        AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
-        AstNode* backp = nodep->backp();
-        AstConst* newconstp = constp->cloneTree(true);
+        const AstNode* const backp = nodep->backp();
+        AstConst* const newconstp = constp->cloneTree(true);
 
         // Prepare a temporary variable
-        FileLine* fl = backp->fileline();
+        FileLine* const fl = backp->fileline();
         const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
-        AstVar* varp = new AstVar(fl, AstVarType::BLOCKTEMP, name, VFlagChildDType(),
-                                  varrefp->varp()->subDTypep()->cloneTree(true));
+        AstVar* const varp = new AstVar(fl, AstVarType::BLOCKTEMP, name, VFlagChildDType(),
+                                        varrefp->varp()->subDTypep()->cloneTree(true));
 
         // Declare the variable
         insertBeforeStmt(nodep, varp);

@@ -197,7 +197,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
     } else {
         // Format
         bool isStmt = false;
-        if (const AstFScanF* dispp = VN_CAST(nodep, FScanF)) {
+        if (const AstFScanF* const dispp = VN_CAST(nodep, FScanF)) {
             isStmt = false;
             puts("VL_FSCANF_IX(");
             iterate(dispp->filep());
@@ -238,7 +238,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
         // Arguments
         for (unsigned i = 0; i < emitDispState.m_argsp.size(); i++) {
             const char fmt = emitDispState.m_argsChar[i];
-            AstNode* argp = emitDispState.m_argsp[i];
+            AstNode* const argp = emitDispState.m_argsp[i];
             const string func = emitDispState.m_argsFunc[i];
             if (func != "" || argp) {
                 puts(",");
@@ -316,7 +316,7 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         emitDispState.pushArg(fmtLetter, argp, "");
         if (fmtLetter == 't' || fmtLetter == '^') {
             AstSFormatF* fmtp = nullptr;
-            if (AstDisplay* nodep = VN_CAST(dispp, Display))
+            if (AstDisplay* const nodep = VN_CAST(dispp, Display))
                 fmtp = nodep->fmtp();
             else if (AstSFormat* nodep = VN_CAST(dispp, SFormat))
                 fmtp = nodep->fmtp();
@@ -472,7 +472,7 @@ void EmitCFunc::emitDereference(const string& pointer) {
 }
 
 void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
-    if (const AstConst* constp = VN_CAST(nodep, Const)) {
+    if (const AstConst* const constp = VN_CAST(nodep, Const)) {
         putbs("std::string(");
         putsQuoted(constp->num().toString());
         puts(")");
@@ -533,13 +533,11 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             puts(",");
             if (!assigntop) {
                 puts(assignString);
-            } else if (VN_IS(assigntop, VarRef)) {
+            } else {
                 if (!assigntop->selfPointer().empty()) {
                     emitDereference(assigntop->selfPointerProtect(m_useSelfForThis));
                 }
                 puts(assigntop->varp()->nameProtect());
-            } else {
-                iterateAndNextNull(assigntop);
             }
             for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
@@ -558,13 +556,11 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             puts(",");
             if (!assigntop) {
                 puts(assignString);
-            } else if (VN_IS(assigntop, VarRef)) {
+            } else {
                 if (!assigntop->selfPointer().empty()) {
                     emitDereference(assigntop->selfPointerProtect(m_useSelfForThis));
                 }
                 puts(assigntop->varp()->nameProtect());
-            } else {
-                iterateAndNextNull(assigntop);
             }
             for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
@@ -629,15 +625,14 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
             if (initarp->defaultp()) {
                 puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
                 puts("; ++__Vi) {\n");
-                emitSetVarConstant(varNameProtected + "[__Vi]",
-                                   VN_CAST(initarp->defaultp(), Const));
+                emitSetVarConstant(varNameProtected + "[__Vi]", VN_AS(initarp->defaultp(), Const));
                 puts("}\n");
             }
             const AstInitArray::KeyItemMap& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* valuep = itr.second->valuep();
                 emitSetVarConstant(varNameProtected + "[" + cvtToStr(itr.first) + "]",
-                                   VN_CAST(valuep, Const));
+                                   VN_AS(valuep, Const));
             }
         } else {
             varp->v3fatalSrc("InitArray under non-arrayed var");
@@ -692,7 +687,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
             if (varp->valuep()) {
-                AstConst* const constp = VN_CAST(varp->valuep(), Const);
+                AstConst* const constp = VN_AS(varp->valuep(), Const);
                 if (!constp) varp->v3fatalSrc("non-const initializer for variable");
                 for (int w = 0; w < varp->widthWords(); ++w) {
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
@@ -792,7 +787,7 @@ void EmitCFunc::emitChangeDet() {
                 doubleOrDetect(nodep, gotOneIgnore);
                 string varname;
                 if (VN_IS(nodep->lhsp(), VarRef)) {
-                    varname = ": " + VN_CAST(nodep->lhsp(), VarRef)->varp()->prettyName();
+                    varname = ": " + VN_AS(nodep->lhsp(), VarRef)->varp()->prettyName();
                 }
                 puts(")) VL_DBG_MSGF(\"        CHANGE: ");
                 puts(protect(nodep->fileline()->filename()));

@@ -50,8 +50,8 @@ public:
 // Graph support classes
 
 class CdcEitherVertex VL_NOT_FINAL : public V3GraphVertex {
-    AstScope* m_scopep;
-    AstNode* m_nodep;
+    AstScope* const m_scopep;
+    AstNode* const m_nodep;
     AstSenTree* m_srcDomainp = nullptr;
     AstSenTree* m_dstDomainp = nullptr;
     bool m_srcDomainSet : 1;
@@ -84,7 +84,7 @@ public:
 };
 
 class CdcVarVertex final : public CdcEitherVertex {
-    AstVarScope* m_varScp;
+    AstVarScope* const m_varScp;
     int m_cntAsyncRst = 0;
     bool m_fromFlop = false;
 
@@ -266,7 +266,7 @@ private:
             if (varscp->varp()->isPrimaryIO()) {
                 // Create IO vertex - note it's relative to the pointed to var, not where we are
                 // now This allows reporting to easily print the input statement
-                CdcLogicVertex* ioVertexp
+                CdcLogicVertex* const ioVertexp
                     = new CdcLogicVertex(&m_graph, varscp->scopep(), varscp->varp(), nullptr);
                 if (varscp->varp()->isWritable()) {
                     new V3GraphEdge(&m_graph, vertexp, ioVertexp, 1);
@@ -351,12 +351,12 @@ private:
         // userClearVertices is very slow, so we use a generation count instead
         m_graph.userClearVertices();  // user1: uint32_t - was analyzed generation
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
+            if (CdcVarVertex* const vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
                 if (vvertexp->cntAsyncRst()) {
                     m_userGeneration++;  // Effectively a userClearVertices()
                     UINFO(8, "   Trace One async: " << vvertexp << endl);
                     // Twice, as we need to detect, then propagate
-                    CdcEitherVertex* markp = traceAsyncRecurse(vvertexp, false);
+                    CdcEitherVertex* const markp = traceAsyncRecurse(vvertexp, false);
                     if (markp) {  // Mark is non-nullptr if something bad on this path
                         UINFO(9, "   Trace One bad! " << vvertexp << endl);
                         m_userGeneration++;  // Effectively a userClearVertices()
@@ -381,7 +381,7 @@ private:
         // Clear out in prep for marking next path
         if (!mark) vertexp->asyncPath(false);
 
-        if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
+        if (CdcLogicVertex* const vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
             // Any logic considered bad, at the moment, anyhow
             if (vvertexp->hazard() && !mark_outp) mark_outp = vvertexp;
             // And keep tracing back so the user can understand what's up
@@ -391,7 +391,8 @@ private:
             if (vvertexp->varScp()->varp()->isPrimaryInish()) {
                 // Show the source "input" statement if it exists
                 for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                    CdcEitherVertex* eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
+                    CdcEitherVertex* const eFromVertexp
+                        = static_cast<CdcEitherVertex*>(edgep->fromp());
                     eFromVertexp->asyncPath(true);
                 }
                 return nullptr;
@@ -399,7 +400,8 @@ private:
             // Also ok if from flop, but partially trace the flop so more obvious to users
             if (vvertexp->fromFlop()) {
                 for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                    CdcEitherVertex* eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
+                    CdcEitherVertex* const eFromVertexp
+                        = static_cast<CdcEitherVertex*>(edgep->fromp());
                     eFromVertexp->asyncPath(true);
                 }
                 return nullptr;
@@ -407,8 +409,8 @@ private:
         }
 
         for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            CdcEitherVertex* eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
-            CdcEitherVertex* submarkp = traceAsyncRecurse(eFromVertexp, mark);
+            CdcEitherVertex* const eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
+            CdcEitherVertex* const submarkp = traceAsyncRecurse(eFromVertexp, mark);
             if (submarkp && !mark_outp) mark_outp = submarkp;
         }
 
@@ -417,14 +419,14 @@ private:
     }
 
     void dumpAsync(CdcVarVertex* vertexp, CdcEitherVertex* markp) {
-        AstNode* nodep = vertexp->varScp();
+        const AstNode* const nodep = vertexp->varScp();
         *m_ofp << "\n";
         *m_ofp << "\n";
         CdcEitherVertex* targetp = vertexp;  // One example destination flop (of possibly many)
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            CdcEitherVertex* eToVertexp = static_cast<CdcEitherVertex*>(edgep->top());
+            CdcEitherVertex* const eToVertexp = static_cast<CdcEitherVertex*>(edgep->top());
             if (!eToVertexp) targetp = eToVertexp;
-            if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(eToVertexp)) {
+            if (const CdcLogicVertex* const vvertexp = dynamic_cast<CdcLogicVertex*>(eToVertexp)) {
                 if (vvertexp->isFlop()  // IE the target flop that is upsetting us
                     && edgep->weight() >= CDC_WEIGHT_ASYNC) {  // And var feeds an async reset line
                     targetp = eToVertexp;
@@ -452,13 +454,13 @@ private:
         const string cont = prefix + sep;
         string nextsep = "   ";
         for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            CdcEitherVertex* eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
+            CdcEitherVertex* const eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
             if (dumpAsyncRecurse(eFromVertexp, cont, nextsep, level + 1)) nextsep = " | ";
         }
 
         // Dump single variable/logic block
         // See also OrderGraph::loopsVertexCb(V3GraphVertex* vertexp)
-        AstNode* nodep = vertexp->nodep();
+        AstNode* const nodep = vertexp->nodep();
         string front
             = pad(filelineWidth(), nodep->fileline()->ascii() + ":") + " " + prefix + " +- ";
         if (VN_IS(nodep, VarScope)) {
@@ -473,7 +475,7 @@ private:
         if (level)
             *m_ofp << V3OutFile::indentSpaces(filelineWidth()) << " " << prefix << nextsep << "\n";
 
-        if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
+        if (CdcLogicVertex* const vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
             // Now that we've printed a path with this hazard, don't bother to print any more
             // Otherwise, we'd get a path for almost every destination flop
             vvertexp->clearHazard();
@@ -499,7 +501,7 @@ private:
             UINFO(9, " Trace Direction " << (traceDests ? "dst" : "src") << endl);
             m_graph.userClearVertices();  // user1: bool - was analyzed
             for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-                if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
+                if (CdcVarVertex* const vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
                     UINFO(9, "   Trace One edge: " << vvertexp << endl);
                     edgeDomainRecurse(vvertexp, traceDests, 0);
                 }
@@ -514,8 +516,8 @@ private:
 
         std::deque<string> report;  // Sort output by name
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
-                AstVar* varp = vvertexp->varScp()->varp();
+            if (const CdcVarVertex* const vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
+                const AstVar* const varp = vvertexp->varScp()->varp();
                 {
                     string what = "wire";
                     if (varp->isPrimaryIO()) what = varp->direction().prettyName();
@@ -558,11 +560,11 @@ private:
         }  // Fully computed
 
         std::set<AstSenTree*> senouts;  // List of all sensitivities for new signal
-        if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
+        if (const CdcLogicVertex* const vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
             if (vvertexp) {}  // Unused
         } else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
             // If primary I/O, give it domain of the input
-            AstVar* varp = vvertexp->varScp()->varp();
+            const AstVar* const varp = vvertexp->varScp()->varp();
             if (varp->isPrimaryIO() && varp->isNonOutput() && !traceDests) {
                 senouts.insert(new AstSenTree(
                     varp->fileline(), new AstSenItem(varp->fileline(), AstSenItem::Combo())));
@@ -572,13 +574,14 @@ private:
         // Now combine domains of sources/dests
         if (traceDests) {
             for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                CdcEitherVertex* eToVertexp = static_cast<CdcEitherVertex*>(edgep->top());
+                CdcEitherVertex* const eToVertexp = static_cast<CdcEitherVertex*>(edgep->top());
                 edgeDomainRecurse(eToVertexp, traceDests, level + 1);
                 if (eToVertexp->dstDomainp()) senouts.insert(eToVertexp->dstDomainp());
             }
         } else {
             for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                CdcEitherVertex* eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
+                CdcEitherVertex* const eFromVertexp
+                    = static_cast<CdcEitherVertex*>(edgep->fromp());
                 edgeDomainRecurse(eFromVertexp, traceDests, level + 1);
                 if (eFromVertexp->srcDomainp()) senouts.insert(eFromVertexp->srcDomainp());
             }
@@ -599,7 +602,7 @@ private:
             }
         }
         // If multiple domains need to do complicated optimizations
-        if (senedited) senoutp = VN_CAST(V3Const::constifyExpensiveEdit(senoutp), SenTree);
+        if (senedited) senoutp = VN_AS(V3Const::constifyExpensiveEdit(senoutp), SenTree);
         if (traceDests) {
             vertexp->dstDomainSet(true);  // Note it's set - domainp may be null, so can't use that
             vertexp->dstDomainp(senoutp);
@@ -653,9 +656,9 @@ private:
     virtual void visit(AstNodeVarRef* nodep) override {
         if (m_scopep) {
             UASSERT_OBJ(m_logicVertexp, nodep, "Var ref not under a logic block");
-            AstVarScope* varscp = nodep->varScopep();
+            AstVarScope* const varscp = nodep->varScopep();
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
-            CdcVarVertex* varvertexp = makeVarVertex(varscp);
+            CdcVarVertex* const varvertexp = makeVarVertex(varscp);
             UINFO(5, " VARREF to " << varscp << endl);
             // We use weight of one for normal edges,
             // Weight of CDC_WEIGHT_ASYNC to indicate feeds async (for reporting)

@@ -347,6 +347,7 @@ protected:
         vluint32_t m_profThreadsWindow = 2;  // +prof+threads window size
         // Slow path
         std::string m_profThreadsFilename;  // +prof+threads filename
+        std::string m_profVltFilename;  // +prof+vlt filename
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
@@ -523,6 +524,8 @@ public:  // But for internal use only
     vluint32_t profThreadsWindow() const VL_MT_SAFE { return m_ns.m_profThreadsWindow; }
     void profThreadsFilename(const std::string& flag) VL_MT_SAFE;
     std::string profThreadsFilename() const VL_MT_SAFE;
+    void profVltFilename(const std::string& flag) VL_MT_SAFE;
+    std::string profVltFilename() const VL_MT_SAFE;
 
     // Internal: Find scope
     const VerilatedScope* scopeFind(const char* namep) const VL_MT_SAFE;

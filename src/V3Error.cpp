@@ -78,7 +78,7 @@ void V3Error::init() {
 
 string V3Error::lineStr(const char* filename, int lineno) {
     std::ostringstream out;
-    const char* fnslashp = std::strrchr(filename, '/');
+    const char* const fnslashp = std::strrchr(filename, '/');
     if (fnslashp) filename = fnslashp + 1;
     out << filename << ":" << std::dec << lineno << ":";
     const char* const spaces = "                    ";

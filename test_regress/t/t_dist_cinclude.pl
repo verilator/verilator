@@ -51,7 +51,7 @@ if (!-r "$root/.git") {
     }
 
     if (keys %names) {
-        error("Files like stdint.h instead of cstdint: ",join(' ',sort keys %names));
+        error("Files like stdint.h instead of cstdint: ", join(' ', sort keys %names));
     }
 }
 

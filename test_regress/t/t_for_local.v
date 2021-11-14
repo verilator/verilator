@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
 
    reg [31:0] loops;
    reg [31:0] loops2;
@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc+8'd1;
       if (cyc == 8'd1) begin
-	 $write("[%0t] t_loop: Running\n",$time);
+	 $write("[%0t] t_loop: Running\n", $time);
 	 // Unwind <
 	 loops = 0;
 	 loops2 = 0;

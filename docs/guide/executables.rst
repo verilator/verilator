@@ -15,5 +15,5 @@ options to each executable.
    exe_verilator.rst
    exe_verilator_coverage.rst
    exe_verilator_gantt.rst
-   exe_verilator_profcfuncs.rst
+   exe_verilator_profcfunc.rst
    exe_sim.rst

@@ -12,8 +12,8 @@ scenarios(vlt_all => 1);
 
 # This test makes randomly named .cpp/.h files, which tend to collect, so remove them first
 foreach my $filename (glob ("$Self->{obj_dir}/*_PS*.cpp"
-                            ." $Self->{obj_dir}/*_PS*.h"
-                            ." $Self->{obj_dir}/*.d" )) {
+                            . " $Self->{obj_dir}/*_PS*.h"
+                            . " $Self->{obj_dir}/*.d")) {
     print "rm $filename\n" if $Self->{verbose};
     unlink $filename;
 }

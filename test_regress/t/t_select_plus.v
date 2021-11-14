@@ -17,7 +17,7 @@ module t (/*AUTOARG*/
    reg [3:0] 		nibblep;
    reg [3:0] 		nibblem;
 
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
 
    always @* begin
       nibblep = from[bitn +: 4];
@@ -28,7 +28,7 @@ module t (/*AUTOARG*/
    end
 
    always @ (posedge clk) begin
-      //$write("[%0t] cyc==%d nibblep==%b nibblem==%b to^from==%x\n",$time, cyc, nibblep, nibblem, from^to);
+      //$write("[%0t] cyc==%d nibblep==%b nibblem==%b to^from==%x\n", $time, cyc, nibblep, nibblem, from^to);
       cyc <= cyc + 8'd1;
       case (cyc)
 	8'd00: begin from<=80'h7bea9d779b67e48f67da; bitn<=7'd7; end

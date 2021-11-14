@@ -85,7 +85,7 @@ module `t2 (
    integer vn = 0;
    integer vpn = 0;
    task clear;
-`ifdef TEST_VERBOSE $display("[%0t] clear\n",$time); `endif
+`ifdef TEST_VERBOSE $display("[%0t] clear\n", $time); `endif
       p0 = 0;
       p1 = 0;
       p01 = 0;
@@ -98,7 +98,7 @@ module `t2 (
    endtask
 
 `define display_counts(text) begin \
-   $write("[%0t] ",$time); \
+   $write("[%0t] ", $time); \
    `ifdef T_CLK_2IN_VEC $write(" 2v "); `endif \
    $write(text); \
    $write(": %0d %0d %0d  %0d %0d %0d  %0d %0d %0d\n",  p0, p1, p01,  n0, n1, n01,  vp, vn, vpn); \

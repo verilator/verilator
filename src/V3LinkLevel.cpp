@@ -49,12 +49,12 @@ void V3LinkLevel::modSortByLevel() {
     ModVec mods;  // Modules
     ModVec tops;  // Top level modules
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+         nodep = VN_AS(nodep->nextp(), NodeModule)) {
         if (nodep->level() <= 2) tops.push_back(nodep);
         mods.push_back(nodep);
     }
     if (tops.size() >= 2) {
-        AstNode* secp = tops[1];  // Complain about second one, as first often intended
+        const AstNode* const secp = tops[1];  // Complain about second one, as first often intended
         if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
             secp->v3warn(MULTITOP, "Multiple top level modules\n"
                                        << secp->warnMore()
@@ -86,7 +86,7 @@ void V3LinkLevel::modSortByLevel() {
 
 void V3LinkLevel::timescaling(const ModVec& mods) {
     // Timescale determination
-    AstNodeModule* modTimedp = nullptr;
+    const AstNodeModule* modTimedp = nullptr;
     VTimescale unit(VTimescale::NONE);
     // Use highest level module as default unit - already sorted in proper order
     for (const auto& modp : mods) {
@@ -132,6 +132,8 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
         v3Global.rootp()->timeprecisionMerge(v3Global.rootp()->fileline(),
                                              VTimescale(VTimescale::TS_DEFAULT));
     }
+
+    // Classes under package have timescale propaged in V3LinkParse
 }
 
 //######################################################################
@@ -163,8 +165,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
 
     // Instantiate all packages under the top wrapper
     // This way all later SCOPE based optimizations can ignore packages
-    for (AstNodeModule* modp = rootp->modulesp(); modp;
-         modp = VN_CAST(modp->nextp(), NodeModule)) {
+    for (AstNodeModule* modp = rootp->modulesp(); modp; modp = VN_AS(modp->nextp(), NodeModule)) {
         if (VN_IS(modp, Package)) {
             AstCell* cellp = new AstCell(modp->fileline(), modp->fileline(),
                                          // Could add __03a__03a="::" to prevent conflict
@@ -187,8 +188,8 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     NameSet ioNames;
     NameSet dupNames;
     // For all modules, skipping over new top
-    for (AstNodeModule* oldmodp = VN_CAST(rootp->modulesp()->nextp(), NodeModule);
-         oldmodp && oldmodp->level() <= 2; oldmodp = VN_CAST(oldmodp->nextp(), NodeModule)) {
+    for (AstNodeModule* oldmodp = VN_AS(rootp->modulesp()->nextp(), NodeModule);
+         oldmodp && oldmodp->level() <= 2; oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
         for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
             if (AstVar* oldvarp = VN_CAST(subnodep, Var)) {
                 if (oldvarp->isIO()) {
@@ -204,8 +205,8 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     }
 
     // For all modules, skipping over new top
-    for (AstNodeModule* oldmodp = VN_CAST(rootp->modulesp()->nextp(), NodeModule);
-         oldmodp && oldmodp->level() <= 2; oldmodp = VN_CAST(oldmodp->nextp(), NodeModule)) {
+    for (AstNodeModule* oldmodp = VN_AS(rootp->modulesp()->nextp(), NodeModule);
+         oldmodp && oldmodp->level() <= 2; oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
         if (VN_IS(oldmodp, Package)) continue;
         // Add instance
         UINFO(5, "LOOP " << oldmodp << endl);

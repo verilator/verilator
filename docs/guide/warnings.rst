@@ -130,9 +130,10 @@ List Of Warnings
 
 .. option:: BADSTDPRAGMA
 
-   Error that a pragma is badly formed, when that pragma is defined by IEEE1800-2017.
-   For example, an empty `pragma line, or an incorrect specified '`pragma protect'.
-   Note that 3rd party pragmas not defined by IEEE1800-2017 are ignored.
+   Error that a pragma is badly formed, when that pragma is defined by IEEE
+   1800-2017.  For example, an empty pragma line, or an incorrect specified
+   'pragma protect'.  Note that 3rd party pragmas not defined by IEEE
+   1800-2017 are ignored.
 
 
 .. option:: BLKANDNBLK
@@ -481,38 +482,43 @@ List Of Warnings
 
    Faulty example:
 
-   .. code-block:: sv
+   .. include:: ../../docs/gen/ex_DIDNOTCONVERGE_faulty.rst
 
-         always_comb b = ~a;
-         always_comb a = b
+   Results in at runtime (not when Verilated):
 
-   This code will toggle forever, and thus to prevent an infinite loop, the
-   executable will give the didn't converge error.
+   .. include:: ../../docs/gen/ex_DIDNOTCONVERGE_nodbg_msg.rst
 
-   To debug this, first review any UNOPTFLAT warnings that were ignored.
-   Though typically it is safe to ignore UNOPTFLAT (at a performance cost),
-   at the time of issuing a UNOPTFLAT Verilator did not know if the logic
-   would eventually converge and assumed it would.
+   This is because the signals keep toggling even with out time
+   passing. Thus to prevent an infinite loop, the Verilated executable
+   gives the DIDNOTCONVERGE error.
+
+   To debug this, first review any UNOPT or UNOPTFLAT warnings that were
+   ignored.  Though typically it is safe to ignore UNOPTFLAT (at a
+   performance cost), at the time of issuing a UNOPTFLAT Verilator did not
+   know if the logic would eventually converge and assumed it would.
 
    Next, run Verilator with :vlopt:`--prof-cfuncs -CFLAGS -DVL_DEBUG
    <--prof-cfuncs>`.  Rerun the test.  Now just before the convergence
    error you should see additional output similar to this:
 
-   .. code-block::
+   .. include:: ../../docs/gen/ex_DIDNOTCONVERGE_msg.rst
 
-         CHANGE: filename.v:1: b
-         CHANGE: filename.v:2: a
-
-   This means that signal b and signal a keep changing, inspect the code
-   that modifies these signals.  Note if many signals are getting printed
-   then most likely all of them are oscillating.  It may also be that
-   e.g. "a" may be oscillating, then "a" feeds signal "c" which then is
-   also reported as oscillating.
+   The CHANGE line means that on the given filename and line number that
+   drove a signal, the signal 'a' kept changing. Inspect the code that
+   modifies these signals.  Note if many signals are getting printed then
+   most likely all of them are oscillating.  It may also be that e.g. "a"
+   may be oscillating, then "a" feeds signal "c" which then is also
+   reported as oscillating.
 
    One way DIDNOTCONVERGE may occur is flops are built out of gate
-   primitives.  error. Verilator does not support building flops or latches
-   out of gate primitives, and any such code must change to use behavioral
+   primitives. Verilator does not support building flops or latches out of
+   gate primitives, and any such code must change to use behavioral
    constructs (e.g. always_ff and always_latch).
+
+   Another way DIDNOTCONVERGE may occur is if # delays are used to generate
+   clocks.  Verilator ignores the delays and gives an :option:`ASSIGNDLY`
+   or :option:`STMTDLY` warning.  If these were suppressed, due to the
+   absense of the delay, the code may now oscillate.
 
    Finally, rare, more difficult cases can be debugged like a C++ program;
    either enter :command:`gdb` and use its tracing facilities, or edit the
@@ -572,7 +578,7 @@ List Of Warnings
    must end in newline, as otherwise for example :command:`cat` with the
    file as an argument may produce undesirable results.
 
-   Repair by adding a newline to the end of the file.
+   Repair by appending a newline to the end of the file.
 
    Disabled by default as this is a code style warning; it will simulate
    correctly.
@@ -792,8 +798,8 @@ List Of Warnings
    .. TODO better example
 
    Warns that a module has multiple definitions.  Generally this indicates
-   a coding error, or a mistake in a library file and it's good practice to
-   have one module per file (and only put each file once on the command
+   a coding error, or a mistake in a library file, and it's good practice
+   to have one module per file (and only put each file once on the command
    line) to avoid these issues.  For some gate level netlists duplicates
    are sometimes unavoidable, and MODDUP should be disabled.
 
@@ -1005,9 +1011,25 @@ List Of Warnings
    a var/reg must be used as the target of procedural assignments.
 
 
+.. option:: PROFOUTOFDATE
+
+   Warns that threads were scheduled using estimated costs, despite the
+   fact that data was provided from profile-guided optimization (see
+   :ref:`Thread PGO`) as fed into Verilator using the
+   :option:`profile_data` configuration file option.  This usually
+   indicates that the profile data was generated from different Verilog
+   source code than Verilator is currently running against.
+
+   It is recommended to create new profiling data, then rerun Verilator
+   with the same input source files and that new profiling data.
+
+   Ignoring this warning may only slow simulations, it will simulate
+   correctly.
+
+
 .. option:: PROTECTED
 
-   Warning that a '`pragma protected' section was encountered. The code
+   Warning that a 'pragma protected' section was encountered. The code
    inside the protected region will be partly checked for correctness, but is
    otherwise ignored.
 
@@ -1183,9 +1205,25 @@ List Of Warnings
 
    Faulty example:
 
-   .. code-block:: sv
+   .. include:: ../../docs/gen/ex_STMTDLY_faulty.rst
 
-         #100 $finish;  //<--- Warning
+   Results in:
+
+   .. include:: ../../docs/gen/ex_STMTDLY_msg.rst
+
+   This is a warning because Verilator does not support delayed statements.
+   It will simply ignore all such delays.  In many cases ignoring a delay
+   might be harmless, but if the delayed statement is, as in this example,
+   used to cause some important action at a later time, it might be an
+   important difference.
+
+   Some possible work arounds:
+
+   * Move the delayed statement into the C++ wrapper file, where the
+     stimulus and clock generation can be done in C++.
+
+   * Convert the statement into a FSM, or other statement that tests
+     against $time.
 
 
 .. option:: SYMRSVDWORD
@@ -1353,7 +1391,9 @@ List Of Warnings
 
    Often UNOPTFLAT is caused by logic that isn't truly circular as viewed by
    synthesis which analyzes interconnection per-bit, but is circular to
-   simulation which analyzes per-bus:
+   simulation which analyzes per-bus.
+
+   Faulty example:
 
    .. code-block:: sv
 
@@ -1466,9 +1506,16 @@ List Of Warnings
    Error that a construct might be legal according to IEEE but is not
    currently supported by Verilator.
 
+   A typical workaround is to recode the construct into a simpler and more
+   common alternative language construct.
+
+   Alternatively, check if the construct is supported by other tools, and
+   if so please consider submitting a github pull request against the
+   Verilator sources to implement the missing unsupported feature.
+
    This error may be ignored with :vlopt:`--bbox-unsup`, however this will
-   make the design simulate incorrectly; see the details under
-   :vlopt:`--bbox-unsup`.
+   make the design simulate incorrectly and is only intended for lint
+   usage; see the details under :vlopt:`--bbox-unsup`.
 
 
 .. option:: UNUSED
@@ -1598,7 +1645,7 @@ List Of Warnings
    * A part select has a different size then needed to index into the
      packed or unpacked array (etc).
 
-   Verilator for attempts to track the minimum width of unsized constants
+   Verilator attempts to track the minimum width of unsized constants
    and will suppress the warning when the minimum width is appropriate to
    fit the required size.
 
@@ -1607,11 +1654,13 @@ List Of Warnings
 
    The recommendation is to fix these issues by:
 
-   * Resizing the variable or constant.  E.g. :code:`2'd2` instead of :code:`3'd2`.
+   * Resizing the variable or constant to match the needed size for the
+     expression.  E.g. :code:`2'd2` instead of :code:`3'd2`.
 
-   * Using :code:`'0` or :code:`'1`.
+   * Using :code:`'0` or :code:`'1` which automatically resize in an
+     expression.
 
-   * Using part select to narrow a variable. E.g. :code:`too_wide[1:0]`.
+   * Using part selects to narrow a variable. E.g. :code:`too_wide[1:0]`.
 
    * Using concatenate to widen a variable. E.g. :code:`{1'b1, too_narrow}`.
 

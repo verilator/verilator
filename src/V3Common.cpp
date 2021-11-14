@@ -64,7 +64,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;\n"});
     std::string comma;
     for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
-        if (auto* const varp = VN_CAST(itemp, Var)) {
+        if (const auto* const varp = VN_CAST(itemp, Var)) {
             if (!varp->isParam()) {
                 string stmt = "out += \"";
                 stmt += comma;

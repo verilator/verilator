@@ -179,6 +179,16 @@ multiline", $time);
       $display("log10(2) = %d", $log10(100));
       // verilator lint_on REALCVT
 
+      // unknown and high-impedance values
+      $display("%d", 1'bx);
+      $display("%h", 14'bx01010);
+      $display("%h %o", 12'b001xxx101x01, 12'b001xxx101x01);
+      $display("%d", 32'bx);
+      $display("%d", 32'bz);
+      $display("%d", 32'b11x11z111);
+      $display("%d", 32'b11111z111);
+      $display("%h", 12'b1zz1_zzzz_1x1z);
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

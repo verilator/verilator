@@ -107,14 +107,14 @@ private:
         // If multiple functions exist, we need to select the appropriate scope.
         for (FuncMmap::iterator it = m_modFuncs.begin(); it != m_modFuncs.end(); ++it) {
             const string name = it->first;
-            AstCFunc* topFuncp = it->second;
+            AstCFunc* const topFuncp = it->second;
             auto nextIt1 = it;
             ++nextIt1;
             bool moreOfSame1 = (nextIt1 != m_modFuncs.end() && nextIt1->first == name);
             if (moreOfSame1) {
                 // Multiple functions under this name, need a wrapper function
                 UINFO(6, "  Wrapping " << name << " multifuncs\n");
-                AstCFunc* newfuncp = topFuncp->cloneTree(false);
+                AstCFunc* const newfuncp = topFuncp->cloneTree(false);
                 if (newfuncp->initsp()) newfuncp->initsp()->unlinkFrBackWithNext()->deleteTree();
                 if (newfuncp->stmtsp()) newfuncp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
                 if (newfuncp->finalsp()) newfuncp->finalsp()->unlinkFrBackWithNext()->deleteTree();
@@ -125,7 +125,7 @@ private:
                 for (FuncMmap::iterator eachIt = it;
                      eachIt != m_modFuncs.end() && eachIt->first == name; ++eachIt) {
                     it = eachIt;
-                    AstCFunc* funcp = eachIt->second;
+                    AstCFunc* const funcp = eachIt->second;
                     auto nextIt2 = eachIt;
                     ++nextIt2;
                     const bool moreOfSame
@@ -138,21 +138,21 @@ private:
                     funcp->declPrivate(true);
                     AstNode* argsp = nullptr;
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
-                        if (AstVar* portp = VN_CAST(stmtp, Var)) {
+                        if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
-                                AstNode* newp = new AstVarRef(portp->fileline(), portp,
-                                                              portp->isWritable() ? VAccess::WRITE
-                                                                                  : VAccess::READ);
+                                AstNode* const newp = new AstVarRef(
+                                    portp->fileline(), portp,
+                                    portp->isWritable() ? VAccess::WRITE : VAccess::READ);
                                 argsp = argsp ? argsp->addNextNull(newp) : newp;
                             }
                         }
                     }
 
-                    AstNode* returnp = new AstCReturn(
+                    AstNode* const returnp = new AstCReturn(
                         funcp->fileline(), new AstCCall(funcp->fileline(), funcp, argsp));
 
                     if (moreOfSame) {
-                        AstIf* ifp = new AstIf(
+                        AstIf* const ifp = new AstIf(
                             funcp->fileline(),
                             new AstEq(
                                 funcp->fileline(), new AstCMath(funcp->fileline(), "this", 64),

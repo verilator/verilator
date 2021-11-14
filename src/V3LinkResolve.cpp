@@ -152,12 +152,12 @@ private:
             // If it's not a simple variable wrap in a temporary
             // This is a bit unfortunate as we haven't done width resolution
             // and any width errors will look a bit odd, but it works.
-            AstNode* sensp = nodep->sensp();
+            AstNode* const sensp = nodep->sensp();
             if (sensp && !VN_IS(sensp, NodeVarRef) && !VN_IS(sensp, Const)) {
                 // Make a new temp wire
                 const string newvarname = "__Vsenitemexpr" + cvtToStr(++m_senitemCvtNum);
-                AstVar* newvarp = new AstVar(sensp->fileline(), AstVarType::MODULETEMP, newvarname,
-                                             VFlagLogicPacked(), 1);
+                AstVar* const newvarp = new AstVar(sensp->fileline(), AstVarType::MODULETEMP,
+                                                   newvarname, VFlagLogicPacked(), 1);
                 // We can't just add under the module, because we may be
                 // inside a generate, begin, etc.
                 // We know a SenItem should be under a SenTree/Always etc,
@@ -175,7 +175,7 @@ private:
                 addwherep->addNext(newvarp);
 
                 sensp->replaceWith(new AstVarRef(sensp->fileline(), newvarp, VAccess::READ));
-                AstAssignW* assignp = new AstAssignW(
+                AstAssignW* const assignp = new AstAssignW(
                     sensp->fileline(), new AstVarRef(sensp->fileline(), newvarp, VAccess::WRITE),
                     sensp);
                 addwherep->addNext(assignp);
@@ -184,21 +184,21 @@ private:
             bool did = true;
             while (did) {
                 did = false;
-                if (AstNodeSel* selp = VN_CAST(nodep->sensp(), NodeSel)) {
-                    AstNode* fromp = selp->fromp()->unlinkFrBack();
+                if (AstNodeSel* const selp = VN_CAST(nodep->sensp(), NodeSel)) {
+                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = true;
                 }
                 // NodeSel doesn't include AstSel....
-                if (AstSel* selp = VN_CAST(nodep->sensp(), Sel)) {
-                    AstNode* fromp = selp->fromp()->unlinkFrBack();
+                if (AstSel* const selp = VN_CAST(nodep->sensp(), Sel)) {
+                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = true;
                 }
-                if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
-                    AstNode* fromp = selp->fromp()->unlinkFrBack();
+                if (AstNodePreSel* const selp = VN_CAST(nodep->sensp(), NodePreSel)) {
+                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = true;
@@ -220,8 +220,8 @@ private:
             // variable we're extracting from (to determine MSB/LSB/endianness/etc.)
             // So we replicate it in another node
             // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
-            AstNode* basefromp = AstArraySel::baseFromp(nodep, false);
-            if (AstNodeVarRef* varrefp
+            AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
+            if (AstNodeVarRef* const varrefp
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            varrefp->cloneTree(false)));
@@ -254,7 +254,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->user2() && nodep->isDefault() && nodep->nextp()) {
             nodep->user2(true);
-            AstNode* nextp = nodep->nextp();
+            AstNode* const nextp = nodep->nextp();
             nodep->unlinkFrBack();
             nextp->addNext(nodep);
         }
@@ -355,7 +355,7 @@ private:
                     skipCount--;
                     continue;
                 }
-                AstConst* constp = VN_CAST(argp, Const);
+                const AstConst* const constp = VN_CAST(argp, Const);
                 const bool isFromString = (constp) ? constp->num().isFromString() : false;
                 if (isFromString) {
                     const int numchars = argp->dtypep()->width() / 8;
@@ -389,7 +389,7 @@ private:
                         }
                     }
                     newFormat.append(str);
-                    AstNode* nextp = argp->nextp();
+                    AstNode* const nextp = argp->nextp();
                     argp->unlinkFrBack();
                     VL_DO_DANGLING(pushDeletep(argp), argp);
                     argp = nextp;
@@ -449,8 +449,8 @@ private:
             UASSERT_OBJ(nodep->text() == "", nodep,
                         "Non-format $sformatf should have \"\" format");
             if (VN_IS(nodep->exprsp(), Const)
-                && VN_CAST(nodep->exprsp(), Const)->num().isFromString()) {
-                AstConst* fmtp = VN_CAST(nodep->exprsp()->unlinkFrBack(), Const);
+                && VN_AS(nodep->exprsp(), Const)->num().isFromString()) {
+                AstConst* const fmtp = VN_AS(nodep->exprsp()->unlinkFrBack(), Const);
                 nodep->text(fmtp->num().toString());
                 VL_DO_DANGLING(pushDeletep(fmtp), fmtp);
             }
@@ -459,7 +459,7 @@ private:
         const string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
         nodep->text(newFormat);
         if ((VN_IS(nodep->backp(), Display)
-             && VN_CAST(nodep->backp(), Display)->displayType().needScopeTracking())
+             && VN_AS(nodep->backp(), Display)->displayType().needScopeTracking())
             || nodep->formatScopeTracking()) {
             nodep->scopeNamep(new AstScopeName(nodep->fileline()));
         }
@@ -472,9 +472,9 @@ private:
             // never used won't result in any warnings.
         } else {
             // Massive hack, just tie off all outputs so our analysis can proceed
-            AstVar* varoutp = nullptr;
+            const AstVar* varoutp = nullptr;
             for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                     if (varp->isReadOnly()) {
                     } else if (varp->isWritable()) {
                         if (varoutp) {

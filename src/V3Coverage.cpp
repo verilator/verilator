@@ -116,20 +116,20 @@ private:
         // Someday the user might be allowed to specify a different page suffix
         const string page = page_prefix + "/" + m_modp->prettyName();
 
-        AstCoverDecl* declp = new AstCoverDecl(fl, page, comment, linescov, offset);
+        AstCoverDecl* const declp = new AstCoverDecl(fl, page, comment, linescov, offset);
         declp->hier(hier);
         m_modp->addStmtp(declp);
         UINFO(9, "new " << declp << endl);
 
-        AstCoverInc* incp = new AstCoverInc(fl, declp);
+        AstCoverInc* const incp = new AstCoverInc(fl, declp);
         if (!trace_var_name.empty() && v3Global.opt.traceCoverage()) {
-            AstVar* varp = new AstVar(incp->fileline(), AstVarType::MODULETEMP, trace_var_name,
-                                      incp->findUInt32DType());
+            AstVar* const varp = new AstVar(incp->fileline(), AstVarType::MODULETEMP,
+                                            trace_var_name, incp->findUInt32DType());
             varp->trace(true);
             varp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
             m_modp->addStmtp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);
-            AstAssign* assp = new AstAssign(
+            AstAssign* const assp = new AstAssign(
                 incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::WRITE),
                 new AstAdd(incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::READ),
                            new AstConst(incp->fileline(), AstConst::WidthedValue(), 32, 1)));
@@ -209,7 +209,7 @@ private:
 
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        AstNodeModule* const origModp = m_modp;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
         {
@@ -240,10 +240,10 @@ private:
             iterateChildren(nodep);
             if (m_state.lineCoverageOn(nodep)) {
                 lineTrack(nodep);
-                AstNode* newp
+                AstNode* const newp
                     = newCoverInc(nodep->fileline(), "", "v_line", "block",
                                   linesCov(m_state, nodep), 0, traceNameForLine(nodep, "block"));
-                if (AstNodeProcedure* itemp = VN_CAST(nodep, NodeProcedure)) {
+                if (AstNodeProcedure* const itemp = VN_CAST(nodep, NodeProcedure)) {
                     itemp->addStmtp(newp);
                 } else if (AstNodeFTask* itemp = VN_CAST(nodep, NodeFTask)) {
                     itemp->addStmtsp(newp);
@@ -261,7 +261,7 @@ private:
         iterateChildren(nodep);
         if (m_modp && !m_inToggleOff && !m_state.m_inModOff && nodep->fileline()->coverageOn()
             && v3Global.opt.coverageToggle()) {
-            const char* disablep = varIgnoreToggle(nodep);
+            const char* const disablep = varIgnoreToggle(nodep);
             if (disablep) {
                 UINFO(4, "    Disable Toggle: " << disablep << " " << nodep << endl);
             } else {
@@ -279,7 +279,7 @@ private:
 
                 // Add signal to hold the old value
                 const string newvarname = string("__Vtogcov__") + nodep->shortName();
-                AstVar* chgVarp
+                AstVar* const chgVarp
                     = new AstVar(nodep->fileline(), AstVarType::MODULETEMP, newvarname, nodep);
                 chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
                 m_modp->addStmtp(chgVarp);
@@ -298,7 +298,7 @@ private:
     }
 
     void toggleVarBottom(const ToggleEnt& above, const AstVar* varp) {
-        AstCoverToggle* newp = new AstCoverToggle(
+        AstCoverToggle* const newp = new AstCoverToggle(
             varp->fileline(),
             newCoverInc(varp->fileline(), "", "v_toggle", varp->name() + above.m_comment, "", 0,
                         ""),
@@ -308,7 +308,7 @@ private:
 
     void toggleVarRecurse(AstNodeDType* dtypep, int depth,  // per-iteration
                           const ToggleEnt& above, AstVar* varp, AstVar* chgVarp) {  // Constant
-        if (const AstBasicDType* bdtypep = VN_CAST(dtypep, BasicDType)) {
+        if (const AstBasicDType* const bdtypep = VN_CAST(dtypep, BasicDType)) {
             if (bdtypep->isRanged()) {
                 for (int index_docs = bdtypep->lo(); index_docs < bdtypep->hi() + 1;
                      ++index_docs) {
@@ -338,7 +338,7 @@ private:
             }
         } else if (AstPackArrayDType* adtypep = VN_CAST(dtypep, PackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
-                AstNodeDType* subtypep = adtypep->subDTypep()->skipRefp();
+                AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
                                  new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
@@ -352,8 +352,8 @@ private:
         } else if (AstStructDType* adtypep = VN_CAST(dtypep, StructDType)) {
             // For now it's packed, so similar to array
             for (AstMemberDType* itemp = adtypep->membersp(); itemp;
-                 itemp = VN_CAST(itemp->nextp(), MemberDType)) {
-                AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                 const int index_code = itemp->lsb();
                 ToggleEnt newent(above.m_comment + string(".") + itemp->name(),
                                  new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
@@ -365,8 +365,8 @@ private:
             }
         } else if (AstUnionDType* adtypep = VN_CAST(dtypep, UnionDType)) {
             // Arbitrarily handle only the first member of the union
-            if (AstMemberDType* itemp = adtypep->membersp()) {
-                AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
+            if (AstMemberDType* const itemp = adtypep->membersp()) {
+                AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                 ToggleEnt newent(above.m_comment + string(".") + itemp->name(),
                                  above.m_varRefp->cloneTree(true),
                                  above.m_chgRefp->cloneTree(true));
@@ -387,7 +387,7 @@ private:
             // An else-if.  When we iterate the if, use "elsif" marking
             const bool elsif
                 = nodep->ifsp() && VN_IS(nodep->elsesp(), If) && !nodep->elsesp()->nextp();
-            if (elsif) VN_CAST(nodep->elsesp(), If)->user1(true);
+            if (elsif) VN_AS(nodep->elsesp(), If)->user1(true);
             const bool first_elsif = !nodep->user1() && elsif;
             const bool cont_elsif = nodep->user1() && elsif;
             const bool final_elsif = nodep->user1() && !elsif && nodep->elsesp();

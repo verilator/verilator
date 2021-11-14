@@ -128,10 +128,10 @@ private:
             if (nodep->isWide()) {
                 if (m_assignLhs) {
                 } else if (nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), NodeAssign)
-                           && assignNoTemp(VN_CAST(nodep->firstAbovep(), NodeAssign))) {
+                           && assignNoTemp(VN_AS(nodep->firstAbovep(), NodeAssign))) {
                     // Not much point if it's just a direct assignment to a constant
                 } else if (VN_IS(nodep->backp(), Sel)
-                           && VN_CAST(nodep->backp(), Sel)->widthp() == nodep) {
+                           && VN_AS(nodep->backp(), Sel)->widthp() == nodep) {
                     // AstSel::width must remain a constant
                 } else if ((nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), ArraySel))
                            || ((VN_IS(m_stmtp, CCall) || VN_IS(m_stmtp, CStmt))
@@ -384,7 +384,7 @@ private:
             AstNode* searchp = nodep->nextp();
             while (searchp && VN_IS(searchp, Comment)) searchp = searchp->nextp();
             if (searchp && VN_IS(searchp, Display)
-                && nodep->filep()->sameGateTree(VN_CAST(searchp, Display)->filep())) {
+                && nodep->filep()->sameGateTree(VN_AS(searchp, Display)->filep())) {
                 // There's another display next; we can just wait to flush
             } else {
                 UINFO(4, "Autoflush " << nodep << endl);

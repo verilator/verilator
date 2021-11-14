@@ -67,7 +67,7 @@ V3ParseImp::~V3ParseImp() {
 
 void V3ParseImp::lexPpline(const char* textp) {
     // Handle lexer `line directive
-    FileLine* prevFl = copyOrSameFileLine();
+    FileLine* const prevFl = copyOrSameFileLine();
     int enterExit;
     lexFileline()->lineDirective(textp, enterExit /*ref*/);
     if (enterExit == 1) {  // Enter
@@ -186,7 +186,7 @@ string V3ParseImp::lexParseTag(const char* textp) {
 
 double V3ParseImp::lexParseTimenum(const char* textp) {
     const size_t length = strlen(textp);
-    char* strgp = new char[length + 1];
+    char* const strgp = new char[length + 1];
     char* dp = strgp;
     const char* sp = textp;
     for (; isdigit(*sp) || *sp == '_' || *sp == '.'; ++sp) {
@@ -281,7 +281,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     if (!ok) {
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
-        AstNodeModule* nodep = new AstNotFoundModule(fileline, modname);
+        AstNodeModule* const nodep = new AstNotFoundModule(fileline, modname);
         v3Global.rootp()->addModulep(nodep);
         return;
     }
@@ -488,7 +488,7 @@ void V3ParseImp::tokenPipelineSym() {
     int token = yylval.token;
     if (token == yaID__LEX || token == yaID__CC) {
         VSymEnt* foundp;
-        if (VSymEnt* look_underp = V3ParseImp::parsep()->symp()->nextId()) {
+        if (VSymEnt* const look_underp = V3ParseImp::parsep()->symp()->nextId()) {
             UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
             // if (debug() >= 7) V3ParseImp::parsep()->symp()->dump(cout, " -symtree: ");
             foundp = look_underp->findIdFallback(*(yylval.strp));
@@ -503,7 +503,7 @@ void V3ParseImp::tokenPipelineSym() {
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }
         if (foundp) {
-            AstNode* scp = foundp->nodep();
+            AstNode* const scp = foundp->nodep();
             yylval.scp = scp;
             UINFO(7, "   tokenPipelineSym: Found " << scp << endl);
             if (token == yaID__LEX) {  // i.e. not yaID__CC

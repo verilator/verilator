@@ -16,7 +16,7 @@ module t (/*autoarg*/
    input [15:0] in;
    wreal aout;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    real 	vin;
    wreal 	vpass;
@@ -59,7 +59,7 @@ module t (/*autoarg*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d aout=%d (%f-%f=%f)\n",$time, cyc, out, vin, gnd, within_range.in_int);
+      $write("[%0t] cyc==%0d aout=%d (%f-%f=%f)\n", $time, cyc, out, vin, gnd, within_range.in_int);
 `endif
       if (cyc==0) begin
 	 // Setup

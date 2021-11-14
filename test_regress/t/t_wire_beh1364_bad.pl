@@ -19,7 +19,7 @@ lint(
     );
 
 if (-e $waiver_filename) {
-    error("Waiver file generated, not expected..");
+    error("Waiver file generated, not expected");
 }
 
 ok(1);

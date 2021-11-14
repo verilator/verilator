@@ -323,7 +323,7 @@ public:
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
                    && !VN_IS(nodep->rhsp(), ArraySel)) {
             // Wide functions assign into the array directly, don't need separate assign statement
-            m_wideTempRefp = VN_CAST(nodep->lhsp(), VarRef);
+            m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
         } else if (nodep->isWide()) {
             putbs("VL_ASSIGN_W(");
@@ -348,7 +348,7 @@ public:
     virtual void visit(AstAssocSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         putbs(".at(");
-        AstAssocArrayDType* adtypep = VN_CAST(nodep->fromp()->dtypep(), AssocArrayDType);
+        AstAssocArrayDType* adtypep = VN_AS(nodep->fromp()->dtypep(), AssocArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
         if (adtypep->keyDTypep()->isWide()) {
             emitCvtWideArray(nodep->bitp(), nodep->fromp());
@@ -392,10 +392,15 @@ public:
         emitCCallArgs(nodep, "");
     }
     virtual void visit(AstCNew* nodep) override {
+        bool comma = false;
         puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
         puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
-        if (nodep->argsp()) puts(", ");
-        iterateAndNextNull(nodep->argsp());
+        if (nodep->argsp()) comma = true;
+        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (comma) puts(", ");
+            iterate(subnodep);
+            comma = true;
+        }
         puts(")");
     }
     virtual void visit(AstCMethodHard* nodep) override {
@@ -900,7 +905,7 @@ public:
         }
     }
     virtual void visit(AstTextBlock* nodep) override {
-        visit(VN_CAST(nodep, NodeSimpleText));
+        visit(static_cast<AstNodeSimpleText*>(nodep));
         for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
             iterate(childp);
             if (nodep->commas() && childp->nextp()) puts(", ");
@@ -980,7 +985,7 @@ public:
     }
     virtual void visit(AstRedXor* nodep) override {
         if (nodep->lhsp()->isWide()) {
-            visit(VN_CAST(nodep, NodeUniop));
+            visit(static_cast<AstNodeUniop*>(nodep));
         } else {
             AstVarRef* const vrefp = VN_CAST(nodep->lhsp(), VarRef);
             const int widthPow2 = vrefp ? vrefp->varp()->dtypep()->widthPow2()
@@ -1044,7 +1049,7 @@ public:
     }
     virtual void visit(AstReplicate* nodep) override {
         if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
-            UASSERT_OBJ((static_cast<int>(VN_CAST(nodep->rhsp(), Const)->toUInt())
+            UASSERT_OBJ((static_cast<int>(VN_AS(nodep->rhsp(), Const)->toUInt())
                          * nodep->lhsp()->widthMin())
                             == nodep->widthMin(),
                         nodep, "Replicate non-constant or width miscomputed");
@@ -1066,8 +1071,8 @@ public:
     virtual void visit(AstStreamL* nodep) override {
         // Attempt to use a "fast" stream function for slice size = power of 2
         if (!nodep->isWide()) {
-            uint32_t isPow2 = VN_CAST(nodep->rhsp(), Const)->num().countOnes() == 1;
-            uint32_t sliceSize = VN_CAST(nodep->rhsp(), Const)->toUInt();
+            uint32_t isPow2 = VN_AS(nodep->rhsp(), Const)->num().countOnes() == 1;
+            uint32_t sliceSize = VN_AS(nodep->rhsp(), Const)->toUInt();
             if (isPow2 && sliceSize <= (nodep->isQuad() ? sizeof(uint64_t) : sizeof(uint32_t))) {
                 puts("VL_STREAML_FAST_");
                 emitIQW(nodep);
@@ -1079,7 +1084,7 @@ public:
                 puts(",");
                 iterateAndNextNull(nodep->lhsp());
                 puts(", ");
-                uint32_t rd_log2 = V3Number::log2b(VN_CAST(nodep->rhsp(), Const)->toUInt());
+                uint32_t rd_log2 = V3Number::log2b(VN_AS(nodep->rhsp(), Const)->toUInt());
                 puts(cvtToStr(rd_log2) + ")");
                 return;
             }

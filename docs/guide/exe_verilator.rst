@@ -158,28 +158,26 @@ Summary:
 
 .. option:: --clk <signal-name>
 
-   Sometimes it is quite difficult for Verilator to distinguish clock
-   signals from other data signals. Occasionally the clock signals can end
-   up in the checking list of signals which determines if further
-   evaluation is needed. This will heavily degrade the performance of a
-   Verilated model.
-
    With :vlopt:`--clk`, the specified signal-name is taken as a root clock
-   into the model, then Verilator will mark the signal as clocker and
-   propagate the clocker attribute automatically to other signals derived
-   from that. In this way, Verilator will try to avoid taking the clocker
-   signal into checking list.
+   into the model; Verilator will mark the signal as clocker and
+   propagate the clocker attribute automatically to other signals downstream in
+   that clock tree.
 
-   Note signal-name is specified by the RTL hierarchy path. For example,
-   v.foo.bar.  If the signal is the input to top-module, the directly the
-   signal name. If you find it difficult to find the exact name, try to use
-   a :option:`/*verilator&32;clocker*/` metacomment in RTL file to mark the
+   The provided signal-name is specified using a RTL hierarchy path. For
+   example, v.foo.bar.  If the signal is the input to top-module, then
+   directly provide the signal name. Alternatively, use a
+   :option:`/*verilator&32;clocker*/` metacomment in RTL file to mark the
    signal directly.
 
-   If clock signals are assigned to vectors and then later used
-   individually, Verilator will attempt to decompose the vector and connect
-   the single-bit clock signals directly.  This should be transparent to
-   the user.
+   If clock signals are assigned to vectors and then later used as
+   individual bits, Verilator will attempt to decompose the vector and
+   connect the single-bit clock signals.
+
+   The clocker attribute is useful in cases where Verilator does not
+   properly distinguish clock signals from other data signals. Using
+   clocker will cause the signal indicated to be considered a clock, and
+   remove it from the combinatorial logic reevaluation checking code. This
+   may greatly improve performance.
 
 .. option:: --make <build-tool>
 
@@ -816,7 +814,7 @@ Summary:
    When compiling the C++ code, enable the compiler's profiling flag
    (e.g. :code:`g++ -pg`). See :ref:`Profiling`.
 
-   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`prof-c`.
+   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
 
 .. option:: --prof-cfuncs
 
@@ -828,12 +826,12 @@ Summary:
    came from.  This allows gprof or oprofile reports to be correlated with
    the original Verilog source statements. See :ref:`Profiling`.
 
-   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`prof-c`.
+   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
 
 .. option:: --prof-threads
 
    Enable gantt chart data collection for threaded builds. See :ref:`Thread
-   Profiling`.
+   Profiling` and :ref:`Thread PGO`.
 
 .. option:: --protect-key <key>
 
@@ -1167,9 +1165,9 @@ Summary:
 
 .. option:: --trace-underscore
 
-   Enable tracing of signals that start with an underscore. Normally, these
-   signals are not output during tracing.  See also
-   :vlopt:`--coverage-underscore` option.
+   Enable tracing of signals or modules that start with an
+   underscore. Normally, these signals are not output during tracing.  See
+   also :vlopt:`--coverage-underscore` option.
 
 .. option:: -U<var>
 
@@ -1506,9 +1504,9 @@ The grammar of configuration commands is as follows:
 
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
-   Indicate the signal is used as clock or not. This information is used by
-   Verilator to mark the signal as clocker and propagate the clocker
-   attribute automatically to derived signals. See :vlopt:`--clk`.
+   Indicates that the signal is used as clock or not. This information is
+   used by Verilator to mark the signal and any derrived signals as
+   clocker.  See :vlopt:`--clk`.
 
    Same as :option:`/*verilator&32;clocker*/` metacomment.
 
@@ -1611,6 +1609,12 @@ The grammar of configuration commands is as follows:
    :option:`/*verilator&32;public*/` or
    :option:`/*verilator&32;public_flat*/`, etc, metacomments. See
    e.g. :ref:`VPI Example`.
+
+.. option:: profile_data -mtask "<mtask_hash>" -cost <cost_value>
+
+   Feeds profile-guided optimization data into the Verilator algorithms in
+   order to improve model runtime performance.  This option is not expected
+   to be used by users directly.  See :ref:`Thread PGO`.
 
 .. option:: sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 

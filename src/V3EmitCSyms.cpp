@@ -21,6 +21,7 @@
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3LanguageWords.h"
+#include "V3PartitionGraph.h"
 
 #include <algorithm>
 #include <map>
@@ -49,9 +50,9 @@ class EmitCSyms final : EmitCBaseVisitor {
             , m_type{type} {}
     };
     struct ScopeFuncData {
-        AstScopeName* m_scopep;
-        AstCFunc* m_cfuncp;
-        AstNodeModule* m_modp;
+        AstScopeName* const m_scopep;
+        AstCFunc* const m_cfuncp;
+        AstNodeModule* const m_modp;
         ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
             : m_scopep{scopep}
             , m_cfuncp{funcp}
@@ -60,9 +61,9 @@ class EmitCSyms final : EmitCBaseVisitor {
     struct ScopeVarData {
         string m_scopeName;
         string m_varBasePretty;
-        AstVar* m_varp;
-        AstNodeModule* m_modp;
-        AstScope* m_scopep;
+        AstVar* const m_varp;
+        AstNodeModule* const m_modp;
+        AstScope* const m_scopep;
         ScopeVarData(const string& scopeName, const string& varBasePretty, AstVar* varp,
                      AstNodeModule* modp, AstScope* scopep)
             : m_scopeName{scopeName}
@@ -123,8 +124,8 @@ class EmitCSyms final : EmitCBaseVisitor {
         // Prevent GCC compile time error; name check all things that reach C++ code
         if (nodep->name() != ""
             && !(VN_IS(nodep, CFunc)
-                 && (VN_CAST(nodep, CFunc)->isConstructor()
-                     || VN_CAST(nodep, CFunc)->isDestructor()))) {
+                 && (VN_AS(nodep, CFunc)->isConstructor()
+                     || VN_AS(nodep, CFunc)->isDestructor()))) {
             const string rsvd = V3LanguageWords::isKeyword(nodep->name());
             if (rsvd != "") {
                 // Generally V3Name should find all of these and throw SYMRSVDWORD.
@@ -192,12 +193,12 @@ class EmitCSyms final : EmitCBaseVisitor {
         // Someday.  For now public isn't common.
         for (std::vector<ScopeModPair>::iterator itsc = m_scopes.begin(); itsc != m_scopes.end();
              ++itsc) {
-            AstScope* scopep = itsc->first;
-            AstNodeModule* smodp = itsc->second;
+            AstScope* const scopep = itsc->first;
+            const AstNodeModule* const smodp = itsc->second;
             for (std::vector<ModVarPair>::iterator it = m_modVars.begin(); it != m_modVars.end();
                  ++it) {
-                AstNodeModule* modp = it->first;
-                AstVar* varp = it->second;
+                AstNodeModule* const modp = it->first;
+                AstVar* const varp = it->second;
                 if (modp == smodp) {
                     // Need to split the module + var name into the
                     // original-ish full scope and variable name under that scope.
@@ -214,12 +215,13 @@ class EmitCSyms final : EmitCBaseVisitor {
                     } else {
                         varBase = whole;
                     }
-                    // UINFO(9,"For "<<scopep->name()<<" - "<<varp->name()<<"  Scp "<<scpName<<"
-                    // Var "<<varBase<<endl);
+                    // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
+                    // << scpName << "Var " << varBase << endl);
                     const string varBasePretty = AstNode::prettyName(varBase);
                     const string scpPretty = AstNode::prettyName(scpName);
                     const string scpSym = scopeSymString(scpName);
-                    // UINFO(9," scnameins sp "<<scpName<<" sp "<<scpPretty<<" ss "<<scpSym<<endl);
+                    // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
+                    // << scpSym << endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
                         m_scopeNames.insert(std::make_pair(
@@ -393,13 +395,14 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.needTraceDumper()) {
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
     }
+    if (v3Global.opt.profThreads()) puts("#include \"verilated_profiler.h\"\n");
 
     puts("\n// INCLUDE MODEL CLASS\n");
     puts("\n#include \"" + topClassName() + ".h\"\n");
 
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+         nodep = VN_AS(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
         puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
@@ -408,7 +411,7 @@ void EmitCSyms::emitSymHdr() {
         puts("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
         std::map<const string, int> types;  // Remove duplicates and sort
         for (const auto& itr : m_scopeFuncs) {
-            AstCFunc* funcp = itr.second.m_cfuncp;
+            const AstCFunc* const funcp = itr.second.m_cfuncp;
             if (funcp->dpiExportImpl()) {
                 const string cbtype
                     = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
@@ -458,8 +461,8 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// MODULE INSTANCE STATE\n");
     for (const auto& i : m_scopes) {
-        AstScope* scopep = i.first;
-        AstNodeModule* modp = i.second;
+        const AstScope* const scopep = i.first;
+        const AstNodeModule* const modp = i.second;
         if (VN_IS(modp, Class)) continue;
         const string name = prefixNameProtect(modp);
         ofp()->printf("%-30s ", name.c_str());
@@ -472,6 +475,22 @@ void EmitCSyms::emitSymHdr() {
         puts(" __Vcoverage[");
         puts(cvtToStr(m_coverBins));
         puts("];\n");
+    }
+
+    if (v3Global.opt.profThreads()) {
+        puts("\n// PROFILING\n");
+        vluint64_t maxProfilerId = 0;
+        if (v3Global.opt.mtasks()) {
+            for (const V3GraphVertex* vxp
+                 = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
+                 vxp; vxp = vxp->verticesNextp()) {
+                const ExecMTask* const mtp
+                    = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+                if (maxProfilerId < mtp->profilerId()) maxProfilerId = mtp->profilerId();
+            }
+        }
+        ++maxProfilerId;  // As size must include 0
+        puts("VerilatedProfiler<" + cvtToStr(maxProfilerId) + "> _vm_profiler;\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names
@@ -535,7 +554,7 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     m_numStmts = 0;
     string filename
         = v3Global.opt.makeDir() + "/" + symClassName() + "__" + cvtToStr(++m_funcNum) + ".cpp";
-    AstCFile* cfilep = newCFile(filename, true /*slow*/, true /*source*/);
+    AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
     m_usesVfinal[m_funcNum] = usesVfinal;
     closeSplit();
@@ -566,7 +585,7 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("#include \"" + symClassName() + ".h\"\n");
     puts("#include \"" + topClassName() + ".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+         nodep = VN_AS(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
         puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
@@ -653,6 +672,7 @@ void EmitCSyms::emitSymImp() {
     }
 
     puts("// FUNCTIONS\n");
+
     // Destructor
     puts(symClassName() + "::~" + symClassName() + "()\n");
     puts("{\n");
@@ -662,7 +682,11 @@ void EmitCSyms::emitSymImp() {
         puts("if (__Vm_dumping) _traceDumpClose();\n");
         puts("#endif  // VM_TRACE\n");
     }
-    if (v3Global.opt.mtasks()) { puts("delete __Vm_threadPoolp;\n"); }
+    if (v3Global.opt.profThreads()) {
+        puts("_vm_profiler.write(\"" + topClassName()
+             + "\", _vm_contextp__->profVltFilename());\n");
+    }
+    if (v3Global.opt.mtasks()) puts("delete __Vm_threadPoolp;\n");
     puts("}\n\n");
 
     // Constructor
@@ -716,6 +740,19 @@ void EmitCSyms::emitSymImp() {
         ++m_numStmts;
     }
     puts("{\n");
+
+    if (v3Global.opt.profThreads()) {
+        puts("// Configure profiling\n");
+        if (v3Global.opt.mtasks()) {
+            for (const V3GraphVertex* vxp
+                 = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
+                 vxp; vxp = vxp->verticesNextp()) {
+                ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+                puts("_vm_profiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
+                     + mtp->hashName() + "\");\n");
+            }
+        }
+    }
 
     puts("// Configure time unit / time precision\n");
     if (!v3Global.rootp()->timeunit().isNone()) {

@@ -24,7 +24,7 @@ execute(
 # Check that the hierarchy doesn't include __PVT__
 # Otherwise our coverage reports would look really ugly
 if ($Self->{vlt_all}) {
-    file_grep($Self->{coverage_filename}, qr/(top\.t\.sub.*.cyc_eq_5)/)
+    file_grep($Self->{coverage_filename}, qr/(top\.t\.sub.*.cyc_eq_5)/);
 }
 
 ok(1);

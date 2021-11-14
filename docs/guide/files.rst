@@ -74,7 +74,7 @@ For --cc/--sc, it creates:
      - DPI import and export declarations (from --dpi)
    * - *{prefix}*\ __Dpi.cpp
      - Global DPI export wrappers (from --dpi)
-   * - *{prefix}*\ __Dpi_Export\ *{__n}\ .cpp
+   * - *{prefix}*\ __Dpi_Export\ *{__n}*\ .cpp
      - DPI export wrappers scoped to this particular model (from --dpi)
    * - *{prefix}*\ __Inlines.h
      - Inline support functions
@@ -145,3 +145,23 @@ After running Make, the C++ compiler may produce the following:
      - Intermediate dependencies
    * - *{prefix}{misc}*\ .o
      - Intermediate objects
+
+The Verilated executable may produce the following:
+
+.. list-table::
+
+   * - coverage.dat
+     - Code coverage output, and default input filename for :command:`verilator_coverage`
+   * - gmon.out
+     - GCC/clang code profiler output, often fed into :command:`verilator_profcfunc`
+   * - profile.vlt
+     - -profile data file for :ref:`Thread PGO`
+   * - profile_threads.dat
+     - -profile-threads data file for :command:`verilator_gnatt`
+
+Verilator_gantt may produce the following:
+
+.. list-table::
+
+   * - profile_threads.vcd
+     - Gantt report waveform output

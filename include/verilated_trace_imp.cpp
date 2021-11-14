@@ -267,7 +267,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::flushBase() {
 // Callbacks to run on global events
 
 template <> void VerilatedTrace<VL_DERIVED_T>::onFlush(void* selfp) {
-    // This calls 'flush' on the derived classo (which must then get any mutex)
+    // This calls 'flush' on the derived class (which must then get any mutex)
     reinterpret_cast<VL_DERIVED_T*>(selfp)->flush();
 }
 
@@ -481,8 +481,8 @@ void VerilatedTrace<VL_DERIVED_T>::addCallbackRecord(std::vector<CallbackRecord>
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     if (VL_UNCOVERABLE(timeLastDump() != 0)) {  // LCOV_EXCL_START
-        std::string msg = (std::string{"Internal: "} + __FILE__ + "::" + __FUNCTION__
-                           + " called with already open file");
+        const std::string msg = (std::string{"Internal: "} + __FILE__ + "::" + __FUNCTION__
+                                 + " called with already open file");
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
     }  // LCOV_EXCL_STOP
     cbVec.push_back(cbRec);

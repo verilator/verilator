@@ -49,7 +49,7 @@ public:
 };
 
 class LinkCellsVertex final : public V3GraphVertex {
-    AstNodeModule* m_modp;
+    AstNodeModule* const m_modp;
 
 public:
     LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
@@ -74,7 +74,7 @@ public:
 };
 
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
-    if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(vertexp)) {
+    if (const LinkCellsVertex* const vvertexp = dynamic_cast<LinkCellsVertex*>(vertexp)) {
         vvertexp->modp()->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Recursive multiple modules (module instantiates "
                                  "something leading back to itself): "
@@ -127,11 +127,11 @@ private:
     }
 
     AstNodeModule* findModuleSym(const string& modName) {
-        VSymEnt* foundp = m_mods.rootp()->findIdFallback(modName);
+        const VSymEnt* const foundp = m_mods.rootp()->findIdFallback(modName);
         if (!foundp) {
             return nullptr;
         } else {
-            return VN_CAST(foundp->nodep(), NodeModule);
+            return VN_AS(foundp->nodep(), NodeModule);
         }
     }
 
@@ -169,9 +169,9 @@ private:
         m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
+            if (const LinkCellsVertex* const vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
                 // +1 so we leave level 1  for the new wrapper we'll make in a moment
-                AstNodeModule* modp = vvertexp->modp();
+                AstNodeModule* const modp = vvertexp->modp();
                 modp->level(vvertexp->rank() + 1);
             }
         }
@@ -228,12 +228,12 @@ private:
         UINFO(4, "Link IfaceRef: " << nodep << endl);
         // Use findIdUpward instead of findIdFlat; it doesn't matter for now
         // but we might support modules-under-modules someday.
-        AstNodeModule* modp = resolveModule(nodep, nodep->ifaceName());
+        AstNodeModule* const modp = resolveModule(nodep, nodep->ifaceName());
         if (modp) {
             if (VN_IS(modp, Iface)) {
                 // Track module depths, so can sort list from parent down to children
                 new V3GraphEdge(&m_graph, vertex(m_modp), vertex(modp), 1, false);
-                if (!nodep->cellp()) nodep->ifacep(VN_CAST(modp, Iface));
+                if (!nodep->cellp()) nodep->ifacep(VN_AS(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {
                 nodep->v3error("Non-interface used as an interface: " << nodep->prettyNameQ());
@@ -256,9 +256,9 @@ private:
         // this move to post param, which would mean we do not auto-read modules
         // and means we cannot compute module levels until later.
         UINFO(4, "Link Bind: " << nodep << endl);
-        AstNodeModule* modp = resolveModule(nodep, nodep->name());
+        AstNodeModule* const modp = resolveModule(nodep, nodep->name());
         if (modp) {
-            AstNode* cellsp = nodep->cellsp()->unlinkFrBackWithNext();
+            AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
             VL_RESTORER(m_modp);
             {
@@ -349,7 +349,7 @@ private:
         // Convert .* to list of pins
         bool pinStar = false;
         for (AstPin *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
-            nextp = VN_CAST(pinp->nextp(), Pin);
+            nextp = VN_AS(pinp->nextp(), Pin);
             if (pinp->dotStar()) {
                 if (pinStar) pinp->v3error("Duplicate .* in an instance");
                 pinStar = true;
@@ -358,10 +358,10 @@ private:
             }
         }
         // Convert unnamed pins to pin number based assignments
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (pinp->name() == "") pinp->name("__pinNumber" + cvtToStr(pinp->pinNum()));
         }
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
@@ -369,7 +369,7 @@ private:
             nodep->modName(nodep->modp()->name());
             // Note what pins exist
             std::unordered_set<string> ports;  // Symbol table of all connected port names
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (pinp->name() == "")
                     pinp->v3error("Connect by position is illegal in .* connected instances");
                 if (!pinp->exprp()) {
@@ -388,13 +388,13 @@ private:
             // and it's easier to do it now than in V3LinkDot when we'd need to repeat steps.
             for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep;
                  portnodep = portnodep->nextp()) {
-                if (const AstPort* portp = VN_CAST(portnodep, Port)) {
+                if (const AstPort* const portp = VN_CAST(portnodep, Port)) {
                     if (ports.find(portp->name()) == ports.end()
                         && ports.find("__pinNumber" + cvtToStr(portp->pinNum())) == ports.end()) {
                         if (pinStar) {
                             UINFO(9, "    need .* PORT  " << portp << endl);
                             // Create any not already connected
-                            AstPin* newp = new AstPin(
+                            AstPin* const newp = new AstPin(
                                 nodep->fileline(), 0, portp->name(),
                                 new AstParseRef(nodep->fileline(), VParseRefExp::PX_TEXT,
                                                 portp->name(), nullptr, nullptr));
@@ -403,7 +403,7 @@ private:
                         } else {  // warn on the CELL that needs it, not the port
                             nodep->v3warn(PINMISSING,
                                           "Cell has missing pin: " << portp->prettyNameQ());
-                            AstPin* newp
+                            AstPin* const newp
                                 = new AstPin(nodep->fileline(), 0, portp->name(), nullptr);
                             nodep->addPinsp(newp);
                         }
@@ -421,14 +421,14 @@ private:
             if (!nodep->hasIfaceVar()) {
                 const string varName
                     = nodep->name() + "__Viftop";  // V3LinkDot looks for this naming
-                AstIfaceRefDType* idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(),
-                                                                 nodep->modp()->name());
+                AstIfaceRefDType* const idtypep = new AstIfaceRefDType(
+                    nodep->fileline(), nodep->name(), nodep->modp()->name());
                 idtypep->ifacep(nullptr);  // cellp overrides
                 // In the case of arrayed interfaces, we replace cellp when de-arraying in V3Inst
                 idtypep->cellp(nodep);  // Only set when real parent cell known.
                 AstVar* varp;
                 if (nodep->rangep()) {
-                    AstNodeArrayDType* arrp
+                    AstNodeArrayDType* const arrp
                         = new AstUnpackArrayDType(nodep->fileline(), VFlagChildDType(), idtypep,
                                                   nodep->rangep()->cloneTree(true));
                     varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
@@ -449,7 +449,7 @@ private:
     }
 
     virtual void visit(AstRefDType* nodep) override {
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
@@ -469,12 +469,12 @@ private:
                 "information of the top module must exist if --hierarchical-child is set");
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
-            nextp = VN_CAST(nodep->nextp(), NodeModule);
+            nextp = VN_AS(nodep->nextp(), NodeModule);
             if (v3Global.opt.hierChild() && nodep->name() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
             }
-            AstNodeModule* foundp = findModuleSym(nodep->name());
+            AstNodeModule* const foundp = findModuleSym(nodep->name());
             if (foundp && foundp != nodep) {
                 if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)

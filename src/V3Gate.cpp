@@ -67,7 +67,7 @@ public:
 // Support classes
 
 class GateEitherVertex VL_NOT_FINAL : public V3GraphVertex {
-    AstScope* m_scopep;  // Scope vertex refers to
+    AstScope* const m_scopep;  // Scope vertex refers to
     bool m_reducible = true;  // True if this node should be able to be eliminated
     bool m_dedupable = true;  // True if this node should be able to be deduped
     bool m_consumed = false;  // Output goes to something meaningful
@@ -124,7 +124,7 @@ public:
 };
 
 class GateVarVertex final : public GateEitherVertex {
-    AstVarScope* m_varScp;
+    AstVarScope* const m_varScp;
     bool m_isTop = false;
     bool m_isClock = false;
     AstNode* m_rstSyncNodep = nullptr;  // Used as reset and not in SenItem, in clocked always
@@ -164,8 +164,8 @@ public:
 };
 
 class GateLogicVertex final : public GateEitherVertex {
-    AstNode* m_nodep;
-    AstActive* m_activep;  // Under what active; nullptr is ok (under cfunc or such)
+    AstNode* const m_nodep;
+    AstActive* const m_activep;  // Under what active; nullptr is ok (under cfunc or such)
     bool m_slow;  // In slow block
 public:
     GateLogicVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep, AstActive* activep,
@@ -227,7 +227,7 @@ private:
             m_lhsVarRef = nodep;
         } else {
             if (m_rhsVarRefs.size() > 1) {
-                AstNodeVarRef* lastRefp = m_rhsVarRefs.back();
+                const AstNodeVarRef* const lastRefp = m_rhsVarRefs.back();
                 if (m_buffersOnly) clearSimple(">1 rhs varRefs");
                 if (!nodep->varScopep()->varp()->gateMultiInputOptimizable()
                     // We didn't check multiInput on the first varref, so check it here
@@ -249,14 +249,12 @@ private:
         // This avoids a mess in computing what exactly a POSEDGE is
         // V3Const cleans up any NOTs by flipping the edges for us
         if (m_buffersOnly
-            && !(VN_IS(nodep->rhsp(), VarRef)
-                 // Avoid making non-clocked logic into clocked,
-                 // as it slows down the verilator_sim_benchmark
-                 || (VN_IS(nodep->rhsp(), Not)
-                     && VN_IS(VN_CAST(nodep->rhsp(), Not)->lhsp(), VarRef)
-                     && VN_CAST(VN_CAST(nodep->rhsp(), Not)->lhsp(), VarRef)
-                            ->varp()
-                            ->isUsedClock()))) {
+            && !(
+                VN_IS(nodep->rhsp(), VarRef)
+                // Avoid making non-clocked logic into clocked,
+                // as it slows down the verilator_sim_benchmark
+                || (VN_IS(nodep->rhsp(), Not) && VN_IS(VN_AS(nodep->rhsp(), Not)->lhsp(), VarRef)
+                    && VN_AS(VN_AS(nodep->rhsp(), Not)->lhsp(), VarRef)->varp()->isUsedClock()))) {
             clearSimple("Not a buffer (goes to a clock)");
         }
     }
@@ -442,9 +440,9 @@ private:
     virtual void visit(AstNodeVarRef* nodep) override {
         if (m_scopep) {
             UASSERT_OBJ(m_logicVertexp, nodep, "Var ref not under a logic block");
-            AstVarScope* varscp = nodep->varScopep();
+            AstVarScope* const varscp = nodep->varScopep();
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
-            GateVarVertex* vvertexp = makeVarVertex(varscp);
+            GateVarVertex* const vvertexp = makeVarVertex(varscp);
             UINFO(5, " VARREF to " << varscp << endl);
             if (m_inSenItem) {
                 vvertexp->setIsClock();
@@ -512,7 +510,7 @@ private:
     }
     virtual void visit(AstConcat* nodep) override {
         UASSERT_OBJ(!(VN_IS(nodep->backp(), NodeAssign)
-                      && VN_CAST(nodep->backp(), NodeAssign)->lhsp() == nodep),
+                      && VN_AS(nodep->backp(), NodeAssign)->lhsp() == nodep),
                     nodep, "Concat on LHS of assignment; V3Const should have deleted it");
         iterateChildren(nodep);
     }
@@ -538,7 +536,7 @@ public:
 
 void GateVisitor::optimizeSignals(bool allowMultiIn) {
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
             if (vvertexp->inEmpty()) {
                 vvertexp->clearReducibleAndDedupable("inEmpty");  // Can't deal with no sources
                 if (!vvertexp->isTop()  // Ok if top inputs are driverless
@@ -564,7 +562,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                 UINFO(8, "SigNotRed " << vvertexp->name() << endl);
             } else {
                 UINFO(8, "Sig " << vvertexp->name() << endl);
-                GateLogicVertex* logicVertexp
+                GateLogicVertex* const logicVertexp
                     = dynamic_cast<GateLogicVertex*>(vvertexp->inBeginp()->fromp());
                 UINFO(8, "  From " << logicVertexp->name() << endl);
                 AstNode* logicp = logicVertexp->nodep();
@@ -580,7 +578,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                         int n = 0;
                         for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;
                              edgep = edgep->outNextp()) {
-                            GateLogicVertex* consumeVertexp
+                            const GateLogicVertex* const consumeVertexp
                                 = dynamic_cast<GateLogicVertex*>(edgep->top());
                             if (!consumeVertexp->slow()) {  // Not tracing or other slow path junk
                                 if (edgep->top()->outBeginp()) {  // Destination is itself used
@@ -604,29 +602,29 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                                                    << " " << vvertexp->name() << endl);
                             for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;
                                  edgep = edgep->outNextp()) {
-                                GateLogicVertex* consumeVertexp
+                                const GateLogicVertex* const consumeVertexp
                                     = dynamic_cast<GateLogicVertex*>(edgep->top());
                                 UINFO(9, "    edge " << edgep << " to: " << consumeVertexp->nodep()
                                                      << endl);
                             }
                             for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep;
                                  edgep = edgep->inNextp()) {
-                                GateLogicVertex* consumeVertexp
+                                const GateLogicVertex* const consumeVertexp
                                     = dynamic_cast<GateLogicVertex*>(edgep->fromp());
                                 UINFO(9, "    edge " << edgep << " from: "
                                                      << consumeVertexp->nodep() << endl);
                             }
                         }
                     } else {
-                        AstNode* substp = okVisitor.substTree();
+                        AstNode* const substp = okVisitor.substTree();
                         if (debug() >= 5) logicp->dumpTree(cout, "    elimVar:  ");
                         if (debug() >= 5) substp->dumpTree(cout, "      subst:  ");
                         ++m_statSigs;
                         bool removedAllUsages = true;
                         for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;) {
-                            GateLogicVertex* consumeVertexp
+                            GateLogicVertex* const consumeVertexp
                                 = dynamic_cast<GateLogicVertex*>(edgep->top());
-                            AstNode* consumerp = consumeVertexp->nodep();
+                            AstNode* const consumerp = consumeVertexp->nodep();
                             if (!elimLogicOkOutputs(consumeVertexp, okVisitor /*ref*/)) {
                                 // Cannot optimize this replacement
                                 removedAllUsages = false;
@@ -638,9 +636,9 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                                 const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
                                 for (GateVarRefList::const_iterator it = rhsVarRefs.begin();
                                      it != rhsVarRefs.end(); ++it) {
-                                    AstVarScope* newvarscp = (*it)->varScopep();
+                                    AstVarScope* const newvarscp = (*it)->varScopep();
                                     UINFO(9, "         Point-to-new vertex " << newvarscp << endl);
-                                    GateVarVertex* varvertexp = makeVarVertex(newvarscp);
+                                    GateVarVertex* const varvertexp = makeVarVertex(newvarscp);
                                     new V3GraphEdge(&m_graph, varvertexp, consumeVertexp, 1);
                                     // Propagate clock attribute onto generating node
                                     varvertexp->propagateAttrClocksFrom(vvertexp);
@@ -687,12 +685,12 @@ bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp,
     // Replacement logic usually has shorter input list, so faster to build list based on it
     const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
     for (GateVarRefList::const_iterator it = rhsVarRefs.begin(); it != rhsVarRefs.end(); ++it) {
-        AstVarScope* vscp = (*it)->varScopep();
+        AstVarScope* const vscp = (*it)->varScopep();
         varscopes.insert(vscp);
     }
     for (V3GraphEdge* edgep = consumeVertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-        GateVarVertex* consVVertexp = dynamic_cast<GateVarVertex*>(edgep->top());
-        AstVarScope* vscp = consVVertexp->varScp();
+        const GateVarVertex* const consVVertexp = dynamic_cast<GateVarVertex*>(edgep->top());
+        AstVarScope* const vscp = consVVertexp->varScp();
         if (varscopes.find(vscp) != varscopes.end()) {
             UINFO(9, "    Block-unopt, insertion generates input vscp " << vscp << endl);
             return false;
@@ -703,29 +701,29 @@ bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp,
 
 void GateVisitor::replaceAssigns() {
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (const GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
             // Take the Comments/assigns that were moved to the VarScope and change them to a
             // simple value assignment
-            AstVarScope* vscp = vvertexp->varScp();
+            const AstVarScope* const vscp = vvertexp->varScp();
             if (vscp->valuep() && !VN_IS(vscp->valuep(), NodeMath)) {
                 // if (debug() > 9) vscp->dumpTree(cout, "-vscPre:  ");
                 while (AstNode* delp = VN_CAST(vscp->valuep(), Comment)) {
                     VL_DO_DANGLING(delp->unlinkFrBack()->deleteTree(), delp);
                 }
-                if (AstInitial* delp = VN_CAST(vscp->valuep(), Initial)) {
-                    AstNode* bodyp = delp->bodysp();
+                if (AstInitial* const delp = VN_CAST(vscp->valuep(), Initial)) {
+                    AstNode* const bodyp = delp->bodysp();
                     bodyp->unlinkFrBackWithNext();
                     delp->replaceWith(bodyp);
                     VL_DO_DANGLING(delp->deleteTree(), delp);
                 }
-                if (AstAlways* delp = VN_CAST(vscp->valuep(), Always)) {
-                    AstNode* bodyp = delp->bodysp();
+                if (AstAlways* const delp = VN_CAST(vscp->valuep(), Always)) {
+                    AstNode* const bodyp = delp->bodysp();
                     bodyp->unlinkFrBackWithNext();
                     delp->replaceWith(bodyp);
                     VL_DO_DANGLING(delp->deleteTree(), delp);
                 }
-                if (AstNodeAssign* delp = VN_CAST(vscp->valuep(), NodeAssign)) {
-                    AstNode* rhsp = delp->rhsp();
+                if (AstNodeAssign* const delp = VN_CAST(vscp->valuep(), NodeAssign)) {
+                    AstNode* const rhsp = delp->rhsp();
                     rhsp->unlinkFrBack();
                     delp->replaceWith(rhsp);
                     VL_DO_DANGLING(delp->deleteTree(), delp);
@@ -747,7 +745,7 @@ void GateVisitor::consumedMark() {
     m_graph.userClearVertices();
     for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
          vertexp = vertexp->verticesNextp()) {
-        GateEitherVertex* evertexp = static_cast<GateEitherVertex*>(vertexp);
+        GateEitherVertex* const evertexp = static_cast<GateEitherVertex*>(vertexp);
         if (!evertexp->user() && evertexp->consumed()) consumedMarkRecurse(evertexp);
     }
 }
@@ -758,7 +756,7 @@ void GateVisitor::consumedMarkRecurse(GateEitherVertex* vertexp) {
     if (!vertexp->consumed()) vertexp->setConsumed("propagated");
     // Walk sources and mark them too
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-        GateEitherVertex* eFromVertexp = static_cast<GateEitherVertex*>(edgep->fromp());
+        GateEitherVertex* const eFromVertexp = static_cast<GateEitherVertex*>(edgep->fromp());
         consumedMarkRecurse(eFromVertexp);
     }
 }
@@ -768,14 +766,14 @@ void GateVisitor::consumedMove() {
     // We need the "usually" block logic to do a better job at this
     for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
          vertexp = vertexp->verticesNextp()) {
-        if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(vertexp)) {
+        if (const GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(vertexp)) {
             if (!vvertexp->consumed() && !vvertexp->user()) {
                 UINFO(8, "Unconsumed " << vvertexp->varScp() << endl);
             }
         }
-        if (GateLogicVertex* lvertexp = dynamic_cast<GateLogicVertex*>(vertexp)) {
-            AstNode* nodep = lvertexp->nodep();
-            AstActive* oldactp = lvertexp->activep();  // nullptr under cfunc
+        if (const GateLogicVertex* const lvertexp = dynamic_cast<GateLogicVertex*>(vertexp)) {
+            AstNode* const nodep = lvertexp->nodep();
+            const AstActive* const oldactp = lvertexp->activep();  // nullptr under cfunc
             if (!lvertexp->consumed() && oldactp) {
                 // Eventually: Move the statement to a new active block
                 // with "tracing-on" sensitivity
@@ -792,10 +790,10 @@ void GateVisitor::consumedMove() {
 void GateVisitor::warnSignals() {
     AstNode::user2ClearTree();
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
-            AstVarScope* vscp = vvertexp->varScp();
-            AstNode* sp = vvertexp->rstSyncNodep();
-            AstNode* ap = vvertexp->rstAsyncNodep();
+        if (const GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+            const AstVarScope* const vscp = vvertexp->varScp();
+            const AstNode* const sp = vvertexp->rstSyncNodep();
+            const AstNode* const ap = vvertexp->rstAsyncNodep();
             if (ap && sp && !vscp->varp()->user2()) {
                 // This is somewhat wrong, as marking one flop as ok for sync
                 // may mean a different flop now fails.  However it's a pain to
@@ -844,11 +842,10 @@ private:
             m_didReplace = true;
             UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                         "Can't replace lvalue assignments with const var");
-            AstNode* substp = m_replaceTreep->cloneTree(false);
-            UASSERT_OBJ(
-                !(VN_IS(nodep, NodeVarRef) && VN_IS(substp, NodeVarRef) && nodep->same(substp)),
-                // Prevent an infinite loop...
-                substp, "Replacing node with itself; perhaps circular logic?");
+            AstNode* const substp = m_replaceTreep->cloneTree(false);
+            UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->same(substp)),
+                        // Prevent an infinite loop...
+                        substp, "Replacing node with itself; perhaps circular logic?");
             // Which fileline() to use?
             // If replacing with logic, an error/warning is likely to want to point to the logic
             // IE what we're replacing with.
@@ -856,7 +853,7 @@ private:
             // to throw warnings that point to a PIN rather than where the pin us used.
             if (VN_IS(substp, VarRef)) substp->fileline(nodep->fileline());
             // Make the substp an rvalue like nodep. This facilitates the hashing in dedupe.
-            if (AstNodeVarRef* varrefp = VN_CAST(substp, NodeVarRef))
+            if (AstNodeVarRef* const varrefp = VN_CAST(substp, NodeVarRef))
                 varrefp->access(VAccess::READ);
             hashReplace(nodep, substp);
             nodep->replaceWith(substp);
@@ -964,8 +961,8 @@ public:
     bool isReplaced(AstNode* nodep) {
         // Assignment may have been hashReplaced, if so consider non-match (effectively removed)
         UASSERT_OBJ(!VN_IS(nodep, NodeAssign), nodep, "Dedup attempt on non-assign");
-        AstNode* extra1p = nodep->user3p();
-        AstNode* extra2p = nodep->user5p();
+        AstNode* const extra1p = nodep->user3p();
+        AstNode* const extra2p = nodep->user5p();
         return ((extra1p && m_nodeDeleteds.find(extra1p) != m_nodeDeleteds.end())
                 || (extra2p && m_nodeDeleteds.find(extra2p) != m_nodeDeleteds.end()));
     }
@@ -984,7 +981,7 @@ public:
     AstNodeAssign* hashAndFindDupe(AstNodeAssign* assignp, AstNode* extra1p, AstNode* extra2p) {
         // Legal for extra1p/2p to be nullptr, we'll compare with other assigns with extras also
         // nullptr
-        AstNode* rhsp = assignp->rhsp();
+        AstNode* const rhsp = assignp->rhsp();
         rhsp->user2p(assignp);
         rhsp->user3p(extra1p);
         rhsp->user5p(extra2p);
@@ -996,7 +993,7 @@ public:
         // So dupit is either a different, duplicate rhsp, or the end of the hash.
         if (dupit != m_dupFinder.end()) {
             m_dupFinder.erase(inserted);
-            return VN_CAST(dupit->second->user2p(), NodeAssign);
+            return VN_AS(dupit->second->user2p(), NodeAssign);
         }
         // Retain new inserted information
         return nullptr;
@@ -1004,9 +1001,9 @@ public:
 
     void check() {
         for (const auto& itr : m_dupFinder) {
-            AstNode* nodep = itr.second;
-            AstNode* activep = nodep->user3p();
-            AstNode* condVarp = nodep->user5p();
+            AstNode* const nodep = itr.second;
+            const AstNode* const activep = nodep->user3p();
+            const AstNode* const condVarp = nodep->user5p();
             if (!isReplaced(nodep)) {
                 // This class won't break if activep isn't an active, or
                 // ifVar isn't a var, but this is checking the caller's construction.
@@ -1097,12 +1094,13 @@ public:
         m_dedupable = true;
         iterate(nodep);
         if (m_dedupable && m_assignp) {
-            AstNode* lhsp = m_assignp->lhsp();
+            AstNode* const lhsp = m_assignp->lhsp();
             // Possible todo, handle more complex lhs expressions
-            if (AstNodeVarRef* lhsVarRefp = VN_CAST(lhsp, NodeVarRef)) {
+            if (const AstNodeVarRef* const lhsVarRefp = VN_CAST(lhsp, NodeVarRef)) {
                 UASSERT_OBJ(lhsVarRefp->varScopep() == consumerVarScopep, consumerVarScopep,
                             "Consumer doesn't match lhs of assign");
-                if (AstNodeAssign* dup = m_ghash.hashAndFindDupe(m_assignp, activep, m_ifCondp)) {
+                if (const AstNodeAssign* const dup
+                    = m_ghash.hashAndFindDupe(m_assignp, activep, m_ifCondp)) {
                     return static_cast<AstNodeVarRef*>(dup->lhsp());
                 }
             }
@@ -1140,26 +1138,26 @@ private:
 
         m_depth++;
         if (vvertexp->inSize1()) {
-            AstNodeVarRef* dupVarRefp = static_cast<AstNodeVarRef*>(
+            AstNodeVarRef* const dupVarRefp = static_cast<AstNodeVarRef*>(
                 vvertexp->iterateInEdges(*this, VNUser(vvertexp)).toNodep());
             if (dupVarRefp) {  // visit(GateLogicVertex*...) returned match
                 V3GraphEdge* edgep = vvertexp->inBeginp();
-                GateLogicVertex* lvertexp = static_cast<GateLogicVertex*>(edgep->fromp());
+                GateLogicVertex* const lvertexp = static_cast<GateLogicVertex*>(edgep->fromp());
                 UASSERT_OBJ(vvertexp->dedupable(), vvertexp->varScp(),
                             "GateLogicVertex* visit should have returned nullptr "
                             "if consumer var vertex is not dedupable.");
                 GateOkVisitor okVisitor{lvertexp->nodep(), false, true};
                 if (okVisitor.isSimple()) {
-                    AstVarScope* dupVarScopep = dupVarRefp->varScopep();
-                    GateVarVertex* dupVvertexp
+                    const AstVarScope* const dupVarScopep = dupVarRefp->varScopep();
+                    GateVarVertex* const dupVvertexp
                         = reinterpret_cast<GateVarVertex*>(dupVarScopep->user1p());
                     UINFO(4, "replacing " << vvertexp << " with " << dupVvertexp << endl);
                     ++m_numDeduped;
                     // Replace all of this varvertex's consumers with dupVarRefp
                     for (V3GraphEdge* outedgep = vvertexp->outBeginp(); outedgep;) {
-                        GateLogicVertex* consumeVertexp
+                        const GateLogicVertex* const consumeVertexp
                             = dynamic_cast<GateLogicVertex*>(outedgep->top());
-                        AstNode* consumerp = consumeVertexp->nodep();
+                        AstNode* const consumerp = consumeVertexp->nodep();
                         // if (debug() >= 9) m_graphp->dumpDotFilePrefixed("gate_preelim");
                         UINFO(9,
                               "elim src vtx" << lvertexp << " node " << lvertexp->nodep() << endl);
@@ -1201,15 +1199,16 @@ private:
     virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) override {
         lvertexp->iterateInEdges(*this);
 
-        GateVarVertex* consumerVvertexpp = static_cast<GateVarVertex*>(vu.toGraphVertex());
+        const GateVarVertex* const consumerVvertexpp
+            = static_cast<GateVarVertex*>(vu.toGraphVertex());
         if (lvertexp->dedupable() && consumerVvertexpp->dedupable()) {
-            AstNode* nodep = lvertexp->nodep();
-            AstVarScope* consumerVarScopep = consumerVvertexpp->varScp();
+            AstNode* const nodep = lvertexp->nodep();
+            AstVarScope* const consumerVarScopep = consumerVvertexpp->varScp();
             // TODO: Doing a simple pointer comparison of activep won't work
             // optimally for statements under generated clocks. Statements under
             // different generated clocks will never compare as equal, even if the
             // generated clocks are deduped into one clock.
-            AstActive* activep = lvertexp->activep();
+            AstActive* const activep = lvertexp->activep();
             return VNUser(m_varVisitor.findDupe(nodep, consumerVarScopep, activep));
         }
         return VNUser(0);
@@ -1230,14 +1229,14 @@ void GateVisitor::dedupe() {
     // Traverse starting from each of the clocks
     UINFO(9, "Gate dedupe() clocks:\n");
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
             if (vvertexp->isClock()) deduper.dedupeTree(vvertexp);
         }
     }
     // Traverse starting from each of the outputs
     UINFO(9, "Gate dedupe() outputs:\n");
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
             if (vvertexp->isTop() && vvertexp->varScp()->varp()->isWritable()) {
                 deduper.dedupeTree(vvertexp);
             }
@@ -1259,15 +1258,15 @@ private:
 
     // assemble two Sel into one if possible
     AstSel* merge(AstSel* pre, AstSel* cur) {
-        AstVarRef* preVarRefp = VN_CAST(pre->fromp(), VarRef);
-        AstVarRef* curVarRefp = VN_CAST(cur->fromp(), VarRef);
+        const AstVarRef* const preVarRefp = VN_CAST(pre->fromp(), VarRef);
+        AstVarRef* const curVarRefp = VN_CAST(cur->fromp(), VarRef);
         if (!preVarRefp || !curVarRefp || !curVarRefp->same(preVarRefp)) {
             return nullptr;  // not the same var
         }
-        const AstConst* pstart = VN_CAST(pre->lsbp(), Const);
-        const AstConst* pwidth = VN_CAST(pre->widthp(), Const);
-        const AstConst* cstart = VN_CAST(cur->lsbp(), Const);
-        const AstConst* cwidth = VN_CAST(cur->widthp(), Const);
+        const AstConst* const pstart = VN_CAST(pre->lsbp(), Const);
+        const AstConst* const pwidth = VN_CAST(pre->widthp(), Const);
+        const AstConst* const cstart = VN_CAST(cur->lsbp(), Const);
+        const AstConst* const cwidth = VN_CAST(cur->widthp(), Const);
         if (!pstart || !pwidth || !cstart || !cwidth) return nullptr;  // too complicated
         if (cur->lsbConst() + cur->widthConst() == pre->lsbConst()) {
             return new AstSel(curVarRefp->fileline(), curVarRefp->cloneTree(false),
@@ -1281,12 +1280,13 @@ private:
         for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep;) {
             V3GraphEdge* oldedgep = edgep;
             edgep = edgep->inNextp();  // for recursive since the edge could be deleted
-            if (GateLogicVertex* lvertexp = dynamic_cast<GateLogicVertex*>(oldedgep->fromp())) {
-                if (AstNodeAssign* assignp = VN_CAST(lvertexp->nodep(), NodeAssign)) {
+            if (GateLogicVertex* const lvertexp
+                = dynamic_cast<GateLogicVertex*>(oldedgep->fromp())) {
+                if (AstNodeAssign* const assignp = VN_CAST(lvertexp->nodep(), NodeAssign)) {
                     // if (lvertexp->outSize1() && VN_IS(assignp->lhsp(), Sel)) {
                     if (VN_IS(assignp->lhsp(), Sel) && lvertexp->outSize1()) {
-                        UINFO(9, "assing to the nodep["
-                                     << VN_CAST(assignp->lhsp(), Sel)->lsbConst() << "]" << endl);
+                        UINFO(9, "assing to the nodep[" << VN_AS(assignp->lhsp(), Sel)->lsbConst()
+                                                        << "]" << endl);
                         // first assign with Sel-lhs
                         if (!m_activep) m_activep = lvertexp->activep();
                         if (!m_logicvp) m_logicvp = lvertexp;
@@ -1300,20 +1300,20 @@ private:
                             continue;
                         }
 
-                        AstSel* preselp = VN_CAST(m_assignp->lhsp(), Sel);
-                        AstSel* curselp = VN_CAST(assignp->lhsp(), Sel);
+                        AstSel* const preselp = VN_CAST(m_assignp->lhsp(), Sel);
+                        AstSel* const curselp = VN_CAST(assignp->lhsp(), Sel);
                         if (!preselp || !curselp) continue;
 
-                        if (AstSel* newselp = merge(preselp, curselp)) {
+                        if (AstSel* const newselp = merge(preselp, curselp)) {
                             UINFO(5, "assemble to new sel: " << newselp << endl);
                             // replace preSel with newSel
                             preselp->replaceWith(newselp);
                             VL_DO_DANGLING(preselp->deleteTree(), preselp);
                             // create new rhs for pre assignment
-                            AstNode* newrhsp = new AstConcat(m_assignp->rhsp()->fileline(),
-                                                             m_assignp->rhsp()->cloneTree(false),
-                                                             assignp->rhsp()->cloneTree(false));
-                            AstNode* oldrhsp = m_assignp->rhsp();
+                            AstNode* const newrhsp = new AstConcat(
+                                m_assignp->rhsp()->fileline(), m_assignp->rhsp()->cloneTree(false),
+                                assignp->rhsp()->cloneTree(false));
+                            AstNode* const oldrhsp = m_assignp->rhsp();
                             oldrhsp->replaceWith(newrhsp);
                             VL_DO_DANGLING(oldrhsp->deleteTree(), oldrhsp);
                             m_assignp->dtypeChgWidthSigned(m_assignp->width() + assignp->width(),
@@ -1330,7 +1330,7 @@ private:
                                     for (V3GraphEdge* ledgep = lvertexp->inBeginp(); ledgep;) {
                                         V3GraphEdge* oedgep = ledgep;
                                         ledgep = ledgep->inNextp();
-                                        GateEitherVertex* fromvp
+                                        GateEitherVertex* const fromvp
                                             = dynamic_cast<GateEitherVertex*>(oedgep->fromp());
                                         new V3GraphEdge(m_graphp, fromvp, m_logicvp, 1);
                                         VL_DO_DANGLING(oedgep->unlinkDelete(), oedgep);
@@ -1369,7 +1369,7 @@ void GateVisitor::mergeAssigns() {
     UINFO(6, "mergeAssigns\n");
     GateMergeAssignsGraphVisitor merger{&m_graph};
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
             merger.mergeAssignsTree(vvertexp);
         }
     }
@@ -1433,7 +1433,7 @@ public:
 class GateClkDecompState final {
 public:
     int m_offset;
-    AstVarScope* m_last_vsp;
+    AstVarScope* const m_last_vsp;
     GateClkDecompState(int offset, AstVarScope* vsp)
         : m_offset{offset}
         , m_last_vsp{vsp} {}
@@ -1453,14 +1453,14 @@ private:
 
     virtual VNUser visit(GateVarVertex* vvertexp, VNUser vu) override {
         // Check that we haven't been here before
-        AstVarScope* vsp = vvertexp->varScp();
+        AstVarScope* const vsp = vvertexp->varScp();
         if (vsp->user2SetOnce()) return VNUser(0);
         UINFO(9, "CLK DECOMP Var - " << vvertexp << " : " << vsp << endl);
         if (vsp->varp()->width() > 1) {
             m_seen_clk_vectors++;
             m_total_seen_clk_vectors++;
         }
-        GateClkDecompState* currState = reinterpret_cast<GateClkDecompState*>(vu.c());
+        GateClkDecompState* const currState = reinterpret_cast<GateClkDecompState*>(vu.c());
         GateClkDecompState nextState(currState->m_offset, vsp);
         vvertexp->iterateCurrentOutEdges(*this, VNUser(&nextState));
         if (vsp->varp()->width() > 1) --m_seen_clk_vectors;
@@ -1469,13 +1469,13 @@ private:
     }
 
     virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) override {
-        GateClkDecompState* currState = reinterpret_cast<GateClkDecompState*>(vu.c());
+        GateClkDecompState* const currState = reinterpret_cast<GateClkDecompState*>(vu.c());
         int clk_offset = currState->m_offset;
-        if (const AstAssignW* assignp = VN_CAST(lvertexp->nodep(), AssignW)) {
+        if (const AstAssignW* const assignp = VN_CAST(lvertexp->nodep(), AssignW)) {
             UINFO(9, "CLK DECOMP Logic (off = " << clk_offset << ") - " << lvertexp << " : "
                                                 << m_clk_vsp << endl);
             // RHS
-            if (AstSel* rselp = VN_CAST(assignp->rhsp(), Sel)) {
+            if (AstSel* const rselp = VN_CAST(assignp->rhsp(), Sel)) {
                 if (VN_IS(rselp->lsbp(), Const) && VN_IS(rselp->widthp(), Const)) {
                     if (clk_offset < rselp->lsbConst() || clk_offset > rselp->msbConst()) {
                         UINFO(9, "CLK DECOMP Sel [ " << rselp->msbConst() << " : "
@@ -1501,7 +1501,7 @@ private:
                 return VNUser(0);
             }
             // LHS
-            if (const AstSel* lselp = VN_CAST(assignp->lhsp(), Sel)) {
+            if (const AstSel* const lselp = VN_CAST(assignp->lhsp(), Sel)) {
                 if (VN_IS(lselp->lsbp(), Const) && VN_IS(lselp->widthp(), Const)) {
                     clk_offset += lselp->lsbConst();
                 } else {
@@ -1515,7 +1515,7 @@ private:
                     }
                     UINFO(9, "CLK DECOMP Connecting - " << assignp->lhsp() << endl);
                     UINFO(9, "                   to - " << m_clk_vsp << endl);
-                    AstNode* rhsp = assignp->rhsp();
+                    AstNode* const rhsp = assignp->rhsp();
                     rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, VAccess::READ));
                     while (V3GraphEdge* edgep = lvertexp->inBeginp()) {
                         VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
@@ -1555,8 +1555,8 @@ void GateVisitor::decomposeClkVectors() {
     AstNode::user2ClearTree();
     GateClkDecompGraphVisitor decomposer{&m_graph};
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* vertp = dynamic_cast<GateVarVertex*>(itp)) {
-            AstVarScope* vsp = vertp->varScp();
+        if (GateVarVertex* const vertp = dynamic_cast<GateVarVertex*>(itp)) {
+            AstVarScope* const vsp = vertp->varScp();
             if (vsp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 if (vsp->varp()->width() > 1) {
                     UINFO(9, "Clocker > 1 bit, not decomposing: " << vsp << endl);
@@ -1576,9 +1576,9 @@ class GateDeassignVisitor final : public GateBaseVisitor {
 private:
     // VISITORS
     virtual void visit(AstVarScope* nodep) override {
-        if (AstNodeAssign* assp = VN_CAST(nodep->valuep(), NodeAssign)) {
+        if (AstNodeAssign* const assp = VN_CAST(nodep->valuep(), NodeAssign)) {
             UINFO(5, " Removeassign " << assp << endl);
-            AstNode* valuep = assp->rhsp();
+            AstNode* const valuep = assp->rhsp();
             valuep->unlinkFrBack();
             assp->replaceWith(valuep);
             VL_DO_DANGLING(assp->deleteTree(), assp);

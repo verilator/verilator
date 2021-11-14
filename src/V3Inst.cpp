@@ -70,39 +70,41 @@ private:
         // Use user1p on the PIN to indicate we created an assign for this pin
         if (!nodep->user1SetOnce()) {
             // Make an ASSIGNW (expr, pin)
-            AstNode* exprp = nodep->exprp()->cloneTree(false);
+            AstNode* const exprp = nodep->exprp()->cloneTree(false);
             UASSERT_OBJ(exprp->width() == nodep->modVarp()->width(), nodep,
                         "Width mismatch, should have been handled in pinReconnectSimple");
             if (nodep->modVarp()->isInoutish()) {
                 nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
             } else if (nodep->modVarp()->isWritable()) {
-                AstNode* rhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
-                                               m_cellp->name(), VAccess::READ);
-                AstAssignW* assp = new AstAssignW(exprp->fileline(), exprp, rhsp);
+                AstNode* const rhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
+                                                     m_cellp->name(), VAccess::READ);
+                AstAssignW* const assp = new AstAssignW(exprp->fileline(), exprp, rhsp);
                 m_cellp->addNextHere(assp);
             } else if (nodep->modVarp()->isNonOutput()) {
                 // Don't bother moving constants now,
                 // we'll be pushing the const down to the cell soon enough.
-                AstNode* assp = new AstAssignW(exprp->fileline(),
-                                               new AstVarXRef(exprp->fileline(), nodep->modVarp(),
-                                                              m_cellp->name(), VAccess::WRITE),
-                                               exprp);
+                AstNode* const assp
+                    = new AstAssignW(exprp->fileline(),
+                                     new AstVarXRef(exprp->fileline(), nodep->modVarp(),
+                                                    m_cellp->name(), VAccess::WRITE),
+                                     exprp);
                 m_cellp->addNextHere(assp);
                 if (debug() >= 9) assp->dumpTree(cout, "     _new: ");
             } else if (nodep->modVarp()->isIfaceRef()
                        || (VN_IS(nodep->modVarp()->subDTypep(), UnpackArrayDType)
-                           && VN_IS(VN_CAST(nodep->modVarp()->subDTypep(), UnpackArrayDType)
-                                        ->subDTypep(),
-                                    IfaceRefDType))) {
+                           && VN_IS(
+                               VN_AS(nodep->modVarp()->subDTypep(), UnpackArrayDType)->subDTypep(),
+                               IfaceRefDType))) {
                 // Create an AstAssignVarScope for Vars to Cells so we can
                 // link with their scope later
-                AstNode* lhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
-                                               m_cellp->name(), VAccess::READ);
-                const AstVarRef* refp = VN_CAST(exprp, VarRef);
-                const AstVarXRef* xrefp = VN_CAST(exprp, VarXRef);
+                AstNode* const lhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
+                                                     m_cellp->name(), VAccess::READ);
+                const AstVarRef* const refp = VN_CAST(exprp, VarRef);
+                const AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef);
                 UASSERT_OBJ(refp || xrefp, exprp,
                             "Interfaces: Pin is not connected to a VarRef or VarXRef");
-                AstAssignVarScope* assp = new AstAssignVarScope(exprp->fileline(), lhsp, exprp);
+                AstAssignVarScope* const assp
+                    = new AstAssignVarScope(exprp->fileline(), lhsp, exprp);
                 m_cellp->addNextHere(assp);
             } else {
                 nodep->v3error("Assigned pin is neither input nor output");
@@ -202,20 +204,20 @@ private:
     // VISITORS
     virtual void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)
-            && VN_IS(VN_CAST(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
+            && VN_IS(VN_AS(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
             UINFO(8, "   dv-vec-VAR    " << nodep << endl);
-            AstUnpackArrayDType* arrdtype = VN_CAST(nodep->dtypep(), UnpackArrayDType);
+            AstUnpackArrayDType* const arrdtype = VN_AS(nodep->dtypep(), UnpackArrayDType);
             AstNode* prevp = nullptr;
             for (int i = arrdtype->lo(); i <= arrdtype->hi(); ++i) {
                 const string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 UINFO(8, "VAR name insert " << varNewName << "  " << nodep << endl);
                 if (!m_deModVars.find(varNewName)) {
-                    AstIfaceRefDType* ifaceRefp
-                        = VN_CAST(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
+                    AstIfaceRefDType* const ifaceRefp
+                        = VN_AS(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
                     arrdtype->addNextHere(ifaceRefp);
                     ifaceRefp->cellp(nullptr);
 
-                    AstVar* varNewp = nodep->cloneTree(false);
+                    AstVar* const varNewp = nodep->cloneTree(false);
                     varNewp->name(varNewName);
                     varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(i) + "__KET__");
                     varNewp->dtypep(ifaceRefp);
@@ -245,10 +247,10 @@ private:
         if (nodep->rangep()) {
             m_cellRangep = nodep->rangep();
 
-            AstVar* ifaceVarp = VN_CAST(nodep->nextp(), Var);
+            AstVar* const ifaceVarp = VN_CAST(nodep->nextp(), Var);
             const bool isIface
                 = ifaceVarp && VN_IS(ifaceVarp->dtypep(), UnpackArrayDType)
-                  && VN_IS(VN_CAST(ifaceVarp->dtypep(), UnpackArrayDType)->subDTypep(),
+                  && VN_IS(VN_AS(ifaceVarp->dtypep(), UnpackArrayDType)->subDTypep(),
                            IfaceRefDType);
 
             // Make all of the required clones
@@ -257,7 +259,7 @@ private:
                     = m_cellRangep->littleEndian() ? (m_cellRangep->elementsConst() - 1 - i) : i;
                 const int instNum = m_cellRangep->loConst() + i;
 
-                AstCell* newp = nodep->cloneTree(false);
+                AstCell* const newp = nodep->cloneTree(false);
                 nodep->addNextHere(newp);
                 // Remove ranging and fix name
                 newp->rangep()->unlinkFrBack()->deleteTree();
@@ -271,12 +273,13 @@ private:
                 // If this AstCell is actually an interface instantiation, also clone the IfaceRef
                 // within the same parent module as the cell
                 if (isIface) {
-                    AstUnpackArrayDType* arrdtype = VN_CAST(ifaceVarp->dtypep(), UnpackArrayDType);
-                    AstIfaceRefDType* origIfaceRefp
-                        = VN_CAST(arrdtype->subDTypep(), IfaceRefDType);
+                    AstUnpackArrayDType* const arrdtype
+                        = VN_AS(ifaceVarp->dtypep(), UnpackArrayDType);
+                    AstIfaceRefDType* const origIfaceRefp
+                        = VN_AS(arrdtype->subDTypep(), IfaceRefDType);
                     origIfaceRefp->cellp(nullptr);
-                    AstVar* varNewp = ifaceVarp->cloneTree(false);
-                    AstIfaceRefDType* ifaceRefp = origIfaceRefp->cloneTree(false);
+                    AstVar* const varNewp = ifaceVarp->cloneTree(false);
+                    AstIfaceRefDType* const ifaceRefp = origIfaceRefp->cloneTree(false);
                     arrdtype->addNextHere(ifaceRefp);
                     ifaceRefp->cellp(newp);
                     ifaceRefp->cellName(newp->name());
@@ -328,7 +331,8 @@ private:
                                        << pinDim.second << endl);
             if (expDim.first == pinDim.first && expDim.second == pinDim.second + 1) {
                 // Connection to array, where array dimensions match the instant dimension
-                AstRange* rangep = VN_CAST(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();
+                AstRange* const rangep
+                    = VN_AS(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();
                 const int arraySelNum = rangep->littleEndian()
                                             ? (rangep->elementsConst() - 1 - m_instSelNum)
                                             : m_instSelNum;
@@ -363,11 +367,12 @@ private:
             }
         }  // end expanding ranged cell
         else if (AstArraySel* arrselp = VN_CAST(nodep->exprp(), ArraySel)) {
-            if (AstUnpackArrayDType* arrp = VN_CAST(arrselp->lhsp()->dtypep(), UnpackArrayDType)) {
+            if (AstUnpackArrayDType* const arrp
+                = VN_CAST(arrselp->lhsp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
                 // Interface pin attaches to one element of arrayed interface
                 V3Const::constifyParamsEdit(arrselp->rhsp());
-                const AstConst* constp = VN_CAST(arrselp->rhsp(), Const);
+                const AstConst* const constp = VN_CAST(arrselp->rhsp(), Const);
                 if (!constp) {
                     nodep->v3warn(
                         E_UNSUPPORTED,
@@ -377,19 +382,19 @@ private:
                 const string index = AstNode::encodeNumber(constp->toSInt());
                 if (VN_IS(arrselp->lhsp(), SliceSel))
                     arrselp->lhsp()->v3error("Unsupported: interface slices");
-                AstVarRef* varrefp = VN_CAST(arrselp->lhsp(), VarRef);
+                AstVarRef* const varrefp = VN_CAST(arrselp->lhsp(), VarRef);
                 UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
-                AstVarXRef* newp = new AstVarXRef(nodep->fileline(),
-                                                  varrefp->name() + "__BRA__" + index + "__KET__",
-                                                  "", VAccess::WRITE);
+                AstVarXRef* const newp = new AstVarXRef(
+                    nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
+                    VAccess::WRITE);
                 newp->dtypep(nodep->modVarp()->dtypep());
                 newp->classOrPackagep(varrefp->classOrPackagep());
                 arrselp->addNextHere(newp);
                 VL_DO_DANGLING(arrselp->unlinkFrBack()->deleteTree(), arrselp);
             }
         } else {
-            AstVar* pinVarp = nodep->modVarp();
-            AstUnpackArrayDType* pinArrp = VN_CAST(pinVarp->dtypep(), UnpackArrayDType);
+            AstVar* const pinVarp = nodep->modVarp();
+            AstUnpackArrayDType* const pinArrp = VN_CAST(pinVarp->dtypep(), UnpackArrayDType);
             if (!pinArrp || !VN_IS(pinArrp->subDTypep(), IfaceRefDType)) return;
             // Arrayed pin/var attaches to arrayed submodule lower port/var, expand it
             AstNode* prevp = nullptr;
@@ -405,7 +410,7 @@ private:
                 if (!pinVarp->backp()) {
                     varNewp = m_deModVars.find(varNewName);
                 } else {
-                    AstIfaceRefDType* ifaceRefp = VN_CAST(pinArrp->subDTypep(), IfaceRefDType);
+                    AstIfaceRefDType* const ifaceRefp = VN_AS(pinArrp->subDTypep(), IfaceRefDType);
                     ifaceRefp->cellp(nullptr);
                     varNewp = pinVarp->cloneTree(false);
                     varNewp->name(varNewName);
@@ -426,18 +431,18 @@ private:
 
                 // But clone the pin for each module instance
                 // Now also clone the pin itself and update its varref
-                AstPin* newp = nodep->cloneTree(false);
+                AstPin* const newp = nodep->cloneTree(false);
                 newp->modVarp(varNewp);
                 newp->name(newp->name() + "__BRA__" + cvtToStr(i) + "__KET__");
                 // And replace exprp with a new varxref
                 const AstVarRef* varrefp = VN_CAST(newp->exprp(), VarRef);  // Maybe null
                 int expr_i = i;
-                if (AstSliceSel* slicep = VN_CAST(newp->exprp(), SliceSel)) {
-                    varrefp = VN_CAST(slicep->fromp(), VarRef);
+                if (AstSliceSel* const slicep = VN_CAST(newp->exprp(), SliceSel)) {
+                    varrefp = VN_AS(slicep->fromp(), VarRef);
                     UASSERT(VN_IS(slicep->rhsp(), Const), "Slices should be constant");
                     int slice_index
                         = slicep->declRange().left() + in * slicep->declRange().leftToRightInc();
-                    auto* exprArrp = VN_CAST(varrefp->dtypep(), UnpackArrayDType);
+                    auto* const exprArrp = VN_AS(varrefp->dtypep(), UnpackArrayDType);
                     UASSERT_OBJ(exprArrp, slicep, "Slice of non-array");
                     expr_i = slice_index + exprArrp->lo();
                 } else if (!varrefp) {
@@ -447,7 +452,7 @@ private:
                 }
 
                 const string newname = varrefp->name() + "__BRA__" + cvtToStr(expr_i) + "__KET__";
-                AstVarXRef* newVarXRefp
+                AstVarXRef* const newVarXRefp
                     = new AstVarXRef(nodep->fileline(), newname, "", VAccess::WRITE);
                 newVarXRefp->varp(newp->modVarp());
                 newp->exprp()->unlinkFrBack()->deleteTree();
@@ -507,7 +512,7 @@ public:
         // Else create a intermediate wire to perform the interconnect
         // Return the new assignment, if one was made
         // Note this module calles cloneTree() via new AstVar
-        AstVar* pinVarp = pinp->modVarp();
+        AstVar* const pinVarp = pinp->modVarp();
         if (!pinp->exprp()) {
             // No-connect, perhaps promote based on `unconnected_drive,
             // otherwise done
@@ -521,9 +526,9 @@ public:
                 return nullptr;
             }
         }
-        AstVarRef* connectRefp = VN_CAST(pinp->exprp(), VarRef);
-        AstVarXRef* connectXRefp = VN_CAST(pinp->exprp(), VarXRef);
-        AstBasicDType* pinBasicp = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe nullptr
+        AstVarRef* const connectRefp = VN_CAST(pinp->exprp(), VarRef);
+        AstVarXRef* const connectXRefp = VN_CAST(pinp->exprp(), VarXRef);
+        AstBasicDType* const pinBasicp = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe nullptr
         AstBasicDType* connBasicp = nullptr;
         AstAssignW* assignp = nullptr;
         if (connectRefp) connBasicp = VN_CAST(connectRefp->varp()->dtypep(), BasicDType);
@@ -548,12 +553,12 @@ public:
             // Make a new temp wire
             // if (1 || debug() >= 9) pinp->dumpTree(cout, "-in_pin:");
             V3Inst::checkOutputShort(pinp);
-            AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
+            AstNode* const pinexprp = pinp->exprp()->unlinkFrBack();
             string newvarname
                 = (string(pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp")
                    // Prevent name conflict if both tri & non-tri add signals
                    + (forTristate ? "t" : "") + "__" + cellp->name() + "__" + pinp->name());
-            AstVar* newvarp
+            AstVar* const newvarp
                 = new AstVar(pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
             // Important to add statement next to cell, in case there is a
             // generate with same named cell
@@ -568,7 +573,7 @@ public:
                                            << pinexprp->width() << endl);
                 rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
                 pinp->exprp(new AstVarRef(newvarp->fileline(), newvarp, VAccess::WRITE));
-                AstNode* rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                AstNode* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
                 assignp = new AstAssignW(pinp->fileline(), pinexprp, rhsSelp);
             } else {
                 // V3 width should have range/extended to make the widths correct
@@ -597,7 +602,7 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
     if (nodep->modVarp()->direction() == VDirection::OUTPUT) {
         if (VN_IS(nodep->exprp(), Const) || VN_IS(nodep->exprp(), Extend)
             || (VN_IS(nodep->exprp(), Concat)
-                && (VN_IS(VN_CAST(nodep->exprp(), Concat)->lhsp(), Const)))) {
+                && (VN_IS(VN_AS(nodep->exprp(), Concat)->lhsp(), Const)))) {
             // Uses v3warn for error, as might be found multiple times
             nodep->v3warn(E_PORTSHORT, "Output port is connected to a constant pin,"
                                        " electrical short");

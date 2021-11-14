@@ -115,8 +115,8 @@ public:
                 } else if (support == 2 && slow) {
                 } else {
                     for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-                         nodep = VN_CAST(nodep->nextp(), NodeFile)) {
-                        AstCFile* cfilep = VN_CAST(nodep, CFile);
+                         nodep = VN_AS(nodep->nextp(), NodeFile)) {
+                        const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                         if (cfilep && cfilep->source() && cfilep->slow() == (slow != 0)
                             && cfilep->support() == (support != 0)) {
                             putMakeClassEntry(of, cfilep->name());

@@ -88,10 +88,6 @@ protected:
     friend class V3GraphEdge;
     friend class GraphAcyc;
     // METHODS
-    void acyclicDFS();
-    void acyclicDFSIterate(V3GraphVertex* vertexp, int depth, uint32_t currentRank);
-    void acyclicCut();
-    void acyclicLoop(V3GraphVertex* vertexp, int depth);
     double orderDFSIterate(V3GraphVertex* vertexp);
     void dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep);
     void verticesUnlink() { m_vertices.reset(); }

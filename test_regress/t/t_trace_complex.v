@@ -8,7 +8,7 @@ bit global_bit;
 
 module t (clk);
    input clk;
-   integer      cyc=0;
+   integer      cyc = 0;
 
    typedef struct packed {
       bit       b1;

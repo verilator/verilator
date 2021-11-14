@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.213 devel],
+AC_INIT([Verilator],[4.215 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -347,22 +347,18 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
 # Currently enabled c++14 due to packaged SystemC dependency
-# c++17 is the newest that Verilator supports
-# c++03 is the oldest that Verilator supports
+# c++14 is the newest that Verilator is regressed to support
+# c++11 is the oldest that Verilator supports
+# gnu is requried for Cygwin to compile verilated.h successfully
+#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
+#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++14)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++11)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++11)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++03)
 AC_SUBST(CFG_CXXFLAGS_STD_NEWEST)
-# And likewise oldest standard (same list above, backwards)
-# This is used for internal testing
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++03)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++11)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++14)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++17)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++20)
-AC_SUBST(CFG_CXXFLAGS_STD_OLDEST)
 
 # Flags for compiling Verilator internals including parser, and Verilated files
 # These turn on extra warnings and are only used with 'configure --enable-ccwarn'

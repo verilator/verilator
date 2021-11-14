@@ -46,7 +46,7 @@
 class VDefine final {
     // Define class.  One for each define.
     // string    m_name;         // Name of the define (list is keyed by this)
-    FileLine* m_fileline;  // Where it was declared
+    FileLine* const m_fileline;  // Where it was declared
     string m_value;  // Value of define
     string m_params;  // Parameters
     bool m_cmdline;  // Set on command line, don't `undefineall
@@ -801,7 +801,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     }
 
     // Save file contents for future error reporting
-    FileLine* flsp = new FileLine(filename);
+    FileLine* const flsp = new FileLine(filename);
     flsp->lineno(1);
     flsp->newContent();
     for (const string& i : wholefile) flsp->contentp()->pushText(i);
@@ -818,15 +818,13 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     for (StrList::iterator it = wholefile.begin(); it != wholefile.end(); ++it) {
         // We don't end-loop at \0 as we allow and strip mid-string '\0's (for now).
         bool strip = false;
-        const char* sp = it->data();
-        const char* ep = sp + it->length();
+        const char* const sp = it->data();
+        const char* const ep = sp + it->length();
         // Only process if needed, as saves extra string allocations
         for (const char* cp = sp; cp < ep; cp++) {
             if (VL_UNLIKELY(*cp == '\r' || *cp == '\0')) {
                 strip = true;
-                break;
-            }
-            if (VL_UNLIKELY(*cp == '\n')) {
+            } else if (VL_UNLIKELY(*cp == '\n')) {
                 eof_newline = 0;
                 ++eof_lineno;
             } else {
@@ -850,10 +848,10 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
 
     // Warning check
     if (eof_newline) {
-        FileLine* fl = new FileLine{flsp};
+        FileLine* const fl = new FileLine{flsp};
         fl->contentLineno(eof_lineno);
         fl->column(eof_newline + 1, eof_newline + 1);
-        fl->v3warn(EOFNEWLINE, "Missing newline at end of file (POSIX 3.206)."
+        fl->v3warn(EOFNEWLINE, "Missing newline at end of file (POSIX 3.206).\n"
                                    << fl->warnMore() << "... Suggest add newline.");
     }
 }
@@ -1182,7 +1180,7 @@ int V3PreProcImp::getStateToken() {
                 if (VL_UNCOVERABLE(m_defRefs.empty())) {
                     fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
                 }
-                VDefineRef* refp = &(m_defRefs.top());
+                VDefineRef* const refp = &(m_defRefs.top());
                 error(string("Expecting ( to begin argument list for define reference `")
                       + refp->name() + "\n");
                 statePop();
@@ -1465,7 +1463,7 @@ int V3PreProcImp::getStateToken() {
                         // Can't subst now, or
                         // `define a x,y
                         // foo(`a,`b)  would break because a contains comma
-                        VDefineRef* refp = &(m_defRefs.top());
+                        VDefineRef* const refp = &(m_defRefs.top());
                         refp->nextarg(refp->nextarg() + m_lexp->m_defValue + out);
                         m_lexp->m_defValue = "";
                     }

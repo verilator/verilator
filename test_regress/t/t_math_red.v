@@ -12,7 +12,7 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
 
    reg [67:0]    r;
 

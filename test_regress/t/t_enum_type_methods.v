@@ -19,7 +19,7 @@ module t (/*AUTOARG*/
 		       E04 = 4
 		       } my_t;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
    my_t e;
 
    int arrayfits [e.num];  // Check can use as constant

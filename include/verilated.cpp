@@ -2258,6 +2258,7 @@ VerilatedContext::VerilatedContext()
     Verilated::lastContextp(this);
     Verilated::threadContextp(this);
     m_ns.m_profThreadsFilename = "profile_threads.dat";
+    m_ns.m_profVltFilename = "profile.vlt";
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);
@@ -2339,6 +2340,14 @@ void VerilatedContext::profThreadsFilename(const std::string& flag) VL_MT_SAFE {
 std::string VerilatedContext::profThreadsFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_profThreadsFilename;
+}
+void VerilatedContext::profVltFilename(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_profVltFilename = flag;
+}
+std::string VerilatedContext::profVltFilename() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_profVltFilename;
 }
 void VerilatedContext::randReset(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
@@ -2495,6 +2504,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             profThreadsWindow(std::atol(value.c_str()));
         } else if (commandArgVlValue(arg, "+verilator+prof+threads+file+", value /*ref*/)) {
             profThreadsFilename(value);
+        } else if (commandArgVlValue(arg, "+verilator+prof+vlt+file+", value /*ref*/)) {
+            profVltFilename(value);
         } else if (commandArgVlValue(arg, "+verilator+rand+reset+", value /*ref*/)) {
             randReset(std::atoi(value.c_str()));
         } else if (commandArgVlValue(arg, "+verilator+seed+", value /*ref*/)) {

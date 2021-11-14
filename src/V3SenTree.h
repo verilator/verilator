@@ -74,38 +74,48 @@ private:
 class SenTreeFinder final {
 private:
     // STATE
-    AstTopScope* m_topScopep = nullptr;  // Top scope to add global SenTrees to
+    AstTopScope* const m_topScopep;  // Top scope to add global SenTrees to
     SenTreeSet m_trees;  // Set of global SenTrees
 
     VL_UNCOPYABLE(SenTreeFinder);
 
 public:
     // CONSTRUCTORS
-    SenTreeFinder() = default;
+    SenTreeFinder()
+        : SenTreeFinder(v3Global.rootp()) {}
+
+    explicit SenTreeFinder(AstNetlist* netlistp)
+        : m_topScopep{netlistp->topScopep()} {
+        // Gather existing global SenTrees
+        for (AstNode* nodep = m_topScopep->senTreesp(); nodep; nodep = nodep->nextp()) {
+            m_trees.add(VN_AS(nodep, SenTree));
+        }
+    }
 
     // METHODS
+
+    // Return a global AstSenTree that matches given SenTree.
+    // If no such global AstSenTree exists create one and add it to the stored AstTopScope.
     AstSenTree* getSenTree(AstSenTree* senTreep) {
-        // Return a global SenTree that matches given SenTree. If no such global
-        // SenTree exists, create one and add it to the stored TopScope.
         AstSenTree* treep = m_trees.find(senTreep);
-        // Not found, form a new one
         if (!treep) {
-            UASSERT(m_topScopep, "Never called init()");
+            // Not found, form a new one
             treep = senTreep->cloneTree(false);
-            m_topScopep->addStmtsp(treep);
+            m_topScopep->addSenTreep(treep);
             UINFO(8, "    New SENTREE " << treep << endl);
             m_trees.add(treep);
         }
         return treep;
     }
 
-    void init(AstTopScope* topScopep) {
-        // Keep hold of top scope so we can add global SenTrees later
-        m_topScopep = topScopep;
-        // Gather existing global SenTrees
-        for (AstNode* nodep = topScopep->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (AstSenTree* senTreep = VN_CAST(nodep, SenTree)) m_trees.add(senTreep);
-        }
+    // Return the global combinational AstSenTree.
+    // If no such global SenTree exists create one and add it to the stored AstTopScope.
+    AstSenTree* getComb() {
+        FileLine* const fl = m_topScopep->fileline();
+        AstSenTree* const combp = new AstSenTree{fl, new AstSenItem{fl, AstSenItem::Combo()}};
+        AstSenTree* const resultp = getSenTree(combp);
+        VL_DO_DANGLING(combp->deleteTree(), combp);  // getSenTree clones, so can delete
+        return resultp;
     }
 };
 

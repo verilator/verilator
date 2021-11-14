@@ -53,14 +53,16 @@ private:
         v3Global.rootp()->addModulep(nodep);
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
-        AstClassPackage* packagep = new AstClassPackage(nodep->fileline(), nodep->origName());
+        AstClassPackage* const packagep
+            = new AstClassPackage(nodep->fileline(), nodep->origName());
         packagep->name(nodep->name() + "__Vclpkg");
         nodep->classOrPackagep(packagep);
         packagep->classp(nodep);
         v3Global.rootp()->addModulep(packagep);
         // Add package to hierarchy
-        AstCell* cellp = new AstCell(packagep->fileline(), packagep->fileline(), packagep->name(),
-                                     packagep->name(), nullptr, nullptr, nullptr);
+        AstCell* const cellp
+            = new AstCell(packagep->fileline(), packagep->fileline(), packagep->name(),
+                          packagep->name(), nullptr, nullptr, nullptr);
         cellp->modp(packagep);
         v3Global.rootp()->topModulep()->addStmtp(cellp);
         // Find class's scope
@@ -72,8 +74,9 @@ private:
         UASSERT_OBJ(classScopep, nodep, "No scope under class");
 
         // Add scope
-        AstScope* scopep = new AstScope(nodep->fileline(), packagep, classScopep->name(),
-                                        classScopep->aboveScopep(), classScopep->aboveCellp());
+        AstScope* const scopep
+            = new AstScope(nodep->fileline(), packagep, classScopep->name(),
+                           classScopep->aboveScopep(), classScopep->aboveCellp());
         packagep->addStmtp(scopep);
         // Iterate
         VL_RESTORER(m_prefix);
@@ -141,8 +144,9 @@ public:
             if (VN_IS(moved.first, NodeFTask)) {
                 moved.second->addActivep(moved.first->unlinkFrBack());
             } else if (VN_IS(moved.first, Var)) {
-                AstVarScope* scopep = VN_CAST(moved.first->user1p(), VarScope);
-                moved.second->addVarp(scopep->unlinkFrBack());
+                AstVarScope* const scopep = VN_AS(moved.first->user1p(), VarScope);
+                scopep->unlinkFrBack();
+                moved.second->addVarp(scopep);
             }
         }
     }

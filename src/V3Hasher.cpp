@@ -81,7 +81,7 @@ private:
 
     virtual void visit(AstNode* nodep) override {
 #if VL_DEBUG
-        UINFO(0, "%Warning: Hashing node as AstNode: " << nodep);
+        UINFO(0, "%Warning: Hashing node as AstNode: " << nodep << endl);
 #endif
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
@@ -353,7 +353,7 @@ private:
     virtual void visit(AstInitArray* nodep) override {
         // Hash unpacked array initializers by value, as the order of initializer nodes does not
         // matter, and we want semantically equivalent initializers to map to the same hash.
-        AstUnpackArrayDType* const dtypep = VN_CAST(nodep->dtypep(), UnpackArrayDType);
+        const AstUnpackArrayDType* const dtypep = VN_CAST(nodep->dtypep(), UnpackArrayDType);
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, /* hashChildren: */ !dtypep, [=]() {
             if (dtypep) {
                 const uint32_t size = dtypep->elementsConst();
@@ -454,6 +454,9 @@ private:
             m_hash += nodep->name();
             iterateNull(nodep->ftaskp());
         });
+    }
+    virtual void visit(AstMTaskBody* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
     virtual void visit(AstNodeProcedure* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});

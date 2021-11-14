@@ -97,10 +97,10 @@ private:
     virtual void visit(AstFell* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
         if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNode* past = new AstPast(fl, exprp, nullptr);
+        AstNode* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, past, new AstNot(fl, exprp->cloneTree(false)));
         exprp->dtypeSetBit();
@@ -116,10 +116,10 @@ private:
     virtual void visit(AstRose* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
         if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNode* past = new AstPast(fl, exprp, nullptr);
+        AstNode* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, new AstNot(fl, past), exprp->cloneTree(false));
         exprp->dtypeSetBit();
@@ -130,9 +130,9 @@ private:
     virtual void visit(AstStable* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
-        AstNode* past = new AstPast(fl, exprp, nullptr);
+        AstNode* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstEq(fl, past, exprp->cloneTree(false));
         exprp->dtypeSetBit();
@@ -144,15 +144,15 @@ private:
     virtual void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
-        FileLine* fl = nodep->fileline();
-        AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+        FileLine* const fl = nodep->fileline();
+        AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 
         if (m_disablep) lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp);
 
-        AstNode* past = new AstPast(fl, lhsp, nullptr);
+        AstNode* const past = new AstPast(fl, lhsp, nullptr);
         past->dtypeFrom(lhsp);
-        AstNode* exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
+        AstNode* const exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));

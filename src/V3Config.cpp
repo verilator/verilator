@@ -24,6 +24,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <unordered_map>
 
 //######################################################################
 // Resolve wildcards in files, modules, ftasks or variables
@@ -102,7 +103,7 @@ public:
     // Apply all attributes to the variable
     void apply(AstVar* varp) {
         for (const_iterator it = begin(); it != end(); ++it) {
-            AstNode* newp = new AstAttrOf(varp->fileline(), it->m_type);
+            AstNode* const newp = new AstAttrOf(varp->fileline(), it->m_type);
             varp->addAttrsp(newp);
             if (it->m_type == AstAttrType::VAR_PUBLIC_FLAT_RW && it->m_sentreep) {
                 newp->addNext(new AstAlwaysPublic(varp->fileline(), it->m_sentreep, nullptr));
@@ -191,11 +192,11 @@ public:
         if (m_inline) {
             AstPragmaType type
                 = m_inlineValue ? AstPragmaType::INLINE_MODULE : AstPragmaType::NO_INLINE_MODULE;
-            AstNode* nodep = new AstPragma(modp->fileline(), type);
+            AstNode* const nodep = new AstPragma(modp->fileline(), type);
             modp->addStmtp(nodep);
         }
         for (auto it = m_modPragmas.cbegin(); it != m_modPragmas.cend(); ++it) {
-            AstNode* nodep = new AstPragma(modp->fileline(), *it);
+            AstNode* const nodep = new AstPragma(modp->fileline(), *it);
             modp->addStmtp(nodep);
         }
     }
@@ -346,6 +347,9 @@ using V3ConfigFileResolver = V3ConfigWildcardResolver<V3ConfigFile>;
 class V3ConfigResolver final {
     V3ConfigModuleResolver m_modules;  // Access to module names (with wildcards)
     V3ConfigFileResolver m_files;  // Access to file names (with wildcards)
+    std::unordered_map<string, std::unordered_map<string, vluint64_t>>
+        m_profileData;  // Access to profile_data records
+    FileLine* m_profileFileLine = nullptr;
 
     static V3ConfigResolver s_singleton;  // Singleton (not via local static, as that's slow)
     V3ConfigResolver() = default;
@@ -356,6 +360,20 @@ public:
 
     V3ConfigModuleResolver& modules() { return m_modules; }
     V3ConfigFileResolver& files() { return m_files; }
+
+    void addProfileData(FileLine* fl, const string& model, const string& key, vluint64_t cost) {
+        if (!m_profileFileLine) m_profileFileLine = fl;
+        if (cost == 0) cost = 1;  // Cost 0 means delete (or no data)
+        m_profileData[model][key] += cost;
+    }
+    vluint64_t getProfileData(const string& model, const string& key) const {
+        const auto mit = m_profileData.find(model);
+        if (mit == m_profileData.cend()) return 0;
+        const auto it = mit->second.find(key);
+        if (it == mit->second.cend()) return 0;
+        return it->second;
+    }
+    FileLine* getProfileDataFileLine() const { return m_profileFileLine; }  // Maybe null
 };
 
 V3ConfigResolver V3ConfigResolver::s_singleton;
@@ -392,10 +410,6 @@ void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int 
     }
 }
 
-void V3Config::addModulePragma(const string& module, AstPragmaType pragma) {
-    V3ConfigResolver::s().modules().at(module).addModulePragma(pragma);
-}
-
 void V3Config::addInline(FileLine* fl, const string& module, const string& ftask, bool on) {
     if (ftask.empty()) {
         V3ConfigResolver::s().modules().at(module).setInline(on);
@@ -406,6 +420,15 @@ void V3Config::addInline(FileLine* fl, const string& module, const string& ftask
             V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setNoInline(on);
         }
     }
+}
+
+void V3Config::addModulePragma(const string& module, AstPragmaType pragma) {
+    V3ConfigResolver::s().modules().at(module).addModulePragma(pragma);
+}
+
+void V3Config::addProfileData(FileLine* fl, const string& model, const string& key,
+                              vluint64_t cost) {
+    V3ConfigResolver::s().addProfileData(fl, model, key, cost);
 }
 
 void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftask,
@@ -495,6 +518,13 @@ void V3Config::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar
         vp = modp->vars().resolve(varp->name());
     }
     if (vp) vp->apply(varp);
+}
+
+vluint64_t V3Config::getProfileData(const string& model, const string& key) {
+    return V3ConfigResolver::s().getProfileData(model, key);
+}
+FileLine* V3Config::getProfileDataFileLine() {
+    return V3ConfigResolver::s().getProfileDataFileLine();
 }
 
 bool V3Config::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {

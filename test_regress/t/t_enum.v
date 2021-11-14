@@ -31,6 +31,7 @@ module t (/*AUTOARG*/);
 	 z5 = e5
 	 } ZN;
 
+   typedef enum three_t;  // Forward
    typedef enum [2:0] { ONES=~0 } three_t;
    three_t three = ONES;
 

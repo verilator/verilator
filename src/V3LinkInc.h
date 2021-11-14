@@ -28,9 +28,6 @@
 class V3LinkInc final {
 public:
     static void linkIncrements(AstNetlist* nodep);
-
-private:
-    void prepost_visit(AstNode* nodep);
 };
 
 #endif  // Guard

@@ -71,7 +71,7 @@ public:
         // Each change detection function needs at least one AstChangeDet
         // to ensure that V3EmitC outputs the necessary code.
         maybeCreateMidChg();
-        m_chgFuncp->addStmtsp(new AstChangeDet{m_scopetopp->fileline(), nullptr, nullptr, false});
+        m_chgFuncp->addStmtsp(new AstChangeDet{m_scopetopp->fileline(), nullptr, nullptr});
     }
     void maybeCreateMidChg() {
         // Don't create an extra function call if splitting is disabled
@@ -94,7 +94,7 @@ public:
             if (!m_tlChgFuncp->stmtsp()) {
                 m_tlChgFuncp->addStmtsp(new AstCReturn{m_scopetopp->fileline(), callp});
             } else {
-                AstCReturn* const returnp = VN_CAST(m_tlChgFuncp->stmtsp(), CReturn);
+                AstCReturn* const returnp = VN_AS(m_tlChgFuncp->stmtsp(), CReturn);
                 UASSERT_OBJ(returnp, m_scopetopp, "Lost CReturn in top change function");
                 // This is currently using AstLogOr which will shortcut the
                 // evaluation if any function returns true. This is likely what
@@ -146,7 +146,7 @@ private:
         m_statep->maybeCreateChgFuncp();
 
         AstChangeDet* const changep = new AstChangeDet{
-            m_vscp->fileline(), m_varEqnp->cloneTree(true), m_newRvEqnp->cloneTree(true), false};
+            m_vscp->fileline(), m_varEqnp->cloneTree(true), m_newRvEqnp->cloneTree(true)};
         m_statep->m_chgFuncp->addStmtsp(changep);
         AstAssign* const initp = new AstAssign{m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
                                                m_varEqnp->cloneTree(true)};

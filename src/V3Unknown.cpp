@@ -91,9 +91,9 @@ private:
         if (m_assigndlyp) {
             // Delayed assignments become normal assignments,
             // then the temp created becomes the delayed assignment
-            AstNode* newp = new AstAssign(m_assigndlyp->fileline(),
-                                          m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
-                                          m_assigndlyp->rhsp()->unlinkFrBackWithNext());
+            AstNode* const newp = new AstAssign(m_assigndlyp->fileline(),
+                                                m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
+                                                m_assigndlyp->rhsp()->unlinkFrBackWithNext());
             m_assigndlyp->replaceWith(newp);
             VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = nullptr);
         }
@@ -103,16 +103,16 @@ private:
         while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)) {
             prep = prep->backp();
         }
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         VL_DANGLING(nodep);  // Zap it so we don't use it by mistake - use prep
 
         // Already exists; rather than IF(a,... IF(b... optimize to IF(a&&b,
         // Saves us teaching V3Const how to optimize, and it won't be needed again.
-        if (AstIf* ifp = VN_CAST(prep->user2p(), If)) {
+        if (const AstIf* const ifp = VN_AS(prep->user2p(), If)) {
             UASSERT_OBJ(!needDly, prep, "Should have already converted to non-delay");
             AstNRelinker replaceHandle;
-            AstNode* earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
-            AstNode* newp = new AstLogAnd(condp->fileline(), condp, earliercondp);
+            AstNode* const earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
+            AstNode* const newp = new AstLogAnd(condp->fileline(), condp, earliercondp);
             UINFO(4, "Edit BOUNDLVALUE " << newp << endl);
             replaceHandle.relink(newp);
         } else {
@@ -192,8 +192,8 @@ private:
             AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
             AstNode* newp;
             // If we got ==1'bx it can never be true (but 1'bx==1'bx can be!)
-            if (((VN_IS(lhsp, Const) && VN_CAST(lhsp, Const)->num().isFourState())
-                 || (VN_IS(rhsp, Const) && VN_CAST(rhsp, Const)->num().isFourState()))) {
+            if (((VN_IS(lhsp, Const) && VN_AS(lhsp, Const)->num().isFourState())
+                 || (VN_IS(rhsp, Const) && VN_AS(rhsp, Const)->num().isFourState()))) {
                 newp = new AstConst(nodep->fileline(), AstConst::WidthedValue(), 1,
                                     (VN_IS(nodep, EqCase) ? 0 : 1));
                 VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
@@ -231,9 +231,9 @@ private:
             } else {
                 // X or Z's become mask, ala case statements.
                 V3Number nummask(rhsp, rhsp->width());
-                nummask.opBitsNonX(VN_CAST(rhsp, Const)->num());
+                nummask.opBitsNonX(VN_AS(rhsp, Const)->num());
                 V3Number numval(rhsp, rhsp->width());
-                numval.opBitsOne(VN_CAST(rhsp, Const)->num());
+                numval.opBitsOne(VN_AS(rhsp, Const)->num());
                 AstNode* and1p = new AstAnd(nodep->fileline(), lhsp,
                                             new AstConst(nodep->fileline(), nummask));
                 AstNode* and2p = new AstConst(nodep->fileline(), numval);
@@ -266,9 +266,9 @@ private:
     virtual void visit(AstCountBits* nodep) override {
         // Ahh, we're two state, so this is easy
         std::array<bool, 3> dropop;
-        dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_CAST(nodep->rhsp(), Const)->num().isAnyX();
-        dropop[1] = VN_IS(nodep->thsp(), Const) && VN_CAST(nodep->thsp(), Const)->num().isAnyX();
-        dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_CAST(nodep->fhsp(), Const)->num().isAnyX();
+        dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->num().isAnyX();
+        dropop[1] = VN_IS(nodep->thsp(), Const) && VN_AS(nodep->thsp(), Const)->num().isAnyX();
+        dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_AS(nodep->fhsp(), Const)->num().isAnyX();
         UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
 
         AstNode* nonXp = nullptr;
@@ -363,7 +363,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
-            AstNode* basefromp = AstArraySel::baseFromp(nodep, true);
+            const AstNode* basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();

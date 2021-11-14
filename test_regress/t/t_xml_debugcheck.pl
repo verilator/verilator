@@ -29,9 +29,9 @@ file_grep("$out_filename", qr/<constpool /x);
 file_grep("$out_filename", qr/<inititem /x);
 file_grep("$out_filename", qr/<if /x);
 file_grep("$out_filename", qr/<while /x);
-file_grep("$out_filename", qr/<begin>/x); # for <if> and <while>
-file_grep("$out_filename", qr/ signed=/x); # for <basicdtype>
-file_grep("$out_filename", qr/ func=/x); # for <ccall>
+file_grep("$out_filename", qr/<begin>/x);  # for <if> and <while>
+file_grep("$out_filename", qr/ signed=/x);  # for <basicdtype>
+file_grep("$out_filename", qr/ func=/x);  # for <ccall>
 
 ok(1);
 1;

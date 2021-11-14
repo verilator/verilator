@@ -75,7 +75,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
             puts(" tag=");
             putsQuoted(nodep->tag());
         }
-        if (AstNodeDType* dtp = VN_CAST(nodep, NodeDType)) {
+        if (const AstNodeDType* const dtp = VN_CAST(nodep, NodeDType)) {
             if (dtp->subDTypep()) {
                 puts(" sub_dtype_id=");
                 outputId(dtp->subDTypep()->skipRefp());

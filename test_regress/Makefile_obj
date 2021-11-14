@@ -41,8 +41,6 @@ CPPFLAGS += $(CPPFLAGS_ADD)
 ifeq ($(CFG_WITH_LONGTESTS),yes)
   ifeq ($(DRIVER_STD),newest)
     CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
-  else ifeq ($(DRIVER_STD),oldest)
-    CPPFLAGS += $(CFG_CXXFLAGS_STD_OLDEST)
   endif
 endif
 

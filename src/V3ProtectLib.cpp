@@ -79,7 +79,7 @@ private:
         } else {
             UASSERT_OBJ(!m_foundTop, nodep, "Multiple root modules");
         }
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         // Need to know the existence of clk before createSvFile()
         m_hasClk = checkIfClockExists(nodep);
         createSvFile(fl, nodep);
@@ -126,7 +126,7 @@ private:
 
     void createSvFile(FileLine* fl, AstNodeModule* modp) {
         // Comments
-        AstTextBlock* txtp = new AstTextBlock(fl);
+        AstTextBlock* const txtp = new AstTextBlock(fl);
         addComment(txtp, fl, "Wrapper module for DPI protected library");
         addComment(txtp, fl,
                    "This module requires lib" + m_libName + ".a or lib" + m_libName
@@ -288,7 +288,7 @@ private:
 
     void createCppFile(FileLine* fl) {
         // Comments
-        AstTextBlock* txtp = new AstTextBlock(fl);
+        AstTextBlock* const txtp = new AstTextBlock(fl);
         addComment(txtp, fl, "Wrapper functions for DPI protected library\n");
 
         // Includes
@@ -408,7 +408,7 @@ private:
     }
 
     void handleClock(AstVar* varp) {
-        FileLine* fl = varp->fileline();
+        FileLine* const fl = varp->fileline();
         handleInput(varp);
         m_seqPortsp->addNodep(varp->cloneTree(false));
         if (m_hasClk) {
@@ -420,7 +420,7 @@ private:
     }
 
     void handleDataInput(AstVar* varp) {
-        FileLine* fl = varp->fileline();
+        FileLine* const fl = varp->fileline();
         handleInput(varp);
         m_comboPortsp->addNodep(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "\n");
@@ -434,13 +434,13 @@ private:
     void handleInput(AstVar* varp) { m_modPortsp->addNodep(varp->cloneTree(false)); }
 
     static void addLocalVariable(AstTextBlock* textp, AstVar* varp, const char* suffix) {
-        AstVar* newVarp
+        AstVar* const newVarp
             = new AstVar(varp->fileline(), AstVarType::VAR, varp->name() + suffix, varp->dtypep());
         textp->addNodep(newVarp);
     }
 
     void handleOutput(AstVar* varp) {
-        FileLine* fl = varp->fileline();
+        FileLine* const fl = varp->fileline();
         m_modPortsp->addNodep(varp->cloneTree(false));
         m_comboPortsp->addNodep(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "_combo__V\n");
@@ -471,7 +471,7 @@ private:
 
     static bool checkIfClockExists(AstNodeModule* modp) {
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->direction() == VDirection::INPUT
                     && (varp->isUsedClock()
                         || varp->attrClocker() == VVarAttrClocker::CLOCKER_YES)) {

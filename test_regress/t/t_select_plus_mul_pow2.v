@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
    reg [63:0] 		from = 64'h0706050403020100;
    reg [7:0] 		to;
    reg [2:0] 		bitn;
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
 
    always @* begin
       to = from[bitn * 8 +: 8];

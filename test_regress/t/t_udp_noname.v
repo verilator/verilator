@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
    wire  o;
    udp (o, a);
 
-   integer cyc;  initial cyc=0;
+   integer cyc;  initial cyc = 0;
 
    // Test loop
    always @ (posedge clk) begin

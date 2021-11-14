@@ -181,7 +181,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
 
     // Grab linenumber
     bool fail = false;
-    const char* ln = textp;
+    const char* const ln = textp;
     while (*textp && !isspace(*textp)) textp++;
     if (isdigit(*ln)) {
         lineno(atoi(ln));
@@ -193,7 +193,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     while (*textp && (isspace(*textp) || *textp == '"')) textp++;
 
     // Grab filename
-    const char* fn = textp;
+    const char* const fn = textp;
     while (*textp && !(isspace(*textp) || *textp == '"')) textp++;
     if (textp != fn) {
         string strfn = fn;
@@ -244,7 +244,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
         return lastNewp;
     }
-    FileLine* newp = new FileLine(this);
+    FileLine* const newp = new FileLine(this);
     lastNewp = newp;
     return newp;
 }
@@ -430,14 +430,14 @@ string FileLine::warnContext(bool secondary) const {
 std::unordered_set<FileLine*> fileLineLeakChecks;
 
 void* FileLine::operator new(size_t size) {
-    FileLine* objp = static_cast<FileLine*>(::operator new(size));
+    FileLine* const objp = static_cast<FileLine*>(::operator new(size));
     fileLineLeakChecks.insert(objp);
     return objp;
 }
 
 void FileLine::operator delete(void* objp, size_t size) {
     if (!objp) return;
-    FileLine* flp = static_cast<FileLine*>(objp);
+    FileLine* const flp = static_cast<FileLine*>(objp);
     const auto it = fileLineLeakChecks.find(flp);
     if (it != fileLineLeakChecks.end()) {
         fileLineLeakChecks.erase(it);

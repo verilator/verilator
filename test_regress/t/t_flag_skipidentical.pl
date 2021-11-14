@@ -15,9 +15,9 @@ scenarios(vlt => 1);
 
     print "NOTE: use --debugi, as --debug in driver turns off skip-identical\n";
 
-    my $outfile = "$Self->{obj_dir}/V".$Self->{name}.".cpp";
+    my $outfile = "$Self->{obj_dir}/V" . $Self->{name} . ".cpp";
     my @oldstats = stat($outfile);
-    print "Old mtime=",$oldstats[9],"\n";
+    print "Old mtime=", $oldstats[9], "\n";
     $oldstats[9] or error("No output file found: $outfile\n");
 
     sleep(2);  # Or else it might take < 1 second to compile and see no diff.
@@ -26,7 +26,7 @@ scenarios(vlt => 1);
     compile();
 
     my @newstats = stat($outfile);
-    print "New mtime=",$newstats[9],"\n";
+    print "New mtime=", $newstats[9], "\n";
 
     ($oldstats[9] == $newstats[9])
         or error("--skip-identical was ignored -- recompiled\n");

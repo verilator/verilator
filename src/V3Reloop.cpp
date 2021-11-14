@@ -68,7 +68,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstVar* findCreateVarTemp(FileLine* fl, AstCFunc* cfuncp) {
-        AstVar* varp = VN_CAST(cfuncp->user1p(), Var);
+        AstVar* varp = VN_AS(cfuncp->user1p(), Var);
         if (!varp) {
             const string newvarname = string("__Vilp");
             varp = new AstVar(fl, AstVarType::STMTTEMP, newvarname, VFlagLogicPacked(), 32);
@@ -168,7 +168,7 @@ private:
             return;
         }
         // Of a constant index
-        AstConst* const lbitp = VN_CAST(lselp->bitp(), Const);
+        const AstConst* const lbitp = VN_CAST(lselp->bitp(), Const);
         if (!lbitp) {
             mergeEnd();
             return;
@@ -192,7 +192,7 @@ private:
         uint32_t rindex = lindex;
         if (rconstp) {  // Ok
         } else if (rselp) {
-            AstConst* const rbitp = VN_CAST(rselp->bitp(), Const);
+            const AstConst* const rbitp = VN_CAST(rselp->bitp(), Const);
             rvarrefp = VN_CAST(rselp->fromp(), NodeVarRef);
             if (!rbitp || !rvarrefp || lvarrefp->varp() == rvarrefp->varp()) {
                 mergeEnd();

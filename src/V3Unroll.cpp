@@ -85,12 +85,12 @@ private:
         return bodySizeOverRecurse(nodep->nextp(), bodySize, bodyLimit);
     }
 
-    bool
-    forUnrollCheck(AstNode* nodep,
-                   AstNode* initp,  // Maybe under nodep (no nextp), or standalone (ignore nextp)
-                   AstNode* precondsp, AstNode* condp,
-                   AstNode* incp,  // Maybe under nodep or in bodysp
-                   AstNode* bodysp) {
+    bool forUnrollCheck(
+        AstNode* nodep,
+        AstNode* const initp,  // Maybe under nodep (no nextp), or standalone (ignore nextp)
+        AstNode* const precondsp, AstNode* condp,
+        AstNode* const incp,  // Maybe under nodep or in bodysp
+        AstNode* bodysp) {
         // To keep the IF levels low, we return as each test fails.
         UINFO(4, " FOR Check " << nodep << endl);
         if (initp) UINFO(6, "    Init " << initp << endl);
@@ -99,7 +99,7 @@ private:
         if (incp) UINFO(6, "    Inc  " << incp << endl);
 
         // Initial value check
-        AstAssign* initAssp = VN_CAST(initp, Assign);
+        AstAssign* const initAssp = VN_CAST(initp, Assign);
         if (!initAssp) return cantUnroll(nodep, "no initial assignment");
         UASSERT_OBJ(!(initp->nextp() && initp->nextp() != nodep), nodep,
                     "initial assignment shouldn't be a list");
@@ -111,12 +111,12 @@ private:
         UASSERT_OBJ(!condp->nextp(), nodep, "conditional shouldn't be a list");
         //
         // Assignment of next value check
-        AstAssign* incAssp = VN_CAST(incp, Assign);
+        const AstAssign* const incAssp = VN_CAST(incp, Assign);
         if (!incAssp) return cantUnroll(nodep, "no increment assignment");
         if (incAssp->nextp()) return cantUnroll(nodep, "multiple increments");
 
-        m_forVarp = VN_CAST(initAssp->lhsp(), VarRef)->varp();
-        m_forVscp = VN_CAST(initAssp->lhsp(), VarRef)->varScopep();
+        m_forVarp = VN_AS(initAssp->lhsp(), VarRef)->varp();
+        m_forVscp = VN_AS(initAssp->lhsp(), VarRef)->varScopep();
         if (VN_IS(nodep, GenFor) && !m_forVarp->isGenVar()) {
             nodep->v3error("Non-genvar used in generate for: " << m_forVarp->prettyNameQ());
         } else if (!VN_IS(nodep, GenFor) && m_forVarp->isGenVar()) {
@@ -131,7 +131,7 @@ private:
         // however, for repeat loops, the loop variable is auto-generated
         // and the initp statements will reference a variable outside of the initp scope
         // alas, failing to simulate.
-        AstConst* constInitp = VN_CAST(initAssp->rhsp(), Const);
+        const AstConst* const constInitp = VN_CAST(initAssp->rhsp(), Const);
         if (!constInitp) return cantUnroll(nodep, "non-constant initializer");
 
         //
@@ -155,7 +155,7 @@ private:
         if (debug() >= 9) nodep->dumpTree(cout, "-   for: ");
 
         if (!m_generate) {
-            AstAssign* incpAssign = VN_CAST(incp, Assign);
+            const AstAssign* const incpAssign = VN_AS(incp, Assign);
             if (!canSimulate(incpAssign->rhsp())) {
                 return cantUnroll(incp, "Unable to simulate increment");
             }
@@ -255,7 +255,7 @@ private:
             outLoopsr++;
 
             // Run inc
-            AstAssign* incpass = VN_CAST(incp, Assign);
+            AstAssign* const incpass = VN_AS(incp, Assign);
             V3Number newLoopValue = V3Number(initp);
             if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
                 return false;
@@ -315,7 +315,7 @@ private:
 
                     // Iteration requires a back, so put under temporary node
                     if (oneloopp) {
-                        AstBegin* tempp
+                        AstBegin* const tempp
                             = new AstBegin(oneloopp->fileline(), "[EditWrapper]", oneloopp);
                         m_varModeReplace = true;
                         iterateAndNextNull(tempp->stmtsp());
@@ -345,7 +345,7 @@ private:
                     }
 
                     // loopValue += valInc
-                    AstAssign* incpass = VN_CAST(incp, Assign);
+                    AstAssign* const incpass = VN_AS(incp, Assign);
                     V3Number newLoopValue = V3Number(nodep);
                     if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
                         nodep->v3error("Loop unrolling failed");
@@ -452,7 +452,7 @@ private:
 
         if (m_varModeReplace && nodep->varp() == m_forVarp && nodep->varScopep() == m_forVscp
             && nodep->access().isReadOnly()) {
-            AstNode* newconstp = m_varValuep->cloneTree(false);
+            AstNode* const newconstp = m_varValuep->cloneTree(false);
             nodep->replaceWith(newconstp);
             pushDeletep(nodep);
         }

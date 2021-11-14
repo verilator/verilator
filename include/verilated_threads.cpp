@@ -25,6 +25,7 @@
 #include "verilated_threads.h"
 
 #include <cstdio>
+#include <fstream>
 
 //=============================================================================
 // Globals
@@ -145,7 +146,7 @@ void VlThreadPool::profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES
     }
 }
 
-void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
+void VlThreadPool::profileDump(const char* filenamep, vluint64_t tickStart, vluint64_t tickEnd)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
@@ -159,13 +160,23 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
 
     // TODO Perhaps merge with verilated_coverage output format, so can
     // have a common merging and reporting tool, etc.
-    fprintf(fp, "VLPROFTHREAD 1.0 # Verilator thread profile dump version 1.0\n");
+    fprintf(fp, "VLPROFTHREAD 1.1 # Verilator thread profile dump version 1.1\n");
     fprintf(fp, "VLPROF arg --threads %" VL_PRI64 "u\n", vluint64_t(m_workers.size() + 1));
     fprintf(fp, "VLPROF arg +verilator+prof+threads+start+%" VL_PRI64 "u\n",
             Verilated::threadContextp()->profThreadsStart());
     fprintf(fp, "VLPROF arg +verilator+prof+threads+window+%u\n",
             Verilated::threadContextp()->profThreadsWindow());
     fprintf(fp, "VLPROF stat yields %" VL_PRI64 "u\n", VlMTaskVertex::yields());
+
+    // Copy /proc/cpuinfo into this output so verilator_gantt can be run on
+    // a different machine
+    {
+        const std::unique_ptr<std::ifstream> ifp{new std::ifstream("/proc/cpuinfo")};
+        if (!ifp->fail()) {
+            std::string line;
+            while (std::getline(*ifp, line)) { fprintf(fp, "VLPROFPROC %s\n", line.c_str()); }
+        }
+    }
 
     vluint32_t thread_id = 0;
     for (const auto& pi : m_allProfiles) {
@@ -177,20 +188,36 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
             case VlProfileRec::TYPE_BARRIER:  //
                 printing = true;
                 break;
+            case VlProfileRec::TYPE_EVAL:
+                if (!printing) break;
+                fprintf(fp,
+                        "VLPROF eval start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
+                        " cpu %u on thread %u\n",
+                        ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime), ei.m_cpu,
+                        thread_id);
+                break;
+            case VlProfileRec::TYPE_EVAL_LOOP:
+                if (!printing) break;
+                fprintf(fp,
+                        "VLPROF eval_loop start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
+                        " cpu %u on thread %u\n",
+                        ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime), ei.m_cpu,
+                        thread_id);
+                break;
             case VlProfileRec::TYPE_MTASK_RUN:
                 if (!printing) break;
                 fprintf(fp,
                         "VLPROF mtask %d"
-                        " start %" VL_PRI64 "u end %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
-                        " predict_time %u cpu %u on thread %u\n",
-                        ei.m_mtaskId, ei.m_startTime, ei.m_endTime,
-                        (ei.m_endTime - ei.m_startTime), ei.m_predictTime, ei.m_cpu, thread_id);
+                        " start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
+                        " predict_start %u predict_cost %u cpu %u on thread %u\n",
+                        ei.m_mtaskId, ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime),
+                        ei.m_predictStart, ei.m_predictCost, ei.m_cpu, thread_id);
                 break;
             default: assert(false); break;  // LCOV_EXCL_LINE
             }
         }
     }
-    fprintf(fp, "VLPROF stat ticks %" VL_PRI64 "u\n", ticksElapsed);
+    fprintf(fp, "VLPROF stat ticks %" VL_PRI64 "u\n", tickEnd - tickStart);
 
     std::fclose(fp);
 }
