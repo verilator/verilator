@@ -179,19 +179,6 @@ Summary:
    remove it from the combinatorial logic reevaluation checking code. This
    may greatly improve performance.
 
-.. option:: --make <build-tool>
-
-   Generates a script for the specified build tool.
-
-   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
-   Both can be specified together.  If no build tool is specified, gmake is
-   assumed.  The executable of gmake can be configured via environment
-   variable "MAKE".
-
-   When using :vlopt:`--build` Verilator takes over the responsibility of
-   building the model library/executable.  For this reason :option:`--make`
-   cannot be specified when using :vlopt:`--build`.
-
 .. option:: --compiler <compiler-name>
 
    Enables workarounds for the specified C++ compiler (list below).
@@ -598,6 +585,19 @@ Summary:
 
    If the design is not to be completely Verilated see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
+
+.. option:: --make <build-tool>
+
+   Generates a script for the specified build tool.
+
+   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
+   Both can be specified together.  If no build tool is specified, gmake is
+   assumed.  The executable of gmake can be configured via environment
+   variable "MAKE".
+
+   When using :vlopt:`--build` Verilator takes over the responsibility of
+   building the model library/executable.  For this reason :option:`--make`
+   cannot be specified when using :vlopt:`--build`.
 
 .. option:: -MAKEFLAGS <string>
 
