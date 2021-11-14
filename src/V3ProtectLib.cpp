@@ -197,15 +197,21 @@ private:
                               + "_protectlib_final(chandle handle__V);\n\n");
 
         // Local variables
-        txtp->addText(fl, "chandle handle__V;\n\n");
+        // Avoid tracing handle, as it is not a stable value, so breaks vcddiff
+        // Likewise other internals aren't interesting to the user
+        txtp->addText(fl, "// verilator tracing_off\n");
+
+        txtp->addText(fl, "chandle handle__V;\n");
+        txtp->addText(fl, "time last_combo_seqnum__V;\n");
+        if (m_hasClk) txtp->addText(fl, "time last_seq_seqnum__V;\n");
+        txtp->addText(fl, "\n");
+
         m_comboDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_comboDeclsp);
         m_seqDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_seqDeclsp);
         m_tmpDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_tmpDeclsp);
-        txtp->addText(fl, "\ntime last_combo_seqnum__V;\n");
-        if (m_hasClk) txtp->addText(fl, "time last_seq_seqnum__V;\n\n");
 
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
