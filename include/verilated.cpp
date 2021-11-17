@@ -1600,6 +1600,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
             inPct = true;
         } else if (!inPct) {  // Normal text
             prefix += *posp;
+        } else if (inPct && posp[0] == '0') {  // %0
         } else {  // Format character
             switch (std::tolower(*posp)) {
             case '%':
