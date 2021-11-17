@@ -233,6 +233,7 @@ public:
     V3Number(String, AstNode* nodep, const string& value) {
         init(nodep, 0);
         setString(value);
+        m_fromString = true;
     }
     class Null {};
     V3Number(Null, AstNode* nodep) {
