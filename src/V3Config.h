@@ -48,7 +48,7 @@ public:
     static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
 
-    static uint64_t getProfileData(const string& model, const string& key);
+    static vluint64_t getProfileData(const string& model, const string& key);
     static FileLine* getProfileDataFileLine();
     static bool waive(FileLine* filelinep, V3ErrorCode code, const string& message);
 };
