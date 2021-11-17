@@ -51,6 +51,12 @@ o: 014 014
 
 b: 000001100 000001100
 
+-1431655766
+-1431655766
+4294967294
+4294967294
+2863311530
+2863311530
 [0] hello, from a very long string. Percent %s are literally substituted in.
 hello, from a concatenated string.
 hello, from a concatenated format string [0].

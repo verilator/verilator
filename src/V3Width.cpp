@@ -3916,6 +3916,8 @@ private:
                         ch = 'g';
                     } else if (argp && argp->isString()) {
                         ch = '@';
+                    } else if (nodep->missingArgChar() == 'd' && argp->isSigned()) {
+                        ch = '~';
                     } else {
                         ch = nodep->missingArgChar();
                     }
