@@ -679,7 +679,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         return "";
     } else if (basicp) {
         bool zeroit
-            = (varp->attrFileDescr()  // Zero so we don't core dump if never $fopen
+            = (varp->attrFileDescr()  // Zero so we don't do file IO if never $fopen
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
                || (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0"));

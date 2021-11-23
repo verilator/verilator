@@ -403,10 +403,8 @@ private:
     }
 
     static void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
-        if (!filep) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");
-        }
+        // This might fail on complex expressions like arrays
+        // We use attrFileDescr() only for lint suppression, so that's ok
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
 
