@@ -25,6 +25,7 @@ Verilator 4.215 devel
 * Fix hang on recursive definition error (#3199). [Jonathan Kimmitt]
 * Fix display of signed without format (#3204). [Julie Schwartz]
 * Fix display of empty string constant (#3207). [Julie Schwartz]
+* Fix incorrect width after and-or optimization (#3208). [Julie Schwartz]
 * Fix %0 format on $value$plusargs.
 
 

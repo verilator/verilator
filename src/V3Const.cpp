@@ -1670,6 +1670,7 @@ private:
         if (operandsSame(llp, rlp)) {
             lp->lhsp(llp);
             lp->rhsp(nodep);
+            lp->dtypeFrom(nodep);
             nodep->lhsp(lrp);
             nodep->rhsp(rrp);
             VL_DO_DANGLING(rp->deleteTree(), rp);
@@ -1677,6 +1678,7 @@ private:
         } else if (operandsSame(lrp, rrp)) {
             lp->lhsp(nodep);
             lp->rhsp(rrp);
+            lp->dtypeFrom(nodep);
             nodep->lhsp(llp);
             nodep->rhsp(rlp);
             VL_DO_DANGLING(rp->deleteTree(), rp);

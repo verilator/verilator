@@ -283,8 +283,8 @@ class Cpt:
                 self.print("\t// " + typefunc['comment'] + "\n")
                 self.print("\tif (" + typefunc['match_if'] + ") {\n")
                 self.print("\t    UINFO(" + str(typefunc['uinfo_level']) +
-                           ",cvtToHex(nodep)" + "<<\" " + typefunc['uinfo'] +
-                           "\\n\");\n")
+                           ", cvtToHex(nodep)" + " << \" " +
+                           typefunc['uinfo'] + "\\n\");\n")
                 self.print("\t    " + typefunc['exec_func'] + "\n")
                 self.print("\t    return true;\n")
                 self.print("\t}\n")
