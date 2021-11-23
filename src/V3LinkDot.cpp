@@ -2952,8 +2952,16 @@ private:
                 nodep->classOrPackagep(foundp->classOrPackagep());
             } else if (AstParamTypeDType* defp
                        = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
-                nodep->refDTypep(defp);
-                nodep->classOrPackagep(foundp->classOrPackagep());
+                if (defp == nodep->backp()) {  // Where backp is typically typedef
+                    nodep->v3error("Reference to '" << m_ds.m_dotText
+                                                    << (m_ds.m_dotText == "" ? "" : ".")
+                                                    << nodep->prettyName() << "'"
+                                                    << " type would form a recursive definition");
+                    nodep->refDTypep(nodep->findVoidDType());  // Try to reduce later errors
+                } else {
+                    nodep->refDTypep(defp);
+                    nodep->classOrPackagep(foundp->classOrPackagep());
+                }
             } else if (AstClass* defp = foundp ? VN_AS(foundp->nodep(), Class) : nullptr) {
                 AstNode* paramsp = nodep->paramsp();
                 if (paramsp) paramsp->unlinkFrBackWithNext();

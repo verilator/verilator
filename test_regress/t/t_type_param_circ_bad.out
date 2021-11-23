@@ -1,0 +1,4 @@
+%Error: t/t_type_param_circ_bad.v:14:27: Reference to 'SZ' type would form a recursive definition
+   14 |    # (parameter type SZ = SZ)
+      |                           ^~
+%Error: Exiting due to

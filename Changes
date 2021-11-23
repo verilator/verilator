@@ -22,6 +22,7 @@ Verilator 4.215 devel
 * Fix array method names with parenthesis (#3181) (#3183). [Teng Huang]
 * Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
 * Fix nested generate if genblk naming (#3189). [yanx21]
+* Fix hang on recursive definition error (#3199). [Jonathan Kimmitt]
 * Fix display of signed without format (#3204). [Julie Schwartz]
 * Fix display of empty string constant (#3207). [Julie Schwartz]
 * Fix %0 format on $value$plusargs.
