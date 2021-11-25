@@ -1351,7 +1351,8 @@ private:
         case AstAttrType::DIM_RIGHT:
         case AstAttrType::DIM_SIZE: {
             UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
-            if (VN_IS(nodep->fromp()->dtypep(), QueueDType)) {
+            AstNodeDType* const dtypep = nodep->fromp()->dtypep();
+            if (VN_IS(dtypep, QueueDType)) {
                 switch (nodep->attrType()) {
                 case AstAttrType::DIM_SIZE: {
                     AstNode* const newp = new AstCMethodHard(
@@ -1398,26 +1399,34 @@ private:
                 default: nodep->v3error("Unhandled attribute type");
                 }
             } else {
-                std::pair<uint32_t, uint32_t> dimpair
-                    = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
-                uint32_t msbdim = dimpair.first + dimpair.second;
+                const std::pair<uint32_t, uint32_t> dimpair = dtypep->skipRefp()->dimensions(true);
+                const uint32_t msbdim = dimpair.first + dimpair.second;
                 if (!nodep->dimp() || msbdim < 1) {
-                    const int dim = 1;
-                    AstConst* const newp = dimensionValue(
-                        nodep->fileline(), nodep->fromp()->dtypep(), nodep->attrType(), dim);
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    if (VN_IS(dtypep, BasicDType) && dtypep->basicp()->isString()) {
+                        // IEEE undocumented but $bits(string) must give length(string) * 8
+                        AstNode* const newp = new AstShiftL{
+                            nodep->fileline(),
+                            new AstLenN{nodep->fileline(), nodep->fromp()->unlinkFrBack()},
+                            new AstConst{nodep->fileline(), 3},  // * 8
+                            32};
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    } else {
+                        const int dim = 1;
+                        AstConst* const newp
+                            = dimensionValue(nodep->fileline(), dtypep, nodep->attrType(), dim);
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    }
                 } else if (VN_IS(nodep->dimp(), Const)) {
                     const int dim = VN_AS(nodep->dimp(), Const)->toSInt();
-                    AstConst* const newp = dimensionValue(
-                        nodep->fileline(), nodep->fromp()->dtypep(), nodep->attrType(), dim);
+                    AstConst* const newp
+                        = dimensionValue(nodep->fileline(), dtypep, nodep->attrType(), dim);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 } else {  // Need a runtime lookup table.  Yuk.
-                    UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep,
-                                "Unsized expression");
-                    AstVar* const varp
-                        = dimensionVarp(nodep->fromp()->dtypep(), nodep->attrType(), msbdim);
+                    UASSERT_OBJ(nodep->fromp() && dtypep, nodep, "Unsized expression");
+                    AstVar* const varp = dimensionVarp(dtypep, nodep->attrType(), msbdim);
                     AstNode* const dimp = nodep->dimp()->unlinkFrBack();
                     AstVarRef* const varrefp
                         = new AstVarRef(nodep->fileline(), varp, VAccess::READ);

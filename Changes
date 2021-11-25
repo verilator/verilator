@@ -27,7 +27,8 @@ Verilator 4.215 devel
 * Fix display of empty string constant (#3207). [Julie Schwartz]
 * Fix incorrect width after and-or optimization (#3208). [Julie Schwartz]
 * Fix $fopen etc on integer arrays (#3214). [adrienlemasle]
-* Fix %0 format on $value$plusargs.
+* Fix $size on dynamic strings (#3216).
+* Fix %0 format on $value$plusargs (#3217).
 
 
 Verilator 4.214 2021-10-17
