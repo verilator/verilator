@@ -206,9 +206,9 @@ private:
         }
 
         // Forward to . so we have a whole word
-        std::string suffix = *bpost ? std::string{bpost + 1} : "";
+        const std::string suffix = *bpost ? std::string{bpost + 1} : "";
 
-        std::string out = prefix + "*" + suffix;
+        const std::string out = prefix + "*" + suffix;
 
         // cout << "\nch pre="<<prefix<<"  s="<<suffix<<"\nch a="<<old<<"\nch b="<<add
         // <<"\ncho="<<out<<endl;
@@ -219,7 +219,7 @@ private:
         for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             if (itemp->m_keys[i] != VerilatedCovConst::KEY_UNDEF) {
                 // We don't compare keys, only values
-                std::string val = m_indexValues[itemp->m_vals[i]];
+                const std::string val = m_indexValues[itemp->m_vals[i]];
                 if (std::string::npos != val.find(match)) {  // Found
                     return true;
                 }
@@ -302,7 +302,7 @@ public:
         // First two key/vals are filename
         ckeyps[0] = "filename";
         valps[0] = m_insertFilenamep;
-        std::string linestr = vlCovCvtToStr(m_insertLineno);
+        const std::string linestr = vlCovCvtToStr(m_insertLineno);
         ckeyps[1] = "lineno";
         valps[1] = linestr.c_str();
         // Default page if not specified
@@ -342,7 +342,7 @@ public:
                 m_insertp->m_vals[addKeynum] = valueIndex(val);
                 ++addKeynum;
                 if (VL_UNCOVERABLE(!legalKey(key))) {
-                    std::string msg
+                    const std::string msg
                         = ("%Error: Coverage keys of one character, or letter+digit are illegal: "
                            + key);  // LCOV_EXCL_LINE
                     VL_FATAL_MT("", 0, "", msg.c_str());
@@ -380,8 +380,9 @@ public:
 
             for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
                 if (itemp->m_keys[i] != VerilatedCovConst::KEY_UNDEF) {
-                    std::string key = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
-                    std::string val = m_indexValues[itemp->m_vals[i]];
+                    const std::string key
+                        = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
+                    const std::string val = m_indexValues[itemp->m_vals[i]];
                     if (key == VL_CIK_PER_INSTANCE) {
                         if (val != "0") per_instance = true;
                     }

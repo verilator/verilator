@@ -192,8 +192,8 @@ public:
 
 class VerilatedDpiOpenVar final {
     // MEMBERS
-    const VerilatedVarProps* m_propsp;  // Variable properties
-    void* m_datap;  // Location of data (local to thread always, so safe)
+    const VerilatedVarProps* const m_propsp;  // Variable properties
+    void* const m_datap;  // Location of data (local to thread always, so safe)
 public:
     // CONSTRUCTORS
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, void* datap)
@@ -230,10 +230,10 @@ public:
 
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
-    void* m_datap;  // Location of data
-    const char* m_namep;  // Name - slowpath
+    void* const m_datap;  // Location of data
+    const char* const m_namep;  // Name - slowpath
 protected:
-    bool m_isParam;
+    const bool m_isParam;
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,

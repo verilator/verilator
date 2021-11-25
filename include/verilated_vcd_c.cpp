@@ -281,7 +281,7 @@ void VerilatedVcd::bufferResize(vluint64_t minsize) {
     // minsize is size of largest write.  We buffer at least 8 times as much data,
     // writing when we are 3/4 full (with thus 2*minsize remaining free)
     if (VL_UNLIKELY(minsize > m_wrChunkSize)) {
-        char* oldbufp = m_wrBufp;
+        const char* oldbufp = m_wrBufp;
         m_wrChunkSize = minsize * 2;
         m_wrBufp = new char[m_wrChunkSize * 8];
         std::memcpy(m_wrBufp, oldbufp, m_writep - oldbufp);
@@ -298,7 +298,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
     // When it gets nearly full we dump it using this routine which calls write()
     // This is much faster than using buffered I/O
     if (VL_UNLIKELY(!isOpen())) return;
-    char* wp = m_wrBufp;
+    const char* wp = m_wrBufp;
     while (true) {
         const ssize_t remaining = (m_writep - wp);
         if (remaining == 0) break;
@@ -311,7 +311,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg
+                const std::string msg
                     = std::string{"VerilatedVcd::bufferFlush: "} + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 closeErr();
@@ -386,7 +386,7 @@ void VerilatedVcd::dumpHeader() {
         const std::string& decl = i.second;
 
         // Determine difference between the old and new names
-        const char* hiername = hiernamestr.c_str();
+        const char* const hiername = hiernamestr.c_str();
         const char* lp = lastName;
         const char* np = hiername;
         lastName = hiername;

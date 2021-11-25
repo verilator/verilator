@@ -208,7 +208,7 @@ void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char
 std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     va_list aq;
     va_copy(aq, ap);
-    size_t len = VL_VSNPRINTF(nullptr, 0, formatp, aq);
+    const size_t len = VL_VSNPRINTF(nullptr, 0, formatp, aq);
     va_end(aq);
     if (VL_UNLIKELY(len < 1)) return "";
 
@@ -387,7 +387,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         vluint64_t k = 0;
         for (int j = uw - 1; j >= 0; --j) {
-            vluint64_t unw64 = ((k << 32ULL) + static_cast<vluint64_t>(lwp[j]));
+            const vluint64_t unw64 = ((k << 32ULL) + static_cast<vluint64_t>(lwp[j]));
             owp[j] = unw64 / static_cast<vluint64_t>(rwp[0]);
             k = unw64 - static_cast<vluint64_t>(owp[j]) * static_cast<vluint64_t>(rwp[0]);
         }
@@ -444,7 +444,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
         vlsint64_t t = 0;  // Must be signed
         vluint64_t k = 0;
         for (int i = 0; i < vw; ++i) {
-            vluint64_t p = qhat * vn[i];  // Multiply by estimate
+            const vluint64_t p = qhat * vn[i];  // Multiply by estimate
             t = un[i + j] - k - (p & 0xFFFFFFFFULL);  // Subtract
             un[i + j] = t;
             k = (p >> 32ULL) - (t >> 32ULL);
@@ -698,8 +698,8 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
             }
         }
     } else {
-        double shiftd = vl_time_multiplier(shift);
-        double scaled = ld * shiftd;
+        const double shiftd = vl_time_multiplier(shift);
+        const double scaled = ld * shiftd;
         const double fracDiv = vl_time_multiplier(fracDigits);
         const double whole = scaled / fracDiv;
         if (!fracDigits) {
@@ -749,7 +749,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
             }
         } else {  // Format character
             inPct = false;
-            char fmt = pos[0];
+            const char fmt = pos[0];
             switch (fmt) {
             case '0':  // FALLTHRU
             case '1':  // FALLTHRU
@@ -809,7 +809,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     output += _vl_vsformat_time(t_tmp, d, timeunit, left, width);
                 } else {
                     const size_t len = pos - pctp + 1;
-                    std::string fmts{pctp, len};
+                    const std::string fmts{pctp, len};
                     VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, fmts.c_str(), d);
                     output += t_tmp;
                 }
@@ -869,7 +869,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         }
                         digits = append.length();
                     }
-                    int needmore = width - digits;
+                    const int needmore = width - digits;
                     std::string padding;
                     if (needmore > 0) {
                         if (pctp && pctp[0] && pctp[1] == '0') {  // %0
@@ -892,7 +892,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         append = VL_DECIMAL_NW(lbits, lwp);
                         digits = append.length();
                     }
-                    int needmore = width - digits;
+                    const int needmore = width - digits;
                     std::string padding;
                     if (needmore > 0) {
                         if (pctp && pctp[0] && pctp[1] == '0') {  // %0
@@ -953,7 +953,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 case 'x':
                     for (; lsb >= 0; --lsb) {
                         lsb = (lsb / 4) * 4;  // Next digit
-                        IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xf;
+                        const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xf;
                         output += "0123456789abcdef"[charval];
                     }
                     break;
@@ -1027,7 +1027,7 @@ static inline void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp,
 }
 static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp,
                                       const std::string& fstr, char* beginp, std::size_t n,
-                                      bool inhibit = false) {
+                                      const bool inhibit = false) {
     // Variant of _vl_vsss_read_str using the same underlying I/O functions but optimized
     // specifically for block reads of N bytes (read operations are not demarcated by
     // whitespace). In the fp case, except descriptor to have been opened in binary mode.
@@ -1100,16 +1100,16 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
         } else if (!inPct) {  // Expected Format
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
-            int c = _vl_vsss_peek(fp, floc, fromp, fstr);
+            const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
             if (c != pos[0]) goto done;
             _vl_vsss_advance(fp, floc);
         } else {  // Format character
             // Skip loading spaces
             inPct = false;
-            char fmt = pos[0];
+            const char fmt = pos[0];
             switch (fmt) {
             case '%': {
-                int c = _vl_vsss_peek(fp, floc, fromp, fstr);
+                const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
                 if (c != '%') goto done;
                 _vl_vsss_advance(fp, floc);
                 break;
@@ -1139,7 +1139,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
                 switch (fmt) {
                 case 'c': {
-                    int c = _vl_vsss_peek(fp, floc, fromp, fstr);
+                    const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
                     if (c == EOF) goto done;
                     _vl_vsss_advance(fp, floc);
                     owp[0] = c;
@@ -1292,7 +1292,7 @@ void _vl_vint_to_string(int obits, char* destoutp, const WDataInP sourcep) VL_MT
     char* destp = destoutp;
     for (; lsb >= 0; --lsb) {
         lsb = (lsb / 8) * 8;  // Next digit
-        IData charval = VL_BITRSHIFT_W(sourcep, lsb) & 0xff;
+        const IData charval = VL_BITRSHIFT_W(sourcep, lsb) & 0xff;
         if (!start || charval) {
             *destp++ = (charval == 0) ? ' ' : charval;
             start = false;  // Drop leading 0s
@@ -1530,16 +1530,16 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
     // Prep for reading
     IData read_count = 0;
     IData read_elements = 0;
-    int start_shift = (width - 1) & ~7;  // bit+7:bit gets first character
+    const int start_shift = (width - 1) & ~7;  // bit+7:bit gets first character
     int shift = start_shift;
     // Read the data
     // We process a character at a time, as then we don't need to deal
     // with changing buffer sizes dynamically, etc.
     while (true) {
-        int c = std::fgetc(fp);
+        const int c = std::fgetc(fp);
         if (VL_UNLIKELY(c == EOF)) break;
         // Shift value in
-        IData entry = read_elements + start - array_lsb;
+        const IData entry = read_elements + start - array_lsb;
         if (width <= 8) {
             CData* const datap = &(reinterpret_cast<CData*>(memp))[entry];
             if (shift == start_shift) *datap = 0;
@@ -1728,14 +1728,14 @@ std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
 std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE {
     // See also _vl_vint_to_string
     char destout[VL_VALUE_STRING_MAX_CHARS + 1];
-    int obits = lwords * VL_EDATASIZE;
+    const int obits = lwords * VL_EDATASIZE;
     int lsb = obits - 1;
     bool start = true;
     char* destp = destout;
     size_t len = 0;
     for (; lsb >= 0; --lsb) {
         lsb = (lsb / 8) * 8;  // Next digit
-        IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
+        const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
         if (!start || charval) {
             *destp++ = (charval == 0) ? ' ' : charval;
             ++len;
@@ -2069,7 +2069,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
                 VL_FATAL_MT(filename.c_str(), rmem.linenum(), "",
                             "$readmem file address beyond bounds of array");
             } else {
-                QData entry = addr - array_lsb;
+                const QData entry = addr - array_lsb;
                 if (bits <= 8) {
                     CData* const datap = &(reinterpret_cast<CData*>(memp))[entry];
                     rmem.setData(datap, value);
@@ -2104,7 +2104,7 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
                    QData start,  // First array row address to write
                    QData end  // Last address to write, or ~0 when not specified
                    ) VL_MT_SAFE {
-    QData addr_max = array_lsb + depth - 1;
+    const QData addr_max = array_lsb + depth - 1;
     if (start < static_cast<QData>(array_lsb)) start = array_lsb;
     if (end > addr_max) end = addr_max;
 
@@ -2828,7 +2828,7 @@ size_t VerilatedVarProps::totalSize() const {
 void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const {
     if (VL_UNLIKELY(dim <= 0 || dim > udims())) return nullptr;
     if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return nullptr;
-    int indxAdj = indx - low(dim);
+    const int indxAdj = indx - low(dim);
     vluint8_t* bytep = reinterpret_cast<vluint8_t*>(datap);
     // If on index 1 of a 2 index array, then each index 1 is index2sz*entsz
     size_t slicesz = entSize();
@@ -2873,7 +2873,7 @@ void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const 
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
     // Slowpath - called once/scope*export at construction
     // Insert a exported function into scope table
-    int funcnum = VerilatedImp::exportInsert(namep);
+    const int funcnum = VerilatedImp::exportInsert(namep);
     if (!finalize) {
         // Need two passes so we know array size to create
         // Alternative is to dynamically stretch the array, which is more code, and slower.
@@ -2915,7 +2915,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, boo
         } else {
             // We could have a linked list of ranges, but really this whole thing needs
             // to be generalized to support structs and unions, etc.
-            std::string msg
+            const std::string msg
                 = std::string{"Unsupported multi-dimensional public varInsert: "} + namep;
             VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
         }
@@ -2962,7 +2962,7 @@ void VerilatedScope::scopeDump() const {
                          VerilatedImp::exportName(i));
         }
     }
-    if (VerilatedVarNameMap* const varsp = this->varsp()) {
+    if (const VerilatedVarNameMap* const varsp = this->varsp()) {
         for (const auto& i : *varsp) VL_PRINTF_MT("       VAR %p: %s\n", &(i.second), i.first);
     }
 }
