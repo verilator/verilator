@@ -60,8 +60,8 @@ public:
 
 private:
     // MEMBERS
-    const vluint32_t m_mtaskId;  // MTask that did enqueue
-    const std::function<void()> m_cb;  // Lambda to execute when message received
+    vluint32_t m_mtaskId;  // MTask that did enqueue
+    std::function<void()> m_cb;  // Lambda to execute when message received
 public:
     // CONSTRUCTORS
     explicit VerilatedMsg(const std::function<void()>& cb)
