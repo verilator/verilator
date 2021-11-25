@@ -1939,7 +1939,15 @@ private:
                     } else {
                         issigned = bdtypep->isSigned();
                     }
-                    if (nodep->valuep()->dtypep()->widthSized()) {
+                    if (valueBdtypep->isString()) {
+                        // parameter X = "str", per IEEE is a number, not a string
+                        if (const auto* const constp = VN_CAST(nodep->valuep(), Const)) {
+                            if (constp->num().isString()) {
+                                width = constp->num().toString().length() * 8;
+                            }
+                        }
+                        if (width < 8) width = 8;
+                    } else if (nodep->valuep()->dtypep()->widthSized()) {
                         width = nodep->valuep()->width();
                     } else {
                         if (nodep->valuep()->width() > 32) {

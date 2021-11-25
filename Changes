@@ -24,7 +24,7 @@ Verilator 4.215 devel
 * Fix nested generate if genblk naming (#3189). [yanx21]
 * Fix hang on recursive definition error (#3199). [Jonathan Kimmitt]
 * Fix display of signed without format (#3204). [Julie Schwartz]
-* Fix display of empty string constant (#3207). [Julie Schwartz]
+* Fix display of empty string constant (#3207) (#3215). [Julie Schwartz]
 * Fix incorrect width after and-or optimization (#3208). [Julie Schwartz]
 * Fix $fopen etc on integer arrays (#3214). [adrienlemasle]
 * Fix $size on dynamic strings (#3216).
