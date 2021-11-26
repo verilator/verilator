@@ -3075,5 +3075,5 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     state.computeIfaceVarSyms();
     state.computeScopeAliases();
     state.dump();
-    LinkDotResolveVisitor visitorb{rootp, &state};
+    { LinkDotResolveVisitor{rootp, &state}; }
 }

@@ -543,6 +543,6 @@ public:
 
 void V3Coverage::coverage(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CoverageVisitor visitor{rootp}; }  // Destruct before checking
+    { CoverageVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coverage", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

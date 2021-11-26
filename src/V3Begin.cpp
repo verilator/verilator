@@ -308,8 +308,8 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         BeginState state;
-        { BeginVisitor bvisitor{nodep, &state}; }
-        if (state.anyFuncInBegin()) { BeginRelinkVisitor brvisitor(nodep, &state); }
+        { BeginVisitor{nodep, &state}; }
+        if (state.anyFuncInBegin()) { BeginRelinkVisitor{nodep, &state}; }
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("begin", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

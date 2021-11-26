@@ -461,5 +461,5 @@ public:
 
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    UndrivenVisitor visitor{nodep};
+    { UndrivenVisitor{nodep}; }
 }

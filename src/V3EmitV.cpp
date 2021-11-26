@@ -827,11 +827,13 @@ public:
 //######################################################################
 // EmitV class functions
 
-void V3EmitV::verilogForTree(AstNode* nodep, std::ostream& os) { EmitVStreamVisitor(nodep, os); }
+void V3EmitV::verilogForTree(AstNode* nodep, std::ostream& os) {
+    { EmitVStreamVisitor{nodep, os}; }
+}
 
 void V3EmitV::verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix,
                                   int flWidth, AstSenTree* domainp, bool user3mark) {
-    EmitVPrefixedVisitor{nodep, os, prefix, flWidth, domainp, user3mark};
+    { EmitVPrefixedVisitor{nodep, os, prefix, flWidth, domainp, user3mark}; }
 }
 
 void V3EmitV::emitvFiles() {
@@ -843,7 +845,7 @@ void V3EmitV::emitvFiles() {
             V3OutVFile of(vfilep->name());
             of.puts("// DESCR"
                     "IPTION: Verilator generated Verilog\n");
-            EmitVFileVisitor visitor{vfilep->tblockp(), &of, true, false};
+            { EmitVFileVisitor{vfilep->tblockp(), &of, true, false}; }
         }
     }
 }
@@ -853,5 +855,5 @@ void V3EmitV::debugEmitV(const string& stage) {
     const string filename
         = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__" + stage + ".v";
     V3OutVFile of(filename);
-    EmitVFileVisitor visitor{v3Global.rootp(), &of, true, true};
+    { EmitVFileVisitor{v3Global.rootp(), &of, true, true}; }
 }

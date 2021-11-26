@@ -201,6 +201,6 @@ public:
 
 void V3Localize::localizeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { LocalizeVisitor visitor{nodep}; }  // Destruct before checking
+    { LocalizeVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("localize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

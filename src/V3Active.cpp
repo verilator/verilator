@@ -542,12 +542,12 @@ private:
         if (combo && !sequent) {
             ActiveLatchCheckVisitor latchvisitor{nodep, kwd};
             if (kwd == VAlwaysKwd::ALWAYS_LATCH) {
-                ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_LATCH};
+                ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_LATCH};
             } else {
-                ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_COMBO};
+                ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMBO};
             }
         } else if (!combo && sequent) {
-            ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_SEQ};
+            ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_SEQ};
         }
     }
     virtual void visit(AstAlways* nodep) override {
@@ -620,6 +620,6 @@ public:
 
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ActiveVisitor visitor{nodep}; }  // Destruct before checking
+    { ActiveVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("active", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -156,7 +156,7 @@ private:
         {
             // Make the new clock signals and replace any activate references
             // See rename, it does some AstNode::userClearTree()'s
-            GenClkRenameVisitor visitor{nodep, m_topModp};
+            GenClkRenameVisitor{nodep, m_topModp};
         }
     }
     virtual void visit(AstNodeModule* nodep) override {
@@ -231,6 +231,6 @@ public:
 
 void V3GenClk::genClkAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { const GenClkReadVisitor visitor{nodep}; }  // Destruct before checking
+    { GenClkReadVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("genclk", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -761,5 +761,5 @@ public:
 
 void V3Cdc::cdcAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    CdcVisitor visitor{nodep};
+    { CdcVisitor{nodep}; }
 }

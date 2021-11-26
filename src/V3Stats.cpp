@@ -279,7 +279,7 @@ public:
 // Top Stats class
 
 void V3Stats::statsStageAll(AstNetlist* nodep, const string& stage, bool fast) {
-    StatsVisitor visitor{nodep, stage, fast};
+    { StatsVisitor{nodep, stage, fast}; }
 }
 
 void V3Stats::statsFinalAll(AstNetlist* nodep) {

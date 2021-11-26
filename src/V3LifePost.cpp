@@ -271,7 +271,7 @@ private:
         squashAssignposts();
 
         // Replace any node4p varscopes with the new scope
-        LifePostElimVisitor visitor{nodep};
+        LifePostElimVisitor{nodep};
     }
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
@@ -348,6 +348,6 @@ public:
 void V3LifePost::lifepostAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Mark redundant AssignPost
-    { LifePostDlyVisitor visitor{nodep}; }  // Destruct before checking
+    { LifePostDlyVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("life_post", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

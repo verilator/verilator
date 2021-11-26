@@ -1259,7 +1259,7 @@ void V3SplitVar::splitVariable(AstNetlist* nodep) {
         refs = visitor.getPackedVarRefs();
     }
     V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
-    { SplitPackedVarVisitor visitor{nodep, refs}; }
+    { SplitPackedVarVisitor{nodep, refs}; }
     V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
 }
 

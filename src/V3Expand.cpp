@@ -910,6 +910,6 @@ public:
 
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ExpandVisitor visitor{nodep}; }  // Destruct before checking
+    { ExpandVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("expand", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -430,6 +430,6 @@ public:
 
 void V3Premit::premitAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { PremitVisitor visitor{nodep}; }  // Destruct before checking
+    { PremitVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("premit", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

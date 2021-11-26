@@ -267,6 +267,6 @@ public:
 
 void V3Reloop::reloopAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ReloopVisitor visitor{nodep}; }  // Destruct before checking
+    { ReloopVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("reloop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

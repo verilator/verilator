@@ -257,7 +257,7 @@ private:
 
     void genChangeDet(AstVarScope* vscp) {
         vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: " << vscp->prettyNameQ());
-        ChangedInsertVisitor visitor{vscp, m_statep};
+        { ChangedInsertVisitor{vscp, m_statep}; }
     }
 
     // VISITORS
@@ -304,7 +304,7 @@ void V3Changed::changedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         ChangedState state;
-        ChangedVisitor visitor{nodep, &state};
+        ChangedVisitor{nodep, &state};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("changed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
