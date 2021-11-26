@@ -180,7 +180,6 @@ private:
     TraceActivityVertex* const m_alwaysVtxp;  // "Always trace" vertex
     bool m_finding = false;  // Pass one of algorithm?
 
-    VDouble0 m_statChgSigs;  // Statistic tracking
     VDouble0 m_statUniqSigs;  // Statistic tracking
     VDouble0 m_statUniqCodes;  // Statistic tracking
 
@@ -890,7 +889,6 @@ public:
         iterate(nodep);
     }
     virtual ~TraceVisitor() override {
-        V3Stats::addStat("Tracing, Unique changing signals", m_statChgSigs);
         V3Stats::addStat("Tracing, Unique traced signals", m_statUniqSigs);
         V3Stats::addStat("Tracing, Unique trace codes", m_statUniqCodes);
     }
