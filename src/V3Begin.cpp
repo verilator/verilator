@@ -41,7 +41,7 @@ private:
     // NODE STATE
     // Entire netlist:
     // AstNodeFTask::user1      -> bool, 1=processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
     bool m_anyFuncInBegin = false;
 
 public:

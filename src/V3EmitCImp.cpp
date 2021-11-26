@@ -556,7 +556,7 @@ class EmitCTrace final : EmitCFunc {
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user1() -> int.  Enum number
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // MEMBERS
     const bool m_slow;  // Making slow file

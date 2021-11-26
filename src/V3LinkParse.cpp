@@ -40,8 +40,8 @@ private:
     // Cleared on netlist
     //  AstNode::user1()        -> bool.  True if processed
     //  AstNode::user2()        -> bool.  True if fileline recomputed
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // TYPES
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;

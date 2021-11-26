@@ -44,7 +44,7 @@ class PremitAssignVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstVar::user3()         // bool; occurs on LHS of current assignment
-    AstUser3InUse m_inuser3;
+    const AstUser3InUse m_inuser3;
 
     // STATE
     bool m_noopt = false;  // Disable optimization of variables in this block
@@ -93,8 +93,8 @@ private:
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
     //  *::user3()              -> See PremitAssignVisitor
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current block

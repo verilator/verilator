@@ -34,7 +34,7 @@ private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost + 1, 0 means don't dump
     //  AstNode::user5()        -> bool. Processed if assertNoDups
-    AstUser4InUse m_inuser4;
+    const AstUser4InUse m_inuser4;
 
     // MEMBERS
     uint32_t m_instrCount = 0;  // Running count of instructions

@@ -239,7 +239,7 @@ string V3HierBlock::commandArgsFileName(bool forCMake) const {
 class HierBlockUsageCollectVisitor final : public AstNVisitor {
     // NODE STATE
     // AstNode::user1()            -> bool. Processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     using ModuleSet = std::unordered_set<const AstModule*>;

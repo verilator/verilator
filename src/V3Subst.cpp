@@ -227,8 +227,8 @@ private:
     // Passed to SubstUseVisitor
     // AstVar::user1p           -> SubstVar* for usage var, 0=not set yet
     // AstVar::user2            -> int step number for last assignment, 0=not set yet
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     std::vector<SubstVarEntry*> m_entryps;  // Nodes to delete when we are finished
@@ -381,6 +381,6 @@ public:
 
 void V3Subst::substituteAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { SubstVisitor visitor{nodep}; }  // Destruct before checking
+    { const SubstVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("subst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

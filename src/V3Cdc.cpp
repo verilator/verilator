@@ -217,9 +217,9 @@ private:
     // AstVarScope::user2       -> bool  Used in sensitivity list
     // {statement}Node::user1p  -> CdcLogicVertex* for this statement
     // AstNode::user3           -> bool  True indicates to print %% (via V3EmitV)
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies

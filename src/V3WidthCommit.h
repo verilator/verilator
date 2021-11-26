@@ -67,7 +67,7 @@ public:
 class WidthCommitVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVar::user1p           -> bool, processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;

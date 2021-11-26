@@ -32,7 +32,7 @@
 class ClassVisitor final : public AstNVisitor {
 private:
     // MEMBERS
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
     string m_prefix;  // String prefix to add to name based on hier
     AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope

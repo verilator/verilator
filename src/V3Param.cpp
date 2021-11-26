@@ -226,8 +226,8 @@ class ParamProcessor final {
     //   AstGenFor::user5()     // bool   True if processed
     //   AstVar::user5()        // bool   True if constant propagated
     //   AstCell::user5p()      // string* Generate portion of hierarchical name
-    AstUser4InUse m_inuser4;
-    AstUser5InUse m_inuser5;
+    const AstUser4InUse m_inuser4;
+    const AstUser5InUse m_inuser5;
     // User1/2/3 used by constant function simulations
 
     // TYPES

@@ -247,7 +247,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstVarScope::user1()            -> bool.  True indicates processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     ChangedState* m_statep;  // Shared state across visitors

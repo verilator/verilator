@@ -73,7 +73,7 @@ private:
     // NODE STATE
     // Cleared each Module:
     //  AstVarScope::user1p()   -> AstVarScope*.  Temporary signal that was created.
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module

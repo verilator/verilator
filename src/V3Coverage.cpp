@@ -73,7 +73,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstIf::user1()                  -> bool.  True indicates ifelse processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     CheckState m_state;  // State save-restored on each new coverage scope/block

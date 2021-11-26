@@ -129,9 +129,9 @@ private:
     //  AstVar::user4()                 // bool.          True if port set for this variable
     //  AstNodeBlock::user4()           // bool.          Did name processing
     //  AstNodeModule::user4()          // bool.          Live module
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser4InUse m_inuser4;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
+    const AstUser4InUse m_inuser4;
 
 public:
     // ENUMS
@@ -1783,8 +1783,8 @@ private:
     //  *::user4()              -> See LinkDotState
     // Cleared on Cell
     //  AstVar::user5()         // bool.          True if pin used in this cell
-    AstUser3InUse m_inuser3;
-    AstUser5InUse m_inuser5;
+    const AstUser3InUse m_inuser3;
+    const AstUser5InUse m_inuser5;
 
     // TYPES
     enum DotPosition : uint8_t {

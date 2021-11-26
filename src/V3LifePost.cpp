@@ -133,7 +133,7 @@ private:
     // NODE STATE
     // Cleared on entire tree
     //  AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var
-    AstUser4InUse m_inuser4;
+    const AstUser4InUse m_inuser4;
 
     // STATE
     uint32_t m_sequence = 0;  // Sequence number of assigns/varrefs,

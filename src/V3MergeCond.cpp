@@ -131,8 +131,8 @@ private:
     // NODE STATE
     // AstVar::user1        -> Flag set for variables referenced by m_mgCondp
     // AstNode::user2       -> Flag marking node as included in merge because cheap to duplicate
-    AstUser1InUse m_user1InUse;
-    AstUser2InUse m_user2InUse;
+    const AstUser1InUse m_user1InUse;
+    const AstUser2InUse m_user2InUse;
 
     // STATE
     VDouble0 m_statMerges;  // Statistic tracking

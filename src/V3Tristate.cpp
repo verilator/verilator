@@ -327,11 +327,11 @@ class TristateVisitor final : public TristateBaseVisitor {
     // See TristateGraph:
     //   AstVar::user5p         -> TristateVertex* for variable being built
     //   AstStmt*::user5p       -> TristateVertex* for this statement
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
-    AstUser4InUse m_inuser4;
-    AstUser5InUse m_inuser5;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
+    const AstUser4InUse m_inuser4;
+    const AstUser5InUse m_inuser5;
 
     // TYPES
     using RefVec = std::vector<AstVarRef*>;

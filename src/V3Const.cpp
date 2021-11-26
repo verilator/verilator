@@ -110,7 +110,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
     // AstVarScope::user4u    -> Same as AstVarRef::user4
-    AstUser4InUse m_inuser4;
+    const AstUser4InUse m_inuser4;
 
     // TYPES
 
@@ -1975,7 +1975,7 @@ private:
             if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
                 // done as unique visitor
-                AstUser4InUse m_inuser4;
+                const AstUser4InUse m_inuser4;
                 ConstVarMarkVisitor mark{nodep->lhsp()};
                 ConstVarFindVisitor find{nodep->rhsp()};
                 if (find.found()) need_temp = true;
@@ -2669,7 +2669,7 @@ private:
             // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
             // other SENITEM(x).
             {
-                AstUser4InUse m_inuse4;
+                const AstUser4InUse m_inuse4;
                 // Mark x in SENITEM(x)
                 for (AstSenItem* senp = nodep->sensesp(); senp;
                      senp = VN_AS(senp->nextp(), SenItem)) {

@@ -308,8 +308,8 @@ private:
     // AstVarScope::user2       -> bool: Signal used in SenItem in *this* always statement
     // AstVar::user2            -> bool: Warned about SYNCASYNCNET
     // AstNodeVarRef::user2     -> bool: ConcatOffset visited
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
@@ -907,9 +907,9 @@ private:
     //                     Set to nullptr if this assign's tree was later replaced
     // AstUser1InUse    m_inuser1;      (Allocated for use in GateVisitor)
     // AstUser2InUse    m_inuser2;      (Allocated for use in GateVisitor)
-    AstUser3InUse m_inuser3;
+    const AstUser3InUse m_inuser3;
     // AstUser4InUse    m_inuser4;      (Allocated for use in V3Hasher via V3DupFinder)
-    AstUser5InUse m_inuser5;
+    const AstUser5InUse m_inuser5;
 
     V3DupFinder m_dupFinder;  // Duplicate finder for rhs of assigns
     std::unordered_set<AstNode*> m_nodeDeleteds;  // Any node in this hash was deleted

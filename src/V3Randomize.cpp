@@ -37,7 +37,7 @@ private:
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     using DerivedSet = std::unordered_set<AstClass*>;
     using BaseToDerivedMap = std::unordered_map<AstClass*, DerivedSet>;
@@ -119,7 +119,7 @@ private:
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
     //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
     // AstUser1InUse    m_inuser1;      (Allocated for use in RandomizeMarkVisitor)
-    AstUser2InUse m_inuser2;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created

@@ -109,7 +109,7 @@ void V3Common::commonAll() {
             // NODE STATE
             // Entire netlist:
             //  AstClass::user1()     -> bool.  True if class needs to_string dumper
-            AstUser1InUse m_inuser1;
+            const AstUser1InUse m_inuser1;
             // Create ToString methods
             makeVlToString(classp);
             makeToString(classp);

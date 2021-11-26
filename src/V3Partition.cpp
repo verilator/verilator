@@ -2566,7 +2566,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     {
         // The V3InstrCount within LogicMTask will set user5 on each AST
         // node, to assert that we never count any node twice.
-        AstUser5InUse inUser5;
+        const AstUser5InUse inUser5;
         Vx2MTaskMap vx2mtask;
         for (V3GraphVertex* vxp = m_fineDepsGraphp->verticesBeginp(); vxp;
              vxp = vxp->verticesNextp()) {

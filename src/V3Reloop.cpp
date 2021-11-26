@@ -45,7 +45,7 @@ class ReloopVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // AstCFunc::user1p      -> Var* for temp var, 0=not set yet
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     VDouble0 m_statReloops;  // Statistic tracking

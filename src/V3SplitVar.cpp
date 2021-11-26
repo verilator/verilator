@@ -127,7 +127,7 @@
 struct SplitVarImpl {
     // NODE STATE
     //  AstNodeModule::user1()  -> Block number counter for generating unique names
-    AstUser1InUse m_user1InUse;  // Only used in SplitUnpackedVarVisitor
+    const AstUser1InUse m_user1InUse;  // Only used in SplitUnpackedVarVisitor
 
     static AstNodeAssign* newAssign(FileLine* fileline, AstNode* lhsp, AstNode* rhsp,
                                     const AstVar* varp) {

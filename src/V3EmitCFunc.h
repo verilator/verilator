@@ -37,7 +37,7 @@ constexpr int EMITC_NUM_CONSTW = 8;
 class EmitCLazyDecls final : public AstNVisitor {
     // NODE STATE/TYPES
     //  AstNode::user2() -> bool. Already emitted decl for symbols.
-    AstUser2InUse m_inuser2;
+    const AstUser2InUse m_inuser2;
 
     // MEMBERS
     std::unordered_set<string> m_emittedManually;  // Set of names already declared manually.

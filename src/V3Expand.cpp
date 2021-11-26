@@ -42,7 +42,7 @@ class ExpandVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstNode* m_stmtp = nullptr;  // Current statement

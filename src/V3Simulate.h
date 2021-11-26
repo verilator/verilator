@@ -72,9 +72,9 @@ class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on each always/assignw
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
 
     // Checking:
     //  AstVar(Scope)::user1()  -> VarUsage.  Set true to indicate tracking as lvalue/rvalue

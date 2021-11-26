@@ -41,8 +41,8 @@ private:
     // NODE STATE
     // AstVar::user1p           -> AstVarScope replacement for this variable
     // AstTask::user2p          -> AstTask*.  Replacement task
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // TYPES
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)

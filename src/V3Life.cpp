@@ -41,7 +41,7 @@
 class LifeState final {
     // NODE STATE
     //   See below
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
 public:

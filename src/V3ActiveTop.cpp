@@ -42,7 +42,7 @@ private:
     //   AstNode::user()                bool. True if processed
     //  Each call to V3Const::constify
     //   AstNode::user4()               Used by V3Const::constify, called below
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope

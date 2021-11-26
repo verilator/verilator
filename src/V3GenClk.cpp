@@ -43,8 +43,8 @@ private:
     // Cleared on top scope
     //  AstVarScope::user2()    -> AstVarScope*.  Signal replacing activation with
     //  AstVarRef::user3()      -> bool.  Signal is replaced activation (already done)
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
 
     // STATE
     AstActive* m_activep = nullptr;  // Inside activate statement
@@ -141,7 +141,7 @@ private:
     // NODE STATE
     // Cleared on top scope
     //  AstVarScope::user()     -> bool.  Set when the var has been used as clock
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     bool m_tracingCall = false;  // Iterating into a call to a cfunc
@@ -231,6 +231,6 @@ public:
 
 void V3GenClk::genClkAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { GenClkReadVisitor visitor{nodep}; }  // Destruct before checking
+    { const GenClkReadVisitor visitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("genclk", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

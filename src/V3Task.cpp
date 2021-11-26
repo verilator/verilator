@@ -98,9 +98,8 @@ private:
     //   AstNodeFTask::user3p   // AstScope* this FTask is under
     //   AstNodeFTask::user4p   // GraphFTaskVertex* this FTask is under
     //   AstVar::user4p         // GraphFTaskVertex* this variable is declared in
-
-    AstUser3InUse m_inuser3;
-    AstUser4InUse m_inuser4;
+    const AstUser3InUse m_inuser3;
+    const AstUser4InUse m_inuser4;
 
     // TYPES
     using VarToScopeMap = std::map<std::pair<AstScope*, AstVar*>, AstVarScope*>;
@@ -370,7 +369,7 @@ struct TaskDpiUtils {
 class TaskGatherWrittenVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVarScope::user5 -> Already considered variable
-    AstUser5InUse m_user5InUse;
+    const AstUser5InUse m_user5InUse;
 
     std::vector<AstVarScope*> m_writtenVariables;  // Variables written
 
@@ -408,9 +407,8 @@ private:
     // Each funccall
     //  to TaskRelinkVisitor:
     //    AstVar::user2p        // AstVarScope* to replace varref with
-
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // TYPES
     enum InsertMode : uint8_t {

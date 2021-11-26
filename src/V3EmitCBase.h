@@ -34,7 +34,7 @@ class EmitCParentModule final {
     // NODE STATE
     //   AstFunc::user4p()      AstNodeModule* Parent module pointer
     //   AstVar::user4p()       AstNodeModule* Parent module pointer
-    AstUser4InUse user4InUse;
+    const AstUser4InUse user4InUse;
 
 public:
     EmitCParentModule();

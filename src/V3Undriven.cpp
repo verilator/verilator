@@ -240,10 +240,10 @@ private:
     // NODE STATE
     // Netlist:
     //  AstVar::user1p          -> UndrivenVar* for usage var, 0=not set yet
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
     // Each always:
     //  AstNode::user2p         -> UndrivenVar* for usage var, 0=not set yet
-    AstUser2InUse m_inuser2;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished

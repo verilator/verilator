@@ -34,7 +34,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     // NODE STATE
     // Cleared on Netlist
     //  AstNodeModule::user1()  -> bool.  Set true __Vconfigure called
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // TYPES
     struct ScopeData {

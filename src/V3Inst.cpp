@@ -39,7 +39,7 @@ private:
     // NODE STATE
     // Cleared each Cell:
     //  AstPin::user1p()        -> bool.  True if created assignment already
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell

@@ -39,7 +39,7 @@
 class CUseVisitor final : public AstNVisitor {
     // NODE STATE
     //  AstNode::user1()     -> bool.  True if already visited
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // MEMBERS
     bool m_impOnly = false;  // In details needed only for implementation

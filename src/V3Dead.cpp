@@ -76,7 +76,7 @@ private:
     //  AstVar::user1()         -> int. Count of number of references
     //  AstVarScope::user1()    -> int. Count of number of references
     //  AstNodeDType::user1()   -> int. Count of number of references
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // TYPES
     using AssignMap = std::multimap<AstVarScope*, AstNodeAssign*>;

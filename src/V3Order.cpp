@@ -364,8 +364,8 @@ class OrderBuildVisitor final : public AstNVisitor {
     // NODE STATE
     //  AstVarScope::user1    -> OrderUser instance for variable (via m_orderUser)
     //  AstVarScope::user2    -> VarUsage within logic blocks
-    AstUser1InUse user1InUse;
-    AstUser2InUse user2InUse;
+    const AstUser1InUse user1InUse;
+    const AstUser2InUse user2InUse;
     AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
@@ -1038,7 +1038,7 @@ class OrderProcess final : AstNDeleter {
     // NODE STATE
     //  AstNodeModule::user3  -> int: Number of AstCFuncs created under this module
     //  AstNode::user4        -> Used by V3Const::constifyExpensiveEdit
-    AstUser3InUse user3InUse;
+    const AstUser3InUse user3InUse;
 
     // STATE
     OrderGraph& m_graph;  // The ordering graph

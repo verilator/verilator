@@ -121,7 +121,7 @@ class CombineVisitor final : CombBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
-    AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
+    const AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
     //  AstUser4InUse     part of V3Hasher in V3DupFinder
 
     // STATE
