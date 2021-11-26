@@ -394,8 +394,7 @@ private:
 #endif
     }
 
-    string readBlocks(int fd, int size, StrList& outl) {
-        string out;
+    void readBlocks(int fd, int size, StrList& outl) {
         char buf[INFILTER_IPC_BUFSIZ];
         ssize_t sizegot = 0;
         while (!m_readEof && (size < 0 || size > sizegot)) {
@@ -421,7 +420,6 @@ private:
                 break;
             }
         }
-        return out;
     }
     // cppcheck-suppress unusedFunction unusedPrivateFunction
     string readFilterLine() {
