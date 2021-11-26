@@ -382,7 +382,7 @@ private:
         for (AstVarScope* vscp : m_vscsp) {
             if (vscp->user1() == 0) {
                 UINFO(4, "  Dead " << vscp << endl);
-                std::pair<AssignMap::iterator, AssignMap::iterator> eqrange
+                const std::pair<AssignMap::iterator, AssignMap::iterator> eqrange
                     = m_assignMap.equal_range(vscp);
                 for (AssignMap::iterator itr = eqrange.first; itr != eqrange.second; ++itr) {
                     AstNodeAssign* const assp = itr->second;

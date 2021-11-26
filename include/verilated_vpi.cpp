@@ -1445,7 +1445,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         if (const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object)) {
             if (VL_UNLIKELY(!vop->rangep())) return nullptr;
             return (new VerilatedVpioConst{vop->rangep()->left()})->castVpiHandle();
-        } else if (VerilatedVpioRange* const vop = VerilatedVpioRange::castp(object)) {
+        } else if (const VerilatedVpioRange* const vop = VerilatedVpioRange::castp(object)) {
             if (VL_UNLIKELY(!vop->rangep())) return nullptr;
             return (new VerilatedVpioConst{vop->rangep()->left()})->castVpiHandle();
         }
@@ -1458,7 +1458,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         if (const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object)) {
             if (VL_UNLIKELY(!vop->rangep())) return nullptr;
             return (new VerilatedVpioConst{vop->rangep()->right()})->castVpiHandle();
-        } else if (VerilatedVpioRange* const vop = VerilatedVpioRange::castp(object)) {
+        } else if (const VerilatedVpioRange* const vop = VerilatedVpioRange::castp(object)) {
             if (VL_UNLIKELY(!vop->rangep())) return nullptr;
             return (new VerilatedVpioConst{vop->rangep()->right()})->castVpiHandle();
         }
@@ -1905,7 +1905,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
     } else if (const VerilatedVpioParam* const vop = VerilatedVpioParam::castp(object)) {
         vl_get_value(vop->varp(), vop->varDatap(), valuep, vop->fullname());
         return;
-    } else if (VerilatedVpioConst* const vop = VerilatedVpioConst::castp(object)) {
+    } else if (const VerilatedVpioConst* const vop = VerilatedVpioConst::castp(object)) {
         if (valuep->format == vpiIntVal) {
             valuep->value.integer = vop->num();
             return;

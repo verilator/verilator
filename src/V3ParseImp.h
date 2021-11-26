@@ -133,8 +133,8 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs);
 
 class V3ParseImp final {
     // MEMBERS
-    AstNetlist* m_rootp;  // Root of the design
-    VInFilter* m_filterp;  // Reading filter
+    AstNetlist* const m_rootp;  // Root of the design
+    VInFilter* const m_filterp;  // Reading filter
     V3ParseSym* m_symp;  // Symbol table
 
     V3Lexer* m_lexerp;  // Current FlexLexer
@@ -229,18 +229,18 @@ public:
     // These can be called by either parser or lexer, as not lex/parser-position aware
     string* newString(const string& text) {
         // Allocate a string, remembering it so we can reclaim storage at lex end
-        string* strp = new string(text);
+        string* const strp = new string(text);
         m_stringps.push_back(strp);
         return strp;
     }
     string* newString(const char* text) {
         // Allocate a string, remembering it so we can reclaim storage at lex end
-        string* strp = new string(text);
+        string* const strp = new string(text);
         m_stringps.push_back(strp);
         return strp;
     }
     string* newString(const char* text, size_t length) {
-        string* strp = new string(text, length);
+        string* const strp = new string(text, length);
         m_stringps.push_back(strp);
         return strp;
     }
@@ -275,7 +275,8 @@ public:
     V3ParseSym* symp() { return m_symp; }
     AstPackage* unitPackage(FileLine* fl) {
         // Find one made earlier?
-        VSymEnt* const rootSymp = symp()->symRootp()->findIdFlat(AstPackage::dollarUnitName());
+        const VSymEnt* const rootSymp
+            = symp()->symRootp()->findIdFlat(AstPackage::dollarUnitName());
         AstPackage* pkgp;
         if (!rootSymp) {
             pkgp = parsep()->rootp()->dollarUnitPkgAddp();

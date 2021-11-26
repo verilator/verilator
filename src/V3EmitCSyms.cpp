@@ -38,9 +38,9 @@ class EmitCSyms final : EmitCBaseVisitor {
 
     // TYPES
     struct ScopeData {
-        string m_symName;
-        string m_prettyName;
-        int m_timeunit;
+        const string m_symName;
+        const string m_prettyName;
+        const int m_timeunit;
         string m_type;
         ScopeData(const string& symName, const string& prettyName, int timeunit,
                   const string& type)
@@ -59,13 +59,13 @@ class EmitCSyms final : EmitCBaseVisitor {
             , m_modp{modp} {}
     };
     struct ScopeVarData {
-        string m_scopeName;
-        string m_varBasePretty;
+        const string m_scopeName;
+        const string m_varBasePretty;
         AstVar* const m_varp;
-        AstNodeModule* const m_modp;
+        const AstNodeModule* const m_modp;
         AstScope* const m_scopep;
         ScopeVarData(const string& scopeName, const string& varBasePretty, AstVar* varp,
-                     AstNodeModule* modp, AstScope* scopep)
+                     const AstNodeModule* modp, AstScope* scopep)
             : m_scopeName{scopeName}
             , m_varBasePretty{varBasePretty}
             , m_varp{varp}
@@ -104,7 +104,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
     int m_coverBins = 0;  // Coverage bin number
-    bool m_dpiHdrOnly;  // Only emit the DPI header
+    const bool m_dpiHdrOnly;  // Only emit the DPI header
     int m_numStmts = 0;  // Number of statements output
     int m_funcNum = 0;  // CFunc split function number
     V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
@@ -197,7 +197,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             const AstNodeModule* const smodp = itsc->second;
             for (std::vector<ModVarPair>::iterator it = m_modVars.begin(); it != m_modVars.end();
                  ++it) {
-                AstNodeModule* const modp = it->first;
+                const AstNodeModule* const modp = it->first;
                 AstVar* const varp = it->second;
                 if (modp == smodp) {
                     // Need to split the module + var name into the
@@ -208,7 +208,7 @@ class EmitCSyms final : EmitCBaseVisitor {
                     string scpName;
                     string varBase;
                     if (whole.substr(0, 10) == "__DOT__TOP") whole.replace(0, 10, "");
-                    string::size_type dpos = whole.rfind("__DOT__");
+                    const string::size_type dpos = whole.rfind("__DOT__");
                     if (dpos != string::npos) {
                         scpName = whole.substr(0, dpos);
                         varBase = whole.substr(dpos + strlen("__DOT__"));
@@ -245,7 +245,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             if (above.substr(0, 4) == "TOP.") above.replace(0, 4, "");
 
             while (!above.empty()) {
-                string::size_type pos = above.rfind("__");
+                const string::size_type pos = above.rfind("__");
                 if (pos == string::npos) break;
                 above.resize(pos);
                 if (m_vpiScopeHierarchy.find(above) != m_vpiScopeHierarchy.end()) {
@@ -552,7 +552,7 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     v3Global.useParallelBuild(true);
 
     m_numStmts = 0;
-    string filename
+    const string filename
         = v3Global.opt.makeDir() + "/" + symClassName() + "__" + cvtToStr(++m_funcNum) + ".cpp";
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
@@ -637,7 +637,7 @@ void EmitCSyms::emitScopeHier(bool destroy) {
 void EmitCSyms::emitSymImp() {
     UINFO(6, __FUNCTION__ << ": " << endl);
     const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".cpp";
-    AstCFile* cfilep = newCFile(filename, true /*slow*/, true /*source*/);
+    AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
 
     if (v3Global.opt.systemC()) {
@@ -747,7 +747,7 @@ void EmitCSyms::emitSymImp() {
             for (const V3GraphVertex* vxp
                  = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
                  vxp; vxp = vxp->verticesNextp()) {
-                ExecMTask* mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+                ExecMTask* const mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
                 puts("_vm_profiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
                      + mtp->hashName() + "\");\n");
             }
@@ -789,8 +789,8 @@ void EmitCSyms::emitSymImp() {
 
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
     for (const auto& i : m_scopes) {
-        AstScope* scopep = i.first;
-        AstNodeModule* modp = i.second;
+        AstScope* const scopep = i.first;
+        AstNodeModule* const modp = i.second;
         checkSplit(false);
         // first is used by AstCoverDecl's call to __vlCoverInsert
         const bool first = !modp->user1();
@@ -824,9 +824,9 @@ void EmitCSyms::emitSymImp() {
         m_ofpBase->puts("// Setup export functions\n");
         m_ofpBase->puts("for (int __Vfinal=0; __Vfinal<2; __Vfinal++) {\n");
         for (auto it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
-            AstScopeName* scopep = it->second.m_scopep;
-            AstCFunc* funcp = it->second.m_cfuncp;
-            AstNodeModule* modp = it->second.m_modp;
+            AstScopeName* const scopep = it->second.m_scopep;
+            AstCFunc* const funcp = it->second.m_cfuncp;
+            AstNodeModule* const modp = it->second.m_modp;
             if (funcp->dpiExportImpl()) {
                 checkSplit(true);
                 puts(protect("__Vscope_" + scopep->scopeSymName()) + ".exportInsert(__Vfinal, ");
@@ -843,14 +843,14 @@ void EmitCSyms::emitSymImp() {
         // Someday.  For now public isn't common.
         for (auto it = m_scopeVars.begin(); it != m_scopeVars.end(); ++it) {
             checkSplit(true);
-            AstScope* scopep = it->second.m_scopep;
-            AstVar* varp = it->second.m_varp;
+            AstScope* const scopep = it->second.m_scopep;
+            AstVar* const varp = it->second.m_varp;
             //
             int pwidth = 1;
             int pdim = 0;
             int udim = 0;
             string bounds;
-            if (AstBasicDType* basicp = varp->basicp()) {
+            if (AstBasicDType* const basicp = varp->basicp()) {
                 // Range is always first, it's not in "C" order
                 if (basicp->isRanged()) {
                     bounds += " ,";
@@ -863,7 +863,7 @@ void EmitCSyms::emitSymImp() {
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
                     dtypep
                         = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-                    if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
+                    if (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
                         bounds += " ,";
                         bounds += cvtToStr(adtypep->left());
                         bounds += ",";
@@ -965,7 +965,7 @@ void EmitCSyms::emitSymImp() {
 void EmitCSyms::emitDpiHdr() {
     UINFO(6, __FUNCTION__ << ": " << endl);
     const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.h";
-    AstCFile* cfilep = newCFile(filename, false /*slow*/, false /*source*/);
+    AstCFile* const cfilep = newCFile(filename, false /*slow*/, false /*source*/);
     cfilep->support(true);
     V3OutCFile hf(filename);
     m_ofp = &hf;
@@ -1019,7 +1019,7 @@ void EmitCSyms::emitDpiHdr() {
 void EmitCSyms::emitDpiImp() {
     UINFO(6, __FUNCTION__ << ": " << endl);
     const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.cpp";
-    AstCFile* cfilep = newCFile(filename, false /*slow*/, true /*source*/);
+    AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
     cfilep->support(true);
     V3OutCFile hf(filename);
     m_ofp = &hf;
@@ -1053,7 +1053,7 @@ void EmitCSyms::emitDpiImp() {
             puts("return " + topClassName() + "::" + nodep->name() + "(");
             string args;
             for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (const AstVar* portp = VN_CAST(stmtp, Var)) {
+                if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
                     if (portp->isIO() && !portp->isFuncReturn()) {
                         if (args != "") args += ", ";
                         args += portp->name();

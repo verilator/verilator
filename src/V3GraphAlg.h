@@ -30,8 +30,8 @@
 template <class T_Graph = V3Graph>  // Or sometimes const V3Graph
 class GraphAlg VL_NOT_FINAL {
 protected:
-    T_Graph* m_graphp;  // Graph we're operating upon
-    V3EdgeFuncP m_edgeFuncp;  // Function that says we follow this edge
+    T_Graph* const m_graphp;  // Graph we're operating upon
+    const V3EdgeFuncP m_edgeFuncp;  // Function that says we follow this edge
     // CONSTRUCTORS
     GraphAlg(T_Graph* graphp, V3EdgeFuncP edgeFuncp)
         : m_graphp{graphp}

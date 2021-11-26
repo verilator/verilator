@@ -31,7 +31,7 @@
 class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     // MEMBERS
     bool m_suppressSemi = false;
-    bool m_suppressUnknown = false;
+    const bool m_suppressUnknown = false;
     AstSenTree* m_sensesp;  // Domain for printing one a ALWAYS under a ACTIVE
 
     // METHODS
@@ -650,7 +650,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         std::vector<const AstUnpackArrayDType*> unpackps;
         for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
             dtypep = dtypep->skipRefp();
-            if (AstUnpackArrayDType* const unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
+            if (const AstUnpackArrayDType* const unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
                 unpackps.push_back(unpackp);
                 dtypep = unpackp->subDTypep();
             } else {
@@ -752,8 +752,8 @@ public:
 
 class EmitVPrefixedFormatter final : public V3OutFormatter {
     std::ostream& m_os;
-    string m_prefix;  // What to print at beginning of each line
-    int m_flWidth;  // Padding of fileline
+    const string m_prefix;  // What to print at beginning of each line
+    const int m_flWidth;  // Padding of fileline
     int m_column;  // Rough location; need just zero or non-zero
     FileLine* m_prefixFl;
     // METHODS

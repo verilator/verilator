@@ -61,7 +61,7 @@ private:
     // STATE
     BeginState* const m_statep;  // Current global state
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNode* m_liftedp = nullptr;  // Local  nodes we are lifting into m_ftaskp
     string m_namedScope;  // Name of begin blocks above us
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
@@ -149,7 +149,7 @@ private:
                     m_unnamedScope = dot(m_unnamedScope, ident);
                     // Create CellInline for dotted var resolution
                     if (!m_ftaskp) {
-                        AstCellInline* inlinep = new AstCellInline(
+                        AstCellInline* const inlinep = new AstCellInline(
                             nodep->fileline(), m_unnamedScope, "__BEGIN__", m_modp->timeunit());
                         m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
                     }
@@ -162,7 +162,7 @@ private:
 
             // Cleanup
             AstNode* addsp = nullptr;
-            if (AstNode* stmtsp = nodep->stmtsp()) {
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
                 stmtsp->unlinkFrBackWithNext();
                 if (addsp) {
                     addsp = addsp->addNextNull(stmtsp);
@@ -222,7 +222,7 @@ private:
         if (nodep->user1SetOnce()) return;  // Don't double-add text's
         if (m_namedScope != "") {
             // To keep correct visual order, must add before other Text's
-            AstNode* afterp = nodep->scopeAttrp();
+            AstNode* const afterp = nodep->scopeAttrp();
             if (afterp) afterp->unlinkFrBackWithNext();
             nodep->scopeAttrp(new AstText(nodep->fileline(), string("__DOT__") + m_namedScope));
             if (afterp) nodep->scopeAttrp(afterp);

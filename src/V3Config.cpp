@@ -190,7 +190,7 @@ public:
 
     void apply(AstNodeModule* modp) {
         if (m_inline) {
-            AstPragmaType type
+            const AstPragmaType type
                 = m_inlineValue ? AstPragmaType::INLINE_MODULE : AstPragmaType::NO_INLINE_MODULE;
             AstNode* const nodep = new AstPragma(modp->fileline(), type);
             modp->addStmtp(nodep);
@@ -223,9 +223,9 @@ using V3ConfigModuleResolver = V3ConfigWildcardResolver<V3ConfigModule>;
 // lint/coverage/tracing on/off
 class V3ConfigIgnoresLine final {
 public:
-    int m_lineno;  // Line number to make change at
-    V3ErrorCode m_code;  // Error code
-    bool m_on;  // True to enable message
+    const int m_lineno;  // Line number to make change at
+    const V3ErrorCode m_code;  // Error code
+    const bool m_on;  // True to enable message
     V3ConfigIgnoresLine(V3ErrorCode code, int lineno, bool on)
         : m_lineno{lineno}
         , m_code{code}
@@ -502,7 +502,7 @@ void V3Config::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
     const string& modname = modulep->name();
     V3ConfigModule* modp = V3ConfigResolver::s().modules().resolve(modname);
     if (!modp) return;
-    V3ConfigFTask* ftp = modp->ftasks().resolve(ftaskp->name());
+    const V3ConfigFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
     if (ftp) ftp->apply(ftaskp);
 }
 

@@ -210,7 +210,7 @@ string V3HierBlock::vFileIfNecessary() const {
 }
 
 void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
-    std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFileName(forCMake))};
+    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFileName(forCMake))};
     *of << "--cc\n";
 
     if (!forCMake) {
@@ -279,7 +279,7 @@ class HierBlockUsageCollectVisitor final : public AstNVisitor {
     virtual void visit(AstCell* nodep) override {
         // Visit used module here to know that the module is hier_block or not.
         // This visitor behaves almost depth first search
-        if (AstModule* modp = VN_CAST(nodep->modp(), Module)) {
+        if (AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
             iterate(modp);
             m_referred.insert(modp);
         }
@@ -336,7 +336,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
     // When processing a hierarchical block, no need to create a plan anymore.
     if (v3Global.opt.hierChild()) return;
 
-    AstNodeModule* modp = nodep->topModulep();
+    AstNodeModule* const modp = nodep->topModulep();
     if (modp->hierBlock()) {
         modp->v3warn(HIERBLOCK,
                      "Top module illegally marked hierarchical block, ignoring marking\n"
@@ -400,7 +400,8 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
         it->second->writeCommandArgsFile(forCMake);
     }
     // For the top module
-    std::unique_ptr<std::ofstream> of{V3File::new_ofstream(topCommandArgsFileName(forCMake))};
+    const std::unique_ptr<std::ofstream> of{
+        V3File::new_ofstream(topCommandArgsFileName(forCMake))};
     if (!forCMake) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {

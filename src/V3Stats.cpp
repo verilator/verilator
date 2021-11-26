@@ -37,12 +37,12 @@ private:
     using NameMap = std::map<const std::string, int>;  // Number of times a name appears
 
     // STATE
-    string m_stage;  // Name of the stage we are scanning
+    const string m_stage;  // Name of the stage we are scanning
     /// m_fast = true:  Counting only critical branch of fastpath
     /// m_fast = false:  Counting every node, ignoring structure of program
-    bool m_fast;
+    const bool m_fast;
 
-    AstCFunc* m_cfuncp;  // Current CFUNC
+    const AstCFunc* m_cfuncp;  // Current CFUNC
     bool m_counting;  // Currently counting
     double m_instrs;  // Current instr count (for determining branch direction)
     bool m_tracingCall;  // Iterating into a CCall to a CFunc
@@ -233,7 +233,7 @@ public:
             const double count = double(m_statVarWidths.at(i));
             if (count != 0.0) {
                 if (v3Global.opt.statsVars()) {
-                    NameMap& nameMapr = m_statVarWidthNames.at(i);
+                    const NameMap& nameMapr = m_statVarWidthNames.at(i);
                     for (const auto& itr : nameMapr) {
                         std::ostringstream os;
                         os << "Vars, width " << std::setw(5) << std::dec << i << " " << itr.first;

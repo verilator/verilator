@@ -97,12 +97,12 @@ class SliceVisitor final : public AstNVisitor {
                 itemp = initp->initsp();
             }
             newp = itemp->cloneTree(false);
-        } else if (AstNodeCond* snodep = VN_CAST(nodep, NodeCond)) {
+        } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
             UINFO(9, "  cloneCond(" << elements << "," << offset << ") " << nodep << endl);
             return snodep->cloneType(snodep->condp()->cloneTree(false),
                                      cloneAndSel(snodep->expr1p(), elements, offset),
                                      cloneAndSel(snodep->expr2p(), elements, offset));
-        } else if (AstSliceSel* snodep = VN_CAST(nodep, SliceSel)) {
+        } else if (const AstSliceSel* const snodep = VN_CAST(nodep, SliceSel)) {
             UINFO(9, "  cloneSliceSel(" << elements << "," << offset << ") " << nodep << endl);
             const int leOffset = (snodep->declRange().lo()
                                   + (!snodep->declRange().littleEndian()

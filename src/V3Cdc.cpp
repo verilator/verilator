@@ -225,7 +225,7 @@ private:
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
     CdcLogicVertex* m_logicVertexp = nullptr;  // Current statement being tracked, nullptr=ignored
     AstScope* m_scopep = nullptr;  // Current scope being processed
-    AstNodeModule* m_modp = nullptr;  // Current module
+    const AstNodeModule* m_modp = nullptr;  // Current module
     AstSenTree* m_domainp = nullptr;  // Current sentree
     bool m_inDly = false;  // In delayed assign
     int m_inSenItem = 0;  // Number of senitems
@@ -337,7 +337,7 @@ private:
 
     int filelineWidth() {
         if (!m_filelineWidth) {
-            CdcWidthVisitor visitor{v3Global.rootp()};
+            const CdcWidthVisitor visitor{v3Global.rootp()};
             m_filelineWidth = visitor.maxWidth();
         }
         return m_filelineWidth;
@@ -385,7 +385,7 @@ private:
             // Any logic considered bad, at the moment, anyhow
             if (vvertexp->hazard() && !mark_outp) mark_outp = vvertexp;
             // And keep tracing back so the user can understand what's up
-        } else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
+        } else if (CdcVarVertex* const vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
             if (mark) vvertexp->asyncPath(true);
             // If primary I/O, it's ok here back
             if (vvertexp->varScp()->varp()->isPrimaryInish()) {
@@ -461,7 +461,7 @@ private:
         // Dump single variable/logic block
         // See also OrderGraph::loopsVertexCb(V3GraphVertex* vertexp)
         AstNode* const nodep = vertexp->nodep();
-        string front
+        const string front
             = pad(filelineWidth(), nodep->fileline()->ascii() + ":") + " " + prefix + " +- ";
         if (VN_IS(nodep, VarScope)) {
             *m_ofp << front << "Variable: " << nodep->prettyName() << '\n';
@@ -562,7 +562,7 @@ private:
         std::set<AstSenTree*> senouts;  // List of all sensitivities for new signal
         if (const CdcLogicVertex* const vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
             if (vvertexp) {}  // Unused
-        } else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
+        } else if (const CdcVarVertex* const vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
             // If primary I/O, give it domain of the input
             const AstVar* const varp = vvertexp->varScp()->varp();
             if (varp->isPrimaryIO() && varp->isNonOutput() && !traceDests) {

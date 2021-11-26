@@ -217,7 +217,7 @@ private:
                         = new AstVarRef(nodep->fileline(), memberVarp, VAccess::WRITE);
                     auto* const stmtp = newRandStmtsp(nodep->fileline(), refp);
                     funcp->addStmtsp(stmtp);
-                } else if (auto* classRefp = VN_CAST(dtypep, ClassRefDType)) {
+                } else if (const auto* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                     auto* const refp
                         = new AstVarRef(nodep->fileline(), memberVarp, VAccess::WRITE);
                     auto* const memberFuncp = V3Randomize::newRandomizeFunc(classRefp->classp());
@@ -253,7 +253,7 @@ public:
 void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        RandomizeMarkVisitor markVisitor{nodep};
+        const RandomizeMarkVisitor markVisitor{nodep};
         RandomizeVisitor{nodep};
     }
     V3Global::dumpCheckGlobalTree("randomize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);

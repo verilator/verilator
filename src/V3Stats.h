@@ -67,11 +67,11 @@ public:
 
 class V3Statistic final {
     // A statistical entry we want published into the database
-    string m_name;  ///< Nameiption of this statistic
+    const string m_name;  ///< Name of this statistic
     double m_count;  ///< Count of occurrences/ value
-    string m_stage;  ///< Runtime stage
-    bool m_sumit;  ///< Do summation of similar stats
-    bool m_perf;  ///< Performance section
+    const string m_stage;  ///< Runtime stage
+    const bool m_sumit;  ///< Do summation of similar stats
+    const bool m_perf;  ///< Performance section
     bool m_printit = true;  ///< Print the results
 public:
     // METHODS

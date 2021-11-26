@@ -391,7 +391,7 @@ class TaskGatherWrittenVisitor final : public AstNVisitor {
 public:
     // Gather all written non-local variables
     static const std::vector<AstVarScope*> gather(AstCFunc* funcp) {
-        TaskGatherWrittenVisitor visitor{funcp};
+        const TaskGatherWrittenVisitor visitor{funcp};
         return std::move(visitor.m_writtenVariables);
     }
 };
@@ -419,7 +419,7 @@ private:
     using DpiCFuncs = std::map<const string, std::tuple<AstNodeFTask*, std::string, AstCFunc*>>;
 
     // STATE
-    TaskStateVisitor* m_statep;  // Common state between visitors
+    TaskStateVisitor* const m_statep;  // Common state between visitors
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
@@ -432,20 +432,21 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
-        AstVar* newvarp = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name, examplep);
+        AstVar* const newvarp
+            = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name, examplep);
         newvarp->funcLocal(true);
         funcp->addInitsp(newvarp);
-        AstVarScope* newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
+        AstVarScope* const newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
         m_scopep->addVarp(newvscp);
         return newvscp;
     }
     AstVarScope* createInputVar(AstCFunc* funcp, const string& name, AstBasicDTypeKwd kwd) {
-        AstVar* newvarp = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name,
-                                     funcp->findBasicDType(kwd));
+        AstVar* const newvarp = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name,
+                                           funcp->findBasicDType(kwd));
         newvarp->funcLocal(true);
         newvarp->direction(VDirection::INPUT);
         funcp->addArgsp(newvarp);
-        AstVarScope* newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
+        AstVarScope* const newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
         m_scopep->addVarp(newvscp);
         return newvscp;
     }
@@ -458,11 +459,12 @@ private:
             // It shouldn't matter, as they are only local variables.
             // We choose to do it under whichever called this function, which results
             // in more cache locality.
-            AstVar* newvarp = new AstVar{invarp->fileline(), AstVarType::BLOCKTEMP, name, invarp};
+            AstVar* const newvarp
+                = new AstVar{invarp->fileline(), AstVarType::BLOCKTEMP, name, invarp};
             newvarp->funcLocal(false);
             newvarp->propagateAttrFrom(invarp);
             m_modp->addStmtp(newvarp);
-            AstVarScope* newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
+            AstVarScope* const newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
             m_scopep->addVarp(newvscp);
             return newvscp;
         }
@@ -472,20 +474,20 @@ private:
                                 AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
-        AstNode* newbodysp
+        AstNode* const newbodysp
             = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe nullptr
-        AstNode* beginp
+        AstNode* const beginp
             = new AstComment(refp->fileline(), string("Function: ") + refp->name(), true);
         if (newbodysp) beginp->addNext(newbodysp);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-newbegi:");
         //
         // Create input variables
         AstNode::user2ClearTree();
-        V3TaskConnects tconnects = V3Task::taskConnects(refp, beginp);
+        const V3TaskConnects tconnects = V3Task::taskConnects(refp, beginp);
         for (const auto& itr : tconnects) {
-            AstVar* portp = itr.first;
-            AstArg* argp = itr.second;
-            AstNode* pinp = argp->exprp();
+            AstVar* const portp = itr.first;
+            AstArg* const argp = itr.second;
+            AstNode* const pinp = argp->exprp();
             portp->unlinkFrBack();
             pushDeletep(portp);  // Remove it from the clone (not original)
             if (!pinp) {
@@ -504,9 +506,9 @@ private:
                     // Correct lvalue; see comments below
                     V3LinkLValue::linkLValueSet(pinp);
 
-                    if (AstVarRef* varrefp = VN_CAST(pinp, VarRef)) {
+                    if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
                         // Connect to this exact variable
-                        AstVarScope* localVscp = varrefp->varScopep();
+                        AstVarScope* const localVscp = varrefp->varScopep();
                         UASSERT_OBJ(localVscp, varrefp, "Null var scope");
                         portp->user2p(localVscp);
                         pushDeletep(pinp);
@@ -525,10 +527,10 @@ private:
 
                     // Even if it's referencing a varref, we still make a temporary
                     // Else task(x,x,x) might produce incorrect results
-                    AstVarScope* tempvscp
+                    AstVarScope* const tempvscp
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(tempvscp);
-                    AstAssign* assp = new AstAssign(
+                    AstAssign* const assp = new AstAssign(
                         pinp->fileline(), pinp,
                         new AstVarRef(tempvscp->fileline(), tempvscp, VAccess::READ));
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
@@ -537,16 +539,16 @@ private:
                     beginp->addNext(assp);
                 } else if (portp->isNonOutput()) {
                     // Make input variable
-                    AstVarScope* inVscp
+                    AstVarScope* const inVscp
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(inVscp);
-                    AstAssign* assp = new AstAssign(
+                    AstAssign* const assp = new AstAssign(
                         pinp->fileline(),
                         new AstVarRef(inVscp->fileline(), inVscp, VAccess::WRITE), pinp);
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
                                                     true);  // Ok if in <= block
                     // Put assignment in FRONT of all other statements
-                    if (AstNode* afterp = beginp->nextp()) {
+                    if (AstNode* const afterp = beginp->nextp()) {
                         afterp->unlinkFrBackWithNext();
                         assp->addNext(afterp);
                     }
@@ -559,13 +561,13 @@ private:
             AstNode* nextstmtp;
             for (AstNode* stmtp = beginp; stmtp; stmtp = nextstmtp) {
                 nextstmtp = stmtp->nextp();
-                if (AstVar* portp = VN_CAST(stmtp, Var)) {
+                if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                     // Any I/O variables that fell out of above loop were already linked
                     if (!portp->user2p()) {
                         // Move it to a new localized variable
                         portp->unlinkFrBack();
                         pushDeletep(portp);  // Remove it from the clone (not original)
-                        AstVarScope* localVscp
+                        AstVarScope* const localVscp
                             = createVarScope(portp, namePrefix + "__" + portp->shortName());
                         portp->user2p(localVscp);
                     }
@@ -580,8 +582,8 @@ private:
         // Replace variable refs
         // Iteration requires a back, so put under temporary node
         {
-            AstBegin* tempp = new AstBegin(beginp->fileline(), "[EditWrapper]", beginp);
-            TaskRelinkVisitor visitor{tempp};
+            AstBegin* const tempp = new AstBegin(beginp->fileline(), "[EditWrapper]", beginp);
+            const TaskRelinkVisitor visitor{tempp};
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
@@ -594,19 +596,19 @@ private:
                                    AstVarScope* outvscp, AstCNew*& cnewpr) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
-        AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());
+        AstCFunc* const cfuncp = m_statep->ftaskCFuncp(refp->taskp());
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
-        AstNode* beginp
+        AstNode* const beginp
             = new AstComment(refp->fileline(), string("Function: ") + refp->name(), true);
         AstNodeCCall* ccallp;
         if (VN_IS(refp, New)) {
-            AstCNew* cnewp = new AstCNew(refp->fileline(), cfuncp);
+            AstCNew* const cnewp = new AstCNew(refp->fileline(), cfuncp);
             cnewp->dtypep(refp->dtypep());
             ccallp = cnewp;
             // Parent AstNew will replace with this CNew
             cnewpr = cnewp;
-        } else if (AstMethodCall* mrefp = VN_CAST(refp, MethodCall)) {
+        } else if (const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall)) {
             ccallp = new AstCMethodCall(refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp);
             beginp->addNext(ccallp);
         } else {
@@ -615,10 +617,10 @@ private:
         }
 
         // Convert complicated outputs to temp signals
-        V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
         for (const auto& itr : tconnects) {
-            AstVar* portp = itr.first;
-            AstNode* pinp = itr.second->exprp();
+            AstVar* const portp = itr.first;
+            AstNode* const pinp = itr.second->exprp();
             if (!pinp) {
                 // Too few arguments in function call
             } else {
@@ -649,11 +651,11 @@ private:
 
                     // Even if it's referencing a varref, we still make a temporary
                     // Else task(x,x,x) might produce incorrect results
-                    AstVarScope* newvscp
+                    AstVarScope* const newvscp
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(newvscp);
                     pinp->replaceWith(new AstVarRef(newvscp->fileline(), newvscp, VAccess::WRITE));
-                    AstAssign* assp = new AstAssign(
+                    AstAssign* const assp = new AstAssign(
                         pinp->fileline(), pinp,
                         new AstVarRef(newvscp->fileline(), newvscp, VAccess::READ));
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
@@ -669,7 +671,7 @@ private:
 
         if (refp->taskp()->dpiContext()) {
             // __Vscopep
-            AstNode* snp = refp->scopeNamep()->unlinkFrBack();
+            AstNode* const snp = refp->scopeNamep()->unlinkFrBack();
             UASSERT_OBJ(snp, refp, "Missing scoping context");
             ccallp->addArgsp(snp);
             // __Vfilenamep
@@ -684,7 +686,7 @@ private:
         for (AstNode* pinp = refp->pinsp(); pinp; pinp = nextpinp) {
             nextpinp = pinp->nextp();
             // Move pin to the CCall, removing all Arg's
-            AstNode* exprp = VN_AS(pinp, Arg)->exprp();
+            AstNode* const exprp = VN_AS(pinp, Arg)->exprp();
             exprp->unlinkFrBack();
             ccallp->addArgsp(exprp);
         }
@@ -705,7 +707,7 @@ private:
         dpiproto += " " + nodep->cname() + " (";
         string args;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (const AstVar* portp = VN_CAST(stmtp, Var)) {
+            if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && !portp->isFuncReturn() && portp != rtnvarp) {
                     if (args != "") {
                         args += ", ";
@@ -735,7 +737,7 @@ private:
         // Create assignment from DPI temporary into internal format
         // DPI temporary is scalar or 1D array (if unpacked array)
         // Internal representation is scalar, 1D, or multi-dimensional array (similar to SV)
-        AstVar* portp = portvscp->varp();
+        AstVar* const portp = portvscp->varp();
         string frstmt;
         string ket;
         const bool useSetWSvlv = TaskDpiUtils::dpiToInternalFrStmt(portp, frName, frstmt, ket);
@@ -766,7 +768,7 @@ private:
             AstNode* stmtp = nullptr;
             // extract a scalar from DPI temporary var that is scalar or 1D array
             if (useSetWSvlv) {
-                AstNode* linesp = new AstText(portvscp->fileline(), frstmt + ket);
+                AstNode* const linesp = new AstText(portvscp->fileline(), frstmt + ket);
                 linesp->addNext(srcp);
                 linesp->addNext(
                     new AstText(portvscp->fileline(),
@@ -780,9 +782,9 @@ private:
                     from += "[" + cvtToStr(i * coef) + "]";
                 }
                 from += ket;
-                AstNode* rhsp = new AstSel(portp->fileline(),
-                                           new AstCMath(portp->fileline(), from, cwidth, false), 0,
-                                           portp->width());
+                AstNode* const rhsp = new AstSel(
+                    portp->fileline(), new AstCMath(portp->fileline(), from, cwidth, false), 0,
+                    portp->width());
                 stmtp = new AstAssign(portp->fileline(), srcp, rhsp);
             }
             if (i > 0) {
@@ -827,7 +829,7 @@ private:
             // If the find fails, it will throw an error
             stmt += "const VerilatedScope* __Vscopep = Verilated::dpiScope();\n";
             // If dpiScope is fails and is null; the exportFind function throws and error
-            string cbtype
+            const string cbtype
                 = VIdProtect::protect(v3Global.opt.prefix() + "__Vcb_" + nodep->cname() + "_t");
             stmt += cbtype + " __Vcb = (" + cbtype
                     + ")(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));\n";  // Can't use
@@ -842,7 +844,7 @@ private:
                  + "*)(__Vscopep->symsp())");  // Upcast w/o overhead
         AstNode* argnodesp = nullptr;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* portp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && !portp->isFuncReturn() && portp != rtnvarp) {
                     // No createDpiTemp; we make a real internal variable instead
                     // SAME CODE BELOW
@@ -851,11 +853,12 @@ private:
                         argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true));
                         args = "";
                     }
-                    AstVarScope* outvscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
+                    AstVarScope* const outvscp
+                        = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
                     // No information exposure; is already visible in import/export func template
                     outvscp->varp()->protect(false);
                     portp->protect(false);
-                    AstVarRef* refp
+                    AstVarRef* const refp
                         = new AstVarRef(portp->fileline(), outvscp,
                                         portp->isWritable() ? VAccess::WRITE : VAccess::READ);
                     argnodesp = argnodesp->addNextNull(refp);
@@ -874,18 +877,18 @@ private:
         }
 
         if (rtnvarp) {
-            AstVar* portp = rtnvarp;
+            AstVar* const portp = rtnvarp;
             // SAME CODE ABOVE
             args += ", ";
             if (args != "") {
                 argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true));
                 args = "";
             }
-            AstVarScope* outvscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
+            AstVarScope* const outvscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
             // No information exposure; is already visible in import/export func template
             outvscp->varp()->protect(false);
-            AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp,
-                                            portp->isWritable() ? VAccess::WRITE : VAccess::READ);
+            AstVarRef* const refp = new AstVarRef(
+                portp->fileline(), outvscp, portp->isWritable() ? VAccess::WRITE : VAccess::READ);
             argnodesp = argnodesp->addNextNull(refp);
         }
 
@@ -893,7 +896,7 @@ private:
             // Add the variables referenced as VarRef's so that lifetime analysis
             // doesn't rip up the variables on us
             args += ");\n";
-            AstCStmt* newp = new AstCStmt(nodep->fileline(), "(*__Vcb)(");
+            AstCStmt* const newp = new AstCStmt(nodep->fileline(), "(*__Vcb)(");
             newp->addBodysp(argnodesp);
             VL_DANGLING(argnodesp);
             newp->addBodysp(new AstText(nodep->fileline(), args, true));
@@ -902,7 +905,7 @@ private:
 
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* portp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && portp->isWritable() && !portp->isFuncReturn()) {
                     funcp->addStmtsp(createAssignInternalToDpi(portp, true, tmpSuffixp, ""));
                 }
@@ -984,10 +987,10 @@ private:
     static void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* portp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO()) {
                     // Move it to new function
-                    AstVar* newPortp = portp->cloneTree(false);
+                    AstVar* const newPortp = portp->cloneTree(false);
                     newPortp->funcLocal(true);
                     dpip->addArgsp(newPortp);
                     if (!portp->basicp()) {
@@ -1011,8 +1014,8 @@ private:
         // Convert input/inout arguments to DPI types
         string args;
         for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* portp = VN_CAST(stmtp, Var)) {
-                AstVarScope* portvscp
+            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+                AstVarScope* const portvscp
                     = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
                 if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
                     && portp->name() != "__Vscopep"  // Passed to dpiContext, not callee
@@ -1021,7 +1024,7 @@ private:
                     if (args != "") args += ", ";
 
                     if (portp->isDpiOpenArray()) {
-                        AstNodeDType* dtypep = portp->dtypep()->skipRefp();
+                        AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
                         if (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)) {
                             v3fatalSrc("Passing dynamic array or queue as actual argument to DPI "
                                        "open array is not yet supported");
@@ -1038,7 +1041,7 @@ private:
                         // point to this task & thread's data, in addition
                         // to static info about the variable
                         const string name = portp->name() + "__Vopenarray";
-                        string varCode
+                        const string varCode
                             = ("VerilatedDpiOpenVar "
                                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
                                + name + " (&" + propName + ", &" + portp->name() + ");\n");
@@ -1082,11 +1085,11 @@ private:
 
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* portp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 portp->protect(false);  // No additional exposure - already part of shown proto
                 if (portp->isIO() && (portp->isWritable() || portp->isFuncReturn())
                     && !portp->isDpiOpenArray()) {
-                    AstVarScope* portvscp = VN_AS(
+                    AstVarScope* const portvscp = VN_AS(
                         portp->user2p(), VarScope);  // Remembered when we created it earlier
                     cfuncp->addStmtsp(
                         createAssignDpiToInternal(portvscp, portp->name() + tmpSuffixp));
@@ -1118,11 +1121,11 @@ private:
         AstNode::user2ClearTree();
         AstVar* rtnvarp = nullptr;
         if (nodep->isFunction()) {
-            AstVar* portp = VN_AS(nodep->fvarp(), Var);
+            AstVar* const portp = VN_AS(nodep->fvarp(), Var);
             UASSERT_OBJ(portp, nodep, "function without function output variable");
             if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
             if (nodep->dpiImport() || nodep->dpiExport()) {
-                AstBasicDType* bdtypep = portp->dtypep()->basicp();
+                AstBasicDType* const bdtypep = portp->dtypep()->basicp();
                 if (!bdtypep->isDpiPrimitive()) {
                     if (bdtypep->isDpiBitVec() && portp->width() > 32) {
                         portp->v3error("DPI function may not return a > 32 bits wide type "
@@ -1190,7 +1193,7 @@ private:
         string suffix;  // So, make them unique
         if (!nodep->taskPublic() && !nodep->classMethod()) suffix = "_" + m_scopep->nameDotless();
         const string name = ((nodep->name() == "new") ? "new" : prefix + nodep->name() + suffix);
-        AstCFunc* cfuncp = new AstCFunc(
+        AstCFunc* const cfuncp = new AstCFunc(
             nodep->fileline(), name, m_scopep,
             ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : ""));
         // It's ok to combine imports because this is just a wrapper;
@@ -1211,7 +1214,7 @@ private:
         cfuncp->pure(nodep->pure());
         if (nodep->name() == "new") {
             cfuncp->isConstructor(true);
-            AstClass* classp = m_statep->getClassp(nodep);
+            AstClass* const classp = m_statep->getClassp(nodep);
             if (classp->extendsp()) {
                 cfuncp->ctorInits(EmitCBaseVisitor::prefixNameProtect(classp->extendsp()->classp())
                                   + "(vlSymsp)");
@@ -1235,7 +1238,7 @@ private:
         }
 
         if (nodep->dpiExport()) {
-            AstScopeName* snp = nodep->scopeNamep();
+            AstScopeName* const snp = nodep->scopeNamep();
             UASSERT_OBJ(snp, nodep, "Missing scoping context");
             snp->dpiExport(
                 true);  // The AstScopeName is really a statement(ish) for tracking, not a function
@@ -1246,7 +1249,7 @@ private:
         // Create list of arguments and move to function
         for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
             nextp = stmtp->nextp();
-            if (AstVar* portp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isParam() && VN_IS(portp->valuep(), InitArray)) {
                     // Move array parameters in functions into constant pool
                     portp->unlinkFrBack();
@@ -1264,7 +1267,8 @@ private:
                         // "Normal" variable, mark inside function
                         portp->funcLocal(true);
                     }
-                    AstVarScope* newvscp = new AstVarScope{portp->fileline(), m_scopep, portp};
+                    AstVarScope* const newvscp
+                        = new AstVarScope{portp->fileline(), m_scopep, portp};
                     m_scopep->addVarp(newvscp);
                     portp->user2p(newvscp);
                 }
@@ -1278,7 +1282,7 @@ private:
         if (rtnvarp) cfuncp->addArgsp(rtnvarp);
 
         // Move body
-        AstNode* bodysp = nodep->stmtsp();
+        AstNode* const bodysp = nodep->stmtsp();
         if (bodysp) {
             bodysp->unlinkFrBackWithNext();
             cfuncp->addStmtsp(bodysp);
@@ -1293,8 +1297,8 @@ private:
         // Replace variable refs
         // Iteration requires a back, so put under temporary node
         {
-            AstBegin* tempp = new AstBegin(cfuncp->fileline(), "[EditWrapper]", cfuncp);
-            TaskRelinkVisitor visitor{tempp};
+            AstBegin* const tempp = new AstBegin(cfuncp->fileline(), "[EditWrapper]", cfuncp);
+            const TaskRelinkVisitor visitor{tempp};
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
@@ -1367,7 +1371,7 @@ private:
             m_insStmtp->addNextHere(newp);
         } else if (m_insMode == IM_WHILE_PRECOND) {
             UINFO(5, "     IM_While_Precond " << m_insStmtp << endl);
-            AstWhile* whilep = VN_AS(m_insStmtp, While);
+            AstWhile* const whilep = VN_AS(m_insStmtp, While);
             UASSERT_OBJ(whilep, nodep, "Insert should be under WHILE");
             whilep->addPrecondsp(newp);
             visitp = newp;
@@ -1430,7 +1434,7 @@ private:
             visitp = insertBeforeStmt(nodep, beginp);
         } else if (!nodep->isStatement()) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
-            AstVarRef* outrefp = new AstVarRef(nodep->fileline(), outvscp, VAccess::READ);
+            AstVarRef* const outrefp = new AstVarRef(nodep->fileline(), outvscp, VAccess::READ);
             nodep->replaceWith(outrefp);
             // Insert new statements
             visitp = insertBeforeStmt(nodep, beginp);
@@ -1482,10 +1486,10 @@ private:
                 if (m_statep->ftaskNoInline(nodep) && !nodep->classMethod()) {
                     m_statep->checkPurity(nodep);
                 }
-                AstNodeFTask* clonedFuncp = nodep->cloneTree(false);
+                AstNodeFTask* const clonedFuncp = nodep->cloneTree(false);
                 if (nodep->isConstructor()) m_statep->remapFuncClassp(nodep, clonedFuncp);
 
-                AstCFunc* cfuncp = makeUserFunc(clonedFuncp, m_statep->ftaskNoInline(nodep));
+                AstCFunc* const cfuncp = makeUserFunc(clonedFuncp, m_statep->ftaskNoInline(nodep));
                 if (cfuncp) {
                     nodep->addNextHere(cfuncp);
                     if (nodep->dpiImport() || m_statep->ftaskNoInline(nodep)) {
@@ -1498,16 +1502,16 @@ private:
             // Any variables inside the function still have varscopes pointing to them.
             // We're going to delete the vars, so delete the varscopes.
             if (nodep->isFunction()) {
-                if (AstVar* portp = VN_CAST(nodep->fvarp(), Var)) {
-                    AstVarScope* vscp = m_statep->findVarScope(m_scopep, portp);
+                if (AstVar* const portp = VN_CAST(nodep->fvarp(), Var)) {
+                    AstVarScope* const vscp = m_statep->findVarScope(m_scopep, portp);
                     UINFO(9, "   funcremovevsc " << vscp << endl);
                     VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
                 }
             }
             for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
                 nextp = stmtp->nextp();
-                if (AstVar* portp = VN_CAST(stmtp, Var)) {
-                    AstVarScope* vscp = m_statep->findVarScope(m_scopep, portp);
+                if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+                    AstVarScope* const vscp = m_statep->findVarScope(m_scopep, portp);
                     UINFO(9, "   funcremovevsc " << vscp << endl);
                     VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
                 }
@@ -1578,7 +1582,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     int tpinnum = 0;
     AstVar* sformatp = nullptr;
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
-        if (AstVar* portp = VN_CAST(stmtp, Var)) {
+        if (AstVar* const portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO()) {
                 tconnects.push_back(std::make_pair(portp, static_cast<AstArg*>(nullptr)));
                 nameToIndex.insert(
@@ -1599,7 +1603,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     bool reorganize = false;
     for (AstNode *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
         nextp = pinp->nextp();
-        AstArg* argp = VN_AS(pinp, Arg);
+        AstArg* const argp = VN_AS(pinp, Arg);
         UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
         if (argp->name() != "") {
             // By name
@@ -1640,7 +1644,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 
     // Connect missing ones
     for (int i = 0; i < tpinnum; ++i) {
-        AstVar* portp = tconnects[i].first;
+        AstVar* const portp = tconnects[i].first;
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
             AstNode* newvaluep = nullptr;
             if (!portp->valuep()) {
@@ -1671,7 +1675,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin
             UINFO(9, "Default pin for " << portp << endl);
-            AstArg* newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
+            AstArg* const newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
             if (tconnects[i].second) {  // Have a "nullptr" pin already defined for it
                 VL_DO_CLEAR(tconnects[i].second->unlinkFrBack()->deleteTree(),
                             tconnects[i].second = nullptr);
@@ -1693,7 +1697,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             nodep->pinsp()->unlinkFrBack();
         }
         for (int i = 0; i < tpinnum; ++i) {
-            AstArg* argp = tconnects[i].second;
+            AstArg* const argp = tconnects[i].second;
             UASSERT_OBJ(argp, nodep, "Lost argument in func conversion");
             nodep->addPinsp(argp);
         }
@@ -1721,7 +1725,8 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
     const string toName = portp->name() + toSuffix;
     size_t unpackSize = 1;  // non-unpacked array is treated as size 1
     int unpackDim = 0;
-    if (AstUnpackArrayDType* unpackp = VN_CAST(portp->dtypep()->skipRefp(), UnpackArrayDType)) {
+    if (AstUnpackArrayDType* const unpackp
+        = VN_CAST(portp->dtypep()->skipRefp(), UnpackArrayDType)) {
         unpackSize = unpackp->arrayUnpackedElements();
         unpackDim = unpackp->dimensions(false).second;
         if (unpackDim > 0) UASSERT_OBJ(unpackSize > 0, portp, "size must be greater than 0");
@@ -1825,7 +1830,7 @@ void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         TaskStateVisitor visitors{nodep};
-        TaskVisitor visitor{nodep, &visitors};
+        const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("task", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

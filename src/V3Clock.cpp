@@ -77,7 +77,7 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstTopScope* m_topScopep = nullptr;  // Current top scope
+    const AstTopScope* m_topScopep = nullptr;  // Current top scope
     AstScope* m_scopep = nullptr;  // Current scope
     AstCFunc* m_evalFuncp = nullptr;  // Top eval function we are creating
     AstCFunc* m_initFuncp = nullptr;  // Top initial function we are creating
@@ -97,7 +97,7 @@ private:
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Clock edge on non-single bit signal: "
                                             << varp->prettyNameQ());
         }
-        string newvarname
+        const string newvarname
             = (string("__Vclklast__") + vscp->scopep()->nameDotless() + "__" + varp->name());
         AstVar* const newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname,
                                            VFlagLogicPacked(), 1);
@@ -184,9 +184,9 @@ private:
         return senEqnp;
     }
     AstIf* makeActiveIf(AstSenTree* sensesp) {
-        AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
+        AstNode* const senEqnp = createSenseEquation(sensesp->sensesp());
         UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, nullptr, nullptr);
+        AstIf* const newifp = new AstIf(sensesp->fileline(), senEqnp, nullptr, nullptr);
         return newifp;
     }
     void clearLastSen() {
@@ -215,11 +215,11 @@ private:
         AstCFunc* funcp = nullptr;
 
         // Unlink all statements, then add item by item to new sub-functions
-        AstBegin* tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
-                                       ofuncp->stmtsp()->unlinkFrBackWithNext()};
+        AstBegin* const tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
+                                             ofuncp->stmtsp()->unlinkFrBackWithNext()};
         if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
         while (tempp->stmtsp()) {
-            AstNode* itemp = tempp->stmtsp()->unlinkFrBack();
+            AstNode* const itemp = tempp->stmtsp()->unlinkFrBack();
             const int stmts = EmitCBaseCounterVisitor(itemp).count();
             if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
                 // Make a new function
@@ -231,7 +231,7 @@ private:
                 funcp->slow(ofuncp->slow());
                 m_topScopep->scopep()->addActivep(funcp);
                 //
-                AstCCall* callp = new AstCCall{funcp->fileline(), funcp};
+                AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
                 ofuncp->addStmtsp(callp);
                 func_stmts = 0;
             }
@@ -289,7 +289,7 @@ private:
         // UINFO(4, " SCOPE   " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
-        if (AstNode* movep = nodep->finalClksp()) {
+        if (AstNode* const movep = nodep->finalClksp()) {
             UASSERT_OBJ(m_topScopep, nodep, "Final clocks under non-top scope");
             movep->unlinkFrBackWithNext();
             m_evalFuncp->addFinalsp(movep);
@@ -297,7 +297,7 @@ private:
         m_scopep = nullptr;
     }
     virtual void visit(AstNodeProcedure* nodep) override {
-        if (AstNode* stmtsp = nodep->bodysp()) {
+        if (AstNode* const stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
             nodep->addNextHere(stmtsp);
         }
@@ -307,12 +307,12 @@ private:
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
-        AstNode* incp = nodep->incp()->unlinkFrBack();
-        AstNode* origp = nodep->origp()->unlinkFrBack();
-        AstNode* changeWrp = nodep->changep()->unlinkFrBack();
-        AstNode* changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
-        AstIf* newp = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp),
-                                incp, nullptr);
+        AstNode* const incp = nodep->incp()->unlinkFrBack();
+        AstNode* const origp = nodep->origp()->unlinkFrBack();
+        AstNode* const changeWrp = nodep->changep()->unlinkFrBack();
+        AstNode* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
+        AstIf* const newp = new AstIf(
+            nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp), incp, nullptr);
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
@@ -325,7 +325,7 @@ private:
         // Link to global function
         if (nodep->formCallTree()) {
             UINFO(4, "    formCallTree " << nodep << endl);
-            AstCCall* callp = new AstCCall(nodep->fileline(), nodep);
+            AstCCall* const callp = new AstCCall(nodep->fileline(), nodep);
             m_finalFuncp->addStmtsp(callp);
         }
     }
@@ -353,7 +353,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (m_mtaskBodyp) {
             UINFO(4, "  TR ACTIVE  " << nodep << endl);
-            AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
+            AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (nodep->hasClocked()) {
                 UASSERT_OBJ(!nodep->hasInitial(), nodep,
                             "Initial block should not have clock sensitivity");
@@ -378,7 +378,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else {
             UINFO(4, "  ACTIVE  " << nodep << endl);
-            AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
+            AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (nodep->hasClocked()) {
                 // Remember the latest sensitivity so we can compare it next time
                 UASSERT_OBJ(!nodep->hasInitial(), nodep,

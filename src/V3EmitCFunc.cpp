@@ -202,7 +202,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             puts("VL_FSCANF_IX(");
             iterate(dispp->filep());
             puts(",");
-        } else if (const AstSScanF* dispp = VN_CAST(nodep, SScanF)) {
+        } else if (const AstSScanF* const dispp = VN_CAST(nodep, SScanF)) {
             isStmt = false;
             checkMaxWords(dispp->fromp());
             puts("VL_SSCANF_I");
@@ -212,7 +212,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             puts(",");
             iterate(dispp->fromp());
             puts(",");
-        } else if (const AstDisplay* dispp = VN_CAST(nodep, Display)) {
+        } else if (const AstDisplay* const dispp = VN_CAST(nodep, Display)) {
             isStmt = true;
             if (dispp->filep()) {
                 puts("VL_FWRITEF(");
@@ -221,7 +221,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             } else {
                 puts("VL_WRITEF(");
             }
-        } else if (const AstSFormat* dispp = VN_CAST(nodep, SFormat)) {
+        } else if (const AstSFormat* const dispp = VN_CAST(nodep, SFormat)) {
             isStmt = true;
             puts("VL_SFORMAT_X(");
             puts(cvtToStr(dispp->lhsp()->widthMin()));
@@ -315,13 +315,14 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         }
         emitDispState.pushArg(fmtLetter, argp, "");
         if (fmtLetter == 't' || fmtLetter == '^') {
-            AstSFormatF* fmtp = nullptr;
-            if (AstDisplay* const nodep = VN_CAST(dispp, Display))
+            const AstSFormatF* fmtp = nullptr;
+            if (const AstDisplay* const nodep = VN_CAST(dispp, Display)) {
                 fmtp = nodep->fmtp();
-            else if (AstSFormat* nodep = VN_CAST(dispp, SFormat))
+            } else if (const AstSFormat* const nodep = VN_CAST(dispp, SFormat)) {
                 fmtp = nodep->fmtp();
-            else
+            } else {
                 fmtp = VN_CAST(dispp, SFormatF);
+            }
             UASSERT_OBJ(fmtp, dispp,
                         "Use of %t must be under AstDisplay, AstSFormat, or AstSFormatF");
             UASSERT_OBJ(!fmtp->timeunit().isNone(), fmtp, "timenunit must be set");
@@ -580,14 +581,14 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             ofp()->printf("%.17e", nodep->num().toDouble());
         }
     } else if (nodep->isQuad()) {
-        vluint64_t num = nodep->toUQuad();
+        const vluint64_t num = nodep->toUQuad();
         if (num < 10) {
             ofp()->printf("%" VL_PRI64 "uULL", num);
         } else {
             ofp()->printf("0x%" VL_PRI64 "xULL", num);
         }
     } else {
-        uint32_t num = nodep->toUInt();
+        const uint32_t num = nodep->toUInt();
         // Only 32 bits - llx + long long here just to appease CPP format warning
         if (num < 10) {
             puts(cvtToStr(num));
@@ -620,8 +621,8 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
         // If a simple CONST value we initialize it using an enum
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
-    } else if (AstInitArray* initarp = VN_CAST(varp->valuep(), InitArray)) {
-        if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+    } else if (const AstInitArray* const initarp = VN_CAST(varp->valuep(), InitArray)) {
+        if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             if (initarp->defaultp()) {
                 puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
                 puts("; ++__Vi) {\n");
@@ -630,7 +631,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
             }
             const AstInitArray::KeyItemMap& mapr = initarp->map();
             for (const auto& itr : mapr) {
-                AstNode* valuep = itr.second->valuep();
+                AstNode* const valuep = itr.second->valuep();
                 emitSetVarConstant(varNameProtected + "[" + cvtToStr(itr.first) + "]",
                                    VN_AS(valuep, Const));
             }
@@ -645,26 +646,26 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameProtected,
                                       AstNodeDType* dtypep, int depth, const string& suffix) {
     dtypep = dtypep->skipRefp();
-    AstBasicDType* basicp = dtypep->basicp();
+    AstBasicDType* const basicp = dtypep->basicp();
     // Returns string to do resetting, empty to do nothing (which caller should handle)
-    if (AstAssocArrayDType* adtypep = VN_CAST(dtypep, AssocArrayDType)) {
+    if (AstAssocArrayDType* const adtypep = VN_CAST(dtypep, AssocArrayDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                    suffix + ".atDefault()" + cvtarray);
     } else if (VN_IS(dtypep, ClassRefDType)) {
         return "";  // Constructor does it
-    } else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
+    } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                    suffix + ".atDefault()" + cvtarray);
-    } else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
+    } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                    suffix + ".atDefault()" + cvtarray);
-    } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+    } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
         const string ivar = string("__Vi") + cvtToStr(depth);
@@ -678,7 +679,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         // String's constructor deals with it
         return "";
     } else if (basicp) {
-        bool zeroit
+        const bool zeroit
             = (varp->attrFileDescr()  // Zero so we don't do file IO if never $fopen
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
@@ -687,7 +688,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
             if (varp->valuep()) {
-                AstConst* const constp = VN_AS(varp->valuep(), Const);
+                const AstConst* const constp = VN_AS(varp->valuep(), Const);
                 if (!constp) varp->v3fatalSrc("non-const initializer for variable");
                 for (int w = 0; w < varp->widthWords(); ++w) {
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
@@ -732,8 +733,8 @@ void EmitCFunc::doubleOrDetect(AstChangeDet* changep, bool& gotOne) {
         }
         iterateAndNextNull(changep->lhsp());
     } else {
-        AstNode* lhsp = changep->lhsp();
-        AstNode* rhsp = changep->rhsp();
+        AstNode* const lhsp = changep->lhsp();
+        AstNode* const rhsp = changep->rhsp();
         UASSERT_OBJ(VN_IS(lhsp, VarRef) || VN_IS(lhsp, ArraySel), changep, "Not ref?");
         UASSERT_OBJ(VN_IS(rhsp, VarRef) || VN_IS(rhsp, ArraySel), changep, "Not ref?");
         for (int word = 0; word < (changep->lhsp()->isWide() ? changep->lhsp()->widthWords() : 1);

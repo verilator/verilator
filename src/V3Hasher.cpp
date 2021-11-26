@@ -496,6 +496,6 @@ V3Hash V3Hasher::operator()(AstNode* nodep) const {
 }
 
 V3Hash V3Hasher::uncachedHash(const AstNode* nodep) {
-    HasherVisitor visitor{nodep};
+    const HasherVisitor visitor{nodep};
     return visitor.finalHash();
 }

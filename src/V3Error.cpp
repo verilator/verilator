@@ -54,7 +54,7 @@ v3errorIniter v3errorInit;
 V3ErrorCode::V3ErrorCode(const char* msgp) {
     // Return error encoding for given string, or ERROR, which is a bad code
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code = V3ErrorCode(codei);
         if (0 == VL_STRCASECMP(msgp, code.ascii())) {
             m_e = code;
             return;
@@ -131,7 +131,7 @@ bool V3Error::isError(V3ErrorCode code, bool supp) {
 }
 
 string V3Error::msgPrefix() {
-    V3ErrorCode code = s_errorCode;
+    const V3ErrorCode code = s_errorCode;
     const bool supp = s_errorSuppressed;
     if (supp) {
         return "-arning-suppressed: ";

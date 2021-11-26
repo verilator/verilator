@@ -110,7 +110,7 @@ private:
             AstCFunc* const topFuncp = it->second;
             auto nextIt1 = it;
             ++nextIt1;
-            bool moreOfSame1 = (nextIt1 != m_modFuncs.end() && nextIt1->first == name);
+            const bool moreOfSame1 = (nextIt1 != m_modFuncs.end() && nextIt1->first == name);
             if (moreOfSame1) {
                 // Multiple functions under this name, need a wrapper function
                 UINFO(6, "  Wrapping " << name << " multifuncs\n");

@@ -186,9 +186,9 @@ private:
     }
     void squashAssignposts() {
         for (auto& itr : m_assignposts) {
-            LifePostLocation* const app = &itr.second;
-            AstVarRef* const lhsp = VN_AS(app->nodep->lhsp(), VarRef);  // original var
-            AstVarRef* const rhsp = VN_AS(app->nodep->rhsp(), VarRef);  // dly var
+            const LifePostLocation* const app = &itr.second;
+            const AstVarRef* const lhsp = VN_AS(app->nodep->lhsp(), VarRef);  // original var
+            const AstVarRef* const rhsp = VN_AS(app->nodep->rhsp(), VarRef);  // dly var
             AstVarScope* const dlyVarp = rhsp->varScopep();
             AstVarScope* const origVarp = lhsp->varScopep();
 
@@ -275,10 +275,10 @@ private:
     }
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
-        AstVarScope* const vscp = nodep->varScopep();
+        const AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
 
-        LifeLocation loc(m_execMTaskp, ++m_sequence);
+        const LifeLocation loc(m_execMTaskp, ++m_sequence);
         if (nodep->access().isWriteOrRW()) m_writes[vscp].insert(loc);
         if (nodep->access().isReadOrRW()) m_reads[vscp].insert(loc);
     }
@@ -292,12 +292,12 @@ private:
     virtual void visit(AstAssignPost* nodep) override {
         // Don't record ASSIGNPOST in the read/write maps, record them in a
         // separate map
-        if (AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
+        if (const AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
             // rhsp is the dly var
-            AstVarScope* const dlyVarp = rhsp->varScopep();
+            const AstVarScope* const dlyVarp = rhsp->varScopep();
             UASSERT_OBJ(m_assignposts.find(dlyVarp) == m_assignposts.end(), nodep,
                         "LifePostLocation attempted duplicate dlyvar map addition");
-            LifeLocation loc(m_execMTaskp, ++m_sequence);
+            const LifeLocation loc(m_execMTaskp, ++m_sequence);
             m_assignposts[dlyVarp] = LifePostLocation(loc, nodep);
         }
     }
@@ -318,7 +318,7 @@ private:
         m_mtasksGraphp = nodep->depGraphp();
         for (V3GraphVertex* mtaskVxp = m_mtasksGraphp->verticesBeginp(); mtaskVxp;
              mtaskVxp = mtaskVxp->verticesNextp()) {
-            ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(mtaskVxp);
+            const ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(mtaskVxp);
             m_execMTaskp = mtaskp;
             m_sequence = 0;
             iterate(mtaskp->bodyp());

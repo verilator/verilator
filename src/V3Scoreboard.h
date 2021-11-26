@@ -355,7 +355,7 @@ private:
     class CmpElems final {
     public:
         bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {
-            T_ElemCompare cmp;
+            const T_ElemCompare cmp;
             return cmp.operator()(*ap, *bp);
         }
     };
@@ -369,8 +369,8 @@ private:
     // set members, set is better performant.
     std::set<const T_Elem*> m_unknown;  // Elements with unknown scores
     SortedMap m_sorted;  // Set of elements with known scores
-    UserScoreFnp m_scoreFnp;  // Scoring function
-    bool m_slowAsserts;  // Do some asserts that require extra lookups
+    const UserScoreFnp m_scoreFnp;  // Scoring function
+    const bool m_slowAsserts;  // Do some asserts that require extra lookups
 
 public:
     // CONSTRUCTORS

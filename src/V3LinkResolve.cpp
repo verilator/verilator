@@ -225,17 +225,17 @@ private:
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            varrefp->cloneTree(false)));
-            } else if (AstUnlinkedRef* uvxrp
+            } else if (AstUnlinkedRef* const uvxrp
                        = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            uvxrp->cloneTree(false)));
-            } else if (auto* fromp = VN_CAST(basefromp, LambdaArgRef)) {
+            } else if (auto* const fromp = VN_CAST(basefromp, LambdaArgRef)) {
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            fromp->cloneTree(false)));
-            } else if (AstMemberSel* fromp = VN_CAST(basefromp, MemberSel)) {
+            } else if (AstMemberSel* const fromp = VN_CAST(basefromp, MemberSel)) {
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
                                            fromp->cloneTree(false)));
-            } else if (AstEnumItemRef* fromp = VN_CAST(basefromp, EnumItemRef)) {
+            } else if (AstEnumItemRef* const fromp = VN_CAST(basefromp, EnumItemRef)) {
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::ENUM_BASE,
                                            fromp->cloneTree(false)));
             } else if (VN_IS(basefromp, Replicate)) {
@@ -364,7 +364,7 @@ private:
                     bool inpercent = false;
                     for (int i = 0; i < numchars; i++) {
                         const int ii = numchars - i - 1;
-                        char c = constp->num().dataByte(ii);
+                        const char c = constp->num().dataByte(ii);
                         str[i] = c;
                         if (!inpercent && c == '%') {
                             inpercent = true;
@@ -584,7 +584,7 @@ public:
 void V3LinkResolve::linkResolve(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     {
-        LinkResolveVisitor visitor{rootp};
+        const LinkResolveVisitor visitor{rootp};
         LinkBotupVisitor{rootp};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkresolve", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);

@@ -199,7 +199,7 @@ class CMakeEmitter final {
 
         *of << "# User .cpp files (from .cpp's on Verilator command line)\n";
         cmake_set_raw(*of, name + "_USER_CLASSES", deslash(cmake_list(v3Global.opt.cppFiles())));
-        if (const V3HierBlockPlan* planp = v3Global.hierPlanp()) {
+        if (const V3HierBlockPlan* const planp = v3Global.hierPlanp()) {
             *of << "# Verilate hierarchical blocks\n";
             // Sorted hierarchical blocks in order of leaf-first.
             const V3HierBlockPlan::HierVector& hierBlocks = planp->hierBlocksSorted();
@@ -260,5 +260,5 @@ public:
 
 void V3EmitCMake::emit() {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    CMakeEmitter emitter;
+    const CMakeEmitter emitter;
 }

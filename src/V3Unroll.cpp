@@ -43,9 +43,9 @@ class UnrollVisitor final : public AstNVisitor {
 private:
     // STATE
     AstVar* m_forVarp;  // Iterator variable
-    AstVarScope* m_forVscp;  // Iterator variable scope (nullptr for generate pass)
+    const AstVarScope* m_forVscp;  // Iterator variable scope (nullptr for generate pass)
     AstConst* m_varValuep;  // Current value of loop
-    AstNode* m_ignoreIncp;  // Increment node to ignore
+    const AstNode* m_ignoreIncp;  // Increment node to ignore
     bool m_varModeCheck;  // Just checking RHS assignments
     bool m_varModeReplace;  // Replacing varrefs
     bool m_varAssignHit;  // Assign var hit

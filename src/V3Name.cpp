@@ -40,7 +40,7 @@ private:
     const AstUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule* m_modp = nullptr;
+    const AstNodeModule* m_modp = nullptr;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

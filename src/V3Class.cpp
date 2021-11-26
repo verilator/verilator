@@ -34,9 +34,9 @@ private:
     // MEMBERS
     const AstUser1InUse m_inuser1;
     string m_prefix;  // String prefix to add to name based on hier
-    AstScope* m_classScopep = nullptr;  // Package moving scopes into
+    const AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
-    AstNodeFTask* m_ftaskp = nullptr;  // Current task
+    const AstNodeFTask* m_ftaskp = nullptr;  // Current task
     std::vector<std::pair<AstNode*, AstScope*>> m_moves;
 
     // NODE STATE
@@ -67,7 +67,7 @@ private:
         v3Global.rootp()->topModulep()->addStmtp(cellp);
         // Find class's scope
         // Alternative would be to move this and related to V3Scope
-        AstScope* classScopep = nullptr;
+        const AstScope* classScopep = nullptr;
         for (AstNode* itp = nodep->stmtsp(); itp; itp = itp->nextp()) {
             if ((classScopep = VN_CAST(itp, Scope))) break;
         }

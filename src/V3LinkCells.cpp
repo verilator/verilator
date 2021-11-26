@@ -113,7 +113,7 @@ private:
     VSymGraph m_mods;  // Symbol table of all module names
     LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
     LibraryVertex* m_libVertexp = nullptr;  // Vertex at root of all libraries
-    V3GraphVertex* m_topVertexp = nullptr;  // Vertex of top module
+    const V3GraphVertex* m_topVertexp = nullptr;  // Vertex of top module
     std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
 
@@ -474,7 +474,7 @@ private:
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
             }
-            AstNodeModule* const foundp = findModuleSym(nodep->name());
+            const AstNodeModule* const foundp = findModuleSym(nodep->name());
             if (foundp && foundp != nodep) {
                 if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)

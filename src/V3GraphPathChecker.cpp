@@ -74,12 +74,12 @@ GraphPathChecker::~GraphPathChecker() {
 void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
     GraphStreamUnordered order(m_graphp, way);
     const GraphWay rev = way.invert();
-    while (const V3GraphVertex* vertexp = order.nextp()) {
+    while (const V3GraphVertex* const vertexp = order.nextp()) {
         unsigned critPathCost = 0;
         for (V3GraphEdge* edgep = vertexp->beginp(rev); edgep; edgep = edgep->nextp(rev)) {
             if (!m_edgeFuncp(edgep)) continue;
 
-            V3GraphVertex* wrelativep = edgep->furtherp(rev);
+            const V3GraphVertex* wrelativep = edgep->furtherp(rev);
             const GraphPCNode* const wrelUserp = static_cast<GraphPCNode*>(wrelativep->userp());
             critPathCost = std::max(critPathCost, wrelUserp->m_cp[way] + 1);
         }

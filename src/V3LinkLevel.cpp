@@ -142,13 +142,13 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
 void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // We do ONLY the top module
-    AstNodeModule* oldmodp = rootp->modulesp();
+    AstNodeModule* const oldmodp = rootp->modulesp();
     if (!oldmodp) {  // Later V3LinkDot will warn
         UINFO(1, "No module found to wrap\n");
         return;
     }
 
-    AstNodeModule* newmodp = new AstModule(oldmodp->fileline(), "$root");
+    AstNodeModule* const newmodp = new AstModule(oldmodp->fileline(), "$root");
     newmodp->name(AstNode::encodeName(newmodp->name()));  // so origName is nice
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();
@@ -167,10 +167,11 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     // This way all later SCOPE based optimizations can ignore packages
     for (AstNodeModule* modp = rootp->modulesp(); modp; modp = VN_AS(modp->nextp(), NodeModule)) {
         if (VN_IS(modp, Package)) {
-            AstCell* cellp = new AstCell(modp->fileline(), modp->fileline(),
-                                         // Could add __03a__03a="::" to prevent conflict
-                                         // with module names/"v"
-                                         modp->name(), modp->name(), nullptr, nullptr, nullptr);
+            AstCell* const cellp
+                = new AstCell(modp->fileline(), modp->fileline(),
+                              // Could add __03a__03a="::" to prevent conflict
+                              // with module names/"v"
+                              modp->name(), modp->name(), nullptr, nullptr, nullptr);
             cellp->modp(modp);
             newmodp->addStmtp(cellp);
         }
@@ -180,7 +181,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
 }
 
 void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
-    AstNodeModule* newmodp = rootp->modulesp();
+    AstNodeModule* const newmodp = rootp->modulesp();
     UASSERT_OBJ(newmodp && newmodp->isTop(), rootp, "No TOP module found to insert under");
 
     // Find all duplicate signal names (if multitop)
@@ -191,7 +192,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     for (AstNodeModule* oldmodp = VN_AS(rootp->modulesp()->nextp(), NodeModule);
          oldmodp && oldmodp->level() <= 2; oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
         for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
-            if (AstVar* oldvarp = VN_CAST(subnodep, Var)) {
+            if (AstVar* const oldvarp = VN_CAST(subnodep, Var)) {
                 if (oldvarp->isIO()) {
                     if (ioNames.find(oldvarp->name()) != ioNames.end()) {
                         // UINFO(8, "Multitop dup I/O found: " << oldvarp << endl);
@@ -210,7 +211,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
         if (VN_IS(oldmodp, Package)) continue;
         // Add instance
         UINFO(5, "LOOP " << oldmodp << endl);
-        AstCell* cellp = new AstCell(
+        AstCell* const cellp = new AstCell(
             newmodp->fileline(), newmodp->fileline(),
             (!v3Global.opt.l2Name().empty() ? v3Global.opt.l2Name() : oldmodp->name()),
             oldmodp->name(), nullptr, nullptr, nullptr);
@@ -219,7 +220,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
 
         // Add pins
         for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
-            if (AstVar* oldvarp = VN_CAST(subnodep, Var)) {
+            if (AstVar* const oldvarp = VN_CAST(subnodep, Var)) {
                 UINFO(8, "VARWRAP " << oldvarp << endl);
                 if (oldvarp->isIO()) {
                     string name = oldvarp->name();
@@ -228,7 +229,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         name = oldmodp->name() + "__02E" + name;
                     }
 
-                    AstVar* varp = oldvarp->cloneTree(false);
+                    AstVar* const varp = oldvarp->cloneTree(false);
                     varp->name(name);
                     varp->protect(false);
                     newmodp->addStmtp(varp);
@@ -249,7 +250,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         varp->trace(false);
                     }
 
-                    AstPin* pinp = new AstPin(
+                    AstPin* const pinp = new AstPin(
                         oldvarp->fileline(), 0, varp->name(),
                         new AstVarRef(varp->fileline(), varp,
                                       oldvarp->isWritable() ? VAccess::WRITE : VAccess::READ));

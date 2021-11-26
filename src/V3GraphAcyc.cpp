@@ -102,7 +102,8 @@ private:
     V3Graph m_breakGraph;  // Graph with only breakable edges represented
     V3List<GraphAcycVertex*> m_work;  // List of vertices with optimization work left
     std::vector<OrigEdgeList*> m_origEdgeDelp;  // List of deletions to do when done
-    V3EdgeFuncP m_origEdgeFuncp;  // Function that says we follow this edge (in original graph)
+    const V3EdgeFuncP
+        m_origEdgeFuncp;  // Function that says we follow this edge (in original graph)
     uint32_t m_placeStep = 0;  // Number that user() must be equal to to indicate processing
 
     static int debug() { return V3Graph::debug(); }
@@ -223,7 +224,7 @@ void GraphAcyc::buildGraphIterate(V3GraphVertex* overtexp, GraphAcycVertex* aver
     // Make new edges
     for (V3GraphEdge* edgep = overtexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
         if (origFollowEdge(edgep)) {  // not cut
-            V3GraphVertex* toVertexp = edgep->top();
+            const V3GraphVertex* toVertexp = edgep->top();
             if (toVertexp->color()) {
                 GraphAcycVertex* const toAVertexp
                     = static_cast<GraphAcycVertex*>(toVertexp->userp());
@@ -282,13 +283,13 @@ void GraphAcyc::simplifyNone(GraphAcycVertex* avertexp) {
         UINFO(9, "  SimplifyNoneRemove " << avertexp << endl);
         avertexp->setDelete();  // Mark so we won't delete it twice
         // Remove edges
-        while (V3GraphEdge* edgep = avertexp->outBeginp()) {
+        while (V3GraphEdge* const edgep = avertexp->outBeginp()) {
             V3GraphVertex* otherVertexp = edgep->top();
             // UINFO(9, "  out " << otherVertexp << endl);
             VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             workPush(otherVertexp);
         }
-        while (V3GraphEdge* edgep = avertexp->inBeginp()) {
+        while (V3GraphEdge* const edgep = avertexp->inBeginp()) {
             V3GraphVertex* otherVertexp = edgep->fromp();
             // UINFO(9, "  in  " << otherVertexp << endl);
             VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
@@ -484,7 +485,7 @@ void GraphAcyc::placeTryEdge(V3GraphEdge* edgep) {
     // Vertex::m_user begin: number indicates this edge was completed
     // Try to assign ranks, presuming this edge is in place
     // If we come across user()==placestep, we've detected a loop and must back out
-    bool loop
+    const bool loop
         = placeIterate(static_cast<GraphAcycVertex*>(edgep->top()), edgep->fromp()->rank() + 1);
     if (!loop) {
         // No loop, we can keep it as uncutable

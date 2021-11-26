@@ -87,7 +87,7 @@ private:
 
         iterateChildren(nodep);
 
-        V3Hash hash = V3Hasher::uncachedHash(m_cfilep);
+        const V3Hash hash = V3Hasher::uncachedHash(m_cfilep);
         m_hashValuep->addText(fl, cvtToStr(hash.value()) + ";\n");
         m_cHashValuep->addText(fl, cvtToStr(hash.value()) + "U;\n");
         m_foundTop = true;

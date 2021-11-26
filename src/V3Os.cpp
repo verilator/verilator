@@ -256,7 +256,7 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
 
 vluint64_t V3Os::rand64(std::array<vluint64_t, 2>& stater) {
     // Xoroshiro128+ algorithm
-    vluint64_t result = stater[0] + stater[1];
+    const vluint64_t result = stater[0] + stater[1];
     stater[1] ^= stater[0];
     stater[0] = (((stater[0] << 55) | (stater[0] >> 9)) ^ stater[1] ^ (stater[1] << 14));
     stater[1] = (stater[1] << 36) | (stater[1] >> 28);

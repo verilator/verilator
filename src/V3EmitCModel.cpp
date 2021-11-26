@@ -136,7 +136,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n");
         ofp()->putsPrivate(false);  // public:
         puts("// API METHODS\n");
-        string callEvalEndStep
+        const string callEvalEndStep
             = (v3Global.needTraceDumper() && !optSystemC()) ? "eval_end_step(); " : "";
         if (optSystemC()) {
             ofp()->putsPrivate(true);  ///< eval() is invoked by our sensitive() calls.
@@ -190,7 +190,7 @@ class EmitCModel final : public EmitCFunc {
             std::vector<const AstCFunc*> funcps;
 
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
+                if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                     if (!funcp->dpiExportDispatcher()) continue;
                     funcps.push_back(funcp);
                 }
@@ -422,7 +422,7 @@ class EmitCModel final : public EmitCFunc {
              + "(vlSymsp);\n");
 
         if (v3Global.opt.threads() == 1) {
-            uint32_t mtaskId = 0;
+            const uint32_t mtaskId = 0;
             putsDecoration("// MTask " + cvtToStr(mtaskId) + " start\n");
             puts("VL_DEBUG_IF(VL_DBG_MSGF(\"MTask" + cvtToStr(mtaskId) + " starting\\n\"););\n");
             puts("Verilated::mtaskId(" + cvtToStr(mtaskId) + ");\n");

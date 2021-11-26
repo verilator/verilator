@@ -47,7 +47,7 @@ private:
     const AstUser3InUse m_inuser3;
 
     // STATE
-    AstActive* m_activep = nullptr;  // Inside activate statement
+    const AstActive* m_activep = nullptr;  // Inside activate statement
     AstNodeModule* const m_topModp;  // Top module
     AstScope* const m_scopetopp = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
 
@@ -70,7 +70,7 @@ private:
             UASSERT_OBJ(vscp != v3Global.rootp()->dpiExportTriggerp(), vscp,
                         "DPI export trigger should not need __VinpClk");
             AstVar* const varp = vscp->varp();
-            string newvarname
+            const string newvarname
                 = "__VinpClk__" + vscp->scopep()->nameDotless() + "__" + varp->name();
             // Create:  VARREF(inpclk)
             //          ...
@@ -145,8 +145,8 @@ private:
 
     // STATE
     bool m_tracingCall = false;  // Iterating into a call to a cfunc
-    AstActive* m_activep = nullptr;  // Inside activate statement
-    AstNodeAssign* m_assignp = nullptr;  // Inside assigndly statement
+    const AstActive* m_activep = nullptr;  // Inside activate statement
+    const AstNodeAssign* m_assignp = nullptr;  // Inside assigndly statement
     AstNodeModule* m_topModp = nullptr;  // Top module
 
     // VISITORS

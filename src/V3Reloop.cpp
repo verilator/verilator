@@ -54,13 +54,13 @@ private:
 
     std::vector<AstNodeAssign*> m_mgAssignps;  // List of assignments merging
     AstCFunc* m_mgCfuncp = nullptr;  // Parent C function
-    AstNode* m_mgNextp = nullptr;  // Next node
-    AstNodeSel* m_mgSelLp = nullptr;  // Parent select, nullptr = idle
-    AstNodeSel* m_mgSelRp = nullptr;  // Parent select, nullptr = constant
-    AstNodeVarRef* m_mgVarrefLp = nullptr;  // Parent varref
-    AstNodeVarRef* m_mgVarrefRp = nullptr;  // Parent varref, nullptr = constant
+    const AstNode* m_mgNextp = nullptr;  // Next node
+    const AstNodeSel* m_mgSelLp = nullptr;  // Parent select, nullptr = idle
+    const AstNodeSel* m_mgSelRp = nullptr;  // Parent select, nullptr = constant
+    const AstNodeVarRef* m_mgVarrefLp = nullptr;  // Parent varref
+    const AstNodeVarRef* m_mgVarrefRp = nullptr;  // Parent varref, nullptr = constant
     int64_t m_mgOffset = 0;  // Index offset
-    AstConst* m_mgConstRp = nullptr;  // Parent RHS constant, nullptr = sel
+    const AstConst* m_mgConstRp = nullptr;  // Parent RHS constant, nullptr = sel
     uint32_t m_mgIndexLo = 0;  // Merge range
     uint32_t m_mgIndexHi = 0;  // Merge range
 
@@ -80,7 +80,7 @@ private:
     }
     void mergeEnd() {
         if (!m_mgAssignps.empty()) {
-            uint32_t items = m_mgIndexHi - m_mgIndexLo + 1;
+            const uint32_t items = m_mgIndexHi - m_mgIndexLo + 1;
             UINFO(9, "End merge iter=" << items << " " << m_mgIndexHi << ":" << m_mgIndexLo << " "
                                        << m_mgOffset << " " << m_mgAssignps[0] << endl);
             if (items >= static_cast<uint32_t>(v3Global.opt.reloopLimit())) {
@@ -162,7 +162,7 @@ private:
         if (!m_cfuncp) return;
 
         // Left select WordSel or ArraySel
-        AstNodeSel* lselp = VN_CAST(nodep->lhsp(), NodeSel);
+        AstNodeSel* const lselp = VN_CAST(nodep->lhsp(), NodeSel);
         if (!lselp) {  // Not ever merged
             mergeEnd();
             return;
@@ -179,16 +179,16 @@ private:
         }
         const uint32_t lindex = lbitp->toUInt();
         // Of variable
-        AstNodeVarRef* const lvarrefp = VN_CAST(lselp->fromp(), NodeVarRef);
+        const AstNodeVarRef* const lvarrefp = VN_CAST(lselp->fromp(), NodeVarRef);
         if (!lvarrefp) {
             mergeEnd();
             return;
         }
 
         // RHS is a constant or a select
-        AstConst* const rconstp = VN_CAST(nodep->rhsp(), Const);
-        AstNodeSel* const rselp = VN_CAST(nodep->rhsp(), NodeSel);
-        AstNodeVarRef* rvarrefp = nullptr;
+        const AstConst* const rconstp = VN_CAST(nodep->rhsp(), Const);
+        const AstNodeSel* const rselp = VN_CAST(nodep->rhsp(), NodeSel);
+        const AstNodeVarRef* rvarrefp = nullptr;
         uint32_t rindex = lindex;
         if (rconstp) {  // Ok
         } else if (rselp) {

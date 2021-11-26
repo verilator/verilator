@@ -266,7 +266,7 @@ private:
         // Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
         if (!nodep->user2SetOnce()) {
             UINFO(4, "  ShiftFix  " << nodep << endl);
-            const AstConst* shiftp = VN_CAST(nodep->rhsp(), Const);
+            const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
             if (shiftp && shiftp->num().mostSetBitP1() > 32) {
                 shiftp->v3error(
                     "Unsupported: Shifting of by over 32-bit number isn't supported."
@@ -279,7 +279,7 @@ private:
                 AstNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 AstNode* constzerop;
-                int m1value
+                const int m1value
                     = nodep->widthMin() - 1;  // Constant of width-1; not changing dtype width
                 if (nodep->signedFlavor()) {
                     // Then over shifting gives the sign bit, not all zeros
@@ -295,10 +295,11 @@ private:
                 }
                 constzerop->dtypeFrom(nodep);  // unsigned
 
-                AstNode* constwidthp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                                    nodep->rhsp()->widthMin(), m1value);
+                AstNode* const constwidthp
+                    = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                   nodep->rhsp()->widthMin(), m1value);
                 constwidthp->dtypeFrom(nodep->rhsp());  // unsigned
-                AstCond* newp = new AstCond(
+                AstCond* const newp = new AstCond(
                     nodep->fileline(),
                     new AstGte(nodep->fileline(), constwidthp, nodep->rhsp()->cloneTree(false)),
                     nodep, constzerop);
@@ -381,7 +382,7 @@ private:
         iterateChildren(nodep);
         m_stmtp = nullptr;
         if (v3Global.opt.autoflush()) {
-            AstNode* searchp = nodep->nextp();
+            const AstNode* searchp = nodep->nextp();
             while (searchp && VN_IS(searchp, Comment)) searchp = searchp->nextp();
             if (searchp && VN_IS(searchp, Display)
                 && nodep->filep()->sameGateTree(VN_AS(searchp, Display)->filep())) {

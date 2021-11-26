@@ -121,7 +121,7 @@ public:
 // Vertex types
 
 class OrderEitherVertex VL_NOT_FINAL : public V3GraphVertex {
-    AstScope* m_scopep;  // Scope the vertex is in
+    AstScope* const m_scopep;  // Scope the vertex is in
     AstSenTree* m_domainp;  // Clock domain (nullptr = to be computed as we iterate)
     bool m_isFromInput = false;  // From input, or derived therefrom (conservatively false)
 protected:
@@ -172,7 +172,7 @@ public:
 };
 
 class OrderLogicVertex final : public OrderEitherVertex {
-    AstNode* m_nodep;
+    AstNode* const m_nodep;
 
 protected:
     OrderLogicVertex(V3Graph* graphp, const OrderLogicVertex& old)
@@ -200,7 +200,7 @@ public:
 };
 
 class OrderVarVertex VL_NOT_FINAL : public OrderEitherVertex {
-    AstVarScope* m_varScp;
+    AstVarScope* const m_varScp;
     bool m_isClock = false;  // Used as clock
     bool m_isDelayed = false;  // Set in a delayed assignment
 protected:
@@ -306,7 +306,7 @@ public:
 class OrderMoveVertex final : public V3GraphVertex {
     enum OrderMState : uint8_t { POM_WAIT, POM_READY, POM_MOVED };
 
-    OrderLogicVertex* m_logicp;
+    OrderLogicVertex* const m_logicp;
     OrderMState m_state;  // Movement state
     OrderMoveDomScope* m_domScopep;  // Domain/scope list information
 
@@ -376,10 +376,10 @@ class MTaskMoveVertex final : public V3GraphVertex {
     //  This could be more compact, since we know m_varp and m_logicp
     //  cannot both be set. Each MTaskMoveVertex represents a logic node
     //  or a var node, it can't be both.
-    OrderLogicVertex* m_logicp;  // Logic represented by this vertex
-    const OrderEitherVertex* m_varp;  // Var represented by this vertex
-    const AstScope* m_scopep;
-    const AstSenTree* m_domainp;
+    OrderLogicVertex* const m_logicp;  // Logic represented by this vertex
+    const OrderEitherVertex* const m_varp;  // Var represented by this vertex
+    const AstScope* const m_scopep;
+    const AstSenTree* const m_domainp;
 
 protected:
     friend class OrderVisitor;
@@ -449,7 +449,7 @@ public:
     // involving pre/pos variables
     virtual bool followComboConnected() const { return true; }
     static bool followComboConnected(const V3GraphEdge* edgep) {
-        const OrderEdge* oedgep = dynamic_cast<const OrderEdge*>(edgep);
+        const OrderEdge* const oedgep = dynamic_cast<const OrderEdge*>(edgep);
         if (!oedgep) v3fatalSrc("Following edge of non-OrderEdge type");
         return (oedgep->followComboConnected());
     }

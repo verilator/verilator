@@ -37,8 +37,8 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule* m_modp = nullptr;  // Current module
-    AstCFunc* m_cfuncp = nullptr;  // Current function
+    const AstNodeModule* m_modp = nullptr;  // Current module
+    const AstCFunc* m_cfuncp = nullptr;  // Current function
     int m_depth = 0;  // How deep in an expression
     int m_deepNum = 0;  // How many functions made
 
@@ -94,9 +94,9 @@ private:
         if (m_depth > v3Global.opt.compLimitBlocks()
             && !VN_IS(nodep, NodeCCall)) {  // Already done
             UINFO(4, "DeepBlocks " << m_depth << " " << nodep << endl);
-            const AstNode* backp = nodep->backp();  // Only for debug
+            const AstNode* const backp = nodep->backp();  // Only for debug
             if (debug() >= 9) backp->dumpTree(cout, "-   pre : ");
-            AstCFunc* funcp = createDeepFunc(nodep);
+            AstCFunc* const funcp = createDeepFunc(nodep);
             iterate(funcp);
             if (debug() >= 9) backp->dumpTree(cout, "-   post: ");
             if (debug() >= 9) funcp->dumpTree(cout, "-   func: ");

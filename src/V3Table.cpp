@@ -174,7 +174,7 @@ public:
     void simulateVarRefCb(AstVarRef* nodep) {
         // Called by TableSimulateVisitor on each unique varref encountered
         UINFO(9, "   SimVARREF " << nodep << endl);
-        AstVarScope* vscp = nodep->varScopep();
+        AstVarScope* const vscp = nodep->varScopep();
         if (nodep->access().isWriteOrRW()) {
             // We'll make the table with a separate natural alignment for each output var, so
             // always have 8, 16 or 32 bit widths, so use widthTotalBytes
@@ -265,7 +265,7 @@ private:
         // Populate the tables
         createTables(nodep, outputAssignedTableBuilder);
 
-        AstNode* stmtsp = createLookupInput(fl, indexVscp);
+        AstNode* const stmtsp = createLookupInput(fl, indexVscp);
         createOutputAssigns(nodep, stmtsp, indexVscp, outputAssignedTableBuilder.varScopep());
 
         // Link it in.
@@ -333,7 +333,7 @@ private:
         // First var in inVars becomes the LSB of the concat
         AstNode* concatp = nullptr;
         for (AstVarScope* invscp : m_inVarps) {
-            AstVarRef* refp = new AstVarRef(fl, invscp, VAccess::READ);
+            AstVarRef* const refp = new AstVarRef(fl, invscp, VAccess::READ);
             if (concatp) {
                 concatp = new AstConcat(fl, refp, concatp);
             } else {

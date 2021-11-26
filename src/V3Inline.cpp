@@ -271,7 +271,7 @@ private:
     // STATE
     std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
     AstNodeModule* const m_modp;  // Current module
-    AstCell* const m_cellp;  // Cell being cloned
+    const AstCell* const m_cellp;  // Cell being cloned
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -423,7 +423,7 @@ private:
                 break;
             }
             // If foo.bar, and foo is an interface, then need to search again for foo
-            string::size_type pos = tryname.rfind('.');
+            const string::size_type pos = tryname.rfind('.');
             if (pos == string::npos || pos == 0) {
                 break;
             } else {

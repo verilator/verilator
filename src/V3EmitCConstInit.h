@@ -72,7 +72,7 @@ protected:
     virtual void visit(AstConst* nodep) override {
         const V3Number& num = nodep->num();
         UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
-        AstNodeDType* const dtypep = nodep->dtypep();
+        const AstNodeDType* const dtypep = nodep->dtypep();
         if (num.isString()) {
             // Note: putsQuoted does not track indentation, so we use this instead
             puts("\"");

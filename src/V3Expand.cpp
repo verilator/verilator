@@ -678,10 +678,10 @@ private:
                 newp = new AstNegate{fl, lhsp};
             } else {
                 UINFO(8, "    REPLICATE " << nodep << endl);
-                const AstConst* constp = VN_AS(nodep->rhsp(), Const);
+                const AstConst* const constp = VN_AS(nodep->rhsp(), Const);
                 UASSERT_OBJ(constp, nodep,
                             "Replication value isn't a constant.  Checked earlier!");
-                uint32_t times = constp->toUInt();
+                const uint32_t times = constp->toUInt();
                 if (nodep->isQuad() && !lhsp->isQuad()) { lhsp = new AstCCast{fl, lhsp, nodep}; }
                 newp = lhsp->cloneTree(true);
                 for (unsigned repnum = 1; repnum < times; repnum++) {

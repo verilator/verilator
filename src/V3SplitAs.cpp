@@ -70,7 +70,7 @@ class SplitAsCleanVisitor final : public SplitAsBaseVisitor {
 private:
     // STATE
     AstVarScope* const m_splitVscp;  // Variable we want to split
-    bool m_modeMatch;  // Remove matching Vscp, else non-matching
+    const bool m_modeMatch;  // Remove matching Vscp, else non-matching
     bool m_keepStmt = false;  // Current Statement must be preserved
     bool m_matches = false;  // Statement below has matching lvalue reference
 
@@ -144,11 +144,11 @@ private:
         newp->user1(true);  // So we don't clone it again
         nodep->addNextHere(newp);
         {  // Delete stuff we don't want in old
-            SplitAsCleanVisitor visitor{nodep, m_splitVscp, false};
+            const SplitAsCleanVisitor visitor{nodep, m_splitVscp, false};
             if (debug() >= 9) nodep->dumpTree(cout, "-out0: ");
         }
         {  // Delete stuff we don't want in new
-            SplitAsCleanVisitor visitor{newp, m_splitVscp, true};
+            const SplitAsCleanVisitor visitor{newp, m_splitVscp, true};
             if (debug() >= 9) newp->dumpTree(cout, "-out1: ");
         }
     }
@@ -159,7 +159,7 @@ private:
         const AstVarScope* lastSplitVscp = nullptr;
         while (!nodep->user1()) {
             // Find any splittable variables
-            SplitAsFindVisitor visitor{nodep};
+            const SplitAsFindVisitor visitor{nodep};
             m_splitVscp = visitor.splitVscp();
             if (m_splitVscp && m_splitVscp == lastSplitVscp) {
                 // We did this last time!  Something's stuck!

@@ -89,7 +89,7 @@ private:
 
     // STATE
     AstActive* m_activep = nullptr;  // Current activate
-    AstCFunc* m_cfuncp = nullptr;  // Current public C Function
+    const AstCFunc* m_cfuncp = nullptr;  // Current public C Function
     AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
@@ -106,7 +106,7 @@ private:
         if (blocking) nodep->user5(true);
         AstVarScope* const vscp = nodep->varScopep();
         // UINFO(4, " MVU " << blocking << " " << nodep << endl);
-        AstNode* const lastrefp = vscp->user5p();
+        const AstNode* const lastrefp = vscp->user5p();
         if (!lastrefp) {
             vscp->user5p(nodep);
         } else {
@@ -275,7 +275,7 @@ private:
             // vval = constant, can just push constant into where we use it
             valreadp = nodep->rhsp()->unlinkFrBack();
         } else {
-            string valvarname
+            const string valvarname
                 = (string("__Vdlyvval__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             AstVarScope* const valvscp
                 = createVarSc(varrefp->varScopep(), valvarname, 0, nodep->rhsp()->dtypep());
@@ -295,7 +295,7 @@ private:
             setvscp = VN_AS(nodep->user3p(), VarScope);
             ++m_statSharedSet;
         } else {  // Create new one
-            string setvarname
+            const string setvarname
                 = (string("__Vdlyvset__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, nullptr);
             setinitp = new AstAssignPre(nodep->fileline(),

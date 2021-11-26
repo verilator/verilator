@@ -250,15 +250,15 @@ private:
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment
-    AstNodeFTask* m_taskp = nullptr;  // Current task
-    AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
+    const AstNodeFTask* m_taskp = nullptr;  // Current task
+    const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
         if (!(which_user == 1 ? nodep->user1p() : nodep->user2p())) {
-            UndrivenVarEntry* entryp = new UndrivenVarEntry(nodep);
+            UndrivenVarEntry* const entryp = new UndrivenVarEntry(nodep);
             // UINFO(9," Associate u="<<which_user<<" "<<cvtToHex(this)<<" "<<nodep->name()<<endl);
             m_entryps[which_user].push_back(entryp);
             if (which_user == 1) {
@@ -270,14 +270,14 @@ private:
             }
             return entryp;
         } else {
-            UndrivenVarEntry* entryp = reinterpret_cast<UndrivenVarEntry*>(
+            UndrivenVarEntry* const entryp = reinterpret_cast<UndrivenVarEntry*>(
                 which_user == 1 ? nodep->user1p() : nodep->user2p());
             return entryp;
         }
     }
 
     void warnAlwCombOrder(AstNodeVarRef* nodep) {
-        AstVar* varp = nodep->varp();
+        AstVar* const varp = nodep->varp();
         if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
             && !m_inBBox  // We may have falsely considered a SysIgnore as a driver
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
@@ -297,7 +297,7 @@ private:
             // for module-wide undriven etc.
             // For non-combo always, run both usr==1 for above, and also
             // usr==2 for always-only checks.
-            UndrivenVarEntry* entryp = getEntryp(nodep, usr);
+            UndrivenVarEntry* const entryp = getEntryp(nodep, usr);
             if (nodep->isNonOutput() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->drivenWhole();
@@ -321,11 +321,11 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstSel* nodep) override {
-        AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
-        AstConst* constp = VN_CAST(nodep->lsbp(), Const);
+        AstNodeVarRef* const varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
+        AstConst* const constp = VN_CAST(nodep->lsbp(), Const);
         if (varrefp && constp && !constp->num().isFourState()) {
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
-                UndrivenVarEntry* entryp = getEntryp(varrefp->varp(), usr);
+                UndrivenVarEntry* const entryp = getEntryp(varrefp->varp(), usr);
                 const int lsb = constp->toUInt();
                 if (m_inBBox || varrefp->access().isWriteOrRW()) {
                     // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
@@ -364,7 +364,7 @@ private:
             }
         }
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
-            UndrivenVarEntry* entryp = getEntryp(nodep->varp(), usr);
+            UndrivenVarEntry* const entryp = getEntryp(nodep->varp(), usr);
             const bool fdrv = nodep->access().isWriteOrRW()
                               && nodep->varp()->attrFileDescr();  // FD's are also being read from
             if (m_inBBox || nodep->access().isWriteOrRW()) {

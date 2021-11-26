@@ -34,7 +34,7 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Last module
-    AstBegin* m_beginp = nullptr;  // Last begin
+    const AstBegin* m_beginp = nullptr;  // Last begin
     unsigned m_monitorNum = 0;  // Global $monitor numbering (not per module)
     AstVar* m_monitorNumVarp = nullptr;  // $monitor number variable
     AstVar* m_monitorOffVarp = nullptr;  // $monitoroff variable

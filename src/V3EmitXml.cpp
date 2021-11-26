@@ -409,7 +409,7 @@ private:
              << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name() << "\""
              << " submodname=\"" << nodep->modName() << "\""
              << " hier=\"" << m_hier + nodep->name() << "\"";
-        std::string hier = m_hier;
+        const std::string hier = m_hier;
         m_hier += nodep->name() + ".";
         m_hasChildren = false;
         iterateChildren(nodep->modp());
@@ -455,10 +455,10 @@ void V3EmitXml::emitxml() {
     }
     {
         std::stringstream sstr;
-        ModuleFilesXmlVisitor moduleFilesVisitor{v3Global.rootp(), sstr};
-        HierCellsXmlVisitor cellsVisitor{v3Global.rootp(), sstr};
+        const ModuleFilesXmlVisitor moduleFilesVisitor{v3Global.rootp(), sstr};
+        const HierCellsXmlVisitor cellsVisitor{v3Global.rootp(), sstr};
         of.puts(sstr.str());
     }
-    EmitXmlFileVisitor visitor{v3Global.rootp(), &of};
+    const EmitXmlFileVisitor visitor{v3Global.rootp(), &of};
     of.puts("</verilator_xml>\n");
 }

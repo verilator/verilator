@@ -220,7 +220,7 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, bool asRef) {
 void EmitCBaseVisitor::emitModCUse(const AstNodeModule* modp, VUseType useType) {
     string nl;
     for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
-        if (AstCUse* usep = VN_CAST(itemp, CUse)) {
+        if (AstCUse* const usep = VN_CAST(itemp, CUse)) {
             if (usep->useType() == useType) {
                 if (usep->useType().isInclude()) {
                     puts("#include \"" + prefixNameProtect(usep) + ".h\"\n");
@@ -238,7 +238,7 @@ void EmitCBaseVisitor::emitModCUse(const AstNodeModule* modp, VUseType useType) 
 void EmitCBaseVisitor::emitTextSection(const AstNodeModule* modp, AstType type) {
     int last_line = -999;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (const AstNodeText* textp = VN_CAST(nodep, NodeText)) {
+        if (const AstNodeText* const textp = VN_CAST(nodep, NodeText)) {
             if (nodep->type() == type) {
                 if (last_line != nodep->fileline()->lineno()) {
                     if (last_line < 0) {

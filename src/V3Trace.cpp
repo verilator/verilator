@@ -215,7 +215,7 @@ private:
         // Find if there are any duplicates
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (TraceTraceVertex* const vvertexp = dynamic_cast<TraceTraceVertex*>(itp)) {
-                AstTraceDecl* const nodep = vvertexp->nodep();
+                const AstTraceDecl* const nodep = vvertexp->nodep();
                 if (nodep->valuep() && !vvertexp->duplicatep()) {
                     const auto dupit = dupFinder.findDuplicate(nodep->valuep());
                     if (dupit != dupFinder.end()) {
@@ -387,7 +387,7 @@ private:
             for (; it != end && it->first == actSet; ++it) {
                 if (!it->second->duplicatep()) {
                     uint32_t cost = 0;
-                    AstTraceDecl* const declp = it->second->nodep();
+                    const AstTraceDecl* const declp = it->second->nodep();
                     // The number of comparisons required by tracep->chg*
                     cost += declp->isWide() ? declp->codeInc() : 1;
                     // Arrays are traced by element
@@ -532,7 +532,7 @@ private:
                 }
             }
             // Add call to top function
-            AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
+            AstCCall* const callp = new AstCCall(funcp->fileline(), funcp);
             callp->argTypes("tracep");
             topFuncp->addStmtsp(callp);
         }
@@ -562,7 +562,7 @@ private:
                     // This is a duplicate trace node. We will assign the signal
                     // number to the canonical node, and emit this as an alias, so
                     // no need to create a TraceInc node.
-                    AstTraceDecl* const canonDeclp = canonVtxp->nodep();
+                    const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
                     UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp,
                                 "Canonical node is a duplicate");
                     UASSERT_OBJ(canonDeclp->code() != 0, canonDeclp,

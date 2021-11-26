@@ -126,7 +126,7 @@ protected:
     EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
-    AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
+    const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
 
 public:
     // METHODS
@@ -229,7 +229,7 @@ public:
         puts(nodep->nameProtect() + "\\n\"); );\n");
 
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
-            if (AstVar* varp = VN_CAST(subnodep, Var)) {
+            if (AstVar* const varp = VN_CAST(subnodep, Var)) {
                 if (varp->isFuncReturn()) emitVarDecl(varp);
             }
         }
@@ -265,7 +265,7 @@ public:
     virtual void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;
-        if (AstSel* selp = VN_CAST(nodep->lhsp(), Sel)) {
+        if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
             if (selp->widthMin() == 1) {
                 putbs("VL_ASSIGNBIT_");
                 emitIQW(selp->fromp());
@@ -292,7 +292,7 @@ public:
                 iterateAndNextNull(selp->fromp());
                 puts(", ");
             }
-        } else if (AstGetcRefN* selp = VN_CAST(nodep->lhsp(), GetcRefN)) {
+        } else if (const AstGetcRefN* const selp = VN_CAST(nodep->lhsp(), GetcRefN)) {
             iterateAndNextNull(selp->lhsp());
             puts(" = ");
             putbs("VL_PUTC_N(");
@@ -300,7 +300,7 @@ public:
             puts(", ");
             iterateAndNextNull(selp->rhsp());
             puts(", ");
-        } else if (AstVar* varp = AstVar::scVarRecurse(nodep->lhsp())) {
+        } else if (AstVar* const varp = AstVar::scVarRecurse(nodep->lhsp())) {
             putbs("VL_ASSIGN_");  // Set a systemC variable
             emitScIQW(varp);
             emitIQW(nodep);
@@ -308,7 +308,7 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ",");
             iterateAndNextNull(nodep->lhsp());
             puts(", ");
-        } else if (AstVar* varp = AstVar::scVarRecurse(nodep->rhsp())) {
+        } else if (AstVar* const varp = AstVar::scVarRecurse(nodep->rhsp())) {
             putbs("VL_ASSIGN_");  // Get a systemC variable
             emitIQW(nodep);
             emitScIQW(varp);
@@ -348,7 +348,7 @@ public:
     virtual void visit(AstAssocSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         putbs(".at(");
-        AstAssocArrayDType* adtypep = VN_AS(nodep->fromp()->dtypep(), AssocArrayDType);
+        AstAssocArrayDType* const adtypep = VN_AS(nodep->fromp()->dtypep(), AssocArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
         if (adtypep->keyDTypep()->isWide()) {
             emitCvtWideArray(nodep->bitp(), nodep->fromp());
@@ -429,11 +429,11 @@ public:
     virtual void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
         putbs("[=](");
-        if (auto* argrefp = nodep->indexArgRefp()) {
+        if (auto* const argrefp = nodep->indexArgRefp()) {
             putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
             puts(",");
         }
-        if (auto* argrefp = nodep->valueArgRefp()) {
+        if (auto* const argrefp = nodep->valueArgRefp()) {
             putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
         // Probably fragile, V3Task may need to convert to a AstCReturn
@@ -632,12 +632,12 @@ public:
         puts(cvtToStr(nodep->memp()->dtypep()->subDTypep()->widthMin()));
         uint32_t array_lo = 0;
         {
-            const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
+            const AstVarRef* const varrefp = VN_CAST(nodep->memp(), VarRef);
             if (!varrefp) {
                 nodep->v3error(nodep->verilogKwd() << " loading non-variable");
             } else if (VN_IS(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)) {
                 // nodep->memp() below will when verilated code is compiled create a C++ template
-            } else if (const AstUnpackArrayDType* adtypep
+            } else if (const AstUnpackArrayDType* const adtypep
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
                 putbs(", ");
                 puts(cvtToStr(varrefp->varp()->dtypep()->arrayUnpackedElements()));
@@ -716,11 +716,11 @@ public:
         uint32_t array_lo = 0;
         uint32_t array_size = 0;
         {
-            const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
+            const AstVarRef* const varrefp = VN_CAST(nodep->memp(), VarRef);
             if (!varrefp) {
                 nodep->v3error(nodep->verilogKwd() << " loading non-variable");
             } else if (VN_CAST(varrefp->varp()->dtypeSkipRefp(), BasicDType)) {
-            } else if (const AstUnpackArrayDType* adtypep
+            } else if (const AstUnpackArrayDType* const adtypep
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
                 array_lo = adtypep->lo();
                 array_size = adtypep->elementsConst();
@@ -980,7 +980,7 @@ public:
         if (nodep->lhsp()->isWide()) {
             visit(static_cast<AstNodeUniop*>(nodep));
         } else {
-            AstVarRef* const vrefp = VN_CAST(nodep->lhsp(), VarRef);
+            const AstVarRef* const vrefp = VN_CAST(nodep->lhsp(), VarRef);
             const int widthPow2 = vrefp ? vrefp->varp()->dtypep()->widthPow2()
                                         : nodep->lhsp()->dtypep()->widthPow2();
             UASSERT_OBJ(widthPow2 > 1, nodep,
@@ -1064,8 +1064,8 @@ public:
     virtual void visit(AstStreamL* nodep) override {
         // Attempt to use a "fast" stream function for slice size = power of 2
         if (!nodep->isWide()) {
-            uint32_t isPow2 = VN_AS(nodep->rhsp(), Const)->num().countOnes() == 1;
-            uint32_t sliceSize = VN_AS(nodep->rhsp(), Const)->toUInt();
+            const uint32_t isPow2 = VN_AS(nodep->rhsp(), Const)->num().countOnes() == 1;
+            const uint32_t sliceSize = VN_AS(nodep->rhsp(), Const)->toUInt();
             if (isPow2 && sliceSize <= (nodep->isQuad() ? sizeof(uint64_t) : sizeof(uint32_t))) {
                 puts("VL_STREAML_FAST_");
                 emitIQW(nodep);
@@ -1077,7 +1077,7 @@ public:
                 puts(",");
                 iterateAndNextNull(nodep->lhsp());
                 puts(", ");
-                uint32_t rd_log2 = V3Number::log2b(VN_AS(nodep->rhsp(), Const)->toUInt());
+                const uint32_t rd_log2 = V3Number::log2b(VN_AS(nodep->rhsp(), Const)->toUInt());
                 puts(cvtToStr(rd_log2) + ")");
                 return;
             }
@@ -1133,7 +1133,7 @@ public:
     }
     virtual void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now
-        AstCFunc* const funcp = nodep->funcp();
+        const AstCFunc* const funcp = nodep->funcp();
         UASSERT_OBJ(funcp->isLoose(), nodep, "Cannot take address of non-loose method");
         puts("&");
         puts(funcNameProtect(funcp));
@@ -1205,7 +1205,7 @@ public:
         }
     }
     virtual void visit(AstCReset* nodep) override {
-        AstVar* varp = nodep->varrefp()->varp();
+        AstVar* const varp = nodep->varrefp()->varp();
         emitVarReset(varp);
     }
     virtual void visit(AstExecGraph* nodep) override {
