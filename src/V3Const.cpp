@@ -480,10 +480,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             incrOps(andp, __LINE__);
 
             // Mark all bits checked in this reduction
-            const int maxBitIdx = std::min(ref.m_lsb + maskNum.width(), ref.width());
-            for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
+            for (int bitIdx = ref.m_lsb; bitIdx < ref.width(); ++bitIdx) {
                 const int maskIdx = bitIdx - ref.m_lsb;
-                if (maskNum.bitIs0(maskIdx)) continue;
+                if (maskIdx >= maskNum.width() || maskNum.bitIs0(maskIdx)) continue;
                 // Set true, m_polarity takes care of the entire parity
                 m_bitPolarities.emplace_back(ref, true, bitIdx);
             }
@@ -572,10 +571,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 incrOps(andp, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.m_lsb + compNum.width(), ref.width());
-                for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
+                for (int bitIdx = ref.m_lsb; bitIdx < ref.width(); ++bitIdx) {
                     const int maskIdx = bitIdx - ref.m_lsb;
-                    if (maskNum.bitIs0(maskIdx)) continue;
+                    if (maskIdx >= maskNum.width() || maskNum.bitIs0(maskIdx)) continue;
                     const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
                     m_bitPolarities.emplace_back(ref, polarity, bitIdx);
                 }
@@ -588,10 +586,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 incrOps(nodep, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.m_lsb + compNum.width(), ref.width());
-                for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
+                for (int bitIdx = ref.m_lsb; bitIdx < ref.width(); ++bitIdx) {
                     const int maskIdx = bitIdx - ref.m_lsb;
-                    const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
+                    const bool bitIs1 = maskIdx < compNum.width() && compNum.bitIs1(maskIdx);
+                    const bool polarity = bitIs1 != maskFlip;
                     m_bitPolarities.emplace_back(ref, polarity, bitIdx);
                 }
             }
