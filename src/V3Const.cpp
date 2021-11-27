@@ -482,7 +482,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             // Mark all bits checked in this reduction
             for (int bitIdx = ref.m_lsb; bitIdx < ref.width(); ++bitIdx) {
                 const int maskIdx = bitIdx - ref.m_lsb;
-                if (maskIdx >= maskNum.width() || maskNum.bitIs0(maskIdx)) continue;
+                if (maskIdx >= maskNum.width()) break;
+                if (maskNum.bitIs0(maskIdx)) continue;
                 // Set true, m_polarity takes care of the entire parity
                 m_bitPolarities.emplace_back(ref, true, bitIdx);
             }
@@ -573,7 +574,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 // Mark all bits checked by this comparison
                 for (int bitIdx = ref.m_lsb; bitIdx < ref.width(); ++bitIdx) {
                     const int maskIdx = bitIdx - ref.m_lsb;
-                    if (maskIdx >= maskNum.width() || maskNum.bitIs0(maskIdx)) continue;
+                    if (maskIdx >= maskNum.width()) break;
+                    if (maskNum.bitIs0(maskIdx)) continue;
                     const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
                     m_bitPolarities.emplace_back(ref, polarity, bitIdx);
                 }
