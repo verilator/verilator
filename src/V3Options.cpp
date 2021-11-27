@@ -111,7 +111,7 @@ public:
 V3LangCode::V3LangCode(const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
     for (int codei = V3LangCode::L_ERROR; codei < V3LangCode::_ENUM_END; ++codei) {
-        V3LangCode code = V3LangCode(codei);
+        const V3LangCode code = V3LangCode(codei);
         if (0 == VL_STRCASECMP(textp, code.ascii())) {
             m_e = code;
             return;
@@ -128,7 +128,7 @@ VTimescale::VTimescale(const string& value, bool& badr)
     badr = true;
     const string spaceless = VString::removeWhitespace(value);
     for (int i = TS_100S; i < _ENUM_END; ++i) {
-        VTimescale ts(i);
+        const VTimescale ts(i);
         if (spaceless == ts.ascii()) {
             badr = false;
             m_e = ts.m_e;
@@ -236,7 +236,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
     for (; isspace(*cp); ++cp) {}
     const char* const unitp = cp;
     for (; *cp && *cp != '/'; ++cp) {}
-    string unitStr(unitp, cp - unitp);
+    const string unitStr(unitp, cp - unitp);
     for (; isspace(*cp); ++cp) {}
     string precStr;
     if (*cp == '/') {
@@ -253,7 +253,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
     }
 
     bool unitbad;
-    VTimescale unit(unitStr, unitbad /*ref*/);
+    const VTimescale unit(unitStr, unitbad /*ref*/);
     if (unitbad && !(unitStr.empty() && allowEmpty)) {
         fl->v3error("`timescale timeunit syntax error: '" << unitStr << "'");
         return;
@@ -471,7 +471,7 @@ string V3Options::fileExists(const string& filename) {
         }
     }
     // Find it
-    std::set<string>* filesetp = &(diriter->second);
+    const std::set<string>* filesetp = &(diriter->second);
     const auto fileiter = filesetp->find(basename);
     if (fileiter == filesetp->end()) {
         return "";  // Not found
@@ -500,9 +500,9 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 1: Delete the option which has no argument
 // 2: Delete the option and its argument
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
-    if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
-        || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
-        || opt == "threads" || opt == "top-module" || opt == "v") {
+    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "j"
+        || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib"
+        || opt == "protect-key" || opt == "threads" || opt == "top-module" || opt == "v") {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
@@ -732,11 +732,6 @@ void V3Options::notify() {
     if (m_hierChild && m_hierBlocks.empty()) {
         cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
     }
-    if (m_hierarchical && m_protectLib.empty() && m_protectKey.empty()) {
-        // Key for hierarchical Verilation is fixed to be ccache friendly when the aim of this run
-        // is not to create protec-lib.
-        m_protectKey = "VL-KEY-HIERARCHICAL";
-    }
 
     if (protectIds()) {
         if (allPublic()) {
@@ -904,7 +899,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     }
 
     V3OptionParser parser;
-    V3OptionParser::AppendHelper DECL_OPTION{parser};
+    const V3OptionParser::AppendHelper DECL_OPTION{parser};
     V3OPTION_PARSER_DECL_TAGS;
 
     const auto callStrSetter = [this](void (V3Options::*cbStr)(const string&)) {
@@ -1096,7 +1091,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
     DECL_OPTION("-hierarchical-block", CbVal, [this](const char* valp) {
-        V3HierarchicalBlockOption opt(valp);
+        const V3HierarchicalBlockOption opt(valp);
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", OnOff, &m_hierChild);
@@ -1113,7 +1108,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
     const auto setLang = [this, fl](const char* valp) {
-        V3LangCode optval = V3LangCode(valp);
+        const V3LangCode optval = V3LangCode(valp);
         if (optval.legal()) {
             m_defaultLanguage = optval;
         } else {
@@ -1126,6 +1121,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     };
     DECL_OPTION("-default-language", CbVal, setLang);
     DECL_OPTION("-language", CbVal, setLang);
+    DECL_OPTION("-lib-create", Set, &m_libCreate);
     DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
     DECL_OPTION("-l2-name", Set, &m_l2Name);
     DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
@@ -1242,7 +1238,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {
-        m_protectLib = valp;
+        m_libCreate = valp;
         m_protectIds = true;
     });
     DECL_OPTION("-public", OnOff, &m_public);
@@ -1377,7 +1373,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         FileLine::globalWarnStyleOff(false);
     });
     DECL_OPTION("-Werror-", CbPartialMatch, [this, fl](const char* optp) {
-        V3ErrorCode code(optp);
+        const V3ErrorCode code(optp);
         if (code == V3ErrorCode::EC_ERROR) {
             if (!isFuture(optp)) fl->v3fatal("Unknown warning specified: -Werror-" << optp);
         } else {

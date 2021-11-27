@@ -43,7 +43,7 @@ private:
     using LinenoSet = std::set<int>;
 
     struct ToggleEnt {
-        string m_comment;  // Comment for coverage dump
+        const string m_comment;  // Comment for coverage dump
         AstNode* m_varRefp;  // How to get to this element
         AstNode* m_chgRefp;  // How to get to this element
         ToggleEnt(const string& comment, AstNode* vp, AstNode* cp)
@@ -73,7 +73,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstIf::user1()                  -> bool.  True indicates ifelse processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     CheckState m_state;  // State save-restored on each new coverage scope/block
@@ -209,7 +209,7 @@ private:
 
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* const origModp = m_modp;
+        const AstNodeModule* const origModp = m_modp;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
         {
@@ -245,9 +245,9 @@ private:
                                   linesCov(m_state, nodep), 0, traceNameForLine(nodep, "block"));
                 if (AstNodeProcedure* const itemp = VN_CAST(nodep, NodeProcedure)) {
                     itemp->addStmtp(newp);
-                } else if (AstNodeFTask* itemp = VN_CAST(nodep, NodeFTask)) {
+                } else if (AstNodeFTask* const itemp = VN_CAST(nodep, NodeFTask)) {
                     itemp->addStmtsp(newp);
-                } else if (AstWhile* itemp = VN_CAST(nodep, While)) {
+                } else if (AstWhile* const itemp = VN_CAST(nodep, While)) {
                     itemp->addBodysp(newp);
                 } else {
                     nodep->v3fatalSrc("Bad node type");
@@ -324,7 +324,7 @@ private:
             } else {
                 toggleVarBottom(above, varp);
             }
-        } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
@@ -336,9 +336,9 @@ private:
                                  chgVarp);
                 newent.cleanup();
             }
-        } else if (AstPackArrayDType* adtypep = VN_CAST(dtypep, PackArrayDType)) {
+        } else if (const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
-                AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
+                const AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
                                  new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
@@ -349,7 +349,7 @@ private:
                                  chgVarp);
                 newent.cleanup();
             }
-        } else if (AstStructDType* adtypep = VN_CAST(dtypep, StructDType)) {
+        } else if (const AstStructDType* const adtypep = VN_CAST(dtypep, StructDType)) {
             // For now it's packed, so similar to array
             for (AstMemberDType* itemp = adtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
@@ -363,9 +363,9 @@ private:
                 toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);
                 newent.cleanup();
             }
-        } else if (AstUnionDType* adtypep = VN_CAST(dtypep, UnionDType)) {
+        } else if (const AstUnionDType* const adtypep = VN_CAST(dtypep, UnionDType)) {
             // Arbitrarily handle only the first member of the union
-            if (AstMemberDType* const itemp = adtypep->membersp()) {
+            if (const AstMemberDType* const itemp = adtypep->membersp()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                 ToggleEnt newent(above.m_comment + string(".") + itemp->name(),
                                  above.m_varRefp->cloneTree(true),
@@ -543,6 +543,6 @@ public:
 
 void V3Coverage::coverage(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CoverageVisitor visitor{rootp}; }  // Destruct before checking
+    { CoverageVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coverage", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

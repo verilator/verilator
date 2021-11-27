@@ -39,7 +39,7 @@ public:
     enum en : uint8_t { MODULE, CLASS, COVERAGE };
 
 private:
-    enum en m_e;
+    const enum en m_e;
 
 public:
     // cppcheck-suppress noExplicitConstructor
@@ -139,7 +139,8 @@ void V3CCtors::evalAsserts() {
     for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
         if (AstVar* const varp = VN_CAST(np, Var)) {
             if (varp->isPrimaryInish() && !varp->isSc()) {
-                if (const AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
+                if (const AstBasicDType* const basicp
+                    = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
                     const int storedWidth = basicp->widthAlignBytes() * 8;
                     const int lastWordWidth = varp->width() % storedWidth;
                     if (lastWordWidth != 0) {

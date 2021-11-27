@@ -80,7 +80,7 @@ extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);
 #endif
 extern IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
-    vluint64_t rnd = vl_rand64();
+    const vluint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {
         // (hi - lo + 1) can be zero when hi is UINT_MAX and lo is zero
         if (VL_UNLIKELY(hi - lo + 1 == 0)) return rnd;
@@ -410,7 +410,7 @@ static inline void VL_ASSIGNBIT_QI(int, int bit, QData& lhsr, QData rhs) VL_PURE
     lhsr = ((lhsr & ~(1ULL << VL_BITBIT_Q(bit))) | (static_cast<QData>(rhs) << VL_BITBIT_Q(bit)));
 }
 static inline void VL_ASSIGNBIT_WI(int, int bit, WDataOutP owp, IData rhs) VL_MT_SAFE {
-    EData orig = owp[VL_BITWORD_E(bit)];
+    const EData orig = owp[VL_BITWORD_E(bit)];
     owp[VL_BITWORD_E(bit)] = ((orig & ~(VL_EUL(1) << VL_BITBIT_E(bit)))
                               | (static_cast<EData>(rhs) << VL_BITBIT_E(bit)));
 }
@@ -696,11 +696,11 @@ static inline IData VL_COUNTONES_W(int words, WDataInP const lwp) VL_MT_SAFE {
 // EMIT_RULE: VL_COUNTBITS_II:  oclean = false; lhs clean
 static inline IData VL_COUNTBITS_I(int lbits, IData lhs, IData ctrl0, IData ctrl1,
                                    IData ctrl2) VL_PURE {
-    int ctrlSum = (ctrl0 & 0x1) + (ctrl1 & 0x1) + (ctrl2 & 0x1);
+    const int ctrlSum = (ctrl0 & 0x1) + (ctrl1 & 0x1) + (ctrl2 & 0x1);
     if (ctrlSum == 3) {
         return VL_COUNTONES_I(lhs);
     } else if (ctrlSum == 0) {
-        IData mask = (lbits == 32) ? -1 : ((1 << lbits) - 1);
+        const IData mask = (lbits == 32) ? -1 : ((1 << lbits) - 1);
         return VL_COUNTONES_I(~lhs & mask);
     } else {
         return (lbits == 32) ? 32 : lbits;
@@ -771,7 +771,7 @@ static inline IData VL_CLOG2_Q(QData lhs) VL_PURE {
     return shifts;
 }
 static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_MT_SAFE {
-    EData adjust = (VL_COUNTONES_W(words, lwp) == 1) ? 0 : 1;
+    const EData adjust = (VL_COUNTONES_W(words, lwp) == 1) ? 0 : 1;
     for (int i = words - 1; i >= 0; --i) {
         if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
             for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
@@ -943,7 +943,7 @@ static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP const lwp
 static inline void VL_NEGATE_INPLACE_W(int words, WDataOutP owp_lwp) VL_MT_SAFE {
     EData carry = 1;
     for (int i = 0; i < words; ++i) {
-        EData word = ~owp_lwp[i] + carry;
+        const EData word = ~owp_lwp[i] + carry;
         carry = (word < ~owp_lwp[i]);
         owp_lwp[i] = word;
     }
@@ -1022,13 +1022,13 @@ static inline WDataOutP VL_MULS_WWW(int, int lbits, int, WDataOutP owp, WDataInP
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP lwusp = lwp;
     WDataInP rwusp = rwp;
-    EData lneg = VL_SIGN_E(lbits, lwp[words - 1]);
+    const EData lneg = VL_SIGN_E(lbits, lwp[words - 1]);
     if (lneg) {  // Negate lhs
         lwusp = lwstore;
         VL_NEGATE_W(words, lwstore, lwp);
         lwstore[words - 1] &= VL_MASK_E(lbits);  // Clean it
     }
-    EData rneg = VL_SIGN_E(lbits, rwp[words - 1]);
+    const EData rneg = VL_SIGN_E(lbits, rwp[words - 1]);
     if (rneg) {  // Negate rhs
         rwusp = rwstore;
         VL_NEGATE_W(words, rwstore, rwp);
@@ -1496,7 +1496,8 @@ static inline WDataOutP VL_STREAML_WWI(int, int lbits, int, WDataOutP owp, WData
         for (int sbit = 0; sbit < ssize && sbit < lbits - istart; ++sbit) {
             // Extract a single bit from lwp and shift it to the correct
             // location for owp.
-            EData bit = (VL_BITRSHIFT_W(lwp, (istart + sbit)) & 1) << VL_BITBIT_E(ostart + sbit);
+            const EData bit = (VL_BITRSHIFT_W(lwp, (istart + sbit)) & 1)
+                              << VL_BITBIT_E(ostart + sbit);
             owp[VL_BITWORD_E(ostart + sbit)] |= bit;
         }
     }
@@ -1766,7 +1767,8 @@ static inline WDataOutP VL_SHIFTRS_WWI(int obits, int lbits, int, WDataOutP owp,
         owp[lmsw] &= VL_MASK_E(lbits);
     } else {
         const int loffset = rd & VL_SIZEBITS_E;
-        int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword (know loffset!=0)
+        const int nbitsonright
+            = VL_EDATASIZE - loffset;  // bits that end up in lword (know loffset!=0)
         // Middle words
         const int words = VL_WORDS_I(obits - rd);
         for (int i = 0; i < words; ++i) {
@@ -1842,7 +1844,7 @@ static inline QData VL_SHIFTRS_QQQ(int obits, int lbits, int rbits, QData lhs, Q
 
 static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP const lwp,
                                    IData rd) VL_MT_SAFE {
-    int word = VL_BITWORD_E(rd);
+    const int word = VL_BITWORD_E(rd);
     if (VL_UNLIKELY(rd > static_cast<IData>(lbits))) {
         return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
         // We return all 1's as that's more likely to find bugs (?) than 0's.
@@ -1860,14 +1862,14 @@ static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP const lwp,
 
 static inline IData VL_SEL_IWII(int, int lbits, int, int, WDataInP const lwp, IData lsb,
                                 IData width) VL_MT_SAFE {
-    int msb = lsb + width - 1;
+    const int msb = lsb + width - 1;
     if (VL_UNLIKELY(msb >= lbits)) {
         return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
     } else if (VL_BITWORD_E(msb) == VL_BITWORD_E(static_cast<int>(lsb))) {
         return VL_BITRSHIFT_W(lwp, lsb);
     } else {
         // 32 bit extraction may span two words
-        int nbitsfromlow = VL_EDATASIZE - VL_BITBIT_E(lsb);  // bits that come from low word
+        const int nbitsfromlow = VL_EDATASIZE - VL_BITBIT_E(lsb);  // bits that come from low word
         return ((lwp[VL_BITWORD_E(msb)] << nbitsfromlow) | VL_BITRSHIFT_W(lwp, lsb));
     }
 }
@@ -1886,7 +1888,7 @@ static inline QData VL_SEL_QWII(int, int lbits, int, int, WDataInP const lwp, ID
         return (hi << nbitsfromlow) | lo;
     } else {
         // 64 bit extraction may span three words
-        int nbitsfromlow = VL_EDATASIZE - VL_BITBIT_E(lsb);
+        const int nbitsfromlow = VL_EDATASIZE - VL_BITBIT_E(lsb);
         const QData hi = (lwp[VL_BITWORD_E(msb)]);
         const QData mid = (lwp[VL_BITWORD_E(lsb) + 1]);
         const QData lo = VL_BITRSHIFT_W(lwp, lsb);
@@ -2220,31 +2222,31 @@ extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suff
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     VlWide<2> rwp;
-    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
+    const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, SData& rdr) VL_MT_SAFE {
     VlWide<2> rwp;
-    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
+    const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {
     VlWide<2> rwp;
-    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
+    const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) VL_MT_SAFE {
     VlWide<2> rwp;
-    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
+    const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_SET_QW(rwp);
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr) VL_MT_SAFE {
     VlWide<2> rwp;
-    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
+    const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
     return got;
 }

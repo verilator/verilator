@@ -279,7 +279,7 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, float& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
 inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const std::string& rhs) {
-    vluint32_t len = rhs.length();
+    const vluint32_t len = rhs.length();
     os << len;
     return os.write(rhs.data(), len);
 }

@@ -154,7 +154,7 @@ private:
 
         // Later code will expand words which adds to GCC compile time,
         // so add penalty based on word width also
-        EmitCBaseCounterVisitor visitor{initp};
+        const EmitCBaseCounterVisitor visitor{initp};
         m_statep->m_numStmts += visitor.count() + m_varEqnp->widthWords();
     }
 
@@ -214,8 +214,8 @@ public:
         m_detects = 0;
         {
             AstVar* const varp = m_vscp->varp();
-            string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"
-                              + varp->shortName()};
+            const string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"
+                                    + varp->shortName()};
             // Create:  VARREF(_last)
             //          ASSIGN(VARREF(_last), VARREF(var))
             //          ...
@@ -247,17 +247,17 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstVarScope::user1()            -> bool.  True indicates processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
-    ChangedState* m_statep;  // Shared state across visitors
+    ChangedState* const m_statep;  // Shared state across visitors
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     void genChangeDet(AstVarScope* vscp) {
         vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: " << vscp->prettyNameQ());
-        ChangedInsertVisitor visitor{vscp, m_statep};
+        { ChangedInsertVisitor{vscp, m_statep}; }
     }
 
     // VISITORS
@@ -304,7 +304,7 @@ void V3Changed::changedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         ChangedState state;
-        ChangedVisitor visitor{nodep, &state};
+        ChangedVisitor{nodep, &state};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("changed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

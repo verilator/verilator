@@ -43,11 +43,11 @@ private:
     // Cleared on top scope
     //  AstVarScope::user2()    -> AstVarScope*.  Signal replacing activation with
     //  AstVarRef::user3()      -> bool.  Signal is replaced activation (already done)
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
 
     // STATE
-    AstActive* m_activep = nullptr;  // Inside activate statement
+    const AstActive* m_activep = nullptr;  // Inside activate statement
     AstNodeModule* const m_topModp;  // Top module
     AstScope* const m_scopetopp = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
 
@@ -70,7 +70,7 @@ private:
             UASSERT_OBJ(vscp != v3Global.rootp()->dpiExportTriggerp(), vscp,
                         "DPI export trigger should not need __VinpClk");
             AstVar* const varp = vscp->varp();
-            string newvarname
+            const string newvarname
                 = "__VinpClk__" + vscp->scopep()->nameDotless() + "__" + varp->name();
             // Create:  VARREF(inpclk)
             //          ...
@@ -141,12 +141,12 @@ private:
     // NODE STATE
     // Cleared on top scope
     //  AstVarScope::user()     -> bool.  Set when the var has been used as clock
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     bool m_tracingCall = false;  // Iterating into a call to a cfunc
-    AstActive* m_activep = nullptr;  // Inside activate statement
-    AstNodeAssign* m_assignp = nullptr;  // Inside assigndly statement
+    const AstActive* m_activep = nullptr;  // Inside activate statement
+    const AstNodeAssign* m_assignp = nullptr;  // Inside assigndly statement
     AstNodeModule* m_topModp = nullptr;  // Top module
 
     // VISITORS
@@ -156,7 +156,7 @@ private:
         {
             // Make the new clock signals and replace any activate references
             // See rename, it does some AstNode::userClearTree()'s
-            GenClkRenameVisitor visitor{nodep, m_topModp};
+            GenClkRenameVisitor{nodep, m_topModp};
         }
     }
     virtual void visit(AstNodeModule* nodep) override {
@@ -231,6 +231,6 @@ public:
 
 void V3GenClk::genClkAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { GenClkReadVisitor visitor{nodep}; }  // Destruct before checking
+    { GenClkReadVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("genclk", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

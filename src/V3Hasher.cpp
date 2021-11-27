@@ -491,11 +491,11 @@ public:
 // V3Hasher methods
 
 V3Hash V3Hasher::operator()(AstNode* nodep) const {
-    if (!nodep->user4()) { HasherVisitor visitor{nodep}; }
+    if (!nodep->user4()) { HasherVisitor{nodep}; }
     return V3Hash(nodep->user4());
 }
 
 V3Hash V3Hasher::uncachedHash(const AstNode* nodep) {
-    HasherVisitor visitor{nodep};
+    const HasherVisitor visitor{nodep};
     return visitor.finalHash();
 }

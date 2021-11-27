@@ -50,7 +50,7 @@ public:
 // Vertices and nodes
 
 class V3GraphTestVertex VL_NOT_FINAL : public V3GraphVertex {
-    string m_name;
+    const string m_name;
 
 public:
     V3GraphTestVertex(V3Graph* graphp, const string& name)

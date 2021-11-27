@@ -79,10 +79,10 @@ public:
 // Readmem/Writemem operation classes
 
 class VlReadMem final {
-    bool m_hex;  // Hex format
-    int m_bits;  // Bit width of values
+    const bool m_hex;  // Hex format
+    const int m_bits;  // Bit width of values
     const std::string& m_filename;  // Filename
-    QData m_end;  // End address (as specified by user)
+    const QData m_end;  // End address (as specified by user)
     FILE* m_fp;  // File handle for filename
     QData m_addr;  // Next address to read
     int m_linenum;  // Line number last read from file
@@ -96,8 +96,8 @@ public:
 };
 
 class VlWriteMem final {
-    bool m_hex;  // Hex format
-    int m_bits;  // Bit width of values
+    const bool m_hex;  // Hex format
+    const int m_bits;  // Bit width of values
     FILE* m_fp;  // File handle for filename
     QData m_addr;  // Next address to write
 public:

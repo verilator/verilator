@@ -53,9 +53,9 @@ private:
     //  AstNodeModule::user2()  // CIL_*. Allowed to automatically inline module
     //  AstNodeModule::user3()  // int. Number of cells referencing this module
     //  AstNodeModule::user4()  // int. Statements in module
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
-    AstUser4InUse m_inuser4;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
+    const AstUser4InUse m_inuser4;
 
     // For the user2 field:
     enum : uint8_t {
@@ -271,7 +271,7 @@ private:
     // STATE
     std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
     AstNodeModule* const m_modp;  // Current module
-    AstCell* const m_cellp;  // Cell being cloned
+    const AstCell* const m_cellp;  // Cell being cloned
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -423,7 +423,7 @@ private:
                 break;
             }
             // If foo.bar, and foo is an interface, then need to search again for foo
-            string::size_type pos = tryname.rfind('.');
+            const string::size_type pos = tryname.rfind('.');
             if (pos == string::npos || pos == 0) {
                 break;
             } else {
@@ -493,11 +493,10 @@ private:
     //                          // is a direct connect to
     //   AstVar::user3()        // bool    Don't alias the user2, keep it as signal
     //   AstCell::user4         // AstCell* of the created clone
-
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
-    AstUser4InUse m_inuser4;
-    AstUser5InUse m_inuser5;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
+    const AstUser4InUse m_inuser4;
+    const AstUser5InUse m_inuser5;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -625,8 +624,7 @@ class InlineIntfRefVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //   AstVar::user1p()   // AstCell which this Var points to
-
-    AstUser2InUse m_inuser2;
+    const AstUser2InUse m_inuser2;
 
     string m_scope;  // Scope name
 
@@ -710,11 +708,11 @@ public:
 
 void V3Inline::inlineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    AstUser1InUse m_inuser1;  // output of InlineMarkVisitor,
-                              // input to InlineVisitor.
+    const AstUser1InUse m_inuser1;  // output of InlineMarkVisitor,
+                                    // input to InlineVisitor.
     // Scoped to clean up temp userN's
-    { InlineMarkVisitor mvisitor{nodep}; }
-    { InlineVisitor visitor{nodep}; }
+    { InlineMarkVisitor{nodep}; }
+    { InlineVisitor{nodep}; }
     // Remove all modules that were inlined
     // V3Dead will also clean them up, but if we have debug on, it's a good
     // idea to avoid dumping the hugely exploded tree.
@@ -725,6 +723,6 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
             VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
         }
     }
-    { InlineIntfRefVisitor crvisitor{nodep}; }
+    { InlineIntfRefVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("inline", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

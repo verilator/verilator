@@ -30,11 +30,11 @@ private:
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()         -> bool.  True if processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Last module
-    AstBegin* m_beginp = nullptr;  // Last begin
+    const AstBegin* m_beginp = nullptr;  // Last begin
     unsigned m_monitorNum = 0;  // Global $monitor numbering (not per module)
     AstVar* m_monitorNumVarp = nullptr;  // $monitor number variable
     AstVar* m_monitorOffVarp = nullptr;  // $monitoroff variable
@@ -62,7 +62,7 @@ private:
         }
         nodep->fmtp()->addExprsp(timenewp);
         if (!nodep->fmtp()->scopeNamep() && nodep->fmtp()->formatScopeTracking()) {
-            nodep->fmtp()->scopeNamep(new AstScopeName(nodep->fileline()));
+            nodep->fmtp()->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
     }
     AstVarRef* newMonitorNumVarRefp(AstNode* nodep, VAccess access) {
@@ -475,6 +475,6 @@ public:
 
 void V3Assert::assertAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { AssertVisitor visitor{nodep}; }  // Destruct before checking
+    { AssertVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assert", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

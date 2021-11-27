@@ -47,9 +47,9 @@ class VDefine final {
     // Define class.  One for each define.
     // string    m_name;         // Name of the define (list is keyed by this)
     FileLine* const m_fileline;  // Where it was declared
-    string m_value;  // Value of define
-    string m_params;  // Parameters
-    bool m_cmdline;  // Set on command line, don't `undefineall
+    const string m_value;  // Value of define
+    const string m_params;  // Parameters
+    const bool m_cmdline;  // Set on command line, don't `undefineall
 public:
     VDefine(FileLine* fl, const string& value, const string& params, bool cmdline)
         : m_fileline{fl}
@@ -66,8 +66,8 @@ public:
 
 class VDefineRef final {
     // One for each pending define substitution
-    string m_name;  // Define last name being defined
-    string m_params;  // Define parameter list for next expansion
+    const string m_name;  // Define last name being defined
+    const string m_params;  // Define parameter list for next expansion
     string m_nextarg;  // String being built for next argument
     int m_parenLevel = 0;  // Parenthesis counting inside def args (for PARENT not child)
 
@@ -91,8 +91,8 @@ public:
 
 class VPreIfEntry final {
     // One for each pending ifdef/ifndef
-    bool m_on;  // Current parse for this ifdef level is "on"
-    bool m_everOn;  // Some if term in elsif tree has been on
+    const bool m_on;  // Current parse for this ifdef level is "on"
+    const bool m_everOn;  // Some if term in elsif tree has been on
 public:
     bool on() const { return m_on; }
     bool everOn() const { return m_everOn; }
@@ -117,7 +117,7 @@ public:
     DefinesMap m_defines;  ///< Map of defines
 
     // STATE
-    V3PreProc* m_preprocp = nullptr;  ///< Object we're holding data for
+    const V3PreProc* m_preprocp = nullptr;  ///< Object we're holding data for
     V3PreLex* m_lexp = nullptr;  ///< Current lexer state (nullptr = closed)
     std::stack<V3PreLex*> m_includeStack;  ///< Stack of includers above current m_lexp
     int m_lastLineno = 0;  // Last line number (stall detection)
@@ -496,7 +496,7 @@ void V3PreProc::debug(int level) {
 }
 
 FileLine* V3PreProc::fileline() {
-    V3PreProcImp* idatap = static_cast<V3PreProcImp*>(this);
+    const V3PreProcImp* idatap = static_cast<V3PreProcImp*>(this);
     return idatap->m_lexp->m_tokFilelinep;
 }
 
@@ -1180,7 +1180,7 @@ int V3PreProcImp::getStateToken() {
                 if (VL_UNCOVERABLE(m_defRefs.empty())) {
                     fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
                 }
-                VDefineRef* const refp = &(m_defRefs.top());
+                const VDefineRef* const refp = &(m_defRefs.top());
                 error(string("Expecting ( to begin argument list for define reference `")
                       + refp->name() + "\n");
                 statePop();
@@ -1612,7 +1612,7 @@ string V3PreProcImp::getline() {
 
     // Make new string with data up to the newline.
     const int len = rtnp - m_lineChars.c_str() + 1;
-    string theLine(m_lineChars, 0, len);
+    const string theLine(m_lineChars, 0, len);
     m_lineChars = m_lineChars.erase(0, len);  // Remove returned characters
     if (debug() >= 4) {
         const string lncln = V3PreLex::cleanDbgStrg(theLine);

@@ -1008,7 +1008,7 @@ public:
     // MEMBERS
     void init(int hi, int lo, bool littleEndian) {
         if (lo > hi) {
-            int t = hi;
+            const int t = hi;
             hi = lo;
             lo = t;
         }
@@ -1077,11 +1077,11 @@ inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
 
 class VBasicTypeKey final {
 public:
-    int m_width;  // From AstNodeDType: Bit width of operation
-    int m_widthMin;  // From AstNodeDType: If unsized, bitwidth of minimum implementation
-    VSigning m_numeric;  // From AstNodeDType: Node is signed
-    AstBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
-    VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
+    const int m_width;  // From AstNodeDType: Bit width of operation
+    const int m_widthMin;  // From AstNodeDType: If unsized, bitwidth of minimum implementation
+    const VSigning m_numeric;  // From AstNodeDType: Node is signed
+    const AstBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
+    const VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
     bool operator==(const VBasicTypeKey& rhs) const {
         return m_width == rhs.m_width && m_widthMin == rhs.m_widthMin && m_numeric == rhs.m_numeric
                && m_keyword == rhs.m_keyword && m_nrange == rhs.m_nrange;
@@ -2612,12 +2612,12 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
-        const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
         return (hi() == asamep->hi() && subDTypep() == asamep->subDTypep()
                 && rangenp()->sameTree(asamep->rangenp()));
     }  // HashedDT doesn't recurse, so need to check children
     virtual bool similarDType(AstNodeDType* samep) const override {
-        const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
         return (asamep && type() == samep->type() && hi() == asamep->hi()
                 && rangenp()->sameTree(asamep->rangenp())
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
@@ -2705,7 +2705,7 @@ public:
     virtual const char* broken() const override;
     virtual int instrCount() const override { return INSTR_COUNT_CALL; }
     virtual bool same(const AstNode* samep) const override {
-        const AstNodeCCall* asamep = static_cast<const AstNodeCCall*>(samep);
+        const AstNodeCCall* const asamep = static_cast<const AstNodeCCall*>(samep);
         return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());
     }
     AstNode* exprsp() const { return op2p(); }  // op2 = expressions to print
@@ -2901,7 +2901,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     // excluding $unit package stuff
 private:
     string m_name;  // Name of the module
-    string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
+    const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     string m_hierName;  // Hierarchical name for errors, etc.
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module

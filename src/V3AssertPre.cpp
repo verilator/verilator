@@ -205,6 +205,6 @@ public:
 
 void V3AssertPre::assertPreAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { AssertPreVisitor visitor{nodep}; }  // Destruct before checking
+    { AssertPreVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assertpre", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

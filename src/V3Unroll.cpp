@@ -43,9 +43,9 @@ class UnrollVisitor final : public AstNVisitor {
 private:
     // STATE
     AstVar* m_forVarp;  // Iterator variable
-    AstVarScope* m_forVscp;  // Iterator variable scope (nullptr for generate pass)
+    const AstVarScope* m_forVscp;  // Iterator variable scope (nullptr for generate pass)
     AstConst* m_varValuep;  // Current value of loop
-    AstNode* m_ignoreIncp;  // Increment node to ignore
+    const AstNode* m_ignoreIncp;  // Increment node to ignore
     bool m_varModeCheck;  // Just checking RHS assignments
     bool m_varModeReplace;  // Replacing varrefs
     bool m_varAssignHit;  // Assign var hit
@@ -86,7 +86,7 @@ private:
     }
 
     bool forUnrollCheck(
-        AstNode* nodep,
+        AstNode* const nodep,
         AstNode* const initp,  // Maybe under nodep (no nextp), or standalone (ignore nextp)
         AstNode* const precondsp, AstNode* condp,
         AstNode* const incp,  // Maybe under nodep or in bodysp
@@ -219,34 +219,34 @@ private:
             return false;
         }
         // Fetch the result
-        V3Number* res = simvis.fetchNumberNull(clonep);
-        if (!res) {
+        V3Number* resp = simvis.fetchNumberNull(clonep);
+        if (!resp) {
             UINFO(3, "No number returned from simulation" << endl);
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;
         }
         // Patch up datatype
         if (dtypep) {
-            AstConst new_con(clonep->fileline(), *res);
+            AstConst new_con{clonep->fileline(), *resp};
             new_con.dtypeFrom(dtypep);
             outNum = new_con.num();
             outNum.isSigned(dtypep->isSigned());
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return true;
         }
-        outNum = *res;
+        outNum = *resp;
         VL_DO_DANGLING(clonep->deleteTree(), clonep);
         return true;
     }
 
     bool countLoops(AstAssign* initp, AstNode* condp, AstNode* incp, int max, int& outLoopsr) {
         outLoopsr = 0;
-        V3Number loopValue = V3Number(initp);
+        V3Number loopValue{initp};
         if (!simulateTree(initp->rhsp(), nullptr, initp, loopValue)) {  //
             return false;
         }
         while (true) {
-            V3Number res = V3Number(initp);
+            V3Number res{initp};
             if (!simulateTree(condp, &loopValue, nullptr, res)) {  //
                 return false;
             }
@@ -256,7 +256,7 @@ private:
 
             // Run inc
             AstAssign* const incpass = VN_AS(incp, Assign);
-            V3Number newLoopValue = V3Number(initp);
+            V3Number newLoopValue{initp};
             if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
                 return false;
             }
@@ -269,7 +269,7 @@ private:
     bool forUnroller(AstNode* nodep, AstAssign* initp, AstNode* condp, AstNode* precondsp,
                      AstNode* incp, AstNode* bodysp) {
         UINFO(9, "forUnroller " << nodep << endl);
-        V3Number loopValue = V3Number(nodep);
+        V3Number loopValue{nodep};
         if (!simulateTree(initp->rhsp(), nullptr, initp, loopValue)) {  //
             return false;
         }
@@ -300,7 +300,7 @@ private:
             int times = 0;
             while (true) {
                 UINFO(8, "      Looping " << loopValue << endl);
-                V3Number res = V3Number(nodep);
+                V3Number res{nodep};
                 if (!simulateTree(condp, &loopValue, nullptr, res)) {
                     nodep->v3error("Loop unrolling failed.");
                     return false;
@@ -346,7 +346,7 @@ private:
 
                     // loopValue += valInc
                     AstAssign* const incpass = VN_AS(incp, Assign);
-                    V3Number newLoopValue = V3Number(nodep);
+                    V3Number newLoopValue{nodep};
                     if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
                         nodep->v3error("Loop unrolling failed");
                         return false;

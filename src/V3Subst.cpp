@@ -180,7 +180,7 @@ private:
     // See SubstVisitor
     //
     // STATE
-    int m_origStep;  // Step number where subst was recorded
+    const int m_origStep;  // Step number where subst was recorded
     bool m_ok = true;  // No misassignments found
 
     // METHODS
@@ -227,8 +227,8 @@ private:
     // Passed to SubstUseVisitor
     // AstVar::user1p           -> SubstVar* for usage var, 0=not set yet
     // AstVar::user2            -> int step number for last assignment, 0=not set yet
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     std::vector<SubstVarEntry*> m_entryps;  // Nodes to delete when we are finished
@@ -274,7 +274,7 @@ private:
                     entryp->assignWhole(m_assignStep, nodep);
                 }
             }
-        } else if (AstWordSel* wordp = VN_CAST(nodep->lhsp(), WordSel)) {
+        } else if (const AstWordSel* const wordp = VN_CAST(nodep->lhsp(), WordSel)) {
             if (AstVarRef* const varrefp = VN_CAST(wordp->lhsp(), VarRef)) {
                 if (VN_IS(wordp->rhsp(), Const) && isSubstVar(varrefp->varp())) {
                     const int word = VN_AS(wordp->rhsp(), Const)->toUInt();
@@ -315,7 +315,7 @@ private:
             SubstVarEntry* const entryp = getEntryp(varrefp);
             if (AstNode* const substp = entryp->substWord(nodep, word)) {
                 // Check that the RHS hasn't changed value since we recorded it.
-                SubstUseVisitor visitor{substp, entryp->getWordStep(word)};
+                const SubstUseVisitor visitor{substp, entryp->getWordStep(word)};
                 if (visitor.ok()) {
                     VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
                 } else {
@@ -340,9 +340,9 @@ private:
             if (nodep->access().isWriteOrRW()) {
                 UINFO(8, " ASSIGNcpx " << nodep << endl);
                 entryp->assignComplex();
-            } else if (AstNode* substp = entryp->substWhole(nodep)) {
+            } else if (AstNode* const substp = entryp->substWhole(nodep)) {
                 // Check that the RHS hasn't changed value since we recorded it.
-                SubstUseVisitor visitor{substp, entryp->getWholeStep()};
+                const SubstUseVisitor visitor{substp, entryp->getWholeStep()};
                 if (visitor.ok()) {
                     UINFO(8, " USEwhole " << nodep << endl);
                     VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
@@ -381,6 +381,6 @@ public:
 
 void V3Subst::substituteAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { SubstVisitor visitor{nodep}; }  // Destruct before checking
+    { SubstVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("subst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -136,7 +136,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n");
         ofp()->putsPrivate(false);  // public:
         puts("// API METHODS\n");
-        string callEvalEndStep
+        const string callEvalEndStep
             = (v3Global.needTraceDumper() && !optSystemC()) ? "eval_end_step(); " : "";
         if (optSystemC()) {
             ofp()->putsPrivate(true);  ///< eval() is invoked by our sensitive() calls.
@@ -197,7 +197,7 @@ class EmitCModel final : public EmitCFunc {
             std::vector<const AstCFunc*> funcps;
 
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
+                if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                     if (!funcp->dpiExportDispatcher()) continue;
                     funcps.push_back(funcp);
                 }
@@ -434,7 +434,7 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.timing()) puts("Verilated::timedQActivate(vlSymsp, VL_TIME_Q());\n");
 
         if (v3Global.opt.threads() == 1) {
-            uint32_t mtaskId = 0;
+            const uint32_t mtaskId = 0;
             putsDecoration("// MTask " + cvtToStr(mtaskId) + " start\n");
             puts("VL_DEBUG_IF(VL_DBG_MSGF(\"MTask" + cvtToStr(mtaskId) + " starting\\n\"););\n");
             puts("Verilated::mtaskId(" + cvtToStr(mtaskId) + ");\n");
@@ -527,12 +527,6 @@ class EmitCModel final : public EmitCFunc {
             puts("}\n");
         }
 
-        putSectionDelimiter("Invoke final blocks");
-        // ::final
-        puts("\nvoid " + topClassName() + "::final() {\n");
-        puts(topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
-        puts("}\n");
-
         putSectionDelimiter("Utilities");
 
         if (v3Global.opt.timing()) {
@@ -555,6 +549,12 @@ class EmitCModel final : public EmitCFunc {
             puts(/**/ "return vlSymsp->name();\n");
             puts("}\n");
         }
+
+        putSectionDelimiter("Invoke final blocks");
+        // ::final
+        puts("\nVL_ATTR_COLD void " + topClassName() + "::final() {\n");
+        puts(/**/ topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
+        puts("}\n");
     }
 
     void emitTraceMethods(AstNodeModule* modp) {
@@ -568,7 +568,7 @@ class EmitCModel final : public EmitCFunc {
              + "* tracep);\n");
 
         // Static helper function
-        puts("\nstatic void " + protect("trace_init") + "(void* voidSelf, "
+        puts("\nVL_ATTR_COLD static void " + protect("trace_init") + "(void* voidSelf, "
              + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) {\n");
         putsDecoration("// Callback from tracep->open()\n");
         puts(voidSelfAssign(modp));
@@ -586,15 +586,15 @@ class EmitCModel final : public EmitCFunc {
         puts("}\n");
 
         // Forward declaration
-        puts("\nvoid " + topModNameProtected + "__" + protect("trace_register") + "("
+        puts("\nVL_ATTR_COLD void " + topModNameProtected + "__" + protect("trace_register") + "("
              + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
              + "* tracep);\n");
 
         // ::trace
-        puts("\nvoid " + topClassName() + "::trace(");
+        puts("\nVL_ATTR_COLD void " + topClassName() + "::trace(");
         puts(v3Global.opt.traceClassBase() + "C* tfp, int, int) {\n");
-        puts("tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
-        puts(topModNameProtected + "__" + protect("trace_register")
+        puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
+        puts(/**/ topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), tfp->spTrace());\n");
         puts("}\n");
     }
@@ -604,16 +604,16 @@ class EmitCModel final : public EmitCFunc {
 
         puts("\nVerilatedSerialize& operator<<(VerilatedSerialize& os, " + topClassName()
              + "& rhs) {\n");
-        puts("Verilated::quiesce();\n");
-        puts("rhs.vlSymsp->" + protect("__Vserialize") + "(os);\n");
-        puts("return os;\n");
+        puts(/**/ "Verilated::quiesce();\n");
+        puts(/**/ "rhs.vlSymsp->" + protect("__Vserialize") + "(os);\n");
+        puts(/**/ "return os;\n");
         puts("}\n");
 
         puts("\nVerilatedDeserialize& operator>>(VerilatedDeserialize& os, " + topClassName()
              + "& rhs) {\n");
-        puts("Verilated::quiesce();\n");
-        puts("rhs.vlSymsp->" + protect("__Vdeserialize") + "(os);\n");
-        puts("return os;\n");
+        puts(/**/ "Verilated::quiesce();\n");
+        puts(/**/ "rhs.vlSymsp->" + protect("__Vdeserialize") + "(os);\n");
+        puts(/**/ "return os;\n");
         puts("}\n");
     }
 

@@ -27,8 +27,8 @@
 
 // Profile record, private class used only by this header
 class VerilatedProfilerRec final {
-    std::string m_name;  // Hashed name of mtask/etc
-    size_t m_counterNumber = 0;  // Which counter has data
+    const std::string m_name;  // Hashed name of mtask/etc
+    const size_t m_counterNumber = 0;  // Which counter has data
 public:
     // METHODS
     VerilatedProfilerRec(size_t counterNumber, const std::string& name)

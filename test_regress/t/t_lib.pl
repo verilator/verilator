@@ -13,16 +13,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(
     vlt => 1,
-    vltmt => 1,
     xsim => 1,
     );
-top_filename("t/t_prot_lib.v");
+
+top_filename("t/t_lib_prot.v");
 
 $Self->{sim_time} = $Self->{benchmark} * 100 if $Self->{benchmark};
 
 my $secret_prefix = "secret";
 my $secret_dir = "$Self->{obj_dir}/$secret_prefix";
-my $abs_secret_dir = File::Spec->rel2abs($secret_dir);
 mkdir $secret_dir;
 
 while (1) {
@@ -31,17 +30,14 @@ while (1) {
     run(logfile => "$secret_dir/vlt_compile.log",
         cmd => ["perl",
                 "$ENV{VERILATOR_ROOT}/bin/verilator",
-                ($Self->{vltmt} ? ' --threads 6' : ''),
                 "--prefix",
-                "Vt_prot_lib_secret",
+                "Vt_lib_prot_secret",
                 "-cc",
                 "-Mdir",
                 $secret_dir,
-                "--protect-lib",
+                "--lib-create",
                 $secret_prefix,
-                "--protect-key",
-                "secret-key",
-                "t/t_prot_lib_secret.v"],
+                "t/t_lib_prot_secret.v"],
         verilator_run => 1,
         );
     last if $Self->{errors};
@@ -51,31 +47,22 @@ while (1) {
               "-C",
               $secret_dir,
               "-f",
-              "Vt_prot_lib_secret.mk"]);
+              "Vt_lib_prot_secret.mk"]);
     last if $Self->{errors};
 
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
-                             ($Self->{vltmt} ? ' --threads 1' : ''),
                              "-LDFLAGS",
-                             "'-Wl,-rpath,$abs_secret_dir -L$abs_secret_dir -l$secret_prefix'"],
+                             "$secret_prefix/libsecret.a"],
         xsim_flags2 => ["$secret_dir/secret.sv"],
         );
 
     execute(
         check_finished => 1,
-        run_env => "DYLD_FALLBACK_LIBRARY_PATH=$abs_secret_dir",
         xsim_run_flags2 => ["--sv_lib",
                             "$secret_dir/libsecret",
                             "--dpi_absolute"],
         );
-
-    if ($Self->{vlt} && $Self->{trace}) {
-        # We can see the ports of the secret module
-        file_grep("$Self->{obj_dir}/simx.vcd", qr/accum_in/);
-        # but we can't see what's inside
-        file_grep_not("$Self->{obj_dir}/simx.vcd", qr/secret_/);
-    }
 
     ok(1);
     last;

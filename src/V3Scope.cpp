@@ -41,8 +41,8 @@ private:
     // NODE STATE
     // AstVar::user1p           -> AstVarScope replacement for this variable
     // AstTask::user2p          -> AstTask*.  Replacement task
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // TYPES
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
@@ -401,8 +401,8 @@ public:
 void V3Scope::scopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        ScopeVisitor visitor{nodep};
-        ScopeCleanupVisitor cleanVisitor{nodep};
+        const ScopeVisitor visitor{nodep};
+        ScopeCleanupVisitor{nodep};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("scope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

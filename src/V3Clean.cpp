@@ -42,15 +42,15 @@ private:
     //  AstNode::user()         -> CleanState.  For this node, 0==UNKNOWN
     //  AstNode::user2()        -> bool.  True indicates widthMin has been propagated
     //  AstNodeDType::user3()   -> AstNodeDType*.  Alternative node with C size
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
 
     // TYPES
     enum CleanState : uint8_t { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
 
     // STATE
-    AstNodeModule* m_modp = nullptr;
+    const AstNodeModule* m_modp = nullptr;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -314,6 +314,6 @@ public:
 
 void V3Clean::cleanAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CleanVisitor visitor{nodep}; }  // Destruct before checking
+    { CleanVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("clean", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

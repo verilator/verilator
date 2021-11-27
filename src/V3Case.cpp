@@ -52,7 +52,7 @@
 
 class CaseLintVisitor final : public AstNVisitor {
 private:
-    AstNodeCase* m_caseExprp
+    const AstNodeCase* m_caseExprp
         = nullptr;  // Under a CASE value node, if so the relevant case statement
 
     // METHODS
@@ -122,12 +122,12 @@ private:
     // NODE STATE
     // Cleared each Case
     //  AstIf::user3()          -> bool.  Set true to indicate clone not needed
-    AstUser3InUse m_inuser3;
+    const AstUser3InUse m_inuser3;
 
     // STATE
     VDouble0 m_statCaseFast;  // Statistic tracking
     VDouble0 m_statCaseSlow;  // Statistic tracking
-    AstNode* m_alwaysp = nullptr;  // Always in which case is located
+    const AstNode* m_alwaysp = nullptr;  // Always in which case is located
 
     // Per-CASE
     int m_caseWidth = 0;  // Width of valueItems
@@ -159,7 +159,7 @@ private:
             return false;  // Too wide for analysis
         }
         UINFO(8, "Simple case statement: " << nodep << endl);
-        uint32_t numCases = 1UL << m_caseWidth;
+        const uint32_t numCases = 1UL << m_caseWidth;
         // Zero list of items for each value
         for (uint32_t i = 0; i < numCases; ++i) m_valueItem[i] = nullptr;
         // Now pick up the values for each assignment
@@ -177,10 +177,10 @@ private:
                 } else {
                     V3Number nummask(itemp, iconstp->width());
                     nummask.opBitsNonX(iconstp->num());
-                    uint32_t mask = nummask.toUInt();
+                    const uint32_t mask = nummask.toUInt();
                     V3Number numval(itemp, iconstp->width());
                     numval.opBitsOne(iconstp->num());
-                    uint32_t val = numval.toUInt();
+                    const uint32_t val = numval.toUInt();
 
                     uint32_t firstOverlap = 0;
                     bool foundOverlap = false;
@@ -364,7 +364,7 @@ private:
                         // For simplicity, make expression that is not equal, and let later
                         // optimizations remove it
                         condp = new AstConst(itemp->fileline(), AstConst::BitFalse());
-                    } else if (AstInsideRange* irangep = VN_CAST(icondp, InsideRange)) {
+                    } else if (AstInsideRange* const irangep = VN_CAST(icondp, InsideRange)) {
                         // Similar logic in V3Width::visit(AstInside)
                         condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
                                                           irangep->rhsp()->unlinkFrBack());
@@ -532,10 +532,10 @@ public:
 
 void V3Case::caseAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CaseVisitor visitor{nodep}; }  // Destruct before checking
+    { CaseVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("case", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 void V3Case::caseLint(AstNodeCase* nodep) {
     UINFO(4, __FUNCTION__ << ": " << endl);
-    CaseLintVisitor visitor{nodep};
+    { CaseLintVisitor{nodep}; }
 }

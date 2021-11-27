@@ -53,7 +53,7 @@ VL_DEBUG_FUNC;  // Declare debug()
 // Vertex that tracks a per-vertex key
 template <typename T_Key> class TspVertexTmpl : public V3GraphVertex {
 private:
-    T_Key m_key;
+    const T_Key m_key;
 
 public:
     TspVertexTmpl(V3Graph* graphp, const T_Key& k)
@@ -112,7 +112,7 @@ public:
 
     bool empty() const { return m_vertices.empty(); }
 
-    std::list<Vertex*> keysToVertexList(const std::vector<T_Key>& odds) {
+    const std::list<Vertex*> keysToVertexList(const std::vector<T_Key>& odds) {
         std::list<Vertex*> vertices;
         for (unsigned i = 0; i < odds.size(); ++i) { vertices.push_back(findVertex(odds.at(i))); }
         return vertices;
@@ -177,7 +177,7 @@ public:
         unsigned edges_made = 0;
         while (!pendingEdges.empty()) {
             const auto firstIt = pendingEdges.cbegin();
-            V3GraphEdge* bestEdgep = *firstIt;
+            const V3GraphEdge* bestEdgep = *firstIt;
             pendingEdges.erase(firstIt);
 
             // bestEdgep->fromp() should be already seen
@@ -298,7 +298,7 @@ public:
 
             // Look for an arbitrary edge we've not yet marked
             for (V3GraphEdge* edgep = cur_vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                vluint32_t edgeId = edgep->user();
+                const vluint32_t edgeId = edgep->user();
                 if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                     // This edge is not yet marked, so follow it.
                     markedEdgesp->insert(edgeId);
@@ -322,7 +322,7 @@ public:
                 recursed = false;
                 // Look for an arbitrary edge at vxp we've not yet marked
                 for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                    vluint32_t edgeId = edgep->user();
+                    const vluint32_t edgeId = edgep->user();
                     if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                         UINFO(6, "Recursing.\n");
                         findEulerTourRecurse(markedEdgesp, vxp, sortedOutp);
@@ -423,7 +423,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     graph.makeMinSpanningTree(&minGraph);
     if (debug() >= 6) minGraph.dumpGraphFilePrefixed("minGraph");
 
-    std::vector<const TspStateBase*> oddDegree = minGraph.getOddDegreeKeys();
+    const std::vector<const TspStateBase*> oddDegree = minGraph.getOddDegreeKeys();
     Graph matching;
     graph.perfectMatching(oddDegree, &matching);
     if (debug() >= 6) matching.dumpGraphFilePrefixed("matching");
@@ -526,9 +526,9 @@ public:
     bool operator<(const TspTestState& other) const { return m_serial < other.m_serial; }
 
 private:
-    unsigned m_xpos;
-    unsigned m_ypos;
-    unsigned m_serial;
+    const unsigned m_xpos;
+    const unsigned m_ypos;
+    const unsigned m_serial;
     static unsigned s_serialNext;
 };
 
@@ -538,11 +538,11 @@ void V3TSP::selfTestStates() {
     // Linear test -- coords all along the x-axis
     {
         V3TSP::StateVec states;
-        TspTestState s10(10, 0);
-        TspTestState s60(60, 0);
-        TspTestState s20(20, 0);
-        TspTestState s100(100, 0);
-        TspTestState s5(5, 0);
+        const TspTestState s10(10, 0);
+        const TspTestState s60(60, 0);
+        const TspTestState s20(20, 0);
+        const TspTestState s100(100, 0);
+        const TspTestState s5(5, 0);
         states.push_back(&s10);
         states.push_back(&s60);
         states.push_back(&s20);
@@ -572,13 +572,13 @@ void V3TSP::selfTestStates() {
     // Test that tspSort() will rotate the list for minimum cost.
     {
         V3TSP::StateVec states;
-        TspTestState a(0, 0);
-        TspTestState b(100, 0);
-        TspTestState c(200, 0);
-        TspTestState d(200, 100);
-        TspTestState e(150, 150);
-        TspTestState f(0, 150);
-        TspTestState g(0, 100);
+        const TspTestState a(0, 0);
+        const TspTestState b(100, 0);
+        const TspTestState c(200, 0);
+        const TspTestState d(200, 100);
+        const TspTestState e(150, 150);
+        const TspTestState f(0, 150);
+        const TspTestState g(0, 100);
 
         states.push_back(&a);
         states.push_back(&b);
@@ -631,7 +631,7 @@ void V3TSP::selfTestString() {
     graph.makeMinSpanningTree(&minGraph);
     if (debug() >= 6) minGraph.dumpGraphFilePrefixed("minGraph");
 
-    std::vector<string> oddDegree = minGraph.getOddDegreeKeys();
+    const std::vector<string> oddDegree = minGraph.getOddDegreeKeys();
     Graph matching;
     graph.perfectMatching(oddDegree, &matching);
     if (debug() >= 6) matching.dumpGraphFilePrefixed("matching");

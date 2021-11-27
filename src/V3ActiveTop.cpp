@@ -42,7 +42,7 @@ private:
     //   AstNode::user()                bool. True if processed
     //  Each call to V3Const::constify
     //   AstNode::user4()               Used by V3Const::constify, called below
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope
@@ -128,6 +128,6 @@ public:
 
 void V3ActiveTop::activeTopAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ActiveTopVisitor visitor{nodep}; }  // Destruct before checking
+    { ActiveTopVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("activetop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

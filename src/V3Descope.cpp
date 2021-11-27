@@ -39,7 +39,7 @@ private:
     // NODE STATE
     //  Cleared entire netlist
     //   AstCFunc::user()               // bool.  Indicates processing completed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // TYPES
     using FuncMmap = std::multimap<std::string, AstCFunc*>;
@@ -110,7 +110,7 @@ private:
             AstCFunc* const topFuncp = it->second;
             auto nextIt1 = it;
             ++nextIt1;
-            bool moreOfSame1 = (nextIt1 != m_modFuncs.end() && nextIt1->first == name);
+            const bool moreOfSame1 = (nextIt1 != m_modFuncs.end() && nextIt1->first == name);
             if (moreOfSame1) {
                 // Multiple functions under this name, need a wrapper function
                 UINFO(6, "  Wrapping " << name << " multifuncs\n");
@@ -289,6 +289,6 @@ public:
 
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DescopeVisitor visitor{nodep}; }  // Destruct before checking
+    { DescopeVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

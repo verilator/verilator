@@ -30,7 +30,7 @@ class UnrollVisitor;
 
 class UnrollStateful final {
     // MEMBERS
-    UnrollVisitor* m_unrollerp;
+    UnrollVisitor* const m_unrollerp;
     VL_UNCOPYABLE(UnrollStateful);
 
 public:

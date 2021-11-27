@@ -42,7 +42,7 @@ class ExpandVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstNode* m_stmtp = nullptr;  // Current statement
@@ -678,10 +678,10 @@ private:
                 newp = new AstNegate{fl, lhsp};
             } else {
                 UINFO(8, "    REPLICATE " << nodep << endl);
-                const AstConst* constp = VN_AS(nodep->rhsp(), Const);
+                const AstConst* const constp = VN_AS(nodep->rhsp(), Const);
                 UASSERT_OBJ(constp, nodep,
                             "Replication value isn't a constant.  Checked earlier!");
-                uint32_t times = constp->toUInt();
+                const uint32_t times = constp->toUInt();
                 if (nodep->isQuad() && !lhsp->isQuad()) { lhsp = new AstCCast{fl, lhsp, nodep}; }
                 newp = lhsp->cloneTree(true);
                 for (unsigned repnum = 1; repnum < times; repnum++) {
@@ -910,6 +910,6 @@ public:
 
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ExpandVisitor visitor{nodep}; }  // Destruct before checking
+    { ExpandVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("expand", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -23,11 +23,16 @@ module t;
       if ($test$plusargs("NOTTHERE")!==0) $stop;
 
       p_i = 10;
-      if ($value$plusargs("NOTTHERE%d", p_i)!==0) $stop;
+      if ($value$plusargs("NOTTHERE%d", p_i) !== 0) $stop;
+      if ($value$plusargs("NOTTHERE%0d", p_i) !== 0) $stop;
       if (p_i !== 10) $stop;
 
       p_i = 0;
-      if ($value$plusargs("INT=%d", p_i)!==1) $stop;
+      if ($value$plusargs("INT=%d", p_i) !== 1) $stop;
+      if (p_i !== 32'd1234) $stop;
+
+      p_i = 0;
+      if ($value$plusargs("INT=%0d", p_i) !== 1) $stop;
       if (p_i !== 32'd1234) $stop;
 
       p_i = 0;

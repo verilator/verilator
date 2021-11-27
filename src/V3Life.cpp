@@ -41,7 +41,7 @@
 class LifeState final {
     // NODE STATE
     //   See below
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
 public:
@@ -303,7 +303,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
-        vluint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
+        const vluint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
         m_sideEffect = false;
         iterateAndNextNull(nodep->rhsp());
         if (lastEdit != AstNode::editCountGbl()) {
@@ -461,12 +461,12 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         if (nodep->entryPoint()) {
             // Usage model 1: Simulate all C code, doing lifetime analysis
-            LifeVisitor visitor{nodep, m_statep};
+            LifeVisitor{nodep, m_statep};
         }
     }
     virtual void visit(AstNodeProcedure* nodep) override {
         // Usage model 2: Cleanup basic blocks
-        LifeVisitor visitor{nodep, m_statep};
+        LifeVisitor{nodep, m_statep};
     }
     virtual void visit(AstVar*) override {}  // Accelerate
     virtual void visit(AstNodeStmt*) override {}  // Accelerate
@@ -489,7 +489,7 @@ void V3Life::lifeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         LifeState state;
-        LifeTopVisitor visitor{nodep, &state};
+        LifeTopVisitor{nodep, &state};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("life", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

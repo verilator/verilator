@@ -31,7 +31,7 @@
 // Algorithms - weakly connected components
 
 class GraphRemoveRedundant final : GraphAlg<> {
-    bool m_sumWeights;  ///< Sum, rather then maximize weights
+    const bool m_sumWeights;  ///< Sum, rather then maximize weights
 private:
     void main() {
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
@@ -213,7 +213,7 @@ private:
     }
 
     void vertexIterate(V3GraphVertex* vertexp) {
-        uint32_t thisDfsNum = m_currentDfs++;
+        const uint32_t thisDfsNum = m_currentDfs++;
         vertexp->user(thisDfsNum);
         vertexp->color(0);
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {

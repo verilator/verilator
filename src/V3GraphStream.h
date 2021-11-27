@@ -44,7 +44,7 @@ private:
     public:
         // MEMBERS
         const V3GraphVertex* m_vxp;  // [mtask] Vertex
-        uint32_t m_pos;  // Sort position
+        const uint32_t m_pos;  // Sort position
         uint32_t m_numBlockingEdges;  // Number of blocking edges
         // CONSTRUCTORS
         VxHolder(const V3GraphVertex* vxp, uint32_t pos, uint32_t numBlockingEdges)
@@ -65,7 +65,7 @@ private:
     class VxHolderCmp final {
     public:
         // MEMBERS
-        T_Compare m_lessThan;  // Sorting functor
+        const T_Compare m_lessThan;  // Sorting functor
         // CONSTRUCTORS
         explicit VxHolderCmp(const T_Compare& lessThan)
             : m_lessThan{lessThan} {}
@@ -87,7 +87,7 @@ private:
     ReadyVertices m_readyVertices;  // List of ready vertices
     std::map<const V3GraphVertex*, VxHolder> m_waitingVertices;  // List of waiting vertices
     typename ReadyVertices::iterator m_last;  // Previously returned element
-    GraphWay m_way;  // FORWARD or REVERSE order of traversal
+    const GraphWay m_way;  // FORWARD or REVERSE order of traversal
 
 public:
     // CONSTRUCTORS
@@ -106,26 +106,26 @@ public:
             // Every vertex initially is waiting, or ready.
             if (way == GraphWay::FORWARD) {
                 if (vxp->inEmpty()) {
-                    VxHolder newVx(vxp, pos++, 0);
+                    const VxHolder newVx(vxp, pos++, 0);
                     m_readyVertices.insert(newVx);
                 } else {
                     uint32_t depCount = 0;
                     for (V3GraphEdge* depp = vxp->inBeginp(); depp; depp = depp->inNextp()) {
                         ++depCount;
                     }
-                    VxHolder newVx(vxp, pos++, depCount);
+                    const VxHolder newVx(vxp, pos++, depCount);
                     m_waitingVertices.emplace(vxp, newVx);
                 }
             } else {  // REVERSE
                 if (vxp->outEmpty()) {
-                    VxHolder newVx(vxp, pos++, 0);
+                    const VxHolder newVx(vxp, pos++, 0);
                     m_readyVertices.insert(newVx);
                 } else {
                     uint32_t depCount = 0;
                     for (V3GraphEdge* depp = vxp->outBeginp(); depp; depp = depp->outNextp()) {
                         ++depCount;
                     }
-                    VxHolder newVx(vxp, pos++, depCount);
+                    const VxHolder newVx(vxp, pos++, depCount);
                     m_waitingVertices.emplace(vxp, newVx);
                 }
             }
@@ -194,7 +194,7 @@ private:
     void unblockDeps(const V3GraphVertex* vertexp) {
         if (m_way == GraphWay::FORWARD) {
             for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                V3GraphVertex* const toVertexp = edgep->top();
+                const V3GraphVertex* const toVertexp = edgep->top();
 
                 const auto it = m_waitingVertices.find(toVertexp);
                 UASSERT_OBJ(it != m_waitingVertices.end(), toVertexp,
@@ -206,7 +206,7 @@ private:
             }
         } else {
             for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                V3GraphVertex* const fromVertexp = edgep->fromp();
+                const V3GraphVertex* const fromVertexp = edgep->fromp();
 
                 const auto it = m_waitingVertices.find(fromVertexp);
                 UASSERT_OBJ(it != m_waitingVertices.end(), fromVertexp,

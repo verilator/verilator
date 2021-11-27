@@ -121,7 +121,7 @@ class CombineVisitor final : CombBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
-    AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
+    const AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
     //  AstUser4InUse     part of V3Hasher in V3DupFinder
 
     // STATE
@@ -223,6 +223,6 @@ public:
 
 void V3Combine::combineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CombineVisitor visitor{nodep}; }  // Destruct before checking
+    { CombineVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("combine", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

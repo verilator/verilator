@@ -162,9 +162,9 @@ private:
     //  AstVarScope::user1()            // V3GraphVertex* for this node
     //  AstCCall::user2()               // bool; walked next list for other ccalls
     //  Ast*::user3()                   // TraceActivityVertex* for this node
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
     // AstUser4InUse     In V3Hasher via V3DupFinder
 
     // STATE
@@ -180,7 +180,6 @@ private:
     TraceActivityVertex* const m_alwaysVtxp;  // "Always trace" vertex
     bool m_finding = false;  // Pass one of algorithm?
 
-    VDouble0 m_statChgSigs;  // Statistic tracking
     VDouble0 m_statUniqSigs;  // Statistic tracking
     VDouble0 m_statUniqCodes;  // Statistic tracking
 
@@ -216,7 +215,7 @@ private:
         // Find if there are any duplicates
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (TraceTraceVertex* const vvertexp = dynamic_cast<TraceTraceVertex*>(itp)) {
-                AstTraceDecl* const nodep = vvertexp->nodep();
+                const AstTraceDecl* const nodep = vvertexp->nodep();
                 if (nodep->valuep() && !vvertexp->duplicatep()) {
                     const auto dupit = dupFinder.findDuplicate(nodep->valuep());
                     if (dupit != dupFinder.end()) {
@@ -388,7 +387,7 @@ private:
             for (; it != end && it->first == actSet; ++it) {
                 if (!it->second->duplicatep()) {
                     uint32_t cost = 0;
-                    AstTraceDecl* const declp = it->second->nodep();
+                    const AstTraceDecl* const declp = it->second->nodep();
                     // The number of comparisons required by tracep->chg*
                     cost += declp->isWide() ? declp->codeInc() : 1;
                     // Arrays are traced by element
@@ -533,7 +532,7 @@ private:
                 }
             }
             // Add call to top function
-            AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
+            AstCCall* const callp = new AstCCall(funcp->fileline(), funcp);
             callp->argTypes("tracep");
             topFuncp->addStmtsp(callp);
         }
@@ -563,7 +562,7 @@ private:
                     // This is a duplicate trace node. We will assign the signal
                     // number to the canonical node, and emit this as an alias, so
                     // no need to create a TraceInc node.
-                    AstTraceDecl* const canonDeclp = canonVtxp->nodep();
+                    const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
                     UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp,
                                 "Canonical node is a duplicate");
                     UASSERT_OBJ(canonDeclp->code() != 0, canonDeclp,
@@ -890,7 +889,6 @@ public:
         iterate(nodep);
     }
     virtual ~TraceVisitor() override {
-        V3Stats::addStat("Tracing, Unique changing signals", m_statChgSigs);
         V3Stats::addStat("Tracing, Unique traced signals", m_statUniqSigs);
         V3Stats::addStat("Tracing, Unique trace codes", m_statUniqCodes);
     }
@@ -901,6 +899,6 @@ public:
 
 void V3Trace::traceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { TraceVisitor visitor{nodep}; }  // Destruct before checking
+    { TraceVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("trace", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

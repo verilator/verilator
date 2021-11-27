@@ -259,7 +259,7 @@ private:
         // if (debug() >= 9) { UINFO(0, "\n"); blockp->dumpTree(cout, "  labeli: "); }
         if (!blockp) {
             nodep->v3error("disable isn't underneath a begin with name: " << nodep->prettyNameQ());
-        } else if (AstBegin* beginp = VN_CAST(blockp, Begin)) {
+        } else if (AstBegin* const beginp = VN_CAST(blockp, Begin)) {
             // Jump to the end of the named block
             AstJumpLabel* const labelp = findAddLabel(beginp, false);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
@@ -287,6 +287,6 @@ public:
 
 void V3LinkJump::linkJump(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { LinkJumpVisitor bvisitor{nodep}; }  // Destruct before checking
+    { LinkJumpVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("link", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

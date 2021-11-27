@@ -50,7 +50,7 @@ class SliceVisitor final : public AstNVisitor {
     //  AstNodeAssign::user1()      -> bool.  True if find is complete
     //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()       -> AstVarRef. The VarRef that the final ArraySel points to
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstNode* m_assignp = nullptr;  // Assignment we are under
@@ -97,12 +97,12 @@ class SliceVisitor final : public AstNVisitor {
                 itemp = initp->initsp();
             }
             newp = itemp->cloneTree(false);
-        } else if (AstNodeCond* snodep = VN_CAST(nodep, NodeCond)) {
+        } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
             UINFO(9, "  cloneCond(" << elements << "," << offset << ") " << nodep << endl);
             return snodep->cloneType(snodep->condp()->cloneTree(false),
                                      cloneAndSel(snodep->expr1p(), elements, offset),
                                      cloneAndSel(snodep->expr2p(), elements, offset));
-        } else if (AstSliceSel* snodep = VN_CAST(nodep, SliceSel)) {
+        } else if (const AstSliceSel* const snodep = VN_CAST(nodep, SliceSel)) {
             UINFO(9, "  cloneSliceSel(" << elements << "," << offset << ") " << nodep << endl);
             const int leOffset = (snodep->declRange().lo()
                                   + (!snodep->declRange().littleEndian()
@@ -237,6 +237,6 @@ public:
 
 void V3Slice::sliceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { SliceVisitor visitor{nodep}; }  // Destruct before checking
+    { SliceVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("slice", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

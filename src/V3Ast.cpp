@@ -777,14 +777,14 @@ void AstNode::deleteTree() {
 #ifdef VL_LEAK_CHECKS
 void* AstNode::operator new(size_t size) {
     // Optimization note: Aligning to cache line is a loss, due to lost packing
-    AstNode* const objp = static_cast<AstNode*>(::operator new(size));
+    const AstNode* const objp = static_cast<AstNode*>(::operator new(size));
     V3Broken::addNewed(objp);
     return objp;
 }
 
 void AstNode::operator delete(void* objp, size_t size) {
     if (!objp) return;
-    AstNode* const nodep = static_cast<AstNode*>(objp);
+    const AstNode* const nodep = static_cast<AstNode*>(objp);
     V3Broken::deleted(nodep);
     ::operator delete(objp);
 }
@@ -995,7 +995,7 @@ void AstNode::checkTreeIterList(AstNode* backp) {
     // private: Check a (possible) list of nodes, this is always the head of the list
     // Audited to make sure this is never nullptr
     AstNode* const headp = this;
-    AstNode* tailp = this;
+    const AstNode* tailp = this;
     for (AstNode* nodep = headp; nodep; nodep = nodep->nextp()) {
         nodep->checkTreeIter(backp);
         UASSERT_OBJ(headp == this || !nextp(), this,

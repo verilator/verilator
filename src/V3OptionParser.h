@@ -61,7 +61,7 @@ public:
 
 private:
     // MEMBERS
-    std::unique_ptr<Impl> m_pimpl;
+    const std::unique_ptr<Impl> m_pimpl;
 
     // METHODS
     ActionIfs* find(const char* optp);

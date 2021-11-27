@@ -48,6 +48,14 @@ or "`ifdef`"'s may break other tools.
    Verilog functions where the variable is flattened out, and also enable
    other optimizations.
 
+   Verilator does not use any text inside the quotes for
+   ordering/scheduling.  If you need the $c to be called at a specific
+   time, e.g. when a variable changes, then the $c must be under an
+   appropriate sensitivity statement, e.g. :code:`always @(posedge clk)
+   $c("func()")` to call it on every edge, or e.g. :code:`always @*
+   c("func(",a,")")` to call it when :code:`a` changes (the latter working
+   because :code:`a` is outside the quotes).
+
    If you will be reading or writing any Verilog variables inside the C++
    functions, the Verilog signals must be declared with
    :option:`/*verilator&32;public*/` metacomments.

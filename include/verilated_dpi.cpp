@@ -428,13 +428,13 @@ void* svGetArrElemPtr(const svOpenArrayHandle h, int indx1, ...) {
     switch (varp->udims()) {
     case 1: datap = _vl_svGetArrElemPtr(h, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         datap = _vl_svGetArrElemPtr(h, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         datap = _vl_svGetArrElemPtr(h, 3, indx1, indx2, indx3);
         break;
     }

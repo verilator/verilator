@@ -116,7 +116,7 @@ public:
     V3Number& setDouble(double value);
     void setBit(int bit, char value) {  // Note must be pre-zeroed!
         if (bit >= m_width) return;
-        uint32_t mask = (1UL << (bit & 31));
+        const uint32_t mask = (1UL << (bit & 31));
         ValueAndX& v = m_value[bit / 32];
         if (value == '0' || value == 0) {
             v.m_value &= ~mask;
@@ -233,6 +233,7 @@ public:
     V3Number(String, AstNode* nodep, const string& value) {
         init(nodep, 0);
         setString(value);
+        m_fromString = true;
     }
     class Null {};
     V3Number(Null, AstNode* nodep) {

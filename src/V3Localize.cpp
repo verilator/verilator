@@ -45,10 +45,10 @@ private:
     //  AstVarScope::user3p()   ->  Set of CFuncs referencing this VarScope. (via m_accessors)
     //  AstCFunc::user4p()      ->  Multimap of 'VarScope -> VarRefs that reference that VarScope'
     //                              in this function. (via m_references)
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
-    AstUser4InUse m_inuser4;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
+    const AstUser4InUse m_inuser4;
 
     AstUser3Allocator<AstVarScope, std::unordered_set<AstCFunc*>> m_accessors;
     AstUser4Allocator<AstCFunc, std::unordered_multimap<const AstVarScope*, AstVarRef*>>
@@ -201,6 +201,6 @@ public:
 
 void V3Localize::localizeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { LocalizeVisitor visitor{nodep}; }  // Destruct before checking
+    { LocalizeVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("localize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

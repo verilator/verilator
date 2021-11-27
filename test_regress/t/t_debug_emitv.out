@@ -88,7 +88,7 @@ module Vt_debug_emitv___024root;
         $fflush(t.fd);
         $fscanf(t.fd, "%d", t.sum);
         ;
-        $fdisplay(32'h69203d20, "%d", t.sum);
+        $fdisplay(32'h69203d20, "%~", t.sum);
         $fwrite(t.fd, "hello");
         $readmemh(t.fd, t.array);
         $readmemh(t.fd, t.array, 32'sh0);
@@ -161,7 +161,7 @@ module Vt_debug_emitv___024root;
         else begin
             $display("0");
         end
-        $display("%d%d", t._Vpast_0_0t._Vpast_1_0, 
+        $display("%~%~", t._Vpast_0_0t._Vpast_1_0, 
                  t._Vpast_1_0);
         t.str = $sformatf("cyc=%~", t.cyc);
         ;

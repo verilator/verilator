@@ -43,7 +43,7 @@ private:
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()   // bool           Moved default caseitems
-    AstUser2InUse m_inuser2;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     // Below state needs to be preserved between each module call.
@@ -136,12 +136,12 @@ private:
             iterateChildren(nodep);
         }
         m_ftaskp = nullptr;
-        if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+        if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->taskp() && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
-            nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+            nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
         }
     }
 
@@ -225,17 +225,17 @@ private:
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            varrefp->cloneTree(false)));
-            } else if (AstUnlinkedRef* uvxrp
+            } else if (AstUnlinkedRef* const uvxrp
                        = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            uvxrp->cloneTree(false)));
-            } else if (auto* fromp = VN_CAST(basefromp, LambdaArgRef)) {
+            } else if (auto* const fromp = VN_CAST(basefromp, LambdaArgRef)) {
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            fromp->cloneTree(false)));
-            } else if (AstMemberSel* fromp = VN_CAST(basefromp, MemberSel)) {
+            } else if (AstMemberSel* const fromp = VN_CAST(basefromp, MemberSel)) {
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
                                            fromp->cloneTree(false)));
-            } else if (AstEnumItemRef* fromp = VN_CAST(basefromp, EnumItemRef)) {
+            } else if (AstEnumItemRef* const fromp = VN_CAST(basefromp, EnumItemRef)) {
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::ENUM_BASE,
                                            fromp->cloneTree(false)));
             } else if (VN_IS(basefromp, Replicate)) {
@@ -263,9 +263,9 @@ private:
     virtual void visit(AstPragma* nodep) override {
         if (nodep->pragType() == AstPragmaType::HIER_BLOCK) {
             UASSERT_OBJ(m_modp, nodep, "HIER_BLOCK not under a module");
-            // If this is hierarchical mode which is to create protect-lib,
+            // If this is hierarchical mode which is to lib-create,
             // sub modules do not have hier_block meta comment in the source code.
-            // But .vlt files may still mark a module which is actually a protect-lib wrapper
+            // But .vlt files may still mark a module which is actually a lib-create wrapper
             // hier_block. AstNodeModule::hierBlock() can be true only when --hierarchical is
             // specified.
             m_modp->hierBlock(v3Global.opt.hierarchical());
@@ -364,7 +364,7 @@ private:
                     bool inpercent = false;
                     for (int i = 0; i < numchars; i++) {
                         const int ii = numchars - i - 1;
-                        char c = constp->num().dataByte(ii);
+                        const char c = constp->num().dataByte(ii);
                         str[i] = c;
                         if (!inpercent && c == '%') {
                             inpercent = true;
@@ -403,10 +403,8 @@ private:
     }
 
     static void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
-        if (!filep) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");
-        }
+        // This might fail on complex expressions like arrays
+        // We use attrFileDescr() only for lint suppression, so that's ok
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
 
@@ -461,7 +459,7 @@ private:
         if ((VN_IS(nodep->backp(), Display)
              && VN_AS(nodep->backp(), Display)->displayType().needScopeTracking())
             || nodep->formatScopeTracking()) {
-            nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+            nodep->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
     }
 
@@ -586,8 +584,8 @@ public:
 void V3LinkResolve::linkResolve(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     {
-        LinkResolveVisitor visitor{rootp};
-        LinkBotupVisitor visitorb{rootp};
+        const LinkResolveVisitor visitor{rootp};
+        LinkBotupVisitor{rootp};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkresolve", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

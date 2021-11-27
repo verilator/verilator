@@ -179,19 +179,6 @@ Summary:
    remove it from the combinatorial logic reevaluation checking code. This
    may greatly improve performance.
 
-.. option:: --make <build-tool>
-
-   Generates a script for the specified build tool.
-
-   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
-   Both can be specified together.  If no build tool is specified, gmake is
-   assumed.  The executable of gmake can be configured via environment
-   variable "MAKE".
-
-   When using :vlopt:`--build` Verilator takes over the responsibility of
-   building the model library/executable.  For this reason :option:`--make`
-   cannot be specified when using :vlopt:`--build`.
-
 .. option:: --compiler <compiler-name>
 
    Enables workarounds for the specified C++ compiler (list below).
@@ -588,6 +575,23 @@ Summary:
    "+libext+" is fairly standard across Verilog tools.  Defaults to
    ".v+.sv".
 
+.. option:: --lib-create <name>
+
+   Produces C++, Verilog wrappers and a Makefile which can in turn produce
+   a DPI library which can be used by Verilator or other simulators along
+   with the corresponding Verilog wrapper.  The Makefile will build both a
+   static and dynamic version of the library named :file:`lib<name>.a` and
+   :file:`lib<name>.so` respectively.  This is done because some simulators
+   require a dynamic library, but the static library is arguably easier to
+   use if possible.  :vlopt:`--protect-lib` implies :vlopt:`--protect-ids`.
+
+   When using :vlopt:`--lib-create` it is advised to also use
+   :vlopt:`--timescale-override /1fs <--timescale-override>` to ensure the
+   model has a time resolution that is always compatible with the time
+   precision of the upper instantiating module.
+
+   See also :vlopt:`--protect-lib`.
+
 .. option:: --lint-only
 
    Check the files for lint violations only, do not create any other
@@ -598,6 +602,19 @@ Summary:
 
    If the design is not to be completely Verilated see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
+
+.. option:: --make <build-tool>
+
+   Generates a script for the specified build tool.
+
+   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
+   Both can be specified together.  If no build tool is specified, gmake is
+   assumed.  The executable of gmake can be configured via environment
+   variable "MAKE".
+
+   When using :vlopt:`--build` Verilator takes over the responsibility of
+   building the model library/executable.  For this reason :option:`--make`
+   cannot be specified when using :vlopt:`--build`.
 
 .. option:: -MAKEFLAGS <string>
 
@@ -872,23 +889,14 @@ Summary:
 
 .. option:: --protect-lib <name>
 
-   Produces C++, Verilog wrappers and a Makefile which can in turn produce
-   a DPI library which can be used by Verilator or other simulators along
-   with the corresponding Verilog wrapper.  The Makefile will build both a
-   static and dynamic version of the library named :file:`lib<name>.a` and
-   :file:`lib<name>.so` respectively.  This is done because some simulators
-   require a dynamic library, but the static library is arguably easier to
-   use if possible.  :vlopt:`--protect-lib` implies :vlopt:`--protect-ids`.
+   Produces a DPI library similar to :vlopt:`--lib-create`, but hides
+   internal design details.  :vlopt:`--protect-lib` implies
+   :vlopt:`--protect-ids`, and :vlopt:`--lib-create`.
 
    This allows for the secure delivery of sensitive IP without the need for
    encrypted RTL (i.e. IEEE P1735).  See :file:`examples/make_protect_lib`
    in the distribution for a demonstration of how to build and use the DPI
    library.
-
-   When using :vlopt:`--protect-lib` it is advised to also use
-   :vlopt:`--timescale-override /1fs <--timescale-override>` to ensure the
-   model has a time resolution that is always compatible with the time
-   precision of the upper instantiating module.
 
 .. option:: --private
 

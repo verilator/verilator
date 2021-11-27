@@ -179,11 +179,11 @@ static bool isClockerAssignment(AstNodeAssign* nodep) {
 
 void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
     if (debug()) cout << "-Info-Loop: " << vertexp << "\n";
-    if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
+    if (OrderLogicVertex* const vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
         std::cerr << vvertexp->nodep()->fileline()->warnOther()
                   << "     Example path: " << vvertexp->nodep()->typeName() << endl;
     }
-    if (OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp)) {
+    if (OrderVarVertex* const vvertexp = dynamic_cast<OrderVarVertex*>(vertexp)) {
         std::cerr << vvertexp->varScp()->fileline()->warnOther()
                   << "     Example path: " << vvertexp->varScp()->prettyName() << endl;
     }
@@ -229,7 +229,7 @@ class OrderClkMarkVisitor final : public AstNVisitor {
                 return;  // skip the marking
             }
 
-            const AstVarRef* lhsp = VN_CAST(nodep->lhsp(), VarRef);
+            const AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef);
             if (lhsp && (lhsp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_UNKNOWN)) {
                 lhsp->varp()->attrClocker(VVarAttrClocker::CLOCKER_YES);  // mark as clocker
                 m_newClkMarked = true;  // enable a further run since new clocker is marked
@@ -364,8 +364,8 @@ class OrderBuildVisitor final : public AstNVisitor {
     // NODE STATE
     //  AstVarScope::user1    -> OrderUser instance for variable (via m_orderUser)
     //  AstVarScope::user2    -> VarUsage within logic blocks
-    AstUser1InUse user1InUse;
-    AstUser2InUse user2InUse;
+    const AstUser1InUse user1InUse;
+    const AstUser2InUse user2InUse;
     AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
@@ -736,7 +736,7 @@ class OrderBuildVisitor final : public AstNVisitor {
         for (AstVarScope* vscp = nodep->topScopep()->scopep()->varsp(); vscp;
              vscp = VN_AS(vscp->nextp(), VarScope)) {
             if (vscp->varp()->isNonOutput()) {
-                OrderVarVertex* varVxp = getVarVertex(vscp, VarVertexType::STD);
+                OrderVarVertex* const varVxp = getVarVertex(vscp, VarVertexType::STD);
                 new OrderEdge(m_graphp, m_inputsVxp, varVxp, WEIGHT_INPUT);
             }
         }
@@ -765,8 +765,8 @@ public:
     V3List<OrderMoveVertex*> m_readyVertices;  // Ready vertices with same domain & scope
 private:
     bool m_onReadyList = false;  // True if DomScope is already on list of ready dom/scopes
-    const AstSenTree* m_domainp;  // Domain all vertices belong to
-    const AstScope* m_scopep;  // Scope all vertices belong to
+    const AstSenTree* const m_domainp;  // Domain all vertices belong to
+    const AstScope* const m_scopep;  // Scope all vertices belong to
 
     using DomScopeKey = std::pair<const AstSenTree*, const AstScope*>;
     using DomScopeMap = std::map<DomScopeKey, OrderMoveDomScope*>;
@@ -852,7 +852,7 @@ private:
     // MEMBERS
     const V3Graph* m_graphp;  // Input graph of OrderLogicVertex's etc
     V3Graph* m_outGraphp;  // Output graph of T_MoveVertex's
-    MoveVertexMaker* m_vxMakerp;  // Factory class for T_MoveVertex's
+    MoveVertexMaker* const m_vxMakerp;  // Factory class for T_MoveVertex's
     Logic2Move m_logic2move;  // Map Logic to Vertex
     // Maps an (original graph vertex, domain) pair to a T_MoveVertex
     // Not std::unordered_map, because std::pair doesn't provide std::hash
@@ -884,8 +884,8 @@ public:
 
         // For each logic node, make a T_MoveVertex
         for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (OrderLogicVertex* lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
-                T_MoveVertex* moveVxp = m_vxMakerp->makeVertexp(
+            if (OrderLogicVertex* const lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
+                T_MoveVertex* const moveVxp = m_vxMakerp->makeVertexp(
                     lvertexp, nullptr, lvertexp->scopep(), lvertexp->domainp());
                 if (moveVxp) {
                     // Cross link so we can find it later
@@ -895,8 +895,8 @@ public:
         }
         // Build edges between logic vertices
         for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (OrderLogicVertex* lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
-                T_MoveVertex* moveVxp = m_logic2move[lvertexp];
+            if (OrderLogicVertex* const lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
+                T_MoveVertex* const moveVxp = m_logic2move[lvertexp];
                 if (moveVxp) iterate(moveVxp, lvertexp, lvertexp->domainp());
             }
         }
@@ -913,7 +913,7 @@ private:
                 continue;
             }
             const int weight = edgep->weight();
-            if (const OrderLogicVertex* toLVertexp
+            if (const OrderLogicVertex* const toLVertexp
                 = dynamic_cast<const OrderLogicVertex*>(edgep->top())) {
 
                 // Do not construct dependencies across exclusive domains.
@@ -928,11 +928,11 @@ private:
                 // This is an OrderVarVertex or other vertex representing
                 // data. (Could be var, settle, or input type vertex.)
                 const V3GraphVertex* nonLogicVxp = edgep->top();
-                VxDomPair key(nonLogicVxp, domainp);
+                const VxDomPair key(nonLogicVxp, domainp);
                 if (!m_var2move[key]) {
-                    const OrderEitherVertex* eithp
+                    const OrderEitherVertex* const eithp
                         = dynamic_cast<const OrderEitherVertex*>(nonLogicVxp);
-                    T_MoveVertex* newMoveVxp
+                    T_MoveVertex* const newMoveVxp
                         = m_vxMakerp->makeVertexp(nullptr, eithp, eithp->scopep(), domainp);
                     m_var2move[key] = newMoveVxp;
 
@@ -974,7 +974,7 @@ public:
     virtual OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
                                          const AstScope* scopep,
                                          const AstSenTree* domainp) override {
-        OrderMoveVertex* resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
+        OrderMoveVertex* const resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
         resultp->domScopep(OrderMoveDomScope::findCreate(domainp, scopep));
         resultp->m_pomWaitingE.pushBack(*m_pomWaitingp, resultp);
         return resultp;
@@ -1017,8 +1017,8 @@ class OrderVerticesByDomainThenScope final {
 
 public:
     virtual bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
-        const MTaskMoveVertex* l_vxp = dynamic_cast<const MTaskMoveVertex*>(lhsp);
-        const MTaskMoveVertex* r_vxp = dynamic_cast<const MTaskMoveVertex*>(rhsp);
+        const MTaskMoveVertex* const l_vxp = dynamic_cast<const MTaskMoveVertex*>(lhsp);
+        const MTaskMoveVertex* const r_vxp = dynamic_cast<const MTaskMoveVertex*>(rhsp);
         vluint64_t l_id = m_ids.findId(l_vxp->domainp());
         vluint64_t r_id = m_ids.findId(r_vxp->domainp());
         if (l_id < r_id) return true;
@@ -1037,8 +1037,8 @@ public:
     // Sort vertex's, which must be AbstractMTask's, into a deterministic
     // order by comparing their serial IDs.
     virtual bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
-        const AbstractMTask* lmtaskp = dynamic_cast<const AbstractLogicMTask*>(lhsp);
-        const AbstractMTask* rmtaskp = dynamic_cast<const AbstractLogicMTask*>(rhsp);
+        const AbstractMTask* const lmtaskp = dynamic_cast<const AbstractLogicMTask*>(lhsp);
+        const AbstractMTask* const rmtaskp = dynamic_cast<const AbstractLogicMTask*>(rhsp);
         return lmtaskp->id() < rmtaskp->id();
     }
 };
@@ -1050,7 +1050,7 @@ class OrderProcess final : AstNDeleter {
     // NODE STATE
     //  AstNodeModule::user3  -> int: Number of AstCFuncs created under this module
     //  AstNode::user4        -> Used by V3Const::constifyExpensiveEdit
-    AstUser3InUse user3InUse;
+    const AstUser3InUse user3InUse;
 
     // STATE
     OrderGraph& m_graph;  // The ordering graph
@@ -1131,8 +1131,8 @@ class OrderProcess final : AstNDeleter {
         AstVarScope* const nodep = vertexp->varScp();
         UASSERT(nodep != v3Global.rootp()->dpiExportTriggerp(),
                 "DPI export trigger should not be marked circular");
-        OrderLogicVertex* fromLVtxp = nullptr;
-        OrderLogicVertex* toLVtxp = nullptr;
+        const OrderLogicVertex* fromLVtxp = nullptr;
+        const OrderLogicVertex* toLVtxp = nullptr;
         if (edgep) {
             fromLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
             toLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->top());
@@ -1229,8 +1229,8 @@ class OrderProcess final : AstNDeleter {
         std::unordered_set<const AstVar*> canSplitList;
         int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
-            OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
-            AstVar* varp = vsvertexp->varScp()->varp();
+            OrderVarStdVertex* const vsvertexp = m_unoptflatVars[i];
+            AstVar* const varp = vsvertexp->varScp()->varp();
             const bool canSplit = V3SplitVar::canSplitVar(varp);
             std::cerr << V3Error::warnMore() << "    " << varp->fileline() << " "
                       << varp->prettyName() << std::dec << ", width " << varp->width()
@@ -1249,8 +1249,8 @@ class OrderProcess final : AstNDeleter {
                          });
         lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
-            OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
-            AstVar* varp = vsvertexp->varScp()->varp();
+            OrderVarStdVertex* const vsvertexp = m_unoptflatVars[i];
+            AstVar* const varp = vsvertexp->varScp()->varp();
             const bool canSplit = V3SplitVar::canSplitVar(varp);
             std::cerr << V3Error::warnMore() << "    " << varp->fileline() << " "
                       << varp->prettyName() << ", width " << std::dec << varp->width()
@@ -1273,9 +1273,9 @@ class OrderProcess final : AstNDeleter {
     void reportLoopVarsIterate(V3GraphVertex* vertexp, uint32_t color) {
         if (vertexp->user()) return;  // Already done
         vertexp->user(1);
-        if (OrderVarStdVertex* vsvertexp = dynamic_cast<OrderVarStdVertex*>(vertexp)) {
+        if (OrderVarStdVertex* const vsvertexp = dynamic_cast<OrderVarStdVertex*>(vertexp)) {
             // Only reporting on standard variable vertices
-            AstVar* varp = vsvertexp->varScp()->varp();
+            AstVar* const varp = vsvertexp->varScp()->varp();
             if (!varp->user3()) {
                 const string name = varp->prettyName();
                 if ((varp->width() != 1) && (name.find("__Vdly") == string::npos)
@@ -1298,7 +1298,7 @@ class OrderProcess final : AstNDeleter {
     // Only for member initialization in constructor
     static OrderInputsVertex& findInputVertex(OrderGraph& graph) {
         for (V3GraphVertex* vtxp = graph.verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-            if (auto* ivtxp = dynamic_cast<OrderInputsVertex*>(vtxp)) return *ivtxp;
+            if (auto* const ivtxp = dynamic_cast<OrderInputsVertex*>(vtxp)) return *ivtxp;
         }
         VL_UNREACHABLE
     }
@@ -1369,7 +1369,7 @@ void OrderProcess::processInputs() {
     todoVec.push_front(&m_inputsVtx);
     m_inputsVtx.isFromInput(true);  // By definition
     while (!todoVec.empty()) {
-        OrderEitherVertex* vertexp = todoVec.back();
+        OrderEitherVertex* const vertexp = todoVec.back();
         todoVec.pop_back();
         processInputsOutIterate(vertexp, todoVec);
     }
@@ -1380,7 +1380,7 @@ void OrderProcess::processInputsInIterate(OrderEitherVertex* vertexp, VertexVec&
     if (vertexp->user()) return;  // Already processed
     if (false && debug() >= 9) {
         UINFO(9, " InIIter " << vertexp << endl);
-        if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
+        if (OrderLogicVertex* const vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
             vvertexp->nodep()->dumpTree(cout, "-            TT: ");
         }
     }
@@ -1389,7 +1389,7 @@ void OrderProcess::processInputsInIterate(OrderEitherVertex* vertexp, VertexVec&
     // Also, determine if this vertex is an input
     int inonly = 1;  // 0=no, 1=maybe, 2=yes until a no
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-        OrderEitherVertex* frVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
+        OrderEitherVertex* const frVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
         processInputsInIterate(frVertexp, todoVec);
         if (frVertexp->isFromInput()) {
             if (inonly == 1) inonly = 2;
@@ -1428,11 +1428,11 @@ void OrderProcess::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec
     {
         // Propagate PrimaryIn through simple assignments, following target of vertex
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            OrderEitherVertex* toVertexp = static_cast<OrderEitherVertex*>(edgep->top());
-            if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {
+            OrderEitherVertex* const toVertexp = static_cast<OrderEitherVertex*>(edgep->top());
+            if (OrderVarStdVertex* const vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {
                 processInputsInIterate(vvertexp, todoVec);
             }
-            if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(toVertexp)) {
+            if (OrderLogicVertex* const vvertexp = dynamic_cast<OrderLogicVertex*>(toVertexp)) {
                 if (VN_IS(vvertexp->nodep(), NodeAssign)) {
                     processInputsInIterate(vvertexp, todoVec);
                 }
@@ -1448,7 +1448,7 @@ void OrderProcess::processCircular() {
     // Take broken edges and add circular flags
     // The change detect code will use this to force changedets
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(itp)) {
+        if (OrderVarStdVertex* const vvertexp = dynamic_cast<OrderVarStdVertex*>(itp)) {
             if (vvertexp->isClock() && !vvertexp->isFromInput()) {
                 // If a clock is generated internally, we need to do another
                 // loop through the entire evaluation.  This fixes races; see
@@ -1471,7 +1471,7 @@ void OrderProcess::processCircular() {
             // Also mark any cut edges
             for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 if (edgep->weight() == 0) {  // was cut
-                    OrderEdge* oedgep = dynamic_cast<OrderEdge*>(edgep);
+                    OrderEdge* const oedgep = dynamic_cast<OrderEdge*>(edgep);
                     UASSERT_OBJ(oedgep, vvertexp->varScp(), "Cutable edge not of proper type");
                     UINFO(6, "      CutCircularO: " << vvertexp->name() << endl);
                     nodeMarkCircular(vvertexp, oedgep);
@@ -1479,7 +1479,7 @@ void OrderProcess::processCircular() {
             }
             for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 if (edgep->weight() == 0) {  // was cut
-                    OrderEdge* oedgep = dynamic_cast<OrderEdge*>(edgep);
+                    OrderEdge* const oedgep = dynamic_cast<OrderEdge*>(edgep);
                     UASSERT_OBJ(oedgep, vvertexp->varScp(), "Cutable edge not of proper type");
                     UINFO(6, "      CutCircularI: " << vvertexp->name() << endl);
                     nodeMarkCircular(vvertexp, oedgep);
@@ -1493,12 +1493,12 @@ void OrderProcess::processSensitive() {
     // Sc sensitives are required on all inputs that go to a combo
     // block.  (Not inputs that go only to clocked blocks.)
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(itp)) {
+        if (OrderVarStdVertex* const vvertexp = dynamic_cast<OrderVarStdVertex*>(itp)) {
             if (vvertexp->varScp()->varp()->isNonOutput()) {
                 // UINFO(0, "  scsen " << vvertexp << endl);
                 for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;
                      edgep = edgep->outNextp()) {
-                    if (OrderEitherVertex* toVertexp
+                    if (OrderEitherVertex* const toVertexp
                         = dynamic_cast<OrderEitherVertex*>(edgep->top())) {
                         if (edgep->weight() && toVertexp->domainp()) {
                             // UINFO(0, "      " << toVertexp->domainp() << endl);
@@ -1515,7 +1515,7 @@ void OrderProcess::processSensitive() {
 
 void OrderProcess::processDomains() {
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        OrderEitherVertex* vertexp = dynamic_cast<OrderEitherVertex*>(itp);
+        OrderEitherVertex* const vertexp = dynamic_cast<OrderEitherVertex*>(itp);
         UASSERT(vertexp, "Null or vertex not derived from EitherVertex");
         processDomainsIterate(vertexp);
     }
@@ -1530,13 +1530,13 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
     //     else, it's full combo code
     if (vertexp->domainp()) return;  // Already processed, or sequential logic
     UINFO(5, "    pdi: " << vertexp << endl);
-    OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp);
+    OrderVarVertex* const vvertexp = dynamic_cast<OrderVarVertex*>(vertexp);
     AstSenTree* domainp = nullptr;
     if (vvertexp && vvertexp->varScp()->varp()->isNonOutput()) domainp = m_comboDomainp;
     if (vvertexp && vvertexp->varScp()->isCircular()) domainp = m_comboDomainp;
     if (!domainp) {
         for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            OrderEitherVertex* fromVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
+            OrderEitherVertex* const fromVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
             if (edgep->weight() && fromVertexp->domainMatters()) {
                 UINFO(9, "     from d=" << cvtToHex(fromVertexp->domainp()) << " " << fromVertexp
                                         << endl);
@@ -1565,7 +1565,7 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
                         UINFO(0, "         d2   =" << fromVertexp->domainp() << endl);
                         fromVertexp->domainp()->dumpTree(cout);
                     }  // LCOV_EXCL_STOP
-                    AstSenTree* newtreep = domainp->cloneTree(false);
+                    AstSenTree* const newtreep = domainp->cloneTree(false);
                     AstSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
                     UASSERT_OBJ(newtree2p, fromVertexp->domainp(),
                                 "No senitem found under clocked domain");
@@ -1614,7 +1614,7 @@ void OrderProcess::processEdgeReport() {
     std::deque<string> report;
 
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(itp)) {
+        if (OrderVarVertex* const vvertexp = dynamic_cast<OrderVarVertex*>(itp)) {
             string name(vvertexp->varScp()->prettyName());
             if (dynamic_cast<OrderVarPreVertex*>(itp)) {
                 name += " {PRE}";
@@ -1626,7 +1626,7 @@ void OrderProcess::processEdgeReport() {
             std::ostringstream os;
             os.setf(std::ios::left);
             os << "  " << cvtToHex(vvertexp->varScp()) << " " << std::setw(50) << name << " ";
-            AstSenTree* sentreep = vvertexp->domainp();
+            AstSenTree* const sentreep = vvertexp->domainp();
             if (sentreep) V3EmitV::verilogForTree(sentreep, os);
             report.push_back(os.str());
         }
@@ -1680,7 +1680,8 @@ void OrderProcess::processMove() {
     while (!m_pomReadyDomScope.empty()) {
         // Start with top node on ready list's domain & scope
         OrderMoveDomScope* domScopep = m_pomReadyDomScope.begin();
-        OrderMoveVertex* topVertexp = domScopep->readyVertices().begin();  // lintok-begin-on-ref
+        OrderMoveVertex* const topVertexp
+            = domScopep->readyVertices().begin();  // lintok-begin-on-ref
         UASSERT(topVertexp, "domScope on ready list without any nodes ready under it");
         // Work on all scopes ready inside this domain
         while (domScopep) {
@@ -1714,7 +1715,7 @@ void OrderProcess::processMovePrepReady() {
     // Make list of ready nodes
     UINFO(5, "  MovePrepReady\n");
     for (OrderMoveVertex* vertexp = m_pomWaiting.begin(); vertexp;) {
-        OrderMoveVertex* nextp = vertexp->pomWaitingNextp();
+        OrderMoveVertex* const nextp = vertexp->pomWaitingNextp();
         if (vertexp->isWait() && vertexp->inEmpty()) processMoveReadyOne(vertexp);
         vertexp = nextp;
     }
@@ -1749,7 +1750,7 @@ void OrderProcess::processMoveDoneOne(OrderMoveVertex* vertexp) {
     // Mark our outputs as one closer to ready
     for (V3GraphEdge *edgep = vertexp->outBeginp(), *nextp; edgep; edgep = nextp) {
         nextp = edgep->outNextp();
-        OrderMoveVertex* toVertexp = static_cast<OrderMoveVertex*>(edgep->top());
+        OrderMoveVertex* const toVertexp = static_cast<OrderMoveVertex*>(edgep->top());
         UINFO(9, "          Clear to " << (toVertexp->inEmpty() ? "[EMP] " : "      ") << toVertexp
                                        << endl);
         // Delete this edge
@@ -1766,11 +1767,11 @@ void OrderProcess::processMoveDoneOne(OrderMoveVertex* vertexp) {
 void OrderProcess::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep,
                                   int level) {
     UASSERT_OBJ(vertexp->domScopep() == domScopep, vertexp, "Domain mismatch; list misbuilt?");
-    const OrderLogicVertex* lvertexp = vertexp->logicp();
-    const AstScope* scopep = lvertexp->scopep();
+    const OrderLogicVertex* const lvertexp = vertexp->logicp();
+    const AstScope* const scopep = lvertexp->scopep();
     UINFO(5, "    POSmove l" << std::setw(3) << level << " d=" << cvtToHex(lvertexp->domainp())
                              << " s=" << cvtToHex(scopep) << " " << lvertexp << endl);
-    AstActive* newActivep
+    AstActive* const newActivep
         = processMoveOneLogic(lvertexp, m_pomNewFuncp /*ref*/, m_pomNewStmts /*ref*/);
     if (newActivep) m_scopetop.addActivep(newActivep);
     processMoveDoneOne(vertexp);
@@ -1839,7 +1840,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
                 newFuncpr->addStmtsp(nodep);
                 if (v3Global.opt.outputSplitCFuncs()) {
                     // Add in the number of nodes we're adding
-                    EmitCBaseCounterVisitor visitor{nodep};
+                    const EmitCBaseCounterVisitor visitor{nodep};
                     newStmtsr += visitor.count();
                 }
             }
@@ -1856,10 +1857,10 @@ void OrderProcess::processMTasksInitial(InitialLogicE logic_type) {
     //
     int initStmts = 0;
     AstCFunc* initCFunc = nullptr;
-    AstScope* lastScopep = nullptr;
+    const AstScope* lastScopep = nullptr;
     for (V3GraphVertex* initVxp = m_graph.verticesBeginp(); initVxp;
          initVxp = initVxp->verticesNextp()) {
-        OrderLogicVertex* initp = dynamic_cast<OrderLogicVertex*>(initVxp);
+        OrderLogicVertex* const initp = dynamic_cast<OrderLogicVertex*>(initVxp);
         if (!initp) continue;
         if ((logic_type == LOGIC_INITIAL) && !initp->domainp()->hasInitial()) continue;
         if ((logic_type == LOGIC_SETTLE) && !initp->domainp()->hasSettle()) continue;
@@ -1868,7 +1869,8 @@ void OrderProcess::processMTasksInitial(InitialLogicE logic_type) {
             initCFunc = nullptr;
             lastScopep = initp->scopep();
         }
-        AstActive* newActivep = processMoveOneLogic(initp, initCFunc /*ref*/, initStmts /*ref*/);
+        AstActive* const newActivep
+            = processMoveOneLogic(initp, initCFunc /*ref*/, initStmts /*ref*/);
         if (newActivep) m_scopetop.addActivep(newActivep);
     }
 }
@@ -1911,7 +1913,7 @@ void OrderProcess::processMTasks() {
     GraphStream<OrderVerticesByDomainThenScope> emit_logic(&logicGraph);
     const V3GraphVertex* moveVxp;
     while ((moveVxp = emit_logic.nextp())) {
-        const MTaskMoveVertex* movep = dynamic_cast<const MTaskMoveVertex*>(moveVxp);
+        const MTaskMoveVertex* const movep = dynamic_cast<const MTaskMoveVertex*>(moveVxp);
         const unsigned mtaskId = movep->color();
         UASSERT(mtaskId > 0, "Every MTaskMoveVertex should have an mtask assignment >0");
         if (movep->logicp()) {
@@ -1922,22 +1924,22 @@ void OrderProcess::processMTasks() {
             // take this opportunity to annotate each AstVar with the id's
             // of mtasks that consume it and produce it. We'll use this
             // information in V3EmitC when we lay out var's in memory.
-            const OrderLogicVertex* logicp = movep->logicp();
+            const OrderLogicVertex* const logicp = movep->logicp();
             for (const V3GraphEdge* edgep = logicp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                const OrderVarVertex* pre_varp
+                const OrderVarVertex* const pre_varp
                     = dynamic_cast<const OrderVarVertex*>(edgep->fromp());
                 if (!pre_varp) continue;
-                AstVar* varp = pre_varp->varScp()->varp();
+                AstVar* const varp = pre_varp->varScp()->varp();
                 // varp depends on logicp, so logicp produces varp,
                 // and vice-versa below
                 varp->addProducingMTaskId(mtaskId);
             }
             for (const V3GraphEdge* edgep = logicp->outBeginp(); edgep;
                  edgep = edgep->outNextp()) {
-                const OrderVarVertex* post_varp
+                const OrderVarVertex* const post_varp
                     = dynamic_cast<const OrderVarVertex*>(edgep->top());
                 if (!post_varp) continue;
-                AstVar* varp = post_varp->varScp()->varp();
+                AstVar* const varp = post_varp->varScp()->varp();
                 varp->addConsumingMTaskId(mtaskId);
             }
             // TODO? We ignore IO vars here, so those will have empty mtask
@@ -1947,8 +1949,8 @@ void OrderProcess::processMTasks() {
 
     // Create the AstExecGraph node which represents the execution
     // of the MTask graph.
-    FileLine* rootFlp = v3Global.rootp()->fileline();
-    AstExecGraph* execGraphp = new AstExecGraph(rootFlp);
+    FileLine* const rootFlp = v3Global.rootp()->fileline();
+    AstExecGraph* const execGraphp = new AstExecGraph(rootFlp);
     m_scopetop.addActivep(execGraphp);
     v3Global.rootp()->execGraphp(execGraphp);
 
@@ -1956,10 +1958,10 @@ void OrderProcess::processMTasks() {
     GraphStream<MTaskVxIdLessThan> emit_mtasks(&mtasks);
     const V3GraphVertex* mtaskVxp;
     while ((mtaskVxp = emit_mtasks.nextp())) {
-        const AbstractLogicMTask* mtaskp = dynamic_cast<const AbstractLogicMTask*>(mtaskVxp);
+        const AbstractLogicMTask* const mtaskp = dynamic_cast<const AbstractLogicMTask*>(mtaskVxp);
 
         // Create a body for this mtask
-        AstMTaskBody* bodyp = new AstMTaskBody(rootFlp);
+        AstMTaskBody* const bodyp = new AstMTaskBody(rootFlp);
         MTaskState& state = mtaskStates[mtaskp->id()];
         state.m_mtaskBodyp = bodyp;
 
@@ -1976,7 +1978,7 @@ void OrderProcess::processMTasks() {
             }
             last_domainp = logicp->domainp();
 
-            AstActive* newActivep
+            AstActive* const newActivep
                 = processMoveOneLogic(logicp, leafCFuncp /*ref*/, leafStmts /*ref*/);
             if (newActivep) bodyp->addStmtsp(newActivep);
         }
@@ -1996,8 +1998,9 @@ void OrderProcess::processMTasks() {
         state.m_mtaskBodyp->execMTaskp(state.m_execMTaskp);
         for (V3GraphEdge* inp = mtaskp->inBeginp(); inp; inp = inp->inNextp()) {
             const V3GraphVertex* fromVxp = inp->fromp();
-            const AbstractLogicMTask* fromp = dynamic_cast<const AbstractLogicMTask*>(fromVxp);
-            MTaskState& fromState = mtaskStates[fromp->id()];
+            const AbstractLogicMTask* const fromp
+                = dynamic_cast<const AbstractLogicMTask*>(fromVxp);
+            const MTaskState& fromState = mtaskStates[fromp->id()];
             new V3GraphEdge(execGraphp->mutableDepGraphp(), fromState.m_execMTaskp,
                             state.m_execMTaskp, 1);
         }

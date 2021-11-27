@@ -37,7 +37,7 @@ private:
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     using DerivedSet = std::unordered_set<AstClass*>;
     using BaseToDerivedMap = std::unordered_map<AstClass*, DerivedSet>;
@@ -119,7 +119,7 @@ private:
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
     //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
     // AstUser1InUse    m_inuser1;      (Allocated for use in RandomizeMarkVisitor)
-    AstUser2InUse m_inuser2;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
@@ -217,7 +217,7 @@ private:
                         = new AstVarRef(nodep->fileline(), memberVarp, VAccess::WRITE);
                     auto* const stmtp = newRandStmtsp(nodep->fileline(), refp);
                     funcp->addStmtsp(stmtp);
-                } else if (auto* classRefp = VN_CAST(dtypep, ClassRefDType)) {
+                } else if (const auto* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                     auto* const refp
                         = new AstVarRef(nodep->fileline(), memberVarp, VAccess::WRITE);
                     auto* const memberFuncp = V3Randomize::newRandomizeFunc(classRefp->classp());
@@ -253,8 +253,8 @@ public:
 void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        RandomizeMarkVisitor markVisitor{nodep};
-        RandomizeVisitor visitor{nodep};
+        const RandomizeMarkVisitor markVisitor{nodep};
+        RandomizeVisitor{nodep};
     }
     V3Global::dumpCheckGlobalTree("randomize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

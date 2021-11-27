@@ -89,9 +89,10 @@ private:
         } else if (VN_IS(ddtypep, AssocArrayDType)) {
         } else if (VN_IS(ddtypep, DynArrayDType)) {
         } else if (VN_IS(ddtypep, QueueDType)) {
-        } else if (const AstNodeUOrStructDType* adtypep = VN_CAST(ddtypep, NodeUOrStructDType)) {
+        } else if (const AstNodeUOrStructDType* const adtypep
+                   = VN_CAST(ddtypep, NodeUOrStructDType)) {
             fromRange = adtypep->declRange();
-        } else if (AstBasicDType* adtypep = VN_CAST(ddtypep, BasicDType)) {
+        } else if (const AstBasicDType* const adtypep = VN_CAST(ddtypep, BasicDType)) {
             if (adtypep->isString() && VN_IS(nodep, SelBit)) {
             } else if (adtypep->isRanged()) {
                 UASSERT_OBJ(
@@ -179,7 +180,7 @@ private:
         } else {
             // Need a slice data type, which is an array of the extracted
             // type, but with (presumably) different size
-            VNumRange newRange(msb, lsb, nodep->declRange().littleEndian());
+            const VNumRange newRange(msb, lsb, nodep->declRange().littleEndian());
             AstNodeDType* const vardtypep
                 = new AstPackArrayDType(nodep->fileline(),
                                         nodep->subDTypep(),  // Need to strip off array reference
@@ -212,7 +213,7 @@ private:
         AstNodeDType* const ddtypep = fromdata.m_dtypep;
         const VNumRange fromRange = fromdata.m_fromRange;
         UINFO(6, "  ddtypep " << ddtypep << endl);
-        if (AstUnpackArrayDType* const adtypep = VN_CAST(ddtypep, UnpackArrayDType)) {
+        if (const AstUnpackArrayDType* const adtypep = VN_CAST(ddtypep, UnpackArrayDType)) {
             // SELBIT(array, index) -> ARRAYSEL(array, index)
             AstNode* subp = rhsp;
             if (fromRange.lo() != 0 || fromRange.hi() < 0) {
@@ -223,7 +224,7 @@ private:
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
+        } else if (const AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
             AstNode* subp = rhsp;
             if (fromRange.littleEndian()) {
@@ -247,7 +248,7 @@ private:
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (AstAssocArrayDType* adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
+        } else if (const AstAssocArrayDType* const adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
             // SELBIT(array, index) -> ASSOCSEL(array, index)
             AstNode* const subp = rhsp;
             AstAssocSel* const newp = new AstAssocSel(nodep->fileline(), fromp, subp);
@@ -255,7 +256,7 @@ private:
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (AstDynArrayDType* adtypep = VN_CAST(ddtypep, DynArrayDType)) {
+        } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
             AstNode* const subp = rhsp;
             AstCMethodHard* const newp = new AstCMethodHard(nodep->fileline(), fromp, "at", subp);
@@ -263,7 +264,7 @@ private:
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTq: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (AstQueueDType* adtypep = VN_CAST(ddtypep, QueueDType)) {
+        } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
             AstNode* const subp = rhsp;
             AstCMethodHard* const newp = new AstCMethodHard(nodep->fileline(), fromp, "at", subp);
@@ -273,7 +274,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, BasicDType) && ddtypep->isString()) {
             // SELBIT(string, index) -> GETC(string, index)
-            AstNodeVarRef* const varrefp = VN_CAST(fromp, NodeVarRef);
+            const AstNodeVarRef* const varrefp = VN_CAST(fromp, NodeVarRef);
             if (!varrefp) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: String array operation on non-variable");
@@ -337,7 +338,7 @@ private:
         AstNode* const lsbp = nodep->thsp()->unlinkFrBack();
         vlsint32_t msb = VN_AS(msbp, Const)->toSInt();
         vlsint32_t lsb = VN_AS(lsbp, Const)->toSInt();
-        vlsint32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
+        const vlsint32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
         const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* const ddtypep = fromdata.m_dtypep;
         const VNumRange fromRange = fromdata.m_fromRange;
@@ -358,7 +359,7 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
-        } else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
+        } else if (AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELEXTRACT(array, msb, lsb) -> SEL(array,
             //             lsb*width-of-subindex, width-of-subindex*(msb-lsb))
             UASSERT_OBJ(!(!fromRange.elements() || (adtypep->width() % fromRange.elements()) != 0),
@@ -367,7 +368,7 @@ private:
                                                                    << fromRange.elements());
             if (fromRange.littleEndian()) {
                 // Below code assumes big bit endian; just works out if we swap
-                int x = msb;
+                const int x = msb;
                 msb = lsb;
                 lsb = x;
             }
@@ -377,7 +378,7 @@ private:
                     "[" << msb << ":" << lsb
                         << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
-                int x = msb;
+                const int x = msb;
                 msb = lsb;
                 lsb = x;
             }
@@ -397,7 +398,7 @@ private:
         } else if (VN_IS(ddtypep, BasicDType)) {
             if (fromRange.littleEndian()) {
                 // Below code assumes big bit endian; just works out if we swap
-                int x = msb;
+                const int x = msb;
                 msb = lsb;
                 lsb = x;
             }
@@ -407,7 +408,7 @@ private:
                     "[" << msb << ":" << lsb
                         << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
-                int x = msb;
+                const int x = msb;
                 msb = lsb;
                 lsb = x;
             }
@@ -430,7 +431,7 @@ private:
                     "[" << msb << ":" << lsb
                         << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
-                int x = msb;
+                const int x = msb;
                 msb = lsb;
                 lsb = x;
             }
@@ -491,7 +492,7 @@ private:
         }
         if (width < 0) nodep->v3error("Width of :+ or :- is < 0: " << widthp->prettyName());
         const FromData fromdata = fromDataForArray(nodep, fromp);
-        AstNodeDType* const ddtypep = fromdata.m_dtypep;
+        const AstNodeDType* const ddtypep = fromdata.m_dtypep;
         const VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, UnpackArrayDType)) {
             // Slice +: and -: extraction
@@ -505,13 +506,13 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (VN_IS(rhsp, Const)) {  // Slice
-                vlsint32_t rhs = VN_AS(rhsp, Const)->toSInt();
+                const vlsint32_t rhs = VN_AS(rhsp, Const)->toSInt();
                 // down array: lsb/lo +: width
                 // down array: msb/hi -: width
                 // up array:   msb/lo +: width
                 // up array:   lsb/hi -: width
-                vlsint32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
-                vlsint32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
+                const vlsint32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
+                const vlsint32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
                 AstSliceSel* const newp = new AstSliceSel(
                     nodep->fileline(), fromp, VNumRange(msb, lsb, fromRange.littleEndian()));
                 nodep->replaceWith(newp);

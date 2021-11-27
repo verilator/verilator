@@ -39,7 +39,7 @@ private:
     // NODE STATE
     // Cleared each Cell:
     //  AstPin::user1p()        -> bool.  True if created assignment already
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell
@@ -195,7 +195,7 @@ class InstDeVisitor final : public AstNVisitor {
 private:
     // STATE
     // Range for arrayed instantiations, nullptr for normal instantiations
-    AstRange* m_cellRangep = nullptr;
+    const AstRange* m_cellRangep = nullptr;
     int m_instSelNum = 0;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
@@ -322,8 +322,10 @@ private:
             UINFO(4, "   PIN  " << nodep << endl);
             const int pinwidth = nodep->modVarp()->width();
             const int expwidth = nodep->exprp()->width();
-            std::pair<uint32_t, uint32_t> pinDim = nodep->modVarp()->dtypep()->dimensions(false);
-            std::pair<uint32_t, uint32_t> expDim = nodep->exprp()->dtypep()->dimensions(false);
+            const std::pair<uint32_t, uint32_t> pinDim
+                = nodep->modVarp()->dtypep()->dimensions(false);
+            const std::pair<uint32_t, uint32_t> expDim
+                = nodep->exprp()->dtypep()->dimensions(false);
             UINFO(4, "   PINVAR  " << nodep->modVarp() << endl);
             UINFO(4, "   EXP     " << nodep->exprp() << endl);
             UINFO(4, "   pinwidth ew=" << expwidth << " pw=" << pinwidth << "  ed=" << expDim.first
@@ -331,7 +333,7 @@ private:
                                        << pinDim.second << endl);
             if (expDim.first == pinDim.first && expDim.second == pinDim.second + 1) {
                 // Connection to array, where array dimensions match the instant dimension
-                AstRange* const rangep
+                const AstRange* const rangep
                     = VN_AS(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();
                 const int arraySelNum = rangep->littleEndian()
                                             ? (rangep->elementsConst() - 1 - m_instSelNum)
@@ -366,8 +368,8 @@ private:
                 nodep->v3fatalSrc("Width mismatch; V3Width should have errored out.");
             }
         }  // end expanding ranged cell
-        else if (AstArraySel* arrselp = VN_CAST(nodep->exprp(), ArraySel)) {
-            if (AstUnpackArrayDType* const arrp
+        else if (AstArraySel* const arrselp = VN_CAST(nodep->exprp(), ArraySel)) {
+            if (const AstUnpackArrayDType* const arrp
                 = VN_CAST(arrselp->lhsp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
                 // Interface pin attaches to one element of arrayed interface
@@ -382,7 +384,7 @@ private:
                 const string index = AstNode::encodeNumber(constp->toSInt());
                 if (VN_IS(arrselp->lhsp(), SliceSel))
                     arrselp->lhsp()->v3error("Unsupported: interface slices");
-                AstVarRef* const varrefp = VN_CAST(arrselp->lhsp(), VarRef);
+                const AstVarRef* const varrefp = VN_CAST(arrselp->lhsp(), VarRef);
                 UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* const newp = new AstVarXRef(
                     nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
@@ -394,7 +396,8 @@ private:
             }
         } else {
             AstVar* const pinVarp = nodep->modVarp();
-            AstUnpackArrayDType* const pinArrp = VN_CAST(pinVarp->dtypep(), UnpackArrayDType);
+            const AstUnpackArrayDType* const pinArrp
+                = VN_CAST(pinVarp->dtypep(), UnpackArrayDType);
             if (!pinArrp || !VN_IS(pinArrp->subDTypep(), IfaceRefDType)) return;
             // Arrayed pin/var attaches to arrayed submodule lower port/var, expand it
             AstNode* prevp = nullptr;
@@ -402,7 +405,7 @@ private:
             // Clone the var referenced by the pin, and clone each var referenced by the varref
             // Clone pin varp:
             for (int in = 0; in < pinArrp->elementsConst(); ++in) {  // 0 = leftmost
-                int i = pinArrp->left() + in * pinArrp->declRange().leftToRightInc();
+                const int i = pinArrp->left() + in * pinArrp->declRange().leftToRightInc();
                 const string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 AstVar* varNewp = nullptr;
 
@@ -437,17 +440,18 @@ private:
                 // And replace exprp with a new varxref
                 const AstVarRef* varrefp = VN_CAST(newp->exprp(), VarRef);  // Maybe null
                 int expr_i = i;
-                if (AstSliceSel* const slicep = VN_CAST(newp->exprp(), SliceSel)) {
+                if (const AstSliceSel* const slicep = VN_CAST(newp->exprp(), SliceSel)) {
                     varrefp = VN_AS(slicep->fromp(), VarRef);
                     UASSERT(VN_IS(slicep->rhsp(), Const), "Slices should be constant");
-                    int slice_index
+                    const int slice_index
                         = slicep->declRange().left() + in * slicep->declRange().leftToRightInc();
-                    auto* const exprArrp = VN_AS(varrefp->dtypep(), UnpackArrayDType);
+                    const auto* const exprArrp = VN_AS(varrefp->dtypep(), UnpackArrayDType);
                     UASSERT_OBJ(exprArrp, slicep, "Slice of non-array");
                     expr_i = slice_index + exprArrp->lo();
                 } else if (!varrefp) {
                     newp->exprp()->v3error("Unexpected connection to arrayed port");
-                } else if (auto* exprArrp = VN_CAST(varrefp->dtypep(), UnpackArrayDType)) {
+                } else if (const auto* const exprArrp
+                           = VN_CAST(varrefp->dtypep(), UnpackArrayDType)) {
                     expr_i = exprArrp->left() + in * exprArrp->declRange().leftToRightInc();
                 }
 
@@ -526,10 +530,11 @@ public:
                 return nullptr;
             }
         }
-        AstVarRef* const connectRefp = VN_CAST(pinp->exprp(), VarRef);
-        AstVarXRef* const connectXRefp = VN_CAST(pinp->exprp(), VarXRef);
-        AstBasicDType* const pinBasicp = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe nullptr
-        AstBasicDType* connBasicp = nullptr;
+        const AstVarRef* const connectRefp = VN_CAST(pinp->exprp(), VarRef);
+        const AstVarXRef* const connectXRefp = VN_CAST(pinp->exprp(), VarXRef);
+        const AstBasicDType* const pinBasicp
+            = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe nullptr
+        const AstBasicDType* connBasicp = nullptr;
         AstAssignW* assignp = nullptr;
         if (connectRefp) connBasicp = VN_CAST(connectRefp->varp()->dtypep(), BasicDType);
         //
@@ -554,7 +559,7 @@ public:
             // if (1 || debug() >= 9) pinp->dumpTree(cout, "-in_pin:");
             V3Inst::checkOutputShort(pinp);
             AstNode* const pinexprp = pinp->exprp()->unlinkFrBack();
-            string newvarname
+            const string newvarname
                 = (string(pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp")
                    // Prevent name conflict if both tri & non-tri add signals
                    + (forTristate ? "t" : "") + "__" + cellp->name() + "__" + pinp->name());
@@ -615,12 +620,12 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
 
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { InstVisitor visitor{nodep}; }  // Destruct before checking
+    { InstVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("inst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { InstDeVisitor visitor{nodep}; }  // Destruct before checking
+    { InstDeVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("dearray", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

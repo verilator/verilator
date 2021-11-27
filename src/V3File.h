@@ -113,8 +113,8 @@ public:
 
 private:
     // MEMBERS
-    string m_filename;
-    Language m_lang;  // Indenting Verilog code
+    const string m_filename;
+    const Language m_lang;  // Indenting Verilog code
     int m_blockIndent;  // Characters per block indent
     int m_commaWidth;  // Width after which to break at ,'s
     int m_lineno = 1;

@@ -50,8 +50,8 @@ public:
     enum VertexType : uint8_t { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
 
 private:
-    string m_name;  // Only used for .dot file generation
-    VertexType m_type;  // Vertex type (BLOCK/BRANCH/OUTPUT)
+    const string m_name;  // Only used for .dot file generation
+    const VertexType m_type;  // Vertex type (BLOCK/BRANCH/OUTPUT)
 
     string typestr() const {  //   "
         switch (m_type) {
@@ -299,7 +299,7 @@ private:
     // NODE STATE
     // Input:
     //  AstVar::user1p // V2LatchGraphVertex* The vertex handling this node
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
     // STATE
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS
@@ -342,8 +342,8 @@ public:
 
 private:
     const CheckType m_check;  // Combo logic or other
-    AstNode* const m_alwaysp;  // Always we're under
-    AstNode* m_assignp = nullptr;  // In assign
+    const AstNode* const m_alwaysp;  // Always we're under
+    const AstNode* m_assignp = nullptr;  // In assign
     // VISITORS
     virtual void visit(AstAssignDly* nodep) override {
         if (m_check != CT_SEQ) {
@@ -438,7 +438,7 @@ private:
     virtual void visit(AstInitial* nodep) override {
         // Relink to IACTIVE, unless already under it
         UINFO(4, "    INITIAL " << nodep << endl);
-        ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
+        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         AstActive* const wantactivep = m_namer.getIActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
@@ -471,7 +471,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
+        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         if (!m_scopeFinalp) {
             m_scopeFinalp = new AstCFunc(
                 nodep->fileline(), "_final_" + m_namer.scopep()->nameDotless(), m_namer.scopep());
@@ -540,14 +540,14 @@ private:
 
         // Warn and/or convert any delayed assignments
         if (combo && !sequent) {
-            ActiveLatchCheckVisitor latchvisitor{nodep, kwd};
+            const ActiveLatchCheckVisitor latchvisitor{nodep, kwd};
             if (kwd == VAlwaysKwd::ALWAYS_LATCH) {
-                ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_LATCH};
+                ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_LATCH};
             } else {
-                ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_COMBO};
+                ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMBO};
             }
         } else if (!combo && sequent) {
-            ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_SEQ};
+            ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_SEQ};
         }
     }
     virtual void visit(AstAlways* nodep) override {
@@ -620,6 +620,6 @@ public:
 
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ActiveVisitor visitor{nodep}; }  // Destruct before checking
+    { ActiveVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("active", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

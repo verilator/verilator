@@ -81,15 +81,15 @@ private:
     // Cleared each scope/active:
     //  AstAssignDly::user3()   -> AstVarScope*.  __Vdlyvset__ created for this assign
     //  AstAlwaysPost::user3()  -> AstVarScope*.  __Vdlyvset__ last referenced in IF
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
-    AstUser4InUse m_inuser4;
-    AstUser5InUse m_inuser5;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
+    const AstUser4InUse m_inuser4;
+    const AstUser5InUse m_inuser5;
 
     // STATE
     AstActive* m_activep = nullptr;  // Current activate
-    AstCFunc* m_cfuncp = nullptr;  // Current public C Function
+    const AstCFunc* m_cfuncp = nullptr;  // Current public C Function
     AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
@@ -106,7 +106,7 @@ private:
         if (blocking) nodep->user5(true);
         AstVarScope* const vscp = nodep->varScopep();
         // UINFO(4, " MVU " << blocking << " " << nodep << endl);
-        AstNode* const lastrefp = vscp->user5p();
+        const AstNode* const lastrefp = vscp->user5p();
         if (!lastrefp) {
             vscp->user5p(nodep);
         } else {
@@ -275,7 +275,7 @@ private:
             // vval = constant, can just push constant into where we use it
             valreadp = nodep->rhsp()->unlinkFrBack();
         } else {
-            string valvarname
+            const string valvarname
                 = (string("__Vdlyvval__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             AstVarScope* const valvscp
                 = createVarSc(varrefp->varScopep(), valvarname, 0, nodep->rhsp()->dtypep());
@@ -295,7 +295,7 @@ private:
             setvscp = VN_AS(nodep->user3p(), VarScope);
             ++m_statSharedSet;
         } else {  // Create new one
-            string setvarname
+            const string setvarname
                 = (string("__Vdlyvset__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, nullptr);
             setinitp = new AstAssignPre(nodep->fileline(),
@@ -512,6 +512,6 @@ public:
 
 void V3Delayed::delayedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DelayedVisitor visitor{nodep}; }  // Destruct before checking
+    { DelayedVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("delayed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
