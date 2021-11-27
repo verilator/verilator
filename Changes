@@ -14,6 +14,7 @@ Verilator 4.215 devel
 **Major:**
 
 * Add --lib-create, similar to --protect-lib but without protections.
+* Support tracing through --hierarchical/--lib-create libraries (#3200).
 
 **Minor:**
 

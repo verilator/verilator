@@ -829,6 +829,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SFORMAT             "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR           "/*verilator split_var*/"
 %token<strp>            yVL_TAG                 "/*verilator tag*/"
+%token<fl>              yVL_TRACE_INIT_TASK     "/*verilator trace_init_task*/"
 
 %token<fl>              yP_TICK         "'"
 %token<fl>              yP_TICKBRA      "'{"
@@ -4125,16 +4126,24 @@ array_methodWith<nodep>:
 	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
-		yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype ';'
-			{ $$ = $5; if (*$4 != "") $5->cname(*$4);
-			  $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
-			  $5->dpiImport(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true);
+		yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype dpi_tf_TraceInitE ';'
+			{ $$ = $5;
+			  if (*$4 != "") $5->cname(*$4);
+			  $5->dpiContext($3 == iprop_CONTEXT);
+			  $5->pure($3 == iprop_PURE);
+			  $5->dpiImport(true);
+			  $5->dpiTraceInit($6);
+			  GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true);
 			  if ($$->prettyName()[0]=='$') SYMP->reinsert($$,nullptr,$$->prettyName());  // For $SysTF overriding
 			  SYMP->reinsert($$); }
 	|	yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE task_prototype ';'
-			{ $$ = $5; if (*$4 != "") $5->cname(*$4);
-			  $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
-			  $5->dpiImport(true); $5->dpiTask(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true);
+			{ $$ = $5;
+			  if (*$4 != "") $5->cname(*$4);
+			  $5->dpiContext($3 == iprop_CONTEXT);
+			  $5->pure($3 == iprop_PURE);
+			  $5->dpiImport(true);
+			  $5->dpiTask(true);
+			  GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true);
 			  if ($$->prettyName()[0]=='$') SYMP->reinsert($$,nullptr,$$->prettyName());  // For $SysTF overriding
 			  SYMP->reinsert($$); }
 	|	yEXPORT yaSTRING dpi_importLabelE yFUNCTION idAny ';'
@@ -4155,6 +4164,12 @@ dpi_tf_import_propertyE<iprop>:	// IEEE: [ dpi_function_import_property + dpi_ta
 	|	yCONTEXT				{ $$ = iprop_CONTEXT; }
 	|	yPURE					{ $$ = iprop_PURE; }
 	;
+
+dpi_tf_TraceInitE<cbool>:	// Verilator extension
+		/* empty */				{ $$ = false; }
+	|	yVL_TRACE_INIT_TASK			{ $$ = true; $<fl>$ = $<fl>1; }
+	;
+
 
 //************************************************
 // Expressions
