@@ -4493,7 +4493,7 @@ private:
                     AstSFormatF* const newp
                         = new AstSFormatF(nodep->fileline(), format, false, argsp);
                     if (!newp->scopeNamep() && newp->formatScopeTracking()) {
-                        newp->scopeNamep(new AstScopeName(newp->fileline()));
+                        newp->scopeNamep(new AstScopeName{newp->fileline(), true});
                     }
                     handle.relink(new AstArg(newp->fileline(), "", newp));
                     // Connection list is now incorrect (has extra args in it).

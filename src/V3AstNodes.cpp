@@ -1700,6 +1700,11 @@ void AstScope::dump(std::ostream& str) const {
     str << " [cellp=" << reinterpret_cast<const void*>(aboveCellp()) << "]";
     str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
 }
+void AstScopeName::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (dpiExport()) str << " [DPIEX]";
+    if (forFormat()) str << " [FMT]";
+}
 void AstSenTree::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isMulti()) str << " [MULTI]";

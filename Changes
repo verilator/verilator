@@ -19,6 +19,7 @@ Verilator 4.215 devel
 
 * Internal code cleanups and improvements. [Geza Lore]
 * Improve --thread verilation-time performance.
+* Support task name in $display %m (#3211). [Julie Schwartz]
 * Fix array method names with parenthesis (#3181) (#3183). [Teng Huang]
 * Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
 * Fix nested generate if genblk naming (#3189). [yanx21]

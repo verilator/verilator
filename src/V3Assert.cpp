@@ -62,7 +62,7 @@ private:
         }
         nodep->fmtp()->addExprsp(timenewp);
         if (!nodep->fmtp()->scopeNamep() && nodep->fmtp()->formatScopeTracking()) {
-            nodep->fmtp()->scopeNamep(new AstScopeName(nodep->fileline()));
+            nodep->fmtp()->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
     }
     AstVarRef* newMonitorNumVarRefp(AstNode* nodep, VAccess access) {

@@ -136,12 +136,12 @@ private:
             iterateChildren(nodep);
         }
         m_ftaskp = nullptr;
-        if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+        if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->taskp() && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
-            nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+            nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
         }
     }
 
@@ -459,7 +459,7 @@ private:
         if ((VN_IS(nodep->backp(), Display)
              && VN_AS(nodep->backp(), Display)->displayType().needScopeTracking())
             || nodep->formatScopeTracking()) {
-            nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+            nodep->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
     }
 

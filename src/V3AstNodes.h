@@ -5379,21 +5379,26 @@ class AstScopeName final : public AstNodeMath {
     // Children: TEXT
 private:
     bool m_dpiExport = false;  // Is for dpiExport
+    const bool m_forFormat = false;  // Is for a format %m
     string scopeNameFormatter(AstText* scopeTextp) const;
     string scopePrettyNameFormatter(AstText* scopeTextp) const;
 
 public:
-    explicit AstScopeName(FileLine* fl)
-        : ASTGEN_SUPER_ScopeName(fl) {
+    class ForFormat {};
+    AstScopeName(FileLine* fl, bool forFormat)
+        : ASTGEN_SUPER_ScopeName(fl)
+        , m_forFormat{forFormat} {
         dtypeSetUInt64();
     }
     ASTNODE_NODE_FUNCS(ScopeName)
     virtual bool same(const AstNode* samep) const override {
-        return m_dpiExport == static_cast<const AstScopeName*>(samep)->m_dpiExport;
+        return (m_dpiExport == static_cast<const AstScopeName*>(samep)->m_dpiExport
+                && m_forFormat == static_cast<const AstScopeName*>(samep)->m_forFormat);
     }
     virtual string emitVerilog() override { return ""; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
+    virtual void dump(std::ostream& str = std::cout) const override;
     AstText* scopeAttrp() const { return VN_AS(op1p(), Text); }
     void scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
     AstText* scopeEntrp() const { return VN_AS(op2p(), Text); }
@@ -5412,6 +5417,7 @@ public:
     }
     bool dpiExport() const { return m_dpiExport; }
     void dpiExport(bool flag) { m_dpiExport = flag; }
+    bool forFormat() const { return m_forFormat; }
 };
 
 class AstUdpTable final : public AstNode {
