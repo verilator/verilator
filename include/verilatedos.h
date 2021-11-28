@@ -333,7 +333,8 @@ typedef signed __int32 ssize_t;  ///< signed size_t; returned from read()
 # include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
-typedef char vlsint8_t;  ///< 8-bit signed type
+// Arm64 gcc 9.3.0 defaults to unsigned char, not signed char
+typedef signed char vlsint8_t;  ///< 8-bit signed type
 typedef uint8_t vluint8_t;  ///< 8-bit unsigned type
 typedef short vlsint16_t;  ///< 16-bit signed type
 typedef uint16_t vluint16_t;  ///< 16-bit unsigned type

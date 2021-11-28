@@ -35,6 +35,7 @@ Verilator 4.215 devel
 * Fix $fopen etc on integer arrays (#3214). [adrienlemasle]
 * Fix $size on dynamic strings (#3216).
 * Fix %0 format on $value$plusargs (#3217).
+* Fix timescale portability on Arm64 (#3222).
 
 
 Verilator 4.214 2021-10-17
