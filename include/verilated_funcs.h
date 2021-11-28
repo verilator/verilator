@@ -1221,31 +1221,27 @@ QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP const rwp, boo
 
 // INTERNAL: Stuff LHS bit 0++ into OUTPUT at specified offset
 // ld may be "dirty", output is clean
-static inline void _vl_insert_II(int, CData& lhsr, IData ld, int hbit, int lbit,
-                                 int rbits) VL_PURE {
+static inline void _vl_insert_II(CData& lhsr, IData ld, int hbit, int lbit, int rbits) VL_PURE {
     const IData cleanmask = VL_MASK_I(rbits);
     const IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
     lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _vl_insert_II(int, SData& lhsr, IData ld, int hbit, int lbit,
-                                 int rbits) VL_PURE {
+static inline void _vl_insert_II(SData& lhsr, IData ld, int hbit, int lbit, int rbits) VL_PURE {
     const IData cleanmask = VL_MASK_I(rbits);
     const IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
     lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _vl_insert_II(int, IData& lhsr, IData ld, int hbit, int lbit,
-                                 int rbits) VL_PURE {
+static inline void _vl_insert_II(IData& lhsr, IData ld, int hbit, int lbit, int rbits) VL_PURE {
     const IData cleanmask = VL_MASK_I(rbits);
     const IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
     lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _vl_insert_QQ(int, QData& lhsr, QData ld, int hbit, int lbit,
-                                 int rbits) VL_PURE {
+static inline void _vl_insert_QQ(QData& lhsr, QData ld, int hbit, int lbit, int rbits) VL_PURE {
     const QData cleanmask = VL_MASK_Q(rbits);
     const QData insmask = (VL_MASK_Q(hbit - lbit + 1)) << lbit;
     lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _vl_insert_WI(int, WDataOutP owp, IData ld, int hbit, int lbit,
+static inline void _vl_insert_WI(WDataOutP owp, IData ld, int hbit, int lbit,
                                  int rbits = 0) VL_MT_SAFE {
     const int hoffset = VL_BITBIT_E(hbit);
     const int loffset = VL_BITBIT_E(lbit);
@@ -1278,7 +1274,7 @@ static inline void _vl_insert_WI(int, WDataOutP owp, IData ld, int hbit, int lbi
 
 // INTERNAL: Stuff large LHS bit 0++ into OUTPUT at specified offset
 // lwp may be "dirty"
-static inline void _vl_insert_WW(int, WDataOutP owp, WDataInP const lwp, int hbit, int lbit,
+static inline void _vl_insert_WW(WDataOutP owp, WDataInP const lwp, int hbit, int lbit,
                                  int rbits = 0) VL_MT_SAFE {
     const int hoffset = VL_BITBIT_E(hbit);
     const int loffset = VL_BITBIT_E(lbit);
@@ -1334,11 +1330,11 @@ static inline void _vl_insert_WW(int, WDataOutP owp, WDataInP const lwp, int hbi
     }
 }
 
-static inline void _vl_insert_WQ(int obits, WDataOutP owp, QData ld, int hbit, int lbit,
+static inline void _vl_insert_WQ(WDataOutP owp, QData ld, int hbit, int lbit,
                                  int rbits = 0) VL_MT_SAFE {
     VlWide<VL_WQ_WORDS_E> lwp;
     VL_SET_WQ(lwp, ld);
-    _vl_insert_WW(obits, owp, lwp, hbit, lbit, rbits);
+    _vl_insert_WW(owp, lwp, hbit, lbit, rbits);
 }
 
 // EMIT_RULE: VL_REPLICATE:  oclean=clean>width32, dirty<=width32; lclean=clean; rclean==clean;
@@ -1362,27 +1358,27 @@ static inline QData VL_REPLICATE_QII(int, int lbits, int, IData ld, IData rep) V
     }
     return returndata;
 }
-static inline WDataOutP VL_REPLICATE_WII(int obits, int lbits, int, WDataOutP owp, IData ld,
+static inline WDataOutP VL_REPLICATE_WII(int, int lbits, int, WDataOutP owp, IData ld,
                                          IData rep) VL_MT_SAFE {
     owp[0] = ld;
     for (unsigned i = 1; i < rep; ++i) {
-        _vl_insert_WI(obits, owp, ld, i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WI(owp, ld, i * lbits + lbits - 1, i * lbits);
     }
     return owp;
 }
-static inline WDataOutP VL_REPLICATE_WQI(int obits, int lbits, int, WDataOutP owp, QData ld,
+static inline WDataOutP VL_REPLICATE_WQI(int, int lbits, int, WDataOutP owp, QData ld,
                                          IData rep) VL_MT_SAFE {
     VL_SET_WQ(owp, ld);
     for (unsigned i = 1; i < rep; ++i) {
-        _vl_insert_WQ(obits, owp, ld, i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WQ(owp, ld, i * lbits + lbits - 1, i * lbits);
     }
     return owp;
 }
-static inline WDataOutP VL_REPLICATE_WWI(int obits, int lbits, int, WDataOutP owp,
-                                         WDataInP const lwp, IData rep) VL_MT_SAFE {
+static inline WDataOutP VL_REPLICATE_WWI(int, int lbits, int, WDataOutP owp, WDataInP const lwp,
+                                         IData rep) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(lbits); ++i) owp[i] = lwp[i];
     for (unsigned i = 1; i < rep; ++i) {
-        _vl_insert_WW(obits, owp, lwp, i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WW(owp, lwp, i * lbits + lbits - 1, i * lbits);
     }
     return owp;
 }
@@ -1523,63 +1519,63 @@ static inline WDataOutP VL_CONCAT_WII(int obits, int lbits, int rbits, WDataOutP
                                       IData rd) VL_MT_SAFE {
     owp[0] = rd;
     for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WI(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WI(owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WWI(int obits, int lbits, int rbits, WDataOutP owp,
                                       WDataInP const lwp, IData rd) VL_MT_SAFE {
     owp[0] = rd;
     for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
+    _vl_insert_WW(owp, lwp, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WIW(int obits, int lbits, int rbits, WDataOutP owp, IData ld,
                                       WDataInP const rwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(rbits); ++i) owp[i] = rwp[i];
     for (int i = VL_WORDS_I(rbits); i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WI(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WI(owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WIQ(int obits, int lbits, int rbits, WDataOutP owp, IData ld,
                                       QData rd) VL_MT_SAFE {
     VL_SET_WQ(owp, rd);
     for (int i = VL_WQ_WORDS_E; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WI(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WI(owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WQI(int obits, int lbits, int rbits, WDataOutP owp, QData ld,
                                       IData rd) VL_MT_SAFE {
     owp[0] = rd;
     for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WQ(owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WQQ(int obits, int lbits, int rbits, WDataOutP owp, QData ld,
                                       QData rd) VL_MT_SAFE {
     VL_SET_WQ(owp, rd);
     for (int i = VL_WQ_WORDS_E; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WQ(owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WWQ(int obits, int lbits, int rbits, WDataOutP owp,
                                       WDataInP const lwp, QData rd) VL_MT_SAFE {
     VL_SET_WQ(owp, rd);
     for (int i = VL_WQ_WORDS_E; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
+    _vl_insert_WW(owp, lwp, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WQW(int obits, int lbits, int rbits, WDataOutP owp, QData ld,
                                       WDataInP const rwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(rbits); ++i) owp[i] = rwp[i];
     for (int i = VL_WORDS_I(rbits); i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WQ(owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WWW(int obits, int lbits, int rbits, WDataOutP owp,
                                       WDataInP const lwp, WDataInP const rwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(rbits); ++i) owp[i] = rwp[i];
     for (int i = VL_WORDS_I(rbits); i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _vl_insert_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
+    _vl_insert_WW(owp, lwp, rbits + lbits - 1, rbits);
     return owp;
 }
 
@@ -1614,7 +1610,7 @@ static inline WDataOutP VL_SHIFTL_WWI(int obits, int, int, WDataOutP owp, WDataI
         for (int i = word_shift; i < VL_WORDS_I(obits); ++i) owp[i] = lwp[i - word_shift];
     } else {
         for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-        _vl_insert_WW(obits, owp, lwp, obits - 1, rd);
+        _vl_insert_WW(owp, lwp, obits - 1, rd);
     }
     return owp;
 }
@@ -1961,7 +1957,7 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
     if (lsb < 0) {
         VL_SET_WQ(owp, mantissa >> -lsb);
     } else if (lsb < obits) {
-        _vl_insert_WQ(obits, owp, mantissa, lsb + 52, lsb);
+        _vl_insert_WQ(owp, mantissa, lsb + 52, lsb);
     }
     if (lhs < 0) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
     return owp;
@@ -1973,41 +1969,41 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
 // EMIT_RULE: VL_ASSIGNRANGE:  rclean=dirty;
 static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, CData& lhsr,
                                      IData rhs) VL_PURE {
-    _vl_insert_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, SData& lhsr,
                                      IData rhs) VL_PURE {
-    _vl_insert_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, IData& lhsr,
                                      IData rhs) VL_PURE {
-    _vl_insert_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 static inline void VL_ASSIGNSEL_QIII(int rbits, int obits, int lsb, QData& lhsr,
                                      IData rhs) VL_PURE {
-    _vl_insert_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 static inline void VL_ASSIGNSEL_QQII(int rbits, int obits, int lsb, QData& lhsr,
                                      QData rhs) VL_PURE {
-    _vl_insert_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 static inline void VL_ASSIGNSEL_QIIQ(int rbits, int obits, int lsb, QData& lhsr,
                                      QData rhs) VL_PURE {
-    _vl_insert_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 // static inline void VL_ASSIGNSEL_IIIW(int obits, int lsb, IData& lhsr, WDataInP const rwp)
 // VL_MT_SAFE { Illegal, as lhs width >= rhs width
 static inline void VL_ASSIGNSEL_WIII(int rbits, int obits, int lsb, WDataOutP owp,
                                      IData rhs) VL_MT_SAFE {
-    _vl_insert_WI(obits, owp, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_WI(owp, rhs, lsb + obits - 1, lsb, rbits);
 }
 static inline void VL_ASSIGNSEL_WIIQ(int rbits, int obits, int lsb, WDataOutP owp,
                                      QData rhs) VL_MT_SAFE {
-    _vl_insert_WQ(obits, owp, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_WQ(owp, rhs, lsb + obits - 1, lsb, rbits);
 }
 static inline void VL_ASSIGNSEL_WIIW(int rbits, int obits, int lsb, WDataOutP owp,
                                      WDataInP const rwp) VL_MT_SAFE {
-    _vl_insert_WW(obits, owp, rwp, lsb + obits - 1, lsb, rbits);
+    _vl_insert_WW(owp, rwp, lsb + obits - 1, lsb, rbits);
 }
 
 //======================================================================
