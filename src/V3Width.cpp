@@ -1813,14 +1813,14 @@ private:
             }
             if (!newp) newp = nodep->fromp()->unlinkFrBack();
             nodep->lhsp(newp);
-            if (debug()) nodep->dumpTree(cout, "  CastOut: ");
-            if (debug()) nodep->backp()->dumpTree(cout, "  CastOutUpUp: ");
+            // if (debug()) nodep->dumpTree(cout, "  CastOut: ");
+            // if (debug()) nodep->backp()->dumpTree(cout, "  CastOutUpUp: ");
         }
         if (m_vup->final()) {
             iterateCheck(nodep, "value", nodep->lhsp(), SELF, FINAL, nodep->lhsp()->dtypep(),
                          EXTEND_EXP, false);
             AstNode* const underp = nodep->lhsp()->unlinkFrBack();
-            if (debug()) underp->dumpTree(cout, "  CastRep: ");
+            // if (debug()) underp->dumpTree(cout, "  CastRep: ");
             nodep->replaceWith(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
