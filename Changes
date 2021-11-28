@@ -22,6 +22,7 @@ Verilator 4.215 devel
 * Improve --thread verilation-time performance.
 * Support task name in $display %m (#3211). [Julie Schwartz]
 * Make 'bit', 'logic' and 'time' types unsigned by default. [Geza Lore]
+* Optimize $random concatenates/selects (#3114).
 * Fix array method names with parenthesis (#3181) (#3183). [Teng Huang]
 * Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
 * Fix wrong bit op tree optimization (#3185). [Yutetsu TAKATSUKASA]

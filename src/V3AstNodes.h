@@ -5481,6 +5481,10 @@ public:
     virtual bool isPredictOptimizable() const override { return false; }
     virtual int instrCount() const override { return INSTR_COUNT_PLI; }
     virtual bool same(const AstNode* samep) const override { return true; }
+    bool combinable(const AstRand* samep) const {
+        return !seedp() && !samep->seedp() && reset() == samep->reset()
+               && urandom() == samep->urandom();
+    }
     AstNode* seedp() const { return op1p(); }
     bool reset() const { return m_reset; }
     bool urandom() const { return m_urandom; }

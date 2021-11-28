@@ -308,16 +308,11 @@ vluint64_t vl_rand64() VL_MT_SAFE {
     return result;
 }
 
-#ifndef VL_NO_LEGACY
-// VL_RANDOM_W currently unused as $random always 32 bits, left for backwards compatibility
-// LCOV_EXCL_START
 WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(obits); ++i) outwp[i] = vl_rand64();
     // Last word is unclean
     return outwp;
 }
-// LCOV_EXCL_STOP
-#endif
 
 IData VL_RANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
     Verilated::threadContextp()->randSeed(static_cast<int>(seed));
