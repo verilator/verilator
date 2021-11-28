@@ -312,23 +312,23 @@ vluint64_t vl_rand64() VL_MT_SAFE {
 // VL_RANDOM_W currently unused as $random always 32 bits, left for backwards compatibility
 // LCOV_EXCL_START
 WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = vl_rand64();
-    outwp[VL_WORDS_I(obits) - 1] = vl_rand64() & VL_MASK_E(obits);
+    for (int i = 0; i < VL_WORDS_I(obits); ++i) outwp[i] = vl_rand64();
+    // Last word is unclean
     return outwp;
 }
 // LCOV_EXCL_STOP
 #endif
 
-IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE {
+IData VL_RANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
     Verilated::threadContextp()->randSeed(static_cast<int>(seed));
-    return VL_RANDOM_I(obits);
+    return VL_RANDOM_I();
 }
 
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     IData data = ~0;
     if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_I(obits);
+        data = VL_RANDOM_I();
     }
     data &= VL_MASK_I(obits);
     return data;
@@ -337,7 +337,7 @@ QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     QData data = ~0ULL;
     if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_Q(obits);
+        data = VL_RANDOM_Q();
     }
     data &= VL_MASK_Q(obits);
     return data;

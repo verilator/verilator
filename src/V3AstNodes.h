@@ -5471,11 +5471,12 @@ public:
                        : (m_urandom ? "%f$urandom()" : "%f$random()");
     }
     virtual string emitC() override {
-        return m_reset   ? "VL_RAND_RESET_%nq(%nw, %P)"
-               : seedp() ? "VL_RANDOM_SEEDED_%nq%lq(%nw, %P, %li)"
-                         : "VL_RANDOM_%nq(%nw, %P)";
+        return m_reset    ? "VL_RAND_RESET_%nq(%nw, %P)"
+               : seedp()  ? "VL_RANDOM_SEEDED_%nq%lq(%li)"
+               : isWide() ? "VL_RANDOM_%nq(%nw, %P)"  //
+                          : "VL_RANDOM_%nq()";
     }
-    virtual bool cleanOut() const override { return true; }
+    virtual bool cleanOut() const override { return false; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual int instrCount() const override { return INSTR_COUNT_PLI; }
