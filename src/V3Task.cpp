@@ -933,8 +933,8 @@ private:
                                : nodep->dpiTask() ? "int"
                                                   : "";
         AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep, rtnType);
-        funcp->dpiImportPrototype(true);
         funcp->dpiContext(nodep->dpiContext());
+        funcp->dpiImportPrototype(true);
         funcp->dontCombine(true);
         funcp->entryPoint(false);
         funcp->isMethod(false);
@@ -1201,9 +1201,10 @@ private:
         cfuncp->dontCombine(!nodep->dpiImport());
         cfuncp->entryPoint(!nodep->dpiImport());
         cfuncp->funcPublic(nodep->taskPublic());
+        cfuncp->dpiContext(nodep->dpiContext());
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
-        cfuncp->dpiContext(nodep->dpiContext());
+        cfuncp->dpiTraceInit(nodep->dpiTraceInit());
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
             cfuncp->isLoose(true);

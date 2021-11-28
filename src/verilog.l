@@ -745,6 +745,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
+  "/*verilator trace_init_task*/"       { FL; return yVL_TRACE_INIT_TASK; }
   "/*verilator tracing_off*/"           { FL_FWD; PARSEP->lexFileline()->tracingOn(false); FL_BRK; }
   "/*verilator tracing_on*/"            { FL_FWD; PARSEP->lexFileline()->tracingOn(true); FL_BRK; }
 

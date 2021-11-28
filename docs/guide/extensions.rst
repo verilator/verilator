@@ -489,6 +489,13 @@ or "`ifdef`"'s may break other tools.
    Verilator) text that should be passed through to the XML output as a tag,
    for use by downstream applications.
 
+.. option:: /*verilator&32;trace_init_task*/
+
+   Attached to a DPI import to indicate that function should be called when
+   initializing tracing. This attribute is indented only to be used
+   internally in code that Verilator generates when :vlopt:`--lib-create`
+   or :vlopt:`--hierarchical` is used along with :vlopt:`--trace`.
+
 .. option:: /*verilator&32;tracing_off*/
 
    Disable waveform tracing for all future signals that are declared in

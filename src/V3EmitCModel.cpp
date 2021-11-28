@@ -23,13 +23,30 @@
 #include "V3UniqueNames.h"
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 class EmitCModel final : public EmitCFunc {
+    // TYPES
+    using CFuncVector = std::vector<const AstCFunc*>;
+
+    // MEMBERS
     V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
     VL_DEBUG_FUNC;
+
+    CFuncVector findFuncps(std::function<bool(const AstCFunc*)> cb) {
+        CFuncVector funcps;
+        for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
+                if (cb(funcp)) funcps.push_back(funcp);
+            }
+        }
+        stable_sort(funcps.begin(), funcps.end(),
+                    [](const AstNode* ap, const AstNode* bp) { return ap->name() < bp->name(); });
+        return funcps;
+    }
 
     void putSectionDelimiter(const string& name) {
         puts("\n");
@@ -194,22 +211,11 @@ class EmitCModel final : public EmitCFunc {
 
         // Emit DPI export dispatcher declarations
         {
-            std::vector<const AstCFunc*> funcps;
-
-            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
-                    if (!funcp->dpiExportDispatcher()) continue;
-                    funcps.push_back(funcp);
-                }
-            }
-
-            stable_sort(funcps.begin(), funcps.end(), [](const AstNode* ap, const AstNode* bp) {
-                return ap->name() < bp->name();
-            });
-
+            const CFuncVector funcps
+                = findFuncps([](const AstCFunc* nodep) { return nodep->dpiExportDispatcher(); });
             if (!funcps.empty()) {
                 puts("\n/// DPI Export functions\n");
-                for (const AstCFunc* funcp : funcps) { emitCFuncDecl(funcp, modp); }
+                for (const AstCFunc* funcp : funcps) emitCFuncDecl(funcp, modp);
             }
         }
 
@@ -590,12 +596,38 @@ class EmitCModel final : public EmitCFunc {
              + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
              + "* tracep);\n");
 
+        const CFuncVector traceInitFuncps
+            = findFuncps([](const AstCFunc* nodep) { return nodep->dpiTraceInit(); });
+        for (const AstCFunc* const funcp : traceInitFuncps) emitCFuncDecl(funcp, modp);
+
         // ::trace
         puts("\nVL_ATTR_COLD void " + topClassName() + "::trace(");
-        puts(v3Global.opt.traceClassBase() + "C* tfp, int, int) {\n");
+        puts(v3Global.opt.traceClassBase() + "C* tfp, int levels, int options) {\n");
+        puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
         puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), tfp->spTrace());\n");
+
+        if (!traceInitFuncps.empty()) {
+            puts(/**/ "if (levels > 0) {\n");
+            puts(/****/ "const QData tfpq = reinterpret_cast<QData>(tfp);\n");
+            for (const AstCFunc* const funcp : traceInitFuncps) {
+                // Some hackery to locate handle__V for trace_init_task
+                // Considered a pragma on the handle, but that still doesn't help us attach it here
+                string handle = funcp->name();
+                const size_t wr_len = strlen("__Vdpiimwrap_");
+                UASSERT_OBJ(handle.substr(0, wr_len) == "__Vdpiimwrap_", funcp,
+                            "Strange trace_init_task function name");
+                handle = "vlSymsp->TOP." + handle.substr(wr_len);
+                const string::size_type pos = handle.rfind("__DOT__");
+                UASSERT_OBJ(pos != string::npos, funcp, "Strange trace_init_task function name");
+                handle = handle.substr(0, pos) + "__DOT__handle___05FV";
+                puts(funcNameProtect(funcp, modp) + "(" + handle
+                     + ", tfpq, levels - 1, options);\n");
+            }
+            puts(/**/ "}\n");
+        }
+
         puts("}\n");
     }
 

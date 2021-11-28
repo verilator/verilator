@@ -2737,6 +2737,7 @@ private:
     bool m_dpiContext : 1;  // DPI import context
     bool m_dpiOpenChild : 1;  // DPI import open array child wrapper
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
+    bool m_dpiTraceInit : 1;  // DPI trace_init
     bool m_isConstructor : 1;  // Class constructor
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
@@ -2760,6 +2761,7 @@ protected:
         , m_dpiContext{false}
         , m_dpiOpenChild{false}
         , m_dpiTask{false}
+        , m_dpiTraceInit{false}
         , m_isConstructor{false}
         , m_isHideLocal{false}
         , m_isHideProtected{false}
@@ -2822,6 +2824,8 @@ public:
     bool dpiOpenChild() const { return m_dpiOpenChild; }
     void dpiTask(bool flag) { m_dpiTask = flag; }
     bool dpiTask() const { return m_dpiTask; }
+    void dpiTraceInit(bool flag) { m_dpiTraceInit = flag; }
+    bool dpiTraceInit() const { return m_dpiTraceInit; }
     void isConstructor(bool flag) { m_isConstructor = flag; }
     bool isConstructor() const { return m_isConstructor; }
     bool isHideLocal() const { return m_isHideLocal; }

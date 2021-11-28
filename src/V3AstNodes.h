@@ -8798,11 +8798,12 @@ private:
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
     bool m_pure : 1;  // Pure function
+    bool m_dpiContext : 1;  // Declared as 'context' DPI import/export function
     bool m_dpiExportDispatcher : 1;  // This is the DPI export entry point (i.e.: called by user)
     bool m_dpiExportImpl : 1;  // DPI export implementation (called from DPI dispatcher via lookup)
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
-    bool m_dpiContext : 1;  // Declared as 'context' DPI import/export function
+    bool m_dpiTraceInit : 1;  // DPI trace_init
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -8825,11 +8826,12 @@ public:
         m_isVirtual = false;
         m_entryPoint = false;
         m_pure = false;
+        m_dpiContext = false;
         m_dpiExportDispatcher = false;
         m_dpiExportImpl = false;
         m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
-        m_dpiContext = false;
+        m_dpiTraceInit = false;
     }
     ASTNODE_NODE_FUNCS(CFunc)
     virtual string name() const override { return m_name; }
@@ -8897,6 +8899,8 @@ public:
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool pure() const { return m_pure; }
     void pure(bool flag) { m_pure = flag; }
+    bool dpiContext() const { return m_dpiContext; }
+    void dpiContext(bool flag) { m_dpiContext = flag; }
     bool dpiExportDispatcher() const { return m_dpiExportDispatcher; }
     void dpiExportDispatcher(bool flag) { m_dpiExportDispatcher = flag; }
     bool dpiExportImpl() const { return m_dpiExportImpl; }
@@ -8905,8 +8909,8 @@ public:
     void dpiImportPrototype(bool flag) { m_dpiImportPrototype = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
-    bool dpiContext() const { return m_dpiContext; }
-    void dpiContext(bool flag) { m_dpiContext = flag; }
+    void dpiTraceInit(bool flag) { m_dpiTraceInit = flag; }
+    bool dpiTraceInit() const { return m_dpiTraceInit; }
     //
     // If adding node accessors, see below emptyBody
     AstNode* argsp() const { return op1p(); }
