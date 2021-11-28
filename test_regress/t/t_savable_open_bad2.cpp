@@ -27,12 +27,12 @@ int main(int argc, char* argv[]) {
     Verilated::debug(0);
     {
         VerilatedSave os;
-        os.open("/No_such_file_as_this");
+        os.open("/No/such_file_as_this");
         TEST_CHECK_EQ(os.isOpen(), false);
     }
     {
         VerilatedRestore os;
-        os.open("/No_such_file_as_this");
+        os.open("/No/such_file_as_this");
         TEST_CHECK_EQ(os.isOpen(), false);
     }
 
