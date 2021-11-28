@@ -1760,8 +1760,9 @@ public:
     }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override {
-        return this->widthp()->isOne() ? "VL_BITSEL_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri)"
-                                       : "VL_SEL_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)";
+        return widthp()->isOne() ? "VL_BITSEL_%nq%lq%rq%tq(%lw, %P, %li, %ri)"
+               : isWide()        ? "VL_SEL_%nq%lq%rq%tq(%nw,%lw, %P, %li, %ri, %ti)"
+                                 : "VL_SEL_%nq%lq%rq%tq(%lw, %P, %li, %ri, %ti)";
     }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
@@ -5618,7 +5619,7 @@ public:
     ASTNODE_NODE_FUNCS(RedAnd)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedAnd(lhs); }
     virtual string emitVerilog() override { return "%f(& %l)"; }
-    virtual string emitC() override { return "VL_REDAND_%nq%lq(%nw,%lw, %P, %li)"; }
+    virtual string emitC() override { return "VL_REDAND_%nq%lq(%lw, %P, %li)"; }
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool sizeMattersLhs() const override { return false; }
@@ -5813,7 +5814,9 @@ public:
         out.opRToIRoundS(lhs);
     }
     virtual string emitVerilog() override { return "%f$rtoi_rounded(%l)"; }
-    virtual string emitC() override { return "VL_RTOIROUND_%nq_D(%nw, %P, %li)"; }
+    virtual string emitC() override {
+        return isWide() ? "VL_RTOIROUND_%nq_D(%nw, %P, %li)" : "VL_RTOIROUND_%nq_D(%li)";
+    }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
@@ -6935,7 +6938,7 @@ public:
         out.opLtS(lhs, rhs);
     }
     virtual string emitVerilog() override { return "%k(%l %f< %r)"; }
-    virtual string emitC() override { return "VL_LTS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() override { return "VL_LTS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() override { return ""; }
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
@@ -7028,7 +7031,7 @@ public:
         out.opGtS(lhs, rhs);
     }
     virtual string emitVerilog() override { return "%k(%l %f> %r)"; }
-    virtual string emitC() override { return "VL_GTS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() override { return "VL_GTS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() override { return ""; }
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
@@ -7121,7 +7124,7 @@ public:
         out.opGteS(lhs, rhs);
     }
     virtual string emitVerilog() override { return "%k(%l %f>= %r)"; }
-    virtual string emitC() override { return "VL_GTES_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() override { return "VL_GTES_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() override { return ""; }
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
@@ -7214,7 +7217,7 @@ public:
         out.opLteS(lhs, rhs);
     }
     virtual string emitVerilog() override { return "%k(%l %f<= %r)"; }
-    virtual string emitC() override { return "VL_LTES_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() override { return "VL_LTES_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() override { return ""; }
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
@@ -7475,7 +7478,7 @@ public:
         out.opMulS(lhs, rhs);
     }
     virtual string emitVerilog() override { return "%k(%l %f* %r)"; }
-    virtual string emitC() override { return "VL_MULS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() override { return "VL_MULS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() override { return ""; }
     virtual bool emitCheckMaxWords() override { return true; }
     virtual bool cleanOut() const override { return false; }
@@ -7987,7 +7990,7 @@ public:
         out.opRepl(lhs, rhs);
     }
     virtual string emitVerilog() override { return "%f{%r{%k%l}}"; }
-    virtual string emitC() override { return "VL_REPLICATE_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() override { return "VL_REPLICATE_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return true; }
@@ -8012,7 +8015,7 @@ public:
         out.opReplN(lhs, rhs);
     }
     virtual string emitVerilog() override { return "%f{%r{%k%l}}"; }
-    virtual string emitC() override { return "VL_REPLICATEN_NN%rq(0,0,%rw, %li, %ri)"; }
+    virtual string emitC() override { return "VL_REPLICATEN_NN%rq(%li, %ri)"; }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return true; }
@@ -8034,7 +8037,7 @@ public:
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opStreamL(lhs, rhs);
     }
-    virtual string emitC() override { return "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() override { return "VL_STREAML_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return true; }

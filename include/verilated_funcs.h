@@ -363,13 +363,13 @@ vluint64_t vl_time_pow10(int n) VL_PURE;
 #define VL_CLEAN_QQ(obits, lbits, lhs) ((lhs)&VL_MASK_Q(obits))
 
 // EMIT_RULE: VL_ASSIGNCLEAN:  oclean=clean; obits==lbits;
-#define VL_ASSIGNCLEAN_W(obits, owp, lwp) VL_CLEAN_WW((obits), (obits), (owp), (lwp))
+#define VL_ASSIGNCLEAN_W(obits, owp, lwp) VL_CLEAN_WW((obits), (owp), (lwp))
 static inline WDataOutP _vl_clean_inplace_w(int obits, WDataOutP owp) VL_MT_SAFE {
     const int words = VL_WORDS_I(obits);
     owp[words - 1] &= VL_MASK_E(obits);
     return owp;
 }
-static inline WDataOutP VL_CLEAN_WW(int obits, int, WDataOutP owp, WDataInP const lwp) VL_MT_SAFE {
+static inline WDataOutP VL_CLEAN_WW(int obits, WDataOutP owp, WDataInP const lwp) VL_MT_SAFE {
     const int words = VL_WORDS_I(obits);
     for (int i = 0; (i < (words - 1)); ++i) owp[i] = lwp[i];
     owp[words - 1] = lwp[words - 1] & VL_MASK_E(obits);
@@ -397,37 +397,37 @@ static inline WDataOutP VL_ASSIGN_W(int obits, WDataOutP owp, WDataInP const lwp
 }
 
 // EMIT_RULE: VL_ASSIGNBIT:  rclean=clean;
-static inline void VL_ASSIGNBIT_II(int, int bit, CData& lhsr, IData rhs) VL_PURE {
+static inline void VL_ASSIGNBIT_II(int bit, CData& lhsr, IData rhs) VL_PURE {
     lhsr = ((lhsr & ~(VL_UL(1) << VL_BITBIT_I(bit))) | (rhs << VL_BITBIT_I(bit)));
 }
-static inline void VL_ASSIGNBIT_II(int, int bit, SData& lhsr, IData rhs) VL_PURE {
+static inline void VL_ASSIGNBIT_II(int bit, SData& lhsr, IData rhs) VL_PURE {
     lhsr = ((lhsr & ~(VL_UL(1) << VL_BITBIT_I(bit))) | (rhs << VL_BITBIT_I(bit)));
 }
-static inline void VL_ASSIGNBIT_II(int, int bit, IData& lhsr, IData rhs) VL_PURE {
+static inline void VL_ASSIGNBIT_II(int bit, IData& lhsr, IData rhs) VL_PURE {
     lhsr = ((lhsr & ~(VL_UL(1) << VL_BITBIT_I(bit))) | (rhs << VL_BITBIT_I(bit)));
 }
-static inline void VL_ASSIGNBIT_QI(int, int bit, QData& lhsr, QData rhs) VL_PURE {
+static inline void VL_ASSIGNBIT_QI(int bit, QData& lhsr, QData rhs) VL_PURE {
     lhsr = ((lhsr & ~(1ULL << VL_BITBIT_Q(bit))) | (static_cast<QData>(rhs) << VL_BITBIT_Q(bit)));
 }
-static inline void VL_ASSIGNBIT_WI(int, int bit, WDataOutP owp, IData rhs) VL_MT_SAFE {
+static inline void VL_ASSIGNBIT_WI(int bit, WDataOutP owp, IData rhs) VL_MT_SAFE {
     const EData orig = owp[VL_BITWORD_E(bit)];
     owp[VL_BITWORD_E(bit)] = ((orig & ~(VL_EUL(1) << VL_BITBIT_E(bit)))
                               | (static_cast<EData>(rhs) << VL_BITBIT_E(bit)));
 }
 // Alternative form that is an instruction faster when rhs is constant one.
-static inline void VL_ASSIGNBIT_IO(int, int bit, CData& lhsr, IData) VL_PURE {
+static inline void VL_ASSIGNBIT_IO(int bit, CData& lhsr) VL_PURE {
     lhsr = (lhsr | (VL_UL(1) << VL_BITBIT_I(bit)));
 }
-static inline void VL_ASSIGNBIT_IO(int, int bit, SData& lhsr, IData) VL_PURE {
+static inline void VL_ASSIGNBIT_IO(int bit, SData& lhsr) VL_PURE {
     lhsr = (lhsr | (VL_UL(1) << VL_BITBIT_I(bit)));
 }
-static inline void VL_ASSIGNBIT_IO(int, int bit, IData& lhsr, IData) VL_PURE {
+static inline void VL_ASSIGNBIT_IO(int bit, IData& lhsr) VL_PURE {
     lhsr = (lhsr | (VL_UL(1) << VL_BITBIT_I(bit)));
 }
-static inline void VL_ASSIGNBIT_QO(int, int bit, QData& lhsr, IData) VL_PURE {
+static inline void VL_ASSIGNBIT_QO(int bit, QData& lhsr) VL_PURE {
     lhsr = (lhsr | (1ULL << VL_BITBIT_Q(bit)));
 }
-static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) VL_MT_SAFE {
+static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
     const EData orig = owp[VL_BITWORD_E(bit)];
     owp[VL_BITWORD_E(bit)] = (orig | (VL_EUL(1) << VL_BITBIT_E(bit)));
 }
@@ -588,9 +588,9 @@ static inline WDataOutP VL_EXTENDS_WW(int obits, int lbits, WDataOutP owp,
 // REDUCTION OPERATORS
 
 // EMIT_RULE: VL_REDAND:  oclean=clean; lclean==clean; obits=1;
-#define VL_REDAND_II(obits, lbits, lhs) ((lhs) == VL_MASK_I(lbits))
-#define VL_REDAND_IQ(obits, lbits, lhs) ((lhs) == VL_MASK_Q(lbits))
-static inline IData VL_REDAND_IW(int, int lbits, WDataInP const lwp) VL_MT_SAFE {
+#define VL_REDAND_II(lbits, lhs) ((lhs) == VL_MASK_I(lbits))
+#define VL_REDAND_IQ(lbits, lhs) ((lhs) == VL_MASK_Q(lbits))
+static inline IData VL_REDAND_IW(int lbits, WDataInP const lwp) VL_MT_SAFE {
     const int words = VL_WORDS_I(lbits);
     EData combine = lwp[0];
     for (int i = 1; i < words - 1; ++i) combine &= lwp[i];
@@ -862,52 +862,52 @@ static inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) V
     return 0;  // ==
 }
 
-#define VL_LTS_IWW(obits, lbits, rbbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) < 0)
-#define VL_LTES_IWW(obits, lbits, rbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) <= 0)
-#define VL_GTS_IWW(obits, lbits, rbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) > 0)
-#define VL_GTES_IWW(obits, lbits, rbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) >= 0)
+#define VL_LTS_IWW(lbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) < 0)
+#define VL_LTES_IWW(lbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) <= 0)
+#define VL_GTS_IWW(lbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) > 0)
+#define VL_GTES_IWW(lbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) >= 0)
 
-static inline IData VL_GTS_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
+static inline IData VL_GTS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     // For lbits==32, this becomes just a single instruction, otherwise ~5.
     // GCC 3.3.4 sign extension bugs on AMD64 architecture force us to use quad logic
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed > rhs_signed;
 }
-static inline IData VL_GTS_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
+static inline IData VL_GTS_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed > rhs_signed;
 }
 
-static inline IData VL_GTES_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
+static inline IData VL_GTES_III(int lbits, IData lhs, IData rhs) VL_PURE {
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed >= rhs_signed;
 }
-static inline IData VL_GTES_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
+static inline IData VL_GTES_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed >= rhs_signed;
 }
 
-static inline IData VL_LTS_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
+static inline IData VL_LTS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed < rhs_signed;
 }
-static inline IData VL_LTS_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
+static inline IData VL_LTS_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed < rhs_signed;
 }
 
-static inline IData VL_LTES_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
+static inline IData VL_LTES_III(int lbits, IData lhs, IData rhs) VL_PURE {
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed <= rhs_signed;
 }
-static inline IData VL_LTES_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
+static inline IData VL_LTES_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed <= rhs_signed;
@@ -1002,18 +1002,18 @@ static inline WDataOutP VL_MUL_W(int words, WDataOutP owp, WDataInP const lwp,
     return owp;
 }
 
-static inline IData VL_MULS_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
+static inline IData VL_MULS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     const vlsint32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
     const vlsint32_t rhs_signed = VL_EXTENDS_II(32, lbits, rhs);
     return lhs_signed * rhs_signed;
 }
-static inline QData VL_MULS_QQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
+static inline QData VL_MULS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed * rhs_signed;
 }
 
-static inline WDataOutP VL_MULS_WWW(int, int lbits, int, WDataOutP owp, WDataInP const lwp,
+static inline WDataOutP VL_MULS_WWW(int lbits, WDataOutP owp, WDataInP const lwp,
                                     WDataInP const rwp) VL_MT_SAFE {
     const int words = VL_WORDS_I(lbits);
     // cppcheck-suppress variableScope
@@ -1339,10 +1339,10 @@ static inline void _vl_insert_WQ(WDataOutP owp, QData ld, int hbit, int lbit,
 
 // EMIT_RULE: VL_REPLICATE:  oclean=clean>width32, dirty<=width32; lclean=clean; rclean==clean;
 // RHS MUST BE CLEAN CONSTANT.
-#define VL_REPLICATE_IOI(obits, lbits, rbits, ld, rep) (-(ld))  // Iff lbits==1
-#define VL_REPLICATE_QOI(obits, lbits, rbits, ld, rep) (-(static_cast<QData>(ld)))  // Iff lbits==1
+#define VL_REPLICATE_IOI(lbits, ld, rep) (-(ld))  // Iff lbits==1
+#define VL_REPLICATE_QOI(lbits, ld, rep) (-(static_cast<QData>(ld)))  // Iff lbits==1
 
-static inline IData VL_REPLICATE_III(int, int lbits, int, IData ld, IData rep) VL_PURE {
+static inline IData VL_REPLICATE_III(int lbits, IData ld, IData rep) VL_PURE {
     IData returndata = ld;
     for (unsigned i = 1; i < rep; ++i) {
         returndata = returndata << lbits;
@@ -1350,7 +1350,7 @@ static inline IData VL_REPLICATE_III(int, int lbits, int, IData ld, IData rep) V
     }
     return returndata;
 }
-static inline QData VL_REPLICATE_QII(int, int lbits, int, IData ld, IData rep) VL_PURE {
+static inline QData VL_REPLICATE_QII(int lbits, IData ld, IData rep) VL_PURE {
     QData returndata = ld;
     for (unsigned i = 1; i < rep; ++i) {
         returndata = returndata << lbits;
@@ -1358,7 +1358,7 @@ static inline QData VL_REPLICATE_QII(int, int lbits, int, IData ld, IData rep) V
     }
     return returndata;
 }
-static inline WDataOutP VL_REPLICATE_WII(int, int lbits, int, WDataOutP owp, IData ld,
+static inline WDataOutP VL_REPLICATE_WII(int lbits, WDataOutP owp, IData ld,
                                          IData rep) VL_MT_SAFE {
     owp[0] = ld;
     for (unsigned i = 1; i < rep; ++i) {
@@ -1366,7 +1366,7 @@ static inline WDataOutP VL_REPLICATE_WII(int, int lbits, int, WDataOutP owp, IDa
     }
     return owp;
 }
-static inline WDataOutP VL_REPLICATE_WQI(int, int lbits, int, WDataOutP owp, QData ld,
+static inline WDataOutP VL_REPLICATE_WQI(int lbits, WDataOutP owp, QData ld,
                                          IData rep) VL_MT_SAFE {
     VL_SET_WQ(owp, ld);
     for (unsigned i = 1; i < rep; ++i) {
@@ -1374,7 +1374,7 @@ static inline WDataOutP VL_REPLICATE_WQI(int, int lbits, int, WDataOutP owp, QDa
     }
     return owp;
 }
-static inline WDataOutP VL_REPLICATE_WWI(int, int lbits, int, WDataOutP owp, WDataInP const lwp,
+static inline WDataOutP VL_REPLICATE_WWI(int lbits, WDataOutP owp, WDataInP const lwp,
                                          IData rep) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(lbits); ++i) owp[i] = lwp[i];
     for (unsigned i = 1; i < rep; ++i) {
@@ -1387,7 +1387,7 @@ static inline WDataOutP VL_REPLICATE_WWI(int, int lbits, int, WDataOutP owp, WDa
 // Special "fast" versions for slice sizes that are a power of 2. These use
 // shifts and masks to execute faster than the slower for-loop approach where a
 // subset of bits is copied in during each iteration.
-static inline IData VL_STREAML_FAST_III(int, int lbits, int, IData ld, IData rd_log2) VL_PURE {
+static inline IData VL_STREAML_FAST_III(int lbits, IData ld, IData rd_log2) VL_PURE {
     // Pre-shift bits in most-significant slice:
     //
     // If lbits is not a multiple of the slice size (i.e., lbits % rd != 0),
@@ -1425,7 +1425,7 @@ static inline IData VL_STREAML_FAST_III(int, int lbits, int, IData ld, IData rd_
     return ret >> (VL_IDATASIZE - lbits);
 }
 
-static inline QData VL_STREAML_FAST_QQI(int, int lbits, int, QData ld, IData rd_log2) VL_PURE {
+static inline QData VL_STREAML_FAST_QQI(int lbits, QData ld, IData rd_log2) VL_PURE {
     // Pre-shift bits in most-significant slice (see comment in VL_STREAML_FAST_III)
     QData ret = ld;
     if (rd_log2) {
@@ -1457,7 +1457,7 @@ static inline QData VL_STREAML_FAST_QQI(int, int lbits, int, QData ld, IData rd_
 }
 
 // Regular "slow" streaming operators
-static inline IData VL_STREAML_III(int, int lbits, int, IData ld, IData rd) VL_PURE {
+static inline IData VL_STREAML_III(int lbits, IData ld, IData rd) VL_PURE {
     IData ret = 0;
     // Slice size should never exceed the lhs width
     const IData mask = VL_MASK_I(rd);
@@ -1469,7 +1469,7 @@ static inline IData VL_STREAML_III(int, int lbits, int, IData ld, IData rd) VL_P
     return ret;
 }
 
-static inline QData VL_STREAML_QQI(int, int lbits, int, QData ld, IData rd) VL_PURE {
+static inline QData VL_STREAML_QQI(int lbits, QData ld, IData rd) VL_PURE {
     QData ret = 0;
     // Slice size should never exceed the lhs width
     const QData mask = VL_MASK_Q(rd);
@@ -1481,7 +1481,7 @@ static inline QData VL_STREAML_QQI(int, int lbits, int, QData ld, IData rd) VL_P
     return ret;
 }
 
-static inline WDataOutP VL_STREAML_WWI(int, int lbits, int, WDataOutP owp, WDataInP const lwp,
+static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const lwp,
                                        IData rd) VL_MT_SAFE {
     VL_ZERO_W(lbits, owp);
     // Slice size should never exceed the lhs width
@@ -1833,13 +1833,12 @@ static inline QData VL_SHIFTRS_QQQ(int obits, int lbits, int rbits, QData lhs, Q
 // Bit selection
 
 // EMIT_RULE: VL_BITSEL:  oclean=dirty; rclean==clean;
-#define VL_BITSEL_IIII(obits, lbits, rbits, zbits, lhs, rhs) ((lhs) >> (rhs))
-#define VL_BITSEL_QIII(obits, lbits, rbits, zbits, lhs, rhs) ((lhs) >> (rhs))
-#define VL_BITSEL_QQII(obits, lbits, rbits, zbits, lhs, rhs) ((lhs) >> (rhs))
-#define VL_BITSEL_IQII(obits, lbits, rbits, zbits, lhs, rhs) (static_cast<IData>((lhs) >> (rhs)))
+#define VL_BITSEL_IIII(lbits, lhs, rhs) ((lhs) >> (rhs))
+#define VL_BITSEL_QIII(lbits, lhs, rhs) ((lhs) >> (rhs))
+#define VL_BITSEL_QQII(lbits, lhs, rhs) ((lhs) >> (rhs))
+#define VL_BITSEL_IQII(lbits, lhs, rhs) (static_cast<IData>((lhs) >> (rhs)))
 
-static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP const lwp,
-                                   IData rd) VL_MT_SAFE {
+static inline IData VL_BITSEL_IWII(int lbits, WDataInP const lwp, IData rd) VL_MT_SAFE {
     const int word = VL_BITWORD_E(rd);
     if (VL_UNLIKELY(rd > static_cast<IData>(lbits))) {
         return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
@@ -1851,13 +1850,11 @@ static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP const lwp,
 
 // EMIT_RULE: VL_RANGE:  oclean=lclean;  out=dirty
 // <msb> & <lsb> MUST BE CLEAN (currently constant)
-#define VL_SEL_IIII(obits, lbits, rbits, tbits, lhs, lsb, width) ((lhs) >> (lsb))
-#define VL_SEL_QQII(obits, lbits, rbits, tbits, lhs, lsb, width) ((lhs) >> (lsb))
-#define VL_SEL_IQII(obits, lbits, rbits, tbits, lhs, lsb, width) \
-    (static_cast<IData>((lhs) >> (lsb)))
+#define VL_SEL_IIII(lbits, lhs, lsb, width) ((lhs) >> (lsb))
+#define VL_SEL_QQII(lbits, lhs, lsb, width) ((lhs) >> (lsb))
+#define VL_SEL_IQII(lbits, lhs, lsb, width) (static_cast<IData>((lhs) >> (lsb)))
 
-static inline IData VL_SEL_IWII(int, int lbits, int, int, WDataInP const lwp, IData lsb,
-                                IData width) VL_MT_SAFE {
+static inline IData VL_SEL_IWII(int lbits, WDataInP const lwp, IData lsb, IData width) VL_MT_SAFE {
     const int msb = lsb + width - 1;
     if (VL_UNLIKELY(msb >= lbits)) {
         return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
@@ -1870,8 +1867,7 @@ static inline IData VL_SEL_IWII(int, int lbits, int, int, WDataInP const lwp, ID
     }
 }
 
-static inline QData VL_SEL_QWII(int, int lbits, int, int, WDataInP const lwp, IData lsb,
-                                IData width) VL_MT_SAFE {
+static inline QData VL_SEL_QWII(int lbits, WDataInP const lwp, IData lsb, IData width) VL_MT_SAFE {
     const int msb = lsb + width - 1;
     if (VL_UNLIKELY(msb > lbits)) {
         return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
@@ -1892,8 +1888,8 @@ static inline QData VL_SEL_QWII(int, int lbits, int, int, WDataInP const lwp, ID
     }
 }
 
-static inline WDataOutP VL_SEL_WWII(int obits, int lbits, int, int, WDataOutP owp,
-                                    WDataInP const lwp, IData lsb, IData width) VL_MT_SAFE {
+static inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataInP const lwp,
+                                    IData lsb, IData width) VL_MT_SAFE {
     const int msb = lsb + width - 1;
     const int word_shift = VL_BITWORD_E(lsb);
     if (VL_UNLIKELY(msb > lbits)) {  // Outside bounds,
@@ -1925,7 +1921,7 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, int, int, WDataOutP ow
 
 // Return QData from double (numeric)
 // EMIT_RULE: VL_RTOIROUND_Q_D:  oclean=dirty; lclean==clean/real
-static inline QData VL_RTOIROUND_Q_D(int, double lhs) VL_PURE {
+static inline QData VL_RTOIROUND_Q_D(double lhs) VL_PURE {
     // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
     // This does not need to support subnormals as they are sub-integral
     lhs = VL_ROUND(lhs);
@@ -1942,8 +1938,8 @@ static inline QData VL_RTOIROUND_Q_D(int, double lhs) VL_PURE {
     if (lhs < 0) out = -out;
     return out;
 }
-static inline IData VL_RTOIROUND_I_D(int bits, double lhs) VL_PURE {
-    return static_cast<IData>(VL_RTOIROUND_Q_D(bits, lhs));
+static inline IData VL_RTOIROUND_I_D(double lhs) VL_PURE {
+    return static_cast<IData>(VL_RTOIROUND_Q_D(lhs));
 }
 static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) VL_PURE {
     // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
@@ -2009,8 +2005,8 @@ static inline void VL_ASSIGNSEL_WIIW(int rbits, int obits, int lsb, WDataOutP ow
 //======================================================================
 // Triops
 
-static inline WDataOutP VL_COND_WIWW(int obits, int, int, int, WDataOutP owp, int cond,
-                                     WDataInP const w1p, WDataInP const w2p) VL_MT_SAFE {
+static inline WDataOutP VL_COND_WIWW(int obits, WDataOutP owp, int cond, WDataInP const w1p,
+                                     WDataInP const w2p) VL_MT_SAFE {
     const int words = VL_WORDS_I(obits);
     for (int i = 0; i < words; ++i) owp[i] = cond ? w1p[i] : w2p[i];
     return owp;
@@ -2185,15 +2181,14 @@ inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
     return lhs + rhs;
 }
-inline std::string VL_REPLICATEN_NNQ(int, int, int, const std::string& lhs, IData rep) VL_PURE {
+inline std::string VL_REPLICATEN_NNQ(const std::string& lhs, IData rep) VL_PURE {
     std::string out;
     out.reserve(lhs.length() * rep);
     for (unsigned times = 0; times < rep; ++times) out += lhs;
     return out;
 }
-inline std::string VL_REPLICATEN_NNI(int obits, int lbits, int rbits, const std::string& lhs,
-                                     IData rep) VL_PURE {
-    return VL_REPLICATEN_NNQ(obits, lbits, rbits, lhs, rep);
+inline std::string VL_REPLICATEN_NNI(const std::string& lhs, IData rep) VL_PURE {
+    return VL_REPLICATEN_NNQ(lhs, rep);
 }
 
 inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }

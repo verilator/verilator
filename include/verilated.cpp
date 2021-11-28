@@ -1041,9 +1041,7 @@ static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp,
 }
 static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits,
                                    IData ld) VL_MT_SAFE {
-    for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) {
-        VL_ASSIGNBIT_WI(0, lsb, owp, ld & 1);
-    }
+    for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) { VL_ASSIGNBIT_WI(lsb, owp, ld & 1); }
 }
 static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
                                   size_t posstart, size_t posend) VL_MT_SAFE {

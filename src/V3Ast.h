@@ -2143,9 +2143,7 @@ public:
     AstNode* expr1p() const { return op2p(); }  // op2 = If true...
     AstNode* expr2p() const { return op3p(); }  // op3 = If false...
     virtual string emitVerilog() override { return "%k(%l %f? %r %k: %t)"; }
-    virtual string emitC() override {
-        return "VL_COND_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)";
-    }
+    virtual string emitC() override { return "VL_COND_%nq%lq%rq%tq(%nw, %P, %li, %ri, %ti)"; }
     virtual bool cleanOut() const override { return false; }  // clean if e1 & e2 clean
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return false; }

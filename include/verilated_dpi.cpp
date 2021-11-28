@@ -68,7 +68,7 @@ svLogic svGetBitselLogic(const svLogicVecVal* sp, int bit) {
             | (((sp[VL_BITWORD_I(bit)].bval >> VL_BITBIT_I(bit)) & 1) << 1));
 }
 
-void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) { VL_ASSIGNBIT_WI(32, bit, dp, s); }
+void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) { VL_ASSIGNBIT_WI(bit, dp, s); }
 void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
     // Verilator doesn't support X/Z so only aval
     dp[VL_BITWORD_I(bit)].aval = ((dp[VL_BITWORD_I(bit)].aval & ~(VL_UL(1) << VL_BITBIT_I(bit)))

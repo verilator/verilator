@@ -265,20 +265,21 @@ public:
     virtual void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;
+        bool rhs = true;
         if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
             if (selp->widthMin() == 1) {
                 putbs("VL_ASSIGNBIT_");
                 emitIQW(selp->fromp());
                 if (nodep->rhsp()->isAllOnesV()) {
                     puts("O(");
+                    rhs = false;
                 } else {
                     puts("I(");
                 }
-                puts(cvtToStr(nodep->widthMin()) + ",");
                 iterateAndNextNull(selp->lsbp());
                 puts(", ");
                 iterateAndNextNull(selp->fromp());
-                puts(", ");
+                if (rhs) puts(", ");
             } else {
                 putbs("VL_ASSIGNSEL_");
                 emitIQW(selp->fromp());
@@ -339,7 +340,7 @@ public:
             if (!VN_IS(nodep->rhsp(), Const)) ofp()->putBreak();
             puts("= ");
         }
-        iterateAndNextNull(nodep->rhsp());
+        if (rhs) iterateAndNextNull(nodep->rhsp());
         if (paren) puts(")");
         if (decind) ofp()->blockDec();
         puts(";\n");
@@ -1049,9 +1050,7 @@ public:
             puts("VL_REPLICATE_");
             emitIQW(nodep);
             puts("OI(");
-            puts(cvtToStr(nodep->widthMin()));
-            if (nodep->lhsp()) puts("," + cvtToStr(nodep->lhsp()->widthMin()));
-            if (nodep->rhsp()) puts("," + cvtToStr(nodep->rhsp()->widthMin()));
+            if (nodep->lhsp()) puts(cvtToStr(nodep->lhsp()->widthMin()));
             puts(",");
             iterateAndNextNull(nodep->lhsp());
             puts(", ");
@@ -1071,10 +1070,8 @@ public:
                 emitIQW(nodep);
                 emitIQW(nodep->lhsp());
                 puts("I(");
-                puts(cvtToStr(nodep->widthMin()));
-                puts("," + cvtToStr(nodep->lhsp()->widthMin()));
-                puts("," + cvtToStr(nodep->rhsp()->widthMin()));
-                puts(",");
+                puts(cvtToStr(nodep->lhsp()->widthMin()));
+                puts(", ");
                 iterateAndNextNull(nodep->lhsp());
                 puts(", ");
                 const uint32_t rd_log2 = V3Number::log2b(VN_AS(nodep->rhsp(), Const)->toUInt());
@@ -1082,8 +1079,8 @@ public:
                 return;
             }
         }
-        emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),
-                   nodep->rhsp(), nullptr);
+        emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(), nodep->rhsp(),
+                   nullptr);
     }
     virtual void visit(AstCastDynamic* nodep) override {
         putbs("VL_CAST_DYNAMIC(");
