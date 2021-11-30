@@ -572,7 +572,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 incrOps(andp, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.m_lsb + compNum.width(), ref.width());
+                const int maxBitIdx = std::min(ref.m_lsb + maskNum.width(), ref.width());
                 for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
                     const int maskIdx = bitIdx - ref.m_lsb;
                     if (maskNum.bitIs0(maskIdx)) continue;

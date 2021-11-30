@@ -57,7 +57,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'ha916d9291821c6e0
+`define EXPECTED_SUM 64'hcae926ece668f35d
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -78,10 +78,11 @@ module Test(/*AUTOARG*/
    logic [31:0] d;
    logic d0, d1, d2, d3, d4, d5, d6, d7;
    logic bug3182_out;
+   logic bug3197_out;
 
    output logic o;
 
-   logic [5:0] tmp;
+   logic [6:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -103,9 +104,11 @@ module Test(/*AUTOARG*/
       tmp[3] <= d0 <-> d1; // replaceLogEq()
       tmp[4] <= i[0] & (i[1] & (i[2] & (i[3] | d[4])));  // ConstBitOpTreeVisitor::m_frozenNodes
       tmp[5] <= bug3182_out;
+      tmp[6] <= bug3197_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
+   bug3197 i_bug3197(.clk(clk), .in(d), .out(bug3197_out));
 
 endmodule
 
@@ -127,4 +130,13 @@ module bug3182(in, out);
    wire [5:0] tmp = bit_source; // V3Gate should inline this
    wire out =  ~(tmp >> 5) & (bit_source == 5'd10);
    /* verilator lint_on WIDTH */
+endmodule
+
+module bug3197(input wire clk, input wire [31:0] in, output out);
+   logic [63:0] d;
+   always_ff @(posedge clk)
+      d <= {d[31:0], in[0] ? in : 32'b0};
+
+   wire tmp0 = (|d[38:0]);
+   assign out = (d[39] | tmp0);
 endmodule
