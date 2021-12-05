@@ -283,7 +283,6 @@ public:
             } else {
                 putbs("VL_ASSIGNSEL_");
                 emitIQW(selp->fromp());
-                puts("II");
                 emitIQW(nodep->rhsp());
                 puts("(");
                 puts(cvtToStr(selp->fromp()->widthMin()) + ",");

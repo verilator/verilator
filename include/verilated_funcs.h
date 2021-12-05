@@ -1962,42 +1962,33 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
 // Range assignments
 
 // EMIT_RULE: VL_ASSIGNRANGE:  rclean=dirty;
-static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, CData& lhsr,
-                                     IData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, int lsb, CData& lhsr, IData rhs) VL_PURE {
     _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, SData& lhsr,
-                                     IData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, int lsb, SData& lhsr, IData rhs) VL_PURE {
     _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, IData& lhsr,
-                                     IData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, int lsb, IData& lhsr, IData rhs) VL_PURE {
     _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QIII(int rbits, int obits, int lsb, QData& lhsr,
-                                     IData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_QI(int rbits, int obits, int lsb, QData& lhsr, IData rhs) VL_PURE {
     _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QQII(int rbits, int obits, int lsb, QData& lhsr,
-                                     QData rhs) VL_PURE {
-    _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
-}
-static inline void VL_ASSIGNSEL_QIIQ(int rbits, int obits, int lsb, QData& lhsr,
-                                     QData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_QQ(int rbits, int obits, int lsb, QData& lhsr, QData rhs) VL_PURE {
     _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 // static inline void VL_ASSIGNSEL_IIIW(int obits, int lsb, IData& lhsr, WDataInP const rwp)
 // VL_MT_SAFE { Illegal, as lhs width >= rhs width
-static inline void VL_ASSIGNSEL_WIII(int rbits, int obits, int lsb, WDataOutP owp,
-                                     IData rhs) VL_MT_SAFE {
+static inline void VL_ASSIGNSEL_WI(int rbits, int obits, int lsb, WDataOutP owp,
+                                   IData rhs) VL_MT_SAFE {
     _vl_insert_WI(owp, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_WIIQ(int rbits, int obits, int lsb, WDataOutP owp,
-                                     QData rhs) VL_MT_SAFE {
+static inline void VL_ASSIGNSEL_WQ(int rbits, int obits, int lsb, WDataOutP owp,
+                                   QData rhs) VL_MT_SAFE {
     _vl_insert_WQ(owp, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_WIIW(int rbits, int obits, int lsb, WDataOutP owp,
-                                     WDataInP const rwp) VL_MT_SAFE {
+static inline void VL_ASSIGNSEL_WW(int rbits, int obits, int lsb, WDataOutP owp,
+                                   WDataInP const rwp) VL_MT_SAFE {
     _vl_insert_WW(owp, rwp, lsb + obits - 1, lsb, rbits);
 }
 
