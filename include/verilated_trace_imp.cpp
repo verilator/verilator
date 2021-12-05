@@ -267,7 +267,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::flushBase() {
 // Callbacks to run on global events
 
 template <> void VerilatedTrace<VL_DERIVED_T>::onFlush(void* selfp) {
-    // This calls 'flush' on the derived classo (which must then get any mutex)
+    // This calls 'flush' on the derived class (which must then get any mutex)
     reinterpret_cast<VL_DERIVED_T*>(selfp)->flush();
 }
 

@@ -217,12 +217,12 @@ private:
     // Store the size atomically, so we can spin wait
     std::atomic<size_t> m_ready_size;
 
-    VlThreadPool* m_poolp;  // Our associated thread pool
+    VlThreadPool* const m_poolp;  // Our associated thread pool
 
-    bool m_profiling;  // Is profiling enabled?
+    const bool m_profiling;  // Is profiling enabled?
     std::atomic<bool> m_exiting;  // Worker thread should exit
     std::thread m_cthread;  // Underlying C++ thread record
-    VerilatedContext* m_contextp;  // Context for spawned thread
+    VerilatedContext* const m_contextp;  // Context for spawned thread
 
     VL_UNCOPYABLE(VlWorkerThread);
 
@@ -274,7 +274,7 @@ class VlThreadPool final {
 
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
-    bool m_profiling;  // is profiling enabled?
+    const bool m_profiling;  // is profiling enabled?
 
     // Support profiling -- we can append records of profiling events
     // to this vector with very low overhead, and then dump them out

@@ -158,41 +158,26 @@ Summary:
 
 .. option:: --clk <signal-name>
 
-   Sometimes it is quite difficult for Verilator to distinguish clock
-   signals from other data signals. Occasionally the clock signals can end
-   up in the checking list of signals which determines if further
-   evaluation is needed. This will heavily degrade the performance of a
-   Verilated model.
-
    With :vlopt:`--clk`, the specified signal-name is taken as a root clock
-   into the model, then Verilator will mark the signal as clocker and
-   propagate the clocker attribute automatically to other signals derived
-   from that. In this way, Verilator will try to avoid taking the clocker
-   signal into checking list.
+   into the model; Verilator will mark the signal as clocker and
+   propagate the clocker attribute automatically to other signals downstream in
+   that clock tree.
 
-   Note signal-name is specified by the RTL hierarchy path. For example,
-   v.foo.bar.  If the signal is the input to top-module, the directly the
-   signal name. If you find it difficult to find the exact name, try to use
-   a :option:`/*verilator&32;clocker*/` metacomment in RTL file to mark the
+   The provided signal-name is specified using a RTL hierarchy path. For
+   example, v.foo.bar.  If the signal is the input to top-module, then
+   directly provide the signal name. Alternatively, use a
+   :option:`/*verilator&32;clocker*/` metacomment in RTL file to mark the
    signal directly.
 
-   If clock signals are assigned to vectors and then later used
-   individually, Verilator will attempt to decompose the vector and connect
-   the single-bit clock signals directly.  This should be transparent to
-   the user.
+   If clock signals are assigned to vectors and then later used as
+   individual bits, Verilator will attempt to decompose the vector and
+   connect the single-bit clock signals.
 
-.. option:: --make <build-tool>
-
-   Generates a script for the specified build tool.
-
-   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
-   Both can be specified together.  If no build tool is specified, gmake is
-   assumed.  The executable of gmake can be configured via environment
-   variable "MAKE".
-
-   When using :vlopt:`--build` Verilator takes over the responsibility of
-   building the model library/executable.  For this reason :option:`--make`
-   cannot be specified when using :vlopt:`--build`.
+   The clocker attribute is useful in cases where Verilator does not
+   properly distinguish clock signals from other data signals. Using
+   clocker will cause the signal indicated to be considered a clock, and
+   remove it from the combinatorial logic reevaluation checking code. This
+   may greatly improve performance.
 
 .. option:: --compiler <compiler-name>
 
@@ -590,6 +575,23 @@ Summary:
    "+libext+" is fairly standard across Verilog tools.  Defaults to
    ".v+.sv".
 
+.. option:: --lib-create <name>
+
+   Produces C++, Verilog wrappers and a Makefile which can in turn produce
+   a DPI library which can be used by Verilator or other simulators along
+   with the corresponding Verilog wrapper.  The Makefile will build both a
+   static and dynamic version of the library named :file:`lib<name>.a` and
+   :file:`lib<name>.so` respectively.  This is done because some simulators
+   require a dynamic library, but the static library is arguably easier to
+   use if possible.  :vlopt:`--protect-lib` implies :vlopt:`--protect-ids`.
+
+   When using :vlopt:`--lib-create` it is advised to also use
+   :vlopt:`--timescale-override /1fs <--timescale-override>` to ensure the
+   model has a time resolution that is always compatible with the time
+   precision of the upper instantiating module.
+
+   See also :vlopt:`--protect-lib`.
+
 .. option:: --lint-only
 
    Check the files for lint violations only, do not create any other
@@ -600,6 +602,19 @@ Summary:
 
    If the design is not to be completely Verilated see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
+
+.. option:: --make <build-tool>
+
+   Generates a script for the specified build tool.
+
+   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
+   Both can be specified together.  If no build tool is specified, gmake is
+   assumed.  The executable of gmake can be configured via environment
+   variable "MAKE".
+
+   When using :vlopt:`--build` Verilator takes over the responsibility of
+   building the model library/executable.  For this reason :option:`--make`
+   cannot be specified when using :vlopt:`--build`.
 
 .. option:: -MAKEFLAGS <string>
 
@@ -874,23 +889,14 @@ Summary:
 
 .. option:: --protect-lib <name>
 
-   Produces C++, Verilog wrappers and a Makefile which can in turn produce
-   a DPI library which can be used by Verilator or other simulators along
-   with the corresponding Verilog wrapper.  The Makefile will build both a
-   static and dynamic version of the library named :file:`lib<name>.a` and
-   :file:`lib<name>.so` respectively.  This is done because some simulators
-   require a dynamic library, but the static library is arguably easier to
-   use if possible.  :vlopt:`--protect-lib` implies :vlopt:`--protect-ids`.
+   Produces a DPI library similar to :vlopt:`--lib-create`, but hides
+   internal design details.  :vlopt:`--protect-lib` implies
+   :vlopt:`--protect-ids`, and :vlopt:`--lib-create`.
 
    This allows for the secure delivery of sensitive IP without the need for
    encrypted RTL (i.e. IEEE P1735).  See :file:`examples/make_protect_lib`
    in the distribution for a demonstration of how to build and use the DPI
    library.
-
-   When using :vlopt:`--protect-lib` it is advised to also use
-   :vlopt:`--timescale-override /1fs <--timescale-override>` to ensure the
-   model has a time resolution that is always compatible with the time
-   precision of the upper instantiating module.
 
 .. option:: --private
 
@@ -1167,9 +1173,9 @@ Summary:
 
 .. option:: --trace-underscore
 
-   Enable tracing of signals that start with an underscore. Normally, these
-   signals are not output during tracing.  See also
-   :vlopt:`--coverage-underscore` option.
+   Enable tracing of signals or modules that start with an
+   underscore. Normally, these signals are not output during tracing.  See
+   also :vlopt:`--coverage-underscore` option.
 
 .. option:: -U<var>
 
@@ -1506,9 +1512,9 @@ The grammar of configuration commands is as follows:
 
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
-   Indicate the signal is used as clock or not. This information is used by
-   Verilator to mark the signal as clocker and propagate the clocker
-   attribute automatically to derived signals. See :vlopt:`--clk`.
+   Indicates that the signal is used as clock or not. This information is
+   used by Verilator to mark the signal and any derrived signals as
+   clocker.  See :vlopt:`--clk`.
 
    Same as :option:`/*verilator&32;clocker*/` metacomment.
 

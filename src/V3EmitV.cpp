@@ -31,7 +31,7 @@
 class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     // MEMBERS
     bool m_suppressSemi = false;
-    bool m_suppressUnknown = false;
+    const bool m_suppressUnknown = false;
     AstSenTree* m_sensesp;  // Domain for printing one a ALWAYS under a ACTIVE
 
     // METHODS
@@ -170,7 +170,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     virtual void visit(AstNodeCase* nodep) override {
         putfs(nodep, "");
-        if (const AstCase* casep = VN_CAST(nodep, Case)) {
+        if (const AstCase* const casep = VN_CAST(nodep, Case)) {
             if (casep->priorityPragma()) puts("priority ");
             if (casep->uniquePragma()) puts("unique ");
             if (casep->unique0Pragma()) puts("unique0 ");
@@ -179,7 +179,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         puts(" (");
         iterateAndNextNull(nodep->exprp());
         puts(")\n");
-        if (const AstCase* casep = VN_CAST(nodep, Case)) {
+        if (const AstCase* const casep = VN_CAST(nodep, Case)) {
             if (casep->fullPragma() || casep->parallelPragma()) {
                 puts(" // synopsys");
                 if (casep->fullPragma()) puts(" full_case");
@@ -342,7 +342,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     virtual void visit(AstNodeIf* nodep) override {
         putfs(nodep, "");
-        if (const AstIf* ifp = VN_CAST(nodep, If)) {
+        if (const AstIf* const ifp = VN_CAST(nodep, If)) {
             if (ifp->priorityPragma()) puts("priority ");
             if (ifp->uniquePragma()) puts("unique ");
             if (ifp->unique0Pragma()) puts("unique0 ");
@@ -382,7 +382,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         }
     }
     virtual void visit(AstTextBlock* nodep) override {
-        visit(VN_CAST(nodep, NodeSimpleText));
+        visit(static_cast<AstNodeSimpleText*>(nodep));
         {
             VL_RESTORER(m_suppressSemi);
             m_suppressVarSemi = nodep->commas();
@@ -416,7 +416,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
 
     // Operators
     virtual void emitVerilogFormat(AstNode* nodep, const string& format, AstNode* lhsp = nullptr,
-                                   AstNode* rhsp = nullptr, AstNode* thsp = nullptr,
+                                   AstNode* const rhsp = nullptr, AstNode* thsp = nullptr,
                                    AstNode* fhsp = nullptr) {
         // Look at emitVerilog() format for term/uni/dual/triops,
         // and write out appropriate text.
@@ -503,7 +503,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             if (comma++) putbs(", ");
             puts(cvtToStr(itr.first));
             puts(":");
-            AstNode* valuep = itr.second->valuep();
+            AstNode* const valuep = itr.second->valuep();
             iterate(valuep);
         }
         puts("}");
@@ -538,15 +538,15 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         if (VN_IS(nodep->lsbp(), Const)) {
             if (nodep->widthp()->isOne()) {
                 if (VN_IS(nodep->lsbp(), Const)) {
-                    puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()));
+                    puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()));
                 } else {
                     iterateAndNextNull(nodep->lsbp());
                 }
             } else {
-                puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()
-                              + VN_CAST(nodep->widthp(), Const)->toSInt() - 1));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()
+                              + VN_AS(nodep->widthp(), Const)->toSInt() - 1));
                 puts(":");
-                puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()));
             }
         } else {
             iterateAndNextNull(nodep->lsbp());
@@ -650,7 +650,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         std::vector<const AstUnpackArrayDType*> unpackps;
         for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
             dtypep = dtypep->skipRefp();
-            if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
+            if (const AstUnpackArrayDType* const unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
                 unpackps.push_back(unpackp);
                 dtypep = unpackp->subDTypep();
             } else {
@@ -752,8 +752,8 @@ public:
 
 class EmitVPrefixedFormatter final : public V3OutFormatter {
     std::ostream& m_os;
-    string m_prefix;  // What to print at beginning of each line
-    int m_flWidth;  // Padding of fileline
+    const string m_prefix;  // What to print at beginning of each line
+    const int m_flWidth;  // Padding of fileline
     int m_column;  // Rough location; need just zero or non-zero
     FileLine* m_prefixFl;
     // METHODS
@@ -827,23 +827,25 @@ public:
 //######################################################################
 // EmitV class functions
 
-void V3EmitV::verilogForTree(AstNode* nodep, std::ostream& os) { EmitVStreamVisitor(nodep, os); }
+void V3EmitV::verilogForTree(AstNode* nodep, std::ostream& os) {
+    { EmitVStreamVisitor{nodep, os}; }
+}
 
 void V3EmitV::verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix,
                                   int flWidth, AstSenTree* domainp, bool user3mark) {
-    EmitVPrefixedVisitor{nodep, os, prefix, flWidth, domainp, user3mark};
+    { EmitVPrefixedVisitor{nodep, os, prefix, flWidth, domainp, user3mark}; }
 }
 
 void V3EmitV::emitvFiles() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
-         filep = VN_CAST(filep->nextp(), NodeFile)) {
-        AstVFile* vfilep = VN_CAST(filep, VFile);
+         filep = VN_AS(filep->nextp(), NodeFile)) {
+        AstVFile* const vfilep = VN_CAST(filep, VFile);
         if (vfilep && vfilep->tblockp()) {
             V3OutVFile of(vfilep->name());
             of.puts("// DESCR"
                     "IPTION: Verilator generated Verilog\n");
-            EmitVFileVisitor visitor{vfilep->tblockp(), &of, true, false};
+            { EmitVFileVisitor{vfilep->tblockp(), &of, true, false}; }
         }
     }
 }
@@ -853,5 +855,5 @@ void V3EmitV::debugEmitV(const string& stage) {
     const string filename
         = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__" + stage + ".v";
     V3OutVFile of(filename);
-    EmitVFileVisitor visitor{v3Global.rootp(), &of, true, true};
+    { EmitVFileVisitor{v3Global.rootp(), &of, true, true}; }
 }

@@ -71,7 +71,7 @@ public:
         // Each change detection function needs at least one AstChangeDet
         // to ensure that V3EmitC outputs the necessary code.
         maybeCreateMidChg();
-        m_chgFuncp->addStmtsp(new AstChangeDet{m_scopetopp->fileline(), nullptr, nullptr, false});
+        m_chgFuncp->addStmtsp(new AstChangeDet{m_scopetopp->fileline(), nullptr, nullptr});
     }
     void maybeCreateMidChg() {
         // Don't create an extra function call if splitting is disabled
@@ -94,7 +94,7 @@ public:
             if (!m_tlChgFuncp->stmtsp()) {
                 m_tlChgFuncp->addStmtsp(new AstCReturn{m_scopetopp->fileline(), callp});
             } else {
-                AstCReturn* const returnp = VN_CAST(m_tlChgFuncp->stmtsp(), CReturn);
+                AstCReturn* const returnp = VN_AS(m_tlChgFuncp->stmtsp(), CReturn);
                 UASSERT_OBJ(returnp, m_scopetopp, "Lost CReturn in top change function");
                 // This is currently using AstLogOr which will shortcut the
                 // evaluation if any function returns true. This is likely what
@@ -146,7 +146,7 @@ private:
         m_statep->maybeCreateChgFuncp();
 
         AstChangeDet* const changep = new AstChangeDet{
-            m_vscp->fileline(), m_varEqnp->cloneTree(true), m_newRvEqnp->cloneTree(true), false};
+            m_vscp->fileline(), m_varEqnp->cloneTree(true), m_newRvEqnp->cloneTree(true)};
         m_statep->m_chgFuncp->addStmtsp(changep);
         AstAssign* const initp = new AstAssign{m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
                                                m_varEqnp->cloneTree(true)};
@@ -154,7 +154,7 @@ private:
 
         // Later code will expand words which adds to GCC compile time,
         // so add penalty based on word width also
-        EmitCBaseCounterVisitor visitor{initp};
+        const EmitCBaseCounterVisitor visitor{initp};
         m_statep->m_numStmts += visitor.count() + m_varEqnp->widthWords();
     }
 
@@ -214,8 +214,8 @@ public:
         m_detects = 0;
         {
             AstVar* const varp = m_vscp->varp();
-            string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"
-                              + varp->shortName()};
+            const string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"
+                                    + varp->shortName()};
             // Create:  VARREF(_last)
             //          ASSIGN(VARREF(_last), VARREF(var))
             //          ...
@@ -247,17 +247,17 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstVarScope::user1()            -> bool.  True indicates processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
-    ChangedState* m_statep;  // Shared state across visitors
+    ChangedState* const m_statep;  // Shared state across visitors
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     void genChangeDet(AstVarScope* vscp) {
         vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: " << vscp->prettyNameQ());
-        ChangedInsertVisitor visitor{vscp, m_statep};
+        { ChangedInsertVisitor{vscp, m_statep}; }
     }
 
     // VISITORS
@@ -304,7 +304,7 @@ void V3Changed::changedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         ChangedState state;
-        ChangedVisitor visitor{nodep, &state};
+        ChangedVisitor{nodep, &state};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("changed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

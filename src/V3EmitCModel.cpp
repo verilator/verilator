@@ -23,13 +23,30 @@
 #include "V3UniqueNames.h"
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 class EmitCModel final : public EmitCFunc {
+    // TYPES
+    using CFuncVector = std::vector<const AstCFunc*>;
+
+    // MEMBERS
     V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
     VL_DEBUG_FUNC;
+
+    CFuncVector findFuncps(std::function<bool(const AstCFunc*)> cb) {
+        CFuncVector funcps;
+        for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
+                if (cb(funcp)) funcps.push_back(funcp);
+            }
+        }
+        stable_sort(funcps.begin(), funcps.end(),
+                    [](const AstNode* ap, const AstNode* bp) { return ap->name() < bp->name(); });
+        return funcps;
+    }
 
     void putSectionDelimiter(const string& name) {
         puts("\n");
@@ -90,7 +107,7 @@ class EmitCModel final : public EmitCFunc {
              "// The application code writes and reads these signals to\n"
              "// propagate new values into/out from the Verilated model.\n");
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {  //
                     emitVarDecl(varp, /* asRef: */ true);
                 }
@@ -102,7 +119,7 @@ class EmitCModel final : public EmitCFunc {
              "// Public to allow access to /* verilator public */ items.\n"
              "// Otherwise the application code can consider these internals.\n");
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstCell* const cellp = VN_CAST_CONST(nodep, Cell)) {
+            if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 puts(prefixNameProtect(cellp->modp()) + "* const " + cellp->nameProtect() + ";\n");
             }
         }
@@ -136,7 +153,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n");
         ofp()->putsPrivate(false);  // public:
         puts("// API METHODS\n");
-        string callEvalEndStep
+        const string callEvalEndStep
             = (v3Global.needTraceDumper() && !optSystemC()) ? "eval_end_step(); " : "";
         if (optSystemC()) {
             ofp()->putsPrivate(true);  ///< eval() is invoked by our sensitive() calls.
@@ -187,22 +204,11 @@ class EmitCModel final : public EmitCFunc {
 
         // Emit DPI export dispatcher declarations
         {
-            std::vector<const AstCFunc*> funcps;
-
-            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-                    if (!funcp->dpiExportDispatcher()) continue;
-                    funcps.push_back(funcp);
-                }
-            }
-
-            stable_sort(funcps.begin(), funcps.end(), [](const AstNode* ap, const AstNode* bp) {
-                return ap->name() < bp->name();
-            });
-
+            const CFuncVector funcps
+                = findFuncps([](const AstCFunc* nodep) { return nodep->dpiExportDispatcher(); });
             if (!funcps.empty()) {
                 puts("\n/// DPI Export functions\n");
-                for (const AstCFunc* funcp : funcps) { emitCFuncDecl(funcp, modp); }
+                for (const AstCFunc* funcp : funcps) emitCFuncDecl(funcp, modp);
             }
         }
 
@@ -237,7 +243,7 @@ class EmitCModel final : public EmitCFunc {
 
         // Set up IO references
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {
                     const string protName = varp->nameProtect();
                     puts("    , " + protName + "{vlSymsp->TOP." + protName + "}\n");
@@ -247,7 +253,7 @@ class EmitCModel final : public EmitCFunc {
 
         // Setup cell pointers
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstCell* const cellp = VN_CAST_CONST(nodep, Cell)) {
+            if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 const string protName = cellp->nameProtect();
                 puts("    , " + protName + "{vlSymsp->TOP." + protName + "}\n");
             }
@@ -422,7 +428,7 @@ class EmitCModel final : public EmitCFunc {
              + "(vlSymsp);\n");
 
         if (v3Global.opt.threads() == 1) {
-            uint32_t mtaskId = 0;
+            const uint32_t mtaskId = 0;
             putsDecoration("// MTask " + cvtToStr(mtaskId) + " start\n");
             puts("VL_DEBUG_IF(VL_DBG_MSGF(\"MTask" + cvtToStr(mtaskId) + " starting\\n\"););\n");
             puts("Verilated::mtaskId(" + cvtToStr(mtaskId) + ");\n");
@@ -515,12 +521,6 @@ class EmitCModel final : public EmitCFunc {
             puts("}\n");
         }
 
-        putSectionDelimiter("Invoke final blocks");
-        // ::final
-        puts("\nvoid " + topClassName() + "::final() {\n");
-        puts(topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
-        puts("}\n");
-
         putSectionDelimiter("Utilities");
         // ::contextp
         puts("\nVerilatedContext* " + topClassName() + "::contextp() const {\n");
@@ -533,6 +533,12 @@ class EmitCModel final : public EmitCFunc {
             puts(/**/ "return vlSymsp->name();\n");
             puts("}\n");
         }
+
+        putSectionDelimiter("Invoke final blocks");
+        // ::final
+        puts("\nVL_ATTR_COLD void " + topClassName() + "::final() {\n");
+        puts(/**/ topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
+        puts("}\n");
     }
 
     void emitTraceMethods(AstNodeModule* modp) {
@@ -546,7 +552,7 @@ class EmitCModel final : public EmitCFunc {
              + "* tracep);\n");
 
         // Static helper function
-        puts("\nstatic void " + protect("trace_init") + "(void* voidSelf, "
+        puts("\nVL_ATTR_COLD static void " + protect("trace_init") + "(void* voidSelf, "
              + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) {\n");
         putsDecoration("// Callback from tracep->open()\n");
         puts(voidSelfAssign(modp));
@@ -564,16 +570,42 @@ class EmitCModel final : public EmitCFunc {
         puts("}\n");
 
         // Forward declaration
-        puts("\nvoid " + topModNameProtected + "__" + protect("trace_register") + "("
+        puts("\nVL_ATTR_COLD void " + topModNameProtected + "__" + protect("trace_register") + "("
              + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
              + "* tracep);\n");
 
+        const CFuncVector traceInitFuncps
+            = findFuncps([](const AstCFunc* nodep) { return nodep->dpiTraceInit(); });
+        for (const AstCFunc* const funcp : traceInitFuncps) emitCFuncDecl(funcp, modp);
+
         // ::trace
-        puts("\nvoid " + topClassName() + "::trace(");
-        puts(v3Global.opt.traceClassBase() + "C* tfp, int, int) {\n");
-        puts("tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
-        puts(topModNameProtected + "__" + protect("trace_register")
+        puts("\nVL_ATTR_COLD void " + topClassName() + "::trace(");
+        puts(v3Global.opt.traceClassBase() + "C* tfp, int levels, int options) {\n");
+        puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
+        puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
+        puts(/**/ topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), tfp->spTrace());\n");
+
+        if (!traceInitFuncps.empty()) {
+            puts(/**/ "if (levels > 0) {\n");
+            puts(/****/ "const QData tfpq = reinterpret_cast<QData>(tfp);\n");
+            for (const AstCFunc* const funcp : traceInitFuncps) {
+                // Some hackery to locate handle__V for trace_init_task
+                // Considered a pragma on the handle, but that still doesn't help us attach it here
+                string handle = funcp->name();
+                const size_t wr_len = strlen("__Vdpiimwrap_");
+                UASSERT_OBJ(handle.substr(0, wr_len) == "__Vdpiimwrap_", funcp,
+                            "Strange trace_init_task function name");
+                handle = "vlSymsp->TOP." + handle.substr(wr_len);
+                const string::size_type pos = handle.rfind("__DOT__");
+                UASSERT_OBJ(pos != string::npos, funcp, "Strange trace_init_task function name");
+                handle = handle.substr(0, pos) + "__DOT__handle___05FV";
+                puts(funcNameProtect(funcp, modp) + "(" + handle
+                     + ", tfpq, levels - 1, options);\n");
+            }
+            puts(/**/ "}\n");
+        }
+
         puts("}\n");
     }
 
@@ -582,16 +614,16 @@ class EmitCModel final : public EmitCFunc {
 
         puts("\nVerilatedSerialize& operator<<(VerilatedSerialize& os, " + topClassName()
              + "& rhs) {\n");
-        puts("Verilated::quiesce();\n");
-        puts("rhs.vlSymsp->" + protect("__Vserialize") + "(os);\n");
-        puts("return os;\n");
+        puts(/**/ "Verilated::quiesce();\n");
+        puts(/**/ "rhs.vlSymsp->" + protect("__Vserialize") + "(os);\n");
+        puts(/**/ "return os;\n");
         puts("}\n");
 
         puts("\nVerilatedDeserialize& operator>>(VerilatedDeserialize& os, " + topClassName()
              + "& rhs) {\n");
-        puts("Verilated::quiesce();\n");
-        puts("rhs.vlSymsp->" + protect("__Vdeserialize") + "(os);\n");
-        puts("return os;\n");
+        puts(/**/ "Verilated::quiesce();\n");
+        puts(/**/ "rhs.vlSymsp->" + protect("__Vdeserialize") + "(os);\n");
+        puts(/**/ "return os;\n");
         puts("}\n");
     }
 

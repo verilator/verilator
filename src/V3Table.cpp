@@ -54,7 +54,7 @@ class TableVisitor;
 
 class TableSimulateVisitor final : public SimulateVisitor {
     // MEMBERS
-    TableVisitor* m_cbthis;  ///< Class for callback
+    TableVisitor* const m_cbthis;  ///< Class for callback
 
 public:
     ///< Call other-this function on all new var references
@@ -174,7 +174,7 @@ public:
     void simulateVarRefCb(AstVarRef* nodep) {
         // Called by TableSimulateVisitor on each unique varref encountered
         UINFO(9, "   SimVARREF " << nodep << endl);
-        AstVarScope* vscp = nodep->varScopep();
+        AstVarScope* const vscp = nodep->varScopep();
         if (nodep->access().isWriteOrRW()) {
             // We'll make the table with a separate natural alignment for each output var, so
             // always have 8, 16 or 32 bit widths, so use widthTotalBytes
@@ -265,7 +265,7 @@ private:
         // Populate the tables
         createTables(nodep, outputAssignedTableBuilder);
 
-        AstNode* stmtsp = createLookupInput(fl, indexVscp);
+        AstNode* const stmtsp = createLookupInput(fl, indexVscp);
         createOutputAssigns(nodep, stmtsp, indexVscp, outputAssignedTableBuilder.varScopep());
 
         // Link it in.
@@ -333,7 +333,7 @@ private:
         // First var in inVars becomes the LSB of the concat
         AstNode* concatp = nullptr;
         for (AstVarScope* invscp : m_inVarps) {
-            AstVarRef* refp = new AstVarRef(fl, invscp, VAccess::READ);
+            AstVarRef* const refp = new AstVarRef(fl, invscp, VAccess::READ);
             if (concatp) {
                 concatp = new AstConcat(fl, refp, concatp);
             } else {
@@ -425,6 +425,6 @@ void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
 
 void V3Table::tableAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { TableVisitor visitor{nodep}; }  // Destruct before checking
+    { TableVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("table", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

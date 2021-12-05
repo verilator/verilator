@@ -29,7 +29,7 @@ while (1) {
         cmd => ["perl",
                 "$ENV{VERILATOR_ROOT}/bin/verilator",
                 "--prefix",
-                "Vt_prot_lib_secret",
+                "Vt_lib_prot_secret",
                 "-cc",
                 "-Mdir",
                 $secret_dir,
@@ -37,7 +37,7 @@ while (1) {
                 $secret_prefix,
                 "--protect-key",
                 "secret-key",
-                "t/t_prot_lib_comb.v"],
+                "t/t_lib_prot_comb.v"],
         verilator_run => 1,
         );
     last if $Self->{errors};
@@ -47,7 +47,7 @@ while (1) {
               "-C",
               $secret_dir,
               "-f",
-              "Vt_prot_lib_secret.mk"]);
+              "Vt_lib_prot_secret.mk"]);
     last if $Self->{errors};
 
     compile(

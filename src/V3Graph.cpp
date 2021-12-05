@@ -327,7 +327,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // List of all possible subgraphs
     std::multimap<std::string, V3GraphVertex*> subgraphs;
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
-        string vertexSubgraph
+        const string vertexSubgraph
             = (colorAsSubgraph && vertexp->color()) ? cvtToStr(vertexp->color()) : "";
         subgraphs.emplace(vertexSubgraph, vertexp);
     }
@@ -341,7 +341,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     string subgr;
     for (auto it = subgraphs.cbegin(); it != subgraphs.cend(); ++it) {
         const string vertexSubgraph = it->first;
-        V3GraphVertex* vertexp = it->second;
+        const V3GraphVertex* vertexp = it->second;
         numMap[vertexp] = n;
         if (subgr != vertexSubgraph) {
             if (subgr != "") *logp << "\t};\n";

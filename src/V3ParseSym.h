@@ -66,7 +66,7 @@ public:
 
     VSymEnt* findNewTable(AstNode* nodep) {
         if (!nodep->user4p()) {
-            VSymEnt* symsp = new VSymEnt(&m_syms, nodep);
+            VSymEnt* const symsp = new VSymEnt(&m_syms, nodep);
             nodep->user4p(symsp);
         }
         return getTable(nodep);
@@ -93,7 +93,7 @@ public:
     void pushNew(AstNode* nodep) { pushNewUnder(nodep, nullptr); }
     void pushNewUnder(AstNode* nodep, VSymEnt* parentp) {
         if (!parentp) parentp = symCurrentp();
-        VSymEnt* symp
+        VSymEnt* const symp
             = findNewTable(nodep);  // Will set user4p, which is how we connect table to node
         symp->fallbackp(parentp);
         reinsert(nodep, parentp);
@@ -128,7 +128,7 @@ public:
     void showUpward() {  // LCOV_EXCL_START
         UINFO(1, "ParseSym Stack:\n");
         for (auto it = m_sympStack.rbegin(); it != m_sympStack.rend(); ++it) {
-            VSymEnt* symp = *it;
+            VSymEnt* const symp = *it;
             UINFO(1, "    " << symp->nodep() << endl);
         }
         UINFO(1, "ParseSym Current: " << symCurrentp()->nodep() << endl);
@@ -136,7 +136,7 @@ public:
     void dump(std::ostream& os, const string& indent = "") { m_syms.dump(os, indent); }
     AstNode* findEntUpward(const string& name) const {
         // Lookup the given string as an identifier, return type of the id, scanning upward
-        VSymEnt* foundp = symCurrentp()->findIdFallback(name);
+        VSymEnt* const foundp = symCurrentp()->findIdFallback(name);
         if (foundp) {
             return foundp->nodep();
         } else {
@@ -145,7 +145,7 @@ public:
     }
     void importExtends(AstNode* classp) {
         // Import from package::id_or_star to this
-        VSymEnt* symp = getTable(classp);
+        VSymEnt* const symp = getTable(classp);
         UASSERT_OBJ(symp, classp,  // Internal problem, because we earlier found it
                     "Extends class package not found");
         // Walk old sym table and reinsert into current table
@@ -154,7 +154,7 @@ public:
     }
     void importItem(AstNode* packagep, const string& id_or_star) {
         // Import from package::id_or_star to this
-        VSymEnt* symp = getTable(packagep);
+        VSymEnt* const symp = getTable(packagep);
         UASSERT_OBJ(symp, packagep,  // Internal problem, because we earlier found it
                     "Import package not found");
         // Walk old sym table and reinsert into current table
@@ -163,7 +163,7 @@ public:
     }
     void exportItem(AstNode* packagep, const string& id_or_star) {
         // Export from this the remote package::id_or_star
-        VSymEnt* symp = getTable(packagep);
+        VSymEnt* const symp = getTable(packagep);
         UASSERT_OBJ(symp, packagep,  // Internal problem, because we earlier found it
                     "Export package not found");
         symCurrentp()->exportFromPackage(&m_syms, symp, id_or_star);

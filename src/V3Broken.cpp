@@ -191,13 +191,13 @@ private:
 
     void processEnter(AstNode* nodep) {
         nodep->brokenState(m_brokenCntCurrentUnder);
-        const char* whyp = nodep->broken();
+        const char* const whyp = nodep->broken();
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
         if (nodep->dtypep()) {
             UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
                         "Broken link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
-            UASSERT_OBJ(VN_IS(nodep->dtypep(), NodeDType), nodep,
+            UASSERT_OBJ(nodep->dtypep(), nodep,
                         "Non-dtype link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
         }
         if (v3Global.assertDTypesResolved()) {
@@ -210,7 +210,8 @@ private:
             }
             UASSERT_OBJ(!nodep->getChildDTypep(), nodep,
                         "childDTypep() non-null on node after should have removed");
-            if (const AstNodeDType* dnodep = VN_CAST(nodep, NodeDType)) checkWidthMin(dnodep);
+            if (const AstNodeDType* const dnodep = VN_CAST(nodep, NodeDType))
+                checkWidthMin(dnodep);
         }
         checkWidthMin(nodep);
     }
@@ -242,7 +243,7 @@ private:
         processAndIterate(nodep);
         UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()
                       && VN_IS(nodep->lhsp(), NodeVarRef)
-                      && !VN_CAST(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
+                      && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
     }
     virtual void visit(AstScope* nodep) override {
@@ -342,8 +343,8 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         UINFO(1, "Broken called under broken, skipping recursion.\n");  // LCOV_EXCL_LINE
     } else {
         inBroken = true;
-        BrokenMarkVisitor mvisitor{nodep};
-        BrokenCheckVisitor cvisitor{nodep};
+        const BrokenMarkVisitor mvisitor{nodep};
+        const BrokenCheckVisitor cvisitor{nodep};
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();
         s_brokenCntGlobal.inc();

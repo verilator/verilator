@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    reg [63:0] crc;
    reg [63:0] sum;
 
@@ -21,10 +21,10 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x sum=%x  in[3:0]=%x  out=%x,%x\n",$time, cyc, crc, sum, crc[3:0], out1,out2);
+      $write("[%0t] cyc==%0d crc=%x sum=%x  in[3:0]=%x  out=%x,%x\n", $time, cyc, crc, sum, crc[3:0], out1,out2);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       sum <= {sum[62:0], sum[63]^sum[2]^sum[0]} ^ {58'h0,out1,out2};
       if (cyc==0) begin
 	 // Setup
@@ -32,7 +32,7 @@ module t (/*AUTOARG*/
 	 sum <= 64'h0;
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
+	 $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
 `define EXPECTED_SUM 64'h10204fa5567c8a4b
 	 if (sum !== `EXPECTED_SUM) $stop;
 	 $write("*-* All Finished *-*\n");

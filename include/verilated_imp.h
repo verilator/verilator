@@ -277,7 +277,7 @@ public:  // But only for verilated*.cpp
     IData fdNewMcd(const char* filenamep) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock{m_fdMutex};
         if (m_fdFreeMct.empty()) return 0;
-        IData idx = m_fdFreeMct.back();
+        const IData idx = m_fdFreeMct.back();
         m_fdFreeMct.pop_back();
         m_fdps[idx] = std::fopen(filenamep, "w");
         if (VL_UNLIKELY(!m_fdps[idx])) return 0;
@@ -299,7 +299,7 @@ public:  // But only for verilated*.cpp
                 m_fdFree[i] = id;
             }
         }
-        IData idx = m_fdFree.back();
+        const IData idx = m_fdFree.back();
         m_fdFree.pop_back();
         m_fdps[idx] = fp;
         return (idx | (1UL << 31));  // bit 31 indicates not MCD
@@ -334,7 +334,7 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock{m_fdMutex};
         if (VL_BITISSET_I(fdi, 31)) {
             // Non-MCD case
-            IData idx = VL_MASK_I(31) & fdi;
+            const IData idx = VL_MASK_I(31) & fdi;
             if (VL_UNLIKELY(idx >= m_fdps.size())) return;
             if (VL_UNLIKELY(idx <= 2)) return;  // stdout/stdin/stderr
             if (VL_UNLIKELY(!m_fdps[idx])) return;  // Already free

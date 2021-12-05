@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
 
    wire signed [7:0] sgn_wide;
    wire [7:0] 	     unsgn_wide;

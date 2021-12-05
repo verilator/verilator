@@ -7,7 +7,7 @@
 module t (clk);
    input clk;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
 
    always @(posedge clk) begin
       cyc <= cyc + 1;

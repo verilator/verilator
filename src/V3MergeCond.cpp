@@ -131,8 +131,8 @@ private:
     // NODE STATE
     // AstVar::user1        -> Flag set for variables referenced by m_mgCondp
     // AstNode::user2       -> Flag marking node as included in merge because cheap to duplicate
-    AstUser1InUse m_user1InUse;
-    AstUser2InUse m_user2InUse;
+    const AstUser1InUse m_user1InUse;
+    const AstUser2InUse m_user2InUse;
 
     // STATE
     VDouble0 m_statMerges;  // Statistic tracking
@@ -141,7 +141,7 @@ private:
 
     AstNode* m_mgFirstp = nullptr;  // First node in merged sequence
     AstNode* m_mgCondp = nullptr;  // The condition of the first node
-    AstNode* m_mgLastp = nullptr;  // Last node in merged sequence
+    const AstNode* m_mgLastp = nullptr;  // Last node in merged sequence
     const AstNode* m_mgNextp = nullptr;  // Next node in list being examined
     uint32_t m_listLenght = 0;  // Length of current list
 
@@ -158,7 +158,7 @@ private:
     static AstNodeCond* extractCond(AstNode* rhsp) {
         if (AstNodeCond* const condp = VN_CAST(rhsp, NodeCond)) {
             return condp;
-        } else if (AstAnd* const andp = VN_CAST(rhsp, And)) {
+        } else if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (AstNodeCond* const condp = VN_CAST(andp->rhsp(), NodeCond)) {
                 if (VN_IS(andp->lhsp(), Const)) return condp;
             }
@@ -169,17 +169,17 @@ private:
     // Predicate to check if an expression yields only 0 or 1 (i.e.: a 1-bit value)
     static bool yieldsOneOrZero(const AstNode* nodep) {
         UASSERT_OBJ(!nodep->isWide(), nodep, "Cannot handle wide nodes");
-        if (const AstConst* const constp = VN_CAST_CONST(nodep, Const)) {
+        if (const AstConst* const constp = VN_CAST(nodep, Const)) {
             return constp->num().toUQuad() <= 1;
         }
-        if (const AstVarRef* const vrefp = VN_CAST_CONST(nodep, VarRef)) {
-            AstVar* const varp = vrefp->varp();
+        if (const AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
+            const AstVar* const varp = vrefp->varp();
             return varp->widthMin() == 1 && !varp->dtypep()->isSigned();
         }
-        if (const AstShiftR* const shiftp = VN_CAST_CONST(nodep, ShiftR)) {
+        if (const AstShiftR* const shiftp = VN_CAST(nodep, ShiftR)) {
             // Shift right by width - 1 or more
-            if (const AstConst* const constp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
-                const AstVarRef* const vrefp = VN_CAST_CONST(shiftp->lhsp(), VarRef);
+            if (const AstConst* const constp = VN_CAST(shiftp->rhsp(), Const)) {
+                const AstVarRef* const vrefp = VN_CAST(shiftp->lhsp(), VarRef);
                 const int width = vrefp && !vrefp->varp()->dtypep()->isSigned()
                                       ? vrefp->varp()->widthMin()
                                       : shiftp->width();
@@ -191,17 +191,17 @@ private:
             || VN_IS(nodep, Gt) || VN_IS(nodep, Gte)) {
             return true;
         }
-        if (const AstNodeBiop* const biopp = VN_CAST_CONST(nodep, NodeBiop)) {
+        if (const AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
             if (VN_IS(nodep, And))
                 return yieldsOneOrZero(biopp->lhsp()) || yieldsOneOrZero(biopp->rhsp());
             if (VN_IS(nodep, Or) || VN_IS(nodep, Xor))
                 return yieldsOneOrZero(biopp->lhsp()) && yieldsOneOrZero(biopp->rhsp());
             return false;
         }
-        if (const AstNodeCond* const condp = VN_CAST_CONST(nodep, NodeCond)) {
+        if (const AstNodeCond* const condp = VN_CAST(nodep, NodeCond)) {
             return yieldsOneOrZero(condp->expr1p()) && yieldsOneOrZero(condp->expr2p());
         }
-        if (const AstCCast* const castp = VN_CAST_CONST(nodep, CCast)) {
+        if (const AstCCast* const castp = VN_CAST(nodep, CCast)) {
             // Cast never sign extends
             return yieldsOneOrZero(castp->lhsp());
         }
@@ -225,17 +225,17 @@ private:
     AstNode* foldAndUnlink(AstNode* rhsp, bool condTrue) {
         if (rhsp->sameTree(m_mgCondp)) {
             return new AstConst(rhsp->fileline(), AstConst::BitTrue{}, condTrue);
-        } else if (AstNodeCond* const condp = extractCond(rhsp)) {
+        } else if (const AstNodeCond* const condp = extractCond(rhsp)) {
             AstNode* const resp
                 = condTrue ? condp->expr1p()->unlinkFrBack() : condp->expr2p()->unlinkFrBack();
             if (condp == rhsp) {  //
                 return resp;
             }
-            if (AstAnd* const andp = VN_CAST(rhsp, And)) {
+            if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
                 UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
                 return new AstAnd{andp->fileline(), andp->lhsp()->cloneTree(false), resp};
             }
-        } else if (AstAnd* const andp = VN_CAST(rhsp, And)) {
+        } else if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (andp->lhsp()->sameTree(m_mgCondp)) {
                 return condTrue ? maskLsb(andp->rhsp()->unlinkFrBack())
                                 : new AstConst{rhsp->fileline(), AstConst::BitFalse()};
@@ -255,11 +255,11 @@ private:
     void mergeEnd(int lineno) {
         UASSERT(m_mgFirstp, "mergeEnd without list " << lineno);
         // We might want to recursively merge an AstIf. We stash it in this variable.
-        AstNodeIf* recursivep = nullptr;
+        const AstNodeIf* recursivep = nullptr;
         // Drop leading cheap nodes. These were only added in the hope of finding
         // an earlier reduced form, but we failed to do so.
         while (m_mgFirstp->user2() && m_mgFirstp != m_mgLastp) {
-            AstNode* const backp = m_mgFirstp;
+            const AstNode* const backp = m_mgFirstp;
             m_mgFirstp = m_mgFirstp->nextp();
             --m_listLenght;
             UASSERT_OBJ(m_mgFirstp && m_mgFirstp->backp() == backp, m_mgLastp,
@@ -268,7 +268,7 @@ private:
         // Drop trailing cheap nodes. These were only added in the hope of finding
         // a later conditional to merge, but we failed to do so.
         while (m_mgLastp->user2() && m_mgFirstp != m_mgLastp) {
-            AstNode* const nextp = m_mgLastp;
+            const AstNode* const nextp = m_mgLastp;
             m_mgLastp = m_mgLastp->backp();
             --m_listLenght;
             UASSERT_OBJ(m_mgLastp && m_mgLastp->nextp() == nextp, m_mgFirstp,
@@ -313,7 +313,7 @@ private:
                     // Cleanup
                     VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
                 } else {
-                    AstNodeIf* const ifp = VN_CAST(currp, NodeIf);
+                    AstNodeIf* const ifp = VN_AS(currp, NodeIf);
                     UASSERT_OBJ(ifp, currp, "Must be AstNodeIf");
                     // Move branch contents under new if
                     if (AstNode* const listp = ifp->ifsp()) {
@@ -328,7 +328,7 @@ private:
             } while (nextp);
             // Recursively merge the resulting AstIf
             recursivep = resultp;
-        } else if (AstNodeIf* const ifp = VN_CAST(m_mgFirstp, NodeIf)) {
+        } else if (const AstNodeIf* const ifp = VN_CAST(m_mgFirstp, NodeIf)) {
             // There was nothing to merge this AstNodeIf with, but try to merge it's branches
             recursivep = ifp;
         }
@@ -353,11 +353,11 @@ private:
     // Check if the node can be simplified if included under the if
     bool isSimplifiableNode(AstNode* nodep) {
         UASSERT_OBJ(m_mgFirstp, nodep, "Cannot check with empty list");
-        if (AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
+        if (const AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
             // If it's an assignment to a 1-bit signal, try reduced forms
             if (assignp->lhsp()->widthMin() == 1) {
                 // Is it a 'lhs = cond & value' or 'lhs = value & cond'?
-                if (AstAnd* const andp = VN_CAST(assignp->rhsp(), And)) {
+                if (const AstAnd* const andp = VN_CAST(assignp->rhsp(), And)) {
                     if (andp->lhsp()->sameTree(m_mgCondp) || andp->rhsp()->sameTree(m_mgCondp)) {
                         return true;
                     }
@@ -373,7 +373,7 @@ private:
     // AstIf and is hence not likely to cause a performance degradation if doing so.
     bool isCheapNode(AstNode* nodep) const {
         if (VN_IS(nodep, Comment)) return true;
-        if (AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
+        if (const AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
             // Check LHS
             AstNode* lhsp = assignp->lhsp();
             while (AstWordSel* const wselp = VN_CAST(lhsp, WordSel)) {
@@ -479,7 +479,7 @@ private:
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) override {
         AstNode* const rhsp = nodep->rhsp();
-        if (AstNodeCond* const condp = extractCond(rhsp)) {
+        if (const AstNodeCond* const condp = extractCond(rhsp)) {
             // Check if mergeable
             if (!checkOrMakeMergeable(nodep)) return;
             // Close potentially incompatible pending merge
@@ -537,6 +537,6 @@ public:
 
 void V3MergeCond::mergeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { MergeCondVisitor visitor{nodep}; }
+    { MergeCondVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("merge_cond", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

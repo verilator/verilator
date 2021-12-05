@@ -22,7 +22,7 @@ module t (/*AUTOARG*/
       reg [7:0]       char;
       integer 	      loc;
       begin
-	 $write("[%0t] ",$time);
+	 $write("[%0t] ", $time);
 	 strings.stringStart(8*8-1);
 	 for (char = strings.stringByte(str); !strings.isNull(char); char = strings.stringByte(str)) begin
 	    $write("%c",char);

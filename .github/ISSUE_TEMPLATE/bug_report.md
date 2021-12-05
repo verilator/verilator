@@ -13,4 +13,6 @@ Can you attach an example that shows the issue?  (Must be openly licensed, ideal
 
 What 'verilator --version' are you using?  Did you try it with the git master version?
 
+What OS and distribution are you using?
+
 Would you be willing to try to fix Verilator yourself with assistance?

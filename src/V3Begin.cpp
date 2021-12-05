@@ -41,7 +41,7 @@ private:
     // NODE STATE
     // Entire netlist:
     // AstNodeFTask::user1      -> bool, 1=processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
     bool m_anyFuncInBegin = false;
 
 public:
@@ -59,10 +59,11 @@ public:
 class BeginVisitor final : public AstNVisitor {
 private:
     // STATE
-    BeginState* m_statep;  // Current global state
+    BeginState* const m_statep;  // Current global state
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNode* m_liftedp = nullptr;  // Local  nodes we are lifting into m_ftaskp
+    string m_displayScope;  // Name of %m in $display/AstScopeName
     string m_namedScope;  // Name of begin blocks above us
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
@@ -111,9 +112,11 @@ private:
         // naming; so that any begin's inside the function will rename
         // inside the function.
         // Process children
+        VL_RESTORER(m_displayScope);
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
         {
+            m_displayScope = dot(m_displayScope, nodep->name());
             m_namedScope = "";
             m_unnamedScope = "";
             m_ftaskp = nodep;
@@ -134,6 +137,7 @@ private:
     virtual void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep << endl);
+        VL_RESTORER(m_displayScope);
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
         {
@@ -145,11 +149,14 @@ private:
                 while ((pos = dottedname.find("__DOT__")) != string::npos) {
                     const string ident = dottedname.substr(0, pos);
                     dottedname = dottedname.substr(pos + strlen("__DOT__"));
-                    if (nodep->name() != "") m_namedScope = dot(m_namedScope, ident);
+                    if (nodep->name() != "") {
+                        m_displayScope = dot(m_displayScope, ident);
+                        m_namedScope = dot(m_namedScope, ident);
+                    }
                     m_unnamedScope = dot(m_unnamedScope, ident);
                     // Create CellInline for dotted var resolution
                     if (!m_ftaskp) {
-                        AstCellInline* inlinep = new AstCellInline(
+                        AstCellInline* const inlinep = new AstCellInline(
                             nodep->fileline(), m_unnamedScope, "__BEGIN__", m_modp->timeunit());
                         m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
                     }
@@ -162,7 +169,7 @@ private:
 
             // Cleanup
             AstNode* addsp = nullptr;
-            if (AstNode* stmtsp = nodep->stmtsp()) {
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
                 stmtsp->unlinkFrBackWithNext();
                 if (addsp) {
                     addsp = addsp->addNextNull(stmtsp);
@@ -220,11 +227,13 @@ private:
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Inline
         if (nodep->user1SetOnce()) return;  // Don't double-add text's
-        if (m_namedScope != "") {
+        // DPI svGetScope doesn't include function name, but %m does
+        const string scname = nodep->forFormat() ? m_displayScope : m_namedScope;
+        if (!scname.empty()) {
             // To keep correct visual order, must add before other Text's
-            AstNode* afterp = nodep->scopeAttrp();
+            AstNode* const afterp = nodep->scopeAttrp();
             if (afterp) afterp->unlinkFrBackWithNext();
-            nodep->scopeAttrp(new AstText(nodep->fileline(), string("__DOT__") + m_namedScope));
+            nodep->scopeAttrp(new AstText{nodep->fileline(), string("__DOT__") + scname});
             if (afterp) nodep->scopeAttrp(afterp);
         }
         iterateChildren(nodep);
@@ -308,8 +317,8 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         BeginState state;
-        { BeginVisitor bvisitor{nodep, &state}; }
-        if (state.anyFuncInBegin()) { BeginRelinkVisitor brvisitor(nodep, &state); }
+        { BeginVisitor{nodep, &state}; }
+        if (state.anyFuncInBegin()) { BeginRelinkVisitor{nodep, &state}; }
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("begin", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

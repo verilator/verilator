@@ -10,7 +10,7 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
    reg [63:0] crc;
    reg [63:0] sum;
 
@@ -129,14 +129,14 @@ module t(/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n",$time, cyc, crc, result);
+      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
       $display("a %b %b %b %b %b %b %b %b %b %b %b", a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
       $display("o %b %b %b %b %b %b %b %b %b %b %b", o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11);
       $display("x %b %b %b %b %b %b %b %b %b", x1, x2, x3, x4, x5, x6, x7, x8, x9);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
-      sum <= result ^ {sum[62:0],sum[63]^sum[2]^sum[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+      sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
       if (cyc == 0) begin
          // Setup
          crc <= 64'h5aef0c8d_d70a4497;
@@ -174,12 +174,12 @@ module t(/*AUTOARG*/
          if (z6 != '1) $stop;
          if (z7 != '0) $stop;
          if (match1_o != match2_o) begin
-            $write("[%0t] cyc==%0d m1=%d != m2=%d\n",$time, cyc, match1_o, match2_o);
+            $write("[%0t] cyc==%0d m1=%d != m2=%d\n", $time, cyc, match1_o, match2_o);
             $stop;
          end
       end
       else begin
-         $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
+         $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
 `define EXPECTED_SUM 64'h727fb78d09c1981e

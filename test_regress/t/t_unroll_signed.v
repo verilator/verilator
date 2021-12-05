@@ -31,7 +31,7 @@ module t (/*AUTOARG*/
    reg [31:0]	   dly_to_ensure_was_unrolled [1:0];
    reg [2:0] 	   i3;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       case (cyc)

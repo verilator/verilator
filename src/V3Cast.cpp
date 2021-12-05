@@ -54,7 +54,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //   AstNode::user()                // bool.  Indicates node is of known size
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
 
@@ -155,7 +155,7 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) override {
-        AstNode* const backp = nodep->backp();
+        const AstNode* const backp = nodep->backp();
         if (nodep->access().isReadOnly() && !VN_IS(backp, CCast) && VN_IS(backp, NodeMath)
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, RedXor) && backp->width()
             && castSize(nodep) != castSize(nodep->varp())) {
@@ -203,6 +203,6 @@ public:
 
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CastVisitor visitor{nodep}; }  // Destruct before checking
+    { CastVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -107,7 +107,7 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
                      $time, x, cyc, accum_in, accum_out, accum_bypass_out);
 `endif
             cyc <= cyc + 1;
-            crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+            crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
             accum_in <= accum_in + 5;
             `DRIVE(s1)
             `DRIVE(s2)

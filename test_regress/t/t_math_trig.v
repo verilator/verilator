@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
    input clk;
 
    real  r, r2;
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    task check(integer line, real got, real ex);
       if (got != ex) begin
@@ -90,7 +90,7 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       r = $itor(cyc)/10.0 - 5.0;  // Crosses 0
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d r=%g s_ln=%0.12g\n",$time, cyc, r, sum_ln);
+      $write("[%0t] cyc==%0d r=%g s_ln=%0.12g\n", $time, cyc, r, sum_ln);
 `endif
       cyc <= cyc + 1;
       if (cyc==0) begin

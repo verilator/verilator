@@ -220,8 +220,8 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                     // this = (this * 10)/*product*/ + (*cp-'0')/*addend*/
                     // Assumed rare; lots of optimizations are possible here
                     V3Number product(this, width() + 4);  // +4 for overflow detection
-                    V3Number ten(this, width() + 4, 10);
-                    V3Number addend(this, width(), (*cp - '0'));
+                    const V3Number ten(this, width() + 4, 10);
+                    const V3Number addend(this, width(), (*cp - '0'));
                     product.opMul(*this, ten);
                     this->opAdd(product, addend);
                     if (product.bitsValue(width(), 4)) {  // Overflowed
@@ -623,7 +623,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
                 str += 'Z';
                 continue;
             }
-            int v = bitsValue(bit - 2, 3);
+            const int v = bitsValue(bit - 2, 3);
             str += static_cast<char>('0' + v);
         }
         return str;
@@ -653,7 +653,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
                 str += 'Z';
                 continue;
             }
-            int v = bitsValue(bit - 3, 4);
+            const int v = bitsValue(bit - 3, 4);
             if (v >= 10) {
                 str += static_cast<char>('a' + v - 10);
             } else {
@@ -664,7 +664,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     }
     case 'c': {
         if (width() > 8) fl->v3warn(WIDTH, "$display-like format of %c format of > 8 bit value");
-        unsigned int v = bitsValue(0, 8);
+        const unsigned int v = bitsValue(0, 8);
         char strc[2];
         strc[0] = v & 0xff;
         strc[1] = '\0';
@@ -677,7 +677,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         bool start = true;
         while ((bit % 8) != 7) bit++;
         for (; bit >= 0; bit -= 8) {
-            int v = bitsValue(bit - 7, 8);
+            const int v = bitsValue(bit - 7, 8);
             if (!start || v) {
                 str += static_cast<char>((v == 0) ? ' ' : v);
                 start = false;  // Drop leading 0s
@@ -880,9 +880,9 @@ double V3Number::toDouble() const {
 
 vlsint32_t V3Number::toSInt() const {
     if (isSigned()) {
-        uint32_t v = toUInt();
-        uint32_t signExtend = (-(v & (1UL << (width() - 1))));
-        uint32_t extended = v | signExtend;
+        const uint32_t v = toUInt();
+        const uint32_t signExtend = (-(v & (1UL << (width() - 1))));
+        const uint32_t extended = v | signExtend;
         return static_cast<vlsint32_t>(extended);
     } else {
         // Where we use this (widths, etc) and care about signedness,
@@ -908,9 +908,9 @@ vluint64_t V3Number::toUQuad() const {
 
 vlsint64_t V3Number::toSQuad() const {
     if (isDouble()) return static_cast<vlsint64_t>(toDouble());
-    vluint64_t v = toUQuad();
-    vluint64_t signExtend = (-(v & (1ULL << (width() - 1))));
-    vluint64_t extended = v | signExtend;
+    const vluint64_t v = toUQuad();
+    const vluint64_t signExtend = (-(v & (1ULL << (width() - 1))));
+    const vluint64_t extended = v | signExtend;
     return static_cast<vlsint64_t>(extended);
 }
 
@@ -923,7 +923,7 @@ string V3Number::toString() const {
     while ((bit % 8) != 7) bit++;
     string str;
     for (; bit >= 0; bit -= 8) {
-        int v = bitsValue(bit - 7, 8);
+        const int v = bitsValue(bit - 7, 8);
         if (!start || v) {
             str += static_cast<char>((v == 0) ? ' ' : v);
             start = false;  // Drop leading 0s
@@ -1745,7 +1745,7 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
     for (int bit = 32; bit < rhs.width(); bit++) {
         if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
     }
-    uint32_t rhsval = rhs.toUInt();
+    const uint32_t rhsval = rhs.toUInt();
     if (rhsval < static_cast<uint32_t>(lhs.width())) {
         for (int bit = 0; bit < this->width(); bit++) setBit(bit, lhs.bitIs(bit + rhsval));
     }
@@ -1767,7 +1767,7 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
         if (rhs.bitIs1(lbits - 1)) setAllBits1();  // -1 else 0
         return *this;  // shift of over 2^32 must be -1/0
     }
-    uint32_t rhsval = rhs.toUInt();
+    const uint32_t rhsval = rhs.toUInt();
     if (rhsval < static_cast<uint32_t>(lhs.width())) {
         for (int bit = 0; bit < this->width(); bit++) {
             setBit(bit, lhs.bitIsExtend(bit + rhsval, lbits));
@@ -1789,7 +1789,7 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
     for (int bit = 32; bit < rhs.width(); bit++) {
         if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
     }
-    uint32_t rhsval = rhs.toUInt();
+    const uint32_t rhsval = rhs.toUInt();
     for (int bit = 0; bit < this->width(); bit++) {
         if (bit >= static_cast<int>(rhsval)) setBit(bit, lhs.bitIs(bit - rhsval));
     }
@@ -1806,7 +1806,7 @@ V3Number& V3Number::opNegate(const V3Number& lhs) {
     if (lhs.isFourState()) return setAllBitsX();
     V3Number notlhs(&lhs, width());
     notlhs.opNot(lhs);
-    V3Number one(&lhs, width(), 1);
+    const V3Number one(&lhs, width(), 1);
     opAdd(notlhs, one);
     return *this;
 }
@@ -1872,7 +1872,7 @@ V3Number& V3Number::opMulS(const V3Number& lhs, const V3Number& rhs) {
     if (lhs.isNegative()) lhsNoSign.opNegate(lhs);
     V3Number rhsNoSign = rhs;
     if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
-    V3Number qNoSign = opMul(lhsNoSign, rhsNoSign);
+    const V3Number qNoSign = opMul(lhsNoSign, rhsNoSign);
     if ((lhs.isNegative() && !rhs.isNegative()) || (!lhs.isNegative() && rhs.isNegative())) {
         opNegate(qNoSign);
     } else {
@@ -1906,7 +1906,7 @@ V3Number& V3Number::opDivS(const V3Number& lhs, const V3Number& rhs) {
     if (lhs.isNegative()) lhsNoSign.opNegate(lhs);
     V3Number rhsNoSign = rhs;
     if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
-    V3Number qNoSign = opDiv(lhsNoSign, rhsNoSign);
+    const V3Number qNoSign = opDiv(lhsNoSign, rhsNoSign);
     // UINFO(9, " >divs-mid "<<lhs<<" "<<rhs<<" "<<qNoSign<<endl);
     if ((lhs.isNegative() && !rhs.isNegative()) || (!lhs.isNegative() && rhs.isNegative())) {
         opNegate(qNoSign);
@@ -1940,7 +1940,7 @@ V3Number& V3Number::opModDivS(const V3Number& lhs, const V3Number& rhs) {
     if (lhs.isNegative()) lhsNoSign.opNegate(lhs);
     V3Number rhsNoSign = rhs;
     if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
-    V3Number qNoSign = opModDiv(lhsNoSign, rhsNoSign);
+    const V3Number qNoSign = opModDiv(lhsNoSign, rhsNoSign);
     if (lhs.isNegative()) {  // Just lhs' sign  (*DIFFERENT FROM PERL, which uses rhs sign*)
         opNegate(qNoSign);
     } else {
@@ -1956,8 +1956,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     setZero();
     // Find MSB and check for zero.
     const int words = lhs.words();
-    int umsbp1 = lhs.mostSetBitP1();  // dividend
-    int vmsbp1 = rhs.mostSetBitP1();  // divisor
+    const int umsbp1 = lhs.mostSetBitP1();  // dividend
+    const int vmsbp1 = rhs.mostSetBitP1();  // divisor
     if (VL_UNLIKELY(vmsbp1 == 0)  // rwp==0 so division by zero.  Return 0.
         || VL_UNLIKELY(umsbp1 == 0)) {  // 0/x so short circuit and return 0
         UINFO(9, "  opmoddiv-zero " << lhs << " " << rhs << " now=" << *this << endl);
@@ -1970,7 +1970,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         vluint64_t k = 0;
         for (int j = uw - 1; j >= 0; j--) {
-            vluint64_t unw64 = ((k << 32ULL) + static_cast<vluint64_t>(lhs.m_value[j].m_value));
+            const vluint64_t unw64
+                = ((k << 32ULL) + static_cast<vluint64_t>(lhs.m_value[j].m_value));
             m_value[j].m_value = unw64 / static_cast<vluint64_t>(rhs.m_value[0].m_value);
             k = unw64
                 - (static_cast<vluint64_t>(m_value[j].m_value)
@@ -1996,8 +1997,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
-    int s = 31 - ((vmsbp1 - 1) & 31);  // shift amount (0...31)
-    uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
+    const int s = 31 - ((vmsbp1 - 1) & 31);  // shift amount (0...31)
+    const uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
     for (int i = vw - 1; i > 0; i--) {
         vn[i] = (rhs.m_value[i].m_value << s)
                 | (shift_mask & (rhs.m_value[i - 1].m_value >> (32 - s)));
@@ -2023,8 +2024,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     // Main loop
     for (int j = uw - vw; j >= 0; j--) {
         // Estimate
-        vluint64_t unw64 = (static_cast<vluint64_t>(un[j + vw]) << 32ULL
-                            | static_cast<vluint64_t>(un[j + vw - 1]));
+        const vluint64_t unw64 = (static_cast<vluint64_t>(un[j + vw]) << 32ULL
+                                  | static_cast<vluint64_t>(un[j + vw - 1]));
         vluint64_t qhat = unw64 / static_cast<vluint64_t>(vn[vw - 1]);
         vluint64_t rhat = unw64 - qhat * static_cast<vluint64_t>(vn[vw - 1]);
 
@@ -2038,7 +2039,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         vlsint64_t t = 0;  // Must be signed
         vluint64_t k = 0;
         for (int i = 0; i < vw; i++) {
-            vluint64_t p = qhat * vn[i];  // Multiply by estimate
+            const vluint64_t p = qhat * vn[i];  // Multiply by estimate
             t = un[i + j] - k - (p & 0xFFFFFFFFULL);  // Subtract
             un[i + j] = t;
             k = (p >> 32ULL) - (t >> 32ULL);
@@ -2192,8 +2193,8 @@ void V3Number::opCleanThis(bool warnOnTruncation) {
     // Clean MSB of number
     NUM_ASSERT_LOGIC_ARGS1(*this);
     const ValueAndX v = m_value[words() - 1];
-    uint32_t newValueMsb = v.m_value & hiWordMask();
-    uint32_t newValueXMsb = v.m_valueX & hiWordMask();
+    const uint32_t newValueMsb = v.m_value & hiWordMask();
+    const uint32_t newValueXMsb = v.m_valueX & hiWordMask();
     if (warnOnTruncation && (newValueMsb != v.m_value || newValueXMsb != v.m_valueX)) {
         // Displaying in decimal avoids hiWordMask truncation
         v3warn(WIDTH, "Value too large for " << width() << " bit number: " << displayed("%d"));
@@ -2258,7 +2259,7 @@ V3Number& V3Number::opIToRD(const V3Number& lhs, bool isSigned) {
     double d = 0;
     const bool negate = isSigned && noxz.isNegative();
     if (negate) {
-        V3Number noxz_signed = noxz;
+        const V3Number noxz_signed = noxz;
         noxz.opNegate(noxz_signed);
     }
     for (int bit = noxz.width() - 1; bit >= 0; bit--) {
@@ -2271,14 +2272,14 @@ V3Number& V3Number::opIToRD(const V3Number& lhs, bool isSigned) {
 V3Number& V3Number::opRToIS(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
-    double v = VL_TRUNC(lhs.toDouble());
-    vlsint32_t i = static_cast<vlsint32_t>(v);  // C converts from double to vlsint32
+    const double v = VL_TRUNC(lhs.toDouble());
+    const vlsint32_t i = static_cast<vlsint32_t>(v);  // C converts from double to vlsint32
     return setLongS(i);
 }
 V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
-    double v = VL_ROUND(lhs.toDouble());
+    const double v = VL_ROUND(lhs.toDouble());
     setZero();
     union {
         double d;
@@ -2289,7 +2290,7 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
 
     const int exp = static_cast<int>((u.q >> 52ULL) & VL_MASK_Q(11)) - 1023;
     const int lsb = exp - 52;
-    vluint64_t mantissa = (u.q & VL_MASK_Q(52)) | (1ULL << 52);
+    const vluint64_t mantissa = (u.q & VL_MASK_Q(52)) | (1ULL << 52);
     if (v != 0) {
         // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
         // This does not need to support subnormals as they are sub-integral
@@ -2300,7 +2301,7 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
             }
         }
         if (v < 0) {
-            V3Number noSign = *this;
+            const V3Number noSign = *this;
             opNegate(noSign);
         }
     }

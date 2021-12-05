@@ -53,10 +53,10 @@ module t (clk);
 	 end
 	 if (cyc==5) begin
 	    read = mi[index];
-	    $display("-Illegal read value: %x",read);
+	    $display("-Illegal read value: %x", read);
 	    //if (read!==1'b1 && read!==1'bx) $stop;
 	    read = mi[indexi];
-	    $display("-Illegal read value: %x",read);
+	    $display("-Illegal read value: %x", read);
 	    //if (read!==1'b1 && read!==1'bx) $stop;
 	 end
 	 if (cyc==6) begin
@@ -64,7 +64,7 @@ module t (clk);
 	 end
 	 if (cyc==7) begin
 	    read = mi[indexi];
-	    $display("-Illegal read value: %x",read);
+	    $display("-Illegal read value: %x", read);
 	    //if (read!==1'b1 && read!==1'bx) $stop;
 	 end
 	 if (cyc==10) begin

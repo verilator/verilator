@@ -78,7 +78,7 @@ unsigned VarTspSorter::s_serialNext = 0;
 class VariableOrder final {
     // NODE STATE
     //  AstVar::user1()    -> attributes, via m_attributes
-    AstUser1InUse m_user1InUse;  // AstVar
+    const AstUser1InUse m_user1InUse;  // AstVar
 
     struct VarAttributes {
         uint32_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
@@ -200,7 +200,7 @@ public:
 void V3VariableOrder::orderAll() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-         modp = VN_CAST(modp->nextp(), NodeModule)) {
+         modp = VN_AS(modp->nextp(), NodeModule)) {
         VariableOrder::processModule(modp);
     }
     V3Global::dumpCheckGlobalTree("variableorder", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);

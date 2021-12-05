@@ -8,10 +8,45 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 4.216 2021-12-05
+==========================
+
+**Major:**
+
+* Add --lib-create, similar to --protect-lib but without protections.
+* Support tracing through --hierarchical/--lib-create libraries (#3200).
+
+**Minor:**
+
+* Internal code cleanups and improvements. [Geza Lore]
+* Improve --thread verilation-time performance.
+* Support task name in $display %m (#3211). [Julie Schwartz]
+* Make 'bit', 'logic' and 'time' types unsigned by default. [Geza Lore]
+* Optimize $random concatenates/selects (#3114).
+* Fix array method names with parenthesis (#3181) (#3183). [Teng Huang]
+* Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
+* Fix wrong bit op tree optimization (#3185). [Yutetsu TAKATSUKASA]
+* Fix some SliceSels not being constants (#3186) (#3218). [Michaël Lefebvre]
+* Fix nested generate if genblk naming (#3189). [yanx21]
+* Fix hang on recursive definition error (#3199). [Jonathan Kimmitt]
+* Fix display of signed without format (#3204). [Julie Schwartz]
+* Fix display of empty string constant (#3207) (#3215). [Julie Schwartz]
+* Fix incorrect width after and-or optimization (#3208). [Julie Schwartz]
+* Fix $fopen etc on integer arrays (#3214). [adrienlemasle]
+* Fix $size on dynamic strings (#3216).
+* Fix %0 format on $value$plusargs (#3217).
+* Fix timescale portability on Arm64 (#3222).
+
+
 Verilator 4.214 2021-10-17
 ==========================
 
+**Major:**
+
 * Add profile-guided optmization of mtasks (#3150).
+
+**Minor:**
+
 * Verilator_gantt has removed the ASCII graphics, use the VCD output instead.
 * Verilator_gantt now shows the predicted mtask times, eval times, and additional statistics.
 * Verilator_gantt data files now include processor information, to allow later processing.

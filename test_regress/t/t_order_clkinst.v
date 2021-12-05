@@ -28,9 +28,9 @@ module t (/*AUTOARG*/
    wire [31:0] c3_count;
    comb_loop c3 (.count(c3_count), .start(c3_start));
 
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
    always @ (posedge clk) begin
-      //$write("[%0t] %x  counts %x %x %x\n",$time,cyc,c1_count,s2_count,c3_count);
+      //$write("[%0t] %x  counts %x %x %x\n", $time,cyc,c1_count,s2_count,c3_count);
       cyc <= cyc + 8'd1;
       case (cyc)
         8'd00: begin

@@ -38,14 +38,14 @@ class EmitCGatherDependencies final : AstNVisitor {
     // METHODS
     void addSymsDependency() { m_dependencies.insert(EmitCBaseVisitor::symClassName()); }
     void addModDependency(const AstNodeModule* modp) {
-        if (const AstClass* const classp = VN_CAST_CONST(modp, Class)) {
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
             m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(classp->classOrPackagep()));
         } else {
             m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(modp));
         }
     }
     void addDTypeDependency(const AstNodeDType* nodep) {
-        if (const AstClassRefDType* const dtypep = VN_CAST_CONST(nodep, ClassRefDType)) {
+        if (const AstClassRefDType* const dtypep = VN_CAST(nodep, ClassRefDType)) {
             m_dependencies.insert(
                 EmitCBaseVisitor::prefixNameProtect(dtypep->classp()->classOrPackagep()));
         }
@@ -135,7 +135,7 @@ class EmitCGatherDependencies final : AstNVisitor {
 
 public:
     static const std::set<std::string> gather(AstCFunc* cfuncp) {
-        EmitCGatherDependencies visitor{cfuncp};
+        const EmitCGatherDependencies visitor{cfuncp};
         return std::move(visitor.m_dependencies);
     }
 };
@@ -193,7 +193,7 @@ class EmitCImp final : EmitCFunc {
         // Emit static variable definitions
         const string modName = prefixNameProtect(modp);
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isStatic()) {
                     puts(varp->vlArgType(true, false, false, modName));
                     puts(";\n");
@@ -205,7 +205,7 @@ class EmitCImp final : EmitCFunc {
         const string modName = prefixNameProtect(modp);
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     if (first) {
                         puts("\n");
@@ -241,7 +241,7 @@ class EmitCImp final : EmitCFunc {
 
         ofp()->indentInc();
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (const AstBasicDType* const dtypep
                     = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
                     if (dtypep->keyword().isMTaskState()) {
@@ -348,7 +348,7 @@ class EmitCImp final : EmitCFunc {
                 // just looking for loading the wrong model
                 VHashSha256 hash;
                 for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                    if (const AstVar* varp = VN_CAST(nodep, Var)) {
+                    if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                         hash.insert(varp->name());
                         hash.insert(varp->dtypep()->width());
                     }
@@ -369,7 +369,7 @@ class EmitCImp final : EmitCFunc {
 
                 // Save all members
                 for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                    if (const AstVar* varp = VN_CAST(nodep, Var)) {
+                    if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                         if (varp->isIO() && modp->isTop() && optSystemC()) {
                             // System C top I/O doesn't need loading, as the
                             // lower level subinst code does it.
@@ -446,7 +446,7 @@ class EmitCImp final : EmitCFunc {
     }
     void emitCommonImp(const AstNodeModule* modp) {
         const AstClass* const classp
-            = VN_IS(modp, ClassPackage) ? VN_CAST_CONST(modp, ClassPackage)->classp() : nullptr;
+            = VN_IS(modp, ClassPackage) ? VN_AS(modp, ClassPackage)->classp() : nullptr;
 
         if (hasCommonImp(modp) || hasCommonImp(classp)) {
             std::set<string> headers;
@@ -486,7 +486,7 @@ class EmitCImp final : EmitCFunc {
         };
 
         gather(modp);
-        if (const AstClassPackage* const packagep = VN_CAST_CONST(modp, ClassPackage)) {
+        if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
             gather(packagep->classp());
         }
 
@@ -556,7 +556,7 @@ class EmitCTrace final : EmitCFunc {
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user1() -> int.  Enum number
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // MEMBERS
     const bool m_slow;  // Making slow file
@@ -576,7 +576,7 @@ class EmitCTrace final : EmitCFunc {
         if (m_slow) filename += "__Slow";
         filename += ".cpp";
 
-        AstCFile* cfilep = newCFile(filename, m_slow, true /*source*/);
+        AstCFile* const cfilep = newCFile(filename, m_slow, true /*source*/);
         cfilep->support(true);
 
         if (optSystemC()) {
@@ -595,23 +595,23 @@ class EmitCTrace final : EmitCFunc {
     }
 
     bool emitTraceIsScBv(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
+        const AstVarRef* const varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
-        AstVar* varp = varrefp->varp();
+        AstVar* const varp = varrefp->varp();
         return varp->isSc() && varp->isScBv();
     }
 
     bool emitTraceIsScBigUint(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
+        const AstVarRef* const varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
-        AstVar* varp = varrefp->varp();
+        AstVar* const varp = varrefp->varp();
         return varp->isSc() && varp->isScBigUint();
     }
 
     bool emitTraceIsScUint(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
+        const AstVarRef* const varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
-        AstVar* varp = varrefp->varp();
+        AstVar* const varp = varrefp->varp();
         return varp->isSc() && varp->isScUint();
     }
 
@@ -714,7 +714,7 @@ class EmitCTrace final : EmitCFunc {
         if (v3Global.opt.traceFormat().fst()) {
             // Skip over refs-to-refs, but stop before final ref so can get data type name
             // Alternatively back in V3Width we could push enum names from upper typedefs
-            if (AstEnumDType* enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {
+            if (AstEnumDType* const enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {
                 int enumNum = enump->user1();
                 if (!enumNum) {
                     enumNum = ++m_enumNum;
@@ -724,7 +724,7 @@ class EmitCTrace final : EmitCFunc {
                     puts("const char* " + protect("__VenumItemNames") + "[]\n");
                     puts("= {");
                     for (AstEnumItem* itemp = enump->itemsp(); itemp;
-                         itemp = VN_CAST(itemp->nextp(), EnumItem)) {
+                         itemp = VN_AS(itemp->nextp(), EnumItem)) {
                         if (++nvals > 1) puts(", ");
                         putbs("\"" + itemp->prettyName() + "\"");
                     }
@@ -733,8 +733,8 @@ class EmitCTrace final : EmitCFunc {
                     puts("const char* " + protect("__VenumItemValues") + "[]\n");
                     puts("= {");
                     for (AstEnumItem* itemp = enump->itemsp(); itemp;
-                         itemp = VN_CAST(itemp->nextp(), EnumItem)) {
-                        AstConst* constp = VN_CAST(itemp->valuep(), Const);
+                         itemp = VN_AS(itemp->nextp(), EnumItem)) {
+                        AstConst* const constp = VN_AS(itemp->valuep(), Const);
                         if (++nvals > 1) puts(", ");
                         putbs("\"" + constp->num().displayed(nodep, "%0b") + "\"");
                     }
@@ -785,7 +785,7 @@ class EmitCTrace final : EmitCFunc {
 
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
         if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
-            AstVar* varp = varrefp->varp();
+            AstVar* const varp = varrefp->varp();
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {
                 puts("(vluint32_t*)");
@@ -882,12 +882,12 @@ public:
 void V3EmitC::emitcImp() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Make parent module pointers available.
-    EmitCParentModule emitCParentModule;
+    const EmitCParentModule emitCParentModule;
 
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
-        const AstNodeModule* const modp = VN_CAST_CONST(nodep, NodeModule);
+        const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
         EmitCImp::main(modp, /* slow: */ true);
         EmitCImp::main(modp, /* slow: */ false);
     }
@@ -902,13 +902,13 @@ void V3EmitC::emitcImp() {
 void V3EmitC::emitcFiles() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
-         filep = VN_CAST(filep->nextp(), NodeFile)) {
-        AstCFile* cfilep = VN_CAST(filep, CFile);
+         filep = VN_AS(filep->nextp(), NodeFile)) {
+        AstCFile* const cfilep = VN_CAST(filep, CFile);
         if (cfilep && cfilep->tblockp()) {
             V3OutCFile of(cfilep->name());
             of.puts("// DESCR"
                     "IPTION: Verilator generated C++\n");
-            EmitCFunc visitor(cfilep->tblockp(), &of, true);
+            const EmitCFunc visitor(cfilep->tblockp(), &of, true);
         }
     }
 }

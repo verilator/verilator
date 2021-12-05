@@ -119,6 +119,26 @@ module t (/*AUTOARG*/);
       i = qe.xor;
       `checkh(i, 32'b0);
 
+      i = q.and();
+      `checkh(i, 32'b1000);
+      i = q.and() with (item + 1);
+      `checkh(i, 32'b1001);
+      i = q.or();
+      `checkh(i, 32'b1110);
+      i = q.or() with (item + 1);
+      `checkh(i, 32'b1111);
+      i = q.xor();
+      `checkh(i, 32'b0110);
+      i = q.xor() with (item + 1);
+      `checkh(i, 32'b0110);
+
+      i = qe.and();
+      `checkh(i, 32'b0);
+      i = qe.or();
+      `checkh(i, 32'b0);
+      i = qe.xor();
+      `checkh(i, 32'b0);
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

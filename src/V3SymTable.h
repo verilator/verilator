@@ -158,7 +158,7 @@ public:
     VSymEnt* findIdFallback(const string& name) const {
         // Find identifier looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
-        if (VSymEnt* entp = findIdFlat(name)) return entp;
+        if (VSymEnt* const entp = findIdFlat(name)) return entp;
         // Then scan the upper begin/end block or module for the name
         if (m_fallbackp) return m_fallbackp->findIdFallback(name);
         return nullptr;
@@ -166,7 +166,7 @@ public:
     void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
         // Suggest alternative symbol candidates without looking upward through symbol hierarchy
         for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
-            const AstNode* itemp = it->second->nodep();
+            const AstNode* const itemp = it->second->nodep();
             if (itemp && (!matcherp || matcherp->nodeMatch(itemp))) {
                 spellerp->pushCandidate(itemp->prettyName());
             }
@@ -185,7 +185,7 @@ private:
                          bool honorExport) {
         if ((!honorExport || srcp->exported())
             && !findIdFlat(name)) {  // Don't insert over existing entry
-            VSymEnt* symp = new VSymEnt(graphp, srcp);
+            VSymEnt* const symp = new VSymEnt(graphp, srcp);
             symp->exported(false);  // Can't reimport an import without an export
             symp->imported(true);
             reinsert(name, symp);
@@ -193,7 +193,7 @@ private:
     }
     void exportOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) const {
         if (srcp->exported()) {
-            if (VSymEnt* symp = findIdFlat(name)) {  // Should already exist in current table
+            if (VSymEnt* const symp = findIdFlat(name)) {  // Should already exist in current table
                 if (!symp->exported()) symp->exported(true);
             }
         }
@@ -237,7 +237,7 @@ public:
     void exportStarStar(VSymGraph* graphp) {
         // Export *:*: Export all tokens from imported packages
         for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
-            VSymEnt* symp = it->second;
+            VSymEnt* const symp = it->second;
             if (!symp->exported()) symp->exported(true);
         }
     }
@@ -247,10 +247,10 @@ public:
         for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
              it != srcp->m_idNameMap.end(); ++it) {
             const string& name = it->first;
-            VSymEnt* subSrcp = it->second;
-            const AstVar* varp = VN_CAST(subSrcp->nodep(), Var);
+            VSymEnt* const subSrcp = it->second;
+            const AstVar* const varp = VN_CAST(subSrcp->nodep(), Var);
             if (!onlyUnmodportable || (varp && varp->isParam())) {
-                VSymEnt* subSymp = new VSymEnt(graphp, subSrcp);
+                VSymEnt* const subSymp = new VSymEnt(graphp, subSrcp);
                 reinsert(name, subSymp);
                 // And recurse to create children
                 subSymp->importFromIface(graphp, subSrcp);
@@ -261,8 +261,8 @@ public:
         if (prettyName == "") prettyName = lookp->prettyName();
         string scopes;
         for (IdNameMap::iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
-            AstNode* itemp = it->second->nodep();
-            if (VN_IS(itemp, Cell) || (VN_IS(itemp, Module) && VN_CAST(itemp, Module)->isTop())) {
+            AstNode* const itemp = it->second->nodep();
+            if (VN_IS(itemp, Cell) || (VN_IS(itemp, Module) && VN_AS(itemp, Module)->isTop())) {
                 if (scopes != "") scopes += ", ";
                 scopes += AstNode::prettyName(it->first);
             }

@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
    reg [63:0] 	crc;
    reg [63:0] 	sum;
 
@@ -82,11 +82,11 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x gv=%x ev=%x\n",$time, cyc, crc, result,
+      $write("[%0t] cyc==%0d crc=%x result=%x gv=%x ev=%x\n", $time, cyc, crc, result,
 	     got_vec_out, exp_vec_out);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       if (cyc==0) begin
 	 // Setup
 	 crc <= 64'h5aef0c8d_d70a4497;
@@ -100,7 +100,7 @@ module t (/*AUTOARG*/
 	 end
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
+	 $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
 	 if (crc !== 64'hc77bb9b3784ea091) $stop;
 	 //Child prints this: $write("*-* All Finished *-*\n");
 	 $finish;

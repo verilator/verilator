@@ -35,7 +35,7 @@ private:
     static vluint64_t covBit(vluint64_t point) { return 1ULL << (point & 63); }
     vluint64_t allocSize() const { return sizeof(vluint64_t) * m_dataSize / 64; }
     void allocate(vluint64_t point) {
-        vluint64_t oldsize = m_dataSize;
+        const vluint64_t oldsize = m_dataSize;
         if (m_dataSize < point) m_dataSize = (point + 64) & ~63ULL;  // Keep power of two
         m_dataSize *= 2;
         // UINFO(9, "Realloc "<<allocSize()<<" for "<<point<<"  "<<cvtToHex(m_datap)<<endl);

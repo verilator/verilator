@@ -64,7 +64,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;\n"});
     std::string comma;
     for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
-        if (auto* const varp = VN_CAST(itemp, Var)) {
+        if (const auto* const varp = VN_CAST(itemp, Var)) {
             if (!varp->isParam()) {
                 string stmt = "out += \"";
                 stmt += comma;
@@ -109,7 +109,7 @@ void V3Common::commonAll() {
             // NODE STATE
             // Entire netlist:
             //  AstClass::user1()     -> bool.  True if class needs to_string dumper
-            AstUser1InUse m_inuser1;
+            const AstUser1InUse m_inuser1;
             // Create ToString methods
             makeVlToString(classp);
             makeToString(classp);

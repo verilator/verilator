@@ -67,7 +67,7 @@ public:
 class WidthCommitVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVar::user1p           -> bool, processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;
@@ -80,7 +80,7 @@ public:
             V3Number num(nodep, nodep->dtypep()->width());
             num.opAssign(nodep->num());
             num.isSigned(nodep->isSigned());
-            AstConst* newp = new AstConst(nodep->fileline(), num);
+            AstConst* const newp = new AstConst(nodep->fileline(), num);
             newp->dtypeFrom(nodep);
             return newp;
         } else {
@@ -102,8 +102,8 @@ private:
         // Recurse to handle the data type, as may change the size etc of this type
         if (!nodep->user1()) iterate(nodep);
         // Look for duplicate
-        if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) {
-            AstBasicDType* newp = nodep->findInsertSameDType(bdtypep);
+        if (AstBasicDType* const bdtypep = VN_CAST(nodep, BasicDType)) {
+            AstBasicDType* const newp = nodep->findInsertSameDType(bdtypep);
             if (newp != bdtypep && debug() >= 9) {
                 UINFO(9, "dtype replacement ");
                 nodep->dumpSmall(cout);
@@ -162,9 +162,9 @@ private:
     virtual void visit(AstConst* nodep) override {
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");
         iterate(nodep->dtypep());  // Do datatype first
-        if (AstConst* newp = newIfConstCommitSize(nodep)) {
+        if (AstConst* const newp = newIfConstCommitSize(nodep)) {
             nodep->replaceWith(newp);
-            AstNode* oldp = nodep;
+            AstNode* const oldp = nodep;
             nodep = newp;
             // if (debug() > 4) oldp->dumpTree(cout, "  fixConstSize_old: ");
             // if (debug() > 4) newp->dumpTree(cout, "              _new: ");
@@ -203,7 +203,7 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         if (nodep->classMethod() && nodep->pureVirtual() && VN_IS(m_modp, Class)
-            && !VN_CAST(m_modp, Class)->isVirtual()) {
+            && !VN_AS(m_modp, Class)->isVirtual()) {
             nodep->v3error(
                 "Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2017 8.21)");
         }
@@ -221,7 +221,7 @@ private:
     virtual void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
         editDType(nodep);
-        if (auto* classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
+        if (auto* const classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
             classEncapCheck(nodep, nodep->varp(), classrefp->classp());
         }  // else might be struct, etc
     }

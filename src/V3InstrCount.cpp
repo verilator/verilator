@@ -34,15 +34,15 @@ private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost + 1, 0 means don't dump
     //  AstNode::user5()        -> bool. Processed if assertNoDups
-    AstUser4InUse m_inuser4;
+    const AstUser4InUse m_inuser4;
 
     // MEMBERS
     uint32_t m_instrCount = 0;  // Running count of instructions
-    const AstNode* m_startNodep;  // Start node of count
+    const AstNode* const m_startNodep;  // Start node of count
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_inCFunc = false;  // Inside AstCFunc
-    bool m_assertNoDups;  // Check for duplicates
-    std::ostream* m_osp;  // Dump file
+    const bool m_assertNoDups;  // Check for duplicates
+    const std::ostream* m_osp;  // Dump file
 
     // TYPES
     // Little class to cleanly call startVisitBase/endVisitBase
@@ -50,8 +50,8 @@ private:
     private:
         // MEMBERS
         uint32_t m_savedCount;
-        AstNode* m_nodep;
-        InstrCountVisitor* m_visitor;
+        AstNode* const m_nodep;
+        InstrCountVisitor* const m_visitor;
 
     public:
         // CONSTRUCTORS
@@ -102,7 +102,7 @@ private:
         // Save the count, and add it back in during ~VisitBase This allows
         // debug prints to show local cost of each subtree, so we can see a
         // hierarchical view of the cost when in debug mode.
-        uint32_t savedCount = m_instrCount;
+        const uint32_t savedCount = m_instrCount;
         m_instrCount = nodep->instrCount();
         return savedCount;
     }
@@ -124,7 +124,7 @@ private:
         //
         // Hence, exclude the child of the AstWordSel from the computation,
         // whose cost scales with the size of the entire (maybe large) vector.
-        VisitBase vb(this, nodep);
+        const VisitBase vb{this, nodep};
         iterateAndNextNull(nodep->bitp());
     }
     virtual void visit(AstSel* nodep) override {
@@ -132,7 +132,7 @@ private:
         // is not expensive. Count the cost of the AstSel itself (scales with
         // its width) and the cost of the lsbp() and widthp() nodes, but not
         // the fromp() node which could be disproportionately large.
-        VisitBase vb(this, nodep);
+        const VisitBase vb{this, nodep};
         iterateAndNextNull(nodep->lsbp());
         iterateAndNextNull(nodep->widthp());
     }
@@ -163,9 +163,9 @@ private:
         markCost(nodep);
     }
     virtual void visit(AstNodeIf* nodep) override {
-        VisitBase vb(this, nodep);
+        const VisitBase vb{this, nodep};
         iterateAndNextNull(nodep->condp());
-        uint32_t savedCount = m_instrCount;
+        const uint32_t savedCount = m_instrCount;
 
         UINFO(8, "ifsp:\n");
         m_instrCount = 0;
@@ -190,19 +190,19 @@ private:
     virtual void visit(AstNodeCond* nodep) override {
         // Just like if/else above, the ternary operator only evaluates
         // one of the two expressions, so only count the max.
-        VisitBase vb(this, nodep);
+        const VisitBase vb{this, nodep};
         iterateAndNextNull(nodep->condp());
-        uint32_t savedCount = m_instrCount;
+        const uint32_t savedCount = m_instrCount;
 
         UINFO(8, "?\n");
         m_instrCount = 0;
         iterateAndNextNull(nodep->expr1p());
-        uint32_t ifCount = m_instrCount;
+        const uint32_t ifCount = m_instrCount;
 
         UINFO(8, ":\n");
         m_instrCount = 0;
         iterateAndNextNull(nodep->expr2p());
-        uint32_t elseCount = m_instrCount;
+        const uint32_t elseCount = m_instrCount;
 
         if (ifCount < elseCount) {
             m_instrCount = savedCount + elseCount;
@@ -229,7 +229,7 @@ private:
         UASSERT_OBJ(nodep == m_startNodep, nodep, "Multiple actives, or not start node");
     }
     virtual void visit(AstNodeCCall* nodep) override {
-        VisitBase vb(this, nodep);
+        const VisitBase vb{this, nodep};
         iterateChildren(nodep);
         m_tracingCall = true;
         iterate(nodep->funcp());
@@ -244,12 +244,12 @@ private:
         VL_RESTORER(m_inCFunc);
         {
             m_inCFunc = true;
-            VisitBase vb(this, nodep);
+            const VisitBase vb{this, nodep};
             iterateChildren(nodep);
         }
     }
     virtual void visit(AstNode* nodep) override {
-        VisitBase vb(this, nodep);
+        const VisitBase vb{this, nodep};
         iterateChildren(nodep);
     }
 
@@ -294,7 +294,7 @@ private:
 };
 
 uint32_t V3InstrCount::count(AstNode* nodep, bool assertNoDups, std::ostream* osp) {
-    InstrCountVisitor visitor{nodep, assertNoDups, osp};
+    const InstrCountVisitor visitor{nodep, assertNoDups, osp};
     if (osp) InstrCountDumpVisitor dumper(nodep, osp);
     return visitor.instrCount();
 }

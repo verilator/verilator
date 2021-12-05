@@ -140,7 +140,7 @@ bool VString::isWhitespace(const string& str) {
 }
 
 double VString::parseDouble(const string& str, bool* successp) {
-    char* strgp = new char[str.size() + 1];
+    char* const strgp = new char[str.size() + 1];
     char* dp = strgp;
     if (successp) *successp = true;
     for (const char* sp = str.c_str(); *sp; ++sp) {
@@ -148,7 +148,7 @@ double VString::parseDouble(const string& str, bool* successp) {
     }
     *dp++ = '\0';
     char* endp = strgp;
-    double d = strtod(strgp, &endp);
+    const double d = strtod(strgp, &endp);
     const size_t parsed_len = endp - strgp;
     if (parsed_len != strlen(strgp)) {
         if (successp) *successp = false;
@@ -321,7 +321,7 @@ uint64_t VHashSha256::digestUInt64() {
     const string& binhash = digestBinary();
     uint64_t out = 0;
     for (size_t byte = 0; byte < sizeof(uint64_t); ++byte) {
-        unsigned char c = binhash[byte];
+        const unsigned char c = binhash[byte];
         out = (out << 8) | c;
     }
     return out;
@@ -411,14 +411,14 @@ string VName::dehash(const string& in) {
         const string::size_type next_dot_pos = in.find("__DOT__", last_dot_pos);
         // Two iterators defining the range between the last and next dots.
         const auto search_begin = std::begin(in) + last_dot_pos;
-        auto search_end
+        const auto search_end
             = next_dot_pos == string::npos ? std::end(in) : std::begin(in) + next_dot_pos;
 
         // Search for __Vhsh between the two dots.
-        auto begin_vhsh
+        const auto begin_vhsh
             = std::search(search_begin, search_end, std::begin(VHSH), std::end(VHSH) - 1);
         if (begin_vhsh != search_end) {
-            std::string vhsh(begin_vhsh, search_end);
+            const std::string vhsh(begin_vhsh, search_end);
             const auto& it = s_dehashMap.find(vhsh);
             UASSERT(it != s_dehashMap.end(), "String not in reverse hash map '" << vhsh << "'");
             // Is this not the first component, but the first to require dehashing?
@@ -582,7 +582,7 @@ void VSpellCheck::selfTest() {
         selfTestSuggestOne(false, "sqrt", "assert", 3);
     }
     {
-        VSpellCheck speller;
+        const VSpellCheck speller;
         UASSERT_SELFTEST(string, "", speller.bestCandidate(""));
     }
     {

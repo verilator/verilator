@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
 		 ELARGE = 'hf00d
 		 } my_t;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
    my_t e;
 
    string all;

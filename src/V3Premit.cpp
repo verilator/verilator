@@ -44,7 +44,7 @@ class PremitAssignVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstVar::user3()         // bool; occurs on LHS of current assignment
-    AstUser3InUse m_inuser3;
+    const AstUser3InUse m_inuser3;
 
     // STATE
     bool m_noopt = false;  // Disable optimization of variables in this block
@@ -93,8 +93,8 @@ private:
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
     //  *::user3()              -> See PremitAssignVisitor
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current block
@@ -128,10 +128,10 @@ private:
             if (nodep->isWide()) {
                 if (m_assignLhs) {
                 } else if (nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), NodeAssign)
-                           && assignNoTemp(VN_CAST(nodep->firstAbovep(), NodeAssign))) {
+                           && assignNoTemp(VN_AS(nodep->firstAbovep(), NodeAssign))) {
                     // Not much point if it's just a direct assignment to a constant
                 } else if (VN_IS(nodep->backp(), Sel)
-                           && VN_CAST(nodep->backp(), Sel)->widthp() == nodep) {
+                           && VN_AS(nodep->backp(), Sel)->widthp() == nodep) {
                     // AstSel::width must remain a constant
                 } else if ((nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), ArraySel))
                            || ((VN_IS(m_stmtp, CCall) || VN_IS(m_stmtp, CStmt))
@@ -266,7 +266,7 @@ private:
         // Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
         if (!nodep->user2SetOnce()) {
             UINFO(4, "  ShiftFix  " << nodep << endl);
-            const AstConst* shiftp = VN_CAST(nodep->rhsp(), Const);
+            const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
             if (shiftp && shiftp->num().mostSetBitP1() > 32) {
                 shiftp->v3error(
                     "Unsupported: Shifting of by over 32-bit number isn't supported."
@@ -279,7 +279,7 @@ private:
                 AstNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 AstNode* constzerop;
-                int m1value
+                const int m1value
                     = nodep->widthMin() - 1;  // Constant of width-1; not changing dtype width
                 if (nodep->signedFlavor()) {
                     // Then over shifting gives the sign bit, not all zeros
@@ -295,10 +295,11 @@ private:
                 }
                 constzerop->dtypeFrom(nodep);  // unsigned
 
-                AstNode* constwidthp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                                    nodep->rhsp()->widthMin(), m1value);
+                AstNode* const constwidthp
+                    = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                   nodep->rhsp()->widthMin(), m1value);
                 constwidthp->dtypeFrom(nodep->rhsp());  // unsigned
-                AstCond* newp = new AstCond(
+                AstCond* const newp = new AstCond(
                     nodep->fileline(),
                     new AstGte(nodep->fileline(), constwidthp, nodep->rhsp()->cloneTree(false)),
                     nodep, constzerop);
@@ -381,10 +382,10 @@ private:
         iterateChildren(nodep);
         m_stmtp = nullptr;
         if (v3Global.opt.autoflush()) {
-            AstNode* searchp = nodep->nextp();
+            const AstNode* searchp = nodep->nextp();
             while (searchp && VN_IS(searchp, Comment)) searchp = searchp->nextp();
             if (searchp && VN_IS(searchp, Display)
-                && nodep->filep()->sameGateTree(VN_CAST(searchp, Display)->filep())) {
+                && nodep->filep()->sameGateTree(VN_AS(searchp, Display)->filep())) {
                 // There's another display next; we can just wait to flush
             } else {
                 UINFO(4, "Autoflush " << nodep << endl);
@@ -430,6 +431,6 @@ public:
 
 void V3Premit::premitAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { PremitVisitor visitor{nodep}; }  // Destruct before checking
+    { PremitVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("premit", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

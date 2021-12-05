@@ -121,7 +121,7 @@ class CombineVisitor final : CombBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
-    AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
+    const AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
     //  AstUser4InUse     part of V3Hasher in V3DupFinder
 
     // STATE
@@ -132,7 +132,7 @@ private:
     // METHODS
     void walkEmptyFuncs() {
         for (const auto& itr : m_dupFinder) {
-            AstCFunc* const oldfuncp = VN_CAST(itr.second, CFunc);
+            AstCFunc* const oldfuncp = VN_AS(itr.second, CFunc);
             UASSERT_OBJ(oldfuncp, itr.second, "Not a CFunc in hash");
             if (!oldfuncp->emptyBody()) continue;
             UASSERT_OBJ(!oldfuncp->dontCombine(), oldfuncp,
@@ -152,14 +152,14 @@ private:
         // Do non-slow first as then favors naming functions based on fast name
         for (const bool slow : {false, true}) {
             for (auto newIt = m_dupFinder.begin(); newIt != m_dupFinder.end(); ++newIt) {
-                AstCFunc* const newfuncp = VN_CAST(newIt->second, CFunc);
+                AstCFunc* const newfuncp = VN_AS(newIt->second, CFunc);
                 UASSERT_OBJ(newfuncp, newIt->second, "Not a CFunc in hash");
                 if (newfuncp->user3()) continue;  // Already replaced
                 if (newfuncp->slow() != slow) continue;
                 auto oldIt = newIt;
                 ++oldIt;  // Skip over current position
                 for (; oldIt != m_dupFinder.end(); ++oldIt) {
-                    AstCFunc* const oldfuncp = VN_CAST(oldIt->second, CFunc);
+                    AstCFunc* const oldfuncp = VN_AS(oldIt->second, CFunc);
                     UASSERT_OBJ(oldfuncp, oldIt->second, "Not a CFunc in hash");
                     UASSERT_OBJ(newfuncp != oldfuncp, newfuncp,
                                 "Same function hashed multiple times");
@@ -223,6 +223,6 @@ public:
 
 void V3Combine::combineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CombineVisitor visitor{nodep}; }  // Destruct before checking
+    { CombineVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("combine", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

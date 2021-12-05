@@ -74,7 +74,7 @@ private:
     int m_modDepth = 0;  // Depth of module hierarchy
 
     char* m_wrBufp;  // Output buffer
-    char* m_wrFlushp;  // Output buffer flush trigger location
+    const char* m_wrFlushp;  // Output buffer flush trigger location
     char* m_writep;  // Write pointer into output buffer
     vluint64_t m_wrChunkSize;  // Output buffer size
     vluint64_t m_wroteBytes = 0;  // Number of bytes written to this file

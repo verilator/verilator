@@ -66,9 +66,9 @@ class V3FileDependImp final {
     // TYPES
     class DependFile final {
         // A single file
-        bool m_target;  // True if write, else read
+        const bool m_target;  // True if write, else read
         bool m_exists = true;
-        string m_filename;  // Filename
+        const string m_filename;  // Filename
         struct stat m_stat;  // Stat information
     public:
         DependFile(const string& filename, bool target)
@@ -190,7 +190,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
          iter != m_filenameList.end(); ++iter) {
         // Read stats of files we create after we're done making them
         // (except for this file, of course)
-        DependFile* dfp = const_cast<DependFile*>(&(*iter));
+        DependFile* const dfp = const_cast<DependFile*>(&(*iter));
         V3Options::fileNfsFlush(dfp->filename());
         dfp->loadStats();
         off_t showSize = iter->size();
@@ -335,7 +335,7 @@ class VInFilterImp final {
 #ifdef INFILTER_PIPE
     pid_t m_pid = 0;  // fork() process id
 #else
-    int m_pid = 0;  // fork() process id - always zero as disabled
+    const int m_pid = 0;  // fork() process id - always zero as disabled
 #endif
     bool m_pidExited = false;
     int m_pidStatus = 0;
@@ -394,8 +394,7 @@ private:
 #endif
     }
 
-    string readBlocks(int fd, int size, StrList& outl) {
-        string out;
+    void readBlocks(int fd, int size, StrList& outl) {
         char buf[INFILTER_IPC_BUFSIZ];
         ssize_t sizegot = 0;
         while (!m_readEof && (size < 0 || size > sizegot)) {
@@ -421,7 +420,6 @@ private:
                 break;
             }
         }
-        return out;
     }
     // cppcheck-suppress unusedFunction unusedPrivateFunction
     string readFilterLine() {
@@ -634,7 +632,7 @@ string V3OutFormatter::indentSpaces(int num) {
         --num;
     }
     *cp++ = '\0';
-    string st(str);
+    string st{str};  // No const, move optimization
     return st;
 }
 
@@ -1055,7 +1053,7 @@ public:
 private:
     void trySep(const string& old, string::size_type start, const string& trySep,
                 string::size_type& posr, string& separatorr) {
-        string::size_type trypos = old.find(trySep, start);
+        const string::size_type trypos = old.find(trySep, start);
         if (trypos != string::npos) {
             if (posr == string::npos || (posr > trypos)) {
                 posr = trypos;

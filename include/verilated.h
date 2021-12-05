@@ -359,7 +359,7 @@ protected:
     } m_args VL_GUARDED_BY(m_argMutex);
 
     // Implementation details
-    std::unique_ptr<VerilatedContextImpData> m_impdatap;
+    const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Coverage access
     std::unique_ptr<VerilatedVirtualBase> m_coveragep;  // Pointer for coveragep()
 

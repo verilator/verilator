@@ -321,12 +321,12 @@ private:
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
+    string      m_libCreate;    // main switch: --lib-create {lib_name}
     string      m_makeDir;      // main switch: -Mdir
     string      m_modPrefix;    // main switch: --mod-prefix
     string      m_pipeFilter;   // main switch: --pipe-filter
     string      m_prefix;       // main switch: --prefix
     string      m_protectKey;   // main switch: --protect-key
-    string      m_protectLib;   // main switch: --protect-lib {lib_name}
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
     string      m_waiverOutput;  // main switch: --waiver-output {filename}
@@ -526,14 +526,9 @@ public:
 
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
     string l2Name() const { return m_l2Name; }
-    string makeDir() const { return m_makeDir; }
-    string modPrefix() const { return m_modPrefix; }
-    string pipeFilter() const { return m_pipeFilter; }
-    string prefix() const { return m_prefix; }
-    string protectKeyDefaulted();  // Set default key if not set by user
-    string protectLib() const { return m_protectLib; }
-    string protectLibName(bool shared) {
-        string libName = "lib" + protectLib();
+    string libCreate() const { return m_libCreate; }
+    string libCreateName(bool shared) {
+        string libName = "lib" + libCreate();
         if (shared) {
             libName += ".so";
         } else {
@@ -541,6 +536,13 @@ public:
         }
         return libName;
     }
+    string makeDir() const { return m_makeDir; }
+    string modPrefix() const { return m_modPrefix; }
+    string pipeFilter() const { return m_pipeFilter; }
+    string prefix() const { return m_prefix; }
+    // Not just called protectKey() to avoid bugs of not using protectKeyDefaulted()
+    bool protectKeyProvided() const { return !m_protectKey.empty(); }
+    string protectKeyDefaulted();  // Set default key if not set by user
     string topModule() const { return m_topModule; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }

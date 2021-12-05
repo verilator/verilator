@@ -103,7 +103,7 @@ public:
     // Apply all attributes to the variable
     void apply(AstVar* varp) {
         for (const_iterator it = begin(); it != end(); ++it) {
-            AstNode* newp = new AstAttrOf(varp->fileline(), it->m_type);
+            AstNode* const newp = new AstAttrOf(varp->fileline(), it->m_type);
             varp->addAttrsp(newp);
             if (it->m_type == AstAttrType::VAR_PUBLIC_FLAT_RW && it->m_sentreep) {
                 newp->addNext(new AstAlwaysPublic(varp->fileline(), it->m_sentreep, nullptr));
@@ -190,13 +190,13 @@ public:
 
     void apply(AstNodeModule* modp) {
         if (m_inline) {
-            AstPragmaType type
+            const AstPragmaType type
                 = m_inlineValue ? AstPragmaType::INLINE_MODULE : AstPragmaType::NO_INLINE_MODULE;
-            AstNode* nodep = new AstPragma(modp->fileline(), type);
+            AstNode* const nodep = new AstPragma(modp->fileline(), type);
             modp->addStmtp(nodep);
         }
         for (auto it = m_modPragmas.cbegin(); it != m_modPragmas.cend(); ++it) {
-            AstNode* nodep = new AstPragma(modp->fileline(), *it);
+            AstNode* const nodep = new AstPragma(modp->fileline(), *it);
             modp->addStmtp(nodep);
         }
     }
@@ -223,9 +223,9 @@ using V3ConfigModuleResolver = V3ConfigWildcardResolver<V3ConfigModule>;
 // lint/coverage/tracing on/off
 class V3ConfigIgnoresLine final {
 public:
-    int m_lineno;  // Line number to make change at
-    V3ErrorCode m_code;  // Error code
-    bool m_on;  // True to enable message
+    const int m_lineno;  // Line number to make change at
+    const V3ErrorCode m_code;  // Error code
+    const bool m_on;  // True to enable message
     V3ConfigIgnoresLine(V3ErrorCode code, int lineno, bool on)
         : m_lineno{lineno}
         , m_code{code}
@@ -502,7 +502,7 @@ void V3Config::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
     const string& modname = modulep->name();
     V3ConfigModule* modp = V3ConfigResolver::s().modules().resolve(modname);
     if (!modp) return;
-    V3ConfigFTask* ftp = modp->ftasks().resolve(ftaskp->name());
+    const V3ConfigFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
     if (ftp) ftp->apply(ftaskp);
 }
 

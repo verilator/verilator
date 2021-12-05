@@ -38,7 +38,7 @@ protected:
     // VISITORS
     virtual void visit(AstInitArray* nodep) override {
         const AstUnpackArrayDType* const dtypep
-            = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         UASSERT_OBJ(dtypep, nodep, "Array initializer has non-array dtype");
         const uint32_t size = dtypep->elementsConst();
         const uint32_t elemBytes = dtypep->subDTypep()->widthTotalBytes();
@@ -72,7 +72,7 @@ protected:
     virtual void visit(AstConst* nodep) override {
         const V3Number& num = nodep->num();
         UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
-        AstNodeDType* const dtypep = nodep->dtypep();
+        const AstNodeDType* const dtypep = nodep->dtypep();
         if (num.isString()) {
             // Note: putsQuoted does not track indentation, so we use this instead
             puts("\"");

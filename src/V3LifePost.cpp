@@ -54,11 +54,11 @@ private:
 
     // VISITORS
     virtual void visit(AstVarRef* nodep) override {
-        AstVarScope* vscp = nodep->varScopep();
+        const AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
-        if (AstVarScope* newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
+        if (AstVarScope* const newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
             UINFO(9, "  Replace " << nodep << " to " << newvscp << endl);
-            AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
+            AstVarRef* const newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
             nodep->replaceWith(newrefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
@@ -133,7 +133,7 @@ private:
     // NODE STATE
     // Cleared on entire tree
     //  AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var
-    AstUser4InUse m_inuser4;
+    const AstUser4InUse m_inuser4;
 
     // STATE
     uint32_t m_sequence = 0;  // Sequence number of assigns/varrefs,
@@ -186,11 +186,11 @@ private:
     }
     void squashAssignposts() {
         for (auto& itr : m_assignposts) {
-            LifePostLocation* app = &itr.second;
-            AstVarRef* lhsp = VN_CAST(app->nodep->lhsp(), VarRef);  // original var
-            AstVarRef* rhsp = VN_CAST(app->nodep->rhsp(), VarRef);  // dly var
-            AstVarScope* dlyVarp = rhsp->varScopep();
-            AstVarScope* origVarp = lhsp->varScopep();
+            const LifePostLocation* const app = &itr.second;
+            const AstVarRef* const lhsp = VN_AS(app->nodep->lhsp(), VarRef);  // original var
+            const AstVarRef* const rhsp = VN_AS(app->nodep->rhsp(), VarRef);  // dly var
+            AstVarScope* const dlyVarp = rhsp->varScopep();
+            AstVarScope* const origVarp = lhsp->varScopep();
 
             // Scrunch these:
             //  X1:  __Vdly__q = __PVT__clk_clocks;
@@ -271,14 +271,14 @@ private:
         squashAssignposts();
 
         // Replace any node4p varscopes with the new scope
-        LifePostElimVisitor visitor{nodep};
+        LifePostElimVisitor{nodep};
     }
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
-        AstVarScope* vscp = nodep->varScopep();
+        const AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
 
-        LifeLocation loc(m_execMTaskp, ++m_sequence);
+        const LifeLocation loc(m_execMTaskp, ++m_sequence);
         if (nodep->access().isWriteOrRW()) m_writes[vscp].insert(loc);
         if (nodep->access().isReadOrRW()) m_reads[vscp].insert(loc);
     }
@@ -292,12 +292,12 @@ private:
     virtual void visit(AstAssignPost* nodep) override {
         // Don't record ASSIGNPOST in the read/write maps, record them in a
         // separate map
-        if (AstVarRef* rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
+        if (const AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
             // rhsp is the dly var
-            AstVarScope* dlyVarp = rhsp->varScopep();
+            const AstVarScope* const dlyVarp = rhsp->varScopep();
             UASSERT_OBJ(m_assignposts.find(dlyVarp) == m_assignposts.end(), nodep,
                         "LifePostLocation attempted duplicate dlyvar map addition");
-            LifeLocation loc(m_execMTaskp, ++m_sequence);
+            const LifeLocation loc(m_execMTaskp, ++m_sequence);
             m_assignposts[dlyVarp] = LifePostLocation(loc, nodep);
         }
     }
@@ -318,7 +318,7 @@ private:
         m_mtasksGraphp = nodep->depGraphp();
         for (V3GraphVertex* mtaskVxp = m_mtasksGraphp->verticesBeginp(); mtaskVxp;
              mtaskVxp = mtaskVxp->verticesNextp()) {
-            ExecMTask* mtaskp = dynamic_cast<ExecMTask*>(mtaskVxp);
+            const ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(mtaskVxp);
             m_execMTaskp = mtaskp;
             m_sequence = 0;
             iterate(mtaskp->bodyp());
@@ -348,6 +348,6 @@ public:
 void V3LifePost::lifepostAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Mark redundant AssignPost
-    { LifePostDlyVisitor visitor{nodep}; }  // Destruct before checking
+    { LifePostDlyVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("life_post", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -37,12 +37,12 @@ private:
     // NODE STATE
 
     // STATE
-    AstScope* m_topScopep = nullptr;  // Current top scope
+    AstScope* const m_topScopep = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
     AstCFunc* m_initFuncp = nullptr;  // Trace function being built
     AstCFunc* m_initSubFuncp = nullptr;  // Trace function being built (under m_init)
     int m_initSubStmts = 0;  // Number of statements in function
     int m_funcNum = 0;  // Function number being built
-    AstVarScope* m_traVscp = nullptr;  // Signal being trace constructed
+    const AstVarScope* m_traVscp = nullptr;  // Signal being trace constructed
     AstNode* m_traValuep = nullptr;  // Signal being traced's value to trace in it
     string m_traShowname;  // Signal being traced's component name
     bool m_interface = false;  // Currently tracing an interface
@@ -84,7 +84,7 @@ private:
         return funcp;
     }
     void callCFuncSub(AstCFunc* basep, AstCFunc* funcp, AstIntfRef* irp) {
-        AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
+        AstCCall* const callp = new AstCCall(funcp->fileline(), funcp);
         if (irp) {
             callp->argTypes("tracep, VLT_TRACE_SCOPE_INTERFACE");
             callp->addArgsp(irp->unlinkFrBack());
@@ -136,7 +136,6 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) override {
-        m_topScopep = nodep->scopep();
         // Create the trace init function
         m_initFuncp = newCFunc("trace_init_top");
         // Create initial sub function
@@ -145,7 +144,7 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstScope* nodep) override {
-        AstCell* const cellp = VN_CAST(nodep->aboveCellp(), Cell);
+        const AstCell* const cellp = nodep->aboveCellp();
         if (cellp && VN_IS(cellp->modp(), Iface)) {
             AstCFunc* const origSubFunc = m_initSubFuncp;
             int origSubStmts = m_initSubStmts;
@@ -164,7 +163,7 @@ private:
                 // be unlinked as we go
                 while (nextIrp) {
                     AstIntfRef* const irp = nextIrp;
-                    nextIrp = VN_CAST(irp->nextp(), IntfRef);
+                    nextIrp = VN_AS(irp->nextp(), IntfRef);
 
                     const string irpName = irp->prettyName();
                     if (scopeLen > irpName.length()) continue;
@@ -301,7 +300,7 @@ private:
                 addIgnore("Unsupported: Unpacked struct/union");
             } else {
                 for (const AstMemberDType* itemp = nodep->membersp(); itemp;
-                     itemp = VN_CAST_CONST(itemp->nextp(), MemberDType)) {
+                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
                     AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);
@@ -361,6 +360,6 @@ public:
 
 void V3TraceDecl::traceDeclAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { TraceDeclVisitor visitor{nodep}; }  // Destruct before checking
+    { TraceDeclVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("tracedecl", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

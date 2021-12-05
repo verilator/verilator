@@ -142,6 +142,12 @@ module t;
       $writeb; $displayb;
       $writeb("b: "); $writeb(nine); $writeb(" "); $displayb(nine);
       $writeo; $displayo;
+      $display("%d", $signed(32'haaaaaaaa));  // -1431655766
+      $display($signed(32'haaaaaaaa));  // -1431655766
+      $display("%d", $unsigned(-2));  // 4294967294
+      $display($unsigned(-2));  // 4294967294
+      $display("%d", 32'haaaaaaaa);  // 2863311530
+      $display(32'haaaaaaaa);  // 2863311530
 
       $display("[%0t] %s%s%s", $time,
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
@@ -149,6 +155,7 @@ module t;
       $write("hel", "lo, fr", "om a concatenated format string [%0t].\n", $time);
       $display("extra argument: ", $time);
       $display($time,, ": pre argument",, "after");
+      $display("empty: >%s<", "");
       $write("[%0t] Embedded tab '\t' and \r return\n", $time);
       $display("[%0t] Embedded\
 multiline", $time);

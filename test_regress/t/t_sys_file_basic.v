@@ -14,6 +14,7 @@
 
 module t;
    integer file;
+   integer file_a[0];
 
    integer	chars;
    reg [1*8:1]	letterl;
@@ -91,8 +92,10 @@ module t;
 
       begin
 	 // Check quadword access; a little strange, but it's legal to open "."
-	 file = $fopen(".","r");
-	 $fclose(file);
+	 // Also checks using array reference
+	 file_a[0] = $fopen(".","r");
+	 if (file_a[0] == 0) $stop;
+	 $fclose(file_a[0]);
       end
 
       begin

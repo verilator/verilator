@@ -28,7 +28,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
    reg [63:0] 	crc;
 
    // Take CRC data and apply to testblock inputs
@@ -69,18 +69,18 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x ",$time, cyc, crc);
+      $write("[%0t] cyc==%0d crc=%x ", $time, cyc, crc);
       $display(" en=%b fen=%b d=%b ev=%b",
 	       test.flop_en_vld[0],  test.ff_en_vld[0],
 	       test.dvld[0],  test.entry_vld[0]);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       if (cyc<3) begin
 	 crc <= 64'h5aef0c8d_d70a4497;
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x\n",$time, cyc, crc);
+	 $write("[%0t] cyc==%0d crc=%x\n", $time, cyc, crc);
          if (ffq_clk_active == 0) begin
            $display ("----");
            $display ("%%Error: TESTCASE FAILED with no Clock arriving at FFQs");

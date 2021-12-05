@@ -69,8 +69,8 @@ public:
 class SplitAsCleanVisitor final : public SplitAsBaseVisitor {
 private:
     // STATE
-    AstVarScope* m_splitVscp;  // Variable we want to split
-    bool m_modeMatch;  // Remove matching Vscp, else non-matching
+    AstVarScope* const m_splitVscp;  // Variable we want to split
+    const bool m_modeMatch;  // Remove matching Vscp, else non-matching
     bool m_keepStmt = false;  // Current Statement must be preserved
     bool m_matches = false;  // Statement below has matching lvalue reference
 
@@ -128,7 +128,7 @@ class SplitAsVisitor final : public SplitAsBaseVisitor {
 private:
     // NODE STATE
     //  AstAlways::user()       -> bool.  True if already processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     VDouble0 m_statSplits;  // Statistic tracking
@@ -140,15 +140,15 @@ private:
         UINFO(3, "   For " << m_splitVscp << endl);
         if (debug() >= 9) nodep->dumpTree(cout, "-in  : ");
         // Duplicate it and link in
-        AstAlways* newp = nodep->cloneTree(false);
+        AstAlways* const newp = nodep->cloneTree(false);
         newp->user1(true);  // So we don't clone it again
         nodep->addNextHere(newp);
         {  // Delete stuff we don't want in old
-            SplitAsCleanVisitor visitor{nodep, m_splitVscp, false};
+            const SplitAsCleanVisitor visitor{nodep, m_splitVscp, false};
             if (debug() >= 9) nodep->dumpTree(cout, "-out0: ");
         }
         {  // Delete stuff we don't want in new
-            SplitAsCleanVisitor visitor{newp, m_splitVscp, true};
+            const SplitAsCleanVisitor visitor{newp, m_splitVscp, true};
             if (debug() >= 9) newp->dumpTree(cout, "-out1: ");
         }
     }
@@ -156,10 +156,10 @@ private:
     virtual void visit(AstAlways* nodep) override {
         // Are there any lvalue references below this?
         // There could be more than one.  So, we process the first one found first.
-        AstVarScope* lastSplitVscp = nullptr;
+        const AstVarScope* lastSplitVscp = nullptr;
         while (!nodep->user1()) {
             // Find any splittable variables
-            SplitAsFindVisitor visitor{nodep};
+            const SplitAsFindVisitor visitor{nodep};
             m_splitVscp = visitor.splitVscp();
             if (m_splitVscp && m_splitVscp == lastSplitVscp) {
                 // We did this last time!  Something's stuck!
@@ -194,6 +194,6 @@ public:
 
 void V3SplitAs::splitAsAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { SplitAsVisitor visitor{nodep}; }  // Destruct before checking
+    { SplitAsVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("splitas", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

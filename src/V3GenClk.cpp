@@ -43,18 +43,18 @@ private:
     // Cleared on top scope
     //  AstVarScope::user2()    -> AstVarScope*.  Signal replacing activation with
     //  AstVarRef::user3()      -> bool.  Signal is replaced activation (already done)
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
+    const AstUser2InUse m_inuser2;
+    const AstUser3InUse m_inuser3;
 
     // STATE
-    AstActive* m_activep = nullptr;  // Inside activate statement
-    AstNodeModule* m_topModp;  // Top module
-    AstScope* m_scopetopp = nullptr;  // Scope under TOPSCOPE
+    const AstActive* m_activep = nullptr;  // Inside activate statement
+    AstNodeModule* const m_topModp;  // Top module
+    AstScope* const m_scopetopp = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
 
     // METHODS
     AstVarScope* genInpClk(AstVarScope* vscp) {
         if (vscp->user2p()) {
-            return VN_CAST(vscp->user2p(), VarScope);
+            return VN_AS(vscp->user2p(), VarScope);
         } else {
             // In order to create a __VinpClk* for a signal, it needs to be marked circular.
             // The DPI export trigger is never marked circular by V3Order (see comments in
@@ -69,18 +69,18 @@ private:
             // that might have dependents scheduled earlier.
             UASSERT_OBJ(vscp != v3Global.rootp()->dpiExportTriggerp(), vscp,
                         "DPI export trigger should not need __VinpClk");
-            AstVar* varp = vscp->varp();
-            string newvarname
+            AstVar* const varp = vscp->varp();
+            const string newvarname
                 = "__VinpClk__" + vscp->scopep()->nameDotless() + "__" + varp->name();
             // Create:  VARREF(inpclk)
             //          ...
             //          ASSIGN(VARREF(inpclk), VARREF(var))
-            AstVar* newvarp
+            AstVar* const newvarp
                 = new AstVar(varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
             m_topModp->addStmtp(newvarp);
-            AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
+            AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
             m_scopetopp->addVarp(newvscp);
-            AstAssign* asninitp = new AstAssign(
+            AstAssign* const asninitp = new AstAssign(
                 vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
                 new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
             m_scopetopp->addFinalClkp(asninitp);
@@ -93,25 +93,21 @@ private:
     // VISITORS
     virtual void visit(AstTopScope* nodep) override {
         AstNode::user2ClearTree();  // user2p() used on entire tree
-
-        AstScope* scopep = nodep->scopep();
-        UASSERT_OBJ(scopep, nodep, "No scope found on top level");
-        m_scopetopp = scopep;
-
         iterateChildren(nodep);
     }
     //----
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
-        AstVarScope* vscp = nodep->varScopep();
+        AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (m_activep && !nodep->user3()) {
             nodep->user3(true);
             if (vscp->isCircular()) {
                 UINFO(8, "  VarActReplace " << nodep << endl);
                 // Replace with the new variable
-                AstVarScope* newvscp = genInpClk(vscp);
-                AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
+                AstVarScope* const newvscp = genInpClk(vscp);
+                AstVarRef* const newrefp
+                    = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
                 nodep->replaceWith(newrefp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
@@ -120,7 +116,7 @@ private:
     virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
         UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
-        iterateChildren(nodep->sensesp());  // iterateAndNext?
+        iterate(nodep->sensesp());
         m_activep = nullptr;
         iterateChildren(nodep);
     }
@@ -145,12 +141,12 @@ private:
     // NODE STATE
     // Cleared on top scope
     //  AstVarScope::user()     -> bool.  Set when the var has been used as clock
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     bool m_tracingCall = false;  // Iterating into a call to a cfunc
-    AstActive* m_activep = nullptr;  // Inside activate statement
-    AstNodeAssign* m_assignp = nullptr;  // Inside assigndly statement
+    const AstActive* m_activep = nullptr;  // Inside activate statement
+    const AstNodeAssign* m_assignp = nullptr;  // Inside assigndly statement
     AstNodeModule* m_topModp = nullptr;  // Top module
 
     // VISITORS
@@ -160,7 +156,7 @@ private:
         {
             // Make the new clock signals and replace any activate references
             // See rename, it does some AstNode::userClearTree()'s
-            GenClkRenameVisitor visitor{nodep, m_topModp};
+            GenClkRenameVisitor{nodep, m_topModp};
         }
     }
     virtual void visit(AstNodeModule* nodep) override {
@@ -192,7 +188,7 @@ private:
 
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
-        AstVarScope* vscp = nodep->varScopep();
+        AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (m_activep) {
             UINFO(8, "  VarAct " << nodep << endl);
@@ -215,7 +211,7 @@ private:
         UINFO(8, "ACTIVE " << nodep << endl);
         m_activep = nodep;
         UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
-        iterateChildren(nodep->sensesp());  // iterateAndNext?
+        iterate(nodep->sensesp());
         m_activep = nullptr;
         iterateChildren(nodep);
     }
@@ -235,6 +231,6 @@ public:
 
 void V3GenClk::genClkAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { GenClkReadVisitor visitor{nodep}; }  // Destruct before checking
+    { GenClkReadVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("genclk", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -536,7 +536,7 @@ static void process() {
     }
 
     // Output DPI protected library files
-    if (!v3Global.opt.protectLib().empty()) {
+    if (!v3Global.opt.libCreate().empty()) {
         V3ProtectLib::protect();
         V3EmitV::emitvFiles();
         V3EmitC::emitcFiles();

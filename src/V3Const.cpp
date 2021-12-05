@@ -79,7 +79,7 @@ public:
 };
 
 static bool isConst(const AstNode* nodep, uint64_t v) {
-    const AstConst* const constp = VN_CAST_CONST(nodep, Const);
+    const AstConst* const constp = VN_CAST(nodep, Const);
     return constp && constp->toUQuad() == v;
 }
 
@@ -110,7 +110,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
     // AstVarScope::user4u    -> Same as AstVarRef::user4
-    AstUser4InUse m_inuser4;
+    const AstUser4InUse m_inuser4;
 
     // TYPES
 
@@ -123,7 +123,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         int m_lsb = 0;
         int m_wordIdx = -1;  // -1 means AstWordSel is not used.
         AstVarRef* m_refp = nullptr;
-        AstConst* m_constp = nullptr;
+        const AstConst* m_constp = nullptr;
 
         int width() const {
             UASSERT(m_refp, "m_refp should be set");
@@ -187,7 +187,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     class VarInfo final {
         // MEMBERS
         int m_knownResult = -1;  // -1: result is not known, 0 or 1: result of this tree
-        ConstBitOpTreeVisitor* const m_parentp;  // ConstBitOpTreeVisitor that holds this VarInfo
+        const ConstBitOpTreeVisitor* const
+            m_parentp;  // ConstBitOpTreeVisitor holding this VarInfo
         AstVarRef* const m_refp;  // Points the variable that this VarInfo covers
         const int m_width;  // Width of term this VarInfo refers to
         V3Number m_bitPolarity;  // Coefficient of each bit
@@ -335,7 +336,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     unsigned m_ops;  // Number of operations such as And, Or, Xor, Sel...
     int m_lsb = 0;  // Current LSB
     LeafInfo* m_leafp = nullptr;  // AstConst or AstVarRef that currently looking for
-    AstNode* const m_rootp;  // Root of this AST subtree
+    const AstNode* const m_rootp;  // Root of this AST subtree
 
     std::vector<AstNode*> m_frozenNodes;  // Nodes that cannot be optimized
     std::vector<BitPolarityEntry> m_bitPolarities;  // Polarity of bits found during iterate()
@@ -415,7 +416,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     virtual void visit(AstCCast* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstShiftR* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
-        AstConst* constp = VN_CAST(nodep->rhsp(), Const);
+        AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
         m_lsb += constp->toUInt();
         incrOps(nodep, __LINE__);
@@ -425,7 +426,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     virtual void visit(AstNot* nodep) override {
         CONST_BITOP_RETURN_IF(nodep->widthMin() != 1, nodep);
         AstNode* lhsp = nodep->lhsp();
-        if (AstCCast* castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+        if (AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
         CONST_BITOP_RETURN_IF(!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, Xor) && !VN_IS(lhsp, RedXor)
                                   && !VN_IS(lhsp, ShiftR),
                               lhsp);
@@ -437,7 +438,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     }
     virtual void visit(AstWordSel* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
-        AstConst* constp = VN_CAST(nodep->bitp(), Const);
+        AstConst* const constp = VN_CAST(nodep->bitp(), Const);
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
         UASSERT_OBJ(m_leafp->m_wordIdx == -1, nodep, "Unexpected nested WordSel");
         m_leafp->m_wordIdx = constp->toSInt();
@@ -461,8 +462,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         Restorer restorer{*this};
         CONST_BITOP_RETURN_IF(!VN_IS(m_rootp, Xor), nodep);
         AstNode* lhsp = nodep->lhsp();
-        if (AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
-        if (AstAnd* const andp = VN_CAST(lhsp, And)) {  // '^(mask & leaf)'
+        if (const AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+        if (const AstAnd* const andp = VN_CAST(lhsp, And)) {  // '^(mask & leaf)'
             CONST_BITOP_RETURN_IF(!andp, lhsp);
 
             const LeafInfo& mask = findLeaf(andp->lhsp(), true);
@@ -524,7 +525,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                     // Revert changes in leaf
                     restorer.restoreNow();
                     // Reach past a cast then add to frozen nodes to be added to final reduction
-                    if (AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
+                    if (const AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
                     m_frozenNodes.push_back(opp);
                     m_failed = origFailed;
                     continue;
@@ -537,7 +538,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                     if (leafInfo.m_lsb < leafInfo.width()) {
                         m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.m_polarity,
                                                      leafInfo.m_lsb);
-                    } else if (isAndTree()) {
+                    } else if (isAndTree() && leafInfo.m_polarity) {
                         // If there is a constant 0 term in an And tree, we must include it. Fudge
                         // this by adding a bit with both polarities, which will simplify to zero
                         m_bitPolarities.emplace_back(leafInfo, true, 0);
@@ -548,15 +549,15 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         } else if ((isAndTree() && VN_IS(nodep, Eq)) || (isOrTree() && VN_IS(nodep, Neq))) {
             Restorer restorer{*this};
             CONST_BITOP_RETURN_IF(!m_polarity, nodep);
-            AstNode* lhsp = nodep->lhsp();
-            if (AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
-            AstConst* const constp = VN_CAST(lhsp, Const);
+            const AstNode* lhsp = nodep->lhsp();
+            if (const AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+            const AstConst* const constp = VN_CAST(lhsp, Const);
             CONST_BITOP_RETURN_IF(!constp, nodep->lhsp());
 
             const bool maskFlip = isOrTree();
             const V3Number& compNum = constp->num();
 
-            if (AstAnd* const andp = VN_CAST(nodep->rhsp(), And)) {  // comp == (mask & v)
+            if (const AstAnd* const andp = VN_CAST(nodep->rhsp(), And)) {  // comp == (mask & v)
                 const LeafInfo& mask = findLeaf(andp->lhsp(), true);
                 CONST_BITOP_RETURN_IF(!mask.m_constp || mask.m_lsb != 0, andp->lhsp());
 
@@ -571,7 +572,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 incrOps(andp, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.m_lsb + compNum.width(), ref.width());
+                const int maxBitIdx = std::min(ref.m_lsb + maskNum.width(), ref.width());
                 for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
                     const int maskIdx = bitIdx - ref.m_lsb;
                     if (maskNum.bitIs0(maskIdx)) continue;
@@ -636,7 +637,7 @@ public:
         UASSERT_OBJ(1 <= resultWidth && resultWidth <= 64, nodep, "resultWidth out of range");
 
         // Walk tree, gathering all terms referenced in expression
-        ConstBitOpTreeVisitor visitor{nodep, externalOps};
+        const ConstBitOpTreeVisitor visitor{nodep, externalOps};
 
         // If failed on root node is not optimizable, or there are no variable terms, then done
         if (visitor.m_failed || visitor.m_varInfos.size() == 1) return nullptr;
@@ -815,6 +816,7 @@ private:
     // AstEnum::user4           -> bool.  Recursing.
 
     // STATE
+    static constexpr bool m_doShort = true;  // Remove expressions that short circuit
     bool m_params = false;  // If true, propagate parameterized and true numbers only
     bool m_required = false;  // If true, must become a constant
     bool m_wremove = true;  // Inside scope, no assignw removal
@@ -822,14 +824,13 @@ private:
     bool m_doExpensive = false;  // Enable computationally expensive optimizations
     bool m_doCpp = false;  // Enable late-stage C++ optimizations
     bool m_doNConst = false;  // Enable non-constant-child simplifications
-    bool m_doShort = true;  // Remove expressions that short circuit
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
     bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstArraySel* m_selp = nullptr;  // Current select
-    AstNode* m_scopep = nullptr;  // Current scope
-    AstAttrOf* m_attrp = nullptr;  // Current attribute
+    const AstArraySel* m_selp = nullptr;  // Current select
+    const AstNode* m_scopep = nullptr;  // Current scope
+    const AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
@@ -841,10 +842,10 @@ private:
     bool operandConst(AstNode* nodep) { return VN_IS(nodep, Const); }
     bool operandAsvConst(const AstNode* nodep) {
         // BIASV(CONST, BIASV(CONST,...)) -> BIASV( BIASV_CONSTED(a,b), ...)
-        const AstNodeBiComAsv* bnodep = VN_CAST_CONST(nodep, NodeBiComAsv);
+        const AstNodeBiComAsv* const bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
         if (!VN_IS(bnodep->lhsp(), Const)) return false;
-        const AstNodeBiComAsv* rnodep = VN_CAST_CONST(bnodep->rhsp(), NodeBiComAsv);
+        const AstNodeBiComAsv* const rnodep = VN_CAST(bnodep->rhsp(), NodeBiComAsv);
         if (!rnodep) return false;
         if (rnodep->type() != bnodep->type()) return false;
         if (rnodep->width() != bnodep->width()) return false;
@@ -854,9 +855,9 @@ private:
     }
     bool operandAsvSame(const AstNode* nodep) {
         // BIASV(SAMEa, BIASV(SAMEb,...)) -> BIASV( BIASV(SAMEa,SAMEb), ...)
-        const AstNodeBiComAsv* bnodep = VN_CAST_CONST(nodep, NodeBiComAsv);
+        const AstNodeBiComAsv* const bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
-        const AstNodeBiComAsv* rnodep = VN_CAST_CONST(bnodep->rhsp(), NodeBiComAsv);
+        const AstNodeBiComAsv* const rnodep = VN_CAST(bnodep->rhsp(), NodeBiComAsv);
         if (!rnodep) return false;
         if (rnodep->type() != bnodep->type()) return false;
         if (rnodep->width() != bnodep->width()) return false;
@@ -873,9 +874,9 @@ private:
         // BIASV(CONST_a_c,BIASV(c...,d...)))
         //
         // Idea for the future: All BiComAsvs could be lists, sorted by if they're constant
-        const AstNodeBiComAsv* bnodep = VN_CAST_CONST(nodep, NodeBiComAsv);
+        const AstNodeBiComAsv* const bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
-        const AstNodeBiComAsv* lnodep = VN_CAST_CONST(bnodep->lhsp(), NodeBiComAsv);
+        const AstNodeBiComAsv* const lnodep = VN_CAST(bnodep->lhsp(), NodeBiComAsv);
         if (!lnodep) return false;
         if (lnodep->type() != bnodep->type()) return false;
         if (lnodep->width() != bnodep->width()) return false;
@@ -883,9 +884,9 @@ private:
     }
     bool operandAsvRUp(const AstNode* nodep) {
         // BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr)) ?
-        const AstNodeBiComAsv* bnodep = VN_CAST_CONST(nodep, NodeBiComAsv);
+        const AstNodeBiComAsv* const bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
-        const AstNodeBiComAsv* rnodep = VN_CAST_CONST(bnodep->rhsp(), NodeBiComAsv);
+        const AstNodeBiComAsv* const rnodep = VN_CAST(bnodep->rhsp(), NodeBiComAsv);
         if (!rnodep) return false;
         if (rnodep->type() != bnodep->type()) return false;
         if (rnodep->width() != bnodep->width()) return false;
@@ -893,8 +894,8 @@ private:
     }
     static bool operandSubAdd(const AstNode* nodep) {
         // SUB( ADD(CONSTx,y), CONSTz) -> ADD(SUB(CONSTx,CONSTz), y)
-        const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
-        const AstNodeBiop* lp = VN_CAST_CONST(np->lhsp(), NodeBiop);
+        const AstNodeBiop* const np = VN_CAST(nodep, NodeBiop);
+        const AstNodeBiop* const lp = VN_CAST(np->lhsp(), NodeBiop);
         return (lp && VN_IS(lp->lhsp(), Const) && VN_IS(np->rhsp(), Const)
                 && lp->width() == np->width());
     }
@@ -902,15 +903,15 @@ private:
         // Remove And with constant one inserted by V3Clean
         // 1 & (a == b)  -> (IData)(a == b)
         // When bool is casted to int, the value is either 0 or 1
-        AstConst* constp = VN_CAST(andp->lhsp(), Const);
+        AstConst* const constp = VN_AS(andp->lhsp(), Const);
         UASSERT_OBJ(constp && constp->isOne(), andp->lhsp(), "TRREEOPC must meet this condition");
-        AstNode* rhsp = andp->rhsp();
+        AstNode* const rhsp = andp->rhsp();
         AstCCast* ccastp = nullptr;
-        auto isEqOrNeq
+        const auto isEqOrNeq
             = [](AstNode* nodep) -> bool { return VN_IS(nodep, Eq) || VN_IS(nodep, Neq); };
         if (isEqOrNeq(rhsp)) {
             ccastp = new AstCCast{andp->fileline(), rhsp->unlinkFrBack(), andp};
-        } else if (AstCCast* tmpp = VN_CAST(rhsp, CCast)) {
+        } else if (AstCCast* const tmpp = VN_CAST(rhsp, CCast)) {
             if (isEqOrNeq(tmpp->lhsp())) {
                 if (tmpp->width() == andp->width()) {
                     tmpp->unlinkFrBack();
@@ -931,9 +932,9 @@ private:
     static bool operandAndOrSame(const AstNode* nodep) {
         // OR( AND(VAL,x), AND(VAL,y)) -> AND(VAL,OR(x,y))
         // OR( AND(x,VAL), AND(y,VAL)) -> AND(OR(x,y),VAL)
-        const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
-        const AstNodeBiop* lp = VN_CAST_CONST(np->lhsp(), NodeBiop);
-        const AstNodeBiop* rp = VN_CAST_CONST(np->rhsp(), NodeBiop);
+        const AstNodeBiop* const np = VN_CAST(nodep, NodeBiop);
+        const AstNodeBiop* const lp = VN_CAST(np->lhsp(), NodeBiop);
+        const AstNodeBiop* const rp = VN_CAST(np->rhsp(), NodeBiop);
         return (lp && rp && lp->width() == rp->width() && lp->type() == rp->type()
                 && (operandsSame(lp->lhsp(), rp->lhsp()) || operandsSame(lp->rhsp(), rp->rhsp())));
     }
@@ -945,24 +946,25 @@ private:
         AstNode* ap;
         AstNodeBiop* andp;
         if (VN_IS(nodep->lhsp(), And)) {
-            andp = VN_CAST(nodep->lhsp(), And);
+            andp = VN_AS(nodep->lhsp(), And);
             ap = nodep->rhsp();
         } else if (VN_IS(nodep->rhsp(), And)) {
-            andp = VN_CAST(nodep->rhsp(), And);
+            andp = VN_AS(nodep->rhsp(), And);
             ap = nodep->lhsp();
         } else
             return false;
-        AstNodeUniop* notp;
+        const AstNodeUniop* notp;
         AstNode* cp;
         if (VN_IS(andp->lhsp(), Not)) {
-            notp = VN_CAST(andp->lhsp(), Not);
+            notp = VN_AS(andp->lhsp(), Not);
             cp = andp->rhsp();
         } else if (VN_IS(andp->rhsp(), Not)) {
-            notp = VN_CAST(andp->rhsp(), Not);
+            notp = VN_AS(andp->rhsp(), Not);
             cp = andp->lhsp();
-        } else
+        } else {
             return false;
-        AstNode* bp = notp->lhsp();
+        }
+        AstNode* const bp = notp->lhsp();
         if (!operandsSame(ap, bp)) return false;
         // Do it
         cp->unlinkFrBack();
@@ -981,14 +983,14 @@ private:
         // (otherwise we'd be trading one operation for two operations)
         // V3Clean often makes this pattern, as it postpones the AND until
         // as high as possible, which is usally the right choice, except for this.
-        AstNodeCond* condp = VN_CAST(nodep->rhsp(), NodeCond);
+        AstNodeCond* const condp = VN_CAST(nodep->rhsp(), NodeCond);
         if (!condp) return false;
         if (!VN_IS(condp->expr1p(), Const) && !VN_IS(condp->expr2p(), Const)) return false;
-        AstConst* maskp = VN_CAST(nodep->lhsp(), Const);
+        AstConst* const maskp = VN_CAST(nodep->lhsp(), Const);
         if (!maskp) return false;
         UINFO(4, "AND(CONSTm, CONDcond(c, i, e))->CONDcond(c, AND(m,i), AND(m, e)) " << nodep
                                                                                      << endl);
-        AstNodeCond* newp = static_cast<AstNodeCond*>(
+        AstNodeCond* const newp = static_cast<AstNodeCond*>(
             condp->cloneType(condp->condp()->unlinkFrBack(),
                              new AstAnd(nodep->fileline(), maskp->cloneTree(false),
                                         condp->expr1p()->unlinkFrBack()),
@@ -1007,16 +1009,16 @@ private:
         // 0xff & (a << 8 | b >> 24) --> 0xff & (b >> 24)
 
         // Compute how many significant bits are in the mask
-        const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
+        const AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         const uint32_t significantBits = constp->num().widthMin();
 
-        AstOr* const orp = VN_CAST(nodep->rhsp(), Or);
+        AstOr* const orp = VN_AS(nodep->rhsp(), Or);
 
         // Predicate for checking whether the bottom 'significantBits' bits of the given expression
         // are all zeroes.
         const auto checkBottomClear = [=](const AstNode* nodep) -> bool {
-            if (const AstShiftL* const shiftp = VN_CAST_CONST(nodep, ShiftL)) {
-                if (const AstConst* const scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+            if (const AstShiftL* const shiftp = VN_CAST(nodep, ShiftL)) {
+                if (const AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                     return scp->num().toUInt() >= significantBits;
                 }
             }
@@ -1049,7 +1051,7 @@ private:
         // drop redundant masking of left shift result. E.g.: 0xff000000 & ((uint32_t)a << 24).
 
         const auto checkMask = [=](const V3Number& mask) -> bool {
-            const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
+            const AstConst* const constp = VN_AS(nodep->lhsp(), Const);
             if (constp->num().isCaseEq(mask)) {
                 AstNode* const rhsp = nodep->rhsp();
                 rhsp->unlinkFrBack();
@@ -1062,15 +1064,15 @@ private:
         };
 
         // Check if masking is redundant
-        if (AstShiftR* const shiftp = VN_CAST(nodep->rhsp(), ShiftR)) {
-            if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+        if (const AstShiftR* const shiftp = VN_CAST(nodep->rhsp(), ShiftR)) {
+            if (const AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                 // Check if mask is full over the non-zero bits
                 V3Number maskLo(nodep, nodep->width());
                 maskLo.setMask(nodep->width() - scp->num().toUInt());
                 return checkMask(maskLo);
             }
-        } else if (AstShiftL* const shiftp = VN_CAST(nodep->rhsp(), ShiftL)) {
-            if (const AstConst* scp = VN_CAST_CONST(shiftp->rhsp(), Const)) {
+        } else if (const AstShiftL* const shiftp = VN_CAST(nodep->rhsp(), ShiftL)) {
+            if (const AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                 // Check if mask is full over the non-zero bits
                 V3Number maskLo(nodep, nodep->width());
                 V3Number maskHi(nodep, nodep->width());
@@ -1121,18 +1123,18 @@ private:
         return newp;
     }
     static bool operandShiftSame(const AstNode* nodep) {
-        const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
+        const AstNodeBiop* const np = VN_AS(nodep, NodeBiop);
         {
-            const AstShiftL* lp = VN_CAST_CONST(np->lhsp(), ShiftL);
-            const AstShiftL* rp = VN_CAST_CONST(np->rhsp(), ShiftL);
+            const AstShiftL* const lp = VN_CAST(np->lhsp(), ShiftL);
+            const AstShiftL* const rp = VN_CAST(np->rhsp(), ShiftL);
             if (lp && rp) {
                 return (lp->width() == rp->width() && lp->lhsp()->width() == rp->lhsp()->width()
                         && operandsSame(lp->rhsp(), rp->rhsp()));
             }
         }
         {
-            const AstShiftR* lp = VN_CAST_CONST(np->lhsp(), ShiftR);
-            const AstShiftR* rp = VN_CAST_CONST(np->rhsp(), ShiftR);
+            const AstShiftR* const lp = VN_CAST(np->lhsp(), ShiftR);
+            const AstShiftR* const rp = VN_CAST(np->rhsp(), ShiftR);
             if (lp && rp) {
                 return (lp->width() == rp->width() && lp->lhsp()->width() == rp->lhsp()->width()
                         && operandsSame(lp->rhsp(), rp->rhsp()));
@@ -1141,33 +1143,30 @@ private:
         return false;
     }
     bool operandHugeShiftL(const AstNodeBiop* nodep) {
-        return (VN_IS(nodep->rhsp(), Const)
-                && !VN_CAST_CONST(nodep->rhsp(), Const)->num().isFourState()
-                && (VN_CAST_CONST(nodep->rhsp(), Const)->toUInt()
-                    >= static_cast<uint32_t>(nodep->width()))
+        return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
+                && (VN_AS(nodep->rhsp(), Const)->toUInt() >= static_cast<uint32_t>(nodep->width()))
                 && isTPure(nodep->lhsp()));
     }
     bool operandHugeShiftR(const AstNodeBiop* nodep) {
-        return (VN_IS(nodep->rhsp(), Const)
-                && !VN_CAST_CONST(nodep->rhsp(), Const)->num().isFourState()
-                && (VN_CAST_CONST(nodep->rhsp(), Const)->toUInt()
+        return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
+                && (VN_AS(nodep->rhsp(), Const)->toUInt()
                     >= static_cast<uint32_t>(nodep->lhsp()->width()))
                 && isTPure(nodep->lhsp()));
     }
     bool operandIsTwo(const AstNode* nodep) {
-        return (VN_IS(nodep, Const) && !VN_CAST_CONST(nodep, Const)->num().isFourState()
-                && nodep->width() <= VL_QUADSIZE && VN_CAST_CONST(nodep, Const)->toUQuad() == 2);
+        return (VN_IS(nodep, Const) && !VN_AS(nodep, Const)->num().isFourState()
+                && nodep->width() <= VL_QUADSIZE && VN_AS(nodep, Const)->toUQuad() == 2);
     }
     bool operandIsTwostate(const AstNode* nodep) {
-        return (VN_IS(nodep, Const) && !VN_CAST_CONST(nodep, Const)->num().isFourState());
+        return (VN_IS(nodep, Const) && !VN_AS(nodep, Const)->num().isFourState());
     }
     bool operandIsPowTwo(const AstNode* nodep) {
         if (!operandIsTwostate(nodep)) return false;
-        return (1 == VN_CAST_CONST(nodep, Const)->num().countOnes());
+        return (1 == VN_AS(nodep, Const)->num().countOnes());
     }
     bool operandShiftOp(const AstNodeBiop* nodep) {
         if (!VN_IS(nodep->rhsp(), Const)) return false;
-        const AstNodeBiop* lhsp = VN_CAST(nodep->lhsp(), NodeBiop);
+        const AstNodeBiop* const lhsp = VN_CAST(nodep->lhsp(), NodeBiop);
         if (!lhsp || !(VN_IS(lhsp, And) || VN_IS(lhsp, Or) || VN_IS(lhsp, Xor))) return false;
         if (nodep->width() != lhsp->width()) return false;
         if (nodep->width() != lhsp->lhsp()->width()) return false;
@@ -1176,13 +1175,13 @@ private:
     }
     bool operandShiftShift(const AstNodeBiop* nodep) {
         // We could add a AND though.
-        const AstNodeBiop* lhsp = VN_CAST(nodep->lhsp(), NodeBiop);
+        const AstNodeBiop* const lhsp = VN_CAST(nodep->lhsp(), NodeBiop);
         if (!lhsp || !(VN_IS(lhsp, ShiftL) || VN_IS(lhsp, ShiftR))) return false;
         // We can only get rid of a<<b>>c or a<<b<<c, with constant b & c
         // because bits may be masked in that process, or (b+c) may exceed the word width.
         if (!(VN_IS(nodep->rhsp(), Const) && VN_IS(lhsp->rhsp(), Const))) return false;
-        if (VN_CAST_CONST(nodep->rhsp(), Const)->num().isFourState()
-            || VN_CAST_CONST(lhsp->rhsp(), Const)->num().isFourState())
+        if (VN_AS(nodep->rhsp(), Const)->num().isFourState()
+            || VN_AS(lhsp->rhsp(), Const)->num().isFourState())
             return false;
         if (nodep->width() != lhsp->width()) return false;
         if (nodep->width() != lhsp->lhsp()->width()) return false;
@@ -1193,9 +1192,9 @@ private:
         // It was an expression, then got constified.  In reality, the WordSel
         // must be wrapped in a Cond, that will be false.
         return (VN_IS(nodep->rhsp(), Const) && VN_IS(nodep->fromp(), NodeVarRef)
-                && VN_CAST_CONST(nodep->fromp(), NodeVarRef)->access().isReadOnly()
-                && (static_cast<int>(VN_CAST_CONST(nodep->rhsp(), Const)->toUInt())
-                    >= VN_CAST(nodep->fromp(), NodeVarRef)->varp()->widthWords()));
+                && VN_AS(nodep->fromp(), NodeVarRef)->access().isReadOnly()
+                && (static_cast<int>(VN_AS(nodep->rhsp(), Const)->toUInt())
+                    >= VN_AS(nodep->fromp(), NodeVarRef)->varp()->widthWords()));
     }
     bool operandSelFull(const AstSel* nodep) {
         return (VN_IS(nodep->lsbp(), Const) && VN_IS(nodep->widthp(), Const)
@@ -1206,7 +1205,7 @@ private:
         // A pattern created by []'s after offsets have been removed
         // SEL(EXTEND(any,width,...),(width-1),0) -> ...
         // Since select's return unsigned, this is always an extend
-        AstExtend* extendp = VN_CAST(nodep->fromp(), Extend);
+        AstExtend* const extendp = VN_CAST(nodep->fromp(), Extend);
         if (!(m_doV && extendp && VN_IS(nodep->lsbp(), Const) && VN_IS(nodep->widthp(), Const)
               && nodep->lsbConst() == 0
               && static_cast<int>(nodep->widthConst()) == extendp->lhsp()->width()))
@@ -1217,13 +1216,13 @@ private:
     bool operandSelBiLower(AstSel* nodep) {
         // SEL(ADD(a,b),(width-1),0) -> ADD(SEL(a),SEL(b))
         // Add or any operation which doesn't care if we discard top bits
-        AstNodeBiop* bip = VN_CAST(nodep->fromp(), NodeBiop);
+        AstNodeBiop* const bip = VN_CAST(nodep->fromp(), NodeBiop);
         if (!(m_doV && bip && VN_IS(nodep->lsbp(), Const) && VN_IS(nodep->widthp(), Const)
               && nodep->lsbConst() == 0))
             return false;
         if (debug() >= 9) nodep->dumpTree(cout, "SEL(BI)-in:");
-        AstNode* bilhsp = bip->lhsp()->unlinkFrBack();
-        AstNode* birhsp = bip->rhsp()->unlinkFrBack();
+        AstNode* const bilhsp = bip->lhsp()->unlinkFrBack();
+        AstNode* const birhsp = bip->rhsp()->unlinkFrBack();
         bip->lhsp(new AstSel(nodep->fileline(), bilhsp, 0, nodep->widthConst()));
         bip->rhsp(new AstSel(nodep->fileline(), birhsp, 0, nodep->widthConst()));
         if (debug() >= 9) bip->dumpTree(cout, "SEL(BI)-ou:");
@@ -1234,14 +1233,14 @@ private:
         // AND({a}, SHIFTR({b}, {c})) is often shorthand in C for Verilog {b}[{c} :+ {a}]
         // becomes thought other optimizations
         // SEL(SHIFTR({a},{b}),{lsb},{width}) -> SEL({a},{lsb+b},{width})
-        AstShiftR* shiftp = VN_CAST(nodep->fromp(), ShiftR);
+        AstShiftR* const shiftp = VN_CAST(nodep->fromp(), ShiftR);
         if (!(m_doV && shiftp && VN_IS(shiftp->rhsp(), Const) && VN_IS(nodep->lsbp(), Const)
               && VN_IS(nodep->widthp(), Const))) {
             return false;
         }
-        AstNode* ap = shiftp->lhsp();
-        AstConst* bp = VN_CAST(shiftp->rhsp(), Const);
-        AstConst* lp = VN_CAST(nodep->lsbp(), Const);
+        AstNode* const ap = shiftp->lhsp();
+        AstConst* const bp = VN_AS(shiftp->rhsp(), Const);
+        AstConst* const lp = VN_AS(nodep->lsbp(), Const);
         if (bp->isWide() || bp->num().isFourState() || bp->num().isNegative() || lp->isWide()
             || lp->num().isFourState() || lp->num().isNegative()) {
             return false;
@@ -1251,7 +1250,7 @@ private:
         //
         UINFO(9, "SEL(SHIFTR(a,b),l,w) -> SEL(a,l+b,w)\n");
         if (debug() >= 9) nodep->dumpTree(cout, "SEL(SH)-in:");
-        AstSel* newp
+        AstSel* const newp
             = new AstSel(nodep->fileline(), ap->unlinkFrBack(), newLsb, nodep->widthConst());
         newp->dtypeFrom(nodep);
         if (debug() >= 9) newp->dumpTree(cout, "SEL(SH)-ou:");
@@ -1264,11 +1263,11 @@ private:
         // EQ(const{width32}, EXTEND(xx{width3})) -> EQ(const{3}, xx{3})
         // The constant must have zero bits (+ 1 if signed) or compare
         // would be incorrect. See also operandBiExtendConst
-        AstExtend* extendp = VN_CAST(nodep->rhsp(), Extend);
+        AstExtend* const extendp = VN_CAST(nodep->rhsp(), Extend);
         if (!extendp) return false;
-        AstNode* smallerp = extendp->lhsp();
+        AstNode* const smallerp = extendp->lhsp();
         const int subsize = smallerp->width();
-        AstConst* constp = VN_CAST(nodep->lhsp(), Const);
+        AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
         if (!constp) return false;
         if (!constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
         //
@@ -1289,11 +1288,11 @@ private:
         // EQ(const{width32}, EXTEND(xx{width3})) -> constant
         // When the constant has non-zero bits above the extend it's a constant.
         // Avoids compiler warning
-        const AstExtend* extendp = VN_CAST_CONST(nodep->rhsp(), Extend);
+        const AstExtend* const extendp = VN_CAST(nodep->rhsp(), Extend);
         if (!extendp) return false;
-        AstNode* smallerp = extendp->lhsp();
+        AstNode* const smallerp = extendp->lhsp();
         const int subsize = smallerp->width();
-        const AstConst* constp = VN_CAST_CONST(nodep->lhsp(), Const);
+        const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
         if (!constp) return false;
         if (constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
         return true;
@@ -1336,8 +1335,8 @@ private:
         if (m_warn && VN_IS(nodep->lsbp(), Const) && VN_IS(nodep->widthp(), Const) && doit) {
             const int maxDeclBit = nodep->declRange().hiMaxSelect() * nodep->declElWidth()
                                    + (nodep->declElWidth() - 1);
-            if (VN_CAST(nodep->lsbp(), Const)->num().isFourState()
-                || VN_CAST(nodep->widthp(), Const)->num().isFourState()) {
+            if (VN_AS(nodep->lsbp(), Const)->num().isFourState()
+                || VN_AS(nodep->widthp(), Const)->num().isFourState()) {
                 nodep->v3error("Selection index is constantly unknown or tristated: "
                                "lsb="
                                << nodep->lsbp()->name() << " width=" << nodep->widthp()->name());
@@ -1387,8 +1386,8 @@ private:
         }
     }
     bool ifSameAssign(const AstNodeIf* nodep) {
-        const AstNodeAssign* ifp = VN_CAST_CONST(nodep->ifsp(), NodeAssign);
-        const AstNodeAssign* elsep = VN_CAST_CONST(nodep->elsesp(), NodeAssign);
+        const AstNodeAssign* const ifp = VN_CAST(nodep->ifsp(), NodeAssign);
+        const AstNodeAssign* const elsep = VN_CAST(nodep->elsesp(), NodeAssign);
         if (!ifp || ifp->nextp()) return false;  // Must be SINGLE statement
         if (!elsep || elsep->nextp()) return false;
         if (ifp->type() != elsep->type()) return false;  // Can't mix an assigndly and an assign
@@ -1399,7 +1398,7 @@ private:
     }
     bool operandIfIf(const AstNodeIf* nodep) {
         if (nodep->elsesp()) return false;
-        const AstNodeIf* lowerIfp = VN_CAST_CONST(nodep->ifsp(), NodeIf);
+        const AstNodeIf* const lowerIfp = VN_CAST(nodep->ifsp(), NodeIf);
         if (!lowerIfp || lowerIfp->nextp()) return false;
         if (nodep->type() != lowerIfp->type()) return false;
         if (afterComment(lowerIfp->elsesp())) return false;
@@ -1411,13 +1410,13 @@ private:
     bool ifAdjacentSel(const AstSel* lhsp, const AstSel* rhsp) {
         if (!v3Global.opt.oAssemble()) return false;  // opt disabled
         if (!lhsp || !rhsp) return false;
-        const AstNode* lfromp = lhsp->fromp();
-        const AstNode* rfromp = rhsp->fromp();
+        const AstNode* const lfromp = lhsp->fromp();
+        const AstNode* const rfromp = rhsp->fromp();
         if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
-        const AstConst* lstart = VN_CAST_CONST(lhsp->lsbp(), Const);
-        const AstConst* rstart = VN_CAST_CONST(rhsp->lsbp(), Const);
-        const AstConst* lwidth = VN_CAST_CONST(lhsp->widthp(), Const);
-        const AstConst* rwidth = VN_CAST_CONST(rhsp->widthp(), Const);
+        const AstConst* const lstart = VN_CAST(lhsp->lsbp(), Const);
+        const AstConst* const rstart = VN_CAST(rhsp->lsbp(), Const);
+        const AstConst* const lwidth = VN_CAST(lhsp->widthp(), Const);
+        const AstConst* const rwidth = VN_CAST(rhsp->widthp(), Const);
         if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
         const int rend = (rstart->toSInt() + rwidth->toSInt());
         return (rend == lstart->toSInt());
@@ -1427,8 +1426,8 @@ private:
         if (!v3Global.opt.oAssemble()) return false;  // opt disabled
         // two same varref
         if (operandsSame(lhsp, rhsp)) return true;
-        AstSel* lselp = VN_CAST(lhsp, Sel);
-        AstSel* rselp = VN_CAST(rhsp, Sel);
+        const AstSel* lselp = VN_CAST(lhsp, Sel);
+        const AstSel* rselp = VN_CAST(rhsp, Sel);
         // a[i:0] a
         if (lselp && !rselp && rhsp->sameGateTree(lselp->fromp()))
             rselp = new AstSel(rhsp->fileline(), rhsp->cloneTree(false), 0, rhsp->width());
@@ -1444,13 +1443,13 @@ private:
         if (!lselp || !rselp) return false;
 
         // a[a:b] a[b-1:c] are adjacent
-        AstNode* lfromp = lselp->fromp();
-        AstNode* rfromp = rselp->fromp();
+        AstNode* const lfromp = lselp->fromp();
+        AstNode* const rfromp = rselp->fromp();
         if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
-        AstConst* lstart = VN_CAST(lselp->lsbp(), Const);
-        AstConst* rstart = VN_CAST(rselp->lsbp(), Const);
-        AstConst* lwidth = VN_CAST(lselp->widthp(), Const);
-        AstConst* rwidth = VN_CAST(rselp->widthp(), Const);
+        AstConst* const lstart = VN_CAST(lselp->lsbp(), Const);
+        AstConst* const rstart = VN_CAST(rselp->lsbp(), Const);
+        AstConst* const lwidth = VN_CAST(lselp->widthp(), Const);
+        AstConst* const rwidth = VN_CAST(rselp->widthp(), Const);
         if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
         const int rend = (rstart->toSInt() + rwidth->toSInt());
         // a[i:j] a[j-1:k]
@@ -1465,8 +1464,8 @@ private:
         if (lhsp->type() != rhsp->type()) return false;
         if (!ifConcatMergeableBiop(lhsp)) return false;
 
-        const AstNodeBiop* lp = VN_CAST_CONST(lhsp, NodeBiop);
-        const AstNodeBiop* rp = VN_CAST_CONST(rhsp, NodeBiop);
+        const AstNodeBiop* const lp = VN_CAST(lhsp, NodeBiop);
+        const AstNodeBiop* const rp = VN_CAST(rhsp, NodeBiop);
         if (!lp || !rp) return false;
         // {a[]&b[], a[]&b[]}
         const bool lad = ifMergeAdjacent(lp->lhsp(), rp->lhsp());
@@ -1491,9 +1490,9 @@ private:
     void replaceNum(AstNode* oldp, const V3Number& num) {
         // Replace oldp node with a constant set to specified value
         UASSERT(oldp, "Null old");
-        UASSERT_OBJ(!(VN_IS(oldp, Const) && !VN_CAST(oldp, Const)->num().isFourState()), oldp,
+        UASSERT_OBJ(!(VN_IS(oldp, Const) && !VN_AS(oldp, Const)->num().isFourState()), oldp,
                     "Already constant??");
-        AstNode* newp = new AstConst(oldp->fileline(), num);
+        AstNode* const newp = new AstConst(oldp->fileline(), num);
         newp->dtypeFrom(oldp);
         if (debug() > 5) oldp->dumpTree(cout, "  const_old: ");
         if (debug() > 5) newp->dumpTree(cout, "       _new: ");
@@ -1525,8 +1524,8 @@ private:
         if (isTPure(checkp)) {
             VL_DO_DANGLING(replaceNum(nodep, 0), nodep);
         } else {
-            AstNode* newp = new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), 0),
-                                       checkp->unlinkFrBack());
+            AstNode* const newp = new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), 0),
+                                             checkp->unlinkFrBack());
             newp->dtypeFrom(nodep);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1539,30 +1538,30 @@ private:
     }
     void replaceConst(AstNodeUniop* nodep) {
         V3Number num(nodep, nodep->width());
-        nodep->numberOperate(num, VN_CAST(nodep->lhsp(), Const)->num());
+        nodep->numberOperate(num, VN_AS(nodep->lhsp(), Const)->num());
         UINFO(4, "UNICONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeBiop* nodep) {
         V3Number num(nodep, nodep->width());
-        nodep->numberOperate(num, VN_CAST(nodep->lhsp(), Const)->num(),
-                             VN_CAST(nodep->rhsp(), Const)->num());
+        nodep->numberOperate(num, VN_AS(nodep->lhsp(), Const)->num(),
+                             VN_AS(nodep->rhsp(), Const)->num());
         UINFO(4, "BICONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeTriop* nodep) {
         V3Number num(nodep, nodep->width());
-        nodep->numberOperate(num, VN_CAST(nodep->lhsp(), Const)->num(),
-                             VN_CAST(nodep->rhsp(), Const)->num(),
-                             VN_CAST(nodep->thsp(), Const)->num());
+        nodep->numberOperate(num, VN_AS(nodep->lhsp(), Const)->num(),
+                             VN_AS(nodep->rhsp(), Const)->num(),
+                             VN_AS(nodep->thsp(), Const)->num());
         UINFO(4, "TRICONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeQuadop* nodep) {
         V3Number num(nodep, nodep->width());
         nodep->numberOperate(
-            num, VN_CAST(nodep->lhsp(), Const)->num(), VN_CAST(nodep->rhsp(), Const)->num(),
-            VN_CAST(nodep->thsp(), Const)->num(), VN_CAST(nodep->fhsp(), Const)->num());
+            num, VN_AS(nodep->lhsp(), Const)->num(), VN_AS(nodep->rhsp(), Const)->num(),
+            VN_AS(nodep->thsp(), Const)->num(), VN_AS(nodep->fhsp(), Const)->num());
         UINFO(4, "QUADCONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
@@ -1570,7 +1569,7 @@ private:
     void replaceConstString(AstNode* oldp, const string& num) {
         // Replace oldp node with a constant set to specified value
         UASSERT(oldp, "Null old");
-        AstNode* newp = new AstConst(oldp->fileline(), AstConst::String(), num);
+        AstNode* const newp = new AstConst(oldp->fileline(), AstConst::String(), num);
         if (debug() > 5) oldp->dumpTree(cout, "  const_old: ");
         if (debug() > 5) newp->dumpTree(cout, "       _new: ");
         oldp->replaceWith(newp);
@@ -1593,14 +1592,14 @@ private:
     //! Replace a ternary node with its RHS after iterating
     //! Used with short-circuiting, where the RHS has not yet been iterated.
     void replaceWIteratedRhs(AstNodeTriop* nodep) {
-        if (AstNode* rhsp = nodep->rhsp()) iterateAndNextNull(rhsp);
+        if (AstNode* const rhsp = nodep->rhsp()) iterateAndNextNull(rhsp);
         replaceWChild(nodep, nodep->rhsp());  // May have changed
     }
 
     //! Replace a ternary node with its THS after iterating
     //! Used with short-circuiting, where the THS has not yet been iterated.
     void replaceWIteratedThs(AstNodeTriop* nodep) {
-        if (AstNode* thsp = nodep->thsp()) iterateAndNextNull(thsp);
+        if (AstNode* const thsp = nodep->thsp()) iterateAndNextNull(thsp);
         replaceWChild(nodep, nodep->thsp());  // May have changed
     }
     void replaceWLhs(AstNodeUniop* nodep) {
@@ -1619,10 +1618,10 @@ private:
         // BIASV(CONSTa, BIASV(CONSTb, c)) -> BIASV( BIASV_CONSTED(a,b), c)
         // BIASV(SAMEa,  BIASV(SAMEb, c))  -> BIASV( BIASV(SAMEa,SAMEb), c)
         // nodep->dumpTree(cout, "  repAsvConst_old: ");
-        AstNode* ap = nodep->lhsp();
-        AstNodeBiop* rp = VN_CAST(nodep->rhsp(), NodeBiop);
-        AstNode* bp = rp->lhsp();
-        AstNode* cp = rp->rhsp();
+        AstNode* const ap = nodep->lhsp();
+        AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
+        AstNode* const bp = rp->lhsp();
+        AstNode* const cp = rp->rhsp();
         ap->unlinkFrBack();
         bp->unlinkFrBack();
         cp->unlinkFrBack();
@@ -1636,10 +1635,10 @@ private:
     }
     void replaceAsvLUp(AstNodeBiop* nodep) {
         // BIASV(BIASV(CONSTll,lr),r) -> BIASV(CONSTll,BIASV(lr,r))
-        AstNodeBiop* lp = VN_CAST(nodep->lhsp()->unlinkFrBack(), NodeBiop);
-        AstNode* llp = lp->lhsp()->unlinkFrBack();
-        AstNode* lrp = lp->rhsp()->unlinkFrBack();
-        AstNode* rp = nodep->rhsp()->unlinkFrBack();
+        AstNodeBiop* const lp = VN_AS(nodep->lhsp()->unlinkFrBack(), NodeBiop);
+        AstNode* const llp = lp->lhsp()->unlinkFrBack();
+        AstNode* const lrp = lp->rhsp()->unlinkFrBack();
+        AstNode* const rp = nodep->rhsp()->unlinkFrBack();
         nodep->lhsp(llp);
         nodep->rhsp(lp);
         lp->lhsp(lrp);
@@ -1648,10 +1647,10 @@ private:
     }
     void replaceAsvRUp(AstNodeBiop* nodep) {
         // BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr))
-        AstNode* lp = nodep->lhsp()->unlinkFrBack();
-        AstNodeBiop* rp = VN_CAST(nodep->rhsp()->unlinkFrBack(), NodeBiop);
-        AstNode* rlp = rp->lhsp()->unlinkFrBack();
-        AstNode* rrp = rp->rhsp()->unlinkFrBack();
+        AstNode* const lp = nodep->lhsp()->unlinkFrBack();
+        AstNodeBiop* const rp = VN_AS(nodep->rhsp()->unlinkFrBack(), NodeBiop);
+        AstNode* const rlp = rp->lhsp()->unlinkFrBack();
+        AstNode* const rrp = rp->rhsp()->unlinkFrBack();
         nodep->lhsp(rlp);
         nodep->rhsp(rp);
         rp->lhsp(lp);
@@ -1663,16 +1662,17 @@ private:
         //  OR  (AND (CONSTll,lr), AND(CONSTrl,    rr=lr)) -> AND (OR(ll,rl), rr)
         // nodep ^lp  ^llp   ^lrp  ^rp  ^rlp       ^rrp
         // (Or/And may also be reversed)
-        AstNodeBiop* lp = VN_CAST(nodep->lhsp()->unlinkFrBack(), NodeBiop);
-        AstNode* llp = lp->lhsp()->unlinkFrBack();
-        AstNode* lrp = lp->rhsp()->unlinkFrBack();
-        AstNodeBiop* rp = VN_CAST(nodep->rhsp()->unlinkFrBack(), NodeBiop);
-        AstNode* rlp = rp->lhsp()->unlinkFrBack();
-        AstNode* rrp = rp->rhsp()->unlinkFrBack();
+        AstNodeBiop* const lp = VN_AS(nodep->lhsp()->unlinkFrBack(), NodeBiop);
+        AstNode* const llp = lp->lhsp()->unlinkFrBack();
+        AstNode* const lrp = lp->rhsp()->unlinkFrBack();
+        AstNodeBiop* const rp = VN_AS(nodep->rhsp()->unlinkFrBack(), NodeBiop);
+        AstNode* const rlp = rp->lhsp()->unlinkFrBack();
+        AstNode* const rrp = rp->rhsp()->unlinkFrBack();
         nodep->replaceWith(lp);
         if (operandsSame(llp, rlp)) {
             lp->lhsp(llp);
             lp->rhsp(nodep);
+            lp->dtypeFrom(nodep);
             nodep->lhsp(lrp);
             nodep->rhsp(rrp);
             VL_DO_DANGLING(rp->deleteTree(), rp);
@@ -1680,6 +1680,7 @@ private:
         } else if (operandsSame(lrp, rrp)) {
             lp->lhsp(nodep);
             lp->rhsp(rrp);
+            lp->dtypeFrom(nodep);
             nodep->lhsp(llp);
             nodep->rhsp(rlp);
             VL_DO_DANGLING(rp->deleteTree(), rp);
@@ -1692,12 +1693,12 @@ private:
     void replaceShiftSame(AstNodeBiop* nodep) {
         // Or(Shift(ll,CONSTlr),Shift(rl,CONSTrr==lr)) -> Shift(Or(ll,rl),CONSTlr)
         // (Or/And may also be reversed)
-        AstNodeBiop* lp = VN_CAST(nodep->lhsp()->unlinkFrBack(), NodeBiop);
-        AstNode* llp = lp->lhsp()->unlinkFrBack();
-        AstNode* lrp = lp->rhsp()->unlinkFrBack();
-        AstNodeBiop* rp = VN_CAST(nodep->rhsp()->unlinkFrBack(), NodeBiop);
-        AstNode* rlp = rp->lhsp()->unlinkFrBack();
-        AstNode* rrp = rp->rhsp()->unlinkFrBack();
+        AstNodeBiop* const lp = VN_AS(nodep->lhsp()->unlinkFrBack(), NodeBiop);
+        AstNode* const llp = lp->lhsp()->unlinkFrBack();
+        AstNode* const lrp = lp->rhsp()->unlinkFrBack();
+        AstNodeBiop* const rp = VN_AS(nodep->rhsp()->unlinkFrBack(), NodeBiop);
+        AstNode* const rlp = rp->lhsp()->unlinkFrBack();
+        AstNode* const rrp = rp->rhsp()->unlinkFrBack();
         nodep->replaceWith(lp);
         lp->lhsp(nodep);
         lp->rhsp(lrp);
@@ -1709,8 +1710,8 @@ private:
     }
     void replaceConcatSel(AstConcat* nodep) {
         // {a[1], a[0]} -> a[1:0]
-        AstSel* lselp = VN_CAST(nodep->lhsp()->unlinkFrBack(), Sel);
-        AstSel* rselp = VN_CAST(nodep->rhsp()->unlinkFrBack(), Sel);
+        AstSel* const lselp = VN_AS(nodep->lhsp()->unlinkFrBack(), Sel);
+        AstSel* const rselp = VN_AS(nodep->rhsp()->unlinkFrBack(), Sel);
         const int lstart = lselp->lsbConst();
         const int lwidth = lselp->widthConst();
         const int rstart = rselp->lsbConst();
@@ -1718,8 +1719,8 @@ private:
 
         UASSERT_OBJ((rstart + rwidth) == lstart, nodep,
                     "tried to merge two selects which are not adjacent");
-        AstSel* newselp = new AstSel(lselp->fromp()->fileline(), rselp->fromp()->cloneTree(false),
-                                     rstart, lwidth + rwidth);
+        AstSel* const newselp = new AstSel(
+            lselp->fromp()->fileline(), rselp->fromp()->cloneTree(false), rstart, lwidth + rwidth);
         UINFO(5, "merged two adjacent sel " << lselp << " and " << rselp << " to one " << newselp
                                             << endl);
 
@@ -1729,15 +1730,15 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void replaceConcatMerge(AstConcat* nodep) {
-        AstNodeBiop* lp = VN_CAST(nodep->lhsp(), NodeBiop);
-        AstNodeBiop* rp = VN_CAST(nodep->rhsp(), NodeBiop);
-        AstNode* llp = lp->lhsp()->cloneTree(false);
-        AstNode* lrp = lp->rhsp()->cloneTree(false);
-        AstNode* rlp = rp->lhsp()->cloneTree(false);
-        AstNode* rrp = rp->rhsp()->cloneTree(false);
+        AstNodeBiop* const lp = VN_AS(nodep->lhsp(), NodeBiop);
+        AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
+        AstNode* const llp = lp->lhsp()->cloneTree(false);
+        AstNode* const lrp = lp->rhsp()->cloneTree(false);
+        AstNode* const rlp = rp->lhsp()->cloneTree(false);
+        AstNode* const rrp = rp->rhsp()->cloneTree(false);
         if (concatMergeable(lp, rp)) {
-            AstConcat* newlp = new AstConcat(rlp->fileline(), llp, rlp);
-            AstConcat* newrp = new AstConcat(rrp->fileline(), lrp, rrp);
+            AstConcat* const newlp = new AstConcat(rlp->fileline(), llp, rlp);
+            AstConcat* const newrp = new AstConcat(rrp->fileline(), lrp, rrp);
             // use the lhs to replace the parent concat
             lp->lhsp()->replaceWith(newlp);
             lp->rhsp()->replaceWith(newrp);
@@ -1766,8 +1767,8 @@ private:
     }
     void replacePowShift(AstNodeBiop* nodep) {  // Pow or PowS
         UINFO(5, "POW(2,b)->SHIFTL(1,b) " << nodep << endl);
-        AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
-        AstShiftL* newp
+        AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstShiftL* const newp
             = new AstShiftL(nodep->fileline(), new AstConst(nodep->fileline(), 1), rhsp);
         newp->dtypeFrom(nodep);
         newp->lhsp()->dtypeFrom(nodep);
@@ -1776,9 +1777,9 @@ private:
     }
     void replaceMulShift(AstMul* nodep) {  // Mul, but not MulS as not simple shift
         UINFO(5, "MUL(2^n,b)->SHIFTL(b,n) " << nodep << endl);
-        const int amount = VN_CAST(nodep->lhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
-        AstNode* opp = nodep->rhsp()->unlinkFrBack();
-        AstShiftL* newp
+        const int amount = VN_AS(nodep->lhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        AstNode* const opp = nodep->rhsp()->unlinkFrBack();
+        AstShiftL* const newp
             = new AstShiftL(nodep->fileline(), opp, new AstConst(nodep->fileline(), amount));
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
@@ -1786,9 +1787,9 @@ private:
     }
     void replaceDivShift(AstDiv* nodep) {  // Mul, but not MulS as not simple shift
         UINFO(5, "DIV(b,2^n)->SHIFTR(b,n) " << nodep << endl);
-        const int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
-        AstNode* opp = nodep->lhsp()->unlinkFrBack();
-        AstShiftR* newp
+        const int amount = VN_AS(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        AstNode* const opp = nodep->lhsp()->unlinkFrBack();
+        AstShiftR* const newp
             = new AstShiftR(nodep->fileline(), opp, new AstConst(nodep->fileline(), amount));
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
@@ -1796,11 +1797,12 @@ private:
     }
     void replaceModAnd(AstModDiv* nodep) {  // Mod, but not ModS as not simple shift
         UINFO(5, "MOD(b,2^n)->AND(b,2^n-1) " << nodep << endl);
-        const int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
+        const int amount = VN_AS(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         V3Number mask(nodep, nodep->width());
         mask.setMask(amount);
-        AstNode* opp = nodep->lhsp()->unlinkFrBack();
-        AstAnd* newp = new AstAnd(nodep->fileline(), opp, new AstConst(nodep->fileline(), mask));
+        AstNode* const opp = nodep->lhsp()->unlinkFrBack();
+        AstAnd* const newp
+            = new AstAnd(nodep->fileline(), opp, new AstConst(nodep->fileline(), mask));
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1809,18 +1811,18 @@ private:
         UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep << endl);
         AstNRelinker handle;
         nodep->unlinkFrBack(&handle);
-        AstNodeBiop* lhsp = VN_CAST(nodep->lhsp(), NodeBiop);
+        AstNodeBiop* const lhsp = VN_AS(nodep->lhsp(), NodeBiop);
         lhsp->unlinkFrBack();
-        AstNode* shiftp = nodep->rhsp()->unlinkFrBack();
-        AstNode* ap = lhsp->lhsp()->unlinkFrBack();
-        AstNode* bp = lhsp->rhsp()->unlinkFrBack();
-        AstNodeBiop* shift1p = nodep;
-        AstNodeBiop* shift2p = nodep->cloneTree(true);
+        AstNode* const shiftp = nodep->rhsp()->unlinkFrBack();
+        AstNode* const ap = lhsp->lhsp()->unlinkFrBack();
+        AstNode* const bp = lhsp->rhsp()->unlinkFrBack();
+        AstNodeBiop* const shift1p = nodep;
+        AstNodeBiop* const shift2p = nodep->cloneTree(true);
         shift1p->lhsp(ap);
         shift1p->rhsp(shiftp->cloneTree(true));
         shift2p->lhsp(bp);
         shift2p->rhsp(shiftp);
-        AstNodeBiop* newp = lhsp;
+        AstNodeBiop* const newp = lhsp;
         newp->lhsp(shift1p);
         newp->rhsp(shift2p);
         handle.relink(newp);
@@ -1829,16 +1831,16 @@ private:
     void replaceShiftShift(AstNodeBiop* nodep) {
         UINFO(4, "SHIFT(SHIFT(a,s1),s2)->SHIFT(a,ADD(s1,s2)) " << nodep << endl);
         if (debug() >= 9) nodep->dumpTree(cout, "  repShiftShift_old: ");
-        AstNodeBiop* lhsp = VN_CAST(nodep->lhsp(), NodeBiop);
+        AstNodeBiop* const lhsp = VN_AS(nodep->lhsp(), NodeBiop);
         lhsp->unlinkFrBack();
-        AstNode* ap = lhsp->lhsp()->unlinkFrBack();
-        AstNode* shift1p = lhsp->rhsp()->unlinkFrBack();
-        AstNode* shift2p = nodep->rhsp()->unlinkFrBack();
+        AstNode* const ap = lhsp->lhsp()->unlinkFrBack();
+        AstNode* const shift1p = lhsp->rhsp()->unlinkFrBack();
+        AstNode* const shift2p = nodep->rhsp()->unlinkFrBack();
         // Shift1p and shift2p may have different sizes, both are
         // self-determined so sum with infinite width
         if (nodep->type() == lhsp->type()) {
-            int shift1 = VN_CAST(shift1p, Const)->toUInt();
-            int shift2 = VN_CAST(shift2p, Const)->toUInt();
+            const int shift1 = VN_AS(shift1p, Const)->toUInt();
+            const int shift2 = VN_AS(shift2p, Const)->toUInt();
             const int newshift = shift1 + shift2;
             VL_DO_DANGLING(shift1p->deleteTree(), shift1p);
             VL_DO_DANGLING(shift2p->deleteTree(), shift2p);
@@ -1847,9 +1849,9 @@ private:
             iterate(nodep);  // Further reduce, either node may have more reductions.
         } else {
             // We know shift amounts are constant, but might be a mixed left/right shift
-            int shift1 = VN_CAST(shift1p, Const)->toUInt();
+            int shift1 = VN_AS(shift1p, Const)->toUInt();
             if (VN_IS(lhsp, ShiftR)) shift1 = -shift1;
-            int shift2 = VN_CAST(shift2p, Const)->toUInt();
+            int shift2 = VN_AS(shift2p, Const)->toUInt();
             if (VN_IS(nodep, ShiftR)) shift2 = -shift2;
             const int newshift = shift1 + shift2;
             VL_DO_DANGLING(shift1p->deleteTree(), shift1p);
@@ -1894,26 +1896,28 @@ private:
 
         // Skip if we're not const'ing an entire module (IE doing only one assign, etc)
         if (!m_modp) return false;
-        AstSel* sel1p = VN_CAST(nodep->lhsp(), Sel);
+        AstSel* const sel1p = VN_CAST(nodep->lhsp(), Sel);
         if (!sel1p) return false;
-        AstNodeAssign* nextp = VN_CAST(nodep->nextp(), NodeAssign);
+        AstNodeAssign* const nextp = VN_CAST(nodep->nextp(), NodeAssign);
         if (!nextp) return false;
         if (nodep->type() != nextp->type()) return false;
-        AstSel* sel2p = VN_CAST(nextp->lhsp(), Sel);
+        AstSel* const sel2p = VN_CAST(nextp->lhsp(), Sel);
         if (!sel2p) return false;
-        AstVarRef* varref1p = VN_CAST(sel1p->fromp(), VarRef);
+        AstVarRef* const varref1p = VN_CAST(sel1p->fromp(), VarRef);
         if (!varref1p) return false;
-        AstVarRef* varref2p = VN_CAST(sel2p->fromp(), VarRef);
+        AstVarRef* const varref2p = VN_CAST(sel2p->fromp(), VarRef);
         if (!varref2p) return false;
         if (!varref1p->sameGateTree(varref2p)) return false;
-        AstConst* con1p = VN_CAST(sel1p->lsbp(), Const);
+        AstConst* const con1p = VN_CAST(sel1p->lsbp(), Const);
         if (!con1p) return false;
-        AstConst* con2p = VN_CAST(sel2p->lsbp(), Const);
+        AstConst* const con2p = VN_CAST(sel2p->lsbp(), Const);
         if (!con2p) return false;
         // We need to make sure there's no self-references involved in either
         // assignment.  For speed, we only look 3 deep, then give up.
         if (!varNotReferenced(nodep->rhsp(), varref1p->varp())) return false;
         if (!varNotReferenced(nextp->rhsp(), varref2p->varp())) return false;
+        // If a variable is marked split_var, access to the variable should not be merged.
+        if (varref1p->varp()->attrSplitVar() || varref2p->varp()->attrSplitVar()) return false;
         // Swap?
         if ((con1p->toSInt() != con2p->toSInt() + sel2p->width())
             && (con2p->toSInt() != con1p->toSInt() + sel1p->width())) {
@@ -1924,8 +1928,8 @@ private:
         UINFO(4, "                   && " << nextp << endl);
         // nodep->dumpTree(cout, "comb1: ");
         // nextp->dumpTree(cout, "comb2: ");
-        AstNode* rhs1p = nodep->rhsp()->unlinkFrBack();
-        AstNode* rhs2p = nextp->rhsp()->unlinkFrBack();
+        AstNode* const rhs1p = nodep->rhsp()->unlinkFrBack();
+        AstNode* const rhs2p = nextp->rhsp()->unlinkFrBack();
         AstNode* newp;
         if (lsbFirstAssign) {
             newp = nodep->cloneType(new AstSel(sel1p->fileline(), varref1p->unlinkFrBack(),
@@ -1949,7 +1953,7 @@ private:
         if (!nodep) return true;
         if (level > 2) return false;
         if (!nodep->isPure()) return false;  // For example a $fgetc can't be reordered
-        if (VN_IS(nodep, NodeVarRef) && VN_CAST(nodep, NodeVarRef)->varp() == varp) return false;
+        if (VN_IS(nodep, NodeVarRef) && VN_AS(nodep, NodeVarRef)->varp() == varp) return false;
         return (varNotReferenced(nodep->nextp(), varp, level + 1)
                 && varNotReferenced(nodep->op1p(), varp, level + 1)
                 && varNotReferenced(nodep->op2p(), varp, level + 1)
@@ -1959,7 +1963,7 @@ private:
 
     bool replaceNodeAssign(AstNodeAssign* nodep) {
         if (VN_IS(nodep->lhsp(), VarRef) && VN_IS(nodep->rhsp(), VarRef)
-            && VN_CAST(nodep->lhsp(), VarRef)->sameNoLvalue(VN_CAST(nodep->rhsp(), VarRef))
+            && VN_AS(nodep->lhsp(), VarRef)->sameNoLvalue(VN_AS(nodep->rhsp(), VarRef))
             && !VN_IS(nodep, AssignDly)) {
             // X = X.  Quite pointless, though X <= X may override another earlier assignment
             if (VN_IS(nodep, AssignW)) {
@@ -1974,9 +1978,9 @@ private:
             if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
                 // done as unique visitor
-                AstUser4InUse m_inuser4;
-                ConstVarMarkVisitor mark{nodep->lhsp()};
-                ConstVarFindVisitor find{nodep->rhsp()};
+                const AstUser4InUse m_inuser4;
+                const ConstVarMarkVisitor mark{nodep->lhsp()};
+                const ConstVarFindVisitor find{nodep->rhsp()};
                 if (find.found()) need_temp = true;
             }
             if (need_temp) {
@@ -1994,26 +1998,26 @@ private:
             }
             if (debug() >= 9) nodep->dumpTree(cout, "  Ass_old: ");
             // Unlink the stuff
-            AstNode* lc1p = VN_CAST(nodep->lhsp(), Concat)->lhsp()->unlinkFrBack();
-            AstNode* lc2p = VN_CAST(nodep->lhsp(), Concat)->rhsp()->unlinkFrBack();
-            AstNode* conp = VN_CAST(nodep->lhsp(), Concat)->unlinkFrBack();
-            AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
-            AstNode* rhs2p = rhsp->cloneTree(false);
+            AstNode* const lc1p = VN_AS(nodep->lhsp(), Concat)->lhsp()->unlinkFrBack();
+            AstNode* const lc2p = VN_AS(nodep->lhsp(), Concat)->rhsp()->unlinkFrBack();
+            AstNode* const conp = VN_AS(nodep->lhsp(), Concat)->unlinkFrBack();
+            AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNode* const rhs2p = rhsp->cloneTree(false);
             // Calc widths
-            int lsb2 = 0;
-            int msb2 = lsb2 + lc2p->width() - 1;
-            int lsb1 = msb2 + 1;
-            int msb1 = lsb1 + lc1p->width() - 1;
+            const int lsb2 = 0;
+            const int msb2 = lsb2 + lc2p->width() - 1;
+            const int lsb1 = msb2 + 1;
+            const int msb1 = lsb1 + lc1p->width() - 1;
             UASSERT_OBJ(msb1 == (conp->width() - 1), nodep, "Width calc mismatch");
             // Form ranges
-            AstSel* sel1p = new AstSel(conp->fileline(), rhsp, lsb1, msb1 - lsb1 + 1);
-            AstSel* sel2p = new AstSel(conp->fileline(), rhs2p, lsb2, msb2 - lsb2 + 1);
+            AstSel* const sel1p = new AstSel(conp->fileline(), rhsp, lsb1, msb1 - lsb1 + 1);
+            AstSel* const sel2p = new AstSel(conp->fileline(), rhs2p, lsb2, msb2 - lsb2 + 1);
             // Make new assigns of same flavor as old one
             //*** Not cloneTree; just one node.
             AstNode* newp = nullptr;
             if (!need_temp) {
-                AstNodeAssign* asn1ap = VN_CAST(nodep->cloneType(lc1p, sel1p), NodeAssign);
-                AstNodeAssign* asn2ap = VN_CAST(nodep->cloneType(lc2p, sel2p), NodeAssign);
+                AstNodeAssign* const asn1ap = VN_AS(nodep->cloneType(lc1p, sel1p), NodeAssign);
+                AstNodeAssign* const asn2ap = VN_AS(nodep->cloneType(lc2p, sel2p), NodeAssign);
                 asn1ap->dtypeFrom(sel1p);
                 asn2ap->dtypeFrom(sel2p);
                 newp = AstNode::addNext(newp, asn1ap);
@@ -2032,22 +2036,22 @@ private:
                                  m_concswapNames.get(sel2p), VFlagLogicPacked(), msb2 - lsb2 + 1);
                 m_modp->addStmtp(temp1p);
                 m_modp->addStmtp(temp2p);
-                AstNodeAssign* asn1ap
-                    = VN_CAST(nodep->cloneType(
-                                  new AstVarRef(sel1p->fileline(), temp1p, VAccess::WRITE), sel1p),
-                              NodeAssign);
-                AstNodeAssign* asn2ap
-                    = VN_CAST(nodep->cloneType(
-                                  new AstVarRef(sel2p->fileline(), temp2p, VAccess::WRITE), sel2p),
-                              NodeAssign);
-                AstNodeAssign* asn1bp
-                    = VN_CAST(nodep->cloneType(
-                                  lc1p, new AstVarRef(sel1p->fileline(), temp1p, VAccess::READ)),
-                              NodeAssign);
-                AstNodeAssign* asn2bp
-                    = VN_CAST(nodep->cloneType(
-                                  lc2p, new AstVarRef(sel2p->fileline(), temp2p, VAccess::READ)),
-                              NodeAssign);
+                AstNodeAssign* const asn1ap
+                    = VN_AS(nodep->cloneType(
+                                new AstVarRef(sel1p->fileline(), temp1p, VAccess::WRITE), sel1p),
+                            NodeAssign);
+                AstNodeAssign* const asn2ap
+                    = VN_AS(nodep->cloneType(
+                                new AstVarRef(sel2p->fileline(), temp2p, VAccess::WRITE), sel2p),
+                            NodeAssign);
+                AstNodeAssign* const asn1bp
+                    = VN_AS(nodep->cloneType(
+                                lc1p, new AstVarRef(sel1p->fileline(), temp1p, VAccess::READ)),
+                            NodeAssign);
+                AstNodeAssign* const asn2bp
+                    = VN_AS(nodep->cloneType(
+                                lc2p, new AstVarRef(sel2p->fileline(), temp2p, VAccess::READ)),
+                            NodeAssign);
                 asn1ap->dtypeFrom(temp1p);
                 asn1bp->dtypeFrom(temp1p);
                 asn2ap->dtypeFrom(temp2p);
@@ -2069,9 +2073,9 @@ private:
             // The right-streaming operator on rhs of assignment does not
             // change the order of bits. Eliminate stream but keep its lhsp
             // Unlink the stuff
-            AstNode* srcp = VN_CAST(nodep->rhsp(), StreamR)->lhsp()->unlinkFrBack();
-            AstNode* sizep = VN_CAST(nodep->rhsp(), StreamR)->rhsp()->unlinkFrBack();
-            AstNode* streamp = VN_CAST(nodep->rhsp(), StreamR)->unlinkFrBack();
+            AstNode* const srcp = VN_AS(nodep->rhsp(), StreamR)->lhsp()->unlinkFrBack();
+            AstNode* const sizep = VN_AS(nodep->rhsp(), StreamR)->rhsp()->unlinkFrBack();
+            AstNode* const streamp = VN_AS(nodep->rhsp(), StreamR)->unlinkFrBack();
             nodep->rhsp(srcp);
             // Cleanup
             VL_DO_DANGLING(sizep->deleteTree(), sizep);
@@ -2080,14 +2084,14 @@ private:
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamL)) {
             // Push the stream operator to the rhs of the assignment statement
-            const int dWidth = VN_CAST(nodep->lhsp(), StreamL)->lhsp()->width();
+            const int dWidth = VN_AS(nodep->lhsp(), StreamL)->lhsp()->width();
             const int sWidth = nodep->rhsp()->width();
             // Unlink the stuff
-            AstNode* dstp = VN_CAST(nodep->lhsp(), StreamL)->lhsp()->unlinkFrBack();
-            AstNode* streamp = VN_CAST(nodep->lhsp(), StreamL)->unlinkFrBack();
-            AstNode* srcp = nodep->rhsp()->unlinkFrBack();
+            AstNode* const dstp = VN_AS(nodep->lhsp(), StreamL)->lhsp()->unlinkFrBack();
+            AstNode* streamp = VN_AS(nodep->lhsp(), StreamL)->unlinkFrBack();
+            AstNode* const srcp = nodep->rhsp()->unlinkFrBack();
             // Connect the rhs to the stream operator and update its width
-            VN_CAST(streamp, StreamL)->lhsp(srcp);
+            VN_AS(streamp, StreamL)->lhsp(srcp);
             streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             // Shrink the RHS if necessary
             if (sWidth > dWidth) {
@@ -2101,12 +2105,12 @@ private:
             // The right stream operator on lhs of assignment statement does
             // not reorder bits. However, if the rhs is wider than the lhs,
             // then we select bits from the left-most, not the right-most.
-            const int dWidth = VN_CAST(nodep->lhsp(), StreamR)->lhsp()->width();
+            const int dWidth = VN_AS(nodep->lhsp(), StreamR)->lhsp()->width();
             const int sWidth = nodep->rhsp()->width();
             // Unlink the stuff
-            AstNode* dstp = VN_CAST(nodep->lhsp(), StreamR)->lhsp()->unlinkFrBack();
-            AstNode* sizep = VN_CAST(nodep->lhsp(), StreamR)->rhsp()->unlinkFrBack();
-            AstNode* streamp = VN_CAST(nodep->lhsp(), StreamR)->unlinkFrBack();
+            AstNode* const dstp = VN_AS(nodep->lhsp(), StreamR)->lhsp()->unlinkFrBack();
+            AstNode* const sizep = VN_AS(nodep->lhsp(), StreamR)->rhsp()->unlinkFrBack();
+            AstNode* const streamp = VN_AS(nodep->lhsp(), StreamR)->unlinkFrBack();
             AstNode* srcp = nodep->rhsp()->unlinkFrBack();
             if (sWidth > dWidth) {
                 srcp = new AstSel(streamp->fileline(), srcp, sWidth - dWidth, dWidth);
@@ -2128,25 +2132,25 @@ private:
     bool operandBoolShift(const AstNode* nodep) {
         // boolean test of AND(const,SHIFTR(x,const)) -> test of AND(SHIFTL(x,const), x)
         if (!VN_IS(nodep, And)) return false;
-        if (!VN_IS(VN_CAST_CONST(nodep, And)->lhsp(), Const)) return false;
-        if (!VN_IS(VN_CAST_CONST(nodep, And)->rhsp(), ShiftR)) return false;
-        const AstShiftR* shiftp = VN_CAST(VN_CAST_CONST(nodep, And)->rhsp(), ShiftR);
+        if (!VN_IS(VN_AS(nodep, And)->lhsp(), Const)) return false;
+        if (!VN_IS(VN_AS(nodep, And)->rhsp(), ShiftR)) return false;
+        const AstShiftR* const shiftp = VN_AS(VN_AS(nodep, And)->rhsp(), ShiftR);
         if (!VN_IS(shiftp->rhsp(), Const)) return false;
-        if (static_cast<uint32_t>(nodep->width())
-            <= VN_CAST_CONST(shiftp->rhsp(), Const)->toUInt()) {
+        if (static_cast<uint32_t>(nodep->width()) <= VN_AS(shiftp->rhsp(), Const)->toUInt()) {
             return false;
         }
         return true;
     }
     void replaceBoolShift(AstNode* nodep) {
         if (debug() >= 9) nodep->dumpTree(cout, "  bshft_old: ");
-        AstConst* andConstp = VN_CAST(VN_CAST(nodep, And)->lhsp(), Const);
-        AstNode* fromp = VN_CAST(VN_CAST(nodep, And)->rhsp(), ShiftR)->lhsp()->unlinkFrBack();
-        AstConst* shiftConstp
-            = VN_CAST(VN_CAST(VN_CAST(nodep, And)->rhsp(), ShiftR)->rhsp(), Const);
+        AstConst* const andConstp = VN_AS(VN_AS(nodep, And)->lhsp(), Const);
+        AstNode* const fromp = VN_AS(VN_AS(nodep, And)->rhsp(), ShiftR)->lhsp()->unlinkFrBack();
+        AstConst* const shiftConstp
+            = VN_AS(VN_AS(VN_AS(nodep, And)->rhsp(), ShiftR)->rhsp(), Const);
         V3Number val(andConstp, andConstp->width());
         val.opShiftL(andConstp->num(), shiftConstp->num());
-        AstAnd* newp = new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), val), fromp);
+        AstAnd* const newp
+            = new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), val), fromp);
         // widthMin no longer applicable if different C-expanded width
         newp->dtypeSetLogicSized(nodep->width(), VSigning::UNSIGNED);
         nodep->replaceWith(newp);
@@ -2159,7 +2163,7 @@ private:
         // Run it - may be unoptimizable due to large for loop, etc
         simvis.mainParamEmulate(nodep);
         if (!simvis.optimizable()) {
-            AstNode* errorp = simvis.whyNotNodep();
+            const AstNode* errorp = simvis.whyNotNodep();
             if (!errorp) errorp = nodep;
             nodep->v3error("Expecting expression to be constant, but can't determine constant for "
                            << nodep->prettyTypeName() << '\n'
@@ -2168,10 +2172,10 @@ private:
             VL_DO_DANGLING(replaceZero(nodep), nodep);
         } else {
             // Fetch the result
-            AstNode* valuep = simvis.fetchValueNull(nodep);  // valuep is owned by Simulate
+            AstNode* const valuep = simvis.fetchValueNull(nodep);  // valuep is owned by Simulate
             UASSERT_OBJ(valuep, nodep, "No value returned from simulation");
             // Replace it
-            AstNode* newp = valuep->cloneTree(false);
+            AstNode* const newp = valuep->cloneTree(false);
             newp->dtypeFrom(nodep);
             newp->fileline(nodep->fileline());
             UINFO(4, "Simulate->" << newp << endl);
@@ -2225,15 +2229,38 @@ private:
         iterate(nodep);  // Again?
     }
 
+    bool matchConcatRand(AstConcat* nodep) {
+        //    CONCAT(RAND, RAND) - created by Chisel code
+        AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
+        AstRand* const bRandp = VN_CAST(nodep->rhsp(), Rand);
+        if (!aRandp || !bRandp) return false;
+        if (!aRandp->combinable(bRandp)) return false;
+        UINFO(4, "Concat(Rand,Rand) => Rand: " << nodep << endl);
+        aRandp->dtypeFrom(nodep);  // I.e. the total width
+        nodep->replaceWith(aRandp->unlinkFrBack());
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        return true;
+    }
+    bool matchSelRand(AstSel* nodep) {
+        //    SEL(RAND) - created by Chisel code
+        AstRand* const aRandp = VN_CAST(nodep->fromp(), Rand);
+        if (!aRandp) return false;
+        if (aRandp->seedp()) return false;
+        UINFO(4, "Sel(Rand) => Rand: " << nodep << endl);
+        aRandp->dtypeFrom(nodep);  // I.e. the total width
+        nodep->replaceWith(aRandp->unlinkFrBack());
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        return true;
+    }
     int operandConcatMove(AstConcat* nodep) {
         //    CONCAT under concat  (See moveConcat)
         // Return value: true indicates to do it; 2 means move to LHS
-        AstConcat* const abConcp = VN_CAST(nodep->lhsp(), Concat);
-        AstConcat* const bcConcp = VN_CAST(nodep->rhsp(), Concat);
+        const AstConcat* const abConcp = VN_CAST(nodep->lhsp(), Concat);
+        const AstConcat* const bcConcp = VN_CAST(nodep->rhsp(), Concat);
         if (!abConcp && !bcConcp) return 0;
         if (bcConcp) {
-            AstNode* ap = nodep->lhsp();
-            AstNode* bp = bcConcp->lhsp();
+            AstNode* const ap = nodep->lhsp();
+            AstNode* const bp = bcConcp->lhsp();
             // If a+b == 32,64,96 etc, then we want to have a+b together on LHS
             if (VL_BITBIT_I(ap->width() + bp->width()) == 0) return 2;  // Transform 2: to abConc
         } else {  // abConcp
@@ -2251,12 +2278,12 @@ private:
         // like that, so on 32 bit boundaries, we'll do the opposite form.
         UINFO(4, "Move concat: " << nodep << endl);
         if (operandConcatMove(nodep) > 1) {
-            AstNode* ap = nodep->lhsp()->unlinkFrBack();
-            AstConcat* bcConcp = VN_CAST(nodep->rhsp(), Concat);
+            AstNode* const ap = nodep->lhsp()->unlinkFrBack();
+            AstConcat* const bcConcp = VN_AS(nodep->rhsp(), Concat);
             bcConcp->unlinkFrBack();
-            AstNode* bp = bcConcp->lhsp()->unlinkFrBack();
-            AstNode* cp = bcConcp->rhsp()->unlinkFrBack();
-            AstConcat* abConcp = new AstConcat(bcConcp->fileline(), ap, bp);
+            AstNode* const bp = bcConcp->lhsp()->unlinkFrBack();
+            AstNode* const cp = bcConcp->rhsp()->unlinkFrBack();
+            AstConcat* const abConcp = new AstConcat(bcConcp->fileline(), ap, bp);
             nodep->lhsp(abConcp);
             nodep->rhsp(cp);
             // If bp was a concat, then we have this exact same form again!
@@ -2264,12 +2291,12 @@ private:
             if (operandConcatMove(abConcp)) moveConcat(abConcp);
             VL_DO_DANGLING(bcConcp->deleteTree(), bcConcp);
         } else {
-            AstConcat* abConcp = VN_CAST(nodep->lhsp(), Concat);
+            AstConcat* const abConcp = VN_AS(nodep->lhsp(), Concat);
             abConcp->unlinkFrBack();
-            AstNode* ap = abConcp->lhsp()->unlinkFrBack();
-            AstNode* bp = abConcp->rhsp()->unlinkFrBack();
-            AstNode* cp = nodep->rhsp()->unlinkFrBack();
-            AstConcat* bcConcp = new AstConcat(abConcp->fileline(), bp, cp);
+            AstNode* const ap = abConcp->lhsp()->unlinkFrBack();
+            AstNode* const bp = abConcp->rhsp()->unlinkFrBack();
+            AstNode* const cp = nodep->rhsp()->unlinkFrBack();
+            AstConcat* const bcConcp = new AstConcat(abConcp->fileline(), bp, cp);
             nodep->lhsp(ap);
             nodep->rhsp(bcConcp);
             if (operandConcatMove(bcConcp)) moveConcat(bcConcp);
@@ -2291,10 +2318,10 @@ private:
 
     void replaceLogEq(AstLogEq* nodep) {
         // LOGEQ(a,b) => AstLogAnd{AstLogOr{AstLogNot{a},b},AstLogOr{AstLogNot{b},a}}
-        AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
-        AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
+        AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
         // Do exactly as IEEE says, might result in extra terms, so in future may do differently
-        AstLogAnd* newp = new AstLogAnd(
+        AstLogAnd* const newp = new AstLogAnd(
             nodep->fileline(),
             new AstLogOr(nodep->fileline(), new AstLogNot(nodep->fileline(), lhsp), rhsp),
             new AstLogOr(nodep->fileline(),
@@ -2307,17 +2334,17 @@ private:
 
     void replaceSelSel(AstSel* nodep) {
         // SEL(SEL({x},a,b),c,d) => SEL({x},a+c,d)
-        AstSel* belowp = VN_CAST(nodep->fromp(), Sel);
-        AstNode* fromp = belowp->fromp()->unlinkFrBack();
-        AstNode* widthp = nodep->widthp()->unlinkFrBack();
-        AstNode* lsb1p = nodep->lsbp()->unlinkFrBack();
-        AstNode* lsb2p = belowp->lsbp()->unlinkFrBack();
+        AstSel* const belowp = VN_AS(nodep->fromp(), Sel);
+        AstNode* const fromp = belowp->fromp()->unlinkFrBack();
+        AstNode* const widthp = nodep->widthp()->unlinkFrBack();
+        AstNode* const lsb1p = nodep->lsbp()->unlinkFrBack();
+        AstNode* const lsb2p = belowp->lsbp()->unlinkFrBack();
         // Eliminate lower range
         UINFO(4, "Elim Lower range: " << nodep << endl);
         AstNode* newlsbp;
         if (VN_IS(lsb1p, Const) && VN_IS(lsb2p, Const)) {
-            newlsbp = new AstConst(lsb1p->fileline(), VN_CAST(lsb1p, Const)->toUInt()
-                                                          + VN_CAST(lsb2p, Const)->toUInt());
+            newlsbp = new AstConst(lsb1p->fileline(),
+                                   VN_AS(lsb1p, Const)->toUInt() + VN_AS(lsb2p, Const)->toUInt());
             VL_DO_DANGLING(lsb1p->deleteTree(), lsb1p);
             VL_DO_DANGLING(lsb2p->deleteTree(), lsb2p);
         } else {
@@ -2326,33 +2353,34 @@ private:
             newlsbp
                 = new AstAdd(lsb1p->fileline(), lsb2p, new AstExtend(lsb1p->fileline(), lsb1p));
             newlsbp->dtypeFrom(lsb2p);  // Unsigned
-            VN_CAST(newlsbp, Add)->rhsp()->dtypeFrom(lsb2p);
+            VN_AS(newlsbp, Add)->rhsp()->dtypeFrom(lsb2p);
         }
-        AstSel* newp = new AstSel(nodep->fileline(), fromp, newlsbp, widthp);
+        AstSel* const newp = new AstSel(nodep->fileline(), fromp, newlsbp, widthp);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
     void replaceSelConcat(AstSel* nodep) {
         // SEL(CONCAT(a,b),c,d) => SEL(a or b, . .)
-        AstConcat* conp = VN_CAST(nodep->fromp(), Concat);
-        AstNode* conLhsp = conp->lhsp();
-        AstNode* conRhsp = conp->rhsp();
+        AstConcat* const conp = VN_AS(nodep->fromp(), Concat);
+        AstNode* const conLhsp = conp->lhsp();
+        AstNode* const conRhsp = conp->rhsp();
         if (static_cast<int>(nodep->lsbConst()) >= conRhsp->width()) {
             conLhsp->unlinkFrBack();
-            AstSel* newp = new AstSel(nodep->fileline(), conLhsp,
-                                      nodep->lsbConst() - conRhsp->width(), nodep->widthConst());
+            AstSel* const newp
+                = new AstSel(nodep->fileline(), conLhsp, nodep->lsbConst() - conRhsp->width(),
+                             nodep->widthConst());
             nodep->replaceWith(newp);
         } else if (static_cast<int>(nodep->msbConst()) < conRhsp->width()) {
             conRhsp->unlinkFrBack();
-            AstSel* newp
+            AstSel* const newp
                 = new AstSel(nodep->fileline(), conRhsp, nodep->lsbConst(), nodep->widthConst());
             nodep->replaceWith(newp);
         } else {
             // Yuk, split between the two
             conRhsp->unlinkFrBack();
             conLhsp->unlinkFrBack();
-            AstConcat* newp
+            AstConcat* const newp
                 = new AstConcat(nodep->fileline(),
                                 new AstSel(nodep->fileline(), conLhsp, 0,
                                            nodep->msbConst() - conRhsp->width() + 1),
@@ -2365,11 +2393,11 @@ private:
     bool operandSelReplicate(AstSel* nodep) {
         // SEL(REPLICATE(from,rep),lsb,width) => SEL(from,0,width) as long
         // as SEL's width <= b's width
-        AstReplicate* repp = VN_CAST(nodep->fromp(), Replicate);
-        AstNode* fromp = repp->lhsp();
-        AstConst* lsbp = VN_CAST(nodep->lsbp(), Const);
+        AstReplicate* const repp = VN_AS(nodep->fromp(), Replicate);
+        AstNode* const fromp = repp->lhsp();
+        AstConst* const lsbp = VN_CAST(nodep->lsbp(), Const);
         if (!lsbp) return false;
-        AstNode* widthp = nodep->widthp();
+        AstNode* const widthp = nodep->widthp();
         if (!VN_IS(widthp, Const)) return false;
         UASSERT_OBJ(fromp->width(), nodep, "Not widthed");
         if ((lsbp->toUInt() / fromp->width())
@@ -2379,7 +2407,7 @@ private:
         //
         fromp->unlinkFrBack();
         widthp->unlinkFrBack();
-        AstSel* newp
+        AstSel* const newp
             = new AstSel(nodep->fileline(), fromp,
                          new AstConst(lsbp->fileline(), lsbp->toUInt() % fromp->width()), widthp);
         newp->dtypeFrom(nodep);
@@ -2389,17 +2417,17 @@ private:
     }
     bool operandRepRep(AstReplicate* nodep) {
         // REPLICATE(REPLICATE2(from2,cnt2),cnt1) => REPLICATE(from2,(cnt1+cnt2))
-        AstReplicate* rep2p = VN_CAST(nodep->lhsp(), Replicate);
-        AstNode* from2p = rep2p->lhsp();
-        AstConst* cnt1p = VN_CAST(nodep->rhsp(), Const);
+        AstReplicate* const rep2p = VN_AS(nodep->lhsp(), Replicate);
+        AstNode* const from2p = rep2p->lhsp();
+        AstConst* const cnt1p = VN_CAST(nodep->rhsp(), Const);
         if (!cnt1p) return false;
-        AstConst* cnt2p = VN_CAST(rep2p->rhsp(), Const);
+        AstConst* const cnt2p = VN_CAST(rep2p->rhsp(), Const);
         if (!cnt2p) return false;
         //
         from2p->unlinkFrBack();
         cnt1p->unlinkFrBack();
         cnt2p->unlinkFrBack();
-        AstReplicate* newp
+        AstReplicate* const newp
             = new AstReplicate(nodep->fileline(), from2p, cnt1p->toUInt() * cnt2p->toUInt());
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
@@ -2416,21 +2444,21 @@ private:
         AstNode* from2p = nodep->rhsp();
         uint32_t cnt2 = 1;
         if (VN_IS(from1p, Replicate)) {
-            AstConst* cnt1p = VN_CAST(VN_CAST(from1p, Replicate)->rhsp(), Const);
+            AstConst* const cnt1p = VN_CAST(VN_CAST(from1p, Replicate)->rhsp(), Const);
             if (!cnt1p) return false;
-            from1p = VN_CAST(from1p, Replicate)->lhsp();
+            from1p = VN_AS(from1p, Replicate)->lhsp();
             cnt1 = cnt1p->toUInt();
         }
         if (VN_IS(from2p, Replicate)) {
-            AstConst* cnt2p = VN_CAST(VN_CAST(from2p, Replicate)->rhsp(), Const);
+            AstConst* const cnt2p = VN_CAST(VN_CAST(from2p, Replicate)->rhsp(), Const);
             if (!cnt2p) return false;
-            from2p = VN_CAST(from2p, Replicate)->lhsp();
+            from2p = VN_AS(from2p, Replicate)->lhsp();
             cnt2 = cnt2p->toUInt();
         }
         if (!operandsSame(from1p, from2p)) return false;
         //
         from1p->unlinkFrBack();
-        AstReplicate* newp = new AstReplicate(nodep->fileline(), from1p, cnt1 + cnt2);
+        AstReplicate* const newp = new AstReplicate(nodep->fileline(), from1p, cnt1 + cnt2);
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2438,13 +2466,13 @@ private:
     }
     void replaceSelIntoBiop(AstSel* nodep) {
         // SEL(BUFIF1(a,b),1,bit) => BUFIF1(SEL(a,1,bit),SEL(b,1,bit))
-        AstNodeBiop* fromp = VN_CAST(nodep->fromp()->unlinkFrBack(), NodeBiop);
+        AstNodeBiop* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), NodeBiop);
         UASSERT_OBJ(fromp, nodep, "Called on non biop");
-        AstNode* lsbp = nodep->lsbp()->unlinkFrBack();
-        AstNode* widthp = nodep->widthp()->unlinkFrBack();
+        AstNode* const lsbp = nodep->lsbp()->unlinkFrBack();
+        AstNode* const widthp = nodep->widthp()->unlinkFrBack();
         //
-        AstNode* bilhsp = fromp->lhsp()->unlinkFrBack();
-        AstNode* birhsp = fromp->rhsp()->unlinkFrBack();
+        AstNode* const bilhsp = fromp->lhsp()->unlinkFrBack();
+        AstNode* const birhsp = fromp->rhsp()->unlinkFrBack();
         //
         fromp->lhsp(
             new AstSel(nodep->fileline(), bilhsp, lsbp->cloneTree(true), widthp->cloneTree(true)));
@@ -2455,12 +2483,12 @@ private:
     }
     void replaceSelIntoUniop(AstSel* nodep) {
         // SEL(NOT(a),1,bit) => NOT(SEL(a,bit))
-        AstNodeUniop* fromp = VN_CAST(nodep->fromp()->unlinkFrBack(), NodeUniop);
+        AstNodeUniop* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), NodeUniop);
         UASSERT_OBJ(fromp, nodep, "Called on non biop");
-        AstNode* lsbp = nodep->lsbp()->unlinkFrBack();
-        AstNode* widthp = nodep->widthp()->unlinkFrBack();
+        AstNode* const lsbp = nodep->lsbp()->unlinkFrBack();
+        AstNode* const widthp = nodep->widthp()->unlinkFrBack();
         //
-        AstNode* bilhsp = fromp->lhsp()->unlinkFrBack();
+        AstNode* const bilhsp = fromp->lhsp()->unlinkFrBack();
         //
         fromp->lhsp(new AstSel(nodep->fileline(), bilhsp, lsbp, widthp));
         fromp->dtypeFrom(nodep);
@@ -2481,8 +2509,8 @@ private:
         if (VN_IS(nodep->bitp(), Const)
             && VN_IS(nodep->fromp(), VarRef)
             // Need to make sure it's an array object so don't mis-allow a constant (bug509.)
-            && VN_CAST(nodep->fromp(), VarRef)->varp()
-            && VN_IS(VN_CAST(nodep->fromp(), VarRef)->varp()->valuep(), InitArray)) {
+            && VN_AS(nodep->fromp(), VarRef)->varp()
+            && VN_IS(VN_AS(nodep->fromp(), VarRef)->varp()->valuep(), InitArray)) {
             m_selp = nodep;  // Ask visit(AstVarRef) to replace varref with const
         }
         iterateAndNextNull(nodep->fromp());
@@ -2490,12 +2518,12 @@ private:
             if (!m_selp) {
                 nodep->v3error("Illegal assignment of constant to unpacked array");
             } else {
-                AstNode* fromp = nodep->fromp()->unlinkFrBack();
+                AstNode* const fromp = nodep->fromp()->unlinkFrBack();
                 nodep->replaceWith(fromp);
                 if (VN_IS(fromp->dtypep()->skipRefp(), NodeArrayDType)) {
                     // Strip off array to find what array references
                     fromp->dtypeFrom(
-                        VN_CAST(fromp->dtypep()->skipRefp(), NodeArrayDType)->subDTypep());
+                        VN_AS(fromp->dtypep()->skipRefp(), NodeArrayDType)->subDTypep());
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
@@ -2509,7 +2537,7 @@ private:
         if (m_doV && nodep->varp()->valuep() && !m_attrp) {
             // if (debug()) valuep->dumpTree(cout, "  visitvaref: ");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
-            AstNode* valuep = nodep->varp()->valuep();
+            AstNode* const valuep = nodep->varp()->valuep();
             if (nodep->access().isReadOnly()
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst
@@ -2520,16 +2548,16 @@ private:
                      && !nodep->varp()->noSubst() && !nodep->varp()->isSigPublic())
                     || nodep->varp()->isParam())) {
                 if (operandConst(valuep)) {
-                    const V3Number& num = VN_CAST(valuep, Const)->num();
+                    const V3Number& num = VN_AS(valuep, Const)->num();
                     // UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
                     VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                     did = true;
                 } else if (m_selp && VN_IS(valuep, InitArray)) {
-                    AstInitArray* initarp = VN_CAST(valuep, InitArray);
-                    uint32_t bit = m_selp->bitConst();
-                    AstNode* itemp = initarp->getIndexDefaultedValuep(bit);
+                    AstInitArray* const initarp = VN_AS(valuep, InitArray);
+                    const uint32_t bit = m_selp->bitConst();
+                    AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
                     if (VN_IS(itemp, Const)) {
-                        const V3Number& num = VN_CAST(itemp, Const)->num();
+                        const V3Number& num = VN_AS(itemp, Const)->num();
                         // UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
                         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                         did = true;
@@ -2539,12 +2567,12 @@ private:
                     // Earlier recursion of InitArray made sure each array value is constant
                     // This exception is fairly fragile, i.e. doesn't
                     // support arrays of arrays or other stuff
-                    AstNode* newp = valuep->cloneTree(false);
+                    AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     did = true;
                 } else if (nodep->varp()->isParam() && VN_IS(valuep, Unbounded)) {
-                    AstNode* newp = valuep->cloneTree(false);
+                    AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     did = true;
@@ -2569,7 +2597,7 @@ private:
                 iterateAndNextNull(nodep->itemp()->valuep());
                 nodep->itemp()->user4(false);
             }
-            if (AstConst* valuep = VN_CAST(nodep->itemp()->valuep(), Const)) {
+            if (AstConst* const valuep = VN_CAST(nodep->itemp()->valuep(), Const)) {
                 const V3Number& num = valuep->num();
                 VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                 did = true;
@@ -2608,16 +2636,16 @@ private:
             }
         } else if (m_doNConst && VN_IS(nodep->sensp(), Not)) {
             // V3Gate may propagate NOTs into clocks... Just deal with it
-            AstNode* sensp = nodep->sensp();
+            AstNode* const sensp = nodep->sensp();
             AstNode* lastSensp = sensp;
             bool invert = false;
             while (VN_IS(lastSensp, Not)) {
-                lastSensp = VN_CAST(lastSensp, Not)->lhsp();
+                lastSensp = VN_AS(lastSensp, Not)->lhsp();
                 invert = !invert;
             }
             UINFO(8, "senItem(NOT...) " << nodep << " " << invert << endl);
             if (invert) nodep->edgeType(nodep->edgeType().invert());
-            AstNodeVarRef* senvarp = VN_CAST(lastSensp->unlinkFrBack(), NodeVarRef);
+            AstNodeVarRef* const senvarp = VN_AS(lastSensp->unlinkFrBack(), NodeVarRef);
             UASSERT_OBJ(senvarp, sensp, "Non-varref sensitivity variable");
             sensp->replaceWith(senvarp);
             VL_DO_DANGLING(sensp->deleteTree(), sensp);
@@ -2670,10 +2698,10 @@ private:
             // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
             // other SENITEM(x).
             {
-                AstUser4InUse m_inuse4;
+                const AstUser4InUse m_inuse4;
                 // Mark x in SENITEM(x)
-                for (AstSenItem* senp = VN_CAST(nodep->sensesp(), SenItem); senp;
-                     senp = VN_CAST(senp->nextp(), SenItem)) {
+                for (AstSenItem* senp = nodep->sensesp(); senp;
+                     senp = VN_AS(senp->nextp(), SenItem)) {
                     if (senp->varrefp() && senp->varrefp()->varScopep()) {
                         senp->varrefp()->varScopep()->user4(1);
                     }
@@ -2683,17 +2711,16 @@ private:
             // Sort the sensitivity names so "posedge a or b" and "posedge b or a" end up together.
             // Also, remove duplicate assignments, and fold POS&NEGs into ANYEDGEs
             // Make things a little faster; check first if we need a sort
-            for (AstSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), SenItem); senp;
-                 senp = nextp) {
-                nextp = VN_CAST(senp->nextp(), SenItem);
+            for (AstSenItem *nextp, *senp = nodep->sensesp(); senp; senp = nextp) {
+                nextp = VN_AS(senp->nextp(), SenItem);
                 // cppcheck-suppress unassignedVariable  // cppcheck bug
-                SenItemCmp cmp;
+                const SenItemCmp cmp;
                 if (nextp && !cmp(senp, nextp)) {
                     // Something's out of order, sort it
                     senp = nullptr;
                     std::vector<AstSenItem*> vec;
-                    for (AstSenItem* senp = VN_CAST(nodep->sensesp(), SenItem); senp;
-                         senp = VN_CAST(senp->nextp(), SenItem)) {
+                    for (AstSenItem* senp = nodep->sensesp(); senp;
+                         senp = VN_AS(senp->nextp(), SenItem)) {
                         vec.push_back(senp);
                     }
                     stable_sort(vec.begin(), vec.end(), SenItemCmp());
@@ -2704,9 +2731,8 @@ private:
             }
 
             // Pass2, remove dup edges
-            for (AstSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), SenItem); senp;
-                 senp = nextp) {
-                nextp = VN_CAST(senp->nextp(), SenItem);
+            for (AstSenItem *nextp, *senp = nodep->sensesp(); senp; senp = nextp) {
+                nextp = VN_AS(senp->nextp(), SenItem);
                 AstSenItem* const litemp = senp;
                 AstSenItem* const ritemp = nextp;
                 if (ritemp) {
@@ -2755,11 +2781,11 @@ private:
     virtual void visit(AstAssignW* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst && replaceNodeAssign(nodep)) return;
-        AstNodeVarRef* varrefp = VN_CAST(
+        AstNodeVarRef* const varrefp = VN_CAST(
             nodep->lhsp(),
             VarRef);  // Not VarXRef, as different refs may set different values to each hierarchy
         if (m_wremove && !m_params && m_doNConst && m_modp && operandConst(nodep->rhsp())
-            && !VN_CAST(nodep->rhsp(), Const)->num().isFourState()
+            && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
             && varrefp  // Don't do messes with BITREFs/ARRAYREFs
             && !varrefp->varp()->valuep()  // Not already constified
             && !varrefp->varScopep()) {  // Not scoped (or each scope may have different initial
@@ -2767,14 +2793,14 @@ private:
             // ASSIGNW (VARREF, const) -> INITIAL ( ASSIGN (VARREF, const) )
             UINFO(4, "constAssignW " << nodep << endl);
             // Make a initial assignment
-            AstNode* exprp = nodep->rhsp()->unlinkFrBack();
+            AstNode* const exprp = nodep->rhsp()->unlinkFrBack();
             varrefp->unlinkFrBack();
-            AstInitial* newinitp = new AstInitial(
+            AstInitial* const newinitp = new AstInitial(
                 nodep->fileline(), new AstAssign(nodep->fileline(), varrefp, exprp));
             m_modp->addStmtp(newinitp);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             // Set the initial value right in the variable so we can constant propagate
-            AstNode* initvaluep = exprp->cloneTree(false);
+            AstNode* const initvaluep = exprp->cloneTree(false);
             varrefp->varp()->valuep(initvaluep);
         }
     }
@@ -2782,7 +2808,7 @@ private:
     virtual void visit(AstNodeIf* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst) {
-            if (const AstConst* constp = VN_CAST(nodep->condp(), Const)) {
+            if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
                 AstNode* keepp = nullptr;
                 if (constp->isZero()) {
                     UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep << endl);
@@ -2811,8 +2837,8 @@ private:
                 }
             } else if (!afterComment(nodep->ifsp())) {
                 UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep << endl);
-                AstNode* condp = nodep->condp();
-                AstNode* elsesp = nodep->elsesp();
+                AstNode* const condp = nodep->condp();
+                AstNode* const elsesp = nodep->elsesp();
                 condp->unlinkFrBackWithNext();
                 elsesp->unlinkFrBackWithNext();
                 if (nodep->ifsp()) {  // Must have been comment
@@ -2825,11 +2851,11 @@ private:
                         || VN_IS(nodep->condp(), LogNot))
                        && nodep->ifsp() && nodep->elsesp()) {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep << endl);
-                AstNode* condp
-                    = VN_CAST(nodep->condp(), NodeUniop)->lhsp()->unlinkFrBackWithNext();
-                AstNode* ifsp = nodep->ifsp()->unlinkFrBackWithNext();
-                AstNode* elsesp = nodep->elsesp()->unlinkFrBackWithNext();
-                AstIf* ifp = new AstIf(nodep->fileline(), condp, elsesp, ifsp);
+                AstNode* const condp
+                    = VN_AS(nodep->condp(), NodeUniop)->lhsp()->unlinkFrBackWithNext();
+                AstNode* const ifsp = nodep->ifsp()->unlinkFrBackWithNext();
+                AstNode* const elsesp = nodep->elsesp()->unlinkFrBackWithNext();
+                AstIf* const ifp = new AstIf(nodep->fileline(), condp, elsesp, ifsp);
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2837,12 +2863,12 @@ private:
                 UINFO(
                     4,
                     "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})\n");
-                AstNodeAssign* ifp = VN_CAST(nodep->ifsp(), NodeAssign);
-                AstNodeAssign* elsep = VN_CAST(nodep->elsesp(), NodeAssign);
+                AstNodeAssign* const ifp = VN_AS(nodep->ifsp(), NodeAssign);
+                AstNodeAssign* const elsep = VN_AS(nodep->elsesp(), NodeAssign);
                 ifp->unlinkFrBack();
-                AstNode* condp = nodep->condp()->unlinkFrBack();
-                AstNode* truep = ifp->rhsp()->unlinkFrBack();
-                AstNode* falsep = elsep->rhsp()->unlinkFrBack();
+                AstNode* const condp = nodep->condp()->unlinkFrBack();
+                AstNode* const truep = ifp->rhsp()->unlinkFrBack();
+                AstNode* const falsep = elsep->rhsp()->unlinkFrBack();
                 ifp->rhsp(new AstCond(truep->fileline(), condp, truep, falsep));
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2850,10 +2876,10 @@ private:
                               // without due to short-circuiting
                        && operandIfIf(nodep)) {
                 UINFO(9, "IF({a}) IF({b}) => IF({a} && {b})" << endl);
-                AstNodeIf* lowerIfp = VN_CAST(nodep->ifsp(), NodeIf);
-                AstNode* condp = nodep->condp()->unlinkFrBack();
-                AstNode* lowerIfsp = lowerIfp->ifsp()->unlinkFrBackWithNext();
-                AstNode* lowerCondp = lowerIfp->condp()->unlinkFrBackWithNext();
+                AstNodeIf* const lowerIfp = VN_AS(nodep->ifsp(), NodeIf);
+                AstNode* const condp = nodep->condp()->unlinkFrBack();
+                AstNode* const lowerIfsp = lowerIfp->ifsp()->unlinkFrBackWithNext();
+                AstNode* const lowerCondp = lowerIfp->condp()->unlinkFrBackWithNext();
                 nodep->condp(new AstLogAnd(lowerIfp->fileline(), condp, lowerCondp));
                 lowerIfp->replaceWith(lowerIfsp);
                 VL_DO_DANGLING(lowerIfp->deleteTree(), lowerIfp);
@@ -2871,7 +2897,7 @@ private:
     bool stmtDisplayDisplay(AstDisplay* nodep) {
         // DISPLAY(SFORMAT(text1)),DISPLAY(SFORMAT(text2)) -> DISPLAY(SFORMAT(text1+text2))
         if (!m_modp) return false;  // Don't optimize under single statement
-        AstDisplay* prevp = VN_CAST(nodep->backp(), Display);
+        AstDisplay* const prevp = VN_CAST(nodep->backp(), Display);
         if (!prevp) return false;
         if (!((prevp->displayType() == nodep->displayType())
               || (prevp->displayType() == AstDisplayType::DT_WRITE
@@ -2884,9 +2910,9 @@ private:
             return false;
         if (!prevp->fmtp() || prevp->fmtp()->nextp() || !nodep->fmtp() || nodep->fmtp()->nextp())
             return false;
-        AstSFormatF* pformatp = prevp->fmtp();
+        AstSFormatF* const pformatp = prevp->fmtp();
         if (!pformatp) return false;
-        AstSFormatF* nformatp = nodep->fmtp();
+        AstSFormatF* const nformatp = nodep->fmtp();
         if (!nformatp) return false;
         // We don't merge scopeNames as can have only one and might be different scopes (late in
         // process) Also rare for real code to print %m multiple times in same message
@@ -2955,10 +2981,9 @@ private:
                         break;
                     default:  // Most operators, just move to next argument
                         if (argp) {
-                            AstNode* nextp = argp->nextp();
+                            AstNode* const nextp = argp->nextp();
                             if (VN_IS(argp, Const)) {  // Convert it
-                                const string out
-                                    = VN_CAST(argp, Const)->num().displayed(nodep, fmt);
+                                const string out = VN_AS(argp, Const)->num().displayed(nodep, fmt);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
                                                             << argp << endl);
                                 // fmt = out w/ replace % with %% as it must be literal.
@@ -3064,7 +3089,7 @@ private:
             // If last statement in a jump label we have JumpLabel(...., JumpGo)
             // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
             if (!nodep->nextp()) {
-                if (AstJumpBlock* aboveBlockp = VN_CAST(nodep->abovep(), JumpBlock)) {
+                if (AstJumpBlock* const aboveBlockp = VN_CAST(nodep->abovep(), JumpBlock)) {
                     if (aboveBlockp == nodep->labelp()->blockp()) {
                         if (aboveBlockp->endStmtsp() == nodep->labelp()) {
                             UINFO(4, "JUMPGO => last remove " << nodep << endl);
@@ -3237,7 +3262,7 @@ private:
     TREEOP1("AstLt   {$lhsp.isAllOnes, $rhsp, $lhsp->width()==$rhsp->width()}",  "replaceNumLimited(nodep,0)");
     TREEOP1("AstGte  {$lhsp.isAllOnes, $rhsp, $lhsp->width()==$rhsp->width()}",  "replaceNumLimited(nodep,1)");
     // Two level bubble pushing
-    TREEOP ("AstNot   {$lhsp.castNot,  $lhsp->width()==VN_CAST($lhsp,,Not)->lhsp()->width()}", "replaceWChild(nodep, $lhsp->op1p())");  // NOT(NOT(x))->x
+    TREEOP ("AstNot   {$lhsp.castNot,  $lhsp->width()==VN_AS($lhsp,,Not)->lhsp()->width()}", "replaceWChild(nodep, $lhsp->op1p())");  // NOT(NOT(x))->x
     TREEOP ("AstLogNot{$lhsp.castLogNot}",              "replaceWChild(nodep, $lhsp->op1p())");  // LOGNOT(LOGNOT(x))->x
     TREEOPV("AstNot   {$lhsp.castEqCase, $lhsp.width1}","AstNeqCase{$lhsp->op1p(),$lhsp->op2p()}");
     TREEOP ("AstLogNot{$lhsp.castEqCase}",              "AstNeqCase{$lhsp->op1p(),$lhsp->op2p()}");
@@ -3349,10 +3374,10 @@ private:
     TREEOPV("AstRedAnd{$lhsp.castConcat}",      "AstAnd{AstRedAnd{$lhsp->castConcat()->lhsp()}, AstRedAnd{$lhsp->castConcat()->rhsp()}}");  // &{a,b} => {&a}&{&b}
     TREEOPV("AstRedOr {$lhsp.castConcat}",      "AstOr {AstRedOr {$lhsp->castConcat()->lhsp()}, AstRedOr {$lhsp->castConcat()->rhsp()}}");  // |{a,b} => {|a}|{|b}
     TREEOPV("AstRedXor{$lhsp.castConcat}",      "AstXor{AstRedXor{$lhsp->castConcat()->lhsp()}, AstRedXor{$lhsp->castConcat()->rhsp()}}");  // ^{a,b} => {^a}^{^b}
-    TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_CAST($lhsp,,Extend)->lhsp()->width()}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
+    TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_AS($lhsp,,Extend)->lhsp()->width()}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
     TREEOPV("AstRedOr {$lhsp.castExtend}",      "AstRedOr {$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstRedXor{$lhsp.castExtend}",      "AstRedXor{$lhsp->castExtend()->lhsp()}");
-    TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_CAST($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^(const ^ a) => (^const)^(^a)
+    TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_AS($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^(const ^ a) => (^const)^(^a)
     TREEOPC("AstAnd {$lhsp.castConst, $rhsp.castRedXor, matchBitOpTree(nodep)}", "DONE");
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
@@ -3362,10 +3387,11 @@ private:
     TREEOPV("AstLogNot{$lhsp.width1, isTPure($lhsp)}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
+    TREEOPV("AstConcat{matchConcatRand(nodep)}",      "DONE");
     TREEOPV("AstConcat{operandConcatMove(nodep)}",      "moveConcat(nodep)");
     TREEOPV("AstConcat{$lhsp.isZero, $rhsp}",           "replaceExtend(nodep, nodep->rhsp())");
     // CONCAT(a[1],a[0]) -> a[1:0]
-    TREEOPV("AstConcat{$lhsp.castSel, $rhsp.castSel, ifAdjacentSel(VN_CAST($lhsp,,Sel),,VN_CAST($rhsp,,Sel))}",  "replaceConcatSel(nodep)");
+    TREEOPV("AstConcat{$lhsp.castSel, $rhsp.castSel, ifAdjacentSel(VN_AS($lhsp,,Sel),,VN_AS($rhsp,,Sel))}",  "replaceConcatSel(nodep)");
     TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp)}", "replaceConcatMerge(nodep)");
     // Common two-level operations that can be simplified
     TREEOP ("AstAnd {$lhsp.castConst,matchAndCond(nodep)}", "DONE");
@@ -3382,14 +3408,15 @@ private:
     TREEOPC("AstXor {matchBitOpTree(nodep)}", "DONE");
     // Note can't simplify a extend{extends}, extends{extend}, as the sign
     // bits end up in the wrong places
-    TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_CAST(nodep->lhsp(), Extend)->lhsp())");
-    TREEOPV("AstExtendS{$lhsp.castExtendS}", "replaceExtend(nodep, VN_CAST(nodep->lhsp(), ExtendS)->lhsp())");
+    TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_AS(nodep->lhsp(), Extend)->lhsp())");
+    TREEOPV("AstExtendS{$lhsp.castExtendS}", "replaceExtend(nodep, VN_AS(nodep->lhsp(), ExtendS)->lhsp())");
     TREEOPV("AstReplicate{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs
     TREEOPV("AstReplicateN{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs
     TREEOPV("AstReplicate{$lhsp.castReplicate, operandRepRep(nodep)}", "DONE");  // {2{3{lhs}}}->{6{lhs}}
     TREEOPV("AstConcat{operandConcatSame(nodep)}", "DONE");  // {a,a}->{2{a}}, {a,2{a}}->{3{a}, etc
     // Next rule because AUTOINST puts the width of bits in
     // to pins, even when the widths are exactly the same across the hierarchy.
+    TREEOPV("AstSel{matchSelRand(nodep)}",      "DONE");
     TREEOPV("AstSel{operandSelExtend(nodep)}",  "DONE");
     TREEOPV("AstSel{operandSelFull(nodep)}",    "replaceWChild(nodep, nodep->fromp())");
     TREEOPV("AstSel{$fromp.castSel}",           "replaceSelSel(nodep)");
@@ -3417,7 +3444,7 @@ private:
     // Strings
     TREEOPA("AstPutcN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPA("AstSubstrN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
-    TREEOPA("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_CAST(nodep->lhsp(), Const)->num().toString())");
+    TREEOPA("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_AS(nodep->lhsp(), Const)->num().toString())");
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");
@@ -3435,7 +3462,7 @@ private:
     virtual void visit(AstNode* nodep) override {
         // Default: Just iterate
         if (m_required) {
-            if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range)) {
+            if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)) {
                 // Ignore dtypes for parameter type pins
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "
@@ -3506,7 +3533,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
     // Make sure we've sized everything first
     nodep = V3Width::widthParamsEdit(nodep);
     ConstVisitor visitor{ConstVisitor::PROC_PARAMS, /* globalPass: */ false};
-    if (AstVar* varp = VN_CAST(nodep, Var)) {
+    if (AstVar* const varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the
         // init value because we need widthing above to handle the var's type.
@@ -3536,7 +3563,7 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
     // Make sure we've sized everything first
     nodep = V3Width::widthGenerateParamsEdit(nodep);
     ConstVisitor visitor{ConstVisitor::PROC_GENERATE, /* globalPass: */ false};
-    if (AstVar* varp = VN_CAST(nodep, Var)) {
+    if (AstVar* const varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the
         // init value because we need widthing above to handle the var's type.

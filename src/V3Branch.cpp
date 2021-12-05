@@ -40,7 +40,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstFTask::user1()       -> int.  Number of references
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
     int m_likely = false;  // Excuses for branch likely taken
@@ -123,5 +123,5 @@ public:
 
 void V3Branch::branchAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    BranchVisitor visitor{nodep};
+    { BranchVisitor{nodep}; }
 }

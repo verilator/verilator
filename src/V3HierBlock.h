@@ -49,13 +49,13 @@ private:
     using StrGParams = std::vector<std::pair<std::string, std::string>>;
 
     // MEMBERS
-    const AstNodeModule* m_modp;  // Hierarchical block module
+    const AstNodeModule* const m_modp;  // Hierarchical block module
     // Hierarchical blocks that directly or indirectly instantiate this block
     HierBlockSet m_parents;
     // Hierarchical blocks that this block directly or indirectly instantiates
     HierBlockSet m_children;
     // Parameters that are overridden by #(.param(value)) syntax.
-    GParams m_gparams;
+    const GParams m_gparams;
 
     // METHODS
     VL_UNCOPYABLE(V3HierBlock);

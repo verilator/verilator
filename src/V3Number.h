@@ -116,7 +116,7 @@ public:
     V3Number& setDouble(double value);
     void setBit(int bit, char value) {  // Note must be pre-zeroed!
         if (bit >= m_width) return;
-        uint32_t mask = (1UL << (bit & 31));
+        const uint32_t mask = (1UL << (bit & 31));
         ValueAndX& v = m_value[bit / 32];
         if (value == '0' || value == 0) {
             v.m_value &= ~mask;
@@ -233,6 +233,7 @@ public:
     V3Number(String, AstNode* nodep, const string& value) {
         init(nodep, 0);
         setString(value);
+        m_fromString = true;
     }
     class Null {};
     V3Number(Null, AstNode* nodep) {
@@ -359,12 +360,8 @@ public:
     // STATICS
     static int log2b(uint32_t num);
 
-    using UniopFuncp = V3Number& (*)(V3Number&);
-    using BiopFuncp = V3Number& (*)(V3Number&, V3Number&);
-
     // MATH
     // "this" is the output, as we need the output width before some computations
-    V3Number& isTrue(const V3Number& lhs);
     V3Number& opBitsNonX(const V3Number& lhs);  // 0/1->1, X/Z->0
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1

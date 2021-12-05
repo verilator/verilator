@@ -283,8 +283,8 @@ class Cpt:
                 self.print("\t// " + typefunc['comment'] + "\n")
                 self.print("\tif (" + typefunc['match_if'] + ") {\n")
                 self.print("\t    UINFO(" + str(typefunc['uinfo_level']) +
-                           ",cvtToHex(nodep)" + "<<\" " + typefunc['uinfo'] +
-                           "\\n\");\n")
+                           ", cvtToHex(nodep)" + " << \" " +
+                           typefunc['uinfo'] + "\\n\");\n")
                 self.print("\t    " + typefunc['exec_func'] + "\n")
                 self.print("\t    return true;\n")
                 self.print("\t}\n")
@@ -333,12 +333,11 @@ class Cpt:
                     "      iterateAndNextNull(nodep->lhsp());\n" +
                     "".join(out_for_type_sc))
                 if out_for_type[0]:
-                    self.print(
-                        "      iterateAndNextNull(nodep->rhsp());\n" +
-                        "      AstNodeTriop *tnp = VN_CAST(nodep, NodeTriop);\n"
-                        +
-                        "      if (tnp && tnp->thsp()) iterateAndNextNull(tnp->thsp());\n"
-                        + "".join(out_for_type) + "    }\n")
+                    self.print("      iterateAndNextNull(nodep->rhsp());\n")
+                    if is_subclass_of(typen, "NodeTriop"):
+                        self.print(
+                            "      iterateAndNextNull(nodep->thsp());\n")
+                    self.print("".join(out_for_type) + "    }\n")
             elif len(out_for_type) > 0:  # Other types with something to print
                 skip = typen in self.tree_skip_visit
                 gen = "Gen" if skip else ""
@@ -363,21 +362,19 @@ def read_types(filename):
             match = re.search(r'^\s*(class|struct)\s*(\S+)', line)
             if match:
                 classn = match.group(2)
-                inh = ""
                 match = re.search(r':\s*public\s+(\S+)', line)
-                if match:
-                    inh = match.group(1)
-                # print("class "+classn+" : "+inh)
-                if classn == "AstNode":
-                    inh = ""
-                if re.search(r'Ast', inh) or classn == "AstNode":
+                supern = match.group(1) if match else ""
+                assert classn != "AstNode" or supern == "", "AstNode can't have a superclass"
+                if re.search(r'Ast', supern) or classn == "AstNode":
+                    if supern == "AstNDeleter":
+                        continue
                     classn = re.sub(r'^Ast', '', classn)
-                    inh = re.sub(r'^Ast', '', inh)
-                    Classes[classn] = inh
-                    if inh != '':
-                        if inh not in Children:
-                            Children[inh] = {}
-                        Children[inh][classn] = 1
+                    supern = re.sub(r'^Ast', '', supern)
+                    Classes[classn] = supern
+                    if supern != '':
+                        if supern not in Children:
+                            Children[supern] = {}
+                        Children[supern][classn] = 1
 
 
 def read_stages(filename):
@@ -448,6 +445,10 @@ def children_of(typen):
                 cllist.append(child)
 
     return cllist
+
+
+def is_subclass_of(typen, what):
+    return typen == what or (typen in children_of(what))
 
 
 # ---------------------------------------------------------------------
@@ -592,6 +593,13 @@ def write_types(filename):
         fh.write("    }\n")
 
 
+def write_yystype(filename):
+    with open_file(filename) as fh:
+        for typen in sorted(Classes.keys()):
+            fh.write("Ast{t}* {m}p;\n".format(t=typen,
+                                              m=typen[0].lower() + typen[1:]))
+
+
 def write_macros(filename):
     with open_file(filename) as fh:
         typen = "None"
@@ -683,6 +691,7 @@ if Args.classes:
     write_visitor("V3Ast__gen_visitor.h")
     write_impl("V3Ast__gen_impl.h")
     write_types("V3Ast__gen_types.h")
+    write_yystype("V3Ast__gen_yystype.h")
     write_macros("V3AstNodes__gen_macros.h")
 
 for cpt in Args.infiles:

@@ -115,8 +115,8 @@ public:
                 } else if (support == 2 && slow) {
                 } else {
                     for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-                         nodep = VN_CAST(nodep->nextp(), NodeFile)) {
-                        AstCFile* cfilep = VN_CAST(nodep, CFile);
+                         nodep = VN_AS(nodep->nextp(), NodeFile)) {
+                        const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                         if (cfilep && cfilep->source() && cfilep->slow() == (slow != 0)
                             && cfilep->support() == (support != 0)) {
                             putMakeClassEntry(of, cfilep->name());
@@ -145,8 +145,8 @@ public:
 
         if (v3Global.opt.exe()) {
             of.puts("default: " + v3Global.opt.exeName() + "\n");
-        } else if (!v3Global.opt.protectLib().empty()) {
-            of.puts("default: lib" + v3Global.opt.protectLib() + "\n");
+        } else if (!v3Global.opt.libCreate().empty()) {
+            of.puts("default: lib" + v3Global.opt.libCreate() + "\n");
         } else {
             of.puts("default: " + v3Global.opt.prefix() + "__ALL.a\n");
         }
@@ -188,7 +188,7 @@ public:
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
-        if (!v3Global.opt.protectLib().empty()) of.puts("\t-fPIC \\\n");
+        if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("\t" + i + " \\\n");
         of.puts("\n");
@@ -243,19 +243,19 @@ public:
             of.puts("\n");
         }
 
-        if (!v3Global.opt.protectLib().empty()) {
-            const string protectLibDeps = "$(VK_OBJS) $(VK_GLOBAL_OBJS) "
-                                          + v3Global.opt.protectLib() + ".o $(VM_HIER_LIBS)";
-            of.puts("\n### Library rules from --protect-lib\n");
+        if (!v3Global.opt.libCreate().empty()) {
+            const string libCreateDeps = "$(VK_OBJS) $(VK_GLOBAL_OBJS) " + v3Global.opt.libCreate()
+                                         + ".o $(VM_HIER_LIBS)";
+            of.puts("\n### Library rules from --lib-create\n");
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
-            of.puts(v3Global.opt.protectLibName(false) + ": " + protectLibDeps + "\n");
+            of.puts(v3Global.opt.libCreateName(false) + ": " + libCreateDeps + "\n");
             of.puts("\n");
             if (v3Global.opt.hierChild()) {
                 // Hierarchical child does not need .so because hierTop() will create .so from .a
-                of.puts("lib" + v3Global.opt.protectLib() + ": "
-                        + v3Global.opt.protectLibName(false) + "\n");
+                of.puts("lib" + v3Global.opt.libCreate() + ": " + v3Global.opt.libCreateName(false)
+                        + "\n");
             } else {
-                of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
+                of.puts(v3Global.opt.libCreateName(true) + ": " + libCreateDeps + "\n");
                 // Linker on mac emits an error if all symbols are not found here,
                 // but some symbols that are referred as "DPI-C" can not be found at this moment.
                 // So add dynamic_lookup
@@ -267,9 +267,8 @@ public:
                     "\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
                 of.puts("endif\n");
                 of.puts("\n");
-                of.puts("lib" + v3Global.opt.protectLib() + ": "
-                        + v3Global.opt.protectLibName(false) + " "
-                        + v3Global.opt.protectLibName(true) + "\n");
+                of.puts("lib" + v3Global.opt.libCreate() + ": " + v3Global.opt.libCreateName(false)
+                        + " " + v3Global.opt.libCreateName(true) + "\n");
             }
         }
 
@@ -408,7 +407,7 @@ public:
 
 void V3EmitMk::emitmk() {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitMk emitter;
+    const EmitMk emitter;
 }
 
 void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {

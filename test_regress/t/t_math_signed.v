@@ -98,7 +98,7 @@ module t (/*AUTOARG*/
       copy_signed = ai;
    endfunction
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    wire [31:0] ucyc = cyc;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
@@ -181,7 +181,7 @@ module by_width (
    wire signed [WIDTH-1:0] i65ext = i65;
    // verilator lint_on WIDTH
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       i1 <= cyc[0];

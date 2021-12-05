@@ -192,7 +192,7 @@ void VerilatedRestore::close() VL_MT_UNSAFE_ONE {
 void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
-    vluint8_t* wp = m_bufp;
+    const vluint8_t* wp = m_bufp;
     while (true) {
         const ssize_t remaining = (m_cp - wp);
         if (remaining == 0) break;

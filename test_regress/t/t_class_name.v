@@ -92,12 +92,10 @@ module t (/*AUTOARG*/);
       c = new;
 
       s = mod_func_name();
-      `checks(s, "tmf top.t");
-      // UNSUP `checks(s, "tmf top.t.mod_func_name");
+      `checks(s, "tmf top.t.mod_func_name");
 
       s = unit_name();
-      `checks(s, "u top.$unit");
-      // UNSUP `checks(s, "u top.$unit.unit_name");
+      `checks(s, "u top.$unit.unit_name");
       // Others: "u $unit_????::unit_name
       // Others: "u $unit::unit_name
       // Others: "u \\package UnitScopePackage_1\ .UnitScopePackage_1.unit_name
@@ -105,14 +103,12 @@ module t (/*AUTOARG*/);
       // *** Below results vary with simulator.
 
       s = Cls::static_name();
-      `checks(s, "c top.$unit.Cls");
-      // UNSUP `checks(s, "c top.$unit.Cls.static_name");
+      `checks(s, "c top.$unit.Cls.static_name");
       // Others: "c $unit_????.Cls.static_name
       // Others: "c $unit::\Cls::static_name
       // Others: "c Cls.static_name
       s = c.c_auto_name();
-      `checks(s, "c top.$unit.Cls");
-      // UNSUP `checks(s, "c top.$unit.Cls.c_auto_name");
+      `checks(s, "c top.$unit.Cls.c_auto_name");
       // Others: "c $unit_????.Cls.c_auto_name
       // Others: "c $unit::\Cls::c_auto_name
       // Others: "c Cls.c_auto_name
@@ -126,33 +122,28 @@ module t (/*AUTOARG*/);
       // Others: "p \\package P\ .Cls.static_name
 
       s = p.p_auto_name();
-      `checks(s, "p top.P.Cls");
-      // UNSUP `checks(s, "p top.P.Cls.p_auto_name");
+      `checks(s, "p top.P.Cls.p_auto_name");
       // Others: "p P.Cls.p_auto_name
       // Others: "p P::Cls.p_auto_name
       // Others: "p P::\Cls::p_auto_name
       // Others: "p \\package P\ .Cls.p_auto_name
 
       s = m.cls_static_name();
-      `checks(s, "m top.t.m.Cls");
-      // UNSUP `checks(s, "m top.t.m.Cls.static_name");
+      `checks(s, "m top.t.m.Cls.static_name");
       // Others: "m top.t.m.Cls.static_name
       // Others: "m top.t.m.\Cls::static_name
 
       s = m.cls_auto_name();
-      `checks(s, "m top.t.m.Cls");
-      // UNSUP `checks(s, "m top.t.m.Cls.m_auto_name");
+      `checks(s, "m top.t.m.Cls.m_auto_name");
       // Others: "m top.t.m.Cls.m_auto_name
       // Others: "m top.t.m.\Cls::m_auto_name
 
       s = m.sub.cls_static_name();
-      `checks(s, "ms top.t.m.sub.Cls");
-      // UNSUP `checks(s, "ms top.t.m.sub.Cls.static_name");
+      `checks(s, "ms top.t.m.sub.Cls.static_name");
       // Others: "ms top.t.m.sub.Cls.static_name
       // Others: "ms top.t.m.sub.\Cls::static_name
       s = m.sub.cls_auto_name();
-      `checks(s, "ms top.t.m.sub.Cls");
-      // UNSUP `checks(s, "ms top.t.m.sub.Cls.ms_auto_name");
+      `checks(s, "ms top.t.m.sub.Cls.ms_auto_name");
       // Others: "ms top.t.m.sub.Cls.ms_auto_name
       // Others: "ms top.t.m.sub.\Cls::ms_auto_name
 

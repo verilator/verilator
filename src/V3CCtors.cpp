@@ -39,7 +39,7 @@ public:
     enum en : uint8_t { MODULE, CLASS, COVERAGE };
 
 private:
-    enum en m_e;
+    const enum en m_e;
 
 public:
     // cppcheck-suppress noExplicitConstructor
@@ -139,7 +139,8 @@ void V3CCtors::evalAsserts() {
     for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
         if (AstVar* const varp = VN_CAST(np, Var)) {
             if (varp->isPrimaryInish() && !varp->isSc()) {
-                if (AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
+                if (const AstBasicDType* const basicp
+                    = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
                     const int storedWidth = basicp->widthAlignBytes() * 8;
                     const int lastWordWidth = varp->width() % storedWidth;
                     if (lastWordWidth != 0) {
@@ -175,7 +176,7 @@ void V3CCtors::cctorsAll() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     evalAsserts();
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-         modp = VN_CAST(modp->nextp(), NodeModule)) {
+         modp = VN_AS(modp->nextp(), NodeModule)) {
         // Process each module in turn
         {
             V3CCtorsBuilder var_reset{modp, "_ctor_var_reset",
@@ -200,7 +201,7 @@ void V3CCtors::cctorsAll() {
                 }
             }
         }
-        if (AstClass* const classp = VN_CAST(modp, Class)) {
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
             AstCFunc* const funcp = new AstCFunc{modp->fileline(), "~", nullptr, ""};
             funcp->isDestructor(true);
             funcp->isStatic(false);

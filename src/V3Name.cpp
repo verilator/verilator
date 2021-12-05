@@ -37,10 +37,10 @@ private:
     //  AstCell::user1()        -> bool.  Set true if already processed
     //  AstScope::user1()       -> bool.  Set true if already processed
     //  AstVar::user1()         -> bool.  Set true if already processed
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule* m_modp = nullptr;
+    const AstNodeModule* m_modp = nullptr;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -51,7 +51,7 @@ private:
                 const string newname = string("__PVT__") + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
-            } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
+            } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
             } else {
                 const string rsvd = V3LanguageWords::isKeyword(nodep->name());
                 if (rsvd != "") {
@@ -142,6 +142,6 @@ public:
 
 void V3Name::nameAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { NameVisitor visitor{nodep}; }  // Destruct before checking
+    { NameVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("name", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

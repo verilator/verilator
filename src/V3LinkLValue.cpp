@@ -262,11 +262,11 @@ private:
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         AstNode* pinp = nodep->pinsp();
-        AstNodeFTask* taskp = nodep->taskp();
+        const AstNodeFTask* const taskp = nodep->taskp();
         // We'll deal with mismatching pins later
         if (!taskp) return;
         for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp = stmtp->nextp()) {
-            if (const AstVar* portp = VN_CAST(stmtp, Var)) {
+            if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO()) {
                     if (portp->isWritable()) {
                         m_setRefLvalue = VAccess::WRITE;
@@ -298,12 +298,12 @@ public:
 
 void V3LinkLValue::linkLValue(AstNetlist* nodep) {
     UINFO(4, __FUNCTION__ << ": " << endl);
-    { LinkLValueVisitor visitor{nodep, VAccess::NOCHANGE}; }  // Destruct before checking
+    { LinkLValueVisitor{nodep, VAccess::NOCHANGE}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
 void V3LinkLValue::linkLValueSet(AstNode* nodep) {
     // Called by later link functions when it is known a node needs
     // to be converted to a lvalue.
     UINFO(9, __FUNCTION__ << ": " << endl);
-    LinkLValueVisitor visitor{nodep, VAccess::WRITE};
+    { LinkLValueVisitor{nodep, VAccess::WRITE}; }
 }

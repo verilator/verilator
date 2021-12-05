@@ -135,8 +135,8 @@ class CMakeEmitter final {
         std::vector<string> support_slow;
         std::vector<string> global;
         for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-             nodep = VN_CAST(nodep->nextp(), NodeFile)) {
-            AstCFile* cfilep = VN_CAST(nodep, CFile);
+             nodep = VN_AS(nodep->nextp(), NodeFile)) {
+            const AstCFile* const cfilep = VN_CAST(nodep, CFile);
             if (cfilep && cfilep->source()) {
                 if (cfilep->support()) {
                     if (cfilep->slow()) {
@@ -178,8 +178,8 @@ class CMakeEmitter final {
         if (v3Global.opt.mtasks()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
         }
-        if (!v3Global.opt.protectLib().empty()) {
-            global.emplace_back(v3Global.opt.makeDir() + "/" + v3Global.opt.protectLib() + ".cpp");
+        if (!v3Global.opt.libCreate().empty()) {
+            global.emplace_back(v3Global.opt.makeDir() + "/" + v3Global.opt.libCreate() + ".cpp");
         }
 
         *of << "# Global classes, need linked once per executable\n";
@@ -199,7 +199,7 @@ class CMakeEmitter final {
 
         *of << "# User .cpp files (from .cpp's on Verilator command line)\n";
         cmake_set_raw(*of, name + "_USER_CLASSES", deslash(cmake_list(v3Global.opt.cppFiles())));
-        if (const V3HierBlockPlan* planp = v3Global.hierPlanp()) {
+        if (const V3HierBlockPlan* const planp = v3Global.hierPlanp()) {
             *of << "# Verilate hierarchical blocks\n";
             // Sorted hierarchical blocks in order of leaf-first.
             const V3HierBlockPlan::HierVector& hierBlocks = planp->hierBlocksSorted();
@@ -238,7 +238,7 @@ class CMakeEmitter final {
                                          // with .so
                     << ")\n";
             }
-            *of << "\n# Verilate the top module that refers protect-lib wrappers of above\n";
+            *of << "\n# Verilate the top module that refers to lib-create wrappers of above\n";
             *of << "verilate(${TOP_TARGET_NAME} PREFIX " << v3Global.opt.prefix() << " TOP_MODULE "
                 << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
                 << deslash(v3Global.opt.makeDir()) << " SOURCES ";
@@ -260,5 +260,5 @@ public:
 
 void V3EmitCMake::emit() {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    CMakeEmitter emitter;
+    const CMakeEmitter emitter;
 }

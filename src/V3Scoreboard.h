@@ -29,9 +29,9 @@
 
 #include "V3Error.h"
 
+#include <set>
 #include <map>
 #include <unordered_map>
-#include <unordered_set>
 
 //######################################################################
 // SortByValueMap
@@ -252,7 +252,7 @@ public:
         return iterator(valIt, keyIt, this);
     }
     const_iterator begin() const {
-        SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
+        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
         const auto valIt = mutp->m_vals.begin();
         if (valIt == mutp->m_vals.end()) return end();
         const auto keyIt = valIt->second.begin();
@@ -278,7 +278,7 @@ public:
         return iterator(valIt, keyIt, this);
     }
     const_iterator find(const T_Key& k) const {
-        SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
+        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
         const auto kvit = mutp->m_keys.find(k);
         if (kvit == mutp->m_keys.end()) return end();
 
@@ -355,7 +355,7 @@ private:
     class CmpElems final {
     public:
         bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {
-            T_ElemCompare cmp;
+            const T_ElemCompare cmp;
             return cmp.operator()(*ap, *bp);
         }
     };
@@ -363,10 +363,14 @@ private:
     using UserScoreFnp = T_Score (*)(const T_Elem*);
 
     // MEMBERS
-    std::unordered_set<const T_Elem*> m_unknown;  // Elements with unknown scores
+    // Below uses set<> not an unordered_set<>. unordered_set::clear() and
+    // construction results in a 491KB clear operation to zero all the
+    // buckets. Since the set size is generally small, and we iterate the
+    // set members, set is better performant.
+    std::set<const T_Elem*> m_unknown;  // Elements with unknown scores
     SortedMap m_sorted;  // Set of elements with known scores
-    UserScoreFnp m_scoreFnp;  // Scoring function
-    bool m_slowAsserts;  // Do some asserts that require extra lookups
+    const UserScoreFnp m_scoreFnp;  // Scoring function
+    const bool m_slowAsserts;  // Do some asserts that require extra lookups
 
 public:
     // CONSTRUCTORS

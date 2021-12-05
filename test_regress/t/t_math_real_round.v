@@ -15,7 +15,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
 
    real    r;
    reg [31:0] v32;

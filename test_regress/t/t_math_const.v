@@ -41,7 +41,7 @@ module t (/*AUTOARG*/
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
 	 if (cyc==1) begin
-	    $write("[%0t] t_const: Running\n",$time);
+	    $write("[%0t] t_const: Running\n", $time);
 
 	    con1 = 4_0'h1000_0010;	// Odd but legal _ in width
 	    con2 = 40'h10_0000_0010;

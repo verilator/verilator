@@ -48,6 +48,14 @@ or "`ifdef`"'s may break other tools.
    Verilog functions where the variable is flattened out, and also enable
    other optimizations.
 
+   Verilator does not use any text inside the quotes for
+   ordering/scheduling.  If you need the $c to be called at a specific
+   time, e.g. when a variable changes, then the $c must be under an
+   appropriate sensitivity statement, e.g. :code:`always @(posedge clk)
+   $c("func()")` to call it on every edge, or e.g. :code:`always @*
+   c("func(",a,")")` to call it when :code:`a` changes (the latter working
+   because :code:`a` is outside the quotes).
+
    If you will be reading or writing any Verilog variables inside the C++
    functions, the Verilog signals must be declared with
    :option:`/*verilator&32;public*/` metacomments.
@@ -176,10 +184,9 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;no_clocker*/
 
-   Used after a signal declaration to indicate the signal is used as clock
-   or not. This information is used by Verilator to mark the signal as
-   clocker and propagate the clocker attribute automatically to derived
-   signals. See :vlopt:`--clk`.
+   Specifies that the signal is used as clock or not. This information is
+   used by Verilator to mark the signal and any derrived signals as
+   clocker.  See :vlopt:`--clk`.
 
    Same as :option:`clocker` and :option:`no_clocker` in configuration
    files.
@@ -481,6 +488,13 @@ or "`ifdef`"'s may break other tools.
    Attached after a variable or structure member to indicate opaque (to
    Verilator) text that should be passed through to the XML output as a tag,
    for use by downstream applications.
+
+.. option:: /*verilator&32;trace_init_task*/
+
+   Attached to a DPI import to indicate that function should be called when
+   initializing tracing. This attribute is indented only to be used
+   internally in code that Verilator generates when :vlopt:`--lib-create`
+   or :vlopt:`--hierarchical` is used along with :vlopt:`--trace`.
 
 .. option:: /*verilator&32;tracing_off*/
 

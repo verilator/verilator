@@ -40,8 +40,8 @@ private:
     // Cleared on netlist
     //  AstNode::user1()        -> bool.  True if processed
     //  AstNode::user2()        -> bool.  True if fileline recomputed
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
+    const AstUser1InUse m_inuser1;
+    const AstUser2InUse m_inuser2;
 
     // TYPES
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
@@ -80,7 +80,7 @@ private:
 
     string nameFromTypedef(AstNode* nodep) {
         // Try to find a name for a typedef'ed enum/struct
-        if (AstTypedef* typedefp = VN_CAST(nodep->backp(), Typedef)) {
+        if (const AstTypedef* const typedefp = VN_CAST(nodep->backp(), Typedef)) {
             // Create a name for the enum, to aid debug and tracing
             // This name is not guaranteed to be globally unique (due to later parameterization)
             string above;
@@ -103,6 +103,21 @@ private:
                 iterateChildren(nodep);
             }
         }
+    }
+
+    bool nestedIfBegin(AstBegin* nodep) {  // Point at begin inside the GenIf
+        // IEEE says directly nested item is not a new block
+        // The genblk name will get attached to the if true/false LOWER begin block(s)
+        //    1: GENIF
+        // -> 1:3: BEGIN [GEN] [IMPLIED]  // nodep passed to this function
+        //    1:3:1: GENIF
+        //    1:3:1:2: BEGIN genblk1 [GEN] [IMPLIED]
+        const AstNode* const backp = nodep->backp();
+        return (nodep->implied()  // User didn't provide begin/end
+                && VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep
+                && !nodep->nextp()  // No other statements under upper genif else
+                && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
+                && !nodep->stmtsp()->nextp());  // Has only one item
     }
 
     // VISITs
@@ -170,7 +185,7 @@ private:
                         nodep->fileline(), nodep->valuep()->cloneTree(true),
                         new AstConst(nodep->fileline(), AstConst::Unsized32(), offset_from_init));
                 }
-                AstNode* newp = new AstEnumItem(nodep->fileline(), name, nullptr, valuep);
+                AstNode* const newp = new AstEnumItem(nodep->fileline(), name, nullptr, valuep);
                 if (addp) {
                     addp = addp->addNextNull(newp);
                 } else {
@@ -197,15 +212,15 @@ private:
         }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
-            AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
+            AstNodeDType* const dtypep = VN_CAST(nodep->valuep(), NodeDType);
             if (!dtypep) {
                 nodep->v3error(
                     "Parameter type's initial value isn't a type: " << nodep->prettyNameQ());
                 nodep->unlinkFrBack();
             } else {
                 dtypep->unlinkFrBack();
-                AstNode* newp = new AstParamTypeDType(nodep->fileline(), nodep->varType(),
-                                                      nodep->name(), VFlagChildDType(), dtypep);
+                AstNode* const newp = new AstParamTypeDType(
+                    nodep->fileline(), nodep->varType(), nodep->name(), VFlagChildDType(), dtypep);
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
@@ -241,7 +256,7 @@ private:
         if (m_inAlways) nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
         if (nodep->valuep()) {
             // A variable with an = value can be three things:
-            FileLine* fl = nodep->valuep()->fileline();
+            FileLine* const fl = nodep->valuep()->fileline();
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
                 // 1. Parameters and function inputs: It's a default to use if not overridden
             } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()) {
@@ -252,9 +267,9 @@ private:
                // AstInitial
             else if (m_valueModp) {
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
-                FileLine* newfl = new FileLine(fl);
+                FileLine* const newfl = new FileLine(fl);
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
-                auto* assp
+                auto* const assp
                     = new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
                                     nodep->valuep()->unlinkFrBack());
                 nodep->addNextHere(new AstInitial(newfl, assp));
@@ -280,7 +295,7 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
-            AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
+            AstTypedef* const typep = VN_AS(nodep->backp(), Typedef);
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -364,7 +379,7 @@ private:
         // Unique name space under each containerp() so that an addition of
         // a new type won't change every verilated module.
         AstTypedef* defp = nullptr;
-        ImplTypedefMap::iterator it
+        const ImplTypedefMap::iterator it
             = m_implTypedef.find(std::make_pair(nodep->containerp(), nodep->name()));
         if (it != m_implTypedef.end()) {
             defp = it->second;
@@ -377,7 +392,7 @@ private:
             }
             UASSERT_OBJ(backp, nodep,
                         "Implicit enum/struct type created under unexpected node type");
-            AstNodeDType* dtypep = nodep->childDTypep();
+            AstNodeDType* const dtypep = nodep->childDTypep();
             dtypep->unlinkFrBack();
             if (VN_IS(backp, Typedef)) {
                 // A typedef doesn't need us to make yet another level of typedefing
@@ -420,11 +435,11 @@ private:
         AstNode* bracketp = nodep->arrayp();
         AstNode* firstVarsp = nullptr;
         while (AstDot* dotp = VN_CAST(bracketp, Dot)) { bracketp = dotp->rhsp(); }
-        if (AstSelBit* selp = VN_CAST(bracketp, SelBit)) {
+        if (AstSelBit* const selp = VN_CAST(bracketp, SelBit)) {
             firstVarsp = selp->rhsp()->unlinkFrBackWithNext();
             selp->replaceWith(selp->fromp()->unlinkFrBack());
             VL_DO_DANGLING(selp->deleteTree(), selp);
-        } else if (AstSelLoopVars* selp = VN_CAST(bracketp, SelLoopVars)) {
+        } else if (AstSelLoopVars* const selp = VN_CAST(bracketp, SelLoopVars)) {
             firstVarsp = selp->elementsp()->unlinkFrBackWithNext();
             selp->replaceWith(selp->fromp()->unlinkFrBack());
             VL_DO_DANGLING(selp->deleteTree(), selp);
@@ -434,7 +449,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        AstNode* arrayp = nodep->arrayp();  // Maybe different node since bracketp looked
+        AstNode* const arrayp = nodep->arrayp();  // Maybe different node since bracketp looked
         if (!VN_IS(arrayp, ParseRef) && !VN_IS(arrayp, Dot)) {
             // Code below needs to use other then attributes to figure out the bounds
             // Also need to deal with queues, etc
@@ -452,26 +467,27 @@ private:
         }
         for (AstNode* varsp = lastVarsp; varsp; varsp = varsp->backp()) {
             UINFO(9, "foreachVar " << varsp << endl);
-            FileLine* fl = varsp->fileline();
-            AstNode* varp
+            FileLine* const fl = varsp->fileline();
+            AstNode* const varp
                 = new AstVar(fl, AstVarType::BLOCKTEMP, varsp->name(), nodep->findSigned32DType());
             // These will be the left and right dimensions and size of the array:
-            AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT, arrayp->cloneTree(false),
-                                           new AstConst(fl, dimension));
-            AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT, arrayp->cloneTree(false),
-                                            new AstConst(fl, dimension));
-            AstNode* sizep = new AstAttrOf(fl, AstAttrType::DIM_SIZE, arrayp->cloneTree(false),
-                                           new AstConst(fl, dimension));
-            AstNode* stmtsp = varp;
+            AstNode* const leftp = new AstAttrOf(
+                fl, AstAttrType::DIM_LEFT, arrayp->cloneTree(false), new AstConst(fl, dimension));
+            AstNode* const rightp = new AstAttrOf(
+                fl, AstAttrType::DIM_RIGHT, arrayp->cloneTree(false), new AstConst(fl, dimension));
+            AstNode* const sizep = new AstAttrOf(
+                fl, AstAttrType::DIM_SIZE, arrayp->cloneTree(false), new AstConst(fl, dimension));
+            AstNode* const stmtsp = varp;
             // Assign left-dimension into the loop var:
             stmtsp->addNext(
                 new AstAssign(fl, new AstVarRef(fl, varp->name(), VAccess::WRITE), leftp));
             // This will turn into a constant bool for static arrays
-            AstNode* notemptyp = new AstGt(fl, sizep, new AstConst(fl, 0));
+            AstNode* const notemptyp = new AstGt(fl, sizep, new AstConst(fl, 0));
             // This will turn into a bool constant, indicating whether
             // we count the loop variable up or down:
-            AstNode* countupp = new AstLte(fl, leftp->cloneTree(true), rightp->cloneTree(true));
-            AstNode* comparep = new AstCond(
+            AstNode* const countupp
+                = new AstLte(fl, leftp->cloneTree(true), rightp->cloneTree(true));
+            AstNode* const comparep = new AstCond(
                 fl, countupp->cloneTree(true),
                 // Left increments up to right
                 new AstLte(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
@@ -479,8 +495,8 @@ private:
                 // Left decrements down to right
                 new AstGte(fl, new AstVarRef(fl, varp->name(), VAccess::READ), rightp));
             // This will reduce to comparep for static arrays
-            AstNode* condp = new AstAnd(fl, notemptyp, comparep);
-            AstNode* incp = new AstAssign(
+            AstNode* const condp = new AstAnd(fl, notemptyp, comparep);
+            AstNode* const incp = new AstAssign(
                 fl, new AstVarRef(fl, varp->name(), VAccess::WRITE),
                 new AstAdd(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
                            new AstCond(fl, countupp, new AstConst(fl, 1), new AstConst(fl, -1))));
@@ -539,12 +555,10 @@ private:
     virtual void visit(AstBegin* nodep) override {
         V3Config::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
-        AstNode* backp = nodep->backp();
+        const AstNode* const backp = nodep->backp();
         // IEEE says directly nested item is not a new block
-        const bool nestedIf = (nodep->implied()  // User didn't provide begin/end
-                               && (VN_IS(nodep->stmtsp(), GenIf)
-                                   || VN_IS(nodep->stmtsp(), GenCase))  // Has an if/case
-                               && !nodep->stmtsp()->nextp());  // Has only one item
+        // The genblk name will get attached to the if true/false LOWER begin block(s)
+        const bool nestedIf = nestedIfBegin(nodep);
         // It's not FOR(BEGIN(...)) but we earlier changed it to BEGIN(FOR(...))
         if (nodep->genforp()) {
             ++m_genblkNum;
@@ -576,9 +590,13 @@ private:
         }
     }
     virtual void visit(AstGenIf* nodep) override {
-        ++m_genblkNum;
         cleanFileline(nodep);
-        {
+        const bool nestedIf
+            = (VN_IS(nodep->backp(), Begin) && nestedIfBegin(VN_CAST(nodep->backp(), Begin)));
+        if (nestedIf) {
+            iterateChildren(nodep);
+        } else {
+            ++m_genblkNum;
             VL_RESTORER(m_genblkAbove);
             VL_RESTORER(m_genblkNum);
             m_genblkAbove = m_genblkNum;
@@ -621,7 +639,7 @@ private:
     virtual void visit(AstTimingControl* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
-        AstAlways* alwaysp = VN_CAST(nodep->backp(), Always);
+        AstAlways* const alwaysp = VN_CAST(nodep->backp(), Always);
         if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB) {
             alwaysp->v3error("Timing control statements not legal under always_comb "
                              "(IEEE 1800-2017 9.2.2.2.2)\n"
@@ -631,7 +649,7 @@ private:
             // Verilator is still ony supporting SenTrees under an always,
             // so allow the parser to handle everything and shim to
             // historical AST here
-            if (AstSenTree* sensesp = nodep->sensesp()) {
+            if (AstSenTree* const sensesp = nodep->sensesp()) {
                 sensesp->unlinkFrBackWithNext();
                 alwaysp->sensesp(sensesp);
             }
@@ -657,6 +675,6 @@ public:
 
 void V3LinkParse::linkParse(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
-    { LinkParseVisitor visitor{rootp}; }  // Destruct before checking
+    { LinkParseVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkparse", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

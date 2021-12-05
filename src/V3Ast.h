@@ -56,23 +56,26 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 // For broken() function, return error string if a base of this class has a match
 #define BROKEN_BASE_RTN(test) \
     do { \
-        const char* reasonp = (test); \
+        const char* const reasonp = (test); \
         if (VL_UNCOVERABLE(reasonp)) return reasonp; \
     } while (false)
 
-// (V)erilator (N)ode is: Returns true iff AstNode is of the given AstNode subtype, and not
-// nullptr.
-#define VN_IS(nodep, nodetypename) (AstNode::privateIs<Ast##nodetypename>(nodep))
+// (V)erilator (N)ode is: Returns true if and only if AstNode is of the given AstNode subtype,
+// and not nullptr.
+#define VN_IS(nodep, nodetypename) (AstNode::privateIs<Ast##nodetypename, decltype(nodep)>(nodep))
 
-// (V)erilator (N)ode cast: More efficient but otherwise same as dynamic_cast, use this instead.
-// Cast to given type if node is of such type, otherwise returns nullptr.
-#define VN_CAST(nodep, nodetypename) (AstNode::privateCast<Ast##nodetypename>(nodep))
-#define VN_CAST_CONST(nodep, nodetypename) (AstNode::privateCastConst<Ast##nodetypename>(nodep))
+// (V)erilator (N)ode cast: Similar to dynamic_cast, but more efficient, use this instead.
+// Cast to given type if node is of such type, otherwise returns nullptr. If 'nodep' is nullptr,
+// return nullptr. Pointer constness is preserved, i.e.: given a 'const AstNode*',
+// a 'const Ast<nodetypename>*' is returned.
+#define VN_CAST(nodep, nodetypename) \
+    (AstNode::privateCast<Ast##nodetypename, decltype(nodep)>(nodep))
 
-// (V)erilator (N)ode as: Assert node is of given type then cast to that type. Node can be nullptr.
-// Use this to downcast instead of VN_CAST when you know the true type of the node.
-#define VN_AS(nodep, nodetypename) (AstNode::privateAs<Ast##nodetypename>(nodep))
-#define VN_AS_CONST(nodep, nodetypename) (AstNode::privateAsConst<Ast##nodetypename>(nodep))
+// (V)erilator (N)ode as: Assert node is of given type then cast to that type. Use this to
+// downcast instead of VN_CAST when you know the true type of the node. If 'nodep' is nullptr,
+// return nullptr. Pointer constness is preserved, i.e.: given a 'const AstNode*', a 'const
+// Ast<nodetypename>*' is returned.
+#define VN_AS(nodep, nodetypename) (AstNode::privateAs<Ast##nodetypename, decltype(nodep)>(nodep))
 
 // (V)erilator (N)ode deleted: Pointer to deleted AstNode (for assertions only)
 #define VN_DELETED(nodep) VL_UNLIKELY((vluint64_t)(nodep) == 0x1)
@@ -501,7 +504,8 @@ public:
     }
     bool isUnsigned() const {
         return m_e == CHANDLE || m_e == EVENTVALUE || m_e == STRING || m_e == SCOPEPTR
-               || m_e == CHARPTR || m_e == UINT32 || m_e == UINT64;
+               || m_e == CHARPTR || m_e == UINT32 || m_e == UINT64 || m_e == BIT || m_e == LOGIC
+               || m_e == TIME;
     }
     bool isFourstate() const {
         return m_e == INTEGER || m_e == LOGIC || m_e == LOGIC_IMPLICIT || m_e == TIME;
@@ -513,9 +517,6 @@ public:
     bool isIntNumeric() const {  // Enum increment supported
         return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
                 || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
-    }
-    bool isSloppy() const {  // Don't be as anal about width warnings
-        return !(m_e == LOGIC || m_e == BIT);
     }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
         return (m_e == LOGIC || m_e == BIT);
@@ -1007,7 +1008,7 @@ public:
     // MEMBERS
     void init(int hi, int lo, bool littleEndian) {
         if (lo > hi) {
-            int t = hi;
+            const int t = hi;
             hi = lo;
             lo = t;
         }
@@ -1026,9 +1027,6 @@ public:
     int hiMaxSelect() const {
         return (lo() < 0 ? hi() - lo() : hi());
     }  // Maximum value a [] select may index
-    bool representableByWidth() const {  // Could be represented by just width=1, or [width-1:0]
-        return (!m_ranged || (m_right == 0 && m_left >= 1));
-    }
     void dump(std::ostream& str) const {
         if (ranged()) {
             str << "[" << left() << ":" << right() << "]";
@@ -1079,11 +1077,11 @@ inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
 
 class VBasicTypeKey final {
 public:
-    int m_width;  // From AstNodeDType: Bit width of operation
-    int m_widthMin;  // From AstNodeDType: If unsized, bitwidth of minimum implementation
-    VSigning m_numeric;  // From AstNodeDType: Node is signed
-    AstBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
-    VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
+    const int m_width;  // From AstNodeDType: Bit width of operation
+    const int m_widthMin;  // From AstNodeDType: If unsized, bitwidth of minimum implementation
+    const VSigning m_numeric;  // From AstNodeDType: Node is signed
+    const AstBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
+    const VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
     bool operator==(const VBasicTypeKey& rhs) const {
         return m_width == rhs.m_width && m_widthMin == rhs.m_widthMin && m_numeric == rhs.m_numeric
                && m_keyword == rhs.m_keyword && m_nrange == rhs.m_nrange;
@@ -1248,31 +1246,39 @@ public:
 // clang-format on
 
 //######################################################################
-// AstNVisitor -- Allows new functions to be called on each node
-// type without changing the base classes.  See "Modern C++ Design".
+// Node deleter, deletes all enqueued AstNode* on destruction, or when
+// explicitly told to do so. This is useful when the deletion of removed
+// nodes needs to be deferred to a later time, because pointers to the
+// removed nodes might still exist.
 
-class AstNVisitor VL_NOT_FINAL {
-private:
+class AstNDeleter VL_NOT_FINAL {
     // MEMBERS
-    std::vector<AstNode*> m_deleteps;  // Nodes to delete when doDeletes() called
-protected:
-    friend class AstNode;
+    std::vector<AstNode*> m_deleteps;  // Nodes to delete
 
 public:
     // METHODS
-    /// At the end of the visitor (or doDeletes()), delete this pushed node
-    /// along with all children and next(s). This is often better to use
-    /// than an immediate deleteTree, as any pointers into this node will
-    /// persist for the lifetime of the visitor
+
+    // Enqueue node for deletion on next 'doDelete' (or destruction)
     void pushDeletep(AstNode* nodep) {
         UASSERT_STATIC(nodep, "Cannot delete nullptr node");
         m_deleteps.push_back(nodep);
     }
-    /// Call deleteTree on all previously pushDeletep()'ed nodes
+
+    // Delete all previously pushed nodes (by callint deleteTree)
     void doDeletes();
 
+    // Do the deletions on destruction
+    virtual ~AstNDeleter() { doDeletes(); }
+};
+
+//######################################################################
+// AstNVisitor -- Allows new functions to be called on each node
+// type without changing the base classes.  See "Modern C++ Design".
+
+class AstNVisitor VL_NOT_FINAL : public AstNDeleter {
+    friend class AstNode;
+
 public:
-    virtual ~AstNVisitor() { doDeletes(); }
     /// Call visit()s on nodep
     void iterate(AstNode* nodep);
     /// Call visit()s on nodep
@@ -1847,28 +1853,54 @@ private:
     // For internal use only.
     template <typename T> inline static bool privateTypeTest(const AstNode* nodep);
 
+    template <typename TargetType, typename DeclType> constexpr static bool uselessCast() {
+        using NonRef = typename std::remove_reference<DeclType>::type;
+        using NonPtr = typename std::remove_pointer<NonRef>::type;
+        using NonCV = typename std::remove_cv<NonPtr>::type;
+        return std::is_base_of<TargetType, NonCV>::value;
+    }
+
+    template <typename TargetType, typename DeclType> constexpr static bool impossibleCast() {
+        using NonRef = typename std::remove_reference<DeclType>::type;
+        using NonPtr = typename std::remove_pointer<NonRef>::type;
+        using NonCV = typename std::remove_cv<NonPtr>::type;
+        return !std::is_base_of<NonCV, TargetType>::value;
+    }
+
 public:
     // For use via the VN_IS macro only
-    template <typename T> inline static bool privateIs(const AstNode* nodep) {
+    template <typename T, typename E> inline static bool privateIs(const AstNode* nodep) {
+        static_assert(!uselessCast<T, E>(), "Unnecessary VN_IS, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_IS, node cannot be this type.");
         return nodep && privateTypeTest<T>(nodep);
     }
+
     // For use via the VN_CAST macro only
-    template <typename T> inline static T* privateCast(AstNode* nodep) {
-        return privateIs<T>(nodep) ? reinterpret_cast<T*>(nodep) : nullptr;
+    template <typename T, typename E> inline static T* privateCast(AstNode* nodep) {
+        static_assert(!uselessCast<T, E>(),
+                      "Unnecessary VN_CAST, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_CAST, node cannot be this type.");
+        return nodep && privateTypeTest<T>(nodep) ? reinterpret_cast<T*>(nodep) : nullptr;
     }
-    // For use via the VN_CAST_CONST macro only
-    template <typename T> inline static const T* privateCastConst(const AstNode* nodep) {
-        return privateIs<T>(nodep) ? reinterpret_cast<const T*>(nodep) : nullptr;
+    template <typename T, typename E> inline static const T* privateCast(const AstNode* nodep) {
+        static_assert(!uselessCast<T, E>(),
+                      "Unnecessary VN_CAST, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_CAST, node cannot be this type.");
+        return nodep && privateTypeTest<T>(nodep) ? reinterpret_cast<const T*>(nodep) : nullptr;
     }
+
     // For use via the VN_AS macro only
-    template <typename T> inline static T* privateAs(AstNode* nodep) {
+    template <typename T, typename E> inline static T* privateAs(AstNode* nodep) {
+        static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
                     "AstNode is not of expected type, but instead has type '" << nodep->typeName()
                                                                               << "'");
         return reinterpret_cast<T*>(nodep);
     }
-    // For use via the VN_AS_CONST macro only
-    template <typename T> inline static const T* privateAsConst(const AstNode* nodep) {
+    template <typename T, typename E> inline static const T* privateAs(const AstNode* nodep) {
+        static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
                     "AstNode is not of expected type, but instead has type '" << nodep->typeName()
                                                                               << "'");
@@ -1922,7 +1954,7 @@ public:
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
-    bool isOpaque() { return VN_IS(this, CvtPackString); }
+    bool isOpaque() const { return VN_IS(this, CvtPackString); }
 };
 
 class AstNodeTermop VL_NOT_FINAL : public AstNodeMath {
@@ -2111,9 +2143,7 @@ public:
     AstNode* expr1p() const { return op2p(); }  // op2 = If true...
     AstNode* expr2p() const { return op3p(); }  // op3 = If false...
     virtual string emitVerilog() override { return "%k(%l %f? %r %k: %t)"; }
-    virtual string emitC() override {
-        return "VL_COND_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)";
-    }
+    virtual string emitC() override { return "VL_COND_%nq%lq%rq%tq(%nw, %P, %li, %ri, %ti)"; }
     virtual bool cleanOut() const override { return false; }  // clean if e1 & e2 clean
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return false; }
@@ -2166,7 +2196,7 @@ public:
     AstNode* fromp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
     AstNode* thsp() const { return op3p(); }
-    AstAttrOf* attrp() const { return VN_CAST(op4p(), AttrOf); }
+    AstAttrOf* attrp() const { return VN_AS(op4p(), AttrOf); }
     void fromp(AstNode* nodep) { return setOp1p(nodep); }
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
@@ -2304,7 +2334,7 @@ public:
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     AstNode* exprp() const { return op1p(); }  // op1 = case condition <expression>
     AstCaseItem* itemsp() const {
-        return VN_CAST(op2p(), CaseItem);
+        return VN_AS(op2p(), CaseItem);
     }  // op2 = list of case expressions
     AstNode* notParallelp() const { return op3p(); }  // op3 = assertion code for non-full case's
     void addItemsp(AstNode* nodep) { addOp2p(nodep); }
@@ -2518,10 +2548,10 @@ public:
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const override {
         return (isFourstate()
-                    ? VN_CAST(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
-                              BasicDType)
-                    : VN_CAST(findBitRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
-                              BasicDType));
+                    ? VN_AS(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
+                            BasicDType)
+                    : VN_AS(findBitRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
+                            BasicDType));
     }
     virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
@@ -2537,7 +2567,7 @@ public:
     virtual string name() const override { return m_name; }
     virtual void name(const string& flag) override { m_name = flag; }
     AstMemberDType* membersp() const {
-        return VN_CAST(op1p(), MemberDType);
+        return VN_AS(op1p(), MemberDType);
     }  // op1 = AstMember list
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
@@ -2580,18 +2610,18 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
-        const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
         return (hi() == asamep->hi() && subDTypep() == asamep->subDTypep()
                 && rangenp()->sameTree(asamep->rangenp()));
     }  // HashedDT doesn't recurse, so need to check children
     virtual bool similarDType(AstNodeDType* samep) const override {
-        const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
         return (asamep && type() == samep->type() && hi() == asamep->hi()
                 && rangenp()->sameTree(asamep->rangenp())
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
+    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const override {
         return m_refDTypep ? m_refDTypep : childDTypep();
@@ -2599,7 +2629,7 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
-    AstRange* rangep() const { return VN_CAST(op2p(), Range); }  // op2 = Array(s) of variable
+    AstRange* rangep() const { return VN_AS(op2p(), Range); }  // op2 = Array(s) of variable
     void rangep(AstRange* nodep);
     // METHODS
     virtual AstBasicDType* basicp() const override {
@@ -2673,7 +2703,7 @@ public:
     virtual const char* broken() const override;
     virtual int instrCount() const override { return INSTR_COUNT_CALL; }
     virtual bool same(const AstNode* samep) const override {
-        const AstNodeCCall* asamep = static_cast<const AstNodeCCall*>(samep);
+        const AstNodeCCall* const asamep = static_cast<const AstNodeCCall*>(samep);
         return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());
     }
     AstNode* exprsp() const { return op2p(); }  // op2 = expressions to print
@@ -2705,6 +2735,7 @@ private:
     bool m_dpiContext : 1;  // DPI import context
     bool m_dpiOpenChild : 1;  // DPI import open array child wrapper
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
+    bool m_dpiTraceInit : 1;  // DPI trace_init
     bool m_isConstructor : 1;  // Class constructor
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
@@ -2728,6 +2759,7 @@ protected:
         , m_dpiContext{false}
         , m_dpiOpenChild{false}
         , m_dpiTask{false}
+        , m_dpiTraceInit{false}
         , m_isConstructor{false}
         , m_isHideLocal{false}
         , m_isHideProtected{false}
@@ -2762,7 +2794,7 @@ public:
     AstNode* stmtsp() const { return op3p(); }  // op3 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
     // op4 = scope name
-    AstScopeName* scopeNamep() const { return VN_CAST(op4p(), ScopeName); }
+    AstScopeName* scopeNamep() const { return VN_AS(op4p(), ScopeName); }
     // MORE ACCESSORS
     void dpiOpenParentInc() { ++m_dpiOpenParent; }
     void dpiOpenParentClear() { m_dpiOpenParent = 0; }
@@ -2790,6 +2822,8 @@ public:
     bool dpiOpenChild() const { return m_dpiOpenChild; }
     void dpiTask(bool flag) { m_dpiTask = flag; }
     bool dpiTask() const { return m_dpiTask; }
+    void dpiTraceInit(bool flag) { m_dpiTraceInit = flag; }
+    bool dpiTraceInit() const { return m_dpiTraceInit; }
     void isConstructor(bool flag) { m_isConstructor = flag; }
     bool isConstructor() const { return m_isConstructor; }
     bool isHideLocal() const { return m_isHideLocal; }
@@ -2842,7 +2876,6 @@ public:
         return m_taskp && m_taskp->isGateOptimizable();
     }
     string dotted() const { return m_dotted; }  // * = Scope name or ""
-    string prettyDotted() const { return prettyName(dotted()); }
     string inlinedDots() const { return m_inlinedDots; }
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
     AstNodeFTask* taskp() const { return m_taskp; }  // [After Link] Pointer to variable
@@ -2860,7 +2893,7 @@ public:
     AstNode* pinsp() const { return op3p(); }
     void addPinsp(AstNode* nodep) { addOp3p(nodep); }
     // op4 = scope tracking
-    AstScopeName* scopeNamep() const { return VN_CAST(op4p(), ScopeName); }
+    AstScopeName* scopeNamep() const { return VN_AS(op4p(), ScopeName); }
     void scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
 };
 
@@ -2870,7 +2903,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     // excluding $unit package stuff
 private:
     string m_name;  // Name of the module
-    string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
+    const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     string m_hierName;  // Hierarchical name for errors, etc.
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
@@ -2881,7 +2914,6 @@ private:
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
     int m_level = 0;  // 1=top module, 2=cell off top module, ...
-    int m_typeNum = 0;  // Incrementing implicit type number
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
@@ -2906,7 +2938,7 @@ public:
     virtual string name() const override { return m_name; }
     virtual bool timescaleMatters() const = 0;
     AstNode* stmtsp() const { return op2p(); }  // op2 = List of statements
-    AstActive* activesp() const { return VN_CAST(op3p(), Active); }  // op3 = List of i/sblocks
+    AstActive* activesp() const { return VN_AS(op3p(), Active); }  // op3 = List of i/sblocks
     // METHODS
     void addInlinesp(AstNode* nodep) { addOp1p(nodep); }
     void addStmtp(AstNode* nodep) { addNOp2p(nodep); }
@@ -2921,7 +2953,6 @@ public:
     void level(int level) { m_level = level; }
     int level() const { return m_level; }
     bool isTop() const { return level() == 1; }
-    int typeNumGetInc() { return ++m_typeNum; }
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modPublic() const { return m_modPublic; }
     void modTrace(bool flag) { m_modTrace = flag; }

@@ -65,7 +65,7 @@ struct V3OptionParser::Impl {
 
 #define V3OPTION_PARSER_DEF_ACT_CLASS(className, type, body, enType) \
     template <> class V3OptionParser::Impl::className<type> final : public ActionBase<enType> { \
-        type* m_valp; /* Pointer to a option variable*/ \
+        type* const m_valp; /* Pointer to a option variable*/ \
 \
     public: \
         explicit className(type* valp) \
@@ -153,7 +153,7 @@ int V3OptionParser::parse(int idx, int argc, char* argv[]) {
     UASSERT(m_pimpl->m_isFinalized, "finalize() must be called before parse()");
     const char* optp = argv[idx];
     if (optp[0] == '-' && optp[1] == '-') ++optp;
-    ActionIfs* actp = find(optp);
+    ActionIfs* const actp = find(optp);
     if (!actp) return 0;
     if (!actp->isValueNeeded()) {
         actp->exec(optp, nullptr);
@@ -224,7 +224,7 @@ V3OptionParser::ActionIfs&
 V3OptionParser::AppendHelper::operator()(const char* optp, CbPartialMatchVal,
                                          Impl::ActionCbPartialMatchVal::CbType cb) const {
     const size_t prefixLen = std::strlen(optp);
-    auto wrap
+    const auto wrap
         = [prefixLen, cb](const char* optp, const char* argp) { cb(optp + prefixLen, argp); };
     return m_parser.add<Impl::ActionCbPartialMatchVal>(optp, std::move(wrap));
 }

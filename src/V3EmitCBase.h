@@ -34,14 +34,14 @@ class EmitCParentModule final {
     // NODE STATE
     //   AstFunc::user4p()      AstNodeModule* Parent module pointer
     //   AstVar::user4p()       AstNodeModule* Parent module pointer
-    AstUser4InUse user4InUse;
+    const AstUser4InUse user4InUse;
 
 public:
     EmitCParentModule();
     VL_UNCOPYABLE(EmitCParentModule);
 
     static const AstNodeModule* get(const AstNode* nodep) {
-        return VN_CAST_CONST(nodep->user4p(), NodeModule);
+        return VN_AS(nodep->user4p(), NodeModule);
     }
 };
 

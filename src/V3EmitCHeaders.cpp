@@ -40,7 +40,7 @@ class EmitCHeader final : public EmitCConstInit {
     void emitCellDecls(const AstNodeModule* modp) {
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstCell* const cellp = VN_CAST_CONST(nodep, Cell)) {
+            if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 decorateFirst(first, "// CELLS\n");
                 puts(prefixNameProtect(cellp->modp()) + "* " + cellp->nameProtect() + ";\n");
             }
@@ -102,7 +102,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         // Emit variables in consecutive anon and non-anon batches
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST_CONST(nodep, Var)) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()) {
                     const bool anon = isAnonOk(varp);
                     if (anon != lastAnon) emitCurrentList();
@@ -179,7 +179,7 @@ class EmitCHeader final : public EmitCConstInit {
     void emitEnums(const AstNodeModule* modp) {
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            const AstTypedef* const tdefp = VN_CAST_CONST(nodep, Typedef);
+            const AstTypedef* const tdefp = VN_CAST(nodep, Typedef);
             if (!tdefp) continue;
             if (!tdefp->attrPublic()) continue;
             const AstEnumDType* const edtypep
@@ -191,7 +191,7 @@ class EmitCHeader final : public EmitCConstInit {
             } else {
                 puts("enum " + tdefp->name() + " {\n");
                 for (const AstEnumItem* itemp = edtypep->itemsp(); itemp;
-                     itemp = VN_CAST(itemp->nextp(), EnumItem)) {
+                     itemp = VN_AS(itemp->nextp(), EnumItem)) {
                     puts(itemp->nameProtect());
                     puts(" = ");
                     iterate(itemp->valuep());
@@ -206,7 +206,7 @@ class EmitCHeader final : public EmitCConstInit {
         std::vector<const AstCFunc*> funcsp;
 
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstCFunc* const funcp = VN_CAST_CONST(nodep, CFunc)) {
+            if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                 if (funcp->dpiImportPrototype())  // Declared in __Dpi.h
                     continue;
                 if (funcp->dpiExportDispatcher())  // Declared in __Dpi.h
@@ -230,7 +230,7 @@ class EmitCHeader final : public EmitCConstInit {
     }
     void emitAll(const AstNodeModule* modp) {
         // Include files required by this AstNodeModule
-        if (const AstClass* const classp = VN_CAST_CONST(modp, Class)) {
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
             if (classp->extendsp())
                 puts("#include \""
                      + prefixNameProtect(classp->extendsp()->classp()->classOrPackagep())
@@ -246,7 +246,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitTextSection(modp, AstType::atScHdr);
 
         // Open class body {{{
-        if (const AstClass* const classp = VN_CAST_CONST(modp, Class)) {
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
             puts("class ");
             puts(prefixNameProtect(modp));
             if (classp->extendsp()) {
@@ -310,7 +310,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         emitAll(modp);
 
-        if (const AstClassPackage* const packagep = VN_CAST_CONST(modp, ClassPackage)) {
+        if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
             // Put the non-static class implementation in same h file for speed
             emitAll(packagep->classp());
         }
@@ -335,6 +335,6 @@ void V3EmitC::emitcHeaders() {
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (VN_IS(nodep, Class)) continue;  // Declared with the ClassPackage
-        EmitCHeader::main(VN_CAST_CONST(nodep, NodeModule));
+        EmitCHeader::main(VN_AS(nodep, NodeModule));
     }
 }

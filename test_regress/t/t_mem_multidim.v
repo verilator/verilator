@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
    reg [7:0]  memn [2:0][1:3][5:2];
    // verilator lint_on  BLKANDNBLK
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    reg [63:0] crc;
    reg [71:0] wide;
    reg [7:0]  narrow;
@@ -62,7 +62,7 @@ module t (/*AUTOARG*/
 	 index0 <= crc[1:0];
 	 index1 <= crc[3:2];
 	 index2 <= crc[6:4];
-	 crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+	 crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
 
 	 // We never read past bounds, or get unspecific results
 	 // We also never read lowest indexes, as writing outside of range may corrupt them
@@ -88,7 +88,7 @@ module t (/*AUTOARG*/
       else if (cyc==91) begin
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x nar=%x wide=%x\n",$time, cyc, crc, narrow, wide);
+	 $write("[%0t] cyc==%0d crc=%x nar=%x wide=%x\n", $time, cyc, crc, narrow, wide);
 	 if (crc != 64'h65e3bddcd9bc2750) $stop;
 	 if (narrow != 8'hca) $stop;
 	 if (wide !=  72'h4edafed31ba6873f73) $stop;

@@ -39,7 +39,7 @@
 class CUseVisitor final : public AstNVisitor {
     // NODE STATE
     //  AstNode::user1()     -> bool.  True if already visited
-    AstUser1InUse m_inuser1;
+    const AstUser1InUse m_inuser1;
 
     // MEMBERS
     bool m_impOnly = false;  // In details needed only for implementation
@@ -100,7 +100,7 @@ void V3CUse::cUseAll() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Call visitor separately for each module, so visitor state is cleared
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-         modp = VN_CAST(modp->nextp(), NodeModule)) {
+         modp = VN_AS(modp->nextp(), NodeModule)) {
         // Insert under this module; someday we should e.g. make Ast
         // for each output file and put under that
         CUseVisitor{modp};

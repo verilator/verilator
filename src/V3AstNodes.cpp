@@ -44,7 +44,7 @@ const char* AstIfaceRefDType::broken() const {
 }
 
 AstIface* AstIfaceRefDType::ifaceViaCellp() const {
-    return ((m_cellp && m_cellp->modp()) ? VN_CAST(m_cellp->modp(), Iface) : m_ifacep);
+    return ((m_cellp && m_cellp->modp()) ? VN_AS(m_cellp->modp(), Iface) : m_ifacep);
 }
 
 const char* AstNodeVarRef::broken() const {
@@ -73,13 +73,13 @@ const char* AstAddrOfCFunc::broken() const {
 }
 
 int AstNodeSel::bitConst() const {
-    AstConst* constp = VN_CAST(bitp(), Const);
+    const AstConst* const constp = VN_AS(bitp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
 
 void AstNodeUOrStructDType::repairMemberCache() {
     clearCache();
-    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_CAST(itemp->nextp(), MemberDType)) {
+    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
         if (m_members.find(itemp->name()) != m_members.end()) {
             itemp->v3error("Duplicate declaration of member name: " << itemp->prettyNameQ());
         } else {
@@ -90,7 +90,7 @@ void AstNodeUOrStructDType::repairMemberCache() {
 
 const char* AstNodeUOrStructDType::broken() const {
     std::unordered_set<AstMemberDType*> exists;
-    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_CAST(itemp->nextp(), MemberDType)) {
+    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
         exists.insert(itemp);
     }
     for (MemberNameMap::const_iterator it = m_members.begin(); it != m_members.end(); ++it) {
@@ -197,30 +197,6 @@ AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     }
 }
 
-AstNodeBiop* AstGte::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
-    if (lhsp->isString() && rhsp->isString()) {
-        return new AstGteN(fl, lhsp, rhsp);
-    } else if (lhsp->isDouble() && rhsp->isDouble()) {
-        return new AstGteD(fl, lhsp, rhsp);
-    } else if (lhsp->isSigned() && rhsp->isSigned()) {
-        return new AstGteS(fl, lhsp, rhsp);
-    } else {
-        return new AstGte(fl, lhsp, rhsp);
-    }
-}
-
-AstNodeBiop* AstLte::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
-    if (lhsp->isString() && rhsp->isString()) {
-        return new AstLteN(fl, lhsp, rhsp);
-    } else if (lhsp->isDouble() && rhsp->isDouble()) {
-        return new AstLteD(fl, lhsp, rhsp);
-    } else if (lhsp->isSigned() && rhsp->isSigned()) {
-        return new AstLteS(fl, lhsp, rhsp);
-    } else {
-        return new AstLte(fl, lhsp, rhsp);
-    }
-}
-
 AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
         return new AstEqN(fl, lhsp, rhsp);
@@ -238,11 +214,11 @@ AstExecGraph::AstExecGraph(FileLine* fileline)
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
 AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp) {
-    AstNode* ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
-    AstNode* bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);
+    AstNode* const ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
+    AstNode* const bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-    AstNode* newp = new AstAnd(fileline(), ap, bp);
+    AstNode* const newp = new AstAnd(fileline(), ap, bp);
     return newp;
 }
 
@@ -250,11 +226,11 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     bool success = false;
     if (literal[0] == '"') {
         // This is a string
-        string v = literal.substr(1, literal.find('"', 1) - 1);
+        const string v = literal.substr(1, literal.find('"', 1) - 1);
         return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
     } else if (literal.find_first_of(".eEpP") != string::npos) {
         // This may be a real
-        double v = VString::parseDouble(literal, &success);
+        const double v = VString::parseDouble(literal, &success);
         if (success) return new AstConst(fl, AstConst::RealDouble(), v);
     }
     if (!success) {
@@ -266,7 +242,7 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
         // the string after the number, this is invalid C and we try
         // the Verilog literal parser.
         char* endp;
-        int v = strtol(literal.c_str(), &endp, 0);
+        const int v = strtol(literal.c_str(), &endp, 0);
         if ((v != 0) && (endp[0] == 0)) {  // C literal
             return new AstConst(fl, AstConst::Signed32(), v);
         } else {  // Try a Verilog literal (fatals if not)
@@ -360,7 +336,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 
 string AstVar::vlEnumType() const {
     string arg;
-    AstBasicDType* bdtypep = basicp();
+    const AstBasicDType* const bdtypep = basicp();
     const bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
         return "VLVT_PTR";
@@ -401,7 +377,7 @@ string AstVar::vlEnumDir() const {
         out += "|VLVF_PUB_RD";
     }
     //
-    if (AstBasicDType* bdtypep = basicp()) {
+    if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
     }
     return out;
@@ -413,7 +389,7 @@ string AstVar::vlPropDecl(const string& propName) const {
     std::vector<int> ulims;  // Unpacked dimension limits
     for (const AstNodeDType* dtp = dtypep(); dtp;) {
         dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-        if (const AstNodeArrayDType* const adtypep = VN_CAST_CONST(dtp, NodeArrayDType)) {
+        if (const AstNodeArrayDType* const adtypep = VN_CAST(dtp, NodeArrayDType)) {
             ulims.push_back(adtypep->declRange().left());
             ulims.push_back(adtypep->declRange().right());
             dtp = adtypep->subDTypep();
@@ -499,7 +475,7 @@ public:
     string convert(const AstVar* varp) const {
         if (varp->isDpiOpenArray()) {
             return openArray(varp);
-        } else if (const AstBasicDType* basicp = varp->basicp()) {
+        } else if (const AstBasicDType* const basicp = varp->basicp()) {
             if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
                 return bitLogicVector(varp, basicp->isDpiBitVec());
             } else {
@@ -539,9 +515,9 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 
 string AstVar::dpiTmpVarType(const string& varName) const {
     class converter final : public dpiTypesToStringConverter {
-        string m_name;
+        const string m_name;
         string arraySuffix(const AstVar* varp, size_t n) const {
-            if (AstUnpackArrayDType* unpackp
+            if (AstUnpackArrayDType* const unpackp
                 = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 // Convert multi dimensional unpacked array to 1D array
                 if (n == 0) n = 1;
@@ -607,15 +583,15 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
     // See if this is a SC assignment; if so return that type
     // Historically sc variables are identified by a variable
     // attribute. TODO it would better be a data type attribute.
-    if (AstVar* anodep = VN_CAST(nodep, Var)) {
+    if (AstVar* const anodep = VN_CAST(nodep, Var)) {
         if (anodep->isSc()) {
             return anodep;
         } else {
             return nullptr;
         }
     } else if (VN_IS(nodep, VarRef)) {
-        if (VN_CAST(nodep, VarRef)->varp()->isSc()) {
-            return VN_CAST(nodep, VarRef)->varp();
+        if (VN_AS(nodep, VarRef)->varp()->isSc()) {
+            return VN_AS(nodep, VarRef)->varp();
         } else {
             return nullptr;
         }
@@ -666,29 +642,29 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
     // Legacy compound argument currently just passed through and unused
     CTypeRecursed info;
 
-    const AstNodeDType* dtypep = this->skipRefp();
-    if (const auto* adtypep = VN_CAST_CONST(dtypep, AssocArrayDType)) {
+    const AstNodeDType* const dtypep = this->skipRefp();
+    if (const auto* const adtypep = VN_CAST(dtypep, AssocArrayDType)) {
         const CTypeRecursed key = adtypep->keyDTypep()->cTypeRecurse(true);
         const CTypeRecursed val = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlAssocArray<" + key.m_type + ", " + val.m_type + ">";
-    } else if (const auto* adtypep = VN_CAST_CONST(dtypep, DynArrayDType)) {
+    } else if (const auto* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlQueue<" + sub.m_type + ">";
-    } else if (const auto* adtypep = VN_CAST_CONST(dtypep, QueueDType)) {
+    } else if (const auto* const adtypep = VN_CAST(dtypep, QueueDType)) {
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlQueue<" + sub.m_type;
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
-    } else if (const auto* adtypep = VN_CAST_CONST(dtypep, ClassRefDType)) {
+    } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
-    } else if (const auto* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
+    } else if (const auto* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         if (adtypep->isCompound()) compound = true;
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
         info.m_type = "VlUnpacked<" + sub.m_type;
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
-    } else if (const AstBasicDType* bdtypep = dtypep->basicp()) {
+    } else if (const AstBasicDType* const bdtypep = dtypep->basicp()) {
         // We don't print msb()/lsb() as multidim packed would require recursion,
         // and may confuse users as C++ data is stored always with bit 0 used
         const string bitvec = (!bdtypep->isOpaque() && !v3Global.opt.protectIds())
@@ -728,7 +704,7 @@ uint32_t AstNodeDType::arrayUnpackedElements() {
     uint32_t entries = 1;
     for (AstNodeDType* dtypep = this; dtypep;) {
         dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-        if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             entries *= adtypep->elementsConst();
             dtypep = adtypep->subDTypep();
         } else {
@@ -745,7 +721,7 @@ std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) {
     uint32_t unpacked = 0;
     for (AstNodeDType* dtypep = this; dtypep;) {
         dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-        if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
+        if (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
             if (VN_IS(adtypep, PackArrayDType)) {
                 ++packed;
             } else {
@@ -753,11 +729,11 @@ std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) {
             }
             dtypep = adtypep->subDTypep();
             continue;
-        } else if (const AstQueueDType* qdtypep = VN_CAST(dtypep, QueueDType)) {
+        } else if (const AstQueueDType* const qdtypep = VN_CAST(dtypep, QueueDType)) {
             unpacked++;
             dtypep = qdtypep->subDTypep();
             continue;
-        } else if (const AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
+        } else if (const AstBasicDType* const adtypep = VN_CAST(dtypep, BasicDType)) {
             if (includeBasic && (adtypep->isRanged() || adtypep->isString())) packed++;
         } else if (VN_IS(dtypep, StructDType)) {
             packed++;
@@ -769,7 +745,7 @@ std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) {
 
 int AstNodeDType::widthPow2() const {
     // I.e.  width 30 returns 32, width 32 returns 32.
-    uint32_t width = this->width();
+    const uint32_t width = this->width();
     for (int p2 = 30; p2 >= 0; p2--) {
         if (width > (1UL << p2)) return (1UL << (p2 + 1));
     }
@@ -777,11 +753,11 @@ int AstNodeDType::widthPow2() const {
 }
 
 bool AstNodeDType::isLiteralType() const {
-    if (auto* const dtypep = VN_CAST_CONST(skipRefp(), BasicDType)) {
+    if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
-    } else if (auto* const dtypep = VN_CAST_CONST(skipRefp(), UnpackArrayDType)) {
+    } else if (const auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {
         return dtypep->basicp()->isLiteralType();
-    } else if (auto* const dtypep = VN_CAST_CONST(skipRefp(), StructDType)) {
+    } else if (const auto* const dtypep = VN_CAST(skipRefp(), StructDType)) {
         // Currently all structs are packed, later this can be expanded to
         // 'forall members _.isLiteralType()'
         return dtypep->packed();
@@ -795,25 +771,25 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
     // Else AstArraySel etc; search for the base
     while (nodep) {
         if (VN_IS(nodep, ArraySel)) {
-            nodep = VN_CAST(nodep, ArraySel)->fromp();
+            nodep = VN_AS(nodep, ArraySel)->fromp();
             continue;
         } else if (VN_IS(nodep, Sel)) {
-            nodep = VN_CAST(nodep, Sel)->fromp();
+            nodep = VN_AS(nodep, Sel)->fromp();
             continue;
         } else if (overMembers && VN_IS(nodep, MemberSel)) {
-            nodep = VN_CAST(nodep, MemberSel)->fromp();
+            nodep = VN_AS(nodep, MemberSel)->fromp();
             continue;
         }
         // AstNodeSelPre stashes the associated variable under an ATTROF
         // of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
         else if (VN_IS(nodep, AttrOf)) {
-            nodep = VN_CAST(nodep, AttrOf)->fromp();
+            nodep = VN_AS(nodep, AttrOf)->fromp();
             continue;
         } else if (VN_IS(nodep, NodePreSel)) {
-            if (VN_CAST(nodep, NodePreSel)->attrp()) {
-                nodep = VN_CAST(nodep, NodePreSel)->attrp();
+            if (VN_AS(nodep, NodePreSel)->attrp()) {
+                nodep = VN_AS(nodep, NodePreSel)->attrp();
             } else {
-                nodep = VN_CAST(nodep, NodePreSel)->fromp();
+                nodep = VN_AS(nodep, NodePreSel)->fromp();
             }
             continue;
         } else {
@@ -854,7 +830,7 @@ string AstScope::nameDotless() const {
 
 string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
     string out;
-    for (AstText* textp = scopeTextp; textp; textp = VN_CAST(textp->nextp(), Text)) {
+    for (AstText* textp = scopeTextp; textp; textp = VN_AS(textp->nextp(), Text)) {
         out += textp->text();
     }
     // TOP will be replaced by top->name()
@@ -865,7 +841,7 @@ string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
 }
 string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
     string out;
-    for (AstText* textp = scopeTextp; textp; textp = VN_CAST(textp->nextp(), Text)) {
+    for (AstText* textp = scopeTextp; textp; textp = VN_AS(textp->nextp(), Text)) {
         out += textp->text();
     }
     if (out.substr(0, 10) == "__DOT__TOP") out.replace(0, 10, "");
@@ -879,28 +855,28 @@ string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
 
 bool AstSenTree::hasClocked() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isClocked()) return true;
     }
     return false;
 }
 bool AstSenTree::hasSettle() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isSettle()) return true;
     }
     return false;
 }
 bool AstSenTree::hasInitial() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isInitial()) return true;
     }
     return false;
 }
 bool AstSenTree::hasCombo() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isCombo()) return true;
     }
     return false;
@@ -918,7 +894,7 @@ void AstTypeTable::clearCache() {
     m_detailedMap.clear();
     // Clear generic()'s so dead detection will work
     for (AstNode* nodep = typesp(); nodep; nodep = nodep->nextp()) {
-        if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) bdtypep->generic(false);
+        if (AstBasicDType* const bdtypep = VN_CAST(nodep, BasicDType)) bdtypep->generic(false);
     }
 }
 
@@ -926,7 +902,7 @@ void AstTypeTable::repairCache() {
     // After we mass-change widthMin in V3WidthCommit, we need to correct the table.
     clearCache();
     for (AstNode* nodep = typesp(); nodep; nodep = nodep->nextp()) {
-        if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) {
+        if (AstBasicDType* const bdtypep = VN_CAST(nodep, BasicDType)) {
             (void)findInsertSameDType(bdtypep);
         }
     }
@@ -934,7 +910,7 @@ void AstTypeTable::repairCache() {
 
 AstEmptyQueueDType* AstTypeTable::findEmptyQueueDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_emptyQueuep)) {
-        AstEmptyQueueDType* newp = new AstEmptyQueueDType{fl};
+        AstEmptyQueueDType* const newp = new AstEmptyQueueDType{fl};
         addTypesp(newp);
         m_emptyQueuep = newp;
     }
@@ -943,7 +919,7 @@ AstEmptyQueueDType* AstTypeTable::findEmptyQueueDType(FileLine* fl) {
 
 AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_voidp)) {
-        AstVoidDType* newp = new AstVoidDType{fl};
+        AstVoidDType* const newp = new AstVoidDType{fl};
         addTypesp(newp);
         m_voidp = newp;
     }
@@ -952,7 +928,7 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
 
 AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_queueIndexp)) {
-        AstQueueDType* newp = new AstQueueDType(fl, AstNode::findUInt32DType(), nullptr);
+        AstQueueDType* const newp = new AstQueueDType(fl, AstNode::findUInt32DType(), nullptr);
         addTypesp(newp);
         m_queueIndexp = newp;
     }
@@ -962,11 +938,11 @@ AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];
     //
-    AstBasicDType* new1p = new AstBasicDType(fl, kwd);
+    AstBasicDType* const new1p = new AstBasicDType(fl, kwd);
     // Because the detailed map doesn't update this map,
     // check the detailed map for this same node
     // Also adds this new node to the detailed map
-    AstBasicDType* newp = findInsertSameDType(new1p);
+    AstBasicDType* const newp = findInsertSameDType(new1p);
     if (newp != new1p) {
         VL_DO_DANGLING(new1p->deleteTree(), new1p);
     } else {
@@ -979,8 +955,8 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) 
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width,
                                                int widthMin, VSigning numeric) {
-    AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
-    AstBasicDType* newp = findInsertSameDType(new1p);
+    AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
+    AstBasicDType* const newp = findInsertSameDType(new1p);
     if (newp != new1p) {
         VL_DO_DANGLING(new1p->deleteTree(), new1p);
     } else {
@@ -992,8 +968,8 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
                                                const VNumRange& range, int widthMin,
                                                VSigning numeric) {
-    AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
-    AstBasicDType* newp = findInsertSameDType(new1p);
+    AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
+    AstBasicDType* const newp = findInsertSameDType(new1p);
     if (newp != new1p) {
         VL_DO_DANGLING(new1p->deleteTree(), new1p);
     } else {
@@ -1003,8 +979,8 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
 }
 
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
-    VBasicTypeKey key(nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
-                      nodep->nrange());
+    const VBasicTypeKey key(nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
+                            nodep->nrange());
     DetailedMap& mapr = m_detailedMap;
     const auto it = mapr.find(key);
     if (it != mapr.end()) return it->second;
@@ -1041,10 +1017,8 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
     // - the default/inititem children might be in different order yet still yield the same table
     // See note in AstInitArray::same about the same. This function instead compares by initializer
     // value, rather than by tree structure.
-    const AstUnpackArrayDType* const aDTypep = VN_CAST(ap->dtypep(), UnpackArrayDType);
-    const AstUnpackArrayDType* const bDTypep = VN_CAST(bp->dtypep(), UnpackArrayDType);
-    UASSERT_STATIC(aDTypep, "Bad type in array initializer");
-    UASSERT_STATIC(bDTypep, "Bad type in array initializer");
+    const AstUnpackArrayDType* const aDTypep = VN_AS(ap->dtypep(), UnpackArrayDType);
+    const AstUnpackArrayDType* const bDTypep = VN_AS(bp->dtypep(), UnpackArrayDType);
     if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) {  // Element types differ
         return false;
     }
@@ -1063,14 +1037,14 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
 }
 
 AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
-    AstNode* const defaultp = initp->defaultp();
+    const AstNode* const defaultp = initp->defaultp();
     // Verify initializer is well formed
     UASSERT_OBJ(VN_IS(initp->dtypep(), UnpackArrayDType), initp,
                 "Const pool table must have AstUnpackArrayDType dtype");
     UASSERT_OBJ(!defaultp || VN_IS(defaultp, Const), initp,
                 "Const pool table default must be Const");
     for (AstNode* nodep = initp->initsp(); nodep; nodep = nodep->nextp()) {
-        AstNode* const valuep = VN_CAST(nodep, InitItem)->valuep();
+        const AstNode* const valuep = VN_AS(nodep, InitItem)->valuep();
         UASSERT_OBJ(VN_IS(valuep, Const), valuep, "Const pool table entry must be Const");
     }
     // Try to find an existing table with the same content
@@ -1078,7 +1052,7 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
     const auto& er = m_tables.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
         AstVarScope* const varScopep = it->second;
-        const AstInitArray* const init2p = VN_CAST(varScopep->varp()->valuep(), InitArray);
+        const AstInitArray* const init2p = VN_AS(varScopep->varp()->valuep(), InitArray);
         if (sameInit(initp, init2p)) {
             return varScopep;  // Found identical table
         }
@@ -1107,7 +1081,7 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     const auto& er = m_consts.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
         AstVarScope* const varScopep = it->second;
-        const AstConst* const init2p = VN_CAST(varScopep->varp()->valuep(), Const);
+        const AstConst* const init2p = VN_AS(varScopep->varp()->valuep(), Const);
         if (sameInit(initp, init2p)
             && (mergeDType || varScopep->dtypep()->sameTree(initp->dtypep()))) {
             return varScopep;  // Found identical constant
@@ -1218,7 +1192,7 @@ void AstNode::dump(std::ostream& str) const {
         } else {
             str << " @dt=" << nodeAddr(dtypep()) << "@";
         }
-        if (AstNodeDType* dtp = dtypep()) dtp->dumpSmall(str);
+        if (AstNodeDType* const dtp = dtypep()) dtp->dumpSmall(str);
     } else {  // V3Broken will throw an error
         if (dtypep()) str << " %Error-dtype-exp=null,got=" << nodeAddr(dtypep());
     }
@@ -1284,9 +1258,8 @@ const char* AstClassPackage::broken() const {
     return nullptr;
 }
 void AstClass::insertCache(AstNode* nodep) {
-    const bool doit
-        = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
-           || (VN_IS(nodep, NodeFTask) && !VN_CAST(nodep, NodeFTask)->isExternProto()));
+    const bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
+                       || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto()));
     if (doit) {
         if (m_members.find(nodep->name()) != m_members.end()) {
             nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
@@ -1312,9 +1285,9 @@ void AstClass::dump(std::ostream& str) const {
     if (isVirtual()) str << " [VIRT]";
 }
 AstClass* AstClassExtends::classp() const {
-    AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
+    const AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
     if (VL_UNLIKELY(!refp)) {  // LinkDot uses this for 'super.'
-        refp = VN_CAST(childDTypep(), ClassRefDType);
+        refp = VN_AS(childDTypep(), ClassRefDType);
     }
     UASSERT_OBJ(refp, this, "class extends non-ref");
     return refp->classp();
@@ -1501,7 +1474,7 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
 void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (generic()) str << " [GENERIC]";
-    if (AstNodeDType* dtp = virtRefDTypep()) {
+    if (AstNodeDType* const dtp = virtRefDTypep()) {
         str << " refdt=" << nodeAddr(dtp);
         dtp->dumpSmall(str);
     }
@@ -1515,7 +1488,7 @@ void AstNodeDType::dumpSmall(std::ostream& str) const {
 }
 void AstNodeArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
-    if (auto* adtypep = VN_CAST_CONST(this, UnpackArrayDType)) {
+    if (auto* const adtypep = VN_CAST(this, UnpackArrayDType)) {
         // uc = packed compound object, u = unpacked POD
         str << (adtypep->isCompound() ? "uc" : "u");
     } else {
@@ -1551,7 +1524,7 @@ std::vector<AstUnpackArrayDType*> AstUnpackArrayDType::unpackDimensions() {
     std::vector<AstUnpackArrayDType*> dims;
     for (AstUnpackArrayDType* unpackp = this; unpackp;) {
         dims.push_back(unpackp);
-        if (AstNodeDType* subp = unpackp->subDTypep()) {
+        if (AstNodeDType* const subp = unpackp->subDTypep()) {
             unpackp = VN_CAST(subp, UnpackArrayDType);
         } else {
             unpackp = nullptr;
@@ -1608,7 +1581,7 @@ void AstMTaskBody::dump(std::ostream& str) const {
 void AstTypeTable::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     for (int i = 0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
-        if (AstBasicDType* subnodep = m_basicps[i]) {
+        if (AstBasicDType* const subnodep = m_basicps[i]) {
             str << '\n';  // Newline from caller, so newline first
             str << "\t\t" << std::setw(8) << AstBasicDTypeKwd(i).ascii();
             str << "  -> ";
@@ -1618,7 +1591,7 @@ void AstTypeTable::dump(std::ostream& str) const {
     {
         const DetailedMap& mapr = m_detailedMap;
         for (const auto& itr : mapr) {
-            AstBasicDType* dtypep = itr.second;
+            AstBasicDType* const dtypep = itr.second;
             str << '\n';  // Newline from caller, so newline first
             str << "\t\tdetailed  ->  ";
             dtypep->dump(str);
@@ -1726,6 +1699,11 @@ void AstScope::dump(std::ostream& str) const {
     str << " [abovep=" << reinterpret_cast<const void*>(aboveScopep()) << "]";
     str << " [cellp=" << reinterpret_cast<const void*>(aboveCellp()) << "]";
     str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
+}
+void AstScopeName::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (dpiExport()) str << " [DPIEX]";
+    if (forFormat()) str << " [FMT]";
 }
 void AstSenTree::dump(std::ostream& str) const {
     this->AstNode::dump(str);

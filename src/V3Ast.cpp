@@ -95,7 +95,7 @@ AstNode* AstNode::abovep() const {
     // Avoid supporting at other locations as would require walking
     // list which is likely to cause performance issues.
     UASSERT_OBJ(!m_nextp || firstAbovep(), this, "abovep() not allowed when in midlist");
-    const AstNode* firstp = firstAbovep() ? this : m_headtailp;
+    const AstNode* const firstp = firstAbovep() ? this : m_headtailp;
     return firstp->backp();
 }
 
@@ -277,8 +277,8 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
         oldtailp->m_nextp = newp;
         newp->m_backp = oldtailp;
         // New tail needs the head
-        AstNode* newtailp = newp->m_headtailp;
-        AstNode* headp = oldtailp->m_headtailp;
+        AstNode* const newtailp = newp->m_headtailp;
+        AstNode* const headp = oldtailp->m_headtailp;
         oldtailp->m_headtailp = nullptr;  // May be written again as new head
         newp->m_headtailp = nullptr;  // May be written again as new tail
         newtailp->m_headtailp = headp;
@@ -305,11 +305,11 @@ void AstNode::addNextHere(AstNode* newp) {
     debugTreeChange(newp, "-addHereNew: ", __LINE__, true);
     newp->editCountInc();
 
-    AstNode* addlastp = newp->m_headtailp;  // Last node in list to be added
+    AstNode* const addlastp = newp->m_headtailp;  // Last node in list to be added
     UASSERT(!addlastp->m_nextp, "Headtailp tail isn't at the tail");
 
     // Forward links
-    AstNode* oldnextp = this->m_nextp;
+    AstNode* const oldnextp = this->m_nextp;
     this->m_nextp = newp;
     addlastp->m_nextp = oldnextp;  // Perhaps null if 'this' is not list
 
@@ -318,7 +318,7 @@ void AstNode::addNextHere(AstNode* newp) {
     newp->m_backp = this;
 
     // Head/tail
-    AstNode* oldheadtailp = this->m_headtailp;
+    AstNode* const oldheadtailp = this->m_headtailp;
     //    (!oldheadtailp)               // this was&is middle of list
     //    (oldheadtailp==this && !oldnext)// this was head AND tail (one node long list)
     //    (oldheadtailp && oldnextp)    // this was&is head of list of not just one node, not
@@ -455,10 +455,10 @@ void AstNRelinker::dump(std::ostream& str) const {
 
 AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
     debugTreeChange(this, "-unlinkWNextThs: ", __LINE__, true);
-    AstNode* oldp = this;
+    AstNode* const oldp = this;
     UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
     oldp->editCountInc();
-    AstNode* backp = oldp->m_backp;
+    AstNode* const backp = oldp->m_backp;
     if (linkerp) {
         linkerp->m_oldp = oldp;
         linkerp->m_backp = backp;
@@ -487,7 +487,7 @@ AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
         AstNode* oldtailp = oldp;
         while (oldtailp->m_nextp) oldtailp = oldtailp->m_nextp;
         // Create new head/tail of old list
-        AstNode* oldheadp = oldtailp->m_headtailp;
+        AstNode* const oldheadp = oldtailp->m_headtailp;
         oldheadp->m_headtailp = oldp->m_backp;
         oldheadp->m_headtailp->m_headtailp = oldheadp;
         // Create new head/tail of extracted list
@@ -515,10 +515,10 @@ AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
 
 AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
     debugTreeChange(this, "-unlinkFrBkThs: ", __LINE__, true);
-    AstNode* oldp = this;
+    AstNode* const oldp = this;
     UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
     oldp->editCountInc();
-    AstNode* backp = oldp->m_backp;
+    AstNode* const backp = oldp->m_backp;
     if (linkerp) {
         linkerp->m_oldp = oldp;
         linkerp->m_backp = backp;
@@ -560,7 +560,7 @@ AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
             this->v3fatalSrc("Unlink of node with back not pointing to it.");
         }
         if (oldp->m_nextp) {
-            AstNode* newheadp = oldp->m_nextp;
+            AstNode* const newheadp = oldp->m_nextp;
             newheadp->m_backp = backp;
             newheadp->m_headtailp = oldp->m_headtailp;
             newheadp->m_headtailp->m_headtailp = newheadp;
@@ -582,7 +582,7 @@ void AstNode::relink(AstNRelinker* linkerp) {
         UINFO(0, " EDIT:      relink: ");
         dumpPtrs();
     }
-    AstNode* newp = this;
+    AstNode* const newp = this;
     UASSERT(linkerp && linkerp->m_backp, "Need non-empty linker");
     UASSERT(!newp->backp(), "New node already linked?");
     newp->editCountInc();
@@ -592,7 +592,7 @@ void AstNode::relink(AstNRelinker* linkerp) {
         cout << endl;
     }
 
-    AstNode* backp = linkerp->m_backp;
+    AstNode* const backp = linkerp->m_backp;
     debugTreeChange(this, "-relinkNew: ", __LINE__, true);
     debugTreeChange(backp, "-relinkTre: ", __LINE__, true);
 
@@ -631,10 +631,10 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
         // Likewise there may be a old list.
         // Insert the whole old list following the new node's list.
         // Thus a unlink without next, followed by relink, gives the same list.
-        AstNode* newlistlastp = newp->m_headtailp;
+        AstNode* const newlistlastp = newp->m_headtailp;
         UASSERT_OBJ(!(newlistlastp->m_nextp && newlistlastp != newp), newp,
                     "Headtailp tail isn't at the tail");
-        AstNode* oldlistlastp = pointpr->m_headtailp;
+        AstNode* const oldlistlastp = pointpr->m_headtailp;
         UASSERT_OBJ(!(oldlistlastp->m_nextp && oldlistlastp != pointpr), newp,
                     "Old headtailp tail isn't at the tail");
         // Next links
@@ -671,7 +671,7 @@ void AstNode::swapWith(AstNode* bp) {
 
 AstNode* AstNode::cloneTreeIter() {
     // private: Clone single node and children
-    AstNode* newp = this->clone();
+    AstNode* const newp = this->clone();
     if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList());
     if (this->m_op2p) newp->op2p(this->m_op2p->cloneTreeIterList());
     if (this->m_op3p) newp->op3p(this->m_op3p->cloneTreeIterList());
@@ -688,7 +688,7 @@ AstNode* AstNode::cloneTreeIterList() {
     AstNode* newtailp = nullptr;
     // Audited to make sure this is never nullptr
     for (AstNode* oldp = this; oldp; oldp = oldp->m_nextp) {
-        AstNode* newp = oldp->cloneTreeIter();
+        AstNode* const newp = oldp->cloneTreeIter();
         newp->m_headtailp = nullptr;
         newp->m_backp = newtailp;
         if (newtailp) newtailp->m_nextp = newp;
@@ -777,14 +777,14 @@ void AstNode::deleteTree() {
 #ifdef VL_LEAK_CHECKS
 void* AstNode::operator new(size_t size) {
     // Optimization note: Aligning to cache line is a loss, due to lost packing
-    AstNode* objp = static_cast<AstNode*>(::operator new(size));
+    const AstNode* const objp = static_cast<AstNode*>(::operator new(size));
     V3Broken::addNewed(objp);
     return objp;
 }
 
 void AstNode::operator delete(void* objp, size_t size) {
     if (!objp) return;
-    AstNode* nodep = static_cast<AstNode*>(objp);
+    const AstNode* const nodep = static_cast<AstNode*>(objp);
     V3Broken::deleted(nodep);
     ::operator delete(objp);
 }
@@ -877,7 +877,7 @@ void AstNode::iterateAndNextConst(AstNVisitor& v) {
     // Keep following the current list even if edits change it
     AstNode* nodep = this;
     do {
-        AstNode* nnextp = nodep->m_nextp;
+        AstNode* const nnextp = nodep->m_nextp;
         ASTNODE_PREFETCH(nnextp);
         nodep->accept(v);
         nodep = nnextp;
@@ -898,7 +898,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
+        AstBegin* const tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
         {
             VL_DO_DANGLING(tempp->stmtsp()->accept(v),
                            nodep);  // nodep to null as may be replaced
@@ -994,8 +994,8 @@ void AstNode::checkTreeIter(AstNode* backp) {
 void AstNode::checkTreeIterList(AstNode* backp) {
     // private: Check a (possible) list of nodes, this is always the head of the list
     // Audited to make sure this is never nullptr
-    AstNode* headp = this;
-    AstNode* tailp = this;
+    AstNode* const headp = this;
+    const AstNode* tailp = this;
     for (AstNode* nodep = headp; nodep; nodep = nodep->nextp()) {
         nodep->checkTreeIter(backp);
         UASSERT_OBJ(headp == this || !nextp(), this,
@@ -1143,7 +1143,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
         checkTree();
         // Broken isn't part of check tree because it can munge iterp's
         // set by other steps if it is called in the middle of other operations
-        if (AstNetlist* netp = VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
+        if (AstNetlist* const netp = VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
     }
 }
 
@@ -1164,7 +1164,7 @@ string AstNode::locationStr() const {
             return "";  // LCOV_EXCL_LINE
         }
         const AstScope* scopep;
-        if ((scopep = VN_CAST_CONST(backp, Scope))) {
+        if ((scopep = VN_CAST(backp, Scope))) {
             // The design is flattened and there are no useful scopes
             // This is probably because of inlining
             if (scopep->isTop()) break;
@@ -1178,10 +1178,10 @@ string AstNode::locationStr() const {
     while (backp) {
         const AstModule* modp;
         const AstNodeVarRef* nvrp;
-        if ((modp = VN_CAST_CONST(backp, Module)) && !modp->hierName().empty()) {
+        if ((modp = VN_CAST(backp, Module)) && !modp->hierName().empty()) {
             str += modp->hierName();
             return str;
-        } else if ((nvrp = VN_CAST_CONST(backp, NodeVarRef))) {
+        } else if ((nvrp = VN_CAST(backp, NodeVarRef))) {
             const string prettyName = nvrp->prettyName();
             // VarRefs have not been flattened yet and do not contain location information
             if (prettyName != nvrp->name()) {
@@ -1276,9 +1276,9 @@ AstNodeDType* AstNode::findVoidDType() const {
 }
 
 //######################################################################
-// AstNVisitor
+// AstNDeleter
 
-void AstNVisitor::doDeletes() {
-    for (AstNode* nodep : m_deleteps) nodep->deleteTree();
+void AstNDeleter::doDeletes() {
+    for (AstNode* const nodep : m_deleteps) nodep->deleteTree();
     m_deleteps.clear();
 }
