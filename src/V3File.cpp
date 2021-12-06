@@ -335,7 +335,7 @@ class VInFilterImp final {
 #ifdef INFILTER_PIPE
     pid_t m_pid = 0;  // fork() process id
 #else
-    const int m_pid = 0;  // fork() process id - always zero as disabled
+    int m_pid = 0;  // fork() process id - always zero as disabled
 #endif
     bool m_pidExited = false;
     int m_pidStatus = 0;

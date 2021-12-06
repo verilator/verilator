@@ -13,6 +13,8 @@ Verilator 4.217 devel
 
 **Minor:**
 
+* Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
+
 
 Verilator 4.216 2021-12-05
 ==========================
