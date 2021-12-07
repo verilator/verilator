@@ -16,6 +16,8 @@ module t (/*AUTOARG*/);
    reg [2:1] [4:3] array [5:6] [7:8];
    reg [1:2] [3:4] larray [6:5] [8:7];
    bit [31:0]      depth1_array [0:0];
+   int             oned [3:1];
+   int             twod [3:1][9:8];
 
    typedef struct packed {
       reg [1:0] [63:0] subarray;
@@ -109,6 +111,21 @@ module t (/*AUTOARG*/);
           add += strarray[s].mid.subarray[ss];
       `checkh(add, 'h19);
 `endif
+
+      add = 0;
+      foreach (oned[i]) begin
+         ++add;
+         break;
+      end
+      `checkh(add, 1);  // 9
+
+      add = 0;
+      foreach (twod[i, j]) begin
+         ++add;
+         break;
+      end
+      `checkh(add, 3);  // 3,9 3,9, 3,9
+      // Although many simulators also do just "0,0". IEEE not clear - should we warn?.
 
       $write("*-* All Finished *-*\n");
       $finish;
