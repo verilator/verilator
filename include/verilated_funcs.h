@@ -1430,7 +1430,7 @@ static inline QData VL_STREAML_FAST_QQI(int lbits, QData ld, IData rd_log2) VL_P
     if (rd_log2) {
         const vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);
         const vluint32_t lbitsRem = lbits - lbitsFloor;
-        const QData msbMask = VL_MASK_Q(lbitsRem) << lbitsFloor;
+        const QData msbMask = lbitsFloor == 64 ? 0ULL : VL_MASK_Q(lbitsRem) << lbitsFloor;
         ret = (ret & ~msbMask) | ((ret & msbMask) << ((1ULL << rd_log2) - lbitsRem));
     }
     switch (rd_log2) {
