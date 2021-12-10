@@ -184,7 +184,6 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, bool asRef) {
             puts("16");
         } else if (nodep->isWide()) {
             puts("W");
-            refNeedParens = true;
         }
 
         puts("(");

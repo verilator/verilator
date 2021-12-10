@@ -11,10 +11,17 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.217 devel
 ==========================
 
+**Major:**
+
+* Primary inputs and outputs (VL_INW/VL_OUTW) now use VlWide type.
+  In general this should be backward compatible, but may lead to some
+  wrapper code needing changes.
+
 **Minor:**
 
 * Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
 * Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235)
+* Fix $sformat of inputs/outputs (#3236). [Adrien Le Masle]
 
 
 Verilator 4.216 2021-12-05
