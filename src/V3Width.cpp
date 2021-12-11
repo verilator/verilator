@@ -216,6 +216,8 @@ private:
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
 
+    static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
+
     // ENUMS
     enum ExtendRule : uint8_t {
         EXTEND_EXP,  // Extend if expect sign and node signed, e.g. node=y in ADD(x,y), "x + y"
@@ -5910,10 +5912,10 @@ private:
             UASSERT_OBJ(vconstp, errNodep, "Enum item without constified value");
             if (vconstp->toUQuad() >= maxval) maxval = vconstp->toUQuad();
         }
-        if (adtypep->itemsp()->width() > 64 || maxval >= (1 << 16)) {
+        if (adtypep->itemsp()->width() > 64 || maxval >= (1 << ENUM_LOOKUP_BITS)) {
             errNodep->v3warn(E_UNSUPPORTED,
                              "Unsupported: enum next/prev method on enum with > 10 bits");
-            return 0;
+            return ENUM_LOOKUP_BITS;
         }
         return maxval;
     }
@@ -5962,9 +5964,7 @@ private:
 
         // Find valid values and populate
         UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
-        std::vector<AstNode*> values;
-        values.resize(msbdim + 1);
-        for (unsigned i = 0; i < (msbdim + 1); ++i) values[i] = nullptr;
+        std::map<vluint64_t, AstNode*> values;
         {
             AstEnumItem* const firstp = nodep->itemsp();
             const AstEnumItem* prevp = firstp;  // Prev must start with last item
@@ -5973,7 +5973,7 @@ private:
                 AstEnumItem* const nextp = VN_AS(itemp->nextp(), EnumItem);
                 const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
                 UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-                const uint32_t i = vconstp->toUInt();
+                const vluint64_t i = vconstp->toUQuad();
                 if (attrType == AstAttrType::ENUM_NAME) {
                     values[i] = new AstConst(nodep->fileline(), AstConst::String(), itemp->name());
                 } else if (attrType == AstAttrType::ENUM_NEXT) {
@@ -5990,7 +5990,7 @@ private:
             }
         }
         // Add all specified values to table
-        for (unsigned i = 0; i < (msbdim + 1); ++i) {
+        for (vluint64_t i = 0; i < (msbdim + 1); ++i) {
             if (values[i]) initp->addIndexValuep(i, values[i]);
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
