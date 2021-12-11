@@ -143,10 +143,10 @@ AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
 # Compiler flags (ensure they are not empty to avoid configure defaults)
-CFLAGS+=" "
-CPPFLAGS+=" "
-CXXFLAGS+=" "
-LDFLAGS+=" "
+CFLAGS="$CFLAGS "
+CPPFLAGS="$CPPFLAGS "
+CXXFLAGS="$CXXFLAGS "
+LDFLAGS="$LDFLAGS "
 
 # Checks for programs.
 AC_PROG_CC
