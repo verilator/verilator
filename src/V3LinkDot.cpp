@@ -1127,7 +1127,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
             }
             if (ins) {
                 if (m_statep->forPrimary() && nodep->isGParam()
-					&& VN_IS(m_modSymp->nodep(), Module)
+                    && VN_IS(m_modSymp->nodep(), Module)
                     && (m_statep->rootEntp()->nodep() == m_modSymp->parentp()->nodep())) {
                     // This is the toplevel module. Check for command line overwrites of parameters
                     // We first search if the parameter is overwritten and then replace it with a
