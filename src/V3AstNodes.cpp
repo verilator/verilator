@@ -1392,6 +1392,10 @@ void AstJumpLabel::dump(std::ostream& str) const {
         str << "%Error:UNLINKED";
     }
 }
+void AstLogOr::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (sideEffect()) str << " [SIDE]";
+}
 void AstMemberSel::dump(std::ostream& str) const {
     this->AstNodeMath::dump(str);
     str << " -> ";

@@ -24,6 +24,7 @@ Verilator 4.217 devel
 * Fix break under foreach loop (#3230).
 * Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235)
 * Fix $sformat of inputs/outputs (#3236). [Adrien Le Masle]
+* Fix associative array foreach loop (#3229).
 
 
 Verilator 4.216 2021-12-05

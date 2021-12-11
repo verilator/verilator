@@ -3812,6 +3812,7 @@ private:
                = loopsp->elementsp()) {  // Loop advances due to below varp->unlinkFrBack()
             AstVar* const varp = VN_CAST(argsp, Var);
             UASSERT_OBJ(varp, argsp, "Missing foreach loop variable");
+            varp->usedLoopIdx(true);
             varp->unlinkFrBack();
             fromDtp = fromDtp->skipRefp();
             if (!fromDtp) {
@@ -3852,6 +3853,42 @@ private:
                 AstNode* const incp = new AstAdd{fl, new AstConst{fl, AstConst::Signed32{}, 1},
                                                  new AstVarRef{fl, varp, VAccess::READ}};
                 loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, condp, incp);
+                // Prep for next
+                fromDtp = fromDtp->subDTypep();
+            } else if (const AstAssocArrayDType* const adtypep
+                       = VN_CAST(fromDtp, AssocArrayDType)) {
+                // Make this: var KEY_TYPE index;
+                //            bit index__Vfirst;
+                //            index__Vfirst = 0;
+                //            if (0 != array.first(index))
+                //                 do body while (index__Vfirst || 0 != array.next(index))
+                varp->dtypeFrom(adtypep->keyDTypep());
+                AstVar* const first_varp = new AstVar{
+                    fl, AstVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
+                first_varp->usedLoopIdx(true);
+                AstNode* const firstp = new AstMethodCall{
+                    fl, fromp->cloneTree(false), "first",
+                    new AstArg{fl, "", new AstVarRef{fl, varp, VAccess::READWRITE}}};
+                AstNode* const nextp = new AstMethodCall{
+                    fl, fromp->cloneTree(false), "next",
+                    new AstArg{fl, "", new AstVarRef{fl, varp, VAccess::READWRITE}}};
+                AstNode* const first_clearp
+                    = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
+                                    new AstConst{fl, AstConst::BitFalse{}}};
+                auto* const orp = new AstLogOr{fl, new AstVarRef{fl, first_varp, VAccess::READ},
+                                               new AstNeq{fl, new AstConst{fl, 0}, nextp}};
+                orp->sideEffect(true);
+                AstNode* const whilep = new AstWhile{fl, orp, first_clearp};
+                first_clearp->addNext(bodyPointp);
+                AstNode* const ifbodyp
+                    = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
+                                    new AstConst{fl, AstConst::BitTrue{}}};
+                ifbodyp->addNext(whilep);
+                AstNode* const stmtsp = varp;  // New statements for under new Begin
+                stmtsp->addNext(first_varp);
+                stmtsp->addNext(
+                    new AstIf{fl, new AstNeq{fl, new AstConst{fl, 0}, firstp}, ifbodyp});
+                loopp = new AstBegin{nodep->fileline(), "", stmtsp, false, true};
                 // Prep for next
                 fromDtp = fromDtp->subDTypep();
             } else {

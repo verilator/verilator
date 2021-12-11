@@ -99,6 +99,16 @@ module t (/*AUTOARG*/
          `checkh(a[~65'hfe], ~ 90'hfee);
       end
 
+      begin
+         int a [string];
+         int sum;
+         sum = 0;
+         a["one"] = 1;
+         a["two"] = 2;
+         foreach (a[i]) sum += a[i];
+         `checkh(sum, 1 + 2);
+      end
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

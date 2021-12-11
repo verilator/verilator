@@ -3209,7 +3209,7 @@ private:
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",        "replaceWLhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhs(nodep)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  //->allOnes
-    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp)}",        "replaceNum(nodep,1)");
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp), nodep->isPure()}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
@@ -3383,7 +3383,7 @@ private:
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
     TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1, isTPure($lhsp), isTPure($rhsp)}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, isTPure($lhsp), isTPure($rhsp)}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, nodep->isPure(), isTPure($lhsp), isTPure($rhsp)}", "AstOr{$lhsp,$rhsp}");
     TREEOPV("AstLogNot{$lhsp.width1, isTPure($lhsp)}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
