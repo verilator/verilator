@@ -629,7 +629,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
                 emitSetVarConstant(varNameProtected + "[__Vi]", VN_AS(initarp->defaultp(), Const));
                 puts("}\n");
             }
-            const AstInitArray::KeyItemMap& mapr = initarp->map();
+            const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
                 emitSetVarConstant(varNameProtected + "[" + cvtToStr(itr.first) + "]",

@@ -1344,7 +1344,7 @@ void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
 void AstInitArray::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     int n = 0;
-    const AstInitArray::KeyItemMap& mapr = map();
+    const auto& mapr = map();
     for (const auto& itr : mapr) {
         if (n++ > 5) {
             str << " ...";

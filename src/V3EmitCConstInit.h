@@ -34,6 +34,15 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitor {
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
+    uint32_t tabModulus(AstNodeDType* dtypep) {
+        const uint32_t elemBytes = dtypep->widthTotalBytes();
+        return dtypep->isString() ? 1  // String
+               : elemBytes <= 2   ? 8  // CData, SData
+               : elemBytes <= 4   ? 4  // IData
+               : elemBytes <= 8   ? 2  // QData
+                                  : 1;
+    }
+
 protected:
     // VISITORS
     virtual void visit(AstInitArray* nodep) override {
@@ -41,12 +50,7 @@ protected:
             = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         UASSERT_OBJ(dtypep, nodep, "Array initializer has non-array dtype");
         const uint32_t size = dtypep->elementsConst();
-        const uint32_t elemBytes = dtypep->subDTypep()->widthTotalBytes();
-        const uint32_t tabMod = dtypep->subDTypep()->isString() ? 1  // String
-                                : elemBytes <= 2                ? 8  // CData, SData
-                                : elemBytes <= 4                ? 4  // IData
-                                : elemBytes <= 8                ? 2  // QData
-                                                                : 1;
+        const uint32_t tabMod = tabModulus(dtypep->subDTypep());
         VL_RESTORER(m_inUnpacked);
         VL_RESTORER(m_unpackedWord);
         m_inUnpacked = true;

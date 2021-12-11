@@ -163,12 +163,12 @@ class EmitXmlFileVisitor final : public AstNVisitor {
     }
     virtual void visit(AstInitArray* nodep) override {
         puts("<initarray>\n");
-        const AstInitArray::KeyItemMap& map = nodep->map();
-        for (AstInitArray::KeyItemMap::const_iterator it = map.begin(); it != map.end(); ++it) {
+        const auto& mapr = nodep->map();
+        for (const auto& itr : mapr) {
             puts("<inititem index=\"");
-            puts(cvtToStr(it->first));
+            puts(cvtToStr(itr.first));
             puts("\">\n");
-            iterateChildren(it->second);
+            iterateChildren(itr.second);
             puts("</inititem>\n");
         }
         puts("</initarray>\n");

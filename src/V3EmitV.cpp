@@ -498,7 +498,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     virtual void visit(AstInitArray* nodep) override {
         putfs(nodep, "'{");
         int comma = 0;
-        const AstInitArray::KeyItemMap& mapr = nodep->map();
+        const auto& mapr = nodep->map();
         for (const auto& itr : mapr) {
             if (comma++) putbs(", ");
             puts(cvtToStr(itr.first));
