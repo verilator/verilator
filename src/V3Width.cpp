@@ -1675,20 +1675,30 @@ private:
             auto* const enumDtp = VN_AS(toDtp, EnumDType);
             UASSERT_OBJ(enumDtp, nodep, "$cast determined as enum, but not enum type");
             const uint64_t maxval = enumMaxValue(nodep, enumDtp);
-            const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
-            AstVar* const varp
-                = enumVarp(enumDtp, AstAttrType::ENUM_VALID, (1ULL << selwidth) - 1);
-            AstVarRef* const varrefp = new AstVarRef(fl, varp, VAccess::READ);
-            varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
-            FileLine* const fl_nowarn = new FileLine(fl);
-            fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
-            auto* const testp = new AstCond{
-                fl,
-                new AstGt{fl_nowarn, nodep->fromp()->cloneTree(false),
-                          new AstConst{fl_nowarn, AstConst::Unsized64{}, maxval}},
-                new AstConst{fl, AstConst::BitFalse{}},
-                new AstArraySel{fl, varrefp,
-                                new AstSel{fl, nodep->fromp()->cloneTree(false), 0, selwidth}}};
+            const bool assoc = maxval > ENUM_LOOKUP_BITS;
+            AstNode* testp = nullptr;
+            if (assoc) {
+                AstVar* const varp = enumVarp(enumDtp, AstAttrType::ENUM_VALID, true, 0);
+                AstVarRef* const varrefp = new AstVarRef{fl, varp, VAccess::READ};
+                varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+                testp = new AstAssocSel{fl, varrefp, nodep->fromp()->cloneTree(false)};
+            } else {
+                const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
+                AstVar* const varp
+                    = enumVarp(enumDtp, AstAttrType::ENUM_VALID, false, (1ULL << selwidth) - 1);
+                AstVarRef* const varrefp = new AstVarRef(fl, varp, VAccess::READ);
+                varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+                FileLine* const fl_nowarn = new FileLine(fl);
+                fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
+                testp = new AstCond{
+                    fl,
+                    new AstGt{fl_nowarn, nodep->fromp()->cloneTree(false),
+                              new AstConst{fl_nowarn, AstConst::Unsized64{}, maxval}},
+                    new AstConst{fl, AstConst::BitFalse{}},
+                    new AstArraySel{
+                        fl, varrefp,
+                        new AstSel{fl, nodep->fromp()->cloneTree(false), 0, selwidth}}};
+            }
             newp = new AstCond{fl, testp,
                                new AstExprStmt{fl,
                                                new AstAssign{fl, nodep->top()->unlinkFrBack(),
@@ -2224,8 +2234,8 @@ private:
             AstNodeDType* const vdtypep = m_vup->dtypeNullp();
             UASSERT_OBJ(vdtypep, nodep, "InitArray type not assigned by AstPattern/Var visitor");
             nodep->dtypep(vdtypep);
-            if (const AstNodeArrayDType* const arrayp
-                = VN_CAST(vdtypep->skipRefp(), NodeArrayDType)) {
+            const AstNodeDType* const arrayp = vdtypep->skipRefp();
+            if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {
                 userIterateChildren(nodep, WidthVP(arrayp->subDTypep(), BOTH).p());
             } else {
                 UINFO(1, "dtype object " << vdtypep->skipRefp() << endl);
@@ -2635,17 +2645,27 @@ private:
             }
             // Need a runtime lookup table.  Yuk.
             const uint64_t msbdim = enumMaxValue(nodep, adtypep);
-            const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
-            AstVar* const varp = enumVarp(adtypep, attrType, (1ULL << selwidth) - 1);
-            AstVarRef* const varrefp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
-            varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
-            AstNode* const newp = new AstArraySel(
-                nodep->fileline(), varrefp,
-                // Select in case widths are off due to msblen!=width
-                // We return "random" values if outside the range, which is fine
-                // as next/previous on illegal values just need something good out
-                new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), 0, selwidth));
-            nodep->replaceWith(newp);
+            const bool assoc = msbdim > ENUM_LOOKUP_BITS;
+            if (assoc) {
+                AstVar* const varp = enumVarp(adtypep, attrType, true, 0);
+                AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
+                varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+                AstNode* const newp
+                    = new AstAssocSel{nodep->fileline(), varrefp, nodep->fromp()->unlinkFrBack()};
+                nodep->replaceWith(newp);
+            } else {
+                const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
+                AstVar* const varp = enumVarp(adtypep, attrType, false, (1ULL << selwidth) - 1);
+                AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
+                varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+                AstNode* const newp = new AstArraySel(
+                    nodep->fileline(), varrefp,
+                    // Select in case widths are off due to msblen!=width
+                    // We return "random" values if outside the range, which is fine
+                    // as next/previous on illegal values just need something good out
+                    new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), 0, selwidth));
+                nodep->replaceWith(newp);
+            }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             nodep->v3error("Unknown built-in enum method " << nodep->prettyNameQ());
@@ -5912,19 +5932,19 @@ private:
             UASSERT_OBJ(vconstp, errNodep, "Enum item without constified value");
             if (vconstp->toUQuad() >= maxval) maxval = vconstp->toUQuad();
         }
-        if (adtypep->itemsp()->width() > 64 || maxval >= (1 << ENUM_LOOKUP_BITS)) {
+        if (adtypep->itemsp()->width() > 64) {
             errNodep->v3warn(E_UNSUPPORTED,
-                             "Unsupported: enum next/prev method on enum with > 10 bits");
-            return ENUM_LOOKUP_BITS;
+                             "Unsupported: enum next/prev/name method on enum with > 64 bits");
+            return 64;
         }
         return maxval;
     }
-    AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t msbdim) {
+    AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, bool assoc, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
         const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
-        UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " max=" << msbdim << " for "
-                                            << nodep << endl);
+        UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
+                                            << " max=" << msbdim << " for " << nodep << endl);
         AstNodeDType* basep;
         if (attrType == AstAttrType::ENUM_NAME) {
             basep = nodep->findStringDType();
@@ -5937,8 +5957,13 @@ private:
         } else {
             basep = nodep->dtypep();
         }
-        AstNodeArrayDType* const vardtypep = new AstUnpackArrayDType(
-            nodep->fileline(), basep, new AstRange(nodep->fileline(), msbdim, 0));
+        AstNodeDType* vardtypep;
+        if (assoc) {
+            vardtypep = new AstAssocArrayDType{nodep->fileline(), basep, nodep};
+        } else {
+            vardtypep = new AstUnpackArrayDType{nodep->fileline(), basep,
+                                                new AstRange(nodep->fileline(), msbdim, 0)};
+        }
         AstInitArray* const initp = new AstInitArray(nodep->fileline(), vardtypep, nullptr);
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
         AstVar* const varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
@@ -5990,8 +6015,12 @@ private:
             }
         }
         // Add all specified values to table
-        for (vluint64_t i = 0; i < (msbdim + 1); ++i) {
-            if (values[i]) initp->addIndexValuep(i, values[i]);
+        if (assoc) {
+            for (const auto& itr : values) initp->addIndexValuep(itr.first, itr.second);
+        } else {
+            for (vluint64_t i = 0; i < (msbdim + 1); ++i) {
+                if (values[i]) initp->addIndexValuep(i, values[i]);
+            }
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
         m_tableMap.emplace(std::make_pair(nodep, attrType), varp);

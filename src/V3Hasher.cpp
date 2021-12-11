@@ -351,17 +351,30 @@ private:
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
     virtual void visit(AstInitArray* nodep) override {
-        // Hash unpacked array initializers by value, as the order of initializer nodes does not
-        // matter, and we want semantically equivalent initializers to map to the same hash.
-        const AstUnpackArrayDType* const dtypep = VN_CAST(nodep->dtypep(), UnpackArrayDType);
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, /* hashChildren: */ !dtypep, [=]() {
-            if (dtypep) {
-                const uint32_t size = dtypep->elementsConst();
-                for (uint32_t n = 0; n < size; ++n) {  //
-                    iterateNull(nodep->getIndexDefaultedValuep(n));
-                }
+        if (const AstAssocArrayDType* const dtypep = VN_CAST(nodep->dtypep(), AssocArrayDType)) {
+            if (nodep->defaultp()) {
+                m_hash
+                    += hashNodeAndIterate(nodep->defaultp(), HASH_DTYPE, HASH_CHILDREN, [=]() {});
             }
-        });
+            const auto& mapr = nodep->map();
+            for (const auto& itr : mapr) {  // mapr is sorted, so hash should get stable results
+                m_hash += itr.first;
+                m_hash += hashNodeAndIterate(itr.second, HASH_DTYPE, HASH_CHILDREN, [=]() {});
+            }
+        } else if (const AstUnpackArrayDType* const dtypep
+                   = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+            // Hash unpacked array initializers by value, as the order of initializer nodes does
+            // not matter, and we want semantically equivalent initializers to map to the same
+            // hash.
+            m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, /* hashChildren: */ !dtypep, [=]() {
+                if (dtypep) {
+                    const uint32_t size = dtypep->elementsConst();
+                    for (uint32_t n = 0; n < size; ++n) {  //
+                        iterateNull(nodep->getIndexDefaultedValuep(n));
+                    }
+                }
+            });
+        }
     }
     virtual void visit(AstPragma* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //

@@ -1017,21 +1017,41 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
     // - the default/inititem children might be in different order yet still yield the same table
     // See note in AstInitArray::same about the same. This function instead compares by initializer
     // value, rather than by tree structure.
-    const AstUnpackArrayDType* const aDTypep = VN_AS(ap->dtypep(), UnpackArrayDType);
-    const AstUnpackArrayDType* const bDTypep = VN_AS(bp->dtypep(), UnpackArrayDType);
-    if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) {  // Element types differ
-        return false;
-    }
-    if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) {  // Ranges differ
-        return false;
-    }
-    // Compare initializer arrays by value. Note this is only called when they hash the same,
-    // so they likely run at most once per call to 'AstConstPool::findTable'.
-    const uint32_t size = aDTypep->elementsConst();
-    for (uint32_t n = 0; n < size; ++n) {
-        const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
-        const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
-        if (!valAp->sameTree(valBp)) { return false; }
+    if (const AstAssocArrayDType* const aDTypep = VN_CAST(ap->dtypep(), AssocArrayDType)) {
+        const AstAssocArrayDType* const bDTypep = VN_CAST(bp->dtypep(), AssocArrayDType);
+        if (!bDTypep) return false;
+        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
+        if (!aDTypep->keyDTypep()->sameTree(bDTypep->keyDTypep())) return false;
+        UASSERT_OBJ(ap->defaultp(), ap, "Assoc InitArray should have a default");
+        UASSERT_OBJ(bp->defaultp(), bp, "Assoc InitArray should have a default");
+        if (!ap->defaultp()->sameTree(bp->defaultp())) return false;
+        // Compare initializer arrays by value. Note this is only called when they hash the same,
+        // so they likely run at most once per call to 'AstConstPool::findTable'.
+        // This assumes that the defaults are used in the same way.
+        // TODO when buinding the AstInitArray, remove any values matching the default
+        const auto& amapr = ap->map();
+        const auto& bmapr = bp->map();
+        const auto ait = amapr.cbegin();
+        const auto bit = bmapr.cbegin();
+        while (ait != amapr.cend() || bit != bmapr.cend()) {
+            if (ait == amapr.cend() || bit == bmapr.cend()) return false;  // Different size
+            if (ait->first != bit->first) return false;  // Different key
+            if (ait->second->sameTree(bit->second)) return false;  // Different value
+        }
+    } else if (const AstUnpackArrayDType* const aDTypep
+               = VN_CAST(ap->dtypep(), UnpackArrayDType)) {
+        const AstUnpackArrayDType* const bDTypep = VN_CAST(bp->dtypep(), UnpackArrayDType);
+        if (!bDTypep) return false;
+        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
+        if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) return false;
+        // Compare initializer arrays by value. Note this is only called when they hash the same,
+        // so they likely run at most once per call to 'AstConstPool::findTable'.
+        const vluint64_t size = aDTypep->elementsConst();
+        for (vluint64_t n = 0; n < size; ++n) {
+            const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
+            const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
+            if (!valAp->sameTree(valBp)) return false;
+        }
     }
     return true;
 }
@@ -1039,8 +1059,9 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
 AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
     const AstNode* const defaultp = initp->defaultp();
     // Verify initializer is well formed
-    UASSERT_OBJ(VN_IS(initp->dtypep(), UnpackArrayDType), initp,
-                "Const pool table must have AstUnpackArrayDType dtype");
+    UASSERT_OBJ(VN_IS(initp->dtypep(), AssocArrayDType)
+                    || VN_IS(initp->dtypep(), UnpackArrayDType),
+                initp, "Const pool table must have array dtype");
     UASSERT_OBJ(!defaultp || VN_IS(defaultp, Const), initp,
                 "Const pool table default must be Const");
     for (AstNode* nodep = initp->initsp(); nodep; nodep = nodep->nextp()) {

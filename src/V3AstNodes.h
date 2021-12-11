@@ -538,6 +538,12 @@ public:
         keyDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
+    AstAssocArrayDType(FileLine* fl, AstNodeDType* dtp, AstNodeDType* keyDtp)
+        : ASTGEN_SUPER_AssocArrayDType(fl) {
+        refDTypep(dtp);
+        keyDTypep(keyDtp);
+        dtypep(dtp);
+    }
     ASTNODE_NODE_FUNCS(AssocArrayDType)
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
@@ -4953,12 +4959,12 @@ class AstInitArray final : public AstNode {
     // Parents: ASTVAR::init()
     // Children: AstInitItem
 public:
-    using KeyItemMap = std::map<uint32_t, AstInitItem*>;
+    using KeyItemMap = std::map<vluint64_t, AstInitItem*>;
 
 private:
     KeyItemMap m_map;  // Node value for each array index
 public:
-    AstInitArray(FileLine* fl, AstNodeArrayDType* newDTypep, AstNode* defaultp)
+    AstInitArray(FileLine* fl, AstNodeDType* newDTypep, AstNode* defaultp)
         : ASTGEN_SUPER_InitArray(fl) {
         dtypep(newDTypep);
         addNOp1p(defaultp);
@@ -4988,7 +4994,7 @@ public:
     AstNode* initsp() const { return op2p(); }  // op2 = Initial value expressions
     void addValuep(AstNode* newp) { addIndexValuep(m_map.size(), newp); }
     const KeyItemMap& map() const { return m_map; }
-    AstNode* addIndexValuep(uint32_t index, AstNode* newp) {
+    AstNode* addIndexValuep(vluint64_t index, AstNode* newp) {
         // Returns old value, caller must garbage collect
         AstNode* oldp = nullptr;
         const auto it = m_map.find(index);
@@ -5002,7 +5008,7 @@ public:
         }
         return oldp;
     }
-    AstNode* getIndexValuep(uint32_t index) const {
+    AstNode* getIndexValuep(vluint64_t index) const {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
             return nullptr;
@@ -5010,7 +5016,7 @@ public:
             return it->second->valuep();
         }
     }
-    AstNode* getIndexDefaultedValuep(uint32_t index) const {
+    AstNode* getIndexDefaultedValuep(vluint64_t index) const {
         AstNode* valuep = getIndexValuep(index);
         if (!valuep) valuep = defaultp();
         return valuep;
