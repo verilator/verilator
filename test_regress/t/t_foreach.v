@@ -72,7 +72,6 @@ module t (/*AUTOARG*/);
       `checkh(sum, 64'h0030128ab2a8e557);
 
       //
-
       sum = 0;
       foreach (larray[index_a]) begin
          sum = crc(sum, index_a, 0, 0, 0);
@@ -120,12 +119,30 @@ module t (/*AUTOARG*/);
       `checkh(add, 1);  // 9
 
       add = 0;
+      foreach (oned[i]) begin
+         ++add;
+         continue;
+         add += 100;
+      end
+      `checkh(add, 3);  // 9, 8, 7
+
+      add = 0;
       foreach (twod[i, j]) begin
          ++add;
          break;
       end
-      `checkh(add, 3);  // 3,9 3,9, 3,9
-      // Although many simulators also do just "0,0". IEEE not clear - should we warn?.
+      // See https://www.accellera.org/images/eda/sv-bc/10303.html
+      `checkh(add, 1);  // 3,9
+
+      add = 0;
+      foreach (twod[i, j]) begin
+         ++add;
+         continue;
+         add += 100;
+      end
+      `checkh(add, 6);
+
+      foreach (twod[i, j]);  // Null body check
 
       $write("*-* All Finished *-*\n");
       $finish;

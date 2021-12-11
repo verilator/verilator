@@ -3522,8 +3522,8 @@ for_step_assignment<nodep>:  // ==IEEE: for_step_assignment
 	;
 
 loop_variables<nodep>:		// IEEE: loop_variables
-		varRefBase				{ $$ = $1; }
-	|	loop_variables ',' varRefBase		{ $$ = $1; $1->addNext($3); }
+		parseRefBase				{ $$ = $1; }
+	|	loop_variables ',' parseRefBase		{ $$ = $1; $1->addNext($3); }
 	;
 
 //************************************************
@@ -5012,6 +5012,12 @@ idArrayedForeach<nodep>:	// IEEE: id + select (under foreach expression)
 // VarRef without any dots or vectorizaion
 varRefBase<varRefp>:
 		id					{ $$ = new AstVarRef($<fl>1, *$1, VAccess::READ); }
+	;
+
+// ParseRef
+parseRefBase<nodep>:
+		id
+			{ $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
 	;
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below

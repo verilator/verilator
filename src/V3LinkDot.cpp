@@ -1270,6 +1270,48 @@ class LinkDotFindVisitor final : public AstNVisitor {
         m_curSymp->exportStarStar(m_statep->symsp());
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
+
+    virtual void visit(AstForeach* nodep) override {
+        // Symbol table needs nodep->name() as the index variable's name
+        VL_RESTORER(m_curSymp);
+        VSymEnt* const oldCurSymp = m_curSymp;
+        {
+            ++m_modWithNum;
+            m_curSymp = m_statep->insertBlock(m_curSymp, "__Vforeach" + cvtToStr(m_modWithNum),
+                                              nodep, m_classOrPackagep);
+            m_curSymp->fallbackp(oldCurSymp);
+
+            const auto loopvarsp = VN_CAST(nodep->arrayp(), SelLoopVars);
+            if (!loopvarsp) {
+                AstNode* const warnp = nodep->arrayp() ? nodep->arrayp() : nodep;
+                warnp->v3warn(E_UNSUPPORTED,
+                              "Unsupported (or syntax error): Foreach on this array's construct");
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                return;
+            }
+
+            for (AstNode *nextp, *argp = loopvarsp->elementsp(); argp; argp = nextp) {
+                nextp = argp->nextp();
+                AstVar* argrefp = nullptr;
+                if (const auto parserefp = VN_CAST(argp, ParseRef)) {
+                    // We use an int type, this might get changed in V3Width when types resolve
+                    argrefp = new AstVar{parserefp->fileline(), AstVarType::BLOCKTEMP,
+                                         parserefp->name(), argp->findSigned32DType()};
+                    parserefp->replaceWith(argrefp);
+                    VL_DO_DANGLING(parserefp->deleteTree(), parserefp);
+                    // Insert argref's name into symbol table
+                    m_statep->insertSym(m_curSymp, argrefp->name(), argrefp, nullptr);
+                } else if (const auto largrefp = VN_CAST(argp, Var)) {
+                    argrefp = largrefp;
+                    // Insert argref's name into symbol table
+                    m_statep->insertSym(m_curSymp, argrefp->name(), argrefp, nullptr);
+                } else {
+                    argp->v3error("'foreach' loop variable expects simple variable name");
+                }
+            }
+        }
+    }
+
     virtual void visit(AstWithParse* nodep) override {
         // Change WITHPARSE(FUNCREF, equation) to FUNCREF(WITH(equation))
         const auto funcrefp = VN_AS(nodep->funcrefp(), NodeFTaskRef);
@@ -1589,6 +1631,11 @@ class LinkDotScopeVisitor final : public AstNVisitor {
         }
     }
     virtual void visit(AstNodeFTask* nodep) override {
+        VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
+        symp->fallbackp(m_modSymp);
+        // No recursion, we don't want to pick up variables
+    }
+    virtual void visit(AstForeach* nodep) override {
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
         symp->fallbackp(m_modSymp);
         // No recursion, we don't want to pick up variables
@@ -2833,6 +2880,16 @@ private:
         }
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;
         m_ftaskp = nullptr;
+    }
+    virtual void visit(AstForeach* nodep) override {
+        UINFO(5, "   " << nodep << endl);
+        checkNoDot(nodep);
+        VSymEnt* const oldCurSymp = m_curSymp;
+        {
+            m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+            iterateChildren(nodep);
+        }
+        m_ds.m_dotSymp = m_curSymp = oldCurSymp;
     }
     virtual void visit(AstWith* nodep) override {
         UINFO(5, "   " << nodep << endl);

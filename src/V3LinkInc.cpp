@@ -107,6 +107,22 @@ private:
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
+    virtual void visit(AstForeach* nodep) override {
+        // Special, as statements need to be put in different places
+        // Body insert just before themselves
+        m_insStmtp = nullptr;  // First thing should be new statement
+        iterateChildren(nodep);
+        // Done the loop
+        m_insStmtp = nullptr;  // Next thing should be new statement
+    }
+    virtual void visit(AstJumpBlock* nodep) override {
+        // Special, as statements need to be put in different places
+        // Body insert just before themselves
+        m_insStmtp = nullptr;  // First thing should be new statement
+        iterateChildren(nodep);
+        // Done the loop
+        m_insStmtp = nullptr;  // Next thing should be new statement
+    }
     virtual void visit(AstNodeIf* nodep) override {
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());

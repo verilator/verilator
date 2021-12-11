@@ -46,7 +46,7 @@ private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    AstWhile* m_loopp = nullptr;  // Current loop
+    AstNode* m_loopp = nullptr;  // Current loop
     bool m_loopInc = false;  // In loop increment
     bool m_inFork = false;  // Under fork
     int m_modRepeatNum = 0;  // Repeat counter
@@ -66,6 +66,13 @@ private:
             underp = VN_AS(nodep, NodeBlock)->stmtsp();
         } else if (VN_IS(nodep, NodeFTask)) {
             underp = VN_AS(nodep, NodeFTask)->stmtsp();
+        } else if (VN_IS(nodep, Foreach)) {
+            if (endOfIter) {
+                underp = VN_AS(nodep, Foreach)->bodysp();
+            } else {
+                underp = nodep;
+                under_and_next = false;  // IE we skip the entire foreach
+            }
         } else if (VN_IS(nodep, While)) {
             if (endOfIter) {
                 // Note we jump to end of bodysp; a FOR loop has its
@@ -190,6 +197,13 @@ private:
             iterateAndNextNull(nodep->bodysp());
             m_loopInc = true;
             iterateAndNextNull(nodep->incsp());
+        }
+    }
+    virtual void visit(AstForeach* nodep) override {
+        VL_RESTORER(m_loopp);
+        {
+            m_loopp = nodep;
+            iterateAndNextNull(nodep->bodysp());
         }
     }
     virtual void visit(AstReturn* nodep) override {

@@ -83,6 +83,7 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
     // List of all encountered to avoid another loop through tree
     std::vector<AstVar*> m_varsp;
     std::vector<AstNode*> m_dtypesp;
@@ -249,6 +250,13 @@ private:
         }
         checkAll(nodep);
     }
+    virtual void visit(AstSelLoopVars* nodep) override {
+        // Var under a SelLoopVars means we haven't called V3Width to remove them yet
+        VL_RESTORER(m_selloopvarsp);
+        m_selloopvarsp = nodep;
+        iterateChildren(nodep);
+        checkAll(nodep);
+    }
     virtual void visit(AstTypedef* nodep) override {
         iterateChildren(nodep);
         if (m_elimCells && !nodep->attrPublic()) {
@@ -270,6 +278,7 @@ private:
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->isSigPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
+        if (m_selloopvarsp) nodep->user1Inc();
         if (mightElimVar(nodep)) m_varsp.push_back(nodep);
     }
     virtual void visit(AstNodeAssign* nodep) override {
