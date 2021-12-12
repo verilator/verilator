@@ -47,14 +47,32 @@ AstIface* AstIfaceRefDType::ifaceViaCellp() const {
     return ((m_cellp && m_cellp->modp()) ? VN_AS(m_cellp->modp(), Iface) : m_ifacep);
 }
 
+const char* AstNodeFTaskRef::broken() const {
+    BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
+    return nullptr;
+}
+
+void AstNodeFTaskRef::cloneRelink() {
+    if (m_taskp && m_taskp->clonep()) m_taskp = m_taskp->clonep();
+    if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+        m_classOrPackagep = m_classOrPackagep->clonep();
+    }
+}
+
 const char* AstNodeVarRef::broken() const {
-    BROKEN_RTN(m_varScopep && !m_varScopep->brokeExists());
     BROKEN_RTN(m_varp && !m_varp->brokeExists());
+    BROKEN_RTN(m_varScopep && !m_varScopep->brokeExists());
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
     return nullptr;
 }
 
 void AstNodeVarRef::cloneRelink() {
     if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep();
+    if (m_varScopep && m_varScopep->clonep()) m_varScopep = m_varScopep->clonep();
+    if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+        m_classOrPackagep = m_classOrPackagep->clonep();
+    }
 }
 
 string AstNodeVarRef::selfPointerProtect(bool useSelfForThis) const {
@@ -1277,6 +1295,9 @@ const char* AstClassPackage::broken() const {
     BROKEN_BASE_RTN(AstNodeModule::broken());
     BROKEN_RTN(m_classp && !m_classp->brokeExists());
     return nullptr;
+}
+void AstClassPackage::cloneRelink() {
+    if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
 }
 void AstClass::insertCache(AstNode* nodep) {
     const bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)

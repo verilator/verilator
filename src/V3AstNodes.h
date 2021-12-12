@@ -307,6 +307,7 @@ public:
     ASTNODE_NODE_FUNCS(ClassPackage)
     virtual string verilogKwd() const override { return "/*class*/package"; }
     virtual const char* broken() const override;
+    virtual void cloneRelink() override;
     virtual bool timescaleMatters() const override { return false; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* classp) { m_classp = classp; }
@@ -333,6 +334,12 @@ public:
         BROKEN_BASE_RTN(AstNodeModule::broken());
         BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
         return nullptr;
+    }
+    virtual void cloneRelink() override {
+        AstNodeModule::cloneRelink();
+        if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+            m_classOrPackagep = m_classOrPackagep->clonep();
+        }
     }
     virtual bool timescaleMatters() const override { return false; }
     // op1/op2/op3 in AstNodeModule
@@ -1034,10 +1041,14 @@ public:
     // METHODS
     virtual const char* broken() const override {
         BROKEN_RTN(m_classp && !m_classp->brokeExists());
+        BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
         return nullptr;
     }
     virtual void cloneRelink() override {
         if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
+        if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+            m_classOrPackagep = m_classOrPackagep->clonep();
+        }
     }
     virtual bool same(const AstNode* samep) const override {
         const AstClassRefDType* const asamep = static_cast<const AstClassRefDType*>(samep);
@@ -1218,11 +1229,15 @@ public:
     virtual const char* broken() const override {
         BROKEN_RTN(m_typedefp && !m_typedefp->brokeExists());
         BROKEN_RTN(m_refDTypep && !m_refDTypep->brokeExists());
+        BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
         return nullptr;
     }
     virtual void cloneRelink() override {
         if (m_typedefp && m_typedefp->clonep()) m_typedefp = m_typedefp->clonep();
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
+        if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+            m_classOrPackagep = m_classOrPackagep->clonep();
+        }
     }
     virtual bool same(const AstNode* samep) const override {
         const AstRefDType* const asamep = static_cast<const AstRefDType*>(samep);
@@ -1339,6 +1354,13 @@ public:
     virtual string name() const override { return m_name; }  // * = Var name
     virtual bool hasDType() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
+    virtual const char* broken() const override {
+        BROKEN_RTN(m_refDTypep && !m_refDTypep->brokeExists());
+        return nullptr;
+    }
+    virtual void cloneRelink() override {
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
+    }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
@@ -1388,6 +1410,7 @@ public:
     virtual void dumpSmall(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
+    virtual bool undead() const { return true; }
     virtual AstNodeDType* subDTypep() const override { return nullptr; }
     virtual AstNodeDType* virtRefDTypep() const override { return nullptr; }
     virtual void virtRefDTypep(AstNodeDType* nodep) override {}
@@ -1415,6 +1438,7 @@ public:
     virtual void dumpSmall(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
+    virtual bool undead() const { return true; }
     virtual AstNodeDType* subDTypep() const override { return nullptr; }
     virtual AstNodeDType* virtRefDTypep() const override { return nullptr; }
     virtual void virtRefDTypep(AstNodeDType* nodep) override {}
@@ -1469,6 +1493,11 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual string name() const override { return itemp()->name(); }
     virtual int instrCount() const override { return 0; }
+    virtual const char* broken() const override {
+        BROKEN_RTN(m_itemp && !m_itemp->brokeExists());
+        BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
+        return nullptr;
+    }
     virtual void cloneRelink() override {
         if (m_itemp->clonep()) m_itemp = m_itemp->clonep();
     }
@@ -8858,6 +8887,9 @@ public:
         BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));
         return nullptr;
     }
+    virtual void cloneRelink() override {
+        if (m_scopep && m_scopep->clonep()) m_scopep = m_scopep->clonep();
+    }
     virtual bool maybePointedTo() const override { return true; }
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual bool same(const AstNode* samep) const override {
@@ -9169,6 +9201,14 @@ class AstTypeTable final : public AstNode {
 public:
     explicit AstTypeTable(FileLine* fl);
     ASTNODE_NODE_FUNCS(TypeTable)
+    virtual bool maybePointedTo() const override { return true; }
+    virtual const char* broken() const override {
+        BROKEN_RTN(m_emptyQueuep && !m_emptyQueuep->brokeExists());
+        BROKEN_RTN(m_queueIndexp && !m_queueIndexp->brokeExists());
+        BROKEN_RTN(m_voidp && !m_voidp->brokeExists());
+        return nullptr;
+    }
+    virtual void cloneRelink() override { V3ERROR_NA; }
     AstNodeDType* typesp() const { return VN_AS(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
@@ -9197,6 +9237,13 @@ class AstConstPool final : public AstNode {
 public:
     explicit AstConstPool(FileLine* fl);
     ASTNODE_NODE_FUNCS(ConstPool)
+    virtual bool maybePointedTo() const override { return true; }
+    virtual const char* broken() const override {
+        BROKEN_RTN(m_modp && !m_modp->brokeExists());
+        BROKEN_RTN(m_scopep && !m_scopep->brokeExists());
+        return nullptr;
+    }
+    virtual void cloneRelink() override { V3ERROR_NA; }
     AstModule* modp() const { return m_modp; }
 
     // Find a table (unpacked array) within the constant pool which is initialized with the
@@ -9236,12 +9283,15 @@ public:
     AstNetlist();
     ASTNODE_NODE_FUNCS(Netlist)
     virtual const char* broken() const override {
+        BROKEN_RTN(m_typeTablep && !m_typeTablep->brokeExists());
+        BROKEN_RTN(m_constPoolp && !m_constPoolp->brokeExists());
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
         BROKEN_RTN(m_dpiExportTriggerp && !m_dpiExportTriggerp->brokeExists());
         BROKEN_RTN(m_topScopep && !m_topScopep->brokeExists());
         return nullptr;
     }
+    virtual void cloneRelink() override { V3ERROR_NA; }
     virtual string name() const override { return "$root"; }
     virtual void dump(std::ostream& str) const override;
     AstNodeModule* modulesp() const {  // op1 = List of modules

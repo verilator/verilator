@@ -1826,6 +1826,9 @@ public:
     virtual AstNodeDType* getChild2DTypep() const { return nullptr; }
     // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
     virtual bool maybePointedTo() const { return false; }
+    // Don't reclaim this node in V3Dead
+    virtual bool undead() const { return false; }
+    // Check if node is consistent, return nullptr if ok, else reason string
     virtual const char* broken() const { return nullptr; }
 
     // INVOKERS
@@ -2867,9 +2870,7 @@ protected:
 public:
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const override;
-    virtual void cloneRelink() override {
-        if (m_taskp && m_taskp->clonep()) m_taskp = m_taskp->clonep();
-    }
+    virtual void cloneRelink() override;
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual string name() const override { return m_name; }  // * = Var name
     virtual bool isGateOptimizable() const override {

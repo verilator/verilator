@@ -114,6 +114,7 @@ private:
         if (!nodep->generic()  // Don't remove generic types
             && m_elimDTypes  // dtypes stick around until post-widthing
             && !VN_IS(nodep, MemberDType)  // Keep member names iff upper type exists
+            && !nodep->undead()  // VoidDType or something Netlist points to
         ) {
             m_dtypesp.push_back(nodep);
         }

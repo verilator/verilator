@@ -78,12 +78,6 @@ inline int AstNodeArrayDType::lo() const { return rangep()->loConst(); }
 inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
 inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right()}; }
 
-inline const char* AstNodeFTaskRef::broken() const {
-    BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
-    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
-    return nullptr;
-}
-
 inline void AstIfaceRefDType::cloneRelink() {
     if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep();
     if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
