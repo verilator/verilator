@@ -3810,16 +3810,17 @@ private:
         // Major dimension first
         while (AstNode* argsp
                = loopsp->elementsp()) {  // Loop advances due to below varp->unlinkFrBack()
+            const bool empty = VN_IS(argsp, Empty);
             AstVar* const varp = VN_CAST(argsp, Var);
-            UASSERT_OBJ(varp, argsp, "Missing foreach loop variable");
-            varp->usedLoopIdx(true);
-            varp->unlinkFrBack();
-            fromDtp = fromDtp->skipRefp();
+            UASSERT_OBJ(varp || empty, argsp, "Missing foreach loop variable");
+            if (varp) varp->usedLoopIdx(true);
+            argsp->unlinkFrBack();
             if (!fromDtp) {
                 argsp->v3error("foreach loop variables exceed number of indices of array");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 return;
             }
+            fromDtp = fromDtp->skipRefp();
             UINFO(9, "- foreachArg " << argsp << endl);
             UINFO(9, "-   from on  " << fromp << endl);
             UINFO(9, "-   from dtp " << fromDtp << endl);
@@ -3828,7 +3829,9 @@ private:
             AstNode* bodyPointp = new AstBegin{fl, "[EditWrapper]", nullptr};
             AstNode* loopp = nullptr;
             if (const AstNodeArrayDType* const adtypep = VN_CAST(fromDtp, NodeArrayDType)) {
-                loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
+                if (varp) {
+                    loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
+                }
                 // Prep for next
                 fromDtp = fromDtp->subDTypep();
             } else if (AstBasicDType* const adtypep = VN_CAST(fromDtp, BasicDType)) {
@@ -3838,21 +3841,25 @@ private:
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                     return;
                 }
-                loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
+                if (varp) {
+                    loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
+                }
                 // Prep for next
                 fromDtp = nullptr;
             } else if (VN_IS(fromDtp, DynArrayDType) || VN_IS(fromDtp, QueueDType)) {
-                auto* const leftp = new AstConst{fl, AstConst::Signed32{}, 0};
-                auto* const sizep
-                    = new AstCMethodHard{fl, fromp->cloneTree(false), "size", nullptr};
-                sizep->dtypeSetSigned32();
-                sizep->didWidth(true);
-                sizep->protect(false);
-                AstNode* const condp
-                    = new AstLt{fl, new AstVarRef{fl, varp, VAccess::READ}, sizep};
-                AstNode* const incp = new AstAdd{fl, new AstConst{fl, AstConst::Signed32{}, 1},
-                                                 new AstVarRef{fl, varp, VAccess::READ}};
-                loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, condp, incp);
+                if (varp) {
+                    auto* const leftp = new AstConst{fl, AstConst::Signed32{}, 0};
+                    auto* const sizep
+                        = new AstCMethodHard{fl, fromp->cloneTree(false), "size", nullptr};
+                    sizep->dtypeSetSigned32();
+                    sizep->didWidth(true);
+                    sizep->protect(false);
+                    AstNode* const condp
+                        = new AstLt{fl, new AstVarRef{fl, varp, VAccess::READ}, sizep};
+                    AstNode* const incp = new AstAdd{fl, new AstConst{fl, AstConst::Signed32{}, 1},
+                                                     new AstVarRef{fl, varp, VAccess::READ}};
+                    loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, condp, incp);
+                }
                 // Prep for next
                 fromDtp = fromDtp->subDTypep();
             } else if (const AstAssocArrayDType* const adtypep
@@ -3897,13 +3904,16 @@ private:
                 return;
             }
             // New loop goes UNDER previous loop
-            if (!newp) {
-                newp = loopp;
-            } else {
-                lastBodyPointp->replaceWith(loopp);
+            if (varp) {
+                if (!newp) {
+                    newp = loopp;
+                } else {
+                    lastBodyPointp->replaceWith(loopp);
+                }
+                lastBodyPointp = bodyPointp;
             }
-            lastBodyPointp = bodyPointp;
         }
+        // The parser validates we don't have "foreach (array[,,,])"
         UASSERT_OBJ(newp, nodep, "foreach has no non-empty loop variable");
         if (bodyp) {
             lastBodyPointp->replaceWith(bodyp);

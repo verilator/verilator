@@ -7,4 +7,7 @@
 %Error: t/t_foreach_type_bad.v:23:21: Illegal to foreach loop on basic 'BASICDTYPE 'bit''
    23 |       foreach (b[i, j, k]);   
       |                     ^
+%Error: t/t_foreach_type_bad.v:25:18: Illegal to foreach loop on basic 'BASICDTYPE 'real''
+   25 |       foreach (r[, i]);   
+      |                  ^
 %Error: Exiting due to

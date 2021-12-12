@@ -1305,6 +1305,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
                     argrefp = largrefp;
                     // Insert argref's name into symbol table
                     m_statep->insertSym(m_curSymp, argrefp->name(), argrefp, nullptr);
+                } else if (VN_IS(argp, Empty)) {
                 } else {
                     argp->v3error("'foreach' loop variable expects simple variable name");
                 }

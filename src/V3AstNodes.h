@@ -183,6 +183,15 @@ public:
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
 };
 
+class AstEmpty final : public AstNode {
+    // Represents something missing, e.g. a missing argument in FOREACH
+public:
+    AstEmpty(FileLine* fl)
+        : ASTGEN_SUPER_Empty(fl) {}
+    ASTNODE_NODE_FUNCS(Empty)
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
 class AstEmptyQueue final : public AstNodeMath {
 public:
     AstEmptyQueue(FileLine* fl)

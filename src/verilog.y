@@ -3523,7 +3523,8 @@ for_step_assignment<nodep>:  // ==IEEE: for_step_assignment
 
 loop_variables<nodep>:		// IEEE: loop_variables
 		parseRefBase				{ $$ = $1; }
-	|	loop_variables ',' parseRefBase		{ $$ = $1; $1->addNext($3); }
+	|	loop_variables ',' parseRefBase		{ $$ = $1; $$->addNext($3); }
+	|	',' parseRefBase			{ $$ = new AstEmpty{$1}; $$->addNext($2); }
 	;
 
 //************************************************
@@ -5007,6 +5008,8 @@ idArrayedForeach<nodep>:	// IEEE: id + select (under foreach expression)
 	//			// To avoid conflicts we allow expr as first element, must post-check
 	|	idArrayed '[' expr ',' loop_variables ']'
 			{ $3 = AstNode::addNextNull($3, $5); $$ = new AstSelLoopVars($2, $1, $3); }
+	|	idArrayed '[' ',' loop_variables ']'
+			{ $4 = AstNode::addNextNull(new AstEmpty{$3}, $4); $$ = new AstSelLoopVars($2, $1, $4); }
 	;
 
 // VarRef without any dots or vectorizaion

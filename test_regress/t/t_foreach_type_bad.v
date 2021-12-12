@@ -22,6 +22,8 @@ module t (/*AUTOARG*/);
 
       foreach (b[i, j, k]);  // extra loop var
 
+      foreach (r[, i]);  // no loop var and extra
+
       $stop;
    end
 

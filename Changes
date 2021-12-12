@@ -19,6 +19,7 @@ Verilator 4.217 devel
 
 **Minor:**
 
+* Support lower dimension looping in foreach loops (#3172). [Ehab Ibrahim]
 * Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
 * Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
 * Fix break under foreach loop (#3230).

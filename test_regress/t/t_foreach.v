@@ -71,6 +71,14 @@ module t (/*AUTOARG*/);
       end
       `checkh(sum, 64'h0030128ab2a8e557);
 
+      // comma syntax
+      sum = 0;
+      foreach (array[,index_b]) begin
+         $display(index_b);
+         sum = crc(sum, 0, index_b, 0, 0);
+      end
+      `checkh(sum, 64'h0000000006000000);
+
       //
       sum = 0;
       foreach (larray[index_a]) begin
