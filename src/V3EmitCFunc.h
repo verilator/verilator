@@ -441,9 +441,6 @@ public:
         iterateAndNextNull(nodep->exprp());
         puts("; }\n");
     }
-    virtual void visit(AstIntfRef* nodep) override {
-        putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()), nodep->protect()));
-    }
     virtual void visit(AstNodeCase* nodep) override {  // LCOV_EXCL_LINE
         // In V3Case...
         nodep->v3fatalSrc("Case statements should have been reduced out");

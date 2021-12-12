@@ -504,9 +504,14 @@ template <> void VerilatedTrace<VL_DERIVED_T>::addCleanupCb(dumpCb_t cb, void* u
     CallbackRecord cbr{cb, userp};
     addCallbackRecord(m_cleanupCbs, cbr);
 }
-template <> void VerilatedTrace<VL_DERIVED_T>::module(const std::string& name) VL_MT_UNSAFE {
-    // Called via callbacks way above in call stack, which already hold m_mutex
-    m_moduleName = name;
+
+template <> void VerilatedTrace<VL_DERIVED_T>::pushNamePrefix(const std::string& prefix) {
+    m_namePrefixStack.push_back(m_namePrefixStack.back() + prefix);
+}
+
+template <> void VerilatedTrace<VL_DERIVED_T>::popNamePrefix(unsigned count) {
+    while (count--) m_namePrefixStack.pop_back();
+    assert(!m_namePrefixStack.empty());
 }
 
 //=========================================================================

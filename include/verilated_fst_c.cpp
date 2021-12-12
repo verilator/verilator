@@ -163,13 +163,13 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
 
-    std::istringstream nameiss{name};
+    std::string nameasstr = namePrefix() + name;
+    std::istringstream nameiss{nameasstr};
     std::istream_iterator<std::string> beg(nameiss);
     std::istream_iterator<std::string> end;
     std::list<std::string> tokens(beg, end);  // Split name
     std::string symbol_name{tokens.back()};
     tokens.pop_back();  // Remove symbol name from hierarchy
-    tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
     std::string tmpModName;
 
     // Find point where current and new scope diverge

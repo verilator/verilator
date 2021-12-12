@@ -477,10 +477,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     // Tab separates final scope from signal name
     // Tab sorts before spaces, so signals nicely will print before scopes
     // Note the hiername may be nothing, if so we'll add "\t{name}"
-    std::string nameasstr = name;
-    if (!moduleName().empty()) {
-        nameasstr = moduleName() + scopeEscape() + nameasstr;  // Optional ->module prefix
-    }
+    std::string nameasstr = namePrefix() + name;
     std::string hiername;
     std::string basename;
     for (const char* cp = nameasstr.c_str(); *cp; cp++) {
@@ -830,16 +827,19 @@ float flo = 0.0f;
 
 void vcdInit(void*, VerilatedVcd* vcdp, vluint32_t) {
     vcdp->scopeEscape('.');
-    vcdp->module("top");
+    vcdp->pushNamePrefix("top.");
     /**/ vcdp->declBus(0x2, "v1", -1, 0, 5, 1);
     /**/ vcdp->declBus(0x3, "v2", -1, 0, 6, 1);
-    /**/ vcdp->module("top.sub1");
+    /**/ vcdp->pushNamePrefix("sub1.");
     /***/ vcdp->declBit(0x4, "s1", -1, 0);
     /***/ vcdp->declBit(0x5, "ch", -1, 0);
-    /**/ vcdp->module("top.sub2");
+    /**/ vcdp->popNamePrefix();
+    /**/ vcdp->pushNamePrefix("sub2.");
     /***/ vcdp->declArray(0x6, "s2", -1, 0, 40, 3);
+    /**/ vcdp->popNamePrefix();
+    vcdp->popNamePrefix();
     // Note need to add 3 for next code.
-    vcdp->module("top2");
+    vcdp->pushNamePrefix("top2.");
     /**/ vcdp->declBus(0x2, "t2v1", -1, 0, 4, 1);
     /**/ vcdp->declTriBit(0x10, "io1", -1, 0);
     /**/ vcdp->declTriBus(0x12, "io5", -1, 0, 4, 0);
@@ -851,6 +851,7 @@ void vcdInit(void*, VerilatedVcd* vcdp, vluint32_t) {
     /**/  // Note need to add 4 for next code.
     /**/ vcdp->declTriQuad(0x24, "tq", -1, 0, 63, 0);
     /**/  // Note need to add 4 for next code.
+    vcdp->popNamePrefix();
 }
 
 void vcdFull(void*, VerilatedVcd* vcdp) {

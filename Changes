@@ -21,6 +21,7 @@ Verilator 4.217 devel
 
 * Support lower dimension looping in foreach loops (#3172). [Ehab Ibrahim]
 * Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
+* Reduce .rodata footpring of trace initializatoin (#3250). [Geza Lore, Shunyao CAD]
 * Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
 * Fix break under foreach loop (#3230).
 * Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235)

@@ -563,9 +563,10 @@ class EmitCModel final : public EmitCFunc {
              "0.\");\n");
         puts("}\n");
         puts("vlSymsp->__Vm_baseCode = code;\n");
-        puts("tracep->module(vlSymsp->name());\n");
         puts("tracep->scopeEscape(' ');\n");
+        puts("tracep->pushNamePrefix(std::string{vlSymsp->name()} + ' ');\n");
         puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
+        puts("tracep->popNamePrefix();\n");
         puts("tracep->scopeEscape('.');\n");  // Restore so later traced files won't break
         puts("}\n");
 
