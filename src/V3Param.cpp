@@ -351,7 +351,7 @@ class ParamProcessor final {
         }
         return string("z") + cvtToStr(num);
     }
-    string moduleCalcName(AstNodeModule* srcModp, const string& longname) {
+    string moduleCalcName(const AstNodeModule* srcModp, const string& longname) {
         string newname = longname;
         if (longname.length() > 30) {
             const auto iter = m_longMap.find(longname);
