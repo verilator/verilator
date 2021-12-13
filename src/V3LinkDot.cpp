@@ -1280,16 +1280,25 @@ class LinkDotFindVisitor final : public AstNVisitor {
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vforeach" + cvtToStr(m_modWithNum),
                                               nodep, m_classOrPackagep);
             m_curSymp->fallbackp(oldCurSymp);
-
+            // DOT(x, SELLOOPVARS(var, loops)) -> SELLOOPVARS(DOT(x, var), loops)
+            if (AstDot* const dotp = VN_CAST(nodep->arrayp(), Dot)) {
+                if (AstSelLoopVars* const loopvarsp = VN_CAST(dotp->rhsp(), SelLoopVars)) {
+                    AstNode* const fromp = loopvarsp->fromp()->unlinkFrBack();
+                    loopvarsp->unlinkFrBack();
+                    dotp->replaceWith(loopvarsp);
+                    dotp->rhsp(fromp);
+                    loopvarsp->fromp(dotp);
+                }
+            }
             const auto loopvarsp = VN_CAST(nodep->arrayp(), SelLoopVars);
             if (!loopvarsp) {
                 AstNode* const warnp = nodep->arrayp() ? nodep->arrayp() : nodep;
                 warnp->v3warn(E_UNSUPPORTED,
                               "Unsupported (or syntax error): Foreach on this array's construct");
+                nodep->dumpTree(cout, "-FIXME-us ");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 return;
             }
-
             for (AstNode *nextp, *argp = loopvarsp->elementsp(); argp; argp = nextp) {
                 nextp = argp->nextp();
                 AstVar* argrefp = nullptr;
@@ -1310,6 +1319,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
                     argp->v3error("'foreach' loop variable expects simple variable name");
                 }
             }
+            iterateChildren(nodep);
         }
     }
 

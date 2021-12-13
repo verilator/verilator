@@ -1726,6 +1726,7 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual bool maybePointedTo() const override { return false; }
     AstNode* fromp() const { return op1p(); }
+    void fromp(AstNode* nodep) { setOp1p(nodep); }
     AstNode* elementsp() const { return op2p(); }
 };
 
@@ -3137,6 +3138,7 @@ public:
     }
     virtual void dump(std::ostream& str) const override;
     AstNode* lhsp() const { return op1p(); }
+    void rhsp(AstNode* nodep) { setOp2p(nodep); }
     AstNode* rhsp() const { return op2p(); }
     bool colon() const { return m_colon; }
 };

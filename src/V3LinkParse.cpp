@@ -444,6 +444,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstNodeModule* nodep) override {

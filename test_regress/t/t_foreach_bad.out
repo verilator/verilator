@@ -1,8 +1,4 @@
 %Error: t/t_foreach_bad.v:14:7: Syntax error; foreach missing bracketed loop variable (IEEE 1800-2017 12.7.3)
    14 |       foreach (array);   
       |       ^~~~~~~
-%Error-UNSUPPORTED: t/t_foreach_bad.v:16:21: Unsupported (or syntax error): Foreach on this array's construct
-   16 |       foreach (array.array[a]);  
-      |                     ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
