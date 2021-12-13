@@ -1295,7 +1295,6 @@ class LinkDotFindVisitor final : public AstNVisitor {
                 AstNode* const warnp = nodep->arrayp() ? nodep->arrayp() : nodep;
                 warnp->v3warn(E_UNSUPPORTED,
                               "Unsupported (or syntax error): Foreach on this array's construct");
-                nodep->dumpTree(cout, "-FIXME-us ");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 return;
             }
