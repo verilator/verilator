@@ -4,6 +4,10 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// See also t_class_param.v
+
+module t (/*AUTOARG*/);
+
 class Cls #(parameter P = 12);
    bit [P-1:0] member;
    function bit [P-1:0] get_member;
@@ -22,11 +26,7 @@ class Wrap #(parameter PMINUS1 = 3);
    endfunction
 endclass
 
-typedef Cls#(5) Cls5_t;
-
-// See also t_class_param_mod.v
-
-module t (/*AUTOARG*/);
+   typedef Cls#(5) Cls5_t;
 
    Cls c12;
    Cls #(.P(4)) c4;

@@ -1,14 +1,5 @@
-%Error-UNSUPPORTED: t/t_class_param.v:22:11: Unsupported: parameterized classes
-                                           : ... In instance t
-   22 |    Cls #(.P(4)) c4;
-      |           ^
+%Error-UNSUPPORTED: t/t_class_param.v:18:30: Unsupported: class parameters
+   18 |    localparam P = PMINUS1 + 1;
+      |                              ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_class_param.v:7:23: Unsupported: class parameters
-                                          : ... In instance t
-    7 | class Cls #(parameter P = 12);
-      |                       ^
-%Error-UNSUPPORTED: t/t_class_param.v:17:14: Unsupported: parameterized classes
-                                           : ... In instance t
-   17 | typedef Cls#(5) Cls5_t;
-      |              ^
 %Error: Exiting due to
