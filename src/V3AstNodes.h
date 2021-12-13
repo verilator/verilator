@@ -1410,7 +1410,7 @@ public:
     virtual void dumpSmall(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
-    virtual bool undead() const { return true; }
+    virtual bool undead() const override { return true; }
     virtual AstNodeDType* subDTypep() const override { return nullptr; }
     virtual AstNodeDType* virtRefDTypep() const override { return nullptr; }
     virtual void virtRefDTypep(AstNodeDType* nodep) override {}
@@ -1438,7 +1438,7 @@ public:
     virtual void dumpSmall(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
-    virtual bool undead() const { return true; }
+    virtual bool undead() const override { return true; }
     virtual AstNodeDType* subDTypep() const override { return nullptr; }
     virtual AstNodeDType* virtRefDTypep() const override { return nullptr; }
     virtual void virtRefDTypep(AstNodeDType* nodep) override {}
