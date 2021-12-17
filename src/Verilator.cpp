@@ -301,10 +301,6 @@ static void process() {
         // After V3Task so task internal variables will get renamed
         V3Name::nameAll(v3Global.rootp());
 
-        // Process force/releases if there are any
-        // After flattening, before Life optimizations
-        if (v3Global.useForce()) V3Force::forceAll(v3Global.rootp());
-
         // Loop unrolling & convert FORs to WHILEs
         V3Unroll::unrollAll(v3Global.rootp());
 
@@ -337,6 +333,10 @@ static void process() {
 
         // Create tracing sample points, before we start eliminating signals
         if (v3Global.opt.trace()) V3TraceDecl::traceDeclAll(v3Global.rootp());
+
+        // Convert forceable signals, process force/release statements.
+        // After V3TraceDecl so we don't trace additional signals inserted to implement forcing.
+        V3Force::forceAll(v3Global.rootp());
 
         // Gate-based logic elimination; eliminate signals and push constant across cell boundaries
         // Instant propagation makes lots-o-constant reduction possibilities.

@@ -220,6 +220,12 @@ private:
                       && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
     }
+    virtual void visit(AstRelease* nodep) override {
+        processAndIterate(nodep);
+        UASSERT_OBJ(!(v3Global.assertDTypesResolved() && VN_IS(nodep->lhsp(), NodeVarRef)
+                      && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
+                    nodep, "Release LHS is not an lvalue");
+    }
     virtual void visit(AstScope* nodep) override {
         VL_RESTORER(m_inScope);
         {

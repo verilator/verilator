@@ -4025,6 +4025,12 @@ private:
         }
     }
 
+    virtual void visit(AstRelease* nodep) override {
+        userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
+        UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LValue be untyped?");
+        UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LValue be unsized?");
+    }
+
     virtual void visit(AstSFormatF* nodep) override {
         // Excludes NodeDisplay, see below
         if (m_vup && !m_vup->prelim()) return;  // Can be called as statement or function

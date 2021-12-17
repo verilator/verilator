@@ -336,6 +336,24 @@ Verilator does not support SEREs yet.  All assertion and coverage
 statements must be simple expressions that complete in one cycle.
 
 
+Force statement
+---------------
+
+Verilator supports the procedural `force` (and corresponding `release`)
+statement. The behaviour of the `force` statement however does not entirely
+comply with the IEEE 1800 SystemVerilog standard. According to the standard,
+when a procedural statement of the form `force a = b;` is executed, the
+simulation should behave as if from that point onwards, a continuous
+assignment `assign a = b;` have been added to override the drivers of `a`.
+More specifically: the value of `a` should be updated, whenever the value of
+`b` changes, all the way until a `release a;` statement is executed.
+Verilator instead evaluates the current value of `b` at the time the `force`
+statement is executed, and forces `a` to that value, without updating it
+until a new `force` or `release` statement is encountered that applies to
+`a`. This non-standard behaviour is nevertheless consistent with some other
+simulators.
+
+
 Encrypted Verilog
 -----------------
 

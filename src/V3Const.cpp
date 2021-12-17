@@ -2768,6 +2768,18 @@ private:
             varrefp->varp()->valuep(initvaluep);
         }
     }
+    virtual void visit(AstRelease* nodep) override {
+        if (AstConcat* const concatp = VN_CAST(nodep->lhsp(), Concat)) {
+            FileLine* const flp = nodep->fileline();
+            AstRelease* const newLp = new AstRelease{flp, concatp->lhsp()->unlinkFrBack()};
+            AstRelease* const newRp = new AstRelease{flp, concatp->rhsp()->unlinkFrBack()};
+            nodep->replaceWith(newLp);
+            newLp->addNextHere(newRp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            visit(newLp);
+            visit(newRp);
+        }
+    }
 
     virtual void visit(AstNodeIf* nodep) override {
         iterateChildren(nodep);
