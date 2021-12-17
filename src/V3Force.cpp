@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Make lookup forces
+// DESCRIPTION: Verilator: Covert forceable signals, process force/release
 //
 // Code available from: https://verilator.org
 //
@@ -13,350 +13,288 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
-// FORCE TRANSFORMATIONS:
-//   Step 1 (ForceVisitor):
-//      For forced nets, make:
-//         __forceon - enable bitmask of what bits are forced
-//         __forcein - value being forced
-//         __preforce - value before force is applied
+//  V3Force's Transformations:
 //
-//      Force sets the appropriate __forceon bits indicating a force is in
-//      effect using the value in __forcein.  Release clears the
-//      appropriate __forceon bits.
+//  For each forceable net with name "<name>":
+//      add 3 extra signals:
+//          - <name>__VforceRd: a net with same type as signal
+//          - <name>__VforceEn: a var with same type as signal, which is the bitwise force enable
+//          - <name>__VforceVl: a var with same type as signal, which is the forced value
+//      add an initial statement:
+//          initial <name>__VforceEn = 0;
+//      add a continuous assignment:
+//          assign <name>__VforceRd = <name>__VforceEn ? <name>__VforceVl : <name>;
+//      replace all READ references to <name> with a read reference to <name>_VforceRd
 //
-//      IEEE says that procedural assignments "hold" the forced value even
-//      after a release, so add an assignment to the original __preforce too.
+//  Replace each AstAssignForce with 3 assignments:
+//      - <lhs>__VforceEn = 1
+//      - <lhs>__VforceVl = <rhs>
+//      - <lhs>__VforceRd = <rhs>
 //
-//      Tristates can't be forced, that would need a __forceen and makes a
-//      large mess, so just error out.
-//
-//   Step 2 (ForceReplaceVisitor): (If any forces made)
-//
-//      Replace any VarRef's to a forced signal to instead go to the
-//      reconsiled signal.
+//  Replace each AstRelease with 1 or 2 assignments:
+//      - <lhs>__VforceEn = 0
+//      - <lhs>__VforceRd = <lhs> // iff lhs is a net
 //
 //*************************************************************************
 
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Error.h"
 #include "V3Global.h"
 #include "V3Force.h"
-#include "V3Simulate.h"
-#include "V3Stats.h"
-#include "V3Ast.h"
 
-#include <cmath>
-#include <vector>
+#include "V3AstUserAllocator.h"
 
 //######################################################################
-// Force shared state
+// Convert force/release statements and signals marked 'forceable'
 
-class ForceBaseVisitor VL_NOT_FINAL : public VNVisitor {
+class ForceConvertVisitor final : public VNVisitor {
     // TYPES
-public:
-    // Enum value must correspond to which user#p is used
-    enum class FVar : uint8_t { FORCEON = 2, FORCEIN = 3, PREFORCE = 4 };
+    struct ForceComponentsVar {
+        AstVar* const m_rdVarp;  // New variable to replace read references with
+        AstVar* const m_enVarp;  // Force enabled signal
+        AstVar* const m_valVarp;  // Forced value
+        AstVar* const m_phVarp;  // Placeholder variable for release (never read)
+        explicit ForceComponentsVar(AstVar* varp)
+            : m_rdVarp{new AstVar{varp->fileline(), VVarType::WIRE, varp->name() + "__VforceRd",
+                                  varp->dtypep()}}
+            , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
+                                  varp->dtypep()}}
+            , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
+                                   varp->dtypep()}}
+            , m_phVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforcePh",
+                                  varp->dtypep()}} {
+            m_rdVarp->addNext(m_enVarp);
+            m_rdVarp->addNext(m_valVarp);
+            m_rdVarp->addNext(m_phVarp);
+            varp->addNextHere(m_rdVarp);
 
-private:
+            if (varp->isPrimaryIO()) {
+                varp->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Force/Release on primary input/output net "
+                        << varp->prettyNameQ() << "\n"
+                        << varp->warnMore()
+                        << "... Suggest assign it to/from a temporary net and force/release that");
+            }
+        }
+    };
+
+    struct ForceComponentsVarScope {
+        AstVarScope* const m_rdVscp;  // New variable to replace read references with
+        AstVarScope* const m_enVscp;  // Force enabled signal
+        AstVarScope* const m_valVscp;  // Forced value
+        AstVarScope* const m_phVscp;  // Placeholder variable for release (never read)
+        explicit ForceComponentsVarScope(AstVarScope* vscp, ForceComponentsVar& fcv)
+            : m_rdVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_rdVarp}}
+            , m_enVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_enVarp}}
+            , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}}
+            , m_phVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_phVarp}} {
+            m_rdVscp->addNext(m_enVscp);
+            m_rdVscp->addNext(m_valVscp);
+            m_rdVscp->addNext(m_phVscp);
+            vscp->addNextHere(m_rdVscp);
+
+            FileLine* const flp = vscp->fileline();
+
+            {  // Add initialization of the enable signal
+                AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
+                V3Number zero{m_enVscp, m_enVscp->width()};
+                zero.setAllBits0();
+                AstNodeMath* const rhsp = new AstConst{flp, zero};
+                AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
+                AstActive* const activep = new AstActive{
+                    flp, "force-init",
+                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
+                activep->sensesStorep(activep->sensesp());
+                activep->addStmtsp(new AstInitial{flp, assignp});
+                vscp->scopep()->addActivep(activep);
+            }
+
+            {  // Add the combinational override
+                AstVarRef* const lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
+                AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
+                origp->user2(1);  // Don't replace this read ref with the read signal
+                AstOr* const rhsp = new AstOr{
+                    flp,
+                    new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
+                               new AstVarRef{flp, m_valVscp, VAccess::READ}},
+                    new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
+                               origp}};
+                AstActive* const activep
+                    = new AstActive{flp, "force-comb",
+                                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}}};
+                activep->sensesStorep(activep->sensesp());
+                activep->addStmtsp(new AstAssignW{flp, lhsp, rhsp});
+                vscp->scopep()->addActivep(activep);
+            }
+        }
+    };
+
     // NODE STATE
-    //   Ast*::user1            -> bool - processed
-    //   AstVar::user1          -> bool - created here
-    //   AstVarScope::user1     -> bool - created here
-    //   AstVar::user2p         -> AstVar* pointer to __forceon
-    //   AstVarScope::user2p    -> AstVarScope* pointer to __forceon
-    //   AstVar::user3p         -> AstVar* pointer to __forcein
-    //   AstVarScope::user3p    -> AstVarScope* pointer to __forcein
-    //   AstVar::user4p         -> AstVar* pointer to __preforce
-    //   AstVarScope::user4p    -> AstVarScope* pointer to __preforce
-    // Uses are in ForceVisitor
+    //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
+    //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
+    //  AstVarRef::user2      -> Flag indicating not to replace reference
+    const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
+    AstUser1Allocator<AstVar, ForceComponentsVar> m_forceComponentsVar;
+    AstUser1Allocator<AstVarScope, ForceComponentsVarScope> m_forceComponentsVarScope;
 
-public:
-    VL_DEBUG_FUNC;  // Declare debug()
+    // METHODS
+    const ForceComponentsVarScope& getForceComponents(AstVarScope* vscp) {
+        AstVar* const varp = vscp->varp();
+        return m_forceComponentsVarScope(vscp, vscp, m_forceComponentsVar(varp, varp));
+    }
 
-    static string fvarName(FVar fvar) {
-        switch (fvar) {
-        case FVar::FORCEON: return "__forceon";
-        case FVar::FORCEIN: return "__forcein";
-        case FVar::PREFORCE: return "__preforce";
-        }
-        v3fatalSrc("bad case");
-        return "";
+    // Replace each AstNodeVarRef in the given 'nodep' that writes a variable by transforming the
+    // referenced AstVarScope with the given function.
+    void transformWritenVarScopes(AstNode* nodep, std::function<AstVarScope*(AstVarScope*)> f) {
+        UASSERT_OBJ(nodep->backp(), nodep, "Must have backp, otherwise will be lost if replaced");
+        nodep->foreach<AstNodeVarRef>([this, &f](AstNodeVarRef* refp) {
+            if (refp->access() != VAccess::WRITE) return;
+            // TODO: this is not strictly speaking safe for some complicated lvalues, eg.:
+            //       'force foo[a(cnt)] = 1;', where 'cnt' is an out parameter, but it will
+            //       do for now...
+            refp->replaceWith(
+                new AstVarRef{refp->fileline(), f(refp->varScopep()), VAccess::WRITE});
+            pushDeletep(refp);
+        });
     }
-    static AstVar* getForceVarNull(const AstVar* const nodep, FVar fvar) {
-        // E.g. trying to make a __perforce__FOO would be bad
-        UASSERT_OBJ(!nodep->user1(), nodep, "lookup on var that Force made itself");
-        return VN_AS(nodep->usernp(static_cast<int>(fvar)), Var);
+
+    // VISIT methods
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    void visit(AstAssignForce* nodep) override {
+        // The AstAssignForce node will be removed for sure
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        pushDeletep(nodep);
+
+        FileLine* const flp = nodep->fileline();
+        AstNode* const lhsp = nodep->lhsp();  // The LValue we are forcing
+        AstNode* const rhsp = nodep->rhsp();  // The value we are forcing it to
+
+        // Set corresponding enable signals to ones
+        V3Number ones{lhsp, lhsp->width()};
+        ones.setAllBits1();
+        AstAssign* const setEnp
+            = new AstAssign{flp, lhsp->cloneTree(false), new AstConst{rhsp->fileline(), ones}};
+        transformWritenVarScopes(setEnp->lhsp(), [this](AstVarScope* vscp) {
+            return getForceComponents(vscp).m_enVscp;
+        });
+        // Set corresponding value signals to the forced value
+        AstAssign* const setValp
+            = new AstAssign{flp, lhsp->cloneTree(false), rhsp->cloneTree(false)};
+        transformWritenVarScopes(setValp->lhsp(), [this](AstVarScope* vscp) {
+            return getForceComponents(vscp).m_valVscp;
+        });
+        // Set corresponding read signal directly as well, in case something in the same process
+        // reads it later
+        AstAssign* const setRdp = new AstAssign{flp, lhsp->unlinkFrBack(), rhsp->unlinkFrBack()};
+        transformWritenVarScopes(setRdp->lhsp(), [this](AstVarScope* vscp) {
+            return getForceComponents(vscp).m_rdVscp;
+        });
+
+        setEnp->addNext(setValp);
+        setEnp->addNext(setRdp);
+        relinker.relink(setEnp);
     }
-    static AstVar* getForceVar(AstVar* const nodep, FVar fvar) {
-        AstVar* const foundp = getForceVarNull(nodep, fvar);
-        if (foundp) return foundp;
-        if (nodep->isPrimaryIO()) {
-            nodep->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: Force/Release on primary input/output net "
-                    << nodep->prettyNameQ() << "\n"
-                    << nodep->warnMore()
-                    << "... Suggest assign it to/from a temporary net and force/release that");
-        }
-        auto* const newp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
-                                      nodep->name() + fvarName(fvar), nodep};
-        newp->user1(true);
-        UINFO(9, "getForceVar for " << nodep << endl);
-        UINFO(9, "getForceVar new " << newp << endl);
-        nodep->addNextHere(newp);
-        nodep->usernp(static_cast<int>(fvar), newp);
-        return newp;
-    }
-    static AstVarScope* getForceVscNull(const AstVarScope* const nodep, FVar fvar) {
-        // E.g. trying to make a __perforce__FOO would be bad
-        UASSERT_OBJ(!nodep->user1(), nodep, "lookup on varscope that Force made itself");
-        return VN_AS(nodep->usernp(static_cast<int>(fvar)), VarScope);
-    }
-    static AstVarScope* getForceVsc(AstVarScope* const nodep, FVar fvar) {
-        AstVarScope* const foundp = getForceVscNull(nodep, fvar);
-        if (foundp) return foundp;
-        FileLine* const fl_nowarn = new FileLine{nodep->fileline()};
+
+    void visit(AstRelease* nodep) override {
+        // The AstRelease node will be removed for sure
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        pushDeletep(nodep);
+
+        FileLine* const flp = nodep->fileline();
+        AstNode* const lhsp = nodep->lhsp();  // The LValue we are releasing
+
+        // Set corresponding enable signals to zero
+        V3Number zero{lhsp, lhsp->width()};
+        zero.setAllBits0();
+        AstAssign* const resetEnp
+            = new AstAssign{flp, lhsp->cloneTree(false), new AstConst{lhsp->fileline(), zero}};
+        transformWritenVarScopes(resetEnp->lhsp(), [this](AstVarScope* vscp) {
+            return getForceComponents(vscp).m_enVscp;
+        });
+        // IEEE 1800-2017 10.6.2: If this is a net, and not a variable, then reset the read
+        // signal directly as well, in case something in the same process reads it later. Also, if
+        // it is a variable, and not a net, set the original signal to the forced value, as it
+        // needs to retain the forced value until the next procedural update, which might happen on
+        // a later eval. Luckily we can do all this in a single assignment.
+        FileLine* const fl_nowarn = new FileLine{flp};
         fl_nowarn->warnOff(V3ErrorCode::BLKANDNBLK, true);
-        auto* const newp
-            = new AstVarScope{fl_nowarn, nodep->scopep(), getForceVar(nodep->varp(), fvar)};
-        newp->user1(true);
-        UINFO(9, "getForceVsc for " << nodep << endl);
-        UINFO(9, "getForceVsc new " << newp << endl);
-        nodep->addNextHere(newp);
-        nodep->usernp(static_cast<int>(fvar), newp);
-        return newp;
-    }
-    static AstVarRef* makeVarRef(AstNodeVarRef* nodep, FVar fvar, VAccess access) {
-        return new AstVarRef{nodep->fileline(), getForceVsc(nodep->varScopep(), fvar), access};
-    }
-    static AstNode* makeForcingEquation(AstNodeVarRef* nodep) {
-        // Forcing:  out = ((__forceon & __forcein) | (~__forceon & __preforce))
-        UINFO(9, "makeForcingEquation for " << nodep << endl);
-        FileLine* const fl = nodep->fileline();
-        AstNode* const orp = new AstOr{
-            fl,
-            new AstAnd{fl, makeVarRef(nodep, FVar::FORCEON, VAccess::READ),
-                       makeVarRef(nodep, FVar::FORCEIN, VAccess::READ)},
-            new AstAnd{fl, new AstNot{fl, makeVarRef(nodep, FVar::FORCEON, VAccess::READ)},
-                       makeVarRef(nodep, FVar::PREFORCE, VAccess::READ)}};
-        return orp;
-    }
-};
+        AstAssign* const resetRdp
+            = new AstAssign{fl_nowarn, lhsp->cloneTree(false), lhsp->unlinkFrBack()};
+        // Replace write refs on the LHS
+        resetRdp->lhsp()->foreach<AstNodeVarRef>([this](AstNodeVarRef* refp) {
+            if (refp->access() != VAccess::WRITE) return;
+            AstVarScope* const vscp = refp->varScopep();
+            AstVarScope* const newVscp
+                = vscp->varp()->isContinuously() ? getForceComponents(vscp).m_rdVscp : vscp;
+            // Disable BLKANDNBLK for this reference
+            FileLine* const flp = new FileLine{refp->fileline()};
+            flp->warnOff(V3ErrorCode::BLKANDNBLK, true);
+            AstVarRef* const newpRefp = new AstVarRef{flp, newVscp, VAccess::WRITE};
+            refp->replaceWith(newpRefp);
+            pushDeletep(refp);
+        });
+        // Replace write refs on RHS
+        resetRdp->rhsp()->foreach<AstNodeVarRef>([this](AstNodeVarRef* refp) {
+            if (refp->access() != VAccess::WRITE) return;
+            AstVarScope* const vscp = refp->varScopep();
+            AstVarScope* const newVscp
+                = vscp->varp()->isContinuously() ? vscp : getForceComponents(vscp).m_valVscp;
+            AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), newVscp, VAccess::READ};
+            newpRefp->user2(1);  // Don't replace this read ref with the read signal
+            refp->replaceWith(newpRefp);
+            pushDeletep(refp);
+        });
 
-//######################################################################
-// Recurse left-hand-side variables to do replaces underneath a force or release
+        resetEnp->addNext(resetRdp);
+        relinker.relink(resetEnp);
+    }
 
-class ForceLhsVisitor final : public ForceBaseVisitor {
-private:
-    // STATE
-    FVar const m_fvar;  // Which variable to replace with
-    AstNodeVarRef* m_releaseVarRefp = nullptr;  // Left hand side variable under release
+    // CONSTRUCTOR
+    explicit ForceConvertVisitor(AstNetlist* nodep) {
+        // Transform all force and release statements
+        iterateAndNextNull(nodep->modulesp());
 
-    virtual void visit(AstNodeVarRef* nodep) override {
-        if (nodep->user1()) return;
-        if (nodep->access().isWriteOrRW()) {
-            if (m_releaseVarRefp) {
-                nodep->v3error("Multiple variables forced in single statement: "
-                               << m_releaseVarRefp->prettyNameQ() << ", "
-                               << nodep->varScopep()->prettyNameQ());
-                return;
+        // Replace references to forced signals
+        nodep->modulesp()->foreachAndNext<AstVarRef>([this](AstVarRef* nodep) {
+            if (ForceComponentsVarScope* const fcp
+                = m_forceComponentsVarScope.tryGet(nodep->varScopep())) {
+                switch (nodep->access()) {
+                case VAccess::READ:
+                    // Read references replaced to read the new, possibly forced signal
+                    if (!nodep->user2()) {
+                        nodep->varp(fcp->m_rdVscp->varp());
+                        nodep->varScopep(fcp->m_rdVscp);
+                    }
+                    break;
+                case VAccess::WRITE:
+                    // Write references use the original signal
+                    break;
+                default:
+                    nodep->v3error(
+                        "Unsupported: Signals used via read-write reference cannot be forced");
+                    break;
+                }
             }
-            m_releaseVarRefp = nodep;
-            AstNode* const newp = makeVarRef(nodep, m_fvar, VAccess::WRITE);
-            newp->user1(true);
-            nodep->replaceWith(newp);
-            pushDeletep(nodep);
-        }
+        });
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    // CONSTRUCTORS
-    explicit ForceLhsVisitor(AstNode* nodep, FVar fvar)
-        : m_fvar(fvar) {
-        iterate(nodep);
-    }
-    virtual ~ForceLhsVisitor() override = default;
-    // METHODS
-    AstNodeVarRef* releaseVarRefp() const { return m_releaseVarRefp; }
+    static void apply(AstNetlist* nodep) { ForceConvertVisitor{nodep}; }
 };
 
 //######################################################################
-// Force class functions
-
-class ForceVisitor final : public ForceBaseVisitor {
-private:
-    // NODE STATE
-    // See ForceBaseVisitor
-    const VNUser1InUse m_inuser1;
-    const VNUser2InUse m_inuser2;
-    const VNUser3InUse m_inuser3;
-    const VNUser4InUse m_inuser4;
-
-    // STATE
-    bool m_anyForce = false;  // Any force, need reconciliation step
-    VDouble0 m_statForces;  // stat tracking
-
-    std::deque<AstAssignForce*> m_forces;  // Pointer to found forces
-    std::deque<AstAssignRelease*> m_releases;  // Pointer to found releases
-
-    virtual void visit(AstAssignForce* nodep) override { m_forces.push_back(nodep); }
-    void visitEarlierForce(AstAssignForce* nodep) {
-        if (nodep->user1SetOnce()) return;
-        if (debug() >= 9) nodep->dumpTree(cout, "-force-i- ");
-        ++m_statForces;
-        m_anyForce = true;
-        // For force/release, duplicate assignment to make
-        //      AssignForce __forceon = '1
-        //      AssignForce __forcein = {value}
-        // and clone LHS's node tree to handle appropriate extractions
-        {  // __forceon = '1
-            AstNodeAssign* const newp = nodep->cloneTree(false);
-            pushDeletep(newp->rhsp()->unlinkFrBack());
-            V3Number num{nodep, nodep->width()};
-            num.setAllBits1();
-            newp->rhsp(new AstConst{nodep->fileline(), num});
-            { ForceLhsVisitor{newp->lhsp(), FVar::FORCEON}; }
-            newp->user1(true);  // Don't process it again
-            nodep->addNextHere(newp);
-            if (debug() >= 9) newp->dumpTree(cout, "-force-fo- ");
-        }
-        {  // Edit to create assignment to have VarRef that refers to __forceon
-            { ForceLhsVisitor{nodep->lhsp(), FVar::FORCEIN}; }
-            nodep->user1(true);  // Don't process it again
-            if (debug() >= 9) nodep->dumpTree(cout, "-force-fi- ");
-        }
-    }
-    virtual void visit(AstAssignRelease* nodep) override { m_releases.push_back(nodep); }
-    void visitEarlierRelease(AstAssignRelease* nodep) {
-        if (nodep->user1SetOnce()) return;
-        if (debug() >= 9) nodep->dumpTree(cout, "-release-i- ");
-        // RHS is not relevant, so no iterate
-        // For release, edit assignment to make
-        //   AssignRelease __forceon = `0
-        //   we already have 0's on RHS, were made when AstNode created
-        // Create assignment to have VarRef that refers to __forceon
-        ForceLhsVisitor fvisitor{nodep->lhsp(), FVar::FORCEON};
-        // releaseVarRefp might be deleted when ForceLhsVisitor destructs, so
-        // keep ForceLhsVisitor in scope for now
-        AstNodeVarRef* const releaseVarRefp = fvisitor.releaseVarRefp();
-        UASSERT_OBJ(releaseVarRefp, nodep, "No LHS variable found under release");
-        if (!getForceVscNull(releaseVarRefp->varScopep(), FVar::FORCEIN)) {
-            UINFO(9, "Deleting release of variable that's never forced: " << nodep << endl);
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            return;
-        }
-        if (!releaseVarRefp->varp()->isContinuously()) {
-            // Create assignment __out == _forceen so when release happens value sticks
-            // See IEEE - a strange historical language artifact
-            UINFO(9, "force var is procedural " << releaseVarRefp->varScopep() << endl);
-            FileLine* const fl_nowarn = new FileLine{nodep->fileline()};
-            fl_nowarn->warnOff(V3ErrorCode::BLKANDNBLK, true);
-            AstNodeAssign* const newp = new AstAssignRelease{
-                fl_nowarn, makeVarRef(releaseVarRefp, FVar::PREFORCE, VAccess::WRITE),
-                makeForcingEquation(releaseVarRefp)};
-            newp->user1(true);  // Don't process it again
-            nodep->addHereThisAsNext(newp);  // Must go before change forceon
-            if (debug() >= 9) newp->dumpTree(cout, "-release-rp- ");
-        }
-        if (debug() >= 9) nodep->dumpTree(cout, "-release-ro- ");
-    }
-
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit ForceVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-        // Now that we know procedural markers in user5, do forces
-        for (auto* const nodep : m_forces) visitEarlierForce(nodep);
-        m_forces.clear();  // As dangling pointers now
-        // Do releases after all forces are processed, so we can just
-        // ignore any release with no corresponding force
-        for (auto* const nodep : m_releases) visitEarlierRelease(nodep);
-        m_releases.clear();  // As dangling pointers now
-    }
-    virtual ~ForceVisitor() override {  //
-        V3Stats::addStat("Tristate, Forces", m_statForces);
-    }
-    // METHODS
-    bool anyForce() const { return m_anyForce; }
-};
-
-//######################################################################
-// Force class functions
-
-class ForceReplace final : public ForceBaseVisitor {
-    // This extra complete-netlist visit could be avoided by recording all
-    // AstVarRefs to every AstVar, but that's a lot of data structure
-    // building, faster to read-only iterate.
-    // As we only care about VarRef's we use direct recusion rather than a visitor
-
-private:
-    void visitVarRef(AstNodeVarRef* nodep) {
-        if (nodep->varScopep()->user2p()) {
-            if (nodep->access().isRW()) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: forced variable used in read-modify-write context");
-            } else if (nodep->access().isWriteOrRW()) {
-                UINFO(9, "  changeRecurse-WR-replace " << nodep << endl);
-                AstNode* const newp = makeVarRef(nodep, FVar::PREFORCE, VAccess::WRITE);
-                newp->user1(true);
-                nodep->replaceWith(newp);
-                pushDeletep(nodep);
-                return;
-            } else if (nodep->access().isReadOrRW()) {
-                // We build forcing equation on each usage rather than making
-                // a variable otherwise we wouldn't know where between a statement
-                // that sets a preforce and uses a forced to insert the proposed
-                // assignment
-                UINFO(9, "  changeRecurse-RD-replace " << nodep << endl);
-                AstNode* const newp = makeForcingEquation(nodep);
-                newp->user1(true);
-                nodep->replaceWith(newp);
-                pushDeletep(nodep);
-                return;
-            }
-        }
-    }
-
-    void changeRecurse(AstNode* nodep) {
-        // Recurse and replace any VarRef WRITEs to refer to the force equation
-        if (VL_LIKELY(!nodep->user1())) {  // Else processed already
-            if (auto* const varrefp = VN_CAST(nodep, NodeVarRef)) {
-                visitVarRef(varrefp);
-                return;  // Might have been edited -- and has no children so ok to exit
-            }
-        }
-        nodep->prefetch();
-        if (nodep->op1p()) changeRecurse(nodep->op1p());
-        if (nodep->op2p()) changeRecurse(nodep->op2p());
-        if (nodep->op3p()) changeRecurse(nodep->op3p());
-        if (nodep->op4p()) changeRecurse(nodep->op4p());
-        if (nodep->nextp()) changeRecurse(nodep->nextp());
-    }
-
-    virtual void visit(AstNode* nodep) override { v3error("Unused"); }  // LCOV_EXCL_LINE
-
-public:
-    // CONSTRUCTORS
-    explicit ForceReplace(AstNetlist* nodep) { changeRecurse(nodep); }
-    virtual ~ForceReplace() override = default;
-};
-
-//######################################################################
-// Force class functions
+//
 
 void V3Force::forceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {  // Destruct before final check
-        ForceVisitor visitor{nodep};
-        if (visitor.anyForce()) {
-            V3Global::dumpCheckGlobalTree("force-mid", 0,
-                                          v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
-            ForceReplace{nodep};
-        }
-    }
+    if (!v3Global.hasForceableSignals()) return;
+    ForceConvertVisitor::apply(nodep);
     V3Global::dumpCheckGlobalTree("force", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

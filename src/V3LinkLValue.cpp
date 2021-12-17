@@ -83,6 +83,15 @@ private:
             iterateAndNextNull(nodep->rhsp());
         }
     }
+    virtual void visit(AstRelease* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        VL_RESTORER(m_setContinuously);
+        {
+            m_setRefLvalue = VAccess::WRITE;
+            m_setContinuously = false;
+            iterateAndNextNull(nodep->lhsp());
+        }
+    }
     virtual void visit(AstCastDynamic* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {

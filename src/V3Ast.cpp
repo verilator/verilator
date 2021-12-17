@@ -71,29 +71,6 @@ AstNode::AstNode(VNType t, FileLine* fl)
     editCountInc();
 }
 
-AstNode* AstNode::usernp(int n) const {
-    switch (n) {
-    case 1: return user1p();
-    case 2: return user2p();
-    case 3: return user3p();
-    case 4: return user4p();
-    case 5: return user5p();
-    }
-    v3fatalSrc("Bad Case");
-    return nullptr;  // LCOV_EXCL_LINE
-}
-void AstNode::usernp(int n, void* userp) {
-    switch (n) {
-    case 1: user1p(userp); return;
-    case 2: user2p(userp); return;
-    case 3: user3p(userp); return;
-    case 4: user4p(userp); return;
-    case 5: user5p(userp); return;
-    }
-    v3fatalSrc("Bad Case");
-    VL_UNREACHABLE
-}
-
 AstNode* AstNode::abovep() const {
     // m_headtailp only valid at beginning or end of list
     // Avoid supporting at other locations as would require walking

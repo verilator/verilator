@@ -3559,11 +3559,10 @@ public:
 };
 
 class AstAssignForce final : public AstNodeAssign {
+    // Procedural 'force' statement
 public:
     AstAssignForce(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER_AssignForce(fl, lhsp, rhsp) {
-        v3Global.useForce(true);
-    }
+        : ASTGEN_SUPER_AssignForce(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignForce)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignForce{this->fileline(), lhsp, rhsp};
@@ -3571,22 +3570,15 @@ public:
     virtual bool brokeLhsMustBeLvalue() const override { return true; }
 };
 
-class AstAssignRelease final : public AstNodeAssign {
-    // Release is treated similar to an assign to `z
+class AstRelease final : public AstNodeStmt {
+    // Procedural 'release' statement
 public:
-    // Only for use in parser, as V3Width needs to resolve the '0 width.
-    AstAssignRelease(FileLine* fl, VFlagChildDType, AstNode* lhsp)
-        : ASTGEN_SUPER_AssignRelease(fl, lhsp, new AstConst{fl, AstConst::StringToParse{}, "'0"}) {
-        v3Global.useForce(true);
+    AstRelease(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER_Release(fl) {
+        setOp1p(lhsp);
     }
-    AstAssignRelease(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER_AssignRelease(fl, lhsp, rhsp) {}
-    ASTNODE_NODE_FUNCS(AssignRelease)
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssignRelease{this->fileline(), lhsp, rhsp};
-    }
-    virtual bool brokeLhsMustBeLvalue() const override { return true; }
-    AstNode* lhsp() const { return op2p(); }
+    ASTNODE_NODE_FUNCS(Release);
+    AstNode* lhsp() const { return op1p(); }
 };
 
 class AstAssignPre final : public AstNodeAssign {

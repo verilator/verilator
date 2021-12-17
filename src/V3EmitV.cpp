@@ -124,15 +124,10 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         putqs(nodep, "*/\n");
     }
     virtual void visit(AstNodeAssign* nodep) override {
-        if (VN_IS(nodep, AssignRelease)) {
-            puts("release ");
-            iterateAndNextNull(nodep->lhsp());
-        } else {
-            if (VN_IS(nodep, AssignForce)) puts("force ");
-            iterateAndNextNull(nodep->lhsp());
-            putfs(nodep, " " + nodep->verilogKwd() + " ");
-            iterateAndNextNull(nodep->rhsp());
-        }
+        if (VN_IS(nodep, AssignForce)) puts("force ");
+        iterateAndNextNull(nodep->lhsp());
+        putfs(nodep, " " + nodep->verilogKwd() + " ");
+        iterateAndNextNull(nodep->rhsp());
         if (!m_suppressSemi) puts(";\n");
     }
     virtual void visit(AstAssignDly* nodep) override {
@@ -153,6 +148,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         iterateAndNextNull(nodep->lhsp());
         putbs(" = ");
         iterateAndNextNull(nodep->rhsp());
+        if (!m_suppressSemi) puts(";\n");
+    }
+    virtual void visit(AstRelease* nodep) override {
+        puts("release ");
+        iterateAndNextNull(nodep->lhsp());
         if (!m_suppressSemi) puts(";\n");
     }
     virtual void visit(AstBreak*) override {

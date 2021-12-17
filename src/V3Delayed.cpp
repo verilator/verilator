@@ -103,6 +103,8 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     void markVarUsage(AstNodeVarRef* nodep, bool blocking) {
+        // Ignore if warning is disabled on this reference (used by V3Force).
+        if (nodep->fileline()->warnIsOff(V3ErrorCode::BLKANDNBLK)) return;
         if (blocking) nodep->user5(true);
         AstVarScope* const vscp = nodep->varScopep();
         // UINFO(4, " MVU " << blocking << " " << nodep << endl);

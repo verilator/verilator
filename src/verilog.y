@@ -3088,10 +3088,10 @@ statement_item<nodep>:		// IEEE: statement_item
 	//UNSUP:			delay_or_event_controlE above
 	|	yDEASSIGN variable_lvalue ';'
 			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); }
-	|	yFORCE expr '=' expr ';'
-			{ $$ = new AstAssignForce{$1, $2, $4}; }
+	|	yFORCE variable_lvalue '=' expr ';'
+			{ $$ = new AstAssignForce{$1, $2, $4}; v3Global.setHasForceableSignals(); }
 	|	yRELEASE variable_lvalue ';'
-			{ $$ = new AstAssignRelease{$1, VFlagChildDType{}, $2}; }
+			{ $$ = new AstRelease{$1, $2}; v3Global.setHasForceableSignals(); }
 	//
 	//			// IEEE: case_statement
 	|	unique_priorityE caseStart caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);

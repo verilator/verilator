@@ -24,6 +24,7 @@
 #include "V3Ast.h"
 
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 template <class T_Node, class T_Data, int T_UserN> class AstUserAllocatorBase VL_NOT_FINAL {
@@ -92,11 +93,12 @@ protected:
     VL_UNCOPYABLE(AstUserAllocatorBase);
 
 public:
-    // Get a reference to the user data
-    T_Data& operator()(T_Node* nodep) {
+    // Get a reference to the user data. If does not exist, construct it with given arguments.
+    template <typename... Args>  //
+    T_Data& operator()(T_Node* nodep, Args&&... args) {
         T_Data* userp = getUserp(nodep);
         if (!userp) {
-            userp = new T_Data;
+            userp = new T_Data{std::forward<Args>(args)...};
             m_allocated.push_back(userp);
             setUserp(nodep, userp);
         }
@@ -109,6 +111,9 @@ public:
         UASSERT_OBJ(userp, nodep, "Missing User data on const AstNode");
         return *userp;
     }
+
+    // Get a pointer to the user data if exists, otherwise nullptr
+    T_Data* tryGet(const T_Node* nodep) { return getUserp(nodep); }
 };
 
 // User pointer allocator classes. T_Node is the type of node the allocator should be applied to

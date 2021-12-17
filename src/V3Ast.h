@@ -1511,14 +1511,6 @@ public:
     uint8_t brokenState() const { return m_brokenState; }
     void brokenState(uint8_t value) { m_brokenState = value; }
 
-    void prefetch() const {
-        ASTNODE_PREFETCH(m_op1p);
-        ASTNODE_PREFETCH(m_op2p);
-        ASTNODE_PREFETCH(m_op3p);
-        ASTNODE_PREFETCH(m_op4p);
-        ASTNODE_PREFETCH(m_nextp);
-    }
-
     // Used by AstNode::broken()
     bool brokeExists() const { return V3Broken::isLinkable(this); }
     bool brokeExistsAbove() const { return brokeExists() && (m_brokenState >> 7); }
@@ -1672,9 +1664,6 @@ public:
     int         user5SetOnce() { int v=user5(); if (!v) user5(1); return v; }  // Better for cache than user5Inc()
     static void user5ClearTree() { VNUser5InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
-
-    AstNode* usernp(int n) const;  // Return user1..userN based on provided n
-    void usernp(int n, void* userp);  // Set user1..userN based on provided n
 
     vluint64_t editCount() const { return m_editCount; }
     void editCountInc() {
