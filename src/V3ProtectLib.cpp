@@ -410,9 +410,9 @@ private:
                                   + "_protectlib_trace(void* vhandlep__V, void* tfp, int levels, "
                                     "int options) {\n");
             castPtr(fl, txtp);
-            txtp->addText(
-                fl,
-                /**/ "handlep__V->trace(static_cast<VerilatedVcdC*>(tfp), levels, options);\n");
+            txtp->addText(fl,
+                          /**/ "handlep__V->trace(static_cast<" + v3Global.opt.traceClassBase()
+                              + "C*>(tfp), levels, options);\n");
             txtp->addText(fl, "}\n\n");
         }
 
