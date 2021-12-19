@@ -5257,6 +5257,28 @@ public:
     AstNode* widthp() const { return op4p(); }
 };
 
+class AstTracePushNamePrefix final : public AstNodeStmt {
+    const string m_prefix;  // Prefix to add to signal names
+public:
+    AstTracePushNamePrefix(FileLine* fl, const string& prefix)
+        : ASTGEN_SUPER_TracePushNamePrefix(fl)
+        , m_prefix{prefix} {}
+    ASTNODE_NODE_FUNCS(TracePushNamePrefix)
+    virtual bool same(const AstNode* samep) const override { return false; }
+    string prefix() const { return m_prefix; }
+};
+
+class AstTracePopNamePrefix final : public AstNodeStmt {
+    const unsigned m_count;  // How many levels to pop
+public:
+    AstTracePopNamePrefix(FileLine* fl, unsigned count)
+        : ASTGEN_SUPER_TracePopNamePrefix(fl)
+        , m_count{count} {}
+    ASTNODE_NODE_FUNCS(TracePopNamePrefix)
+    virtual bool same(const AstNode* samep) const override { return false; }
+    unsigned count() const { return m_count; }
+};
+
 class AstTraceDecl final : public AstNodeStmt {
     // Trace point declaration
     // Separate from AstTraceInc; as a declaration can't be deleted
@@ -5271,12 +5293,10 @@ private:
     const AstVarType m_varType;  // Type of variable (for localparam vs. param)
     const AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     const VDirection m_declDirection;  // Declared direction input/output etc
-    const bool m_isScoped;  // Uses run-time scope (for interfaces)
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
-                 AstNode* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
-                 bool isScoped)
+                 AstNode* valuep, const VNumRange& bitRange, const VNumRange& arrayRange)
         : ASTGEN_SUPER_TraceDecl(fl)
         , m_showname{showname}
         , m_bitRange{bitRange}
@@ -5286,8 +5306,7 @@ public:
                * (VL_EDATASIZE / 32)))  // A code is always 32-bits
         , m_varType{varp->varType()}
         , m_declKwd{varp->declKwd()}
-        , m_declDirection{varp->declDirection()}
-        , m_isScoped{isScoped} {
+        , m_declDirection{varp->declDirection()} {
         dtypeFrom(valuep);
         addNOp1p(valuep);
     }
@@ -5307,7 +5326,6 @@ public:
     AstVarType varType() const { return m_varType; }
     AstBasicDTypeKwd declKwd() const { return m_declKwd; }
     VDirection declDirection() const { return m_declDirection; }
-    bool isScoped() const { return m_isScoped; }
     AstNode* valuep() const { return op1p(); }
 };
 

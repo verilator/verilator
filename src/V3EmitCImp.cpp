@@ -631,9 +631,7 @@ class EmitCTrace final : EmitCFunc {
         puts("(c+" + cvtToStr(nodep->code()));
         if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->widthWords()));
         puts(",");
-        if (nodep->isScoped()) puts("Verilated::catName(scopep,");
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
-        if (nodep->isScoped()) puts(",(int)scopet,\" \")");
         // Direction
         if (v3Global.opt.traceFormat().fst()) {
             puts("," + cvtToStr(enumNum));
@@ -836,12 +834,22 @@ class EmitCTrace final : EmitCFunc {
 
         EmitCFunc::visit(nodep);
     }
+    virtual void visit(AstTracePushNamePrefix* nodep) override {
+        puts("tracep->pushNamePrefix(");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
+        puts(");\n");
+    }
+    virtual void visit(AstTracePopNamePrefix* nodep) override {  //
+        puts("tracep->popNamePrefix(");
+        puts(cvtToStr(nodep->count()));
+        puts(");\n");
+    }
     virtual void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());
         if (nodep->arrayRange().ranged()) {
-            puts("{int i; for (i=0; i<" + cvtToStr(nodep->arrayRange().elements()) + "; i++) {\n");
+            puts("for (int i = 0; i < " + cvtToStr(nodep->arrayRange().elements()) + "; ++i) {\n");
             emitTraceInitOne(nodep, enumNum);
-            puts("}}\n");
+            puts("\n}\n");
         } else {
             emitTraceInitOne(nodep, enumNum);
             puts("\n");

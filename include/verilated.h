@@ -823,8 +823,8 @@ public:
 public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
-    static const char* catName(const char* n1, const char* n2, int scopet = 0,
-                               const char* delimiter = ".");  // Returns static data
+    // Returns pointer to thread-local static data (overwritten on next call)
+    static const char* catName(const char* n1, const char* n2, const char* delimiter = ".");
 
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;

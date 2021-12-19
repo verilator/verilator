@@ -2625,14 +2625,11 @@ void Verilated::debug(int level) VL_MT_SAFE {
     }
 }
 
-const char* Verilated::catName(const char* n1, const char* n2, int scopet,
-                               const char* delimiter) VL_MT_SAFE {
-    // Returns new'ed data
+const char* Verilated::catName(const char* n1, const char* n2, const char* delimiter) VL_MT_SAFE {
     // Used by symbol table creation to make module names
     static VL_THREAD_LOCAL char* t_strp = nullptr;
     static VL_THREAD_LOCAL size_t t_len = 0;
-    const size_t newlen
-        = std::strlen(n1) + std::strlen(n2) + std::strlen(delimiter) + (scopet > 0 ? 2 : 1);
+    const size_t newlen = std::strlen(n1) + std::strlen(n2) + std::strlen(delimiter) + 1;
     if (VL_UNLIKELY(!t_strp || newlen > t_len)) {
         if (t_strp) delete[] t_strp;
         t_strp = new char[newlen];
@@ -2640,8 +2637,6 @@ const char* Verilated::catName(const char* n1, const char* n2, int scopet,
     }
     char* dp = t_strp;
     for (const char* sp = n1; *sp;) *dp++ = *sp++;
-    // Add scope type
-    if (scopet) *dp++ = (char)(0x80 + scopet);
     for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
     for (const char* sp = n2; *sp;) *dp++ = *sp++;
     *dp++ = '\0';

@@ -150,7 +150,7 @@ private:
     vluint32_t m_nextCode;  // Next code number to assign
     vluint32_t m_numSignals;  // Number of distinct signals
     vluint32_t m_maxBits;  // Number of bits in the widest signal
-    std::string m_moduleName;  // Name of module being trace initialized now
+    std::vector<std::string> m_namePrefixStack{""};  // Path prefixes to add to signal names
     char m_scopeEscape;
     double m_timeRes;  // Time resolution (ns/ms etc)
     double m_timeUnit;  // Time units (ns/ms etc)
@@ -213,7 +213,6 @@ protected:
     vluint32_t nextCode() const { return m_nextCode; }
     vluint32_t numSignals() const { return m_numSignals; }
     vluint32_t maxBits() const { return m_maxBits; }
-    const std::string& moduleName() const { return m_moduleName; }
     void fullDump(bool value) { m_fullDump = value; }
     vluint64_t timeLastDump() { return m_timeLastDump; }
 
@@ -229,6 +228,8 @@ protected:
     bool isScopeEscape(char c) { return std::isspace(c) || c == m_scopeEscape; }
     // Character that splits scopes.  Note whitespace are ALWAYS escapes.
     char scopeEscape() { return m_scopeEscape; }
+    // Prefix to assume in signal declarations
+    const std::string& namePrefix() const { return m_namePrefixStack.back(); }
 
     void closeBase();
     void flushBase();
@@ -269,8 +270,10 @@ public:
     void addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
     void addCleanupCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
 
-    void module(const std::string& name) VL_MT_UNSAFE;
     void scopeEscape(char flag) { m_scopeEscape = flag; }
+
+    void pushNamePrefix(const std::string&);
+    void popNamePrefix(unsigned count = 1);
 
     //=========================================================================
     // Hot path internal interface to Verilator generated code
