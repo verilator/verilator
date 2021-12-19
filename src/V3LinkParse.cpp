@@ -307,6 +307,11 @@ private:
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClockEn(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FORCEABLE) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->setForceable();
+            v3Global.setHasForceableSignals();
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);

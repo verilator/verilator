@@ -1529,6 +1529,14 @@ The grammar of configuration commands is as follows:
 
    Same as :option:`/*verilator&32;coverage_block_off*/` metacomment.
 
+.. option:: forceable -module "<modulename>" -var "<signame>"
+
+   Generate public `<signame>__VforceEn` and `<signame>__VforceVal` signals
+   that can be used to force/release a signal from C++ code. The force control
+   signals are created as :option:`public_flat` signals.
+
+   Same as :option:`/*verilator&32;forceable*/` metacomment.
+
 .. option:: full_case -file "<filename>" -lines <lineno>
 
 .. option:: parallel_case -file "<filename>" -lines <lineno>
