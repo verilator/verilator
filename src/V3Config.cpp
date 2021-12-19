@@ -87,6 +87,9 @@ class V3ConfigVarAttr final {
 public:
     VAttrType m_type;  // Type of attribute
     AstSenTree* m_sentreep;  // Sensitivity tree for public_flat_rw
+    explicit V3ConfigVarAttr(VAttrType type)
+        : m_type{type}
+        , m_sentreep{nullptr} {}
     V3ConfigVarAttr(VAttrType type, AstSenTree* sentreep)
         : m_type{type}
         , m_sentreep{sentreep} {}
@@ -455,14 +458,25 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
                 V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setPublic(true);
             }
         } else {
-            fl->v3error("missing -signal");
+            fl->v3error("missing -var");
         }
     } else {
-        V3ConfigModule& mod = V3ConfigResolver::s().modules().at(module);
-        if (ftask.empty()) {
-            mod.vars().at(var).push_back(V3ConfigVarAttr(attr, sensep));
+        if (attr == VAttrType::VAR_FORCEABLE) {
+            if (module.empty()) {
+                fl->v3error("missing -module");
+            } else if (!ftask.empty()) {
+                fl->v3error("Signals inside functions/tasks cannot be marked forceable");
+            } else {
+                V3ConfigResolver::s().modules().at(module).vars().at(var).push_back(
+                    V3ConfigVarAttr(attr));
+            }
         } else {
-            mod.ftasks().at(ftask).vars().at(var).push_back(V3ConfigVarAttr(attr, sensep));
+            V3ConfigModule& mod = V3ConfigResolver::s().modules().at(module);
+            if (ftask.empty()) {
+                mod.vars().at(var).push_back(V3ConfigVarAttr(attr, sensep));
+            } else {
+                mod.ftasks().at(ftask).vars().at(var).push_back(V3ConfigVarAttr(attr, sensep));
+            }
         }
     }
 }

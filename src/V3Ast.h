@@ -372,6 +372,7 @@ public:
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_CLOCK_ENABLE,               // V3LinkParse moves to AstVar::attrClockEn
+        VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT_RD,             // V3LinkParse moves to AstVar::sigPublic
@@ -396,7 +397,7 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "MEMBER_BASE",
             "TYPENAME",
-            "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
+            "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_FORCEABLE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
             "VAR_NO_CLOCKER", "VAR_SPLIT_VAR"

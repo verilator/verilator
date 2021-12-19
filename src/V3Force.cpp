@@ -256,6 +256,15 @@ class ForceConvertVisitor final : public VNVisitor {
         relinker.relink(resetEnp);
     }
 
+    void visit(AstVarScope* nodep) override {
+        // If this signal is marked externally forceable, create the public force signals
+        if (nodep->varp()->isForceable()) {
+            const ForceComponentsVarScope& fc = getForceComponents(nodep);
+            fc.m_enVscp->varp()->sigPublic(true);
+            fc.m_valVscp->varp()->sigPublic(true);
+        }
+    }
+
     // CONSTRUCTOR
     explicit ForceConvertVisitor(AstNetlist* nodep) {
         // Transform all force and release statements

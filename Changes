@@ -23,6 +23,7 @@ Verilator 4.217 devel
 
 * Support class static members (#2233).
 * Support force/release (#2431) (#2593). [Shunyao CAD]
+* Add 'forceable' attribute to allow forcing from C++. (#3272). [Geza Lore, Shunyao CAD]
 * Support lower dimension looping in foreach loops (#3172). [Ehab Ibrahim]
 * Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
 * Reduce .rodata footprint of trace initialization (#3250). [Geza Lore, Shunyao CAD]

@@ -2000,6 +2000,7 @@ private:
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
+    bool m_isForceable : 1;  // May be forced/released externally from user C code
 
     void init() {
         m_ansi = false;
@@ -2039,6 +2040,7 @@ private:
         m_overridenParam = false;
         m_trace = false;
         m_isLatched = false;
+        m_isForceable = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2200,6 +2202,8 @@ public:
     bool overriddenParam() const { return m_overridenParam; }
     void trace(bool flag) { m_trace = flag; }
     void isLatched(bool flag) { m_isLatched = flag; }
+    bool isForceable() const { return m_isForceable; }
+    void setForceable() { m_isForceable = true; }
     // METHODS
     virtual void name(const string& name) override { m_name = name; }
     virtual void tag(const string& text) override { m_tag = text; }

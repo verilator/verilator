@@ -209,6 +209,20 @@ or "`ifdef`"'s may break other tools.
    (if appropriate :vlopt:`--coverage` flags are passed) after being
    disabled earlier with :option:`/*verilator&32;coverage_off*/`.
 
+.. option:: /*verilator&32;forceable*/
+
+   Specifies that the signal (net or variable) should be made forceable from
+   C++ code by generating public `<signame>__VforceEn` and
+   `<signame>__VforceVal` signals The force control signals are created as
+   :option:`public_flat` signals.
+
+   To force a marked signal from C++, set the corresponding `__VforceVal`
+   variable to the desired value, and the `__VforceEn` signal to the bitmask
+   indicating which bits of the signal to force. To force all bits of the
+   target signal, set `__VforceEn` to all ones. To release the signal (or part
+   thereof), set appropriate bits of the `__VforceEn` signal to zero.
+
+   Same as :option:`forceable` in configuration  files.
 
 .. _verilator_hier_block:
 
