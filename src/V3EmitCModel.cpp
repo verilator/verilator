@@ -581,6 +581,14 @@ class EmitCModel final : public EmitCFunc {
         // ::trace
         puts("\nVL_ATTR_COLD void " + topClassName() + "::trace(");
         puts(v3Global.opt.traceClassBase() + "C* tfp, int levels, int options) {\n");
+        if (optSystemC()) {
+            puts(/**/ "if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {\n");
+            puts(/****/ "std::cerr << \"" + topClassName()
+                 + "::trace() is called before sc_core::sc_start(sc_core::SC_ZERO_TIME)\" << "
+                   "std::endl;\n");
+            puts(/****/ "std::abort();\n");
+            puts(/**/ "}");
+        }
         puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
         puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
