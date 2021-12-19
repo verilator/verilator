@@ -139,7 +139,7 @@ public:
     explicit VerilatedFstC(void* filep = nullptr)
         : m_sptrace{filep} {}
     /// Destruct, flush, and close the dump
-    ~VerilatedFstC() { close(); }
+    virtual ~VerilatedFstC() { close(); }
 
     // METHODS - User called
 

@@ -57,6 +57,9 @@ public:
         if (!delta_cycle) { this->dump(sc_time_stamp().to_double()); }
     }
 
+    // Override VerilatedFstC. Must be called after starting simulation.
+    virtual void open(const char* filename) /*override*/ VL_MT_SAFE;
+
 private:
     /// Fake outs for linker
 

@@ -346,7 +346,7 @@ public:
     explicit VerilatedVcdC(VerilatedVcdFile* filep = nullptr)
         : m_sptrace{filep} {}
     /// Destruct, flush, and close the dump
-    ~VerilatedVcdC() { close(); }
+    virtual ~VerilatedVcdC() { close(); }
 
 public:
     // METHODS - User called
@@ -356,7 +356,7 @@ public:
     /// Open a new VCD file
     /// This includes a complete header dump each time it is called,
     /// just as if this object was deleted and reconstructed.
-    void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
+    virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
     /// Continue a VCD dump by rotating to a new file name
     /// The header is only in the first file created, this allows
     /// "cat" to be used to combine the header plus any number of data files.
