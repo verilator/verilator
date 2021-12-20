@@ -28,21 +28,21 @@
 #include "V3Graph.h"
 #include "V3TSP.h"
 
+#include <algorithm>
 #include <cmath>
 #include <list>
 #include <memory>
-#include <set>
 #include <sstream>
 #include <string>
-#include <vector>
 #include <unordered_set>
 #include <unordered_map>
+#include <vector>
 
 //######################################################################
 // Support classes
 
 namespace V3TSP {
-static unsigned edgeIdNext = 0;
+static uint32_t edgeIdNext = 0;
 
 static void selfTestStates();
 static void selfTestString();
@@ -73,6 +73,8 @@ public:
     // TYPES
     using Vertex = TspVertexTmpl<T_Key>;
 
+    enum VertexState : uint32_t { CLEAR = 0, MST_VISITED = 1, UNMATCHED_ODD = 2 };
+
     // MEMBERS
     std::unordered_map<T_Key, Vertex*> m_vertices;  // T_Key to Vertex lookup map
 
@@ -94,7 +96,10 @@ public:
     // a matched pairs of opposite-directional edges to represent
     // each non-directional edge:
     void addEdge(const T_Key& from, const T_Key& to, int cost) {
+#if VL_DEBUG  // Hot, so only in debug
         UASSERT(from != to, "Adding edge would form a loop");
+        UASSERT(cost >= 0, "Negative weight edge");
+#endif
         Vertex* const fp = findVertex(from);
         Vertex* const tp = findVertex(to);
 
@@ -102,12 +107,20 @@ public:
         // The only time we may create duplicate edges is when
         // combining the MST with the perfect-matched pairs,
         // and in that case, we want to permit duplicate edges.
-        const unsigned edgeId = ++V3TSP::edgeIdNext;
+        const uint32_t edgeId = ++V3TSP::edgeIdNext;
 
-        // Record the 'id' which identifies a single bidir edge
-        // in the user field of each V3GraphEdge:
-        (new V3GraphEdge(this, fp, tp, cost))->user(edgeId);
-        (new V3GraphEdge(this, tp, fp, cost))->user(edgeId);
+        // We want to be able to compare edges quickly for a total
+        // ordering, so pre-compute a sorting key and store it in
+        // the edge user field. We also want easy access to the 'id'
+        // which uniquely identifies a single bidir edge. Luckily we
+        // can do both efficiently.
+        const uint64_t userValue = (static_cast<uint64_t>(cost) << 32) | edgeId;
+        (new V3GraphEdge(this, fp, tp, cost))->user(userValue);
+        (new V3GraphEdge(this, tp, fp, cost))->user(userValue);
+    }
+
+    inline static uint32_t getEdgeId(const V3GraphEdge* edgep) {
+        return static_cast<uint32_t>(edgep->user());
     }
 
     bool empty() const { return m_vertices.empty(); }
@@ -118,100 +131,121 @@ public:
         return vertices;
     }
 
-    class EdgeCmp final {
-        // Provides a deterministic compare for outgoing V3GraphEdge's
-        // to be used in Prim's algorithm below. Also used in the
-        // perfectMatching() routine.
-    public:
-        // CONSTRUCTORS
-        EdgeCmp() = default;
-        // METHODS
-        bool operator()(const V3GraphEdge* ap, const V3GraphEdge* bp) {
-            const int aCost = ap->weight();
-            const int bCost = bp->weight();
-            // Sort first on cost, lowest cost edges first:
-            if (aCost < bCost) return true;
-            if (bCost < aCost) return false;
-            // Costs are equal. Compare edgeId's which should be unique.
-            return ap->user() < bp->user();
-        }
+private:
+    // We will keep sorted lists of edges as vectors
+    using EdgeList = std::vector<V3GraphEdge*>;
 
-    private:
-        VL_UNCOPYABLE(EdgeCmp);
+    inline static bool edgeCmp(const V3GraphEdge* ap, const V3GraphEdge* bp) {
+        // We pre-computed these when adding the edge to sort first by cost, then by identity
+        return ap->user() > bp->user();
+    }
+
+    struct EdgeListCmp final {
+        bool operator()(const EdgeList* ap, const EdgeList* bp) {
+            // Simply compare heads
+            return edgeCmp(bp->back(), ap->back());
+        }
     };
 
-    static Vertex* castVertexp(V3GraphVertex* vxp) { return dynamic_cast<Vertex*>(vxp); }
+    inline static Vertex* castVertexp(V3GraphVertex* vxp) { return static_cast<Vertex*>(vxp); }
 
+public:
     // From *this, populate *mstp with the minimum spanning tree.
     // *mstp must be initially empty.
     void makeMinSpanningTree(TspGraphTmpl* mstp) {
         UASSERT(mstp->empty(), "Output graph must start empty");
 
         // Use Prim's algorithm to efficiently construct the MST.
-        std::unordered_set<Vertex*> visited_set;
 
-        EdgeCmp cmp;
-        using PendingEdgeSet = std::set<V3GraphEdge*, EdgeCmp&>;
-        // This is the set of pending edges from visited to unvisited
-        // nodes.
-        PendingEdgeSet pendingEdges(cmp);
-
-        vluint32_t vertCount = 0;
+        uint32_t vertCount = 0;
         for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             mstp->addVertex(castVertexp(vxp)->key());
             vertCount++;
         }
 
-        // Choose an arbitrary start vertex and visit it;
-        // all incident edges from this vertex go into a pending edge set.
-        Vertex* const start_vertexp = castVertexp(verticesBeginp());
-        visited_set.insert(start_vertexp);
-        for (V3GraphEdge* edgep = start_vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            pendingEdges.insert(edgep);
-        }
+        // Allocate storage for per vertex edge lists up front.
+        std::vector<EdgeList> allocatedEdgeLists{vertCount};
+
+        // Index of vertex in visitation order (used for indexing allocatedEdgeLists)
+        uint32_t vertIdx = 0;
+
+        // We keep pending edges as a sorted set of sorted vectors. This allows us to find the
+        // lowest cost edge quickly, while also reducing the cost of inserting batches of new
+        // edges, which is what we need in this algorithm.
+        std::set<EdgeList*, EdgeListCmp> pendingEdgeListps;
+
+        const auto visit = [&](V3GraphVertex* vtxp) {
+#ifdef VL_DEBUG  // Very hot, so only in debug
+            UASSERT(vtxp->user() == VertexState::CLEAR, "Vertex visited twice");
+#endif
+            // Mark vertex as visited
+            vtxp->user(VertexState::MST_VISITED);
+            // Allocate new edge list
+            EdgeList* const newEdgesp = &allocatedEdgeLists[vertIdx++];
+            // Gather out edges of this vertex
+            for (V3GraphEdge* edgep = vtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+                // Don't add edges leading to vertices we already visited. This is a highly
+                // connected graph, so this greatly reduces the cost of maintaining the pending
+                // set.
+                if (edgep->top()->user() == VertexState::MST_VISITED) continue;
+                newEdgesp->push_back(edgep);
+            }
+            // If no relevant out edges, then we are done
+            if (newEdgesp->empty()) return;
+            // Sort new edge list
+            std::sort(newEdgesp->begin(), newEdgesp->end(), edgeCmp);
+            // Add edge list to pending set
+            pendingEdgeListps.insert(newEdgesp);
+        };
+
+        // To start, choose an arbitrary vertex and visit it.
+        visit(verticesBeginp());
 
         // Repeatedly find the least costly edge in the pending set.
         // If it connects to an unvisited node, visit that node and update
         // the pending edge set. If it connects to an already visited node,
         // discard it and repeat again.
-        unsigned edges_made = 0;
-        while (!pendingEdges.empty()) {
-            const auto firstIt = pendingEdges.cbegin();
-            const V3GraphEdge* bestEdgep = *firstIt;
-            pendingEdges.erase(firstIt);
+        while (!pendingEdgeListps.empty()) {
+            // Grab lowest cost edge list
+            auto it = pendingEdgeListps.begin();
 
-            // bestEdgep->fromp() should be already seen
-            Vertex* const from_vertexp = castVertexp(bestEdgep->fromp());
-            UASSERT(visited_set.find(from_vertexp) != visited_set.end(), "Can't find vertex");
+            // Grab lowest cost edge
+            EdgeList* const bestEdgeListp = *it;
+            const V3GraphEdge* const bestEdgep = bestEdgeListp->back();
 
-            // If the neighbor is not yet visited, visit it and add its edges
-            // to the pending set.
+            // Remove the lowest cost edge list. We will remove its lowest cost element, and either
+            // we are done with (if it had a single element) it in which case it will be discarded,
+            // or the cost of the new head element might be different, so we will need to re-insert
+            // it in the right place. In either case, it needs to be removed.
+            pendingEdgeListps.erase(it);
+
+            // If the lowest cost edge list is not a singleton list, then pop the lowest cost
+            // edge and re-insert the remaining edge list into the pending set.
+            if (bestEdgeListp->size() > 1) {
+                bestEdgeListp->pop_back();
+                pendingEdgeListps.insert(bestEdgeListp);
+            }
+
+            // Grab the target vertex
             Vertex* const neighborp = castVertexp(bestEdgep->top());
-            if (visited_set.find(neighborp) == visited_set.end()) {
-                const int bestCost = bestEdgep->weight();
-                UINFO(6, "bestCost = " << bestCost << "  from " << from_vertexp->key() << " to "
-                                       << neighborp->key() << endl);
+
+            // If the neighbour is not yet visited
+            if (neighborp->user() == VertexState::CLEAR) {
+                // Visit it
+                visit(neighborp);
 
                 // Create the edge in our output MST graph
-                mstp->addEdge(from_vertexp->key(), neighborp->key(), bestCost);
-                edges_made++;
+                Vertex* const from_vertexp = castVertexp(bestEdgep->fromp());
+                mstp->addEdge(from_vertexp->key(), neighborp->key(), bestEdgep->weight());
 
-                // Mark this vertex as visited
-                visited_set.insert(neighborp);
-
-                // Update the pending edges with new edges
-                for (V3GraphEdge* edgep = neighborp->outBeginp(); edgep;
-                     edgep = edgep->outNextp()) {
-                    pendingEdges.insert(edgep);
-                }
-            } else {
-                UINFO(6,
-                      "Discarding edge to already-visited neighbor " << neighborp->key() << endl);
+#if VL_DEBUG  // Very hot loop, so only in debug
+                UASSERT(from_vertexp->user() == MST_VISITED,
+                        "bestEdgep->fromp() should be already seen");
+#endif
             }
         }
 
-        UASSERT(edges_made + 1 == vertCount, "Algorithm failed");
-        UASSERT(visited_set.size() == vertCount, "Algorithm failed");
+        UASSERT(vertIdx == vertCount, "Should have visited all vertices");
     }
 
     // Populate *outp with a minimal perfect matching of *this.
@@ -219,15 +253,13 @@ public:
     void perfectMatching(const std::vector<T_Key>& oddKeys, TspGraphTmpl* outp) {
         UASSERT(outp->empty(), "Output graph must start empty");
 
-        std::list<Vertex*> odds = keysToVertexList(oddKeys);
-        std::unordered_set<Vertex*> unmatchedOdds;
-        using VertexListIt = typename std::list<Vertex*>::iterator;
-        for (VertexListIt it = odds.begin(); it != odds.end(); ++it) {
-            outp->addVertex((*it)->key());
-            unmatchedOdds.insert(*it);
-        }
-
+        const std::list<Vertex*>& odds = keysToVertexList(oddKeys);
         UASSERT(odds.size() % 2 == 0, "number of odd-order nodes should be even");
+
+        for (Vertex* const vtxp : odds) {
+            outp->addVertex(vtxp->key());
+            vtxp->user(VertexState::UNMATCHED_ODD);
+        }
 
         // TODO: The true Chrisofides algorithm calls for minimum-weight
         // perfect matching. Instead, we have a simple greedy algorithm
@@ -241,46 +273,54 @@ public:
 
         // -----
 
-        // Reuse the comparator from Prim's routine. The logic is the same
-        // here.  Note that the two V3GraphEdge's representing a single
-        // bidir edge will collide in the pendingEdges set here, but this
-        // is OK, we'll ignore the direction on the edge anyway.
-        EdgeCmp cmp;
-        using PendingEdgeSet = std::set<V3GraphEdge*, EdgeCmp&>;
-        PendingEdgeSet pendingEdges(cmp);
+        // Gather and sort all edges. We use a vector then sort, because this is faster than a
+        // sorted set. Reuse the comparator from Prim's routine (note it a 'greater', not a
+        // 'lesser' comparator). The logic is the same here.
+        //
+        // Note that there are two V3GraphEdge's representing a single bidir edge. While we could
+        // just add both to the pending list and get the same result, we will only add one (based
+        // on fast pointer comparison - this still yields deterministic results), in order to
+        // reduce the size of the working set.
+        std::vector<V3GraphEdge*> pendingEdges;
 
-        for (VertexListIt it = odds.begin(); it != odds.end(); ++it) {
-            for (V3GraphEdge* edgep = (*it)->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                pendingEdges.insert(edgep);
+        for (Vertex* const fromp : odds) {
+            for (V3GraphEdge* edgep = fromp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+                Vertex* const top = castVertexp(edgep->top());
+                // There are two edges (in both directions) between these two vertices. Keep one.
+                if (fromp > top) continue;
+                // We only care about edges between the odd-order vertices
+                if (top->user() != VertexState::UNMATCHED_ODD) continue;
+                // Add to candidate list
+                pendingEdges.push_back(edgep);
             }
         }
+
+        // Sort reverse iterators. This yields ascending order with a 'greater' comparator.
+        std::sort(pendingEdges.rbegin(), pendingEdges.rend(), edgeCmp);
 
         // Iterate over all edges, in order from low to high cost.
         // For any edge whose ends are both odd-order vertices which
         // haven't been matched yet, match them.
-        for (typename PendingEdgeSet::iterator it = pendingEdges.begin(); it != pendingEdges.end();
-             ++it) {
-            Vertex* const fromp = castVertexp((*it)->fromp());
-            Vertex* const top = castVertexp((*it)->top());
-            if ((unmatchedOdds.find(fromp) != unmatchedOdds.end())
-                && (unmatchedOdds.find(top) != unmatchedOdds.end())) {
-                outp->addEdge(fromp->key(), top->key(), (*it)->weight());
-                unmatchedOdds.erase(fromp);
-                unmatchedOdds.erase(top);
+        for (V3GraphEdge* const edgep : pendingEdges) {
+            Vertex* const fromp = castVertexp(edgep->fromp());
+            Vertex* const top = castVertexp(edgep->top());
+            if (fromp->user() == VertexState::UNMATCHED_ODD
+                && top->user() == VertexState::UNMATCHED_ODD) {
+                outp->addEdge(fromp->key(), top->key(), edgep->weight());
+                fromp->user(VertexState::CLEAR);
+                top->user(VertexState::CLEAR);
             }
         }
-        UASSERT(unmatchedOdds.empty(), "Algorithm should have processed all vertices");
     }
 
     void combineGraph(const TspGraphTmpl& g) {
-        std::unordered_set<vluint32_t> edges_done;
+        std::unordered_set<uint32_t> edges_done;
         for (V3GraphVertex* vxp = g.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             const Vertex* const fromp = castVertexp(vxp);
             for (V3GraphEdge* edgep = fromp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 const Vertex* const top = castVertexp(edgep->top());
-                if (edges_done.find(edgep->user()) == edges_done.end()) {
+                if (edges_done.insert(getEdgeId(edgep)).second) {
                     addEdge(fromp->key(), top->key(), edgep->weight());
-                    edges_done.insert(edgep->user());
                 }
             }
         }
@@ -298,7 +338,7 @@ public:
 
             // Look for an arbitrary edge we've not yet marked
             for (V3GraphEdge* edgep = cur_vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                const vluint32_t edgeId = edgep->user();
+                const vluint32_t edgeId = getEdgeId(edgep);
                 if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                     // This edge is not yet marked, so follow it.
                     markedEdgesp->insert(edgeId);
@@ -322,7 +362,7 @@ public:
                 recursed = false;
                 // Look for an arbitrary edge at vxp we've not yet marked
                 for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                    const vluint32_t edgeId = edgep->user();
+                    const vluint32_t edgeId = getEdgeId(edgep);
                     if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                         UINFO(6, "Recursing.\n");
                         findEulerTourRecurse(markedEdgesp, vxp, sortedOutp);
@@ -348,7 +388,7 @@ public:
             os << " " << tspvp->key() << '\n';
             for (V3GraphEdge* edgep = tspvp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 const Vertex* const neighborp = castVertexp(edgep->top());
-                os << "   has edge " << edgep->user() << " to " << neighborp->key() << '\n';
+                os << "   has edge " << getEdgeId(edgep) << " to " << neighborp->key() << '\n';
             }
         }
     }
