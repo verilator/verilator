@@ -542,6 +542,8 @@ static void process() {
         V3EmitC::emitcFiles();
     }
 
+    if (v3Global.opt.stats()) V3Stats::statsStage("emit");
+
     // Statistics
     reportStatsIfEnabled();
 
