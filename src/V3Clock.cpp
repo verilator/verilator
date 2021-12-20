@@ -207,8 +207,7 @@ private:
     }
     void splitCheck(AstCFunc* ofuncp) {
         if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
-        if (EmitCBaseCounterVisitor(ofuncp->stmtsp()).count() < v3Global.opt.outputSplitCFuncs())
-            return;
+        if (EmitCBaseCounterVisitor(ofuncp).count() < v3Global.opt.outputSplitCFuncs()) return;
 
         int funcnum = 0;
         int func_stmts = 0;
@@ -223,8 +222,9 @@ private:
             const int stmts = EmitCBaseCounterVisitor(itemp).count();
             if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
                 // Make a new function
-                funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + cvtToStr(++funcnum),
-                                     m_topScopep->scopep()};
+                funcp
+                    = new AstCFunc{ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcnum++),
+                                   m_topScopep->scopep()};
                 funcp->dontCombine(true);
                 funcp->isStatic(false);
                 funcp->isLoose(true);
