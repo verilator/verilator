@@ -104,6 +104,7 @@ class V3Global final {
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
     bool m_useForce = false;  // Need force/release processing
+    bool m_hasSCTextSections = false;  // Has `systemc_* sections that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
 
@@ -146,6 +147,8 @@ public:
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    bool hasSCTextSections() const { return m_hasSCTextSections; }
+    void setHasSCTextSections() { m_hasSCTextSections = true; }
     V3HierBlockPlan* hierPlanp() const { return m_hierPlanp; }
     void hierPlanp(V3HierBlockPlan* plan) {
         UASSERT(!m_hierPlanp, "call once");

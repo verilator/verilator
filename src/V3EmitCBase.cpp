@@ -235,6 +235,10 @@ void EmitCBaseVisitor::emitModCUse(const AstNodeModule* modp, VUseType useType) 
 }
 
 void EmitCBaseVisitor::emitTextSection(const AstNodeModule* modp, VNType type) {
+    // Short circuit if nothing to do. This can save a lot of time on large designs as this
+    // function needs to traverse the entire module linearly.
+    if (!v3Global.hasSCTextSections()) return;
+
     int last_line = -999;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (const AstNodeText* const textp = VN_CAST(nodep, NodeText)) {

@@ -2293,12 +2293,12 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: interface decls within module decls"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// Verilator specific
-	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); }
-	|	yaSCINT					{ $$ = new AstScInt($<fl>1,*$1); }
-	|	yaSCIMP					{ $$ = new AstScImp($<fl>1,*$1); }
-	|	yaSCIMPH				{ $$ = new AstScImpHdr($<fl>1,*$1); }
-	|	yaSCCTOR				{ $$ = new AstScCtor($<fl>1,*$1); }
-	|	yaSCDTOR				{ $$ = new AstScDtor($<fl>1,*$1); }
+	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCINT					{ $$ = new AstScInt($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCIMP					{ $$ = new AstScImp($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCIMPH				{ $$ = new AstScImpHdr($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCCTOR				{ $$ = new AstScCtor($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCDTOR				{ $$ = new AstScDtor($<fl>1,*$1); v3Global.setHasSCTextSections(); }
 	|	yVL_HIER_BLOCK				{ $$ = new AstPragma($1,VPragmaType::HIER_BLOCK); }
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,VPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,VPragmaType::NO_INLINE_MODULE); }
