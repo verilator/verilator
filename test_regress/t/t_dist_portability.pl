@@ -40,7 +40,7 @@ sub uint {
         $line =~ s!//.*$!!;
         next if $line !~ /uint\d+_t\b/;
         next if $line =~ /vl[su]int\d+_t/;
-        next if $line =~ /typedef/;
+        next if $line =~ /\b(typedef|using)\b/;
         next if $line =~ m!include/svdpi.h!;  # Not ours
         if ($line =~ /^([^:]+)/) {
             $names{$1} = 1;

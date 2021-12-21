@@ -278,75 +278,38 @@ void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
 // to be declared in order to get the PRIxx macros used by fstapi.c
 #define __STDC_FORMAT_MACROS
 
+// Now that C++ requires these standard types the vl types are deprecated
+#include <cstdint>
+
+using vluint8_t = uint8_t;  ///< 8-bit unsigned type (backward compatibility)
+using vluint16_t = uint16_t;  ///< 16-bit unsigned type (backward compatibility)
+using vluint32_t = uint32_t;  ///< 32-bit unsigned type (backward compatibility)
+using vluint64_t = uint64_t;  ///< 64-bit unsigned type (backward compatibility)
+using vlsint8_t = int8_t;  ///< 8-bit signed type (backward compatibility)
+using vlsint16_t = int16_t;  ///< 16-bit signed type (backward compatibility)
+using vlsint32_t = int32_t;  ///< 32-bit signed type (backward compatibility)
+using vlsint64_t = int64_t;  ///< 64-bit signed type (backward compatibility)
+
 #if defined(__CYGWIN__)
 
-# include <stdint.h>
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
-typedef unsigned char uint8_t;  ///< 8-bit unsigned type (backward compatibility)
-typedef unsigned short int uint16_t;  ///< 16-bit unsigned type (backward compatibility)
-typedef char vlsint8_t;  ///< 8-bit signed type
-typedef unsigned char vluint8_t;  ///< 8-bit unsigned type
-typedef short int vlsint16_t;  ///< 16-bit signed type
-typedef unsigned short int vluint16_t;  ///< 16-bit unsigned type
-# if defined(__uint32_t_defined) || defined(___int32_t_defined)  // Newer Cygwin uint32_t in stdint.h as an unsigned int
-typedef int32_t vlsint32_t;  ///< 32-bit signed type
-typedef uint32_t vluint32_t;  ///< 32-bit unsigned type
-# else  // Older Cygwin has long==uint32_t
-typedef unsigned long uint32_t;  ///< 32-bit unsigned type (backward compatibility)
-typedef long vlsint32_t;  ///< 32-bit signed type
-typedef unsigned long vluint32_t;  ///< 32-bit unsigned type
-# endif
-# if defined(__WORDSIZE) && (__WORDSIZE == 64)
-typedef long vlsint64_t;  ///< 64-bit signed type
-typedef unsigned long vluint64_t;  ///< 64-bit unsigned type
-# else
-typedef long long vlsint64_t;  ///< 64-bit signed type
-typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
-# endif
 
 #elif defined(_WIN32) && defined(_MSC_VER)
 
-typedef unsigned __int8 uint8_t;  ///< 8-bit unsigned type (backward compatibility)
-typedef unsigned __int16 uint16_t;  ///< 16-bit unsigned type (backward compatibility)
-typedef unsigned __int32 uint32_t;  ///< 32-bit unsigned type (backward compatibility)
-typedef signed __int8 vlsint8_t;  ///< 8-bit signed type
-typedef unsigned __int8 vluint8_t;  ///< 8-bit unsigned type
-typedef signed __int16 vlsint16_t;  ///< 16-bit signed type
-typedef unsigned __int16 vluint16_t;  ///< 16-bit unsigned type
-typedef signed __int32 vlsint32_t;  ///< 32-bit signed type
-typedef unsigned __int32 vluint32_t;  ///< 32-bit unsigned type
-typedef signed __int64 vlsint64_t;  ///< 64-bit signed type
-typedef unsigned __int64 vluint64_t;  ///< 64-bit unsigned type
-
 # ifndef _SSIZE_T_DEFINED
 #  ifdef _WIN64
-typedef signed __int64 ssize_t;  ///< signed size_t; returned from read()
+using ssize_t = uint64_t;  ///< signed size_t; returned from read()
 #  else
-typedef signed __int32 ssize_t;  ///< signed size_t; returned from read()
+using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #  endif
 # endif
 
 #else  // Linux or compliant Unix flavors, -m64
 
 # include <inttypes.h>  // Solaris
-# include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
-// Arm64 gcc 9.3.0 defaults to unsigned char, not signed char
-typedef signed char vlsint8_t;  ///< 8-bit signed type
-typedef uint8_t vluint8_t;  ///< 8-bit unsigned type
-typedef short vlsint16_t;  ///< 16-bit signed type
-typedef uint16_t vluint16_t;  ///< 16-bit unsigned type
-typedef int vlsint32_t;  ///< 32-bit signed type
-typedef uint32_t vluint32_t;  ///< 32-bit unsigned type
-# if defined(__WORDSIZE) && (__WORDSIZE == 64)
-typedef long vlsint64_t;  ///< 64-bit signed type
-typedef unsigned long vluint64_t;  ///< 64-bit unsigned type
-# else
-typedef long long vlsint64_t;  ///< 64-bit signed type
-typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
-# endif
 #endif
 
 //=========================================================================
