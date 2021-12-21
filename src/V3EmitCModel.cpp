@@ -583,10 +583,10 @@ class EmitCModel final : public EmitCFunc {
         puts(v3Global.opt.traceClassBase() + "C* tfp, int levels, int options) {\n");
         if (optSystemC()) {
             puts(/**/ "if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {\n");
-            puts(/****/ "std::cerr << \"" + topClassName()
-                 + "::trace() is called before sc_core::sc_start(sc_core::SC_ZERO_TIME)\" << "
-                   "std::endl;\n");
-            puts(/****/ "std::abort();\n");
+            puts(/****/ "vl_fatal(__FILE__, __LINE__, name(), \"" + topClassName()
+                 + +"::trace() is called before sc_core::sc_start(). "
+                    "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before trace() to complete "
+                    "elaboration.\");\n");
             puts(/**/ "}");
         }
         puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
