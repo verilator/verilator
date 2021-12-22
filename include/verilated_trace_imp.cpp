@@ -660,7 +660,7 @@ static inline void cvtQDataToStr(char* dstp, QData value) {
 void verilated_trace_imp_selftest() {
 #define SELF_CHECK(got, exp) \
     do { \
-        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest\n"); \
+        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest"); \
     } while (0)
 
 #define SELF_CHECK_TS(scale) \

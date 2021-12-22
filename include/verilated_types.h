@@ -86,6 +86,7 @@ class VlReadMem final {
     FILE* m_fp;  // File handle for filename
     QData m_addr;  // Next address to read
     int m_linenum;  // Line number last read from file
+    bool m_anyAddr = false;  // Had address directive in the file
 public:
     VlReadMem(bool hex, int bits, const std::string& filename, QData start, QData end);
     ~VlReadMem();

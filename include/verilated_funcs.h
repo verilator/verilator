@@ -43,11 +43,16 @@ extern void vl_finish(const char* filename, int linenum, const char* hier);
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
 extern void vl_stop(const char* filename, int linenum, const char* hier);
 
-/// Routine to call for a couple of fatal messages
+/// Routine to call for fatal messages
 /// User code may wish to replace this function, to do so, define VL_USER_FATAL.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
 extern void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg);
+
+/// Routine to call for warning messages
+/// User code may wish to replace this function, to do so, define VL_USER_WARN.
+/// This code does not have to be thread safe.
+extern void vl_warn(const char* filename, int linenum, const char* hier, const char* msg);
 
 //=========================================================================
 // Extern functions -- Slow path
@@ -57,9 +62,12 @@ extern void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL
 /// Multithread safe wrapper for calls to $stop
 extern void VL_STOP_MT(const char* filename, int linenum, const char* hier,
                        bool maybe = true) VL_MT_SAFE;
-/// Multithread safe wrapper to call for a couple of fatal messages
+/// Multithread safe wrapper to call for fatal messages
 extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
                         const char* msg) VL_MT_SAFE;
+/// Multithread safe wrapper to call for warning messages
+extern void VL_WARN_MT(const char* filename, int linenum, const char* hier,
+                       const char* msg) VL_MT_SAFE;
 
 // clang-format off
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.

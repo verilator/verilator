@@ -168,6 +168,19 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
 }
 #endif
 
+#ifndef VL_USER_WARN  ///< Define this to override the vl_warn function
+void vl_warn(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
+    if (false && hier) {}
+    if (filename && filename[0]) {
+        // Not VL_PRINTF_MT, already on main thread
+        VL_PRINTF("%%Warning: %s:%d: %s\n", filename, linenum, msg);
+    } else {
+        VL_PRINTF("%%Warning: %s\n", msg);
+    }
+    Verilated::runFlushCallbacks();
+}
+#endif
+
 //===========================================================================
 // Wrapper to call certain functions via messages when multithreaded
 
@@ -198,6 +211,16 @@ void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char
     }});
 #else
     vl_fatal(filename, linenum, hier, msg);
+#endif
+}
+
+void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+#ifdef VL_THREADED
+    VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
+        vl_warn(filename, linenum, hier, msg);
+    }});
+#else
+    vl_warn(filename, linenum, hier, msg);
 #endif
 }
 
@@ -1876,6 +1899,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
                 ignore_to_eol = true;
             } else if (c == '@') {
                 reading_addr = true;
+                m_anyAddr = true;
                 m_addr = 0;
             }
             // Check for hex or binary digits as file format requests
@@ -1902,9 +1926,9 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         lastc = c;
     }
 
-    if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end)) {
-        VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
-                    "$readmem file ended before specified final address (IEEE 2017 21.4)");
+    if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
+        VL_WARN_MT(m_filename.c_str(), m_linenum, "",
+                   "$readmem file ended before specified final address (IEEE 2017 21.4)");
     }
 
     return false;  // EOF
