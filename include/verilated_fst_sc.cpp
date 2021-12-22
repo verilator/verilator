@@ -27,6 +27,17 @@
 //======================================================================
 //======================================================================
 
+void VerilatedFstSc::open(const char* filename) {
+    if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {
+        vl_fatal(__FILE__, __LINE__, "VerilatedFstSc",
+                 ("%Error: VerilatedFstSc::open(\"" + std::string(filename)
+                  + "\") is called before sc_core::sc_start(). "
+                    "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.")
+                     .c_str());
+    }
+    VerilatedFstC::open(filename);
+}
+
 //--------------------------------------------------
 // SystemC 2.1.v1
 // cppcheck-suppress unusedFunction
