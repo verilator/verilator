@@ -1286,6 +1286,8 @@ public:
     void iterateAndNextNull(AstNode* nodep);
     /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list
     void iterateAndNextConstNull(AstNode* nodep);
+    /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list, in reverse order
+    void iterateAndNextConstNullBackwards(AstNode* nodep);
     /// Return edited nodep; see comments in V3Ast.cpp
     AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
 
@@ -3011,6 +3013,9 @@ inline void VNVisitor::iterateChildrenBackwards(AstNode* nodep) {
 inline void VNVisitor::iterateChildrenConst(AstNode* nodep) { nodep->iterateChildrenConst(*this); }
 inline void VNVisitor::iterateAndNextNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateAndNext(*this);
+}
+inline void VNVisitor::iterateAndNextConstNullBackwards(AstNode* nodep) {
+    if (VL_LIKELY(nodep)) nodep->iterateListBackwards(*this);
 }
 inline void VNVisitor::iterateAndNextConstNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateAndNextConst(*this);

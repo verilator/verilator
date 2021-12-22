@@ -89,6 +89,8 @@ protected:
         for (T_Data* const p : m_allocated) { delete p; }
     }
 
+    VL_UNCOPYABLE(AstUserAllocatorBase);
+
 public:
     // Get a reference to the user data
     T_Data& operator()(T_Node* nodep) {
