@@ -1322,7 +1322,7 @@ bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* ba
     return isClassExtendedFrom(refClassp->extendsp()->classp(), baseClassp);
 }
 void AstClass::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeModule::dump(str);
     if (isExtended()) str << " [EXT]";
     if (isVirtual()) str << " [VIRT]";
 }
@@ -1336,6 +1336,7 @@ AstClass* AstClassExtends::classp() const {
 }
 void AstClassRefDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (classOrPackagep()) str << " cpkg=" << nodeAddr(classOrPackagep());
     if (classp()) {
         str << " -> ";
         classp()->dump(str);
