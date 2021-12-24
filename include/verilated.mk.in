@@ -223,7 +223,8 @@ endif
 	$(info Archive $(AR) -rcs $@ $^)
 	$(foreach L, $(filter-out %.a,$^), $(shell echo $L >>$@.verilator_deplist.tmp))
 	@if test $(words $(filter %.a,$^)) -eq 0; then \
-		$(AR) -rcs $@ @$@.verilator_deplist.tmp; \
+		cat $@.verilator_deplist.tmp | xargs $(AR) -rc $@; \
+		$(AR) -s $@; \
 	else \
 		$(RM) -rf $@.tmpdir; \
 		for archive in $(filter %.a,$^); do \
@@ -232,7 +233,8 @@ endif
 			$(AR) -x ../../$${archive}; \
 			cd ../..; \
 		done; \
-		$(AR) -rcs $@ @$@.verilator_deplist.tmp $@.tmpdir/*/*.o; \
+		cat $@.verilator_deplist.tmp | xargs $(AR) -rc $@; \
+		$(AR) -rcs $@ $@.tmpdir/*/*.o; \
 	fi \
 	; $(RM) -rf $@.verilator_deplist.tmp $@.tmpdir
 
