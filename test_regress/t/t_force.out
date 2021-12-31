@@ -1,0 +1,26 @@
+%Error-UNSUPPORTED: t/t_force.v:25:7: Unsupported: Verilog 1995 force
+   25 |       force bus[1:0] = 2'b10;
+      |       ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_force.v:29:7: Unsupported: Verilog 1995 release
+   29 |       release bus;
+      |       ^~~~~~~
+%Error-UNSUPPORTED: t/t_force.v:43:10: Unsupported: Verilog 1995 force
+   43 |          force never_driven = 32'h888;
+      |          ^~~~~
+%Error-UNSUPPORTED: t/t_force.v:56:10: Unsupported: Verilog 1995 release
+   56 |          release never_forced;   
+      |          ^~~~~~~
+%Error-UNSUPPORTED: t/t_force.v:65:10: Unsupported: Verilog 1995 force
+   65 |          force bus = 4'b0111;
+      |          ^~~~~
+%Error-UNSUPPORTED: t/t_force.v:69:10: Unsupported: Verilog 1995 force
+   69 |          force bus = 4'b1111;
+      |          ^~~~~
+%Error-UNSUPPORTED: t/t_force.v:73:10: Unsupported: Verilog 1995 release
+   73 |          release bus;
+      |          ^~~~~~~
+%Error-UNSUPPORTED: t/t_force.v:85:10: Unsupported: Verilog 1995 release
+   85 |          release bus[0];
+      |          ^~~~~~~
+%Error: Exiting due to
