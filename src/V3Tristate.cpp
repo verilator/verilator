@@ -377,14 +377,17 @@ class TristateVisitor final : public TristateBaseVisitor {
     void associateLogic(AstNode* fromp, AstNode* top) {
         if (m_logicp) m_tgraph.associate(fromp, top);
     }
+    AstConst* newAllZerosOrOnes(AstNode* nodep, bool ones) {
+        V3Number num{nodep, nodep->width()};
+        if (ones) num.setAllBits1();
+        AstConst* const newp = new AstConst{nodep->fileline(), num};
+        return newp;
+    }
     AstNode* getEnp(AstNode* nodep) {
         if (!nodep->user1p()) {
             // There's no select being built yet, so add what will become a
             // constant output enable driver of all 1's
-            V3Number num(nodep, nodep->width());
-            num.setAllBits1();
-            AstNode* const enp = new AstConst(nodep->fileline(), num);
-            nodep->user1p(enp);
+            nodep->user1p(newAllZerosOrOnes(nodep, true));
         }
         // Otherwise return the previous output enable
         return nodep->user1p();
@@ -486,14 +489,12 @@ class TristateVisitor final : public TristateBaseVisitor {
                     // This variable is floating, set output enable to
                     // always be off on this assign
                     UINFO(8, "  Adding driver to var " << varp << endl);
-                    AstConst* const constp = new AstConst(
-                        varp->fileline(), AstConst::WidthedValue(), varp->width(), 0);
+                    AstConst* const constp = newAllZerosOrOnes(varp, false);
                     AstVarRef* const varrefp
                         = new AstVarRef(varp->fileline(), varp, VAccess::WRITE);
                     AstNode* const newp = new AstAssignW(varp->fileline(), varrefp, constp);
                     UINFO(9, "       newoev " << newp << endl);
-                    varrefp->user1p(new AstConst(varp->fileline(), AstConst::WidthedValue(),
-                                                 varp->width(), 0));
+                    varrefp->user1p(newAllZerosOrOnes(varp, false));
                     nodep->addStmtp(newp);
                     mapInsertLhsVarRef(varrefp);  // insertTristates will convert
                     //                               // to a varref to the __out# variable
@@ -602,23 +603,16 @@ class TristateVisitor final : public TristateBaseVisitor {
             undrivenp = ((!undrivenp) ? tmp : new AstAnd(refp->fileline(), tmp, undrivenp));
         }
         if (!undrivenp) {  // No drivers on the bus
-            V3Number ones(invarp, lhsp->width());
-            ones.setAllBits1();
-            undrivenp = new AstConst(invarp->fileline(), ones);
+            undrivenp = newAllZerosOrOnes(invarp, true);
         }
         if (!outvarp) {
             // This is the final pre-forced resolution of the tristate, so we apply
             // the pull direction to any undriven pins.
             V3Number pull(invarp, lhsp->width());
             const AstPull* const pullp = static_cast<AstPull*>(lhsp->user3p());
-            if (pullp && pullp->direction() == 1) {
-                pull.setAllBits1();
-                UINFO(9, "Has pullup " << pullp << endl);
-            } else {
-                pull.setAllBits0();  // Default pull direction is down.
-            }
-            undrivenp = new AstAnd(invarp->fileline(), undrivenp,
-                                   new AstConst(invarp->fileline(), pull));
+            bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
+            undrivenp
+                = new AstAnd{invarp->fileline(), undrivenp, newAllZerosOrOnes(invarp, pull1)};
             orp = new AstOr(invarp->fileline(), orp, undrivenp);
         } else {
             VL_DO_DANGLING(undrivenp->deleteTree(), undrivenp);
