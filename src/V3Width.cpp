@@ -1430,10 +1430,8 @@ private:
                     UASSERT_OBJ(nodep->fromp() && dtypep, nodep, "Unsized expression");
                     AstVar* const varp = dimensionVarp(dtypep, nodep->attrType(), msbdim);
                     AstNode* const dimp = nodep->dimp()->unlinkFrBack();
-                    AstVarRef* const varrefp
-                        = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
-                    varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
-                    AstNode* const newp = new AstArraySel(nodep->fileline(), varrefp, dimp);
+                    AstNode* const newp
+                        = new AstArraySel{nodep->fileline(), newVarRefDollarUnit(varp), dimp};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 }
@@ -1679,15 +1677,12 @@ private:
             AstNode* testp = nullptr;
             if (assoc) {
                 AstVar* const varp = enumVarp(enumDtp, AstAttrType::ENUM_VALID, true, 0);
-                AstVarRef* const varrefp = new AstVarRef{fl, varp, VAccess::READ};
-                varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
-                testp = new AstAssocSel{fl, varrefp, nodep->fromp()->cloneTree(false)};
+                testp = new AstAssocSel{fl, newVarRefDollarUnit(varp),
+                                        nodep->fromp()->cloneTree(false)};
             } else {
                 const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
                 AstVar* const varp
                     = enumVarp(enumDtp, AstAttrType::ENUM_VALID, false, (1ULL << selwidth) - 1);
-                AstVarRef* const varrefp = new AstVarRef(fl, varp, VAccess::READ);
-                varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
                 FileLine* const fl_nowarn = new FileLine(fl);
                 fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
                 testp = new AstCond{
@@ -1696,7 +1691,7 @@ private:
                               new AstConst{fl_nowarn, AstConst::Unsized64{}, maxval}},
                     new AstConst{fl, AstConst::BitFalse{}},
                     new AstArraySel{
-                        fl, varrefp,
+                        fl, newVarRefDollarUnit(varp),
                         new AstSel{fl, nodep->fromp()->cloneTree(false), 0, selwidth}}};
             }
             newp = new AstCond{fl, testp,
@@ -2648,18 +2643,14 @@ private:
             const bool assoc = msbdim > ENUM_LOOKUP_BITS;
             if (assoc) {
                 AstVar* const varp = enumVarp(adtypep, attrType, true, 0);
-                AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
-                varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
-                AstNode* const newp
-                    = new AstAssocSel{nodep->fileline(), varrefp, nodep->fromp()->unlinkFrBack()};
+                AstNode* const newp = new AstAssocSel{nodep->fileline(), newVarRefDollarUnit(varp),
+                                                      nodep->fromp()->unlinkFrBack()};
                 nodep->replaceWith(newp);
             } else {
                 const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
                 AstVar* const varp = enumVarp(adtypep, attrType, false, (1ULL << selwidth) - 1);
-                AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
-                varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
                 AstNode* const newp = new AstArraySel(
-                    nodep->fileline(), varrefp,
+                    nodep->fileline(), newVarRefDollarUnit(varp),
                     // Select in case widths are off due to msblen!=width
                     // We return "random" values if outside the range, which is fine
                     // as next/previous on illegal values just need something good out
@@ -6321,6 +6312,11 @@ private:
             nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
+    }
+    AstNode* newVarRefDollarUnit(AstVar* nodep) {
+        AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::READ};
+        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+        return varrefp;
     }
     AstNode* nodeForUnsizedWarning(AstNode* nodep) {
         // Return a nodep to use for unsized warnings, reporting on child if can
