@@ -753,7 +753,9 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
-        if (VN_IS(nodep, AssignDly)) {
+        if (VN_IS(nodep, AssignForce)) {
+            clearOptimizable(nodep, "Force");
+        } else if (VN_IS(nodep, AssignDly)) {
             if (m_anyAssignComb) clearOptimizable(nodep, "Mix of dly/non-dly assigns");
             m_anyAssignDly = true;
             m_inDlyAssign = true;

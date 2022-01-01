@@ -1988,6 +1988,7 @@ private:
     bool m_fileDescr : 1;  // File descriptor
     bool m_isRand : 1;  // Random variable
     bool m_isConst : 1;  // Table contains constant data
+    bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_isStatic : 1;  // Static C variable (for Verilog see instead isAutomatic)
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
@@ -2026,6 +2027,7 @@ private:
         m_fileDescr = false;
         m_isRand = false;
         m_isConst = false;
+        m_isContinuously = false;
         m_isStatic = false;
         m_isPulldown = false;
         m_isPullup = false;
@@ -2180,6 +2182,7 @@ public:
     void primaryIO(bool flag) { m_primaryIO = flag; }
     void isRand(bool flag) { m_isRand = flag; }
     void isConst(bool flag) { m_isConst = flag; }
+    void isContinuously(bool flag) { m_isContinuously = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
     void funcLocal(bool flag) { m_funcLocal = flag; }
@@ -2203,6 +2206,7 @@ public:
     virtual void tag(const string& text) override { m_tag = text; }
     virtual string tag() const override { return m_tag; }
     bool isAnsi() const { return m_ansi; }
+    bool isContinuously() const { return m_isContinuously; }
     bool isDeclTyped() const { return m_declTyped; }
     bool isInoutish() const { return m_direction.isInoutish(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
@@ -2272,6 +2276,7 @@ public:
         if (fromp->attrClockEn()) attrClockEn(true);
         if (fromp->attrFileDescr()) attrFileDescr(true);
         if (fromp->attrIsolateAssign()) attrIsolateAssign(true);
+        if (fromp->isContinuously()) isContinuously(true);
     }
     bool gateMultiInputOptimizable() const {
         // Ok to gate optimize; must return false if propagateAttrFrom would do anything
@@ -3535,6 +3540,37 @@ public:
     void lhsp(AstNode* np) { setOp1p(np); }
     AstNode* lhsp() const { return op1p(); }  // op1 = Assign to
     uint32_t direction() const { return (uint32_t)m_direction; }
+};
+
+class AstAssignForce final : public AstNodeAssign {
+public:
+    AstAssignForce(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER_AssignForce(fl, lhsp, rhsp) {
+        v3Global.useForce(true);
+    }
+    ASTNODE_NODE_FUNCS(AssignForce)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+        return new AstAssignForce{this->fileline(), lhsp, rhsp};
+    }
+    virtual bool brokeLhsMustBeLvalue() const override { return true; }
+};
+
+class AstAssignRelease final : public AstNodeAssign {
+    // Release is treated similar to an assign to `z
+public:
+    // Only for use in parser, as V3Width needs to resolve the '0 width.
+    AstAssignRelease(FileLine* fl, VFlagChildDType, AstNode* lhsp)
+        : ASTGEN_SUPER_AssignRelease(fl, lhsp, new AstConst{fl, AstConst::StringToParse{}, "'0"}) {
+        v3Global.useForce(true);
+    }
+    AstAssignRelease(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER_AssignRelease(fl, lhsp, rhsp) {}
+    ASTNODE_NODE_FUNCS(AssignRelease)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+        return new AstAssignRelease{this->fileline(), lhsp, rhsp};
+    }
+    virtual bool brokeLhsMustBeLvalue() const override { return true; }
+    AstNode* lhsp() const { return op2p(); }
 };
 
 class AstAssignPre final : public AstNodeAssign {

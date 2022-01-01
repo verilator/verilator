@@ -15,26 +15,22 @@ module t(/*AUTOARG*/
 
    integer cyc = 0;
 
-   logic [7:0] subnet;
-   sub1 sub1(.*);
+   logic [3:0] busa;
+   logic [3:0] busb;
 
    // Test loop
    always @ (posedge clk) begin
       cyc <= cyc + 1;
-      if (cyc == 10) begin
-         `checkh(subnet, 8'h11);
-         force sub1.subnet = 8'h01;  // sub1.subnet same as subnet
+      if (cyc == 0) begin
+         busa <= 4'b0101;
+         busb <= 4'b0111;
       end
-      else if (cyc == 11) begin
-         `checkh(subnet, 8'h01);
-         force subnet = 8'h10;  // sub1.subnet same as subnet
+      else if (cyc == 1) begin
+         force {busa, busb} = 8'b1111_1101;
       end
-      else if (cyc == 12) begin
-         `checkh(subnet, 8'h10);
-         release subnet;  // sub1.subnet same as subnet
-      end
-      else if (cyc == 13) begin
-         `checkh(subnet, 8'h11);
+      else if (cyc == 2) begin
+         `checkh(busa, 4'b1111);
+         `checkh(busb, 4'b1101);
       end
       //
       else if (cyc == 99) begin
@@ -43,8 +39,4 @@ module t(/*AUTOARG*/
       end
    end
 
-endmodule
-
-module sub1(output logic [7:0] subnet);
-   assign subnet = 8'h11;
 endmodule

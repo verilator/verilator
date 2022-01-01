@@ -35,6 +35,7 @@ private:
     // NODE STATE
 
     // STATE
+    bool m_setContinuously = false;  // Set that var has some continuous assignment
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
 
@@ -47,6 +48,9 @@ private:
         // VarRef: LValue its reference
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
         if (nodep->varp()) {
+            if (nodep->access().isWriteOrRW() && m_setContinuously) {
+                nodep->varp()->isContinuously(true);
+            }
             if (nodep->access().isWriteOrRW() && !m_ftaskp && nodep->varp()->isReadOnly()) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
@@ -69,10 +73,13 @@ private:
     }
     virtual void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_setRefLvalue);
+        VL_RESTORER(m_setContinuously);
         {
             m_setRefLvalue = VAccess::WRITE;
+            m_setContinuously = VN_IS(nodep, AssignW) || VN_IS(nodep, AssignAlias);
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = VAccess::NOCHANGE;
+            m_setContinuously = false;
             iterateAndNextNull(nodep->rhsp());
         }
     }

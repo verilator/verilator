@@ -103,6 +103,7 @@ class V3Global final {
     // Experimenting with always requiring heavy, see (#2701)
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
+    bool m_useForce = false;  // Need force/release processing
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
 
@@ -150,6 +151,8 @@ public:
         UASSERT(!m_hierPlanp, "call once");
         m_hierPlanp = plan;
     }
+    void useForce(bool flag) { m_useForce = flag; }
+    bool useForce() const { return m_useForce; }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useParallelBuild() const { return m_useParallelBuild; }
     void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }

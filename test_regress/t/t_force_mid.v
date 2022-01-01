@@ -8,13 +8,14 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 
 module t(/*AUTOARG*/
-   // Inouts
+   // Outputs
    tried,
    // Inputs
    clk
    );
+
    input clk;
-   inout tri [3:0] tried;
+   output [3:0] tried;
 
    integer cyc = 0;
 

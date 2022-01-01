@@ -1,8 +1,0 @@
-%Error-UNSUPPORTED: t/t_force_subvar.v:26:10: Unsupported: Verilog 1995 force
-   26 |          force sub.subvar = 32'hffff;
-      |          ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_force_subvar.v:36:10: Unsupported: Verilog 1995 release
-   36 |          release sub.subvar;
-      |          ^~~~~~~
-%Error: Exiting due to

@@ -3090,9 +3090,9 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yDEASSIGN variable_lvalue ';'
 			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); }
 	|	yFORCE expr '=' expr ';'
-			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 force"); }
+			{ $$ = new AstAssignForce{$1, $2, $4}; }
 	|	yRELEASE variable_lvalue ';'
-			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 release"); }
+			{ $$ = new AstAssignRelease{$1, VFlagChildDType{}, $2}; }
 	//
 	//			// IEEE: case_statement
 	|	unique_priorityE caseStart caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);

@@ -51,6 +51,7 @@
 #include "V3EmitXml.h"
 #include "V3Expand.h"
 #include "V3File.h"
+#include "V3Force.h"
 #include "V3Gate.h"
 #include "V3GenClk.h"
 #include "V3Graph.h"
@@ -300,6 +301,10 @@ static void process() {
         // Add __PVT's
         // After V3Task so task internal variables will get renamed
         V3Name::nameAll(v3Global.rootp());
+
+        // Process force/releases if there are any
+        // After flattening, before Life optimizations
+        if (v3Global.useForce()) V3Force::forceAll(v3Global.rootp());
 
         // Loop unrolling & convert FORs to WHILEs
         V3Unroll::unrollAll(v3Global.rootp());
