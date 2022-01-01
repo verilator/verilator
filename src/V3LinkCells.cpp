@@ -123,7 +123,7 @@ private:
     V3GraphVertex* vertex(AstNodeModule* nodep) {
         // Return corresponding vertex for this module
         if (!nodep->user1p()) nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
-        return (nodep->user1u().toGraphVertex());
+        return nodep->user1u().toGraphVertex();
     }
 
     AstNodeModule* findModuleSym(const string& modName) {
@@ -185,6 +185,9 @@ private:
         // Module: Pick up modnames, so we can resolve cells later
         VL_RESTORER(m_modp);
         {
+            // For nested modules/classes, child below parent
+            if (m_modp) new V3GraphEdge{&m_graph, vertex(m_modp), vertex(nodep), 1};
+            //
             m_modp = nodep;
             UINFO(4, "Link Module: " << nodep << endl);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
@@ -449,6 +452,18 @@ private:
     }
 
     virtual void visit(AstRefDType* nodep) override {
+        iterateChildren(nodep);
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            pinp->param(true);
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
+        }
+    }
+    virtual void visit(AstClassOrPackageRef* nodep) override {
+        iterateChildren(nodep);
+        // Inside a class, an extends or reference to another class
+        // Note we don't add a V3GraphEdge{vertex(m_modp), vertex(nodep->classOrPackagep()}
+        // We could for an extends, but for another reference we cannot, as
+        // it is legal to have classes both with parameters that link to each other
         for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));

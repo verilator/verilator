@@ -641,10 +641,11 @@ class ParamProcessor final {
                 longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                 any_overridesr = true;
             } else {
+                V3Const::constifyParamsEdit(pinp->exprp());
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 const AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
-                    // if (debug()) pinp->dumpTree(cout, "error:");
+                    if (debug()) pinp->dumpTree(cout, "-nodes: ");
                     pinp->v3error("Can't convert defparam value to constant: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                     pinp->exprp()->replaceWith(new AstConst(

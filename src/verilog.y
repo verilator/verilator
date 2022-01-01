@@ -6225,8 +6225,7 @@ class_item<nodep>:			// ==IEEE: class_item
 	|	timeunits_declaration			{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
 	//			// local_parameter_declaration under parameter_declaration
-	|	parameter_declaration ';'
-			{ $$ = $1; BBUNSUP($2, "Unsupported: class parameters"); }  // 1800-2009
+	|	parameter_declaration ';'		{ $$ = $1; }
 	|	';'					{ $$ = nullptr; }
 	//
 	|	error ';'				{ $$ = nullptr; }
