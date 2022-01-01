@@ -183,6 +183,13 @@ private:
         VL_RESTORER(m_setRefLvalue);
         iterateChildren(nodep);
     }
+    virtual void visit(AstRand* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        {
+            if (!nodep->urandom()) m_setRefLvalue = VAccess::WRITE;
+            iterateAndNextNull(nodep->seedp());
+        }
+    }
     virtual void visit(AstReadMem* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {

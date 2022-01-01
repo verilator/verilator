@@ -85,7 +85,8 @@ extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 inline IData VL_RANDOM_I() VL_MT_SAFE { return vl_rand64(); }
 inline QData VL_RANDOM_Q() VL_MT_SAFE { return vl_rand64(); }
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);
-extern IData VL_RANDOM_SEEDED_II(IData seed) VL_MT_SAFE;
+extern IData VL_RANDOM_SEEDED_II(IData& seedr) VL_MT_SAFE;
+extern IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     const vluint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {

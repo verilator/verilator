@@ -337,11 +337,17 @@ WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     return outwp;
 }
 
-IData VL_RANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
+IData VL_RANDOM_SEEDED_II(IData& seedr) VL_MT_SAFE {
+    // $random - seed is a new seed to apply, then we return new seed
+    Verilated::threadContextp()->randSeed(static_cast<int>(seedr));
+    seedr = VL_RANDOM_I();
+    return VL_RANDOM_I();
+}
+IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
+    // $urandom - seed is a new seed to apply
     Verilated::threadContextp()->randSeed(static_cast<int>(seed));
     return VL_RANDOM_I();
 }
-
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     IData data = ~0;
