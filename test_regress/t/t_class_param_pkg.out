@@ -1,0 +1,9 @@
+%Error: t/t_class_param_pkg.v:51:16: Syntax Error: Not expecting CLASSORPACKAGEREF under a DOT in dotted expression
+   51 |       if (Pkg::Cls#()::PBASE != 12) $stop;
+      |                ^~~
+%Error: t/t_class_param_pkg.v:51:21: Syntax Error: Not expecting PIN under a CLASSORPACKAGEREF in dotted expression
+   51 |       if (Pkg::Cls#()::PBASE != 12) $stop;
+      |                     ^
+%Error: Internal Error: t/t_class_param_pkg.v:51:21: ../V3LinkDot.cpp:#: Pin not under instance?
+   51 |       if (Pkg::Cls#()::PBASE != 12) $stop;
+      |                     ^
