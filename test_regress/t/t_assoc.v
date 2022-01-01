@@ -44,6 +44,12 @@ module t (/*AUTOARG*/
          i = a.prev(k); `checkh(i, 0);
          v = $sformatf("%p", a); `checks(v, "'{'h2:\"bared\", 'h3:\"fooed\"} ");
 
+         a.first(k); `checks(k, 4'd2);
+         a.next(k); `checks(k, 4'd3);
+         a.next(k);
+         a.last(k); `checks(k, 4'd3);
+         a.prev(k); `checks(k, 4'd2);
+
          a.delete(4'd2);
          i = a.size(); `checkh(i, 1);
 
