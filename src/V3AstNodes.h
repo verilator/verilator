@@ -5578,10 +5578,10 @@ public:
     }
     virtual string emitC() override {
         return m_reset ? "VL_RAND_RESET_%nq(%nw, %P)"
-                       : seedp() ? (urandom() ? "VL_URANDOM_SEEDED_%nq%lq(%li)"
-                                              : "VL_RANDOM_SEEDED_%nq%lq(%li)")
-                                 : isWide() ? "VL_RANDOM_%nq(%nw, %P)"  //
-                                            : "VL_RANDOM_%nq()";
+               : seedp()
+                   ? (urandom() ? "VL_URANDOM_SEEDED_%nq%lq(%li)" : "VL_RANDOM_SEEDED_%nq%lq(%li)")
+               : isWide() ? "VL_RANDOM_%nq(%nw, %P)"  //
+                          : "VL_RANDOM_%nq()";
     }
     virtual bool cleanOut() const override { return false; }
     virtual bool isGateOptimizable() const override { return false; }
