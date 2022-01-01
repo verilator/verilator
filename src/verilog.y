@@ -3619,7 +3619,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
 	|	yD_EXIT parenE				{ $$ = new AstFinish($1); }
 	//
-	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
+	|	yD_FCLOSE '(' expr ')'			{ $$ = new AstFClose{$1, $3}; }
 	|	yD_FFLUSH parenE			{ $$ = new AstFFlush($1, nullptr); }
 	|	yD_FFLUSH '(' expr ')'			{ $$ = new AstFFlush($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }

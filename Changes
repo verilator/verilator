@@ -30,6 +30,7 @@ Verilator 4.217 devel
 * Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235)
 * Fix $sformat of inputs/outputs (#3236). [Adrien Le Masle]
 * Fix associative array foreach loop (#3229).
+* Fix $fclose not accepting expressions (#3237). [Julie Schwartz]
 * Fix $random not updating seed (#3238). [Julie Schwartz]
 * Fix splitting of _eval and other top level functions. [Geza Lore, Shunyao CAD]
 
