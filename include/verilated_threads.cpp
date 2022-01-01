@@ -161,12 +161,12 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t tickStart, vlui
     // TODO Perhaps merge with verilated_coverage output format, so can
     // have a common merging and reporting tool, etc.
     fprintf(fp, "VLPROFTHREAD 1.1 # Verilator thread profile dump version 1.1\n");
-    fprintf(fp, "VLPROF arg --threads %" VL_PRI64 "u\n", vluint64_t(m_workers.size() + 1));
-    fprintf(fp, "VLPROF arg +verilator+prof+threads+start+%" VL_PRI64 "u\n",
+    fprintf(fp, "VLPROF arg --threads %" PRIu64 "\n", vluint64_t(m_workers.size() + 1));
+    fprintf(fp, "VLPROF arg +verilator+prof+threads+start+%" PRIu64 "\n",
             Verilated::threadContextp()->profThreadsStart());
     fprintf(fp, "VLPROF arg +verilator+prof+threads+window+%u\n",
             Verilated::threadContextp()->profThreadsWindow());
-    fprintf(fp, "VLPROF stat yields %" VL_PRI64 "u\n", VlMTaskVertex::yields());
+    fprintf(fp, "VLPROF stat yields %" PRIu64 "\n", VlMTaskVertex::yields());
 
     // Copy /proc/cpuinfo into this output so verilator_gantt can be run on
     // a different machine
@@ -191,15 +191,14 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t tickStart, vlui
             case VlProfileRec::TYPE_EVAL:
                 if (!printing) break;
                 fprintf(fp,
-                        "VLPROF eval start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
-                        " cpu %u on thread %u\n",
+                        "VLPROF eval start %" PRIu64 " elapsed %" PRIu64 " cpu %u on thread %u\n",
                         ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime), ei.m_cpu,
                         thread_id);
                 break;
             case VlProfileRec::TYPE_EVAL_LOOP:
                 if (!printing) break;
                 fprintf(fp,
-                        "VLPROF eval_loop start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
+                        "VLPROF eval_loop start %" PRIu64 " elapsed %" PRIu64
                         " cpu %u on thread %u\n",
                         ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime), ei.m_cpu,
                         thread_id);
@@ -208,7 +207,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t tickStart, vlui
                 if (!printing) break;
                 fprintf(fp,
                         "VLPROF mtask %d"
-                        " start %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
+                        " start %" PRIu64 " elapsed %" PRIu64
                         " predict_start %u predict_cost %u cpu %u on thread %u\n",
                         ei.m_mtaskId, ei.m_startTime - tickStart, (ei.m_endTime - ei.m_startTime),
                         ei.m_predictStart, ei.m_predictCost, ei.m_cpu, thread_id);
@@ -217,7 +216,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t tickStart, vlui
             }
         }
     }
-    fprintf(fp, "VLPROF stat ticks %" VL_PRI64 "u\n", tickEnd - tickStart);
+    fprintf(fp, "VLPROF stat ticks %" PRIu64 "\n", tickEnd - tickStart);
 
     std::fclose(fp);
 }

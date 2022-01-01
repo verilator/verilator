@@ -273,7 +273,7 @@ void VerilatedVcd::printStr(const char* str) {
 void VerilatedVcd::printQuad(vluint64_t n) {
     constexpr size_t LEN_STR_QUAD = 40;
     char buf[LEN_STR_QUAD];
-    VL_SNPRINTF(buf, LEN_STR_QUAD, "%" VL_PRI64 "u", n);
+    VL_SNPRINTF(buf, LEN_STR_QUAD, "%" PRIu64, n);
     printStr(buf);
 }
 

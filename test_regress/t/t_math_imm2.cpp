@@ -36,8 +36,8 @@ int main(int argc, char* argv[]) {
                         | MaskVal(sim->LowMaskSel_Bot, sim->HighMaskSel_Bot));
 
             if (sim->LogicImm != expected) {
-                printf("%%Error: %d.%d,%d.%d -> %016" VL_PRI64 "x/%016" VL_PRI64
-                       "x -> %016" VL_PRI64 "x (expected %016" VL_PRI64 "x)\n",
+                printf("%%Error: %d.%d,%d.%d -> %016" PRIx64 "/%016" PRIx64 " -> %016" PRIx64
+                       " (expected %016" PRIx64 ")\n",
                        sim->LowMaskSel_Top, sim->HighMaskSel_Top, sim->LowMaskSel_Bot,
                        sim->HighMaskSel_Bot, sim->LowLogicImm, sim->HighLogicImm, sim->LogicImm,
                        expected);

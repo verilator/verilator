@@ -271,13 +271,13 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     va_start(ap, formatp);
     const std::string out = _vl_string_vprintf(formatp, ap);
     va_end(ap);
-    // printf("-imm-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(),
+    // printf("-imm-V{t%d,%" PRId64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(),
     // out.c_str());
 
     // Using VL_PRINTF not VL_PRINTF_MT so that we can call VL_DBG_MSGF
     // from within the guts of the thread execution machinery (and it goes
     // to the screen and not into the queues we're debugging)
-    VL_PRINTF("-V{t%u,%" VL_PRI64 "u}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
+    VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
 #ifdef VL_THREADED
@@ -701,18 +701,17 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
             if (!fracDigits) {
                 digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s%s", ptr, suffix.c_str());
             } else {
-                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s.%0*" VL_PRI64 "u%s", ptr,
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s.%0*" PRIu64 "%s", ptr,
                                      fracDigits, VL_SET_QW(frac), suffix.c_str());
             }
         } else {
             const vluint64_t integer64 = VL_SET_QW(integer);
             if (!fracDigits) {
-                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u%s", integer64,
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRIu64 "%s", integer64,
                                      suffix.c_str());
             } else {
-                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH,
-                                     "%" VL_PRI64 "u.%0*" VL_PRI64 "u%s", integer64, fracDigits,
-                                     VL_SET_QW(frac), suffix.c_str());
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRIu64 ".%0*" PRIu64 "%s",
+                                     integer64, fracDigits, VL_SET_QW(frac), suffix.c_str());
             }
         }
     } else {
@@ -874,7 +873,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     std::string append;
                     if (lbits <= VL_QUADSIZE) {
                         digits = VL_SNPRINTF(
-                            t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "d",
+                            t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRId64,
                             static_cast<vlsint64_t>(VL_EXTENDS_QQ(lbits, lbits, ld)));
                         append = t_tmp;
                     } else {
@@ -903,8 +902,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     int digits = 0;
                     std::string append;
                     if (lbits <= VL_QUADSIZE) {
-                        digits
-                            = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u", ld);
+                        digits = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRIu64, ld);
                         append = t_tmp;
                     } else {
                         append = VL_DECIMAL_NW(lbits, lwp);
@@ -1180,7 +1178,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "0123456789+-xXzZ?_");
                     if (!t_tmp[0]) goto done;
                     vlsint64_t ld = 0;
-                    std::sscanf(t_tmp, "%30" VL_PRI64 "d", &ld);
+                    std::sscanf(t_tmp, "%30" PRId64, &ld);
                     VL_SET_WQ(owp, ld);
                     break;
                 }
@@ -1205,7 +1203,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "0123456789+-xXzZ?_");
                     if (!t_tmp[0]) goto done;
                     QData ld = 0;
-                    std::sscanf(t_tmp, "%30" VL_PRI64 "u", &ld);
+                    std::sscanf(t_tmp, "%30" PRIu64, &ld);
                     VL_SET_WQ(owp, ld);
                     break;
                 }
@@ -1639,7 +1637,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     switch (std::tolower(fmt)) {
     case 'd': {
         vlsint64_t lld = 0;
-        std::sscanf(dp, "%30" VL_PRI64 "d", &lld);
+        std::sscanf(dp, "%30" PRId64, &lld);
         VL_SET_WQ(rwp, lld);
         break;
     }
@@ -1993,7 +1991,7 @@ VlWriteMem::~VlWriteMem() {
 void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
     if (VL_UNLIKELY(!m_fp)) return;
     if (addr != m_addr && addrstamp) {  // Only assoc has time stamps
-        fprintf(m_fp, "@%" VL_PRI64 "x\n", addr);
+        fprintf(m_fp, "@%" PRIx64 "\n", addr);
     }
     m_addr = addr + 1;
     if (m_bits <= 8) {

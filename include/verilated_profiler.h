@@ -103,7 +103,7 @@ void VerilatedProfiler<T_Entries>::write(const char* modelp,
 
     for (const auto& it : m_records) {
         const std::string& name = it.name();
-        fprintf(fp, "profile_data -model \"%s\" -mtask \"%s\" -cost 64'd%" VL_PRI64 "u\n", modelp,
+        fprintf(fp, "profile_data -model \"%s\" -mtask \"%s\" -cost 64'd%" PRIu64 "\n", modelp,
                 name.c_str(), m_counters[it.counterNumber()]);
     }
 

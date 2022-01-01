@@ -534,7 +534,7 @@ public:
         if (VL_UNCOVERABLE(cb_data_p->reason >= CB_ENUM_MAX_VALUE)) {
             VL_FATAL_MT(__FILE__, __LINE__, "", "vpi bb reason too large");
         }
-        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" VL_PRI64 "d obj=%p\n",
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" PRId64 " obj=%p\n",
                                     cb_data_p->reason, id, cb_data_p->obj););
         VerilatedVpioVar* varop = nullptr;
         if (cb_data_p->reason == cbValueChange) varop = VerilatedVpioVar::castp(cb_data_p->obj);
@@ -542,8 +542,8 @@ public:
     }
     static void cbTimedAdd(vluint64_t id, const s_cb_data* cb_data_p, QData time) {
         // The passed cb_data_p was property of the user, so need to recreate
-        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" VL_PRI64
-                                    "d delay=%" VL_PRI64 "u\n",
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" PRId64
+                                    " delay=%" PRIu64 "\n",
                                     cb_data_p->reason, id, time););
         s().m_timedCbs.emplace(std::piecewise_construct,
                                std::forward_as_tuple(std::make_pair(time, id)),
@@ -573,7 +573,7 @@ public:
                 ++it;
                 if (VL_UNLIKELY(!ho.invalid())) {
                     VL_DEBUG_IF_PLI(
-                        VL_DBG_MSGF("- vpi: timed_callback id=%" VL_PRI64 "d\n", ho.id()););
+                        VL_DBG_MSGF("- vpi: timed_callback id=%" PRId64 "\n", ho.id()););
                     ho.invalidate();  // Timed callbacks are one-shot
                     (ho.cb_rtnp())(ho.cb_datap());
                 }
@@ -602,7 +602,7 @@ public:
                 continue;
             }
             VerilatedVpiCbHolder& ho = *it;
-            VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback reason=%d id=%" VL_PRI64 "d\n",
+            VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback reason=%d id=%" PRId64 "\n",
                                         reason, ho.id()););
             (ho.cb_rtnp())(ho.cb_datap());
             called = true;
@@ -636,9 +636,9 @@ public:
                                             *(static_cast<CData*>(prevDatap)), newDatap,
                                             prevDatap););
                 if (std::memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
-                    VL_DEBUG_IF_PLI(
-                        VL_DBG_MSGF("- vpi: value_callback %" VL_PRI64 "d %s v[0]=%d\n", ho.id(),
-                                    varop->fullname(), *(static_cast<CData*>(newDatap))););
+                    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" PRId64 " %s v[0]=%d\n",
+                                                ho.id(), varop->fullname(),
+                                                *(static_cast<CData*>(newDatap))););
                     update.insert(varop);
                     vpi_get_value(ho.cb_datap()->obj, ho.cb_datap()->value);
                     (ho.cb_rtnp())(ho.cb_datap());

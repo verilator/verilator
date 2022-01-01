@@ -320,10 +320,9 @@ uint64_t V3Os::memUsageBytes() {
     FILE* fp = fopen(statmFilename, "r");
     if (!fp) return 0;
     vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    const int items = fscanf(fp,
-                             "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
-                             "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u",
-                             &size, &resident, &share, &text, &lib, &data, &dt);
+    const int items = fscanf(
+        fp, "%" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
+        &size, &resident, &share, &text, &lib, &data, &dt);
     fclose(fp);
     if (VL_UNCOVERABLE(7 != items)) return 0;
     return (text + data) * getpagesize();

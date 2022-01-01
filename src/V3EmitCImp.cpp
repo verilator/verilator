@@ -353,7 +353,7 @@ class EmitCImp final : EmitCFunc {
                         hash.insert(varp->dtypep()->width());
                     }
                 }
-                ofp()->printf("vluint64_t __Vcheckval = 0x%" VL_PRI64 "xULL;\n",
+                ofp()->printf("vluint64_t __Vcheckval = 0x%" PRIx64 "ULL;\n",
                               static_cast<vluint64_t>(hash.digestUInt64()));
                 if (de) {
                     puts("os.readAssert(__Vcheckval);\n");

@@ -280,6 +280,7 @@ void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
 
 // Now that C++ requires these standard types the vl types are deprecated
 #include <cstdint>
+#include <cinttypes>
 
 using vluint8_t = uint8_t;  ///< 8-bit unsigned type (backward compatibility)
 using vluint16_t = uint16_t;  ///< 16-bit unsigned type (backward compatibility)
@@ -314,16 +315,18 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 
 //=========================================================================
 // Printing printf/scanf formats
-// Alas cinttypes isn't that standard yet
 
 // Use Microsoft-specific format specifiers for Microsoft Visual C++ only
-#ifdef _MSC_VER
-# define VL_PRI64 "I64"
-#else  // use standard C99 format specifiers
-# if defined(__WORDSIZE) && (__WORDSIZE == 64)
-#  define VL_PRI64 "l"
-# else
-#  define VL_PRI64 "ll"
+// Deprecated, favor C++11's PRIx64, etc, instead
+#ifndef VL_NO_LEGACY
+# ifdef _MSC_VER
+#  define VL_PRI64 "I64"  ///< print a vluint64_t (backward compatibility)
+# else  // use standard C99 format specifiers
+#  if defined(__WORDSIZE) && (__WORDSIZE == 64)
+#   define VL_PRI64 "l"  ///< print a vluint64_t (backward compatibility)
+#  else
+#   define VL_PRI64 "ll"  ///< print a vluint64_t (backward compatibility)
+#  endif
 # endif
 #endif
 

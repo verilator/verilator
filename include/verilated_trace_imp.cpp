@@ -400,8 +400,8 @@ void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m
     // chances are the data being dumped will have other problems
     const VerilatedLockGuard lock{m_mutex};
     if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
-        VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64
-                     "u, dump call ignored\n",
+        VL_PRINTF_MT("%%Warning: previous dump at t=%" PRIu64 ", requesting t=%" PRIu64
+                     ", dump call ignored\n",
                      m_timeLastDump, timeui);
         return;
     }  // LCOV_EXCL_STOP
