@@ -1,30 +1,30 @@
-%Error-UNSUPPORTED: t/t_class_param.v:32:11: Unsupported: parameterized classes
+%Error-UNSUPPORTED: t/t_class_param.v:40:11: Unsupported: parameterized classes
                                            : ... In instance t
-   32 |    Cls #(.P(4)) c4;
-      |           ^
+   40 |    Cls #(.PBASE(4)) c4;
+      |           ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_class_param.v:34:12: Unsupported: parameterized classes
+%Error-UNSUPPORTED: t/t_class_param.v:42:12: Unsupported: parameterized classes
                                            : ... In instance t
-   34 |    Wrap #(.PMINUS1(15)) w16;
-      |            ^~~~~~~
-%Error-UNSUPPORTED: t/t_class_param.v:7:23: Unsupported: class parameters
-                                          : ... In instance t
-    7 | class Cls #(parameter P = 12);
-      |                       ^
-%Error-UNSUPPORTED: t/t_class_param.v:17:24: Unsupported: class parameters
+   42 |    Wrap #(.P(16)) w16;
+      |            ^
+%Error-UNSUPPORTED: t/t_class_param.v:13:24: Unsupported: class parameters
                                            : ... In instance t
-   17 | class Wrap #(parameter PMINUS1 = 3);
-      |                        ^~~~~~~
-%Error-UNSUPPORTED: t/t_class_param.v:18:15: Unsupported: class parameters
+   13 | class Wrap #(parameter P = 13);
+      |                        ^
+%Error-UNSUPPORTED: t/t_class_param.v:21:15: Unsupported: class parameters
                                            : ... In instance t
-   18 |    localparam P = PMINUS1 + 1;
-      |               ^
-%Error-UNSUPPORTED: t/t_class_param.v:19:9: Unsupported: parameterized classes
-                                          : ... In instance t
-   19 |    Cls#(P) c1;
-      |         ^
-%Error-UNSUPPORTED: t/t_class_param.v:25:14: Unsupported: parameterized classes
+   21 |    localparam PMINUS1 = P - 1;   
+      |               ^~~~~~~
+%Error-UNSUPPORTED: t/t_class_param.v:20:17: Unsupported: parameterized classes
                                            : ... In instance t
-   25 | typedef Cls#(5) Cls5_t;
+   20 |    Cls#(PMINUS1 + 1) c1;
+      |                 ^
+%Error-UNSUPPORTED: t/t_class_param.v:24:23: Unsupported: class parameters
+                                           : ... In instance t
+   24 | class Cls #(parameter PBASE = 12);
+      |                       ^~~~~
+%Error-UNSUPPORTED: t/t_class_param.v:35:14: Unsupported: parameterized classes
+                                           : ... In instance t
+   35 | typedef Cls#(8) Cls8_t;
       |              ^
 %Error: Exiting due to

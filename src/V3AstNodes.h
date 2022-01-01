@@ -3118,8 +3118,14 @@ public:
     virtual string name() const override { return m_name; }  // * = Var name
     AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
     void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
-    AstNodeModule* classOrPackagep() const { return VN_AS(m_classOrPackageNodep, NodeModule); }
-    AstPackage* packagep() const { return VN_AS(classOrPackageNodep(), Package); }
+    AstNodeModule* classOrPackagep() const {
+        AstNode* foundp = m_classOrPackageNodep;
+        while (auto* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
+        while (auto* const anodep = VN_CAST(foundp, ClassRefDType))
+            foundp = anodep->classOrPackagep();
+        return VN_CAST(foundp, NodeModule);
+    }
+    AstPackage* packagep() const { return VN_CAST(classOrPackageNodep(), Package); }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackageNodep = nodep; }
     AstPin* paramsp() const { return VN_AS(op4p(), Pin); }
 };
