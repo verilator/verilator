@@ -250,6 +250,7 @@ private:
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment
+    bool m_inInoutPin = false;  // Connected to pin that is inout
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
@@ -374,7 +375,13 @@ private:
                 }
                 entryp->drivenWhole();
             }
-            if (m_inBBox || nodep->access().isReadOrRW() || fdrv) entryp->usedWhole();
+            if (m_inBBox || nodep->access().isReadOrRW()
+                || fdrv
+                // Inouts have only isWrite set, as we don't have more
+                // information and operating on module boundry, treat as
+                // both read and writing
+                || m_inInoutPin)
+                entryp->usedWhole();
         }
     }
 
@@ -429,6 +436,11 @@ private:
             m_taskp = nodep;
             iterateChildren(nodep);
         }
+    }
+    virtual void visit(AstPin* nodep) override {
+        VL_RESTORER(m_inInoutPin);
+        m_inInoutPin = nodep->modVarp()->isInoutish();
+        iterateChildren(nodep);
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os

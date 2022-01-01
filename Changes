@@ -33,6 +33,7 @@ Verilator 4.217 devel
 * Fix associative array foreach loop (#3229).
 * Fix $fclose not accepting expressions (#3237). [Julie Schwartz]
 * Fix $random not updating seed (#3238). [Julie Schwartz]
+* Fix spurious UNUSED by ignoring inout pin connections (#3242). [Julie Schwartz]
 * Fix splitting of _eval and other top level functions. [Geza Lore, Shunyao CAD]
 
 
