@@ -105,7 +105,7 @@ private:
     const AstUser2InUse m_inuser2;
 
     // STATE
-    VInFilter* m_filterp;  // Parser filter
+    VInFilter* const m_filterp;  // Parser filter
     V3ParseSym* m_parseSymp;  // Parser symbol table
 
     // Below state needs to be preserved between each module call.
@@ -498,9 +498,9 @@ private:
 public:
     // CONSTRUCTORS
     LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp)
-        : m_mods{nodep} {
-        m_filterp = filterp;
-        m_parseSymp = parseSymp;
+        : m_filterp{filterp}
+        , m_parseSymp{parseSymp}
+        , m_mods{nodep} {
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
             UASSERT(!v3Global.opt.topModule().empty(),

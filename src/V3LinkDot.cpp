@@ -147,7 +147,7 @@ private:
 
     // MEMBERS
     VSymGraph m_syms;  // Symbol table
-    VSymEnt* m_dunitEntp;  // $unit entry
+    VSymEnt* m_dunitEntp = nullptr;  // $unit entry
     std::multimap<std::string, VSymEnt*>
         m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
     std::set<std::pair<AstNodeModule*, std::string>>
@@ -204,7 +204,6 @@ public:
         m_forPrimary = (step == LDS_PRIMARY);
         m_forPrearray = (step == LDS_PARAMED || step == LDS_PRIMARY);
         m_forScopeCreation = (step == LDS_SCOPED);
-        m_dunitEntp = nullptr;
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
     }
@@ -1744,7 +1743,7 @@ public:
 // Iterate an interface to resolve modports
 class LinkDotIfaceVisitor final : public AstNVisitor {
     // STATE
-    LinkDotState* m_statep;  // State to pass between visitors, including symbol table
+    LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
 
     // METHODS
@@ -1815,10 +1814,10 @@ class LinkDotIfaceVisitor final : public AstNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkDotIfaceVisitor(AstIface* nodep, VSymEnt* curSymp, LinkDotState* statep) {
+    LinkDotIfaceVisitor(AstIface* nodep, VSymEnt* curSymp, LinkDotState* statep)
+        : m_statep{statep}
+        , m_curSymp{curSymp} {
         UINFO(4, __FUNCTION__ << ": " << endl);
-        m_curSymp = curSymp;
-        m_statep = statep;
         iterate(nodep);
     }
     virtual ~LinkDotIfaceVisitor() override = default;

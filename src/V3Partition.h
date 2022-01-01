@@ -36,7 +36,7 @@ using Vx2MTaskMap = std::unordered_map<const MTaskMoveVertex*, LogicMTask*>;
 
 class V3Partition final {
     // MEMBERS
-    V3Graph* m_fineDepsGraphp;  // Fine-grained dependency graph
+    V3Graph* const m_fineDepsGraphp;  // Fine-grained dependency graph
 public:
     // CONSTRUCTORS
     explicit V3Partition(V3Graph* fineDepsGraphp)

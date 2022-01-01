@@ -89,9 +89,12 @@ inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 
 class V3Global final {
     // Globals
-    AstNetlist* m_rootp;  // Root of entire netlist
-    V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, nullptr unless hier_block
-    VWidthMinUsage m_widthMinUsage;  // What AstNode::widthMin() is used for
+    AstNetlist* m_rootp = nullptr;  // Root of entire netlist,
+    // created by makeInitNetlist(} so static constructors run first
+    V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical verilation plan,
+    // nullptr unless hier_block, set via hierPlanp(V3HierBlockPlan*}
+    VWidthMinUsage m_widthMinUsage
+        = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
     int m_debugFileNumber = 0;  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
@@ -112,10 +115,7 @@ public:
     V3Options opt;  // All options; let user see them directly
 
     // CONSTRUCTORS
-    V3Global()
-        : m_rootp{nullptr}  // created by makeInitNetlist(} so static constructors run first
-        , m_hierPlanp{nullptr}  // Set via hierPlanp(V3HierBlockPlan*} when use hier_block
-        , m_widthMinUsage{VWidthMinUsage::LINT_WIDTH} {}
+    V3Global() {}
     AstNetlist* makeNetlist();
     void boot() {
         UASSERT(!m_rootp, "call once");

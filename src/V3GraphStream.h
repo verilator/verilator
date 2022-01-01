@@ -43,7 +43,7 @@ private:
     class VxHolder final {
     public:
         // MEMBERS
-        const V3GraphVertex* m_vxp;  // [mtask] Vertex
+        const V3GraphVertex* const m_vxp;  // [mtask] Vertex
         const uint32_t m_pos;  // Sort position
         uint32_t m_numBlockingEdges;  // Number of blocking edges
         // CONSTRUCTORS
@@ -57,7 +57,7 @@ private:
         // newly unblocked
         bool unblock() {
             UASSERT_OBJ(m_numBlockingEdges > 0, vertexp(), "Underflow of blocking edges");
-            m_numBlockingEdges--;
+            --m_numBlockingEdges;
             return (m_numBlockingEdges == 0);
         }
     };

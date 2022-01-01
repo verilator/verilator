@@ -826,10 +826,10 @@ class GateElimVisitor final : public GateBaseVisitor {
 private:
     // NODE STATE
     // STATE
-    const AstVarScope* m_elimVarScp;  // Variable being eliminated
-    AstNode* m_replaceTreep;  // What to replace the variable with
-    bool m_didReplace;  // Did we do any replacements
-    GateDedupeVarVisitor* m_varVisp;  // Callback to keep hash up to date
+    const AstVarScope* const m_elimVarScp;  // Variable being eliminated
+    AstNode* const m_replaceTreep;  // What to replace the variable with
+    bool m_didReplace = false;  // Did we do any replacements
+    GateDedupeVarVisitor* const m_varVisp;  // Callback to keep hash up to date
 
     // METHODS
     void hashReplace(AstNode* oldp, AstNode* newp);
@@ -867,14 +867,13 @@ public:
     // CONSTRUCTORS
     virtual ~GateElimVisitor() override = default;
     GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep,
-                    GateDedupeVarVisitor* varVisp) {
+                    GateDedupeVarVisitor* varVisp)
+        : m_elimVarScp{varscp}
+        , m_replaceTreep{replaceTreep}
+        , m_varVisp{varVisp} {
         UINFO(9, "     elimvisitor " << nodep << endl);
         UINFO(9, "     elim varscp " << varscp << endl);
         UINFO(9, "     elim repce  " << replaceTreep << endl);
-        m_didReplace = false;
-        m_elimVarScp = varscp;
-        m_replaceTreep = replaceTreep;
-        m_varVisp = varVisp;
         iterate(nodep);
     }
     bool didReplace() const { return m_didReplace; }

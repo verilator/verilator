@@ -34,7 +34,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
     // AstNode::user1           -> uint64_t, number to connect crossrefs
 
     // MEMBERS
-    V3OutFile* m_ofp;
+    V3OutFile* const m_ofp;
     uint64_t m_id = 0;
 
     // METHODS

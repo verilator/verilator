@@ -140,7 +140,7 @@ private:
     // NODE STATE
     // Entire netlist:
     // {statement}Node::user3   -> bool, indicating not hazard
-    std::ofstream* m_ofp;  // Output file
+    std::ofstream* const m_ofp = nullptr;  // Output file
     string m_prefix;
 
     virtual void visit(AstNode* nodep) override {

@@ -52,8 +52,8 @@
 class SimStackNode final {
 public:
     // MEMBERS
-    AstFuncRef* m_funcp;
-    V3TaskConnects* m_tconnects;
+    AstFuncRef* const m_funcp;
+    V3TaskConnects* const m_tconnects;
     // CONSTRUCTORS
     SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects)
         : m_funcp{funcp}

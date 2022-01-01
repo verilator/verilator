@@ -182,7 +182,7 @@ public:
 
 class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     // MEMBERS
-    FILE* m_fp;
+    FILE* m_fp = nullptr;
 
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);

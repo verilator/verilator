@@ -61,33 +61,13 @@ std::ostream& operator<<(std::ostream& os, AstType rhs);
 AstNode::AstNode(AstType t, FileLine* fl)
     : m_type{t}
     , m_fileline{fl} {
-    editCountInc();
-    m_nextp = nullptr;
-    m_backp = nullptr;
     m_headtailp = this;  // When made, we're a list of only a single element
-    m_op1p = nullptr;
-    m_op2p = nullptr;
-    m_op3p = nullptr;
-    m_op4p = nullptr;
-    m_iterpp = nullptr;
-    m_dtypep = nullptr;
-    m_clonep = nullptr;
-    m_cloneCnt = 0;
     // Attributes
     m_flags.didWidth = false;
     m_flags.doingWidth = false;
     m_flags.protect = true;
     m_flags.unused = 0;  // Initializing this avoids a read-modify-write on construction
-    m_user1u = VNUser(0);
-    m_user1Cnt = 0;
-    m_user2u = VNUser(0);
-    m_user2Cnt = 0;
-    m_user3u = VNUser(0);
-    m_user3Cnt = 0;
-    m_user4u = VNUser(0);
-    m_user4Cnt = 0;
-    m_user5u = VNUser(0);
-    m_user5Cnt = 0;
+    editCountInc();
 }
 
 AstNode* AstNode::abovep() const {

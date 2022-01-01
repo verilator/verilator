@@ -876,7 +876,7 @@ public:
 
 class PartParallelismEst final {
     // MEMBERS
-    const V3Graph* m_graphp;  // Mtask-containing graph
+    const V3Graph* const m_graphp;  // Mtask-containing graph
 
     // Total cost of evaluating the whole graph.
     // The ratio of m_totalGraphCost to longestCpCost gives us an estimate
@@ -1108,7 +1108,7 @@ private:
     };
 
     // MEMBERS
-    V3Graph* m_mtasksp;  // Mtask graph
+    V3Graph* const m_mtasksp;  // Mtask graph
     uint32_t m_scoreLimit;  // Sloppy score allowed when picking merges
     uint32_t m_scoreLimitBeforeRescore = 0xffffffff;  // Next score rescore at
     unsigned m_mergesSinceRescore = 0;  // Merges since last rescore
@@ -1827,7 +1827,7 @@ private:
     using Olv2MTaskMap = std::unordered_map<const OrderLogicVertex*, LogicMTask*>;
 
     // MEMBERS
-    V3Graph* m_mtasksp;  // Mtask graph
+    V3Graph* const m_mtasksp;  // Mtask graph
     Olv2MTaskMap m_olv2mtask;  // Map OrderLogicVertex to LogicMTask who wraps it
     unsigned m_mergesDone = 0;  // Number of MTasks merged. For stats only.
 public:

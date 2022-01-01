@@ -39,7 +39,7 @@ private:
     static int s_anonNum;  // Number of next anonymous object (parser use only)
     VSymGraph m_syms;  // Graph of symbol tree
     VSymEnt* m_symTableNextId = nullptr;  // Symbol table for next lexer lookup (parser use only)
-    VSymEnt* m_symCurrentp;  // Active symbol table for additions/lookups
+    VSymEnt* m_symCurrentp = nullptr;  // Active symbol table for additions/lookups
     std::vector<VSymEnt*> m_sympStack;  // Stack of upper nodes with pending symbol tables
 
 public:

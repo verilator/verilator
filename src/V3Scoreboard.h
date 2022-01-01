@@ -70,7 +70,7 @@ public:
         // MEMBERS
         typename KeySet::iterator m_keyIt;
         typename Val2Keys::iterator m_valIt;
-        SortByValueMap* m_sbvmp;
+        SortByValueMap* const m_sbvmp;
         bool m_end = true;  // At the end()
 
         // CONSTRUCTORS

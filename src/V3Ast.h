@@ -1356,13 +1356,14 @@ public:
 
 class AstNode VL_NOT_FINAL {
     // v ASTNODE_PREFETCH depends on below ordering of members
-    AstNode* m_nextp;  // Next peer in the parent's list
-    AstNode* m_backp;  // Node that points to this one (via next/op1/op2/...)
-    AstNode* m_op1p;  // Generic pointer 1
-    AstNode* m_op2p;  // Generic pointer 2
-    AstNode* m_op3p;  // Generic pointer 3
-    AstNode* m_op4p;  // Generic pointer 4
-    AstNode** m_iterpp;  // Pointer to node iterating on, change it if we replace this node.
+    AstNode* m_nextp = nullptr;  // Next peer in the parent's list
+    AstNode* m_backp = nullptr;  // Node that points to this one (via next/op1/op2/...)
+    AstNode* m_op1p = nullptr;  // Generic pointer 1
+    AstNode* m_op2p = nullptr;  // Generic pointer 2
+    AstNode* m_op3p = nullptr;  // Generic pointer 3
+    AstNode* m_op4p = nullptr;  // Generic pointer 4
+    AstNode** m_iterpp
+        = nullptr;  // Pointer to node iterating on, change it if we replace this node.
     const AstType m_type;  // Node sub-type identifier
     // ^ ASTNODE_PREFETCH depends on above ordering of members
 
@@ -1384,7 +1385,7 @@ class AstNode VL_NOT_FINAL {
     // field masking resulting in unnecessary read-modify-write ops.
     uint8_t m_brokenState = 0;
 
-    int m_cloneCnt;  // Sequence number for when last clone was made
+    int m_cloneCnt = 0;  // Sequence number for when last clone was made
 
 #if defined(__x86_64__) && defined(__gnu_linux__)
     // Only assert this on known platforms, as it only affects performance, not correctness
@@ -1393,7 +1394,7 @@ class AstNode VL_NOT_FINAL {
                   "packing requires padding");
 #endif
 
-    AstNodeDType* m_dtypep;  // Data type of output or assignment (etc)
+    AstNodeDType* m_dtypep = nullptr;  // Data type of output or assignment (etc)
     AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
     FileLine* m_fileline;  // Where it was declared
     vluint64_t m_editCount;  // When it was last edited
@@ -1401,20 +1402,21 @@ class AstNode VL_NOT_FINAL {
     // Global edit counter, last value for printing * near node #s
     static vluint64_t s_editCntLast;
 
-    AstNode* m_clonep;  // Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
+    AstNode* m_clonep
+        = nullptr;  // Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
     static int s_cloneCntGbl;  // Count of which userp is set
 
     // This member ordering both allows 64 bit alignment and puts associated data together
-    VNUser m_user1u;  // Contains any information the user iteration routine wants
-    uint32_t m_user1Cnt;  // Mark of when userp was set
-    uint32_t m_user2Cnt;  // Mark of when userp was set
-    VNUser m_user2u;  // Contains any information the user iteration routine wants
-    VNUser m_user3u;  // Contains any information the user iteration routine wants
-    uint32_t m_user3Cnt;  // Mark of when userp was set
-    uint32_t m_user4Cnt;  // Mark of when userp was set
-    VNUser m_user4u;  // Contains any information the user iteration routine wants
-    VNUser m_user5u;  // Contains any information the user iteration routine wants
-    uint32_t m_user5Cnt;  // Mark of when userp was set
+    VNUser m_user1u = VNUser{0};  // Contains any information the user iteration routine wants
+    uint32_t m_user1Cnt = 0;  // Mark of when userp was set
+    uint32_t m_user2Cnt = 0;  // Mark of when userp was set
+    VNUser m_user2u = VNUser{0};  // Contains any information the user iteration routine wants
+    VNUser m_user3u = VNUser{0};  // Contains any information the user iteration routine wants
+    uint32_t m_user3Cnt = 0;  // Mark of when userp was set
+    uint32_t m_user4Cnt = 0;  // Mark of when userp was set
+    VNUser m_user4u = VNUser{0};  // Contains any information the user iteration routine wants
+    VNUser m_user5u = VNUser{0};  // Contains any information the user iteration routine wants
+    uint32_t m_user5Cnt = 0;  // Mark of when userp was set
 
     // METHODS
     void op1p(AstNode* nodep) {

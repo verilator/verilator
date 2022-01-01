@@ -118,13 +118,13 @@ public:
 class ChangedInsertVisitor final : public AstNVisitor {
 private:
     // STATE
-    ChangedState* m_statep;  // Shared state across visitors
-    AstVarScope* m_vscp;  // Original (non-change) variable we're change-detecting
-    AstVarScope* m_newvscp;  // New (change detect) variable we're change-detecting
-    AstNode* m_varEqnp;  // Original var's equation to get var value
-    AstNode* m_newLvEqnp;  // New var's equation to read value
-    AstNode* m_newRvEqnp;  // New var's equation to set value
-    uint32_t m_detects;  // # detects created
+    ChangedState* m_statep = nullptr;  // Shared state across visitors
+    AstVarScope* m_vscp = nullptr;  // Original (non-change) variable we're change-detecting
+    AstVarScope* m_newvscp = nullptr;  // New (change detect) variable we're change-detecting
+    AstNode* m_varEqnp = nullptr;  // Original var's equation to get var value
+    AstNode* m_newLvEqnp = nullptr;  // New var's equation to read value
+    AstNode* m_newRvEqnp = nullptr;  // New var's equation to set value
+    uint32_t m_detects = 0;  // # detects created
 
     // CONSTANTS
     enum MiscConsts {
@@ -211,7 +211,6 @@ public:
                     "DPI export trigger should not need change detect");
         m_statep = statep;
         m_vscp = vscp;
-        m_detects = 0;
         {
             AstVar* const varp = m_vscp->varp();
             const string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"

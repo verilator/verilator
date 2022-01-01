@@ -42,7 +42,7 @@ private:
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_inCFunc = false;  // Inside AstCFunc
     const bool m_assertNoDups;  // Check for duplicates
-    const std::ostream* m_osp;  // Dump file
+    const std::ostream* const m_osp;  // Dump file
 
     // TYPES
     // Little class to cleanly call startVisitBase/endVisitBase
@@ -264,7 +264,7 @@ private:
     //  AstNode::user4()        -> int.  Path cost, 0 means don't dump
 
     // MEMBERS
-    std::ostream* m_osp;  // Dump file
+    std::ostream* const m_osp;  // Dump file
     unsigned m_depth = 0;  // Current tree depth for printing indent
 
 public:

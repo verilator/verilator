@@ -754,7 +754,7 @@ class EmitVPrefixedFormatter final : public V3OutFormatter {
     std::ostream& m_os;
     const string m_prefix;  // What to print at beginning of each line
     const int m_flWidth;  // Padding of fileline
-    int m_column;  // Rough location; need just zero or non-zero
+    int m_column = 0;  // Rough location; need just zero or non-zero
     FileLine* m_prefixFl;
     // METHODS
     virtual void putcOutput(char chr) override {
@@ -783,7 +783,6 @@ public:
         , m_os(os)  // Need () or GCC 4.8 false warning
         , m_prefix{prefix}
         , m_flWidth{flWidth} {
-        m_column = 0;
         m_prefixFl = v3Global.rootp()->fileline();  // NETLIST's fileline instead of nullptr to
                                                     // avoid nullptr checks
     }

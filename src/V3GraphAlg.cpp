@@ -369,7 +369,7 @@ void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
 
 class GraphAlgSubtrees final : GraphAlg<> {
 private:
-    V3Graph* m_loopGraphp;
+    V3Graph* const m_loopGraphp;
 
     //! Iterate through all connected nodes of a graph with a loop or loops.
     V3GraphVertex* vertexIterateAll(V3GraphVertex* vertexp) {

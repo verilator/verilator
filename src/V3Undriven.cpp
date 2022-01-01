@@ -39,7 +39,7 @@
 
 class UndrivenVarEntry final {
     // MEMBERS
-    AstVar* m_varp;  // Variable this tracks
+    AstVar* const m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
 
@@ -49,9 +49,9 @@ class UndrivenVarEntry final {
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVarEntry(AstVar* varp) {  // Construction for when a var is used
+    explicit UndrivenVarEntry(AstVar* varp)
+        : m_varp(varp) {  // Construction for when a var is used
         UINFO(9, "create " << varp << endl);
-        m_varp = varp;
         m_wholeFlags.resize(FLAGS_PER_BIT);
         for (int i = 0; i < FLAGS_PER_BIT; i++) m_wholeFlags[i] = false;
         m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
