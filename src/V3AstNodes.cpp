@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,14 +47,32 @@ AstIface* AstIfaceRefDType::ifaceViaCellp() const {
     return ((m_cellp && m_cellp->modp()) ? VN_AS(m_cellp->modp(), Iface) : m_ifacep);
 }
 
+const char* AstNodeFTaskRef::broken() const {
+    BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
+    return nullptr;
+}
+
+void AstNodeFTaskRef::cloneRelink() {
+    if (m_taskp && m_taskp->clonep()) m_taskp = m_taskp->clonep();
+    if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+        m_classOrPackagep = m_classOrPackagep->clonep();
+    }
+}
+
 const char* AstNodeVarRef::broken() const {
-    BROKEN_RTN(m_varScopep && !m_varScopep->brokeExists());
     BROKEN_RTN(m_varp && !m_varp->brokeExists());
+    BROKEN_RTN(m_varScopep && !m_varScopep->brokeExists());
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
     return nullptr;
 }
 
 void AstNodeVarRef::cloneRelink() {
     if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep();
+    if (m_varScopep && m_varScopep->clonep()) m_varScopep = m_varScopep->clonep();
+    if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+        m_classOrPackagep = m_classOrPackagep->clonep();
+    }
 }
 
 string AstNodeVarRef::selfPointerProtect(bool useSelfForThis) const {
@@ -285,17 +303,17 @@ bool AstVar::isScBigUint() const {
             && !isScBv());
 }
 
-void AstVar::combineType(AstVarType type) {
+void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
     // We don't test varType for certain types, instead set flags since
     // when we combine wires cross-hierarchy we need a union of all characteristics.
     m_varType = type;
     // These flags get combined with the existing settings of the flags.
-    if (type == AstVarType::TRIWIRE || type == AstVarType::TRI0 || type == AstVarType::TRI1) {
+    if (type == VVarType::TRIWIRE || type == VVarType::TRI0 || type == VVarType::TRI1) {
         m_tristate = true;
     }
-    if (type == AstVarType::TRI0) m_isPulldown = true;
-    if (type == AstVarType::TRI1) m_isPullup = true;
+    if (type == VVarType::TRI0) m_isPulldown = true;
+    if (type == VVarType::TRI1) m_isPullup = true;
 }
 
 string AstVar::verilogKwd() const {
@@ -303,11 +321,11 @@ string AstVar::verilogKwd() const {
         return direction().verilogKwd();
     } else if (isTristate()) {
         return "tri";
-    } else if (varType() == AstVarType::WIRE) {
+    } else if (varType() == VVarType::WIRE) {
         return "wire";
-    } else if (varType() == AstVarType::WREAL) {
+    } else if (varType() == VVarType::WREAL) {
         return "wreal";
-    } else if (varType() == AstVarType::IFACEREF) {
+    } else if (varType() == VVarType::IFACEREF) {
         return "ifaceref";
     } else {
         return dtypep()->name();
@@ -337,10 +355,10 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 string AstVar::vlEnumType() const {
     string arg;
     const AstBasicDType* const bdtypep = basicp();
-    const bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
-    if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
+    const bool strtype = bdtypep && bdtypep->keyword() == VBasicDTypeKwd::STRING;
+    if (bdtypep && bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
         return "VLVT_PTR";
-    } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) {
+    } else if (bdtypep && bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR) {
         return "VLVT_PTR";
     } else if (strtype) {
         arg += "VLVT_STRING";
@@ -467,7 +485,7 @@ public:
     }
     virtual string primitive(const AstVar* varp) const {
         string type;
-        const AstBasicDTypeKwd keyword = varp->basicp()->keyword();
+        const VBasicDTypeKwd keyword = varp->basicp()->keyword();
         if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
         type += keyword.dpiType();
         return type;
@@ -499,8 +517,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
             virtual string primitive(const AstVar* varp) const override {
                 string type = dpiTypesToStringConverter::primitive(varp);
                 if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                    if (!varp->isWritable()
-                        && varp->basicp()->keyword() != AstBasicDTypeKwd::STRING)
+                    if (!varp->isWritable() && varp->basicp()->keyword() != VBasicDTypeKwd::STRING)
                         type = "const " + type;
                     type += "*";
                 }
@@ -541,7 +558,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
         virtual string primitive(const AstVar* varp) const override {
             string type = dpiTypesToStringConverter::primitive(varp);
             if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (!varp->isWritable() && varp->basicp()->keyword() == AstBasicDTypeKwd::CHANDLE)
+                if (!varp->isWritable() && varp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE)
                     type = "const " + type;
             }
             type += ' ' + m_name + arraySuffix(varp, 0);
@@ -670,9 +687,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         const string bitvec = (!bdtypep->isOpaque() && !v3Global.opt.protectIds())
                                   ? "/*" + cvtToStr(dtypep->width() - 1) + ":0*/"
                                   : "";
-        if (bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
+        if (bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
             info.m_type = "const char*";
-        } else if (bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) {
+        } else if (bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR) {
             info.m_type = "const VerilatedScope*";
         } else if (bdtypep->keyword().isDouble()) {
             info.m_type = "double";
@@ -781,7 +798,7 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
             continue;
         }
         // AstNodeSelPre stashes the associated variable under an ATTROF
-        // of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
+        // of VAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
         else if (VN_IS(nodep, AttrOf)) {
             nodep = VN_AS(nodep, AttrOf)->fromp();
             continue;
@@ -884,7 +901,7 @@ bool AstSenTree::hasCombo() const {
 
 AstTypeTable::AstTypeTable(FileLine* fl)
     : ASTGEN_SUPER_TypeTable(fl) {
-    for (int i = 0; i < AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = nullptr;
+    for (int i = 0; i < VBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = nullptr;
 }
 
 void AstTypeTable::clearCache() {
@@ -935,7 +952,7 @@ AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
     return m_queueIndexp;
 }
 
-AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) {
+AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];
     //
     AstBasicDType* const new1p = new AstBasicDType(fl, kwd);
@@ -953,7 +970,7 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) 
     return newp;
 }
 
-AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width,
+AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width,
                                                int widthMin, VSigning numeric) {
     AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
     AstBasicDType* const newp = findInsertSameDType(new1p);
@@ -965,7 +982,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
     return newp;
 }
 
-AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
+AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
                                                const VNumRange& range, int widthMin,
                                                VSigning numeric) {
     AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
@@ -1000,7 +1017,7 @@ AstConstPool::AstConstPool(FileLine* fl)
 
 AstVarScope* AstConstPool::createNewEntry(const string& name, AstNode* initp) {
     FileLine* const fl = initp->fileline();
-    AstVar* const varp = new AstVar(fl, AstVarType::MODULETEMP, name, initp->dtypep());
+    AstVar* const varp = new AstVar(fl, VVarType::MODULETEMP, name, initp->dtypep());
     varp->isConst(true);
     varp->isStatic(true);
     varp->valuep(initp->cloneTree(false));
@@ -1017,21 +1034,41 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
     // - the default/inititem children might be in different order yet still yield the same table
     // See note in AstInitArray::same about the same. This function instead compares by initializer
     // value, rather than by tree structure.
-    const AstUnpackArrayDType* const aDTypep = VN_AS(ap->dtypep(), UnpackArrayDType);
-    const AstUnpackArrayDType* const bDTypep = VN_AS(bp->dtypep(), UnpackArrayDType);
-    if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) {  // Element types differ
-        return false;
-    }
-    if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) {  // Ranges differ
-        return false;
-    }
-    // Compare initializer arrays by value. Note this is only called when they hash the same,
-    // so they likely run at most once per call to 'AstConstPool::findTable'.
-    const uint32_t size = aDTypep->elementsConst();
-    for (uint32_t n = 0; n < size; ++n) {
-        const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
-        const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
-        if (!valAp->sameTree(valBp)) { return false; }
+    if (const AstAssocArrayDType* const aDTypep = VN_CAST(ap->dtypep(), AssocArrayDType)) {
+        const AstAssocArrayDType* const bDTypep = VN_CAST(bp->dtypep(), AssocArrayDType);
+        if (!bDTypep) return false;
+        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
+        if (!aDTypep->keyDTypep()->sameTree(bDTypep->keyDTypep())) return false;
+        UASSERT_OBJ(ap->defaultp(), ap, "Assoc InitArray should have a default");
+        UASSERT_OBJ(bp->defaultp(), bp, "Assoc InitArray should have a default");
+        if (!ap->defaultp()->sameTree(bp->defaultp())) return false;
+        // Compare initializer arrays by value. Note this is only called when they hash the same,
+        // so they likely run at most once per call to 'AstConstPool::findTable'.
+        // This assumes that the defaults are used in the same way.
+        // TODO when buinding the AstInitArray, remove any values matching the default
+        const auto& amapr = ap->map();
+        const auto& bmapr = bp->map();
+        const auto ait = amapr.cbegin();
+        const auto bit = bmapr.cbegin();
+        while (ait != amapr.cend() || bit != bmapr.cend()) {
+            if (ait == amapr.cend() || bit == bmapr.cend()) return false;  // Different size
+            if (ait->first != bit->first) return false;  // Different key
+            if (ait->second->sameTree(bit->second)) return false;  // Different value
+        }
+    } else if (const AstUnpackArrayDType* const aDTypep
+               = VN_CAST(ap->dtypep(), UnpackArrayDType)) {
+        const AstUnpackArrayDType* const bDTypep = VN_CAST(bp->dtypep(), UnpackArrayDType);
+        if (!bDTypep) return false;
+        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
+        if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) return false;
+        // Compare initializer arrays by value. Note this is only called when they hash the same,
+        // so they likely run at most once per call to 'AstConstPool::findTable'.
+        const vluint64_t size = aDTypep->elementsConst();
+        for (vluint64_t n = 0; n < size; ++n) {
+            const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
+            const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
+            if (!valAp->sameTree(valBp)) return false;
+        }
     }
     return true;
 }
@@ -1039,8 +1076,9 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
 AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
     const AstNode* const defaultp = initp->defaultp();
     // Verify initializer is well formed
-    UASSERT_OBJ(VN_IS(initp->dtypep(), UnpackArrayDType), initp,
-                "Const pool table must have AstUnpackArrayDType dtype");
+    UASSERT_OBJ(VN_IS(initp->dtypep(), AssocArrayDType)
+                    || VN_IS(initp->dtypep(), UnpackArrayDType),
+                initp, "Const pool table must have array dtype");
     UASSERT_OBJ(!defaultp || VN_IS(defaultp, Const), initp,
                 "Const pool table default must be Const");
     for (AstNode* nodep = initp->initsp(); nodep; nodep = nodep->nextp()) {
@@ -1257,6 +1295,9 @@ const char* AstClassPackage::broken() const {
     BROKEN_RTN(m_classp && !m_classp->brokeExists());
     return nullptr;
 }
+void AstClassPackage::cloneRelink() {
+    if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
+}
 void AstClass::insertCache(AstNode* nodep) {
     const bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
                        || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto()));
@@ -1280,7 +1321,7 @@ bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* ba
     return isClassExtendedFrom(refClassp->extendsp()->classp(), baseClassp);
 }
 void AstClass::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeModule::dump(str);
     if (isExtended()) str << " [EXT]";
     if (isVirtual()) str << " [VIRT]";
 }
@@ -1294,6 +1335,7 @@ AstClass* AstClassExtends::classp() const {
 }
 void AstClassRefDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (classOrPackagep()) str << " cpkg=" << nodeAddr(classOrPackagep());
     if (classp()) {
         str << " -> ";
         classp()->dump(str);
@@ -1344,7 +1386,7 @@ void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
 void AstInitArray::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     int n = 0;
-    const AstInitArray::KeyItemMap& mapr = map();
+    const auto& mapr = map();
     for (const auto& itr : mapr) {
         if (n++ > 5) {
             str << " ...";
@@ -1370,6 +1412,10 @@ void AstJumpLabel::dump(std::ostream& str) const {
     } else {
         str << "%Error:UNLINKED";
     }
+}
+void AstLogOr::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (sideEffect()) str << " [SIDE]";
 }
 void AstMemberSel::dump(std::ostream& str) const {
     this->AstNodeMath::dump(str);
@@ -1580,10 +1626,10 @@ void AstMTaskBody::dump(std::ostream& str) const {
 }
 void AstTypeTable::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    for (int i = 0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+    for (int i = 0; i < static_cast<int>(VBasicDTypeKwd::_ENUM_MAX); ++i) {
         if (AstBasicDType* const subnodep = m_basicps[i]) {
             str << '\n';  // Newline from caller, so newline first
-            str << "\t\t" << std::setw(8) << AstBasicDTypeKwd(i).ascii();
+            str << "\t\t" << std::setw(8) << VBasicDTypeKwd(i).ascii();
             str << "  -> ";
             subnodep->dump(str);
         }

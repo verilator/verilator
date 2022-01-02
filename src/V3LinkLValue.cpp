@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,11 +30,12 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkLValueVisitor final : public AstNVisitor {
+class LinkLValueVisitor final : public VNVisitor {
 private:
     // NODE STATE
 
     // STATE
+    bool m_setContinuously = false;  // Set that var has some continuous assignment
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
 
@@ -47,6 +48,9 @@ private:
         // VarRef: LValue its reference
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
         if (nodep->varp()) {
+            if (nodep->access().isWriteOrRW() && m_setContinuously) {
+                nodep->varp()->isContinuously(true);
+            }
             if (nodep->access().isWriteOrRW() && !m_ftaskp && nodep->varp()->isReadOnly()) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
@@ -69,10 +73,13 @@ private:
     }
     virtual void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_setRefLvalue);
+        VL_RESTORER(m_setContinuously);
         {
             m_setRefLvalue = VAccess::WRITE;
+            m_setContinuously = VN_IS(nodep, AssignW) || VN_IS(nodep, AssignAlias);
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = VAccess::NOCHANGE;
+            m_setContinuously = false;
             iterateAndNextNull(nodep->rhsp());
         }
     }
@@ -175,6 +182,13 @@ private:
         // Can't know if lvalue or not; presume so as stricter
         VL_RESTORER(m_setRefLvalue);
         iterateChildren(nodep);
+    }
+    virtual void visit(AstRand* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        {
+            if (!nodep->urandom()) m_setRefLvalue = VAccess::WRITE;
+            iterateAndNextNull(nodep->seedp());
+        }
     }
     virtual void visit(AstReadMem* nodep) override {
         VL_RESTORER(m_setRefLvalue);

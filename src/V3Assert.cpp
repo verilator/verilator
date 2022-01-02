@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -25,12 +25,12 @@
 //######################################################################
 // Assert class functions
 
-class AssertVisitor final : public AstNVisitor {
+class AssertVisitor final : public VNVisitor {
 private:
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()         -> bool.  True if processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Last module
@@ -52,7 +52,7 @@ private:
                 + ((message != "") ? ": " : "") + message + "\n");
     }
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
-        nodep->displayType(AstDisplayType::DT_WRITE);
+        nodep->displayType(VDisplayType::DT_WRITE);
         nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text()));
         // cppcheck-suppress nullPointer
         AstNode* const timenewp = new AstTime(nodep->fileline(), m_modp->timeunit());
@@ -67,8 +67,8 @@ private:
     }
     AstVarRef* newMonitorNumVarRefp(AstNode* nodep, VAccess access) {
         if (!m_monitorNumVarp) {
-            m_monitorNumVarp = new AstVar{nodep->fileline(), AstVarType::MODULETEMP,
-                                          "__VmonitorNum", nodep->findUInt64DType()};
+            m_monitorNumVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorNum",
+                                          nodep->findUInt64DType()};
             v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(m_monitorNumVarp);
         }
         const auto varrefp = new AstVarRef(nodep->fileline(), m_monitorNumVarp, access);
@@ -77,8 +77,8 @@ private:
     }
     AstVarRef* newMonitorOffVarRefp(AstNode* nodep, VAccess access) {
         if (!m_monitorOffVarp) {
-            m_monitorOffVarp = new AstVar{nodep->fileline(), AstVarType::MODULETEMP,
-                                          "__VmonitorOff", nodep->findBitDType()};
+            m_monitorOffVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorOff",
+                                          nodep->findBitDType()};
             v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(m_monitorOffVarp);
         }
         const auto varrefp = new AstVarRef(nodep->fileline(), m_monitorOffVarp, access);
@@ -105,8 +105,8 @@ private:
 
     AstNode* newFireAssertUnchecked(AstNode* nodep, const string& message) {
         // Like newFireAssert() but omits the asserts-on check
-        AstDisplay* const dispp = new AstDisplay(nodep->fileline(), AstDisplayType::DT_ERROR,
-                                                 message, nullptr, nullptr);
+        AstDisplay* const dispp
+            = new AstDisplay(nodep->fileline(), VDisplayType::DT_ERROR, message, nullptr, nullptr);
         dispp->fmtp()->timeunit(m_modp->timeunit());
         AstNode* const bodysp = dispp;
         replaceDisplay(dispp, "%%Error");  // Convert to standard DISPLAY format
@@ -341,7 +341,7 @@ private:
         m_modp->addStmtp(alwaysp);
         for (uint32_t i = 0; i < ticks; ++i) {
             AstVar* const outvarp = new AstVar(
-                nodep->fileline(), AstVarType::MODULETEMP,
+                nodep->fileline(), VVarType::MODULETEMP,
                 "_Vpast_" + cvtToStr(m_modPastNum++) + "_" + cvtToStr(i), inp->dtypep());
             m_modp->addStmtp(outvarp);
             AstNode* const assp = new AstAssignDly(
@@ -362,15 +362,15 @@ private:
     virtual void visit(AstDisplay* nodep) override {
         iterateChildren(nodep);
         // Replace the special types with standard text
-        if (nodep->displayType() == AstDisplayType::DT_INFO) {
+        if (nodep->displayType() == VDisplayType::DT_INFO) {
             replaceDisplay(nodep, "-Info");
-        } else if (nodep->displayType() == AstDisplayType::DT_WARNING) {
+        } else if (nodep->displayType() == VDisplayType::DT_WARNING) {
             replaceDisplay(nodep, "%%Warning");
-        } else if (nodep->displayType() == AstDisplayType::DT_ERROR
-                   || nodep->displayType() == AstDisplayType::DT_FATAL) {
+        } else if (nodep->displayType() == VDisplayType::DT_ERROR
+                   || nodep->displayType() == VDisplayType::DT_FATAL) {
             replaceDisplay(nodep, "%%Error");
-        } else if (nodep->displayType() == AstDisplayType::DT_MONITOR) {
-            nodep->displayType(AstDisplayType::DT_DISPLAY);
+        } else if (nodep->displayType() == VDisplayType::DT_MONITOR) {
+            nodep->displayType(VDisplayType::DT_DISPLAY);
             const auto fl = nodep->fileline();
             const auto monNum = ++m_monitorNum;
             // Where $monitor was we do "__VmonitorNum = N;"
@@ -388,12 +388,12 @@ private:
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
             AstNode* const newp = new AstAlwaysPostponed{fl, ifp};
             m_modp->addStmtp(newp);
-        } else if (nodep->displayType() == AstDisplayType::DT_STROBE) {
-            nodep->displayType(AstDisplayType::DT_DISPLAY);
+        } else if (nodep->displayType() == VDisplayType::DT_STROBE) {
+            nodep->displayType(VDisplayType::DT_DISPLAY);
             // Need one-shot
             const auto fl = nodep->fileline();
             const auto varp
-                = new AstVar{fl, AstVarType::MODULETEMP, "__Vstrobe" + cvtToStr(m_modStrobeNum++),
+                = new AstVar{fl, VVarType::MODULETEMP, "__Vstrobe" + cvtToStr(m_modStrobeNum++),
                              nodep->findBitDType()};
             m_modp->addStmtp(varp);
             // Where $strobe was we do "__Vstrobe = '1;"

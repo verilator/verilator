@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -42,21 +42,22 @@
 
 //######################################################################
 
-class UnknownVisitor final : public AstNVisitor {
+class UnknownVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
     //  AstSel::user()          -> bool.  Set true if already processed
     //  AstArraySel::user()     -> bool.  Set true if already processed
     //  AstNode::user2p()       -> AstIf* Inserted if assignment for conditional
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
     AstAssignW* m_assignwp = nullptr;  // Current assignment
     AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
     bool m_constXCvt = false;  // Convert X's
+    bool m_allowXUnique = true;  // Allow unique assignments
     VDouble0 m_statUnkVars;  // Statistic tracking
     V3UniqueNames m_lvboundNames;  // For generating unique temporary variable names
     V3UniqueNames m_xrandNames;  // For generating unique temporary variable names
@@ -110,14 +111,14 @@ private:
         // Saves us teaching V3Const how to optimize, and it won't be needed again.
         if (const AstIf* const ifp = VN_AS(prep->user2p(), If)) {
             UASSERT_OBJ(!needDly, prep, "Should have already converted to non-delay");
-            AstNRelinker replaceHandle;
+            VNRelinker replaceHandle;
             AstNode* const earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
             AstNode* const newp = new AstLogAnd(condp->fileline(), condp, earliercondp);
             UINFO(4, "Edit BOUNDLVALUE " << newp << endl);
             replaceHandle.relink(newp);
         } else {
             AstVar* const varp
-                = new AstVar(fl, AstVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep());
+                = new AstVar(fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep());
             m_modp->addStmtp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
             prep->replaceWith(new AstVarRef(fl, varp, VAccess::WRITE));
@@ -141,9 +142,12 @@ private:
         UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
+        VL_RESTORER(m_allowXUnique);
         {
             m_modp = nodep;
             m_constXCvt = true;
+            // Class X randomization causes Vxrand in strange places, so disable
+            if (VN_IS(nodep, Class)) m_allowXUnique = false;
             m_lvboundNames.reset();
             m_xrandNames.reset();
             iterateChildren(nodep);
@@ -310,7 +314,7 @@ private:
             numb1.opBitsOne(nodep->num());
             V3Number numbx(nodep, nodep->width());
             numbx.opBitsXZ(nodep->num());
-            if (v3Global.opt.xAssign() != "unique") {
+            if (!m_allowXUnique || v3Global.opt.xAssign() != "unique") {
                 // All X bits just become 0; fastest simulation, but not nice
                 V3Number numnew(nodep, numb1.width());
                 if (v3Global.opt.xAssign() == "1") {
@@ -327,10 +331,11 @@ private:
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
                 AstVar* const newvarp
-                    = new AstVar(nodep->fileline(), AstVarType::XTEMP, m_xrandNames.get(nodep),
+                    = new AstVar(nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
                                  VFlagLogicPacked(), nodep->width());
+                newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 AstNodeVarRef* const newref1p
                     = new AstVarRef(nodep->fileline(), newvarp, VAccess::READ);
@@ -386,7 +391,7 @@ private:
                 VL_DO_DANGLING(condp->deleteTree(), condp);
             } else if (!lvalue) {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 V3Number xnum(nodep, nodep->width());
                 xnum.setAllBitsX();
@@ -445,7 +450,7 @@ private:
                        // Making a scalar would break if we're making an array
                        && !VN_IS(nodep->dtypep()->skipRefp(), NodeArrayDType)) {
                 // ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 V3Number xnum(nodep, nodep->width());
                 if (nodep->isString()) {
@@ -462,7 +467,7 @@ private:
                 iterate(newp);
             } else if (!lvalue) {  // Mid-multidimension read, just use zero
                 // ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 AstNode* const bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
                 AstNode* const newp = new AstCondBound(
                     bitp->fileline(), condp, bitp,

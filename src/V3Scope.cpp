@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -36,13 +36,13 @@
 //######################################################################
 // Scope class functions
 
-class ScopeVisitor final : public AstNVisitor {
+class ScopeVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // AstVar::user1p           -> AstVarScope replacement for this variable
     // AstTask::user2p          -> AstTask*.  Replacement task
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // TYPES
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
@@ -320,7 +320,7 @@ public:
 //######################################################################
 // Scope cleanup -- remove unused activates
 
-class ScopeCleanupVisitor final : public AstNVisitor {
+class ScopeCleanupVisitor final : public VNVisitor {
 private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope we are building

@@ -40,6 +40,7 @@ int sc_main(int argc, char** argv) {
 
 #ifdef TEST_HDR_TRACE
     VerilatedVcdSc* tfp = new VerilatedVcdSc;
+    sc_core::sc_start(sc_core::SC_ZERO_TIME);
     ap->trace(tfp, 99);
     bp->trace(tfp, 99);
     tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");

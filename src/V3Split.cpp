@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -235,17 +235,17 @@ public:
 //######################################################################
 // Split class functions
 
-class SplitReorderBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class SplitReorderBaseVisitor VL_NOT_FINAL : public VNVisitor {
 private:
     // NODE STATE
     // AstVarScope::user1p      -> Var SplitNodeVertex* for usage var, 0=not set yet
     // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
     // Ast*::user3p             -> Statement SplitLogicVertex* (temporary only)
     // Ast*::user4              -> Current ordering number (reorderBlock usage)
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
 
 protected:
     // STATE
@@ -543,7 +543,7 @@ protected:
         if (leaveAlone) {
             UINFO(6, "   No changes\n");
         } else {
-            AstNRelinker replaceHandle;  // Where to add the list
+            VNRelinker replaceHandle;  // Where to add the list
             AstNode* newListp = nullptr;
             for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
                 AstNode* const nextp = it->second;
@@ -623,7 +623,7 @@ private:
 using ColorSet = std::unordered_set<uint32_t>;
 using AlwaysVec = std::vector<AstAlways*>;
 
-class IfColorVisitor final : public AstNVisitor {
+class IfColorVisitor final : public VNVisitor {
     // MEMBERS
     ColorSet m_colors;  // All colors in the original always block
 
@@ -681,7 +681,7 @@ private:
     VL_UNCOPYABLE(IfColorVisitor);
 };
 
-class EmitSplitVisitor final : public AstNVisitor {
+class EmitSplitVisitor final : public VNVisitor {
     // MEMBERS
     const AstAlways* const m_origAlwaysp;  // Block that *this will split
     const IfColorVisitor* const m_ifColorp;  // Digest of results of prior coloring
@@ -793,7 +793,7 @@ private:
     VL_UNCOPYABLE(EmitSplitVisitor);
 };
 
-class RemovePlaceholdersVisitor final : public AstNVisitor {
+class RemovePlaceholdersVisitor final : public VNVisitor {
     std::unordered_set<AstNode*> m_removeSet;  // placeholders to be removed
 public:
     explicit RemovePlaceholdersVisitor(AstNode* nodep) {

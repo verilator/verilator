@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -184,7 +184,6 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, bool asRef) {
             puts("16");
         } else if (nodep->isWide()) {
             puts("W");
-            refNeedParens = true;
         }
 
         puts("(");
@@ -235,7 +234,7 @@ void EmitCBaseVisitor::emitModCUse(const AstNodeModule* modp, VUseType useType) 
     puts(nl);
 }
 
-void EmitCBaseVisitor::emitTextSection(const AstNodeModule* modp, AstType type) {
+void EmitCBaseVisitor::emitTextSection(const AstNodeModule* modp, VNType type) {
     int last_line = -999;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (const AstNodeText* const textp = VN_CAST(nodep, NodeText)) {

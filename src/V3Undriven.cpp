@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -39,7 +39,7 @@
 
 class UndrivenVarEntry final {
     // MEMBERS
-    AstVar* m_varp;  // Variable this tracks
+    AstVar* const m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
 
@@ -49,9 +49,9 @@ class UndrivenVarEntry final {
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVarEntry(AstVar* varp) {  // Construction for when a var is used
+    explicit UndrivenVarEntry(AstVar* varp)
+        : m_varp(varp) {  // Construction for when a var is used
         UINFO(9, "create " << varp << endl);
-        m_varp = varp;
         m_wholeFlags.resize(FLAGS_PER_BIT);
         for (int i = 0; i < FLAGS_PER_BIT; i++) m_wholeFlags[i] = false;
         m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
@@ -235,21 +235,22 @@ public:
 //######################################################################
 // Undriven state, as a visitor of each AstNode
 
-class UndrivenVisitor final : public AstNVisitor {
+class UndrivenVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Netlist:
     //  AstVar::user1p          -> UndrivenVar* for usage var, 0=not set yet
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
     // Each always:
     //  AstNode::user2p         -> UndrivenVar* for usage var, 0=not set yet
-    const AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment
+    bool m_inInoutPin = false;  // Connected to pin that is inout
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
@@ -374,7 +375,13 @@ private:
                 }
                 entryp->drivenWhole();
             }
-            if (m_inBBox || nodep->access().isReadOrRW() || fdrv) entryp->usedWhole();
+            if (m_inBBox || nodep->access().isReadOrRW()
+                || fdrv
+                // Inouts have only isWrite set, as we don't have more
+                // information and operating on module boundry, treat as
+                // both read and writing
+                || m_inInoutPin)
+                entryp->usedWhole();
         }
     }
 
@@ -429,6 +436,11 @@ private:
             m_taskp = nodep;
             iterateChildren(nodep);
         }
+    }
+    virtual void visit(AstPin* nodep) override {
+        VL_RESTORER(m_inInoutPin);
+        m_inInoutPin = nodep->modVarp()->isInoutish();
+        iterateChildren(nodep);
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os

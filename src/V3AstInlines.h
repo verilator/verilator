@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -77,12 +77,6 @@ inline int AstNodeArrayDType::hi() const { return rangep()->hiConst(); }
 inline int AstNodeArrayDType::lo() const { return rangep()->loConst(); }
 inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
 inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right()}; }
-
-inline const char* AstNodeFTaskRef::broken() const {
-    BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
-    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
-    return nullptr;
-}
 
 inline void AstIfaceRefDType::cloneRelink() {
     if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep();

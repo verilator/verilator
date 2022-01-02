@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -335,7 +335,7 @@ class VInFilterImp final {
 #ifdef INFILTER_PIPE
     pid_t m_pid = 0;  // fork() process id
 #else
-    const int m_pid = 0;  // fork() process id - always zero as disabled
+    int m_pid = 0;  // fork() process id - always zero as disabled
 #endif
     bool m_pidExited = false;
     int m_pidStatus = 0;

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -38,11 +38,11 @@
 //######################################################################
 // Expand state, as a visitor of each AstNode
 
-class ExpandVisitor final : public AstNVisitor {
+class ExpandVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstNode* m_stmtp = nullptr;  // Current statement
@@ -82,7 +82,7 @@ private:
 
     static void insertBefore(AstNode* placep, AstNode* newp) {
         newp->user1(1);  // Already processed, don't need to re-iterate
-        AstNRelinker linker;
+        VNRelinker linker;
         placep->unlinkFrBack(&linker);
         newp->addNext(placep);
         linker.relink(newp);

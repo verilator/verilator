@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_force_mid.v:18:17: Unsupported: Force/Release on primary input/output net 'tried'
+                                         : ... Suggest assign it to/from a temporary net and force/release that
+   18 |    output [3:0] tried;
+      |                 ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,12 +34,12 @@
 
 //######################################################################
 
-class DescopeVisitor final : public AstNVisitor {
+class DescopeVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Cleared entire netlist
     //   AstCFunc::user()               // bool.  Indicates processing completed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // TYPES
     using FuncMmap = std::multimap<std::string, AstCFunc*>;
@@ -168,7 +168,7 @@ private:
                 // Not really any way the user could do this, and we'd need
                 // to come up with some return value
                 // newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
-                //                                   AstDisplayType::DT_WARNING,
+                //                                   VDisplayType::DT_WARNING,
                 //                                   string("%%Error: ")+name+"() called with bad
                 //                                   scope", nullptr));
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));

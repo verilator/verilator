@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2009-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -39,7 +39,7 @@ private:
     static int s_anonNum;  // Number of next anonymous object (parser use only)
     VSymGraph m_syms;  // Graph of symbol tree
     VSymEnt* m_symTableNextId = nullptr;  // Symbol table for next lexer lookup (parser use only)
-    VSymEnt* m_symCurrentp;  // Active symbol table for additions/lookups
+    VSymEnt* m_symCurrentp = nullptr;  // Active symbol table for additions/lookups
     std::vector<VSymEnt*> m_sympStack;  // Stack of upper nodes with pending symbol tables
 
 public:

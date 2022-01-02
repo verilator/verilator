@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -199,7 +199,7 @@ public:
 //######################################################################
 // Collect existing active names
 
-class ActiveBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class ActiveBaseVisitor VL_NOT_FINAL : public VNVisitor {
 protected:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -299,7 +299,7 @@ private:
     // NODE STATE
     // Input:
     //  AstVar::user1p // V2LatchGraphVertex* The vertex handling this node
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
     // STATE
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS

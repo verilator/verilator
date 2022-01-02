@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -32,7 +32,7 @@
 
 //######################################################################
 
-class DepthBlockVisitor final : public AstNVisitor {
+class DepthBlockVisitor final : public VNVisitor {
 private:
     // NODE STATE
 
@@ -46,7 +46,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstCFunc* createDeepFunc(AstNode* nodep) {
-        AstNRelinker relinkHandle;
+        VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         // Create sub function
         AstScope* const scopep = m_cfuncp->scopep();

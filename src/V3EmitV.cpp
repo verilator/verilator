@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -99,6 +99,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         iterateChildren(nodep);
         putqs(nodep, "end\n");
     }
+    virtual void visit(AstInitialAutomatic* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstAlways* nodep) override {
         putfs(nodep, "always ");
         if (m_sensesp) {
@@ -124,9 +125,15 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         putqs(nodep, "*/\n");
     }
     virtual void visit(AstNodeAssign* nodep) override {
-        iterateAndNextNull(nodep->lhsp());
-        putfs(nodep, " " + nodep->verilogKwd() + " ");
-        iterateAndNextNull(nodep->rhsp());
+        if (VN_IS(nodep, AssignRelease)) {
+            puts("release ");
+            iterateAndNextNull(nodep->lhsp());
+        } else {
+            if (VN_IS(nodep, AssignForce)) puts("force ");
+            iterateAndNextNull(nodep->lhsp());
+            putfs(nodep, " " + nodep->verilogKwd() + " ");
+            iterateAndNextNull(nodep->rhsp());
+        }
         if (!m_suppressSemi) puts(";\n");
     }
     virtual void visit(AstAssignDly* nodep) override {
@@ -498,7 +505,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     virtual void visit(AstInitArray* nodep) override {
         putfs(nodep, "'{");
         int comma = 0;
-        const AstInitArray::KeyItemMap& mapr = nodep->map();
+        const auto& mapr = nodep->map();
         for (const auto& itr : mapr) {
             if (comma++) putbs(", ");
             puts(cvtToStr(itr.first));
@@ -754,7 +761,7 @@ class EmitVPrefixedFormatter final : public V3OutFormatter {
     std::ostream& m_os;
     const string m_prefix;  // What to print at beginning of each line
     const int m_flWidth;  // Padding of fileline
-    int m_column;  // Rough location; need just zero or non-zero
+    int m_column = 0;  // Rough location; need just zero or non-zero
     FileLine* m_prefixFl;
     // METHODS
     virtual void putcOutput(char chr) override {
@@ -783,7 +790,6 @@ public:
         , m_os(os)  // Need () or GCC 4.8 false warning
         , m_prefix{prefix}
         , m_flWidth{flWidth} {
-        m_column = 0;
         m_prefixFl = v3Global.rootp()->fileline();  // NETLIST's fileline instead of nullptr to
                                                     // avoid nullptr checks
     }
@@ -818,7 +824,7 @@ public:
                          AstSenTree* domainp, bool user3mark)
         : EmitVBaseVisitor{false, domainp}
         , m_formatter{os, prefix, flWidth} {
-        if (user3mark) AstUser3InUse::check();
+        if (user3mark) VNUser3InUse::check();
         iterate(nodep);
     }
     virtual ~EmitVPrefixedVisitor() override = default;

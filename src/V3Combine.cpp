@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,7 +34,7 @@
 
 //######################################################################
 
-class CombBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class CombBaseVisitor VL_NOT_FINAL : public VNVisitor {
 protected:
     // STATE
 
@@ -121,8 +121,8 @@ class CombineVisitor final : CombBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
-    const AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
-    //  AstUser4InUse     part of V3Hasher in V3DupFinder
+    const VNUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
+    //  VNUser4InUse     part of V3Hasher in V3DupFinder
 
     // STATE
     VDouble0 m_cfuncsCombined;  // Statistic tracking

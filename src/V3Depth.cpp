@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -35,7 +35,7 @@
 
 //######################################################################
 
-class DepthVisitor final : public AstNVisitor {
+class DepthVisitor final : public VNVisitor {
 private:
     // NODE STATE
 
@@ -52,7 +52,7 @@ private:
     void createDeepTemp(AstNode* nodep) {
         UINFO(6, "  Deep  " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
-        AstVar* const varp = new AstVar{nodep->fileline(), AstVarType::STMTTEMP,
+        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
         UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
         m_cfuncp->addInitsp(varp);
@@ -62,7 +62,7 @@ private:
         // Put assignment before the referencing statement
         AstAssign* const assp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, nodep};
-        AstNRelinker linker2;
+        VNRelinker linker2;
         m_stmtp->unlinkFrBack(&linker2);
         assp->addNext(m_stmtp);
         linker2.relink(assp);

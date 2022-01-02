@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator Arguments
@@ -1364,9 +1364,10 @@ Summary:
    .. note::
 
       This option applies only to values which are explicitly written as X
-      in the Verilog source code. Initial values of clocks are set to 0
-      unless `--x-initial-edge` is specified. Initial values of all other
-      state holding variables are controlled with `--x-initial`.
+      in modules (not classes) in the Verilog source code. Initial values
+      of clocks are set to 0 unless `--x-initial-edge` is
+      specified. Initial values of all other state holding variables are
+      controlled with `--x-initial`.
 
 .. option:: --x-initial 0
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -140,7 +140,7 @@ bool V3Broken::isLinkable(const AstNode* nodep) { return s_linkableTable.isLinka
 //######################################################################
 // Mark every node in the tree
 
-class BrokenMarkVisitor final : public AstNVisitor {
+class BrokenMarkVisitor final : public VNVisitor {
 private:
     const uint8_t m_brokenCntCurrent = s_brokenCntGlobal.get();
 
@@ -166,7 +166,7 @@ public:
 //######################################################################
 // Check every node in tree
 
-class BrokenCheckVisitor final : public AstNVisitor {
+class BrokenCheckVisitor final : public VNVisitor {
     bool m_inScope = false;  // Under AstScope
 
     // Constants for marking we are under/not under a node

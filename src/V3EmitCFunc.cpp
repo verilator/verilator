@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -307,7 +307,7 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
     }
     emitDispState.pushFormat(pfmt);
     if (!ignore) {
-        if (argp->dtypep()->basicp()->keyword() == AstBasicDTypeKwd::STRING) {
+        if (argp->dtypep()->basicp()->keyword() == VBasicDTypeKwd::STRING) {
             // string in SystemVerilog is std::string in C++ which is not POD
             emitDispState.pushArg(' ', nullptr, "-1");
         } else {
@@ -542,9 +542,8 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             }
             for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
-                ofp()->printf(",0x%08" VL_PRI64 "x",
-                              static_cast<vluint64_t>(
-                                  nodep->num().edataWord(word + chunks * EMITC_NUM_CONSTW)));
+                ofp()->printf(",0x%08" PRIx64, static_cast<vluint64_t>(nodep->num().edataWord(
+                                                   word + chunks * EMITC_NUM_CONSTW)));
             }
             puts(")");
         }
@@ -565,9 +564,8 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             }
             for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
-                ofp()->printf(",0x%08" VL_PRI64 "x",
-                              static_cast<vluint64_t>(
-                                  nodep->num().edataWord(word + chunks * EMITC_NUM_CONSTW)));
+                ofp()->printf(",0x%08" PRIx64, static_cast<vluint64_t>(nodep->num().edataWord(
+                                                   word + chunks * EMITC_NUM_CONSTW)));
             }
             puts(")");
         }
@@ -583,9 +581,9 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
     } else if (nodep->isQuad()) {
         const vluint64_t num = nodep->toUQuad();
         if (num < 10) {
-            ofp()->printf("%" VL_PRI64 "uULL", num);
+            ofp()->printf("%" PRIu64 "ULL", num);
         } else {
-            ofp()->printf("0x%" VL_PRI64 "xULL", num);
+            ofp()->printf("0x%" PRIx64 "ULL", num);
         }
     } else {
         const uint32_t num = nodep->toUInt();
@@ -593,7 +591,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
         if (num < 10) {
             puts(cvtToStr(num));
         } else {
-            ofp()->printf("0x%" VL_PRI64 "x", static_cast<vluint64_t>(num));
+            ofp()->printf("0x%" PRIx64, static_cast<vluint64_t>(num));
         }
         // If signed, we'll do our own functions
         // But must be here, or <= comparisons etc may end up signed
@@ -622,14 +620,25 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
     } else if (const AstInitArray* const initarp = VN_CAST(varp->valuep(), InitArray)) {
-        if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        if (AstAssocArrayDType* const adtypep = VN_CAST(dtypep, AssocArrayDType)) {
+            if (initarp->defaultp()) {
+                emitSetVarConstant(varNameProtected + ".atDefault()",
+                                   VN_AS(initarp->defaultp(), Const));
+            }
+            const auto& mapr = initarp->map();
+            for (const auto& itr : mapr) {
+                AstNode* const valuep = itr.second->valuep();
+                emitSetVarConstant(varNameProtected + ".at(" + cvtToStr(itr.first) + ")",
+                                   VN_AS(valuep, Const));
+            }
+        } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             if (initarp->defaultp()) {
                 puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
                 puts("; ++__Vi) {\n");
                 emitSetVarConstant(varNameProtected + "[__Vi]", VN_AS(initarp->defaultp(), Const));
                 puts("}\n");
             }
-            const AstInitArray::KeyItemMap& mapr = initarp->map();
+            const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
                 emitSetVarConstant(varNameProtected + "[" + cvtToStr(itr.first) + "]",
@@ -675,7 +684,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
                                                  depth + 1, suffix + "[" + ivar + "]");
         const string post = "}\n";
         return below.empty() ? "" : pre + below + post;
-    } else if (basicp && basicp->keyword() == AstBasicDTypeKwd::STRING) {
+    } else if (basicp && basicp->keyword() == VBasicDTypeKwd::STRING) {
         // String's constructor deals with it
         return "";
     } else if (basicp) {

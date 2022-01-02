@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -63,7 +63,7 @@
 //######################################################################
 // Delayed state, as a visitor of each AstNode
 
-class DelayedVisitor final : public AstNVisitor {
+class DelayedVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared each module:
@@ -81,11 +81,11 @@ private:
     // Cleared each scope/active:
     //  AstAssignDly::user3()   -> AstVarScope*.  __Vdlyvset__ created for this assign
     //  AstAlwaysPost::user3()  -> AstVarScope*.  __Vdlyvset__ last referenced in IF
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
-    const AstUser5InUse m_inuser5;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
+    const VNUser5InUse m_inuser5;
 
     // STATE
     AstActive* m_activep = nullptr;  // Current activate
@@ -139,13 +139,13 @@ private:
             varp = it->second;
         } else {
             if (newdtypep) {
-                varp = new AstVar(oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, newdtypep);
+                varp = new AstVar(oldvarscp->fileline(), VVarType::BLOCKTEMP, name, newdtypep);
             } else if (width == 0) {
-                varp = new AstVar(oldvarscp->fileline(), AstVarType::BLOCKTEMP, name,
+                varp = new AstVar(oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
                                   oldvarscp->varp());
                 varp->dtypeFrom(oldvarscp);
             } else {  // Used for vset and dimensions, so can zero init
-                varp = new AstVar(oldvarscp->fileline(), AstVarType::BLOCKTEMP, name,
+                varp = new AstVar(oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
                                   VFlagBitPacked(), width);
             }
             addmodp->addStmtp(varp);

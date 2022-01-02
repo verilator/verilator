@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -400,8 +400,8 @@ void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m
     // chances are the data being dumped will have other problems
     const VerilatedLockGuard lock{m_mutex};
     if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
-        VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64
-                     "u, dump call ignored\n",
+        VL_PRINTF_MT("%%Warning: previous dump at t=%" PRIu64 ", requesting t=%" PRIu64
+                     ", dump call ignored\n",
                      m_timeLastDump, timeui);
         return;
     }  // LCOV_EXCL_STOP
@@ -504,9 +504,14 @@ template <> void VerilatedTrace<VL_DERIVED_T>::addCleanupCb(dumpCb_t cb, void* u
     CallbackRecord cbr{cb, userp};
     addCallbackRecord(m_cleanupCbs, cbr);
 }
-template <> void VerilatedTrace<VL_DERIVED_T>::module(const std::string& name) VL_MT_UNSAFE {
-    // Called via callbacks way above in call stack, which already hold m_mutex
-    m_moduleName = name;
+
+template <> void VerilatedTrace<VL_DERIVED_T>::pushNamePrefix(const std::string& prefix) {
+    m_namePrefixStack.push_back(m_namePrefixStack.back() + prefix);
+}
+
+template <> void VerilatedTrace<VL_DERIVED_T>::popNamePrefix(unsigned count) {
+    while (count--) m_namePrefixStack.pop_back();
+    assert(!m_namePrefixStack.empty());
 }
 
 //=========================================================================
@@ -655,7 +660,7 @@ static inline void cvtQDataToStr(char* dstp, QData value) {
 void verilated_trace_imp_selftest() {
 #define SELF_CHECK(got, exp) \
     do { \
-        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest\n"); \
+        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest"); \
     } while (0)
 
 #define SELF_CHECK_TS(scale) \

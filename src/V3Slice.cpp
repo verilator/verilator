@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -44,13 +44,13 @@
 
 //*************************************************************************
 
-class SliceVisitor final : public AstNVisitor {
+class SliceVisitor final : public VNVisitor {
     // NODE STATE
     // Cleared on netlist
     //  AstNodeAssign::user1()      -> bool.  True if find is complete
     //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()       -> AstVarRef. The VarRef that the final ArraySel points to
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstNode* m_assignp = nullptr;  // Assignment we are under
@@ -196,12 +196,12 @@ class SliceVisitor final : public AstNVisitor {
                             logp = clonep;
                         } else {
                             switch (nodep->type()) {
-                            case AstType::atEq:  // FALLTHRU
-                            case AstType::atEqCase:
+                            case VNType::atEq:  // FALLTHRU
+                            case VNType::atEqCase:
                                 logp = new AstLogAnd(nodep->fileline(), logp, clonep);
                                 break;
-                            case AstType::atNeq:  // FALLTHRU
-                            case AstType::atNeqCase:
+                            case VNType::atNeq:  // FALLTHRU
+                            case VNType::atNeqCase:
                                 logp = new AstLogOr(nodep->fileline(), logp, clonep);
                                 break;
                             default:

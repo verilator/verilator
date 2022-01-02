@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -51,6 +51,7 @@
 #include "V3EmitXml.h"
 #include "V3Expand.h"
 #include "V3File.h"
+#include "V3Force.h"
 #include "V3Gate.h"
 #include "V3GenClk.h"
 #include "V3Graph.h"
@@ -302,6 +303,10 @@ static void process() {
         // After V3Task so task internal variables will get renamed
         V3Name::nameAll(v3Global.rootp());
 
+        // Process force/releases if there are any
+        // After flattening, before Life optimizations
+        if (v3Global.useForce()) V3Force::forceAll(v3Global.rootp());
+
         // Loop unrolling & convert FORs to WHILEs
         V3Unroll::unrollAll(v3Global.rootp());
 
@@ -549,6 +554,8 @@ static void process() {
         V3EmitC::emitcFiles();
     }
 
+    if (v3Global.opt.stats()) V3Stats::statsStage("emit");
+
     // Statistics
     reportStatsIfEnabled();
 
@@ -589,7 +596,7 @@ static void verilate(const string& argString) {
 
     // Internal tests (after option parsing as need debug() setting,
     // and after removing files as may make debug output)
-    AstBasicDTypeKwd::selfTest();
+    VBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();

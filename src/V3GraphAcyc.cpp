@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -31,7 +31,7 @@
 
 class GraphAcycVertex final : public V3GraphVertex {
     // user() is used for various sub-algorithm pieces
-    V3GraphVertex* m_origVertexp;  // Pointer to first vertex this represents
+    V3GraphVertex* const m_origVertexp;  // Pointer to first vertex this represents
 protected:
     friend class GraphAcyc;
     V3ListEnt<GraphAcycVertex*> m_work;  // List of vertices with optimization work left
@@ -98,7 +98,7 @@ private:
     //    GraphEdge::user()     OrigEdgeList*   Old graph edges
     //    GraphVertex::user     bool            Detection of loops in simplifyDupIterate
     // MEMBERS
-    V3Graph* m_origGraphp;  // Original graph
+    V3Graph* const m_origGraphp;  // Original graph
     V3Graph m_breakGraph;  // Graph with only breakable edges represented
     V3List<GraphAcycVertex*> m_work;  // List of vertices with optimization work left
     std::vector<OrigEdgeList*> m_origEdgeDelp;  // List of deletions to do when done

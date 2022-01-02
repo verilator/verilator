@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -31,7 +31,7 @@
 //######################################################################
 // Visitor that gathers the headers required by an AstCFunc
 
-class EmitCGatherDependencies final : AstNVisitor {
+class EmitCGatherDependencies final : VNVisitor {
     // Ordered set, as it is used as a key in another map.
     std::set<string> m_dependencies;  // Header names to be included in output C++ file
 
@@ -186,7 +186,7 @@ class EmitCImp final : EmitCFunc {
         puts("\n");
         for (const string& name : headers) puts("#include \"" + name + ".h\"\n");
 
-        emitTextSection(m_modp, AstType::atScImpHdr);
+        emitTextSection(m_modp, VNType::atScImpHdr);
     }
 
     void emitStaticVarDefns(const AstNodeModule* modp) {
@@ -266,7 +266,7 @@ class EmitCImp final : EmitCFunc {
 
         putsDecoration("// Reset structure values\n");
         puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
-        emitTextSection(modp, AstType::atScCtor);
+        emitTextSection(modp, VNType::atScCtor);
 
         puts("}\n");
     }
@@ -329,7 +329,7 @@ class EmitCImp final : EmitCFunc {
     void emitDestructorImp(const AstNodeModule* modp) {
         puts("\n");
         puts(prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
-        emitTextSection(modp, AstType::atScDtor);
+        emitTextSection(modp, VNType::atScDtor);
         puts("}\n");
         splitSizeInc(10);
     }
@@ -353,7 +353,7 @@ class EmitCImp final : EmitCFunc {
                         hash.insert(varp->dtypep()->width());
                     }
                 }
-                ofp()->printf("vluint64_t __Vcheckval = 0x%" VL_PRI64 "xULL;\n",
+                ofp()->printf("vluint64_t __Vcheckval = 0x%" PRIx64 "ULL;\n",
                               static_cast<vluint64_t>(hash.digestUInt64()));
                 if (de) {
                     puts("os.readAssert(__Vcheckval);\n");
@@ -395,7 +395,7 @@ class EmitCImp final : EmitCFunc {
                             // Want to detect types that are represented as arrays
                             // (i.e. packed types of more than 64 bits).
                             if (elementp->isWide()
-                                && !(basicp && basicp->keyword() == AstBasicDTypeKwd::STRING)) {
+                                && !(basicp && basicp->keyword() == VBasicDTypeKwd::STRING)) {
                                 const int vecnum = vects++;
                                 const string ivar = string("__Vi") + cvtToStr(vecnum);
                                 puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
@@ -441,7 +441,7 @@ class EmitCImp final : EmitCFunc {
             emitCoverageImp();
         } else {
             // From `systemc_implementation
-            emitTextSection(modp, AstType::atScImp);
+            emitTextSection(modp, VNType::atScImp);
         }
     }
     void emitCommonImp(const AstNodeModule* modp) {
@@ -556,7 +556,7 @@ class EmitCTrace final : EmitCFunc {
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user1() -> int.  Enum number
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // MEMBERS
     const bool m_slow;  // Making slow file
@@ -631,9 +631,7 @@ class EmitCTrace final : EmitCFunc {
         puts("(c+" + cvtToStr(nodep->code()));
         if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->widthWords()));
         puts(",");
-        if (nodep->isScoped()) puts("Verilated::catName(scopep,");
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
-        if (nodep->isScoped()) puts(",(int)scopet,\" \")");
         // Direction
         if (v3Global.opt.traceFormat().fst()) {
             puts("," + cvtToStr(enumNum));
@@ -649,35 +647,35 @@ class EmitCTrace final : EmitCFunc {
             }
             //
             // fstVarType
-            const AstVarType vartype = nodep->varType();
-            const AstBasicDTypeKwd kwd = nodep->declKwd();
+            const VVarType vartype = nodep->varType();
+            const VBasicDTypeKwd kwd = nodep->declKwd();
             string fstvt;
             // Doubles have special decoding properties, so must indicate if a double
             if (nodep->dtypep()->basicp()->isDouble()) {
-                if (vartype == AstVarType::GPARAM || vartype == AstVarType::LPARAM) {
+                if (vartype == VVarType::GPARAM || vartype == VVarType::LPARAM) {
                     fstvt = "FST_VT_VCD_REAL_PARAMETER";
                 } else {
                     fstvt = "FST_VT_VCD_REAL";
                 }
             }
             // clang-format off
-            else if (vartype == AstVarType::GPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
-            else if (vartype == AstVarType::LPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
-            else if (vartype == AstVarType::SUPPLY0) { fstvt = "FST_VT_VCD_SUPPLY0"; }
-            else if (vartype == AstVarType::SUPPLY1) { fstvt = "FST_VT_VCD_SUPPLY1"; }
-            else if (vartype == AstVarType::TRI0) {    fstvt = "FST_VT_VCD_TRI0"; }
-            else if (vartype == AstVarType::TRI1) {    fstvt = "FST_VT_VCD_TRI1"; }
-            else if (vartype == AstVarType::TRIWIRE) { fstvt = "FST_VT_VCD_TRI"; }
-            else if (vartype == AstVarType::WIRE) {    fstvt = "FST_VT_VCD_WIRE"; }
-            else if (vartype == AstVarType::PORT) {    fstvt = "FST_VT_VCD_WIRE"; }
+            else if (vartype == VVarType::GPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
+            else if (vartype == VVarType::LPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
+            else if (vartype == VVarType::SUPPLY0) { fstvt = "FST_VT_VCD_SUPPLY0"; }
+            else if (vartype == VVarType::SUPPLY1) { fstvt = "FST_VT_VCD_SUPPLY1"; }
+            else if (vartype == VVarType::TRI0) {    fstvt = "FST_VT_VCD_TRI0"; }
+            else if (vartype == VVarType::TRI1) {    fstvt = "FST_VT_VCD_TRI1"; }
+            else if (vartype == VVarType::TRIWIRE) { fstvt = "FST_VT_VCD_TRI"; }
+            else if (vartype == VVarType::WIRE) {    fstvt = "FST_VT_VCD_WIRE"; }
+            else if (vartype == VVarType::PORT) {    fstvt = "FST_VT_VCD_WIRE"; }
             //
-            else if (kwd == AstBasicDTypeKwd::INTEGER) {  fstvt = "FST_VT_VCD_INTEGER"; }
-            else if (kwd == AstBasicDTypeKwd::BIT) {      fstvt = "FST_VT_SV_BIT"; }
-            else if (kwd == AstBasicDTypeKwd::LOGIC) {    fstvt = "FST_VT_SV_LOGIC"; }
-            else if (kwd == AstBasicDTypeKwd::INT) {      fstvt = "FST_VT_SV_INT"; }
-            else if (kwd == AstBasicDTypeKwd::SHORTINT) { fstvt = "FST_VT_SV_SHORTINT"; }
-            else if (kwd == AstBasicDTypeKwd::LONGINT) {  fstvt = "FST_VT_SV_LONGINT"; }
-            else if (kwd == AstBasicDTypeKwd::BYTE) {     fstvt = "FST_VT_SV_BYTE"; }
+            else if (kwd == VBasicDTypeKwd::INTEGER) {  fstvt = "FST_VT_VCD_INTEGER"; }
+            else if (kwd == VBasicDTypeKwd::BIT) {      fstvt = "FST_VT_SV_BIT"; }
+            else if (kwd == VBasicDTypeKwd::LOGIC) {    fstvt = "FST_VT_SV_LOGIC"; }
+            else if (kwd == VBasicDTypeKwd::INT) {      fstvt = "FST_VT_SV_INT"; }
+            else if (kwd == VBasicDTypeKwd::SHORTINT) { fstvt = "FST_VT_SV_SHORTINT"; }
+            else if (kwd == VBasicDTypeKwd::LONGINT) {  fstvt = "FST_VT_SV_LONGINT"; }
+            else if (kwd == VBasicDTypeKwd::BYTE) {     fstvt = "FST_VT_SV_BYTE"; }
             else { fstvt = "FST_VT_SV_BIT"; }
             // clang-format on
             //
@@ -836,12 +834,22 @@ class EmitCTrace final : EmitCFunc {
 
         EmitCFunc::visit(nodep);
     }
+    virtual void visit(AstTracePushNamePrefix* nodep) override {
+        puts("tracep->pushNamePrefix(");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
+        puts(");\n");
+    }
+    virtual void visit(AstTracePopNamePrefix* nodep) override {  //
+        puts("tracep->popNamePrefix(");
+        puts(cvtToStr(nodep->count()));
+        puts(");\n");
+    }
     virtual void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());
         if (nodep->arrayRange().ranged()) {
-            puts("{int i; for (i=0; i<" + cvtToStr(nodep->arrayRange().elements()) + "; i++) {\n");
+            puts("for (int i = 0; i < " + cvtToStr(nodep->arrayRange().elements()) + "; ++i) {\n");
             emitTraceInitOne(nodep, enumNum);
-            puts("}}\n");
+            puts("\n}\n");
         } else {
             emitTraceInitOne(nodep, enumNum);
             puts("\n");

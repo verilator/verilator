@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,10 +34,10 @@ constexpr int EMITC_NUM_CONSTW = 8;
 //######################################################################
 // Emit lazy forward declarations
 
-class EmitCLazyDecls final : public AstNVisitor {
+class EmitCLazyDecls final : public VNVisitor {
     // NODE STATE/TYPES
     //  AstNode::user2() -> bool. Already emitted decl for symbols.
-    const AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     // MEMBERS
     std::unordered_set<string> m_emittedManually;  // Set of names already declared manually.
@@ -115,9 +115,9 @@ public:
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 private:
-    AstVarRef* m_wideTempRefp;  // Variable that _WW macros should be setting
-    int m_labelNum;  // Next label number
-    int m_splitSize;  // # of cfunc nodes placed into output file
+    AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
+    int m_labelNum = 0;  // Next label number
+    int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
     bool m_emitConstInit = false;  // Emitting constant initializer
@@ -265,24 +265,24 @@ public:
     virtual void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;
+        bool rhs = true;
         if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
             if (selp->widthMin() == 1) {
                 putbs("VL_ASSIGNBIT_");
                 emitIQW(selp->fromp());
                 if (nodep->rhsp()->isAllOnesV()) {
                     puts("O(");
+                    rhs = false;
                 } else {
                     puts("I(");
                 }
-                puts(cvtToStr(nodep->widthMin()) + ",");
                 iterateAndNextNull(selp->lsbp());
                 puts(", ");
                 iterateAndNextNull(selp->fromp());
-                puts(", ");
+                if (rhs) puts(", ");
             } else {
                 putbs("VL_ASSIGNSEL_");
                 emitIQW(selp->fromp());
-                puts("II");
                 emitIQW(nodep->rhsp());
                 puts("(");
                 puts(cvtToStr(selp->fromp()->widthMin()) + ",");
@@ -339,7 +339,7 @@ public:
             if (!VN_IS(nodep->rhsp(), Const)) ofp()->putBreak();
             puts("= ");
         }
-        iterateAndNextNull(nodep->rhsp());
+        if (rhs) iterateAndNextNull(nodep->rhsp());
         if (paren) puts(")");
         if (decind) ofp()->blockDec();
         puts(";\n");
@@ -440,9 +440,6 @@ public:
         puts(") { return ");
         iterateAndNextNull(nodep->exprp());
         puts("; }\n");
-    }
-    virtual void visit(AstIntfRef* nodep) override {
-        putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()), nodep->protect()));
     }
     virtual void visit(AstNodeCase* nodep) override {  // LCOV_EXCL_LINE
         // In V3Case...
@@ -1056,9 +1053,7 @@ public:
             puts("VL_REPLICATE_");
             emitIQW(nodep);
             puts("OI(");
-            puts(cvtToStr(nodep->widthMin()));
-            if (nodep->lhsp()) puts("," + cvtToStr(nodep->lhsp()->widthMin()));
-            if (nodep->rhsp()) puts("," + cvtToStr(nodep->rhsp()->widthMin()));
+            if (nodep->lhsp()) puts(cvtToStr(nodep->lhsp()->widthMin()));
             puts(",");
             iterateAndNextNull(nodep->lhsp());
             puts(", ");
@@ -1078,10 +1073,8 @@ public:
                 emitIQW(nodep);
                 emitIQW(nodep->lhsp());
                 puts("I(");
-                puts(cvtToStr(nodep->widthMin()));
-                puts("," + cvtToStr(nodep->lhsp()->widthMin()));
-                puts("," + cvtToStr(nodep->rhsp()->widthMin()));
-                puts(",");
+                puts(cvtToStr(nodep->lhsp()->widthMin()));
+                puts(", ");
                 iterateAndNextNull(nodep->lhsp());
                 puts(", ");
                 const uint32_t rd_log2 = V3Number::log2b(VN_AS(nodep->rhsp(), Const)->toUInt());
@@ -1089,8 +1082,8 @@ public:
                 return;
             }
         }
-        emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),
-                   nodep->rhsp(), nullptr);
+        emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(), nodep->rhsp(),
+                   nullptr);
     }
     virtual void visit(AstCastDynamic* nodep) override {
         putbs("VL_CAST_DYNAMIC(");
@@ -1239,11 +1232,7 @@ public:
     }
 
     EmitCFunc()
-        : m_lazyDecls(*this) {
-        m_wideTempRefp = nullptr;
-        m_labelNum = 0;
-        m_splitSize = 0;
-    }
+        : m_lazyDecls(*this) {}
     EmitCFunc(AstNode* nodep, V3OutCFile* ofp, bool trackText = false)
         : EmitCFunc{} {
         m_ofp = ofp;

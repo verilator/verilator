@@ -9,31 +9,26 @@
 //
 //*************************************************************************
 
+#include <cinttypes>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include "svdpi.h"
 
-// clang-format off
-#ifdef _WIN32
-# define T_PRI64 "I64"
-#else  // Linux or compliant Unix flavors
-# define T_PRI64 "ll"
-#endif
-
 //======================================================================
 
 #if defined(VERILATOR)
-# ifdef T_DPI_EXPORT_NOOPT
-#  include "Vt_dpi_export_noopt__Dpi.h"
-# else
-#  include "Vt_dpi_export__Dpi.h"
-# endif
-#elif defined(VCS)
-# include "../vc_hdrs.h"
-#elif defined(CADENCE)
-# define NEED_EXTERNS
+#ifdef T_DPI_EXPORT_NOOPT
+#include "Vt_dpi_export_noopt__Dpi.h"
 #else
-# error "Unknown simulator for DPI test"
+#include "Vt_dpi_export__Dpi.h"
+#endif
+#elif defined(VCS)
+#include "../vc_hdrs.h"
+#elif defined(CADENCE)
+#define NEED_EXTERNS
+#else
+#error "Unknown simulator for DPI test"
 #endif
 // clang-format on
 
@@ -73,11 +68,11 @@ extern void dpix_t_time(const svLogicVecVal* i, svLogicVecVal* o);
 #define CHECK_RESULT(type, got, exp)            \
     if ((got) != (exp)) {                       \
         printf("%%Error: %s:%d:", __FILE__, __LINE__); \
-        union { type a; long long l; } u;       \
+        union { type a; uint64_t l; } u;          \
         u.l = 0; u.a = got; if (u.a) {/*used*/} \
-        printf(" GOT = %" T_PRI64 "x", u.l);    \
+        printf(" GOT = %" PRIx64, u.l);    \
         u.l = 0; u.a = exp; if (u.a) {/*used*/} \
-        printf("  EXP = %" T_PRI64 "x\n", u.l); \
+        printf("  EXP = %" PRIx64 "\n", u.l); \
         return __LINE__; \
     }
 // clang-format on

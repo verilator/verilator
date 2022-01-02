@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,7 +41,7 @@ constexpr int CDC_WEIGHT_ASYNC = 0x1000;  // Weight for edges that feed async lo
 
 //######################################################################
 
-class CdcBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class CdcBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -140,7 +140,7 @@ private:
     // NODE STATE
     // Entire netlist:
     // {statement}Node::user3   -> bool, indicating not hazard
-    std::ofstream* m_ofp;  // Output file
+    std::ofstream* const m_ofp = nullptr;  // Output file
     string m_prefix;
 
     virtual void visit(AstNode* nodep) override {
@@ -217,9 +217,9 @@ private:
     // AstVarScope::user2       -> bool  Used in sensitivity list
     // {statement}Node::user1p  -> CdcLogicVertex* for this statement
     // AstNode::user3           -> bool  True indicates to print %% (via V3EmitV)
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
@@ -715,6 +715,7 @@ private:
 
     // Ignores
     virtual void visit(AstInitial*) override {}
+    virtual void visit(AstInitialAutomatic*) override {}
     virtual void visit(AstTraceDecl*) override {}
     virtual void visit(AstCoverToggle*) override {}
     virtual void visit(AstNodeDType*) override {}

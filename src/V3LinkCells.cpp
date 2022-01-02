@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -91,7 +91,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkCellsVisitor final : public AstNVisitor {
+class LinkCellsVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
@@ -101,11 +101,11 @@ private:
     //   AstCell::user2()               // bool   clone renaming completed
     //  Allocated across all readFiles in V3Global::readFiles:
     //   AstNode::user4p()      // VSymEnt*    Package and typedef symbol names
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
-    VInFilter* m_filterp;  // Parser filter
+    VInFilter* const m_filterp;  // Parser filter
     V3ParseSym* m_parseSymp;  // Parser symbol table
 
     // Below state needs to be preserved between each module call.
@@ -123,7 +123,7 @@ private:
     V3GraphVertex* vertex(AstNodeModule* nodep) {
         // Return corresponding vertex for this module
         if (!nodep->user1p()) nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
-        return (nodep->user1u().toGraphVertex());
+        return nodep->user1u().toGraphVertex();
     }
 
     AstNodeModule* findModuleSym(const string& modName) {
@@ -185,6 +185,9 @@ private:
         // Module: Pick up modnames, so we can resolve cells later
         VL_RESTORER(m_modp);
         {
+            // For nested modules/classes, child below parent
+            if (m_modp) new V3GraphEdge{&m_graph, vertex(m_modp), vertex(nodep), 1};
+            //
             m_modp = nodep;
             UINFO(4, "Link Module: " << nodep << endl);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
@@ -431,10 +434,10 @@ private:
                     AstNodeArrayDType* const arrp
                         = new AstUnpackArrayDType(nodep->fileline(), VFlagChildDType(), idtypep,
                                                   nodep->rangep()->cloneTree(true));
-                    varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
+                    varp = new AstVar(nodep->fileline(), VVarType::IFACEREF, varName,
                                       VFlagChildDType(), arrp);
                 } else {
-                    varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
+                    varp = new AstVar(nodep->fileline(), VVarType::IFACEREF, varName,
                                       VFlagChildDType(), idtypep);
                 }
                 varp->isIfaceParent(true);
@@ -449,6 +452,18 @@ private:
     }
 
     virtual void visit(AstRefDType* nodep) override {
+        iterateChildren(nodep);
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            pinp->param(true);
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
+        }
+    }
+    virtual void visit(AstClassOrPackageRef* nodep) override {
+        iterateChildren(nodep);
+        // Inside a class, an extends or reference to another class
+        // Note we don't add a V3GraphEdge{vertex(m_modp), vertex(nodep->classOrPackagep()}
+        // We could for an extends, but for another reference we cannot, as
+        // it is legal to have classes both with parameters that link to each other
         for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
@@ -498,9 +513,9 @@ private:
 public:
     // CONSTRUCTORS
     LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp)
-        : m_mods{nodep} {
-        m_filterp = filterp;
-        m_parseSymp = parseSymp;
+        : m_filterp{filterp}
+        , m_parseSymp{parseSymp}
+        , m_mods{nodep} {
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
             UASSERT(!v3Global.opt.topModule().empty(),

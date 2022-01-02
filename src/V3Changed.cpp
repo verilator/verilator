@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -115,16 +115,16 @@ public:
 //######################################################################
 // Utility visitor to find elements to be compared
 
-class ChangedInsertVisitor final : public AstNVisitor {
+class ChangedInsertVisitor final : public VNVisitor {
 private:
     // STATE
-    ChangedState* m_statep;  // Shared state across visitors
-    AstVarScope* m_vscp;  // Original (non-change) variable we're change-detecting
-    AstVarScope* m_newvscp;  // New (change detect) variable we're change-detecting
-    AstNode* m_varEqnp;  // Original var's equation to get var value
-    AstNode* m_newLvEqnp;  // New var's equation to read value
-    AstNode* m_newRvEqnp;  // New var's equation to set value
-    uint32_t m_detects;  // # detects created
+    ChangedState* m_statep = nullptr;  // Shared state across visitors
+    AstVarScope* m_vscp = nullptr;  // Original (non-change) variable we're change-detecting
+    AstVarScope* m_newvscp = nullptr;  // New (change detect) variable we're change-detecting
+    AstNode* m_varEqnp = nullptr;  // Original var's equation to get var value
+    AstNode* m_newLvEqnp = nullptr;  // New var's equation to read value
+    AstNode* m_newRvEqnp = nullptr;  // New var's equation to set value
+    uint32_t m_detects = 0;  // # detects created
 
     // CONSTANTS
     enum MiscConsts {
@@ -211,7 +211,6 @@ public:
                     "DPI export trigger should not need change detect");
         m_statep = statep;
         m_vscp = vscp;
-        m_detects = 0;
         {
             AstVar* const varp = m_vscp->varp();
             const string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"
@@ -221,7 +220,7 @@ public:
             //          ...
             //          CHANGEDET(VARREF(_last), VARREF(var))
             AstVar* const newvarp
-                = new AstVar{varp->fileline(), AstVarType::MODULETEMP, newvarname, varp};
+                = new AstVar{varp->fileline(), VVarType::MODULETEMP, newvarname, varp};
             m_statep->m_topModp->addStmtp(newvarp);
             m_newvscp = new AstVarScope{m_vscp->fileline(), m_statep->m_scopetopp, newvarp};
             m_statep->m_scopetopp->addVarp(m_newvscp);
@@ -242,12 +241,12 @@ public:
 //######################################################################
 // Changed state, as a visitor of each AstNode
 
-class ChangedVisitor final : public AstNVisitor {
+class ChangedVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     //  AstVarScope::user1()            -> bool.  True indicates processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     ChangedState* const m_statep;  // Shared state across visitors

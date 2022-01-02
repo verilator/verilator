@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_class_static_member.v:12:15: Unsupported: 'static' class members
+                                                   : ... In instance t
+   12 |    static int c_st = 22;
+      |               ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

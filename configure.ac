@@ -1,13 +1,13 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2021 by Wilson Snyder. Verilator is free software; you
+# Copyright 2003-2022 by Wilson Snyder. Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.215 devel],
+AC_INIT([Verilator],[4.217 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -143,10 +143,10 @@ AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
 # Compiler flags (ensure they are not empty to avoid configure defaults)
-CFLAGS+=" "
-CPPFLAGS+=" "
-CXXFLAGS+=" "
-LDFLAGS+=" "
+CFLAGS="$CFLAGS "
+CPPFLAGS="$CPPFLAGS "
+CXXFLAGS="$CXXFLAGS "
+LDFLAGS="$LDFLAGS "
 
 # Checks for programs.
 AC_PROG_CC

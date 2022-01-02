@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,11 +41,11 @@
 
 //######################################################################
 
-class ReloopVisitor final : public AstNVisitor {
+class ReloopVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // AstCFunc::user1p      -> Var* for temp var, 0=not set yet
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     VDouble0 m_statReloops;  // Statistic tracking
@@ -71,7 +71,7 @@ private:
         AstVar* varp = VN_AS(cfuncp->user1p(), Var);
         if (!varp) {
             const string newvarname = string("__Vilp");
-            varp = new AstVar(fl, AstVarType::STMTTEMP, newvarname, VFlagLogicPacked(), 32);
+            varp = new AstVar(fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked(), 32);
             UASSERT_OBJ(cfuncp, fl, "Assignment not under a function");
             cfuncp->addInitsp(varp);
             cfuncp->user1p(varp);

@@ -18,7 +18,6 @@ my $Debug;
 if (!-r "$root/.git") {
     skip("Not in a git repository");
 } else {
-    uint();
     printfll();
     cstr();
     vsnprintf();
@@ -26,31 +25,6 @@ if (!-r "$root/.git") {
 }
 
 ok(1);
-
-sub uint {
-    ### Must trim output before and after our file list
-    #my $files = "*/*.c* */*.h test_regress/t/*.c* test_regress/t/*.h";
-    # src isn't clean, and probably doesn't need to be (yet?)
-    my $files = "include/*.c* include/*.h examples/*/*.c* test_regress/t/*.c* test_regress/t/*.h";
-    my $cmd = "cd $root && fgrep -n int $files | sort";
-    print "C $cmd\n";
-    my $grep = `$cmd`;
-    my %names;
-    foreach my $line (split /\n/, $grep) {
-        $line =~ s!//.*$!!;
-        next if $line !~ /uint\d+_t\b/;
-        next if $line =~ /vl[su]int\d+_t/;
-        next if $line =~ /typedef/;
-        next if $line =~ m!include/svdpi.h!;  # Not ours
-        if ($line =~ /^([^:]+)/) {
-            $names{$1} = 1;
-            print "$line\n";
-        }
-    }
-    if (keys %names) {
-        error("Files with uint32*_t instead of vluint32s: ", join(' ', sort keys %names));
-    }
-}
 
 sub printfll {
     my $files = "src/*.c* src/*.h include/*.c* include/*.h examples/*/*.c* test_regress/t/*.c* test_regress/t/*.h";
@@ -69,7 +43,7 @@ sub printfll {
         }
     }
     if (keys %names) {
-        error("Files with %ll instead of VL_PRI64: ", join(' ', sort keys %names));
+        error("Files with %ll instead of PRIx64: ", join(' ', sort keys %names));
     }
 }
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,18 +29,19 @@
 
 //######################################################################
 
-class ClassVisitor final : public AstNVisitor {
+class ClassVisitor final : public VNVisitor {
 private:
+    // NODE STATE
+    //  AstClass::user1()       -> bool.  True if iterated already
+    //  AstVar::user1p()        -> AstVarScope*  Scope used with this var
+    const VNUser1InUse m_inuser1;
+
     // MEMBERS
-    const AstUser1InUse m_inuser1;
     string m_prefix;  // String prefix to add to name based on hier
     const AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
     const AstNodeFTask* m_ftaskp = nullptr;  // Current task
-    std::vector<std::pair<AstNode*, AstScope*>> m_moves;
-
-    // NODE STATE
-    //  AstClass::user1()       -> bool.  True if iterated already
+    std::vector<std::pair<AstNode*, AstScope*>> m_toScopeMoves;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -54,15 +55,19 @@ private:
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep
-            = new AstClassPackage(nodep->fileline(), nodep->origName());
+            = new AstClassPackage{nodep->fileline(), nodep->origName()};
         packagep->name(nodep->name() + "__Vclpkg");
         nodep->classOrPackagep(packagep);
         packagep->classp(nodep);
         v3Global.rootp()->addModulep(packagep);
         // Add package to hierarchy
-        AstCell* const cellp
-            = new AstCell(packagep->fileline(), packagep->fileline(), packagep->name(),
-                          packagep->name(), nullptr, nullptr, nullptr);
+        AstCell* const cellp = new AstCell{packagep->fileline(),
+                                           packagep->fileline(),
+                                           packagep->name(),
+                                           packagep->name(),
+                                           nullptr,
+                                           nullptr,
+                                           nullptr};
         cellp->modp(packagep);
         v3Global.rootp()->topModulep()->addStmtp(cellp);
         // Find class's scope
@@ -75,8 +80,8 @@ private:
 
         // Add scope
         AstScope* const scopep
-            = new AstScope(nodep->fileline(), packagep, classScopep->name(),
-                           classScopep->aboveScopep(), classScopep->aboveCellp());
+            = new AstScope{nodep->fileline(), packagep, classScopep->name(),
+                           classScopep->aboveScopep(), classScopep->aboveCellp()};
         packagep->addStmtp(scopep);
         // Iterate
         VL_RESTORER(m_prefix);
@@ -100,10 +105,13 @@ private:
 
     virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
-        // Don't move now, or wouldn't keep interating the class
-        // TODO move class statics too
-        if (m_packageScopep && m_ftaskp && m_ftaskp->lifetime().isStatic()) {
-            m_moves.push_back(std::make_pair(nodep, m_packageScopep));
+        if (m_packageScopep) {
+            if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
+                // Move later, or we wouldn't keep interating the class
+                // We're really moving the VarScope but we might not
+                // have a pointer to it yet
+                m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
+            }
         }
     }
 
@@ -118,7 +126,7 @@ private:
             m_ftaskp = nodep;
             iterateChildren(nodep);
             if (m_packageScopep && nodep->lifetime().isStatic()) {
-                m_moves.push_back(std::make_pair(nodep, m_packageScopep));
+                m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
             }
         }
     }
@@ -128,7 +136,7 @@ private:
         // Don't move now, or wouldn't keep interating the class
         // TODO move function statics only
         // if (m_classScopep) {
-        //    m_moves.push_back(std::make_pair(nodep, m_classScopep));
+        //    m_toScopeMoves.push_back(std::make_pair(nodep, m_classScopep));
         //}
     }
 
@@ -140,13 +148,18 @@ public:
     // CONSTRUCTORS
     explicit ClassVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ClassVisitor() override {
-        for (auto moved : m_moves) {
-            if (VN_IS(moved.first, NodeFTask)) {
-                moved.second->addActivep(moved.first->unlinkFrBack());
-            } else if (VN_IS(moved.first, Var)) {
-                AstVarScope* const scopep = VN_AS(moved.first->user1p(), VarScope);
-                scopep->unlinkFrBack();
-                moved.second->addVarp(scopep);
+        for (auto moved : m_toScopeMoves) {
+            AstNode* const nodep = moved.first;
+            AstScope* const scopep = moved.second;
+            UINFO(9, "moving " << nodep << " to " << scopep << endl);
+            if (VN_IS(nodep, NodeFTask)) {
+                scopep->addActivep(nodep->unlinkFrBack());
+            } else if (VN_IS(nodep, Var)) {
+                AstVarScope* const vscp = VN_AS(nodep->user1p(), VarScope);
+                vscp->unlinkFrBack();
+                scopep->addVarp(vscp);
+            } else {
+                nodep->v3fatalSrc("Bad case");
             }
         }
     }

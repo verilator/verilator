@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -163,13 +163,13 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
 
-    std::istringstream nameiss{name};
+    std::string nameasstr = namePrefix() + name;
+    std::istringstream nameiss{nameasstr};
     std::istream_iterator<std::string> beg(nameiss);
     std::istream_iterator<std::string> end;
     std::list<std::string> tokens(beg, end);  // Split name
     std::string symbol_name{tokens.back()};
     tokens.pop_back();  // Remove symbol name from hierarchy
-    tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
     std::string tmpModName;
 
     // Find point where current and new scope diverge

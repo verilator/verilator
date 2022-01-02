@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,7 +41,7 @@
 class LifeState final {
     // NODE STATE
     //   See below
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
 public:
@@ -125,16 +125,15 @@ class LifeBlock final {
     //  For each basic block, we'll make a new map of what variables that if/else is changing
     using LifeMap = std::unordered_map<AstVarScope*, LifeVarEntry>;
     LifeMap m_map;  // Current active lifetime map for current scope
-    LifeBlock* m_aboveLifep;  // Upper life, or nullptr
-    LifeState* m_statep;  // Current global state
+    LifeBlock* const m_aboveLifep;  // Upper life, or nullptr
+    LifeState* const m_statep;  // Current global state
 
     VL_DEBUG_FUNC;  // Declare debug()
 
 public:
-    LifeBlock(LifeBlock* aboveLifep, LifeState* statep) {
-        m_aboveLifep = aboveLifep;  // Null if top
-        m_statep = statep;
-    }
+    LifeBlock(LifeBlock* aboveLifep, LifeState* statep)
+        : m_aboveLifep{aboveLifep}  // Null if top
+        , m_statep{statep} {}
     ~LifeBlock() = default;
     // METHODS
     void checkRemoveAssign(const LifeMap::iterator& it) {
@@ -268,10 +267,10 @@ public:
 //######################################################################
 // Life state, as a visitor of each AstNode
 
-class LifeVisitor final : public AstNVisitor {
+class LifeVisitor final : public VNVisitor {
 private:
     // STATE
-    LifeState* m_statep;  // Current state
+    LifeState* const m_statep;  // Current state
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
     bool m_noopt = false;  // Disable optimization of variables in this block
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
@@ -433,9 +432,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    LifeVisitor(AstNode* nodep, LifeState* statep) {
+    LifeVisitor(AstNode* nodep, LifeState* statep)
+        : m_statep{statep} {
         UINFO(4, "  LifeVisitor on " << nodep << endl);
-        m_statep = statep;
         {
             m_lifep = new LifeBlock(nullptr, m_statep);
             iterate(nodep);
@@ -450,7 +449,7 @@ public:
 
 //######################################################################
 
-class LifeTopVisitor final : public AstNVisitor {
+class LifeTopVisitor final : public VNVisitor {
     // Visit all top nodes searching for functions that are entry points we want to start
     // finding code within.
 private:

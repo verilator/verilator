@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -91,15 +91,15 @@ public:
 
 //######################################################################
 
-class TaskStateVisitor final : public AstNVisitor {
+class TaskStateVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Output:
     //   AstNodeFTask::user3p   // AstScope* this FTask is under
     //   AstNodeFTask::user4p   // GraphFTaskVertex* this FTask is under
     //   AstVar::user4p         // GraphFTaskVertex* this variable is declared in
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
 
     // TYPES
     using VarToScopeMap = std::map<std::pair<AstScope*, AstVar*>, AstVarScope*>;
@@ -112,7 +112,7 @@ private:
     AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
-    std::vector<AstInitial*> m_initialps;  // Initial blocks to move
+    std::vector<AstInitialAutomatic*> m_initialps;  // Initial blocks to move
 
 public:
     // METHODS
@@ -219,7 +219,7 @@ private:
         }
     }
     virtual void visit(AstPragma* nodep) override {
-        if (nodep->pragType() == AstPragmaType::NO_INLINE_TASK) {
+        if (nodep->pragType() == VPragmaType::NO_INLINE_TASK) {
             // Just mark for the next steps, and we're done with it.
             m_curVxp->noInline(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -246,7 +246,7 @@ private:
             iterateChildren(nodep);
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
-        for (AstInitial* initialp : m_initialps) {
+        for (AstInitialAutomatic* initialp : m_initialps) {
             if (AstNode* const newp = initialp->bodysp()) {
                 newp->unlinkFrBackWithNext();
                 if (!m_ctorp->stmtsp()) {
@@ -261,7 +261,7 @@ private:
         m_ctorp = nullptr;
         m_classp = nullptr;
     }
-    virtual void visit(AstInitial* nodep) override {
+    virtual void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
         iterateChildren(nodep);
     }
@@ -286,7 +286,7 @@ public:
 
 //######################################################################
 
-class TaskRelinkVisitor final : public AstNVisitor {
+class TaskRelinkVisitor final : public VNVisitor {
     // Replace varrefs with new var pointer
 private:
     // NODE STATE
@@ -340,7 +340,7 @@ struct TaskDpiUtils {
     static bool dpiToInternalFrStmt(AstVar* portp, const string& frName, string& frstmt,
                                     string& ket) {
         ket.clear();
-        if (portp->basicp() && portp->basicp()->keyword() == AstBasicDTypeKwd::CHANDLE) {
+        if (portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE) {
             frstmt = "VL_CVT_VP_Q(" + frName;
             ket = ")";
         } else if ((portp->basicp() && portp->basicp()->isDpiPrimitive())) {
@@ -366,10 +366,10 @@ struct TaskDpiUtils {
 //######################################################################
 // Gather non-local variables written by an AstCFunc
 
-class TaskGatherWrittenVisitor final : public AstNVisitor {
+class TaskGatherWrittenVisitor final : public VNVisitor {
     // NODE STATE
     // AstVarScope::user5 -> Already considered variable
-    const AstUser5InUse m_user5InUse;
+    const VNUser5InUse m_user5InUse;
 
     std::vector<AstVarScope*> m_writtenVariables;  // Variables written
 
@@ -399,7 +399,7 @@ public:
 //######################################################################
 // Task state, as a visitor of each AstNode
 
-class TaskVisitor final : public AstNVisitor {
+class TaskVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Each module:
@@ -407,8 +407,8 @@ private:
     // Each funccall
     //  to TaskRelinkVisitor:
     //    AstVar::user2p        // AstVarScope* to replace varref with
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // TYPES
     enum InsertMode : uint8_t {
@@ -432,17 +432,16 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
-        AstVar* const newvarp
-            = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name, examplep);
+        AstVar* const newvarp = new AstVar(funcp->fileline(), VVarType::BLOCKTEMP, name, examplep);
         newvarp->funcLocal(true);
         funcp->addInitsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
         m_scopep->addVarp(newvscp);
         return newvscp;
     }
-    AstVarScope* createInputVar(AstCFunc* funcp, const string& name, AstBasicDTypeKwd kwd) {
-        AstVar* const newvarp = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name,
-                                           funcp->findBasicDType(kwd));
+    AstVarScope* createInputVar(AstCFunc* funcp, const string& name, VBasicDTypeKwd kwd) {
+        AstVar* const newvarp
+            = new AstVar(funcp->fileline(), VVarType::BLOCKTEMP, name, funcp->findBasicDType(kwd));
         newvarp->funcLocal(true);
         newvarp->direction(VDirection::INPUT);
         funcp->addArgsp(newvarp);
@@ -460,7 +459,7 @@ private:
             // We choose to do it under whichever called this function, which results
             // in more cache locality.
             AstVar* const newvarp
-                = new AstVar{invarp->fileline(), AstVarType::BLOCKTEMP, name, invarp};
+                = new AstVar{invarp->fileline(), VVarType::BLOCKTEMP, name, invarp};
             newvarp->funcLocal(false);
             newvarp->propagateAttrFrom(invarp);
             m_modp->addStmtp(newvarp);
@@ -1105,7 +1104,7 @@ private:
             // This flag is set any time a DPI export is invoked, and cleared at the end of eval.
             FileLine* const fl = m_topScopep->fileline();
             AstVar* const varp
-                = new AstVar{fl, AstVarType::VAR, "__Vdpi_export_trigger", VFlagBitPacked{}, 1};
+                = new AstVar{fl, VVarType::VAR, "__Vdpi_export_trigger", VFlagBitPacked{}, 1};
             m_topScopep->scopep()->modp()->addStmtp(varp);
             dpiExportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
             m_topScopep->scopep()->addVarp(dpiExportTriggerp);
@@ -1233,9 +1232,9 @@ private:
         }
         if (nodep->dpiContext()) {
             // First three args go to dpiContext call
-            createInputVar(cfuncp, "__Vscopep", AstBasicDTypeKwd::SCOPEPTR);
-            createInputVar(cfuncp, "__Vfilenamep", AstBasicDTypeKwd::CHARPTR);
-            createInputVar(cfuncp, "__Vlineno", AstBasicDTypeKwd::INT);
+            createInputVar(cfuncp, "__Vscopep", VBasicDTypeKwd::SCOPEPTR);
+            createInputVar(cfuncp, "__Vfilenamep", VBasicDTypeKwd::CHARPTR);
+            createInputVar(cfuncp, "__Vlineno", VBasicDTypeKwd::INT);
         }
 
         if (nodep->dpiExport()) {
@@ -1751,9 +1750,9 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         }
     } else {
         const bool isChandle
-            = portp->basicp() && portp->basicp()->keyword() == AstBasicDTypeKwd::CHANDLE;
+            = portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE;
         const bool isString
-            = portp->basicp() && portp->basicp()->keyword() == AstBasicDTypeKwd::STRING;
+            = portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::STRING;
         const string idx = portp->name() + "__Vidx";
         stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++" + idx
                + ") ";

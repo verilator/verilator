@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -243,7 +243,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitModCUse(modp, VUseType::INT_FWD_CLASS);
 
         // From `systemc_header
-        emitTextSection(modp, AstType::atScHdr);
+        emitTextSection(modp, VNType::atScHdr);
 
         // Open class body {{{
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
@@ -271,7 +271,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitFuncDecls(modp, /* inClassBody: */ true);
 
         // From `systemc_interface
-        emitTextSection(modp, AstType::atScInt);
+        emitTextSection(modp, VNType::atScInt);
 
         // Close class body
         if (!VN_IS(modp, Class)) {

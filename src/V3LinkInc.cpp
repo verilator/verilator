@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,7 +47,7 @@
 
 //######################################################################
 
-class LinkIncVisitor final : public AstNVisitor {
+class LinkIncVisitor final : public VNVisitor {
 private:
     // TYPES
     enum InsertMode : uint8_t {
@@ -104,6 +104,22 @@ private:
         m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->bodysp());
         iterateAndNextNull(nodep->incsp());
+        // Done the loop
+        m_insStmtp = nullptr;  // Next thing should be new statement
+    }
+    virtual void visit(AstForeach* nodep) override {
+        // Special, as statements need to be put in different places
+        // Body insert just before themselves
+        m_insStmtp = nullptr;  // First thing should be new statement
+        iterateChildren(nodep);
+        // Done the loop
+        m_insStmtp = nullptr;  // Next thing should be new statement
+    }
+    virtual void visit(AstJumpBlock* nodep) override {
+        // Special, as statements need to be put in different places
+        // Body insert just before themselves
+        m_insStmtp = nullptr;  // First thing should be new statement
+        iterateChildren(nodep);
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
@@ -189,7 +205,7 @@ private:
         // Prepare a temporary variable
         FileLine* const fl = backp->fileline();
         const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
-        AstVar* const varp = new AstVar(fl, AstVarType::BLOCKTEMP, name, VFlagChildDType(),
+        AstVar* const varp = new AstVar(fl, VVarType::BLOCKTEMP, name, VFlagChildDType(),
                                         varrefp->varp()->subDTypep()->cloneTree(true));
 
         // Declare the variable

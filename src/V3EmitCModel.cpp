@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -585,9 +585,10 @@ class EmitCModel final : public EmitCFunc {
              "0.\");\n");
         puts("}\n");
         puts("vlSymsp->__Vm_baseCode = code;\n");
-        puts("tracep->module(vlSymsp->name());\n");
         puts("tracep->scopeEscape(' ');\n");
+        puts("tracep->pushNamePrefix(std::string{vlSymsp->name()} + ' ');\n");
         puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
+        puts("tracep->popNamePrefix();\n");
         puts("tracep->scopeEscape('.');\n");  // Restore so later traced files won't break
         puts("}\n");
 
@@ -603,6 +604,14 @@ class EmitCModel final : public EmitCFunc {
         // ::trace
         puts("\nVL_ATTR_COLD void " + topClassName() + "::trace(");
         puts(v3Global.opt.traceClassBase() + "C* tfp, int levels, int options) {\n");
+        if (optSystemC()) {
+            puts(/**/ "if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {\n");
+            puts(/****/ "vl_fatal(__FILE__, __LINE__, name(), \"" + topClassName()
+                 + +"::trace() is called before sc_core::sc_start(). "
+                    "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before trace() to complete "
+                    "elaboration.\");\n");
+            puts(/**/ "}");
+        }
         puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
         puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")

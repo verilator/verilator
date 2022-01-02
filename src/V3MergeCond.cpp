@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -60,7 +60,7 @@ enum class Mergeable {
     NO_IMPURE  // Tree cannot be merged because it contains an impure node
 };
 
-class CheckMergeableVisitor final : public AstNVisitor {
+class CheckMergeableVisitor final : public VNVisitor {
 private:
     // STATE
     bool m_condAssign = false;  // Does this tree contain an assignment to a condition variable??
@@ -109,7 +109,7 @@ public:
     }
 };
 
-class MarkVarsVisitor final : public AstNVisitor {
+class MarkVarsVisitor final : public VNVisitor {
 private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -126,13 +126,13 @@ public:
     void mark(AstNode* node) { iterate(node); }
 };
 
-class MergeCondVisitor final : public AstNVisitor {
+class MergeCondVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // AstVar::user1        -> Flag set for variables referenced by m_mgCondp
     // AstNode::user2       -> Flag marking node as included in merge because cheap to duplicate
-    const AstUser1InUse m_user1InUse;
-    const AstUser2InUse m_user2InUse;
+    const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
 
     // STATE
     VDouble0 m_statMerges;  // Statistic tracking

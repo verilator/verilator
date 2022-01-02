@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -162,10 +162,10 @@ private:
     //  AstVarScope::user1()            // V3GraphVertex* for this node
     //  AstCCall::user2()               // bool; walked next list for other ccalls
     //  Ast*::user3()                   // TraceActivityVertex* for this node
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    // AstUser4InUse     In V3Hasher via V3DupFinder
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    // VNUser4InUse     In V3Hasher via V3DupFinder
 
     // STATE
     AstNodeModule* m_topModp = nullptr;  // Module to add variables to
@@ -448,7 +448,7 @@ private:
         AstNodeDType* const newArrDtp = new AstUnpackArrayDType(flp, newScalarDtp, newArange);
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
         AstVar* const newvarp
-            = new AstVar(flp, AstVarType::MODULETEMP, "__Vm_traceActivity", newArrDtp);
+            = new AstVar(flp, VVarType::MODULETEMP, "__Vm_traceActivity", newArrDtp);
         m_topModp->addStmtp(newvarp);
         AstVarScope* const newvscp = new AstVarScope(flp, m_topScopep, newvarp);
         m_topScopep->addVarp(newvscp);

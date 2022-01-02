@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -33,7 +33,7 @@
 
 //######################################################################
 
-class SplitAsBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class SplitAsBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -128,7 +128,7 @@ class SplitAsVisitor final : public SplitAsBaseVisitor {
 private:
     // NODE STATE
     //  AstAlways::user()       -> bool.  True if already processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     VDouble0 m_statSplits;  // Statistic tracking

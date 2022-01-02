@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -36,7 +36,7 @@
 // Then user can build Verilated module as usual.
 //
 // Here is more detailed internal process.
-// 1) Parser adds AstPragmaType::HIER_BLOCK of AstPragma to modules
+// 1) Parser adds VPragmaType::HIER_BLOCK of AstPragma to modules
 //    that are marked with /*verilator hier_block*/ metacomment in Verilator run a).
 // 2) AstModule with HIER_BLOCK pragma is marked modp->hier_block(true)
 //    in V3LinkResolve.cpp during run a).
@@ -236,10 +236,10 @@ string V3HierBlock::commandArgsFileName(bool forCMake) const {
 
 //######################################################################
 // Collect how hierarchical blocks are used
-class HierBlockUsageCollectVisitor final : public AstNVisitor {
+class HierBlockUsageCollectVisitor final : public VNVisitor {
     // NODE STATE
     // AstNode::user1()            -> bool. Processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     using ModuleSet = std::unordered_set<const AstModule*>;
@@ -247,7 +247,7 @@ class HierBlockUsageCollectVisitor final : public AstNVisitor {
     AstModule* m_modp = nullptr;  // The current module
     AstModule* m_hierBlockp = nullptr;  // The nearest parent module that is a hierarchical block
     ModuleSet m_referred;  // Modules that have hier_block pragma
-    V3HierBlock::GParams m_gparams;  // list of variables that is AstVarType::GPARAM
+    V3HierBlock::GParams m_gparams;  // list of variables that is VVarType::GPARAM
 
     virtual void visit(AstModule* nodep) override {
         // Don't visit twice

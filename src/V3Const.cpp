@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -38,7 +38,7 @@
 //######################################################################
 // Utilities
 
-class ConstVarMarkVisitor final : public AstNVisitor {
+class ConstVarMarkVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, Var marked, 0=not set yet
 private:
@@ -57,7 +57,7 @@ public:
     virtual ~ConstVarMarkVisitor() override = default;
 };
 
-class ConstVarFindVisitor final : public AstNVisitor {
+class ConstVarFindVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, input from ConstVarMarkVisitor
     // MEMBERS
@@ -106,11 +106,11 @@ static int countTrailingZeroes(uint64_t val) {
 // This visitor can be used in the post-expanded Ast from V3Expand, where the Ast satisfies:
 // - Constants are 64 bit at most (because words are accessed via AstWordSel)
 // - Variables are scoped.
-class ConstBitOpTreeVisitor final : public AstNVisitor {
+class ConstBitOpTreeVisitor final : public VNVisitor {
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
     // AstVarScope::user4u    -> Same as AstVarRef::user4
-    const AstUser4InUse m_inuser4;
+    const VNUser4InUse m_inuser4;
 
     // TYPES
 
@@ -572,7 +572,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 incrOps(andp, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.m_lsb + compNum.width(), ref.width());
+                const int maxBitIdx = std::min(ref.m_lsb + maskNum.width(), ref.width());
                 for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
                     const int maskIdx = bitIdx - ref.m_lsb;
                     if (maskNum.bitIs0(maskIdx)) continue;
@@ -806,7 +806,7 @@ public:
 //######################################################################
 // Const state, as a visitor of each AstNode
 
-class ConstVisitor final : public AstNVisitor {
+class ConstVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // ** only when m_warn/m_doExpensive is set.  If state is needed other times,
@@ -1809,7 +1809,7 @@ private:
     }
     void replaceShiftOp(AstNodeBiop* nodep) {
         UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep << endl);
-        AstNRelinker handle;
+        VNRelinker handle;
         nodep->unlinkFrBack(&handle);
         AstNodeBiop* const lhsp = VN_AS(nodep->lhsp(), NodeBiop);
         lhsp->unlinkFrBack();
@@ -1978,7 +1978,7 @@ private:
             if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
                 // done as unique visitor
-                const AstUser4InUse m_inuser4;
+                const VNUser4InUse m_inuser4;
                 const ConstVarMarkVisitor mark{nodep->lhsp()};
                 const ConstVarFindVisitor find{nodep->rhsp()};
                 if (find.found()) need_temp = true;
@@ -2029,10 +2029,10 @@ private:
                 // We could create just one temp variable, but we'll get better optimization
                 // if we make one per term.
                 AstVar* const temp1p
-                    = new AstVar(sel1p->fileline(), AstVarType::BLOCKTEMP,
+                    = new AstVar(sel1p->fileline(), VVarType::BLOCKTEMP,
                                  m_concswapNames.get(sel1p), VFlagLogicPacked(), msb1 - lsb1 + 1);
                 AstVar* const temp2p
-                    = new AstVar(sel2p->fileline(), AstVarType::BLOCKTEMP,
+                    = new AstVar(sel2p->fileline(), VVarType::BLOCKTEMP,
                                  m_concswapNames.get(sel2p), VFlagLogicPacked(), msb2 - lsb2 + 1);
                 m_modp->addStmtp(temp1p);
                 m_modp->addStmtp(temp2p);
@@ -2229,6 +2229,29 @@ private:
         iterate(nodep);  // Again?
     }
 
+    bool matchConcatRand(AstConcat* nodep) {
+        //    CONCAT(RAND, RAND) - created by Chisel code
+        AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
+        AstRand* const bRandp = VN_CAST(nodep->rhsp(), Rand);
+        if (!aRandp || !bRandp) return false;
+        if (!aRandp->combinable(bRandp)) return false;
+        UINFO(4, "Concat(Rand,Rand) => Rand: " << nodep << endl);
+        aRandp->dtypeFrom(nodep);  // I.e. the total width
+        nodep->replaceWith(aRandp->unlinkFrBack());
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        return true;
+    }
+    bool matchSelRand(AstSel* nodep) {
+        //    SEL(RAND) - created by Chisel code
+        AstRand* const aRandp = VN_CAST(nodep->fromp(), Rand);
+        if (!aRandp) return false;
+        if (aRandp->seedp()) return false;
+        UINFO(4, "Sel(Rand) => Rand: " << nodep << endl);
+        aRandp->dtypeFrom(nodep);  // I.e. the total width
+        nodep->replaceWith(aRandp->unlinkFrBack());
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        return true;
+    }
     int operandConcatMove(AstConcat* nodep) {
         //    CONCAT under concat  (See moveConcat)
         // Return value: true indicates to do it; 2 means move to LHS
@@ -2675,7 +2698,7 @@ private:
             // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
             // other SENITEM(x).
             {
-                const AstUser4InUse m_inuse4;
+                const VNUser4InUse m_inuse4;
                 // Mark x in SENITEM(x)
                 for (AstSenItem* senp = nodep->sensesp(); senp;
                      senp = VN_AS(senp->nextp(), SenItem)) {
@@ -2877,10 +2900,10 @@ private:
         AstDisplay* const prevp = VN_CAST(nodep->backp(), Display);
         if (!prevp) return false;
         if (!((prevp->displayType() == nodep->displayType())
-              || (prevp->displayType() == AstDisplayType::DT_WRITE
-                  && nodep->displayType() == AstDisplayType::DT_DISPLAY)
-              || (prevp->displayType() == AstDisplayType::DT_DISPLAY
-                  && nodep->displayType() == AstDisplayType::DT_WRITE)))
+              || (prevp->displayType() == VDisplayType::DT_WRITE
+                  && nodep->displayType() == VDisplayType::DT_DISPLAY)
+              || (prevp->displayType() == VDisplayType::DT_DISPLAY
+                  && nodep->displayType() == VDisplayType::DT_WRITE)))
             return false;
         if ((prevp->filep() && !nodep->filep()) || (!prevp->filep() && nodep->filep())
             || !prevp->filep()->sameTree(nodep->filep()))
@@ -2905,8 +2928,8 @@ private:
         //
         UINFO(9, "DISPLAY(SF({a})) DISPLAY(SF({b})) -> DISPLAY(SF({a}+{b}))" << endl);
         // Convert DT_DISPLAY to DT_WRITE as may allow later optimizations
-        if (prevp->displayType() == AstDisplayType::DT_DISPLAY) {
-            prevp->displayType(AstDisplayType::DT_WRITE);
+        if (prevp->displayType() == VDisplayType::DT_DISPLAY) {
+            prevp->displayType(VDisplayType::DT_WRITE);
             pformatp->text(pformatp->text() + "\n");
         }
         // We can't replace prev() as the edit tracking iterators will get confused.
@@ -3186,7 +3209,7 @@ private:
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",        "replaceWLhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhs(nodep)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  //->allOnes
-    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp)}",        "replaceNum(nodep,1)");
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp), nodep->isPure()}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
@@ -3360,10 +3383,11 @@ private:
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
     TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1, isTPure($lhsp), isTPure($rhsp)}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, isTPure($lhsp), isTPure($rhsp)}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, nodep->isPure(), isTPure($lhsp), isTPure($rhsp)}", "AstOr{$lhsp,$rhsp}");
     TREEOPV("AstLogNot{$lhsp.width1, isTPure($lhsp)}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
+    TREEOPV("AstConcat{matchConcatRand(nodep)}",      "DONE");
     TREEOPV("AstConcat{operandConcatMove(nodep)}",      "moveConcat(nodep)");
     TREEOPV("AstConcat{$lhsp.isZero, $rhsp}",           "replaceExtend(nodep, nodep->rhsp())");
     // CONCAT(a[1],a[0]) -> a[1:0]
@@ -3392,6 +3416,7 @@ private:
     TREEOPV("AstConcat{operandConcatSame(nodep)}", "DONE");  // {a,a}->{2{a}}, {a,2{a}}->{3{a}, etc
     // Next rule because AUTOINST puts the width of bits in
     // to pins, even when the widths are exactly the same across the hierarchy.
+    TREEOPV("AstSel{matchSelRand(nodep)}",      "DONE");
     TREEOPV("AstSel{operandSelExtend(nodep)}",  "DONE");
     TREEOPV("AstSel{operandSelFull(nodep)}",    "replaceWChild(nodep, nodep->fromp())");
     TREEOPV("AstSel{$fromp.castSel}",           "replaceSelSel(nodep)");

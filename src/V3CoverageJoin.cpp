@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,10 +30,10 @@
 //######################################################################
 // CoverageJoin state, as a visitor of each AstNode
 
-class CoverageJoinVisitor final : public AstNVisitor {
+class CoverageJoinVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // AstUser4InUse     In V3Hasher via V3DupFinder
+    // VNUser4InUse     In V3Hasher via V3DupFinder
 
     // STATE
     std::vector<AstCoverToggle*> m_toggleps;  // List of of all AstCoverToggle's

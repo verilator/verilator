@@ -1,0 +1,4 @@
+%Error: t/t_class_static_member_pkg.v:51:16: Syntax Error: Not expecting CLASSORPACKAGEREF under a DOT in dotted expression
+   51 |       v = Pkg::Cls::f_cs_st(); do if ((v) !== (27)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_class_static_member_pkg.v",51, (v), (27)); $stop; end while(0);;
+      |                ^~~
+%Error: Exiting due to

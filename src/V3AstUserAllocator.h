@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -72,15 +72,15 @@ protected:
     AstUserAllocatorBase() {
         // This simplifies statically as T_UserN is constant. In C++17, use 'if constexpr'.
         if (T_UserN == 1) {
-            AstUser1InUse::check();
+            VNUser1InUse::check();
         } else if (T_UserN == 2) {
-            AstUser2InUse::check();
+            VNUser2InUse::check();
         } else if (T_UserN == 3) {
-            AstUser3InUse::check();
+            VNUser3InUse::check();
         } else if (T_UserN == 4) {
-            AstUser4InUse::check();
+            VNUser4InUse::check();
         } else {
-            AstUser5InUse::check();
+            VNUser5InUse::check();
         }
     }
 
