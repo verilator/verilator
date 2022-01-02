@@ -46,7 +46,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstCFunc* createDeepFunc(AstNode* nodep) {
-        AstNRelinker relinkHandle;
+        VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         // Create sub function
         AstScope* const scopep = m_cfuncp->scopep();

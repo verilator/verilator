@@ -110,7 +110,7 @@ private:
         // Saves us teaching V3Const how to optimize, and it won't be needed again.
         if (const AstIf* const ifp = VN_AS(prep->user2p(), If)) {
             UASSERT_OBJ(!needDly, prep, "Should have already converted to non-delay");
-            AstNRelinker replaceHandle;
+            VNRelinker replaceHandle;
             AstNode* const earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
             AstNode* const newp = new AstLogAnd(condp->fileline(), condp, earliercondp);
             UINFO(4, "Edit BOUNDLVALUE " << newp << endl);
@@ -330,7 +330,7 @@ private:
                     = new AstVar(nodep->fileline(), AstVarType::XTEMP, m_xrandNames.get(nodep),
                                  VFlagLogicPacked(), nodep->width());
                 ++m_statUnkVars;
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 AstNodeVarRef* const newref1p
                     = new AstVarRef(nodep->fileline(), newvarp, VAccess::READ);
@@ -386,7 +386,7 @@ private:
                 VL_DO_DANGLING(condp->deleteTree(), condp);
             } else if (!lvalue) {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 V3Number xnum(nodep, nodep->width());
                 xnum.setAllBitsX();
@@ -445,7 +445,7 @@ private:
                        // Making a scalar would break if we're making an array
                        && !VN_IS(nodep->dtypep()->skipRefp(), NodeArrayDType)) {
                 // ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 V3Number xnum(nodep, nodep->width());
                 if (nodep->isString()) {
@@ -462,7 +462,7 @@ private:
                 iterate(newp);
             } else if (!lvalue) {  // Mid-multidimension read, just use zero
                 // ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 AstNode* const bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
                 AstNode* const newp = new AstCondBound(
                     bitp->fileline(), condp, bitp,

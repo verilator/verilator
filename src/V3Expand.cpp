@@ -82,7 +82,7 @@ private:
 
     static void insertBefore(AstNode* placep, AstNode* newp) {
         newp->user1(1);  // Already processed, don't need to re-iterate
-        AstNRelinker linker;
+        VNRelinker linker;
         placep->unlinkFrBack(&linker);
         newp->addNext(placep);
         linker.relink(newp);

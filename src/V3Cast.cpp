@@ -63,7 +63,7 @@ private:
 
     void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedCast " << nodep << endl);
-        AstNRelinker relinkHandle;
+        VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
         AstCCast* const castp
@@ -102,7 +102,7 @@ private:
     void ensureNullChecked(AstNode* nodep) {
         // TODO optimize to track null checked values and avoid where possible
         if (!VN_IS(nodep->backp(), NullCheck)) {
-            AstNRelinker relinkHandle;
+            VNRelinker relinkHandle;
             nodep->unlinkFrBack(&relinkHandle);
             AstNode* const newp = new AstNullCheck{nodep->fileline(), nodep};
             relinkHandle.relink(newp);

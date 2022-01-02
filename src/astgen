@@ -366,8 +366,6 @@ def read_types(filename):
                 supern = match.group(1) if match else ""
                 assert classn != "AstNode" or supern == "", "AstNode can't have a superclass"
                 if re.search(r'Ast', supern) or classn == "AstNode":
-                    if supern == "AstNDeleter":
-                        continue
                     classn = re.sub(r'^Ast', '', classn)
                     supern = re.sub(r'^Ast', '', supern)
                     Classes[classn] = supern

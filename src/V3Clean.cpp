@@ -120,7 +120,7 @@ private:
     // Operate on nodes
     void insertClean(AstNode* nodep) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedClean " << nodep << endl);
-        AstNRelinker relinkHandle;
+        VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
         computeCppWidth(nodep);

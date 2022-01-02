@@ -1809,7 +1809,7 @@ private:
     }
     void replaceShiftOp(AstNodeBiop* nodep) {
         UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep << endl);
-        AstNRelinker handle;
+        VNRelinker handle;
         nodep->unlinkFrBack(&handle);
         AstNodeBiop* const lhsp = VN_AS(nodep->lhsp(), NodeBiop);
         lhsp->unlinkFrBack();

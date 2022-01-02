@@ -1034,7 +1034,7 @@ public:
 //######################################################################
 // OrderProcess class
 
-class OrderProcess final : AstNDeleter {
+class OrderProcess final : VNDeleter {
     // NODE STATE
     //  AstNodeModule::user3  -> int: Number of AstCFuncs created under this module
     //  AstNode::user4        -> Used by V3Const::constifyExpensiveEdit

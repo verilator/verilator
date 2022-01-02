@@ -100,7 +100,7 @@ private:
             AstJumpLabel* const labelp = new AstJumpLabel(nodep->fileline(), blockp);
             blockp->labelp(labelp);
 
-            AstNRelinker repHandle;
+            VNRelinker repHandle;
             if (under_and_next) {
                 underp->unlinkFrBackWithNext(&repHandle);
             } else {

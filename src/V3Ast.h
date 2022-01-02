@@ -1157,7 +1157,7 @@ public:
 //  user2.  When the member goes out of scope it will be automagically
 //  freed up.
 
-class AstUserInUseBase VL_NOT_FINAL {
+class VNUserInUseBase VL_NOT_FINAL {
 protected:
     static void allocate(int id, uint32_t& cntGblRef, bool& userBusyRef) {
         // Perhaps there's still a AstUserInUse in scope for this?
@@ -1188,7 +1188,7 @@ protected:
 // We let AstNode peek into here, because when under low optimization even
 // an accessor would be way too slow.
 // clang-format off
-class AstUser1InUse final : AstUserInUseBase {
+class AstUser1InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1199,7 +1199,7 @@ public:
     static void clear() { clearcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class AstUser2InUse final : AstUserInUseBase {
+class AstUser2InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1210,7 +1210,7 @@ public:
     static void clear() { clearcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class AstUser3InUse final : AstUserInUseBase {
+class AstUser3InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1221,7 +1221,7 @@ public:
     static void clear() { clearcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class AstUser4InUse final : AstUserInUseBase {
+class AstUser4InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1232,7 +1232,7 @@ public:
     static void clear() { clearcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class AstUser5InUse final : AstUserInUseBase {
+class AstUser5InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1251,7 +1251,7 @@ public:
 // nodes needs to be deferred to a later time, because pointers to the
 // removed nodes might still exist.
 
-class AstNDeleter VL_NOT_FINAL {
+class VNDeleter VL_NOT_FINAL {
     // MEMBERS
     std::vector<AstNode*> m_deleteps;  // Nodes to delete
 
@@ -1268,14 +1268,14 @@ public:
     void doDeletes();
 
     // Do the deletions on destruction
-    virtual ~AstNDeleter() { doDeletes(); }
+    virtual ~VNDeleter() { doDeletes(); }
 };
 
 //######################################################################
 // AstNVisitor -- Allows new functions to be called on each node
 // type without changing the base classes.  See "Modern C++ Design".
 
-class AstNVisitor VL_NOT_FINAL : public AstNDeleter {
+class AstNVisitor VL_NOT_FINAL : public VNDeleter {
     friend class AstNode;
 
 public:
@@ -1303,10 +1303,10 @@ public:
 };
 
 //######################################################################
-// AstNRelinker -- Holds the state of a unlink so a new node can be
+// VNRelinker -- Holds the state of a unlink so a new node can be
 // added at the same point.
 
-class AstNRelinker final {
+class VNRelinker final {
 protected:
     friend class AstNode;
     enum RelinkWhatEn : uint8_t {
@@ -1323,12 +1323,12 @@ protected:
     AstNode** m_iterpp = nullptr;
 
 public:
-    AstNRelinker() = default;
+    VNRelinker() = default;
     void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
     void dump(std::ostream& str = std::cout) const;
 };
-inline std::ostream& operator<<(std::ostream& os, const AstNRelinker& rhs) {
+inline std::ostream& operator<<(std::ostream& os, const VNRelinker& rhs) {
     rhs.dump(os);
     return os;
 }
@@ -1771,12 +1771,12 @@ public:
     }
     void addHereThisAsNext(AstNode* newp);  // Adds at old place of this, this becomes next
     void replaceWith(AstNode* newp);  // Replace current node in tree with new node
-    AstNode* unlinkFrBack(AstNRelinker* linkerp
+    AstNode* unlinkFrBack(VNRelinker* linkerp
                           = nullptr);  // Unlink this from whoever points to it.
     // Unlink this from whoever points to it, keep entire next list with unlinked node
-    AstNode* unlinkFrBackWithNext(AstNRelinker* linkerp = nullptr);
+    AstNode* unlinkFrBackWithNext(VNRelinker* linkerp = nullptr);
     void swapWith(AstNode* bp);
-    void relink(AstNRelinker* linkerp);  // Generally use linker->relink() instead
+    void relink(VNRelinker* linkerp);  // Generally use linker->relink() instead
     void cloneRelinkNode() { cloneRelink(); }
     // Iterate and insert - assumes tree format
     virtual void addNextStmt(AstNode* newp,
@@ -1935,7 +1935,7 @@ inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
     }
     return os;
 }
-inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
+inline void VNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 
 //######################################################################
 //######################################################################

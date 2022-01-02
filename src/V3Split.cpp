@@ -543,7 +543,7 @@ protected:
         if (leaveAlone) {
             UINFO(6, "   No changes\n");
         } else {
-            AstNRelinker replaceHandle;  // Where to add the list
+            VNRelinker replaceHandle;  // Where to add the list
             AstNode* newListp = nullptr;
             for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
                 AstNode* const nextp = it->second;

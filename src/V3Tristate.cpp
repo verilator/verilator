@@ -1010,7 +1010,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 AstVar* const envarp = getCreateEnVarp(varrefp->varp());
                 // If any drops, we need to add in the count of Zs (from __en)
                 UINFO(4, " COUNTBITS('z)-> " << nodep << endl);
-                AstNRelinker relinkHandle;
+                VNRelinker relinkHandle;
                 nodep->unlinkFrBack(&relinkHandle);
                 AstNode* newp = new AstCountOnes(
                     nodep->fileline(), new AstVarRef(nodep->fileline(), envarp, VAccess::READ));

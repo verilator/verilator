@@ -155,7 +155,7 @@ private:
         } else if (m_inTracep) {
             m_inTracep->addPrecondsp(newp);
         } else if (m_stmtp) {
-            AstNRelinker linker;
+            VNRelinker linker;
             m_stmtp->unlinkFrBack(&linker);
             newp->addNext(m_stmtp);
             linker.relink(newp);
@@ -167,7 +167,7 @@ private:
     void createDeepTemp(AstNode* nodep, bool noSubst) {
         if (nodep->user1SetOnce()) return;  // Only add another assignment for this node
 
-        AstNRelinker relinker;
+        VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
 
         FileLine* const fl = nodep->fileline();
@@ -276,7 +276,7 @@ private:
                                          // C operator's width must be < maximum shift which is
                                          // based on Verilog width
                 && nodep->width() < (1LL << nodep->rhsp()->widthMin())) {
-                AstNRelinker replaceHandle;
+                VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 AstNode* constzerop;
                 const int m1value

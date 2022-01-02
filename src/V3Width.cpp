@@ -3351,7 +3351,7 @@ private:
                 if (patp->lhssp()->nextp()) {
                     // Can't just addNext, as would add to end of all members.
                     // So detach, add next and reattach
-                    AstNRelinker relinkHandle;
+                    VNRelinker relinkHandle;
                     patp->unlinkFrBack(&relinkHandle);
                     while (AstNode* const movep = patp->lhssp()->nextp()) {
                         movep->unlinkFrBack();  // Not unlinkFrBackWithNext, just one
@@ -4078,7 +4078,7 @@ private:
                                || VN_IS(dtypep, QueueDType)) {
                         added = true;
                         newFormat += "%@";
-                        AstNRelinker handle;
+                        VNRelinker handle;
                         argp->unlinkFrBack(&handle);
                         AstCMath* const newp
                             = new AstCMath(nodep->fileline(), "VL_TO_STRING(", 0, true);
@@ -4657,7 +4657,7 @@ private:
                 if (portp->attrSFormat()
                     && (!VN_IS(pinp, SFormatF) || pinp->nextp())) {  // Not already done
                     UINFO(4, "   sformat via metacomment: " << nodep << endl);
-                    AstNRelinker handle;
+                    VNRelinker handle;
                     argp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
                     AstNode* argsp = nullptr;
                     while (AstArg* const nextargp = VN_AS(argp->nextp(), Arg)) {
@@ -4691,7 +4691,7 @@ private:
                               && VN_AS(pinp, VarRef)->varp()->basicp()->keyword()
                                      == AstBasicDTypeKwd::STRING)) {
                     UINFO(4, "   Add CvtPackString: " << pinp << endl);
-                    AstNRelinker handle;
+                    VNRelinker handle;
                     pinp->unlinkFrBack(&handle);  // No next, that's the next pin
                     AstNode* const newp = new AstCvtPackString(pinp->fileline(), pinp);
                     handle.relink(newp);
@@ -5314,7 +5314,7 @@ private:
             nodep = newp;
         } else if (expWidth < nodep->width()) {
             // Trunc - Extract
-            AstNRelinker linker;
+            VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             AstNode* const newp = new AstSel(nodep->fileline(), nodep, 0, expWidth);
             newp->didWidth(true);  // Don't replace dtype with unsigned
@@ -5322,7 +5322,7 @@ private:
             nodep = newp;
         } else {
             // Extend
-            AstNRelinker linker;
+            VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             bool doSigned = false;
             switch (extendRule) {
@@ -5367,7 +5367,7 @@ private:
             VL_DANGLING(nodep);
             nodep = newp;
         } else {
-            AstNRelinker linker;
+            VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             AstNode* const newp = new AstRedOr(nodep->fileline(), nodep);
             linker.relink(newp);
@@ -5521,7 +5521,7 @@ private:
         // For DOUBLE under a logical op, add implied test against zero, never a warning
         if (underp && underp->isDouble()) {
             UINFO(6, "   spliceCvtCmpD0: " << underp << endl);
-            AstNRelinker linker;
+            VNRelinker linker;
             underp->unlinkFrBack(&linker);
             AstNode* const newp
                 = new AstNeqD(nodep->fileline(), underp,
@@ -5727,7 +5727,7 @@ private:
         // We don't warn here, "2.0 * 2" is common and reasonable
         if (nodep && !nodep->dtypep()->skipRefp()->isDouble()) {
             UINFO(6, "   spliceCvtD: " << nodep << endl);
-            AstNRelinker linker;
+            VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             AstNode* newp;
             if (nodep->dtypep()->skipRefp()->isSigned()) {
@@ -5746,7 +5746,7 @@ private:
         // 11.8.2: Argument to convert is self-determined
         if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
             UINFO(6, "   spliceCvtS: " << nodep << endl);
-            AstNRelinker linker;
+            VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             if (const AstConst* const constp = VN_CAST(nodep, Const)) {
                 // We convert to/from vlsint32 rather than use floor() as want to make sure is
@@ -5772,7 +5772,7 @@ private:
         // 11.8.2: Argument to convert is self-determined
         if (nodep && !(nodep->dtypep()->basicp() && nodep->dtypep()->basicp()->isString())) {
             UINFO(6, "   spliceCvtString: " << nodep << endl);
-            AstNRelinker linker;
+            VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             AstNode* const newp = new AstCvtPackString(nodep->fileline(), nodep);
             linker.relink(newp);

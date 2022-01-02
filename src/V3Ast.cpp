@@ -441,12 +441,12 @@ void AstNode::addOp4p(AstNode* newp) {
 void AstNode::replaceWith(AstNode* newp) {
     // Replace oldp with this
     // Unlike a unlink/relink, children are changed to point to the new node.
-    AstNRelinker repHandle;
+    VNRelinker repHandle;
     this->unlinkFrBack(&repHandle);
     repHandle.relink(newp);
 }
 
-void AstNRelinker::dump(std::ostream& str) const {
+void VNRelinker::dump(std::ostream& str) const {
     str << " BK=" << reinterpret_cast<uint32_t*>(m_backp);
     str << " ITER=" << reinterpret_cast<uint32_t*>(m_iterpp);
     str << " CHG=" << (m_chg == RELINK_NEXT ? "[NEXT] " : "");
@@ -456,7 +456,7 @@ void AstNRelinker::dump(std::ostream& str) const {
     str << (m_chg == RELINK_OP4 ? "[OP4] " : "");
 }
 
-AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
+AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
     debugTreeChange(this, "-unlinkWNextThs: ", __LINE__, true);
     AstNode* const oldp = this;
     UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
@@ -467,15 +467,15 @@ AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
         linkerp->m_backp = backp;
         linkerp->m_iterpp = oldp->m_iterpp;
         if (backp->m_nextp == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_NEXT;
+            linkerp->m_chg = VNRelinker::RELINK_NEXT;
         } else if (backp->m_op1p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP1;
+            linkerp->m_chg = VNRelinker::RELINK_OP1;
         } else if (backp->m_op2p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP2;
+            linkerp->m_chg = VNRelinker::RELINK_OP2;
         } else if (backp->m_op3p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP3;
+            linkerp->m_chg = VNRelinker::RELINK_OP3;
         } else if (backp->m_op4p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP4;
+            linkerp->m_chg = VNRelinker::RELINK_OP4;
         } else {
             oldp->v3fatalSrc("Unlink of node with back not pointing to it.");
         }
@@ -516,7 +516,7 @@ AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
     return oldp;
 }
 
-AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
+AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
     debugTreeChange(this, "-unlinkFrBkThs: ", __LINE__, true);
     AstNode* const oldp = this;
     UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
@@ -527,15 +527,15 @@ AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
         linkerp->m_backp = backp;
         linkerp->m_iterpp = oldp->m_iterpp;
         if (backp->m_nextp == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_NEXT;
+            linkerp->m_chg = VNRelinker::RELINK_NEXT;
         } else if (backp->m_op1p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP1;
+            linkerp->m_chg = VNRelinker::RELINK_OP1;
         } else if (backp->m_op2p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP2;
+            linkerp->m_chg = VNRelinker::RELINK_OP2;
         } else if (backp->m_op3p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP3;
+            linkerp->m_chg = VNRelinker::RELINK_OP3;
         } else if (backp->m_op4p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP4;
+            linkerp->m_chg = VNRelinker::RELINK_OP4;
         } else {
             this->v3fatalSrc("Unlink of node with back not pointing to it.");
         }
@@ -580,7 +580,7 @@ AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
     return oldp;
 }
 
-void AstNode::relink(AstNRelinker* linkerp) {
+void AstNode::relink(VNRelinker* linkerp) {
     if (debug() > 8) {
         UINFO(0, " EDIT:      relink: ");
         dumpPtrs();
@@ -600,11 +600,11 @@ void AstNode::relink(AstNRelinker* linkerp) {
     debugTreeChange(backp, "-relinkTre: ", __LINE__, true);
 
     switch (linkerp->m_chg) {
-    case AstNRelinker::RELINK_NEXT: backp->addNextHere(newp); break;
-    case AstNRelinker::RELINK_OP1: relinkOneLink(backp->m_op1p /*ref*/, newp); break;
-    case AstNRelinker::RELINK_OP2: relinkOneLink(backp->m_op2p /*ref*/, newp); break;
-    case AstNRelinker::RELINK_OP3: relinkOneLink(backp->m_op3p /*ref*/, newp); break;
-    case AstNRelinker::RELINK_OP4: relinkOneLink(backp->m_op4p /*ref*/, newp); break;
+    case VNRelinker::RELINK_NEXT: backp->addNextHere(newp); break;
+    case VNRelinker::RELINK_OP1: relinkOneLink(backp->m_op1p /*ref*/, newp); break;
+    case VNRelinker::RELINK_OP2: relinkOneLink(backp->m_op2p /*ref*/, newp); break;
+    case VNRelinker::RELINK_OP3: relinkOneLink(backp->m_op3p /*ref*/, newp); break;
+    case VNRelinker::RELINK_OP4: relinkOneLink(backp->m_op4p /*ref*/, newp); break;
     default: this->v3fatalSrc("Relink of node without any link to change."); break;
     }
     // Relink
@@ -654,15 +654,15 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
 
 void AstNode::addHereThisAsNext(AstNode* newp) {
     // {old}->this->{next} becomes {old}->new->this->{next}
-    AstNRelinker handle;
+    VNRelinker handle;
     this->unlinkFrBackWithNext(&handle);
     newp->addNext(this);
     handle.relink(newp);
 }
 
 void AstNode::swapWith(AstNode* bp) {
-    AstNRelinker aHandle;
-    AstNRelinker bHandle;
+    VNRelinker aHandle;
+    VNRelinker bHandle;
     this->unlinkFrBack(&aHandle);
     bp->unlinkFrBack(&bHandle);
     aHandle.relink(bp);
@@ -1279,9 +1279,9 @@ AstNodeDType* AstNode::findVoidDType() const {
 }
 
 //######################################################################
-// AstNDeleter
+// VNDeleter
 
-void AstNDeleter::doDeletes() {
+void VNDeleter::doDeletes() {
     for (AstNode* const nodep : m_deleteps) nodep->deleteTree();
     m_deleteps.clear();
 }
