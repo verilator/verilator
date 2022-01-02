@@ -38,10 +38,12 @@ private:
 
     // MEMBERS
     string m_prefix;  // String prefix to add to name based on hier
+    AstNodeModule* m_classPackagep = nullptr;  // Package moving into
     const AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
     const AstNodeFTask* m_ftaskp = nullptr;  // Current task
     std::vector<std::pair<AstNode*, AstScope*>> m_toScopeMoves;
+    std::vector<std::pair<AstNode*, AstNodeModule*>> m_toPackageMoves;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -85,9 +87,11 @@ private:
         packagep->addStmtp(scopep);
         // Iterate
         VL_RESTORER(m_prefix);
+        VL_RESTORER(m_classPackagep);
         VL_RESTORER(m_classScopep);
         VL_RESTORER(m_packageScopep);
         {
+            m_classPackagep = packagep;
             m_classScopep = classScopep;
             m_packageScopep = scopep;
             m_prefix = nodep->name() + "__02e";  // .
@@ -108,6 +112,12 @@ private:
         if (m_packageScopep) {
             if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
                 // Move later, or we wouldn't keep interating the class
+                // We're really moving the VarScope but we might not
+                // have a pointer to it yet
+                m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
+            }
+            if (!m_ftaskp && nodep->lifetime().isStatic()) {
+                m_toPackageMoves.push_back(std::make_pair(nodep, m_classPackagep));
                 // We're really moving the VarScope but we might not
                 // have a pointer to it yet
                 m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
@@ -138,6 +148,13 @@ private:
         //    m_toScopeMoves.push_back(std::make_pair(nodep, m_classScopep));
         //}
     }
+    virtual void visit(AstInitial* nodep) override {
+        // But not AstInitialAutomatic, which remains under the class
+        iterateChildren(nodep);
+        if (m_packageScopep) {
+            m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
+        }
+    }
 
     virtual void visit(AstNodeMath* nodep) override {}  // Short circuit
     virtual void visit(AstNodeStmt* nodep) override {}  // Short circuit
@@ -155,11 +172,22 @@ public:
                 scopep->addActivep(nodep->unlinkFrBack());
             } else if (VN_IS(nodep, Var)) {
                 AstVarScope* const vscp = VN_AS(nodep->user1p(), VarScope);
+                vscp->scopep(scopep);
                 vscp->unlinkFrBack();
                 scopep->addVarp(vscp);
+            } else if (VN_IS(nodep, Initial)) {
+                nodep->unlinkFrBack();
+                scopep->addActivep(nodep);
             } else {
                 nodep->v3fatalSrc("Bad case");
             }
+        }
+        for (auto moved : m_toPackageMoves) {
+            AstNode* const nodep = moved.first;
+            AstNodeModule* const modp = moved.second;
+            UINFO(9, "moving " << nodep << " to " << modp << endl);
+            nodep->unlinkFrBack();
+            modp->addStmtp(nodep);
         }
     }
 };

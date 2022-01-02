@@ -1041,8 +1041,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->isFuncLocal() && nodep->lifetime().isStatic()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' function/task variables");
-        } else if (nodep->isClassMember() && nodep->lifetime().isStatic()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class members");
         }
         if (!m_statep->forScopeCreation()) {
             // Find under either a task or the module's vars
@@ -2511,6 +2509,16 @@ private:
         }
         if (start) m_ds = lastStates;
     }
+    virtual void visit(AstClassOrPackageRef* nodep) override {
+        UINFO(9, "   linkClassOrPackageRef " << m_ds.ascii() << "  n=" << nodep << endl);
+        if (m_ds.m_dotPos == DP_PACKAGE) {
+            // Already under dot, so this is {ClassOrPackage} Dot {ClassOrPackage}
+            // m_ds.m_dotText communicates the cell prefix between stages
+            m_ds.m_dotPos = DP_PACKAGE;
+        }
+        // TODO we don't iterate pins yet, as class parameters are not supported
+    }
+
     virtual void visit(AstVarRef* nodep) override {
         // VarRef: Resolve its reference
         // ParseRefs are used the first pass (forPrimary) so we shouldn't get can't find
