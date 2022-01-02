@@ -61,9 +61,13 @@ private:
         packagep->classp(nodep);
         v3Global.rootp()->addModulep(packagep);
         // Add package to hierarchy
-        AstCell* const cellp
-            = new AstCell{packagep->fileline(), packagep->fileline(), packagep->name(),
-                          packagep->name(), nullptr, nullptr, nullptr};
+        AstCell* const cellp = new AstCell{packagep->fileline(),
+                                           packagep->fileline(),
+                                           packagep->name(),
+                                           packagep->name(),
+                                           nullptr,
+                                           nullptr,
+                                           nullptr};
         cellp->modp(packagep);
         v3Global.rootp()->topModulep()->addStmtp(cellp);
         // Find class's scope
