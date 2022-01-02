@@ -99,9 +99,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         iterateChildren(nodep);
         putqs(nodep, "end\n");
     }
-    virtual void visit(AstInitialAutomatic* nodep) override {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstInitialAutomatic* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstAlways* nodep) override {
         putfs(nodep, "always ");
         if (m_sensesp) {
