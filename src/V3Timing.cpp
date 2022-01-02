@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -84,7 +84,7 @@
 class TimingState final {
     // NODE STATE
     // AstDelay::user1  -> int, state assignment
-    AstUser1InUse m_inuser1;
+    VNUser1InUse m_inuser1;
 
     // MEMBERS
     AstVarScope* m_eventVarScp = nullptr;  // FSM event variable for procedure
@@ -100,8 +100,8 @@ public:
     AstVarScope* getCreateEventVarScp(FileLine* fileline) {
         if (!m_eventVarScp) {
             const string name = "__vProc" + cvtToStr(m_procNum) + "Event";
-            AstVar* const varp = new AstVar{fileline, AstVarType::MODULETEMP, name,
-                                            m_modp->findBasicDType(AstBasicDTypeKwd::EVENTVALUE)};
+            AstVar* const varp = new AstVar{fileline, VVarType::MODULETEMP, name,
+                                            m_modp->findBasicDType(VBasicDTypeKwd::EVENTVALUE)};
             m_modp->addStmtp(varp);
             m_eventVarScp = new AstVarScope{fileline, m_scopep, varp};
             m_scopep->addVarp(m_eventVarScp);
@@ -113,7 +113,7 @@ public:
             // TODO change width to CData at end-of-time for small FSMs
             // (Also makes more likely would land next to Event var)
             AstVar* const varp
-                = new AstVar{fl, AstVarType::MODULETEMP, fsmName(), VFlagBitPacked{}, 32};
+                = new AstVar{fl, VVarType::MODULETEMP, fsmName(), VFlagBitPacked{}, 32};
             m_modp->addStmtp(varp);
             m_fsmVarScp = new AstVarScope{fl, m_scopep, varp};
             m_fsmVarScp->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT,
@@ -140,7 +140,7 @@ public:
 //######################################################################
 // Visit a procedure being rebuilt
 
-class TimingProcedureVisitor final : public AstNVisitor {
+class TimingProcedureVisitor final : public VNVisitor {
     // MEMBERS
     TimingState& m_state;  // State
     bool m_newProc;  // Creating always from an initial block
@@ -283,7 +283,7 @@ public:
 
 //######################################################################
 
-class TimingVisitor final : public AstNVisitor {
+class TimingVisitor final : public VNVisitor {
 private:
     // STATE
     TimingState m_state;  // State information
