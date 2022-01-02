@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something isn't working as expected, and it isn't "Unsupported." (Note our contributor agreement at https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.rst)
+about: Use this to report that something isn't working as expected, and it isn't "Unsupported." (Note our contributor agreement at https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.rst)
 title: ''
 labels: new
 assignees: ''
@@ -15,4 +15,4 @@ What 'verilator --version' are you using?  Did you try it with the git master ve
 
 What OS and distribution are you using?
 
-Would you be willing to try to fix Verilator yourself with assistance?
+May we assist you in trying to fix this in Verilator yourself?
