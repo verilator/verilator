@@ -57,6 +57,7 @@ private:
     AstAssignW* m_assignwp = nullptr;  // Current assignment
     AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
     bool m_constXCvt = false;  // Convert X's
+    bool m_allowXUnique = true;  // Allow unique assignments
     VDouble0 m_statUnkVars;  // Statistic tracking
     V3UniqueNames m_lvboundNames;  // For generating unique temporary variable names
     V3UniqueNames m_xrandNames;  // For generating unique temporary variable names
@@ -141,9 +142,12 @@ private:
         UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
+        VL_RESTORER(m_allowXUnique);
         {
             m_modp = nodep;
             m_constXCvt = true;
+            // Class X randomization causes Vxrand in strange places, so disable
+            if (VN_IS(nodep, Class)) m_allowXUnique = false;
             m_lvboundNames.reset();
             m_xrandNames.reset();
             iterateChildren(nodep);
@@ -310,7 +314,7 @@ private:
             numb1.opBitsOne(nodep->num());
             V3Number numbx(nodep, nodep->width());
             numbx.opBitsXZ(nodep->num());
-            if (v3Global.opt.xAssign() != "unique") {
+            if (!m_allowXUnique || v3Global.opt.xAssign() != "unique") {
                 // All X bits just become 0; fastest simulation, but not nice
                 V3Number numnew(nodep, numb1.width());
                 if (v3Global.opt.xAssign() == "1") {
@@ -329,6 +333,7 @@ private:
                 AstVar* const newvarp
                     = new AstVar(nodep->fileline(), AstVarType::XTEMP, m_xrandNames.get(nodep),
                                  VFlagLogicPacked(), nodep->width());
+                newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);

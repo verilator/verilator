@@ -1364,9 +1364,10 @@ Summary:
    .. note::
 
       This option applies only to values which are explicitly written as X
-      in the Verilog source code. Initial values of clocks are set to 0
-      unless `--x-initial-edge` is specified. Initial values of all other
-      state holding variables are controlled with `--x-initial`.
+      in modules (not classes) in the Verilog source code. Initial values
+      of clocks are set to 0 unless `--x-initial-edge` is
+      specified. Initial values of all other state holding variables are
+      controlled with `--x-initial`.
 
 .. option:: --x-initial 0
 
