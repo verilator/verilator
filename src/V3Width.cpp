@@ -101,9 +101,17 @@ std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
     return str << s_det[rhs];
 }
 
-enum Castable : uint8_t { UNSUPPORTED, COMPATIBLE, DYNAMIC_ENUM, DYNAMIC_CLASS, INCOMPATIBLE };
+enum Castable : uint8_t {
+    UNSUPPORTED,
+    COMPATIBLE,
+    ENUM_EXPLICIT,
+    ENUM_IMPLICIT,
+    DYNAMIC_CLASS,
+    INCOMPATIBLE
+};
 std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
-    static const char* const s_det[] = {"UNSUP", "COMPAT", "DYN_ENUM", "DYN_CLS", "INCOMPAT"};
+    static const char* const s_det[]
+        = {"UNSUP", "COMPAT", "ENUM_EXP", "ENUM_IMP", "DYN_CLS", "INCOMPAT"};
     return str << s_det[rhs];
 }
 
@@ -1665,7 +1673,7 @@ private:
         if (castable == DYNAMIC_CLASS) {
             // Keep in place, will compute at runtime
             return;
-        } else if (castable == DYNAMIC_ENUM) {
+        } else if (castable == ENUM_EXPLICIT || castable == ENUM_IMPLICIT) {
             // TODO is from is a constant we could simplify, though normal constant
             // elimination should do much the same
             // Form: "( ((v > size) ? false : enum_valid[v[N:0]])
@@ -1760,7 +1768,8 @@ private:
                                                  << toDtp->prettyDTypeNameQ() << " from "
                                                  << fromDtp->prettyDTypeNameQ());
                 bad = true;
-            } else if (castable == COMPATIBLE || castable == DYNAMIC_ENUM) {
+            } else if (castable == COMPATIBLE || castable == ENUM_IMPLICIT
+                       || castable == ENUM_EXPLICIT) {
                 ;  // Continue
             } else if (castable == DYNAMIC_CLASS) {
                 nodep->v3error("Dynamic, not static cast, required to cast "
@@ -6277,7 +6286,8 @@ private:
         if (VN_IS(toDtp, BasicDType) || VN_IS(toDtp, NodeUOrStructDType)) {
             if (fromNumericable) return COMPATIBLE;
         } else if (VN_IS(toDtp, EnumDType)) {
-            if (fromNumericable) return DYNAMIC_ENUM;
+            if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp)) return ENUM_IMPLICIT;
+            if (fromNumericable) return ENUM_EXPLICIT;
         } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
             if (VN_IS(fromConstp, Const) && VN_AS(fromConstp, Const)->num().isNull())
                 return COMPATIBLE;

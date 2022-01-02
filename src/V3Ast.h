@@ -1699,7 +1699,7 @@ public:
             editCountInc();
         }
     }
-    void dtypeFrom(AstNode* fromp) {
+    void dtypeFrom(const AstNode* fromp) {
         if (fromp) dtypep(fromp->dtypep());
     }
     void dtypeChgSigned(bool flag = true);

@@ -59,7 +59,7 @@ module t (/*AUTOARG*/
       end
       //
       else if (cyc == 20) begin
-         e <= 'h11; // Unknown
+         e <= my_t'('h11); // Unknown
       end
       else if (cyc == 21) begin
          `checks(e.name, ""); // Unknown
