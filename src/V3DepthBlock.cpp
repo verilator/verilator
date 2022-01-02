@@ -32,7 +32,7 @@
 
 //######################################################################
 
-class DepthBlockVisitor final : public AstNVisitor {
+class DepthBlockVisitor final : public VNVisitor {
 private:
     // NODE STATE
 

@@ -30,14 +30,14 @@
 //######################################################################
 // Name state, as a visitor of each AstNode
 
-class NameVisitor final : public AstNVisitor {
+class NameVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
     //  AstCell::user1()        -> bool.  Set true if already processed
     //  AstScope::user1()       -> bool.  Set true if already processed
     //  AstVar::user1()         -> bool.  Set true if already processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     const AstNodeModule* m_modp = nullptr;

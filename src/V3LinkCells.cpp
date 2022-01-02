@@ -91,7 +91,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkCellsVisitor final : public AstNVisitor {
+class LinkCellsVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
@@ -101,8 +101,8 @@ private:
     //   AstCell::user2()               // bool   clone renaming completed
     //  Allocated across all readFiles in V3Global::readFiles:
     //   AstNode::user4p()      // VSymEnt*    Package and typedef symbol names
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     VInFilter* const m_filterp;  // Parser filter
@@ -434,10 +434,10 @@ private:
                     AstNodeArrayDType* const arrp
                         = new AstUnpackArrayDType(nodep->fileline(), VFlagChildDType(), idtypep,
                                                   nodep->rangep()->cloneTree(true));
-                    varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
+                    varp = new AstVar(nodep->fileline(), VVarType::IFACEREF, varName,
                                       VFlagChildDType(), arrp);
                 } else {
-                    varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
+                    varp = new AstVar(nodep->fileline(), VVarType::IFACEREF, varName,
                                       VFlagChildDType(), idtypep);
                 }
                 varp->isIfaceParent(true);

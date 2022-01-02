@@ -30,7 +30,7 @@
 //######################################################################
 // Stats class functions
 
-class StatsVisitor final : public AstNVisitor {
+class StatsVisitor final : public VNVisitor {
 private:
     // NODE STATE/TYPES
 
@@ -48,7 +48,7 @@ private:
     bool m_tracingCall;  // Iterating into a CCall to a CFunc
 
     std::vector<VDouble0> m_statTypeCount;  // Nodes of given type
-    VDouble0 m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];  // Nodes of given type
+    VDouble0 m_statAbove[VNType::_ENUM_END][VNType::_ENUM_END];  // Nodes of given type
     std::array<VDouble0, VBranchPred::_ENUM_END> m_statPred;  // Nodes of given type
     VDouble0 m_statInstr;  // Instruction count
     VDouble0 m_statInstrFast;  // Instruction count, non-slow() eval functions only
@@ -214,7 +214,7 @@ public:
         m_instrs = 0;
         m_tracingCall = false;
         // Initialize arrays
-        m_statTypeCount.resize(AstType::_ENUM_END);
+        m_statTypeCount.resize(VNType::_ENUM_END);
         // Process
         iterate(nodep);
     }
@@ -247,19 +247,19 @@ public:
             }
         }
         // Node types
-        for (int type = 0; type < AstType::_ENUM_END; type++) {
+        for (int type = 0; type < VNType::_ENUM_END; type++) {
             const double count = double(m_statTypeCount.at(type));
             if (count != 0.0) {
-                V3Stats::addStat(m_stage, string("Node count, ") + AstType(type).ascii(), count);
+                V3Stats::addStat(m_stage, string("Node count, ") + VNType(type).ascii(), count);
             }
         }
-        for (int type = 0; type < AstType::_ENUM_END; type++) {
-            for (int type2 = 0; type2 < AstType::_ENUM_END; type2++) {
+        for (int type = 0; type < VNType::_ENUM_END; type++) {
+            for (int type2 = 0; type2 < VNType::_ENUM_END; type2++) {
                 const double count = double(m_statAbove[type][type2]);
                 if (count != 0.0) {
                     V3Stats::addStat(m_stage,
-                                     (string("Node pairs, ") + AstType(type).ascii() + "_"
-                                      + AstType(type2).ascii()),
+                                     (string("Node pairs, ") + VNType(type).ascii() + "_"
+                                      + VNType(type2).ascii()),
                                      count);
                 }
             }

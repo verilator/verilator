@@ -34,14 +34,14 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkParseVisitor final : public AstNVisitor {
+class LinkParseVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on netlist
     //  AstNode::user1()        -> bool.  True if processed
     //  AstNode::user2()        -> bool.  True if fileline recomputed
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // TYPES
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
@@ -232,11 +232,11 @@ private:
 
         if (v3Global.opt.publicFlatRW()) {
             switch (nodep->varType()) {
-            case AstVarType::VAR:  // FALLTHRU
-            case AstVarType::GPARAM:  // FALLTHRU
-            case AstVarType::LPARAM:  // FALLTHRU
-            case AstVarType::PORT:  // FALLTHRU
-            case AstVarType::WIRE: nodep->sigUserRWPublic(true); break;
+            case VVarType::VAR:  // FALLTHRU
+            case VVarType::GPARAM:  // FALLTHRU
+            case VVarType::LPARAM:  // FALLTHRU
+            case VVarType::PORT:  // FALLTHRU
+            case VVarType::WIRE: nodep->sigUserRWPublic(true); break;
             default: break;
             }
         }
@@ -298,41 +298,41 @@ private:
     virtual void visit(AstAttrOf* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
-        if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
+        if (nodep->attrType() == VAttrType::DT_PUBLIC) {
             AstTypedef* const typep = VN_AS(nodep->backp(), Typedef);
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
+        } else if (nodep->attrType() == VAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClockEn(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_PUBLIC) {
+        } else if (nodep->attrType() == VAttrType::VAR_PUBLIC) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             m_varp->sigModPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT) {
+        } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RD) {
+        } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT_RD) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRdPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RW) {
+        } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT_RW) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
+        } else if (nodep->attrType() == VAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrIsolateAssign(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_SFORMAT) {
+        } else if (nodep->attrType() == VAttrType::VAR_SFORMAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrSFormat(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_SPLIT_VAR) {
+        } else if (nodep->attrType() == VAttrType::VAR_SPLIT_VAR) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             if (!VN_IS(m_modp, Module)) {
                 m_varp->v3warn(
@@ -344,15 +344,15 @@ private:
                 m_varp->attrSplitVar(true);
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_SC_BV) {
+        } else if (nodep->attrType() == VAttrType::VAR_SC_BV) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_CLOCKER) {
+        } else if (nodep->attrType() == VAttrType::VAR_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(VVarAttrClocker::CLOCKER_YES);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_NO_CLOCKER) {
+        } else if (nodep->attrType() == VAttrType::VAR_NO_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(VVarAttrClocker::CLOCKER_NO);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

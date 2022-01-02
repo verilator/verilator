@@ -30,10 +30,10 @@
 //######################################################################
 // CoverageJoin state, as a visitor of each AstNode
 
-class CoverageJoinVisitor final : public AstNVisitor {
+class CoverageJoinVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // AstUser4InUse     In V3Hasher via V3DupFinder
+    // VNUser4InUse     In V3Hasher via V3DupFinder
 
     // STATE
     std::vector<AstCoverToggle*> m_toggleps;  // List of of all AstCoverToggle's

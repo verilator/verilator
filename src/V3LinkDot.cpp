@@ -129,9 +129,9 @@ private:
     //  AstVar::user4()                 // bool.          True if port set for this variable
     //  AstNodeBlock::user4()           // bool.          Did name processing
     //  AstNodeModule::user4()          // bool.          Live module
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser4InUse m_inuser4;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser4InUse m_inuser4;
 
 public:
     // ENUMS
@@ -706,7 +706,7 @@ LinkDotState* LinkDotState::s_errorThisp = nullptr;
 
 //======================================================================
 
-class LinkDotFindVisitor final : public AstNVisitor {
+class LinkDotFindVisitor final : public VNVisitor {
     // STATE
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     AstNodeModule* m_classOrPackagep = nullptr;  // Current package
@@ -1015,10 +1015,10 @@ class LinkDotFindVisitor final : public AstNVisitor {
                 if (dtypep) {
                     dtypep->unlinkFrBack();
                 } else {
-                    dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
+                    dtypep = new AstBasicDType(nodep->fileline(), VBasicDTypeKwd::LOGIC);
                 }
                 AstVar* const newvarp
-                    = new AstVar(nodep->fileline(), AstVarType::VAR, nodep->name(),
+                    = new AstVar(nodep->fileline(), VVarType::VAR, nodep->name(),
                                  VFlagChildDType(), dtypep);  // Not dtype resolved yet
                 newvarp->direction(VDirection::OUTPUT);
                 newvarp->lifetime(VLifetime::AUTOMATIC);
@@ -1132,9 +1132,8 @@ class LinkDotFindVisitor final : public AstNVisitor {
                     // We first search if the parameter is overwritten and then replace it with a
                     // new value. It will keep the same FileLine information.
                     if (v3Global.opt.hasParameter(nodep->name())) {
-                        AstVar* const newp
-                            = new AstVar(nodep->fileline(), AstVarType(AstVarType::GPARAM),
-                                         nodep->name(), nodep);
+                        AstVar* const newp = new AstVar(
+                            nodep->fileline(), VVarType(VVarType::GPARAM), nodep->name(), nodep);
                         newp->combineType(nodep);
                         const string svalue = v3Global.opt.parameter(nodep->name());
                         if (AstNode* const valuep
@@ -1302,7 +1301,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
                 AstVar* argrefp = nullptr;
                 if (const auto parserefp = VN_CAST(argp, ParseRef)) {
                     // We use an int type, this might get changed in V3Width when types resolve
-                    argrefp = new AstVar{parserefp->fileline(), AstVarType::BLOCKTEMP,
+                    argrefp = new AstVar{parserefp->fileline(), VVarType::BLOCKTEMP,
                                          parserefp->name(), argp->findSigned32DType()};
                     parserefp->replaceWith(argrefp);
                     VL_DO_DANGLING(parserefp->deleteTree(), parserefp);
@@ -1382,7 +1381,7 @@ public:
 
 //======================================================================
 
-class LinkDotParamVisitor final : public AstNVisitor {
+class LinkDotParamVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on global
@@ -1574,7 +1573,7 @@ public:
 
 //======================================================================
 
-class LinkDotScopeVisitor final : public AstNVisitor {
+class LinkDotScopeVisitor final : public VNVisitor {
 
     // STATE
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
@@ -1741,7 +1740,7 @@ public:
 //======================================================================
 
 // Iterate an interface to resolve modports
-class LinkDotIfaceVisitor final : public AstNVisitor {
+class LinkDotIfaceVisitor final : public VNVisitor {
     // STATE
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
@@ -1834,7 +1833,7 @@ void LinkDotState::computeIfaceModSyms() {
 
 //======================================================================
 
-class LinkDotResolveVisitor final : public AstNVisitor {
+class LinkDotResolveVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on global
@@ -1844,8 +1843,8 @@ private:
     //  *::user4()              -> See LinkDotState
     // Cleared on Cell
     //  AstVar::user5()         // bool.          True if pin used in this cell
-    const AstUser3InUse m_inuser3;
-    const AstUser5InUse m_inuser5;
+    const VNUser3InUse m_inuser3;
+    const VNUser5InUse m_inuser5;
 
     // TYPES
     enum DotPosition : uint8_t {
@@ -1924,7 +1923,7 @@ private:
                                       << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                 }
             }
-            AstVar* const newp = new AstVar(nodep->fileline(), AstVarType::WIRE, nodep->name(),
+            AstVar* const newp = new AstVar(nodep->fileline(), VVarType::WIRE, nodep->name(),
                                             VFlagLogicPacked(), 1);
             newp->trace(modp->modTrace());
             nodep->varp(newp);

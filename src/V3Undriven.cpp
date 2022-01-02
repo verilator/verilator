@@ -235,15 +235,15 @@ public:
 //######################################################################
 // Undriven state, as a visitor of each AstNode
 
-class UndrivenVisitor final : public AstNVisitor {
+class UndrivenVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Netlist:
     //  AstVar::user1p          -> UndrivenVar* for usage var, 0=not set yet
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
     // Each always:
     //  AstNode::user2p         -> UndrivenVar* for usage var, 0=not set yet
-    const AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished

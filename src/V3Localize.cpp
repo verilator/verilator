@@ -36,7 +36,7 @@
 //######################################################################
 // LocalizeVisitor
 
-class LocalizeVisitor final : public AstNVisitor {
+class LocalizeVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstVarScope::user1()    ->  Bool indicating VarScope is not optimizable.
@@ -45,10 +45,10 @@ private:
     //  AstVarScope::user3p()   ->  Set of CFuncs referencing this VarScope. (via m_accessors)
     //  AstCFunc::user4p()      ->  Multimap of 'VarScope -> VarRefs that reference that VarScope'
     //                              in this function. (via m_references)
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
 
     AstUser3Allocator<AstVarScope, std::unordered_set<AstCFunc*>> m_accessors;
     AstUser4Allocator<AstCFunc, std::unordered_multimap<const AstVarScope*, AstVarRef*>>
@@ -65,7 +65,7 @@ private:
 
     bool isOptimizable(AstVarScope* nodep) {
         return !nodep->user1() ||  // Not marked as not optimizable, or ...
-               (nodep->varp()->varType() == AstVarType::BLOCKTEMP
+               (nodep->varp()->varType() == VVarType::BLOCKTEMP
                 && m_accessors(nodep).size() == 1);  // .. a block temp used in a single CFunc
     }
 

@@ -26,7 +26,7 @@
 // Standard defines for all AstNode final classes
 
 #define ASTNODE_NODE_FUNCS_NO_DTOR(name) \
-    virtual void accept(AstNVisitor& v) override { v.visit(this); } \
+    virtual void accept(VNVisitor& v) override { v.visit(this); } \
     virtual AstNode* clone() override { return new Ast##name(*this); } \
     static Ast##name* cloneTreeNull(Ast##name* nodep, bool cloneNextLink) { \
         return nodep ? nodep->cloneTree(cloneNextLink) : nullptr; \
@@ -391,10 +391,10 @@ class AstParamTypeDType final : public AstNodeDType {
     // Parents: MODULE
     // A parameter type statement; much like a var or typedef
 private:
-    const AstVarType m_varType;  // Type of variable (for localparam vs. param)
+    const VVarType m_varType;  // Type of variable (for localparam vs. param)
     string m_name;  // Name of variable
 public:
-    AstParamTypeDType(FileLine* fl, AstVarType type, const string& name, VFlagChildDType,
+    AstParamTypeDType(FileLine* fl, VVarType type, const string& name, VFlagChildDType,
                       AstNodeDType* dtp)
         : ASTGEN_SUPER_ParamTypeDType(fl)
         , m_varType{type}
@@ -428,9 +428,9 @@ public:
     virtual bool maybePointedTo() const override { return true; }
     virtual bool hasDType() const override { return true; }
     virtual void name(const string& flag) override { m_name = flag; }
-    AstVarType varType() const { return m_varType; }  // * = Type of variable
+    VVarType varType() const { return m_varType; }  // * = Type of variable
     bool isParam() const { return true; }
-    bool isGParam() const { return (varType() == AstVarType::GPARAM); }
+    bool isGParam() const { return (varType() == VVarType::GPARAM); }
     virtual bool isCompound() const override {
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
@@ -824,7 +824,7 @@ class AstBasicDType final : public AstNodeDType {
     // Children: RANGE (converted to constant in V3Width)
 private:
     struct Members {
-        AstBasicDTypeKwd m_keyword;  // (also in VBasicTypeKey) What keyword created basic type
+        VBasicDTypeKwd m_keyword;  // (also in VBasicTypeKey) What keyword created basic type
         VNumRange m_nrange;  // (also in VBasicTypeKey) Numeric msb/lsb (if non-opaque keyword)
         bool operator==(const Members& rhs) const {
             return rhs.m_keyword == m_keyword && rhs.m_nrange == m_nrange;
@@ -832,31 +832,30 @@ private:
     } m;
     // See also in AstNodeDType: m_width, m_widthMin, m_numeric(issigned)
 public:
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, const VSigning& signst = VSigning::NOSIGN)
+    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, const VSigning& signst = VSigning::NOSIGN)
         : ASTGEN_SUPER_BasicDType(fl) {
         init(kwd, signst, 0, -1, nullptr);
     }
     AstBasicDType(FileLine* fl, VFlagLogicPacked, int wantwidth)
         : ASTGEN_SUPER_BasicDType(fl) {
-        init(AstBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr);
+        init(VBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr);
     }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER_BasicDType(fl) {
-        init(AstBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr);
+        init(VBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr);
     }
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSigning numer, int wantwidth, int widthmin)
+    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int widthmin)
         : ASTGEN_SUPER_BasicDType(fl) {
         init(kwd, numer, wantwidth, widthmin, nullptr);
     }
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSigning numer, VNumRange range,
-                  int widthmin)
+    AstBasicDType(FileLine* fl, VBasicDTypeKwd kwd, VSigning numer, VNumRange range, int widthmin)
         : ASTGEN_SUPER_BasicDType(fl) {
         init(kwd, numer, range.elements(), widthmin, nullptr);
         m.m_nrange = range;  // as init() presumes lsb==0, but range.lsb() might not be
     }
     // See also addRange in verilog.y
 private:
-    void init(AstBasicDTypeKwd kwd, VSigning numer, int wantwidth, int wantwidthmin,
+    void init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int wantwidthmin,
               AstRange* rangep) {
         // wantwidth=0 means figure it out, but if a widthmin is >=0
         //    we allow width 0 so that {{0{x}},y} works properly
@@ -864,8 +863,8 @@ private:
         m.m_keyword = kwd;
         // Implicitness: // "parameter X" is implicit and sized from initial
         // value, "parameter reg x" not
-        if (keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT) {
-            if (rangep || wantwidth) m.m_keyword = AstBasicDTypeKwd::LOGIC;
+        if (keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT) {
+            if (rangep || wantwidth) m.m_keyword = VBasicDTypeKwd::LOGIC;
         }
         if (numer == VSigning::NOSIGN) {
             if (keyword().isSigned()) {
@@ -930,7 +929,7 @@ public:
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     virtual int widthTotalBytes() const override;
     virtual bool isFourstate() const override { return keyword().isFourstate(); }
-    AstBasicDTypeKwd keyword() const {  // Avoid using - use isSomething accessors instead
+    VBasicDTypeKwd keyword() const {  // Avoid using - use isSomething accessors instead
         return m.m_keyword;
     }
     bool isBitLogic() const { return keyword().isBitLogic(); }
@@ -941,10 +940,10 @@ public:
     bool isZeroInit() const { return keyword().isZeroInit(); }
     bool isRanged() const { return rangep() || m.m_nrange.ranged(); }
     bool isDpiBitVec() const {  // DPI uses svBitVecVal
-        return keyword() == AstBasicDTypeKwd::BIT && isRanged();
+        return keyword() == VBasicDTypeKwd::BIT && isRanged();
     }
     bool isDpiLogicVec() const {  // DPI uses svLogicVecVal
-        return keyword().isFourstate() && !(keyword() == AstBasicDTypeKwd::LOGIC && !isRanged());
+        return keyword().isFourstate() && !(keyword() == VBasicDTypeKwd::LOGIC && !isRanged());
     }
     bool isDpiPrimitive() const {  // DPI uses a primitive type
         return !isDpiBitVec() && !isDpiLogicVec();
@@ -959,7 +958,7 @@ public:
     bool littleEndian() const {
         return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian());
     }
-    bool implicit() const { return keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT; }
+    bool implicit() const { return keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT; }
     VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }
     void cvtRangeConst() {  // Convert to smaller representation
         if (rangep() && VN_IS(rangep()->leftp(), Const) && VN_IS(rangep()->rightp(), Const)) {
@@ -1956,10 +1955,10 @@ private:
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
-    AstVarType m_varType;  // Type of variable
+    VVarType m_varType;  // Type of variable
     VDirection m_direction;  // Direction input/output etc
     VDirection m_declDirection;  // Declared direction input/output etc
-    AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
+    VBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
     MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
@@ -2044,7 +2043,7 @@ private:
     }
 
 public:
-    AstVar(FileLine* fl, AstVarType type, const string& name, VFlagChildDType, AstNodeDType* dtp)
+    AstVar(FileLine* fl, VVarType type, const string& name, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER_Var(fl)
         , m_name{name}
         , m_origName{name} {
@@ -2055,10 +2054,10 @@ public:
         if (dtp->basicp()) {
             m_declKwd = dtp->basicp()->keyword();
         } else {
-            m_declKwd = AstBasicDTypeKwd::LOGIC;
+            m_declKwd = VBasicDTypeKwd::LOGIC;
         }
     }
-    AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtp)
+    AstVar(FileLine* fl, VVarType type, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER_Var(fl)
         , m_name{name}
         , m_origName{name} {
@@ -2069,28 +2068,28 @@ public:
         if (dtp->basicp()) {
             m_declKwd = dtp->basicp()->keyword();
         } else {
-            m_declKwd = AstBasicDTypeKwd::LOGIC;
+            m_declKwd = VBasicDTypeKwd::LOGIC;
         }
     }
-    AstVar(FileLine* fl, AstVarType type, const string& name, VFlagLogicPacked, int wantwidth)
+    AstVar(FileLine* fl, VVarType type, const string& name, VFlagLogicPacked, int wantwidth)
         : ASTGEN_SUPER_Var(fl)
         , m_name{name}
         , m_origName{name} {
         init();
         combineType(type);
         dtypeSetLogicSized(wantwidth, VSigning::UNSIGNED);
-        m_declKwd = AstBasicDTypeKwd::LOGIC;
+        m_declKwd = VBasicDTypeKwd::LOGIC;
     }
-    AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
+    AstVar(FileLine* fl, VVarType type, const string& name, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER_Var(fl)
         , m_name{name}
         , m_origName{name} {
         init();
         combineType(type);
         dtypeSetBitSized(wantwidth, VSigning::UNSIGNED);
-        m_declKwd = AstBasicDTypeKwd::BIT;
+        m_declKwd = VBasicDTypeKwd::BIT;
     }
-    AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
+    AstVar(FileLine* fl, VVarType type, const string& name, AstVar* examplep)
         : ASTGEN_SUPER_Var(fl)
         , m_name{name}
         , m_origName{name} {
@@ -2107,7 +2106,7 @@ public:
     virtual bool maybePointedTo() const override { return true; }
     virtual string origName() const override { return m_origName; }  // * = Original name
     void origName(const string& name) { m_origName = name; }
-    AstVarType varType() const { return m_varType; }  // * = Type of variable
+    VVarType varType() const { return m_varType; }  // * = Type of variable
     void direction(const VDirection& flag) {
         m_direction = flag;
         if (m_direction == VDirection::INOUT) m_tristate = true;
@@ -2116,7 +2115,7 @@ public:
     bool isIO() const { return m_direction != VDirection::NONE; }
     void declDirection(const VDirection& flag) { m_declDirection = flag; }
     VDirection declDirection() const { return m_declDirection; }
-    void varType(AstVarType type) { m_varType = type; }
+    void varType(VVarType type) { m_varType = type; }
     void varType2Out() {
         m_tristate = false;
         m_direction = VDirection::OUTPUT;
@@ -2125,7 +2124,7 @@ public:
         m_tristate = false;
         m_direction = VDirection::INPUT;
     }
-    AstBasicDTypeKwd declKwd() const { return m_declKwd; }
+    VBasicDTypeKwd declKwd() const { return m_declKwd; }
     string scType() const;  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string cPubArgType(bool named, bool forReturn) const;
@@ -2137,7 +2136,7 @@ public:
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
-    void combineType(AstVarType type);
+    void combineType(VVarType type);
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
@@ -2215,7 +2214,7 @@ public:
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
-    bool isIfaceRef() const { return (varType() == AstVarType::IFACEREF); }
+    bool isIfaceRef() const { return (varType() == VVarType::IFACEREF); }
     bool isIfaceParent() const { return m_isIfaceParent; }
     bool isSignal() const { return varType().isSignal(); }
     bool isTemp() const { return varType().isTemp(); }
@@ -2225,14 +2224,14 @@ public:
                 // Wrapper would otherwise duplicate wrapped module's coverage
                 && !isSc() && !isPrimaryIO() && !isConst() && !isDouble() && !isString());
     }
-    bool isClassMember() const { return varType() == AstVarType::MEMBER; }
-    bool isStatementTemp() const { return (varType() == AstVarType::STMTTEMP); }
-    bool isXTemp() const { return (varType() == AstVarType::XTEMP); }
+    bool isClassMember() const { return varType() == VVarType::MEMBER; }
+    bool isStatementTemp() const { return (varType() == VVarType::STMTTEMP); }
+    bool isXTemp() const { return (varType() == VVarType::XTEMP); }
     bool isParam() const {
-        return (varType() == AstVarType::LPARAM || varType() == AstVarType::GPARAM);
+        return (varType() == VVarType::LPARAM || varType() == VVarType::GPARAM);
     }
-    bool isGParam() const { return (varType() == AstVarType::GPARAM); }
-    bool isGenVar() const { return (varType() == AstVarType::GENVAR); }
+    bool isGParam() const { return (varType() == VVarType::GPARAM); }
+    bool isGenVar() const { return (varType() == VVarType::GENVAR); }
     bool isBitLogic() const {
         AstBasicDType* bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();
@@ -2294,8 +2293,8 @@ public:
         if (typevarp->attrScClocked()) attrScClocked(true);
     }
     void inlineAttrReset(const string& name) {
-        if (direction() == VDirection::INOUT && varType() == AstVarType::WIRE) {
-            m_varType = AstVarType::TRIWIRE;
+        if (direction() == VDirection::INOUT && varType() == VVarType::WIRE) {
+            m_varType = VVarType::TRIWIRE;
         }
         m_direction = VDirection::NONE;
         m_name = name;
@@ -3955,17 +3954,17 @@ class AstDisplay final : public AstNodeStmt {
     // Children: file which must be a varref
     // Children: SFORMATF to generate print string
 private:
-    AstDisplayType m_displayType;
+    VDisplayType m_displayType;
 
 public:
-    AstDisplay(FileLine* fl, AstDisplayType dispType, const string& text, AstNode* filep,
+    AstDisplay(FileLine* fl, VDisplayType dispType, const string& text, AstNode* filep,
                AstNode* exprsp, char missingArgChar = 'd')
         : ASTGEN_SUPER_Display(fl) {
         setOp1p(new AstSFormatF(fl, text, true, exprsp, missingArgChar));
         setNOp3p(filep);
         m_displayType = dispType;
     }
-    AstDisplay(FileLine* fl, AstDisplayType dispType, AstNode* filep, AstNode* exprsp,
+    AstDisplay(FileLine* fl, VDisplayType dispType, AstNode* filep, AstNode* exprsp,
                char missingArgChar = 'd')
         : ASTGEN_SUPER_Display(fl) {
         setOp1p(new AstSFormatF(fl, AstSFormatF::NoFormat(), exprsp, missingArgChar));
@@ -3993,8 +3992,8 @@ public:
         return displayType() == static_cast<const AstDisplay*>(samep)->displayType();
     }
     virtual int instrCount() const override { return INSTR_COUNT_PLI; }
-    AstDisplayType displayType() const { return m_displayType; }
-    void displayType(AstDisplayType type) { m_displayType = type; }
+    VDisplayType displayType() const { return m_displayType; }
+    void displayType(VDisplayType type) { m_displayType = type; }
     // * = Add a newline for $display
     bool addNewline() const { return displayType().addNewline(); }
     void fmtp(AstSFormatF* nodep) { addOp1p(nodep); }  // op1 = To-String formatter
@@ -4030,10 +4029,10 @@ class AstElabDisplay final : public AstNode {
     // Parents: stmtlist
     // Children: SFORMATF to generate print string
 private:
-    AstDisplayType m_displayType;
+    VDisplayType m_displayType;
 
 public:
-    AstElabDisplay(FileLine* fl, AstDisplayType dispType, AstNode* exprsp)
+    AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNode* exprsp)
         : ASTGEN_SUPER_ElabDisplay(fl) {
         setOp1p(new AstSFormatF(fl, AstSFormatF::NoFormat(), exprsp));
         m_displayType = dispType;
@@ -4057,8 +4056,8 @@ public:
         return displayType() == static_cast<const AstElabDisplay*>(samep)->displayType();
     }
     virtual int instrCount() const override { return INSTR_COUNT_PLI; }
-    AstDisplayType displayType() const { return m_displayType; }
-    void displayType(AstDisplayType type) { m_displayType = type; }
+    VDisplayType displayType() const { return m_displayType; }
+    void displayType(VDisplayType type) { m_displayType = type; }
     void fmtp(AstSFormatF* nodep) { addOp1p(nodep); }  // op1 = To-String formatter
     AstSFormatF* fmtp() const { return VN_AS(op1p(), SFormatF); }
 };
@@ -4406,7 +4405,7 @@ class AstNodeReadWriteMem VL_NOT_FINAL : public AstNodeStmt {
 private:
     const bool m_isHex;  // readmemh, not readmemb
 public:
-    AstNodeReadWriteMem(AstType t, FileLine* fl, bool hex, AstNode* filenamep, AstNode* memp,
+    AstNodeReadWriteMem(VNType t, FileLine* fl, bool hex, AstNode* filenamep, AstNode* memp,
                         AstNode* lsbp, AstNode* msbp)
         : AstNodeStmt(t, fl)
         , m_isHex(hex) {
@@ -5171,15 +5170,15 @@ public:
 
 class AstPragma final : public AstNode {
 private:
-    const AstPragmaType m_pragType;  // Type of pragma
+    const VPragmaType m_pragType;  // Type of pragma
 public:
     // Pragmas don't result in any output code, they're just flags that affect
     // other processing in verilator.
-    AstPragma(FileLine* fl, AstPragmaType pragType)
+    AstPragma(FileLine* fl, VPragmaType pragType)
         : ASTGEN_SUPER_Pragma(fl)
         , m_pragType{pragType} {}
     ASTNODE_NODE_FUNCS(Pragma)
-    AstPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
+    VPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool same(const AstNode* samep) const override {
         return pragType() == static_cast<const AstPragma*>(samep)->pragType();
@@ -5341,8 +5340,8 @@ private:
     const VNumRange m_bitRange;  // Property of var the trace details
     const VNumRange m_arrayRange;  // Property of var the trace details
     const uint32_t m_codeInc;  // Code increment
-    const AstVarType m_varType;  // Type of variable (for localparam vs. param)
-    const AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
+    const VVarType m_varType;  // Type of variable (for localparam vs. param)
+    const VBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     const VDirection m_declDirection;  // Declared direction input/output etc
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
@@ -5374,8 +5373,8 @@ public:
     uint32_t codeInc() const { return m_codeInc; }
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
-    AstVarType varType() const { return m_varType; }
-    AstBasicDTypeKwd declKwd() const { return m_declKwd; }
+    VVarType varType() const { return m_varType; }
+    VBasicDTypeKwd declKwd() const { return m_declKwd; }
     VDirection declDirection() const { return m_declDirection; }
     AstNode* valuep() const { return op1p(); }
 };
@@ -5473,10 +5472,9 @@ public:
 class AstAttrOf final : public AstNode {
 private:
     // Return a value of a attribute, for example a LSB or array LSB of a signal
-    AstAttrType m_attrType;  // What sort of extraction
+    VAttrType m_attrType;  // What sort of extraction
 public:
-    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp = nullptr,
-              AstNode* dimp = nullptr)
+    AstAttrOf(FileLine* fl, VAttrType attrtype, AstNode* fromp = nullptr, AstNode* dimp = nullptr)
         : ASTGEN_SUPER_AttrOf(fl) {
         setNOp1p(fromp);
         setNOp2p(dimp);
@@ -5485,7 +5483,7 @@ public:
     ASTNODE_NODE_FUNCS(AttrOf)
     AstNode* fromp() const { return op1p(); }
     AstNode* dimp() const { return op2p(); }
-    AstAttrType attrType() const { return m_attrType; }
+    VAttrType attrType() const { return m_attrType; }
     virtual void dump(std::ostream& str = std::cout) const override;
 };
 
@@ -6374,7 +6372,7 @@ public:
 
 class AstNodeSystemUniop VL_NOT_FINAL : public AstNodeUniop {
 public:
-    AstNodeSystemUniop(AstType t, FileLine* fl, AstNode* lhsp)
+    AstNodeSystemUniop(VNType t, FileLine* fl, AstNode* lhsp)
         : AstNodeUniop(t, fl, lhsp) {
         dtypeSetDouble();
     }
@@ -8253,7 +8251,7 @@ public:
 
 class AstNodeSystemBiop VL_NOT_FINAL : public AstNodeBiop {
 public:
-    AstNodeSystemBiop(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+    AstNodeSystemBiop(VNType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : AstNodeBiop(t, fl, lhsp, rhsp) {
         dtypeSetDouble();
     }
@@ -8657,7 +8655,7 @@ private:
     const bool m_immediate;  // Immediate assertion/cover
     string m_name;  // Name to report
 public:
-    AstNodeCoverOrAssert(AstType t, FileLine* fl, AstNode* propp, AstNode* passsp, bool immediate,
+    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp, bool immediate,
                          const string& name = "")
         : AstNodeStmt{t, fl}
         , m_immediate{immediate}
@@ -8725,7 +8723,7 @@ class AstNodeSimpleText VL_NOT_FINAL : public AstNodeText {
 private:
     bool m_tracking;  // When emit, it's ok to parse the string to do indentation
 public:
-    AstNodeSimpleText(AstType t, FileLine* fl, const string& textp, bool tracking = false)
+    AstNodeSimpleText(VNType t, FileLine* fl, const string& textp, bool tracking = false)
         : AstNodeText(t, fl, textp)
         , m_tracking(tracking) {}
     ASTNODE_BASE_FUNCS(NodeSimpleText)
@@ -8838,7 +8836,7 @@ class AstNodeFile VL_NOT_FINAL : public AstNode {
 private:
     string m_name;  ///< Filename
 public:
-    AstNodeFile(AstType t, FileLine* fl, const string& name)
+    AstNodeFile(VNType t, FileLine* fl, const string& name)
         : AstNode(t, fl) {
         m_name = name;
     }
@@ -9265,7 +9263,7 @@ class AstTypeTable final : public AstNode {
     AstEmptyQueueDType* m_emptyQueuep = nullptr;
     AstQueueDType* m_queueIndexp = nullptr;
     AstVoidDType* m_voidp = nullptr;
-    AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
+    AstBasicDType* m_basicps[VBasicDTypeKwd::_ENUM_MAX];
     //
     using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
     DetailedMap m_detailedMap;
@@ -9283,10 +9281,10 @@ public:
     virtual void cloneRelink() override { V3ERROR_NA; }
     AstNodeDType* typesp() const { return VN_AS(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
-    AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
-    AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width, int widthMin,
+    AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd);
+    AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width, int widthMin,
                                      VSigning numeric);
-    AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, const VNumRange& range,
+    AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, const VNumRange& range,
                                      int widthMin, VSigning numeric);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
     AstEmptyQueueDType* findEmptyQueueDType(FileLine* fl);

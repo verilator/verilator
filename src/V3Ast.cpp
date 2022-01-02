@@ -36,29 +36,29 @@ vluint64_t AstNode::s_editCntGbl = 0;  // Hot cache line
 // along with each userp, and thus by bumping this count we can make it look
 // as if we iterated across the entire tree to set all the userp's to null.
 int AstNode::s_cloneCntGbl = 0;
-uint32_t AstUser1InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t AstUser2InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t AstUser3InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t AstUser4InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t AstUser5InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser1InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser2InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser3InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser4InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser5InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 
-bool AstUser1InUse::s_userBusy = false;
-bool AstUser2InUse::s_userBusy = false;
-bool AstUser3InUse::s_userBusy = false;
-bool AstUser4InUse::s_userBusy = false;
-bool AstUser5InUse::s_userBusy = false;
+bool VNUser1InUse::s_userBusy = false;
+bool VNUser2InUse::s_userBusy = false;
+bool VNUser3InUse::s_userBusy = false;
+bool VNUser4InUse::s_userBusy = false;
+bool VNUser5InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
 //######################################################################
 // V3AstType
 
-std::ostream& operator<<(std::ostream& os, AstType rhs);
+std::ostream& operator<<(std::ostream& os, VNType rhs);
 
 //######################################################################
 // Creators
 
-AstNode::AstNode(AstType t, FileLine* fl)
+AstNode::AstNode(VNType t, FileLine* fl)
     : m_type{t}
     , m_fileline{fl} {
     m_headtailp = this;  // When made, we're a list of only a single element
@@ -796,7 +796,7 @@ void AstNode::operator delete(void* objp, size_t size) {
 //======================================================================
 // Iterators
 
-void AstNode::iterateChildren(AstNVisitor& v) {
+void AstNode::iterateChildren(VNVisitor& v) {
     // This is a very hot function
     // Optimization note: Grabbing m_op#p->m_nextp is a net loss
     ASTNODE_PREFETCH(m_op1p);
@@ -809,7 +809,7 @@ void AstNode::iterateChildren(AstNVisitor& v) {
     if (m_op4p) m_op4p->iterateAndNext(v);
 }
 
-void AstNode::iterateChildrenConst(AstNVisitor& v) {
+void AstNode::iterateChildrenConst(VNVisitor& v) {
     // This is a very hot function
     ASTNODE_PREFETCH(m_op1p);
     ASTNODE_PREFETCH(m_op2p);
@@ -821,7 +821,7 @@ void AstNode::iterateChildrenConst(AstNVisitor& v) {
     if (m_op4p) m_op4p->iterateAndNextConst(v);
 }
 
-void AstNode::iterateAndNext(AstNVisitor& v) {
+void AstNode::iterateAndNext(VNVisitor& v) {
     // This is a very hot function
     // IMPORTANT: If you replace a node that's the target of this iterator,
     // then the NEW node will be iterated on next, it isn't skipped!
@@ -855,7 +855,7 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
     }
 }
 
-void AstNode::iterateListBackwards(AstNVisitor& v) {
+void AstNode::iterateListBackwards(VNVisitor& v) {
     AstNode* nodep = this;
     while (nodep->m_nextp) nodep = nodep->m_nextp;
     while (nodep) {
@@ -869,14 +869,14 @@ void AstNode::iterateListBackwards(AstNVisitor& v) {
     }
 }
 
-void AstNode::iterateChildrenBackwards(AstNVisitor& v) {
+void AstNode::iterateChildrenBackwards(VNVisitor& v) {
     if (m_op1p) m_op1p->iterateListBackwards(v);
     if (m_op2p) m_op2p->iterateListBackwards(v);
     if (m_op3p) m_op3p->iterateListBackwards(v);
     if (m_op4p) m_op4p->iterateListBackwards(v);
 }
 
-void AstNode::iterateAndNextConst(AstNVisitor& v) {
+void AstNode::iterateAndNextConst(VNVisitor& v) {
     // Keep following the current list even if edits change it
     AstNode* nodep = this;
     do {
@@ -887,7 +887,7 @@ void AstNode::iterateAndNextConst(AstNVisitor& v) {
     } while (nodep);
 }
 
-AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
+AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     // Some visitors perform tree edits (such as V3Const), and may even
     // replace/delete the exact nodep that the visitor is called with.  If
     // this happens, the parent will lose the handle to the node that was
@@ -1242,27 +1242,27 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
     }
 }
 
-AstNodeDType* AstNode::findBasicDType(AstBasicDTypeKwd kwd) const {
+AstNodeDType* AstNode::findBasicDType(VBasicDTypeKwd kwd) const {
     // For 'simple' types we use the global directory.  These are all unsized.
     // More advanced types land under the module/task/etc
     return v3Global.rootp()->typeTablep()->findBasicDType(fileline(), kwd);
 }
 AstNodeDType* AstNode::findBitDType(int width, int widthMin, VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT,
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::BIT,
                                                              width, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC,
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::LOGIC,
                                                              width, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
                                            VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC,
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::LOGIC,
                                                              range, widthMin, numeric);
 }
 AstNodeDType* AstNode::findBitRangeDType(const VNumRange& range, int widthMin,
                                          VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT,
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::BIT,
                                                              range, widthMin, numeric);
 }
 AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {

@@ -41,7 +41,7 @@ constexpr int CDC_WEIGHT_ASYNC = 0x1000;  // Weight for edges that feed async lo
 
 //######################################################################
 
-class CdcBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class CdcBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -217,9 +217,9 @@ private:
     // AstVarScope::user2       -> bool  Used in sensitivity list
     // {statement}Node::user1p  -> CdcLogicVertex* for this statement
     // AstNode::user3           -> bool  True indicates to print %% (via V3EmitV)
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies

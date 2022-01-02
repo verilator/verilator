@@ -42,15 +42,15 @@
 
 //######################################################################
 
-class UnknownVisitor final : public AstNVisitor {
+class UnknownVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
     //  AstSel::user()          -> bool.  Set true if already processed
     //  AstArraySel::user()     -> bool.  Set true if already processed
     //  AstNode::user2p()       -> AstIf* Inserted if assignment for conditional
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -118,7 +118,7 @@ private:
             replaceHandle.relink(newp);
         } else {
             AstVar* const varp
-                = new AstVar(fl, AstVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep());
+                = new AstVar(fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep());
             m_modp->addStmtp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
             prep->replaceWith(new AstVarRef(fl, varp, VAccess::WRITE));
@@ -331,7 +331,7 @@ private:
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
                 AstVar* const newvarp
-                    = new AstVar(nodep->fileline(), AstVarType::XTEMP, m_xrandNames.get(nodep),
+                    = new AstVar(nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
                                  VFlagLogicPacked(), nodep->width());
                 newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;

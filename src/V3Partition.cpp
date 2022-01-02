@@ -1698,7 +1698,7 @@ const GraphWay* PartContraction::s_shortestWaywardCpInclusiveWay = nullptr;
 
 // Scan node, indicate whether it contains a call to a DPI imported
 // routine.
-class DpiImportCallVisitor final : public AstNVisitor {
+class DpiImportCallVisitor final : public VNVisitor {
 private:
     bool m_hasDpiHazard = false;  // Found a DPI import call.
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
@@ -2565,7 +2565,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     {
         // The V3InstrCount within LogicMTask will set user5 on each AST
         // node, to assert that we never count any node twice.
-        const AstUser5InUse inUser5;
+        const VNUser5InUse inUser5;
         Vx2MTaskMap vx2mtask;
         for (V3GraphVertex* vxp = m_fineDepsGraphp->verticesBeginp(); vxp;
              vxp = vxp->verticesNextp()) {
@@ -2909,8 +2909,8 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
         // state variable and wait to be notified.
         const string name = "__Vm_mtaskstate_" + cvtToStr(mtaskp->id());
         AstBasicDType* const mtaskStateDtypep
-            = v3Global.rootp()->typeTablep()->findBasicDType(fl, AstBasicDTypeKwd::MTASKSTATE);
-        AstVar* const varp = new AstVar(fl, AstVarType::MODULETEMP, name, mtaskStateDtypep);
+            = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
+        AstVar* const varp = new AstVar(fl, VVarType::MODULETEMP, name, mtaskStateDtypep);
         varp->valuep(new AstConst(fl, nDependencies));
         varp->protect(false);  // Do not protect as we still have references in AstText
         modp->addStmtp(varp);
@@ -3001,9 +3001,9 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
 
     // Create the fake "final" mtask state variable
     AstBasicDType* const mtaskStateDtypep
-        = v3Global.rootp()->typeTablep()->findBasicDType(fl, AstBasicDTypeKwd::MTASKSTATE);
+        = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
     AstVar* const varp
-        = new AstVar(fl, AstVarType::MODULETEMP, "__Vm_mtaskstate_final", mtaskStateDtypep);
+        = new AstVar(fl, VVarType::MODULETEMP, "__Vm_mtaskstate_final", mtaskStateDtypep);
     varp->valuep(new AstConst(fl, funcps.size()));
     varp->protect(false);  // Do not protect as we still have references in AstText
     modp->addStmtp(varp);

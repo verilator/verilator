@@ -28,7 +28,7 @@
 //######################################################################
 // ProtectLib top-level visitor
 
-class ProtectVisitor final : public AstNVisitor {
+class ProtectVisitor final : public VNVisitor {
 private:
     AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
     AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions
@@ -471,7 +471,7 @@ private:
 
     static void addLocalVariable(AstTextBlock* textp, AstVar* varp, const char* suffix) {
         AstVar* const newVarp
-            = new AstVar(varp->fileline(), AstVarType::VAR, varp->name() + suffix, varp->dtypep());
+            = new AstVar(varp->fileline(), VVarType::VAR, varp->name() + suffix, varp->dtypep());
         textp->addNodep(newVarp);
     }
 

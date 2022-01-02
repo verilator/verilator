@@ -50,7 +50,7 @@
 
 //######################################################################
 
-class CaseLintVisitor final : public AstNVisitor {
+class CaseLintVisitor final : public VNVisitor {
 private:
     const AstNodeCase* m_caseExprp
         = nullptr;  // Under a CASE value node, if so the relevant case statement
@@ -117,12 +117,12 @@ public:
 //######################################################################
 // Case state, as a visitor of each AstNode
 
-class CaseVisitor final : public AstNVisitor {
+class CaseVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared each Case
     //  AstIf::user3()          -> bool.  Set true to indicate clone not needed
-    const AstUser3InUse m_inuser3;
+    const VNUser3InUse m_inuser3;
 
     // STATE
     VDouble0 m_statCaseFast;  // Statistic tracking

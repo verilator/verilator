@@ -34,7 +34,7 @@
 
 //######################################################################
 
-class CombBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class CombBaseVisitor VL_NOT_FINAL : public VNVisitor {
 protected:
     // STATE
 
@@ -121,8 +121,8 @@ class CombineVisitor final : CombBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
-    const AstUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
-    //  AstUser4InUse     part of V3Hasher in V3DupFinder
+    const VNUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
+    //  VNUser4InUse     part of V3Hasher in V3DupFinder
 
     // STATE
     VDouble0 m_cfuncsCombined;  // Statistic tracking

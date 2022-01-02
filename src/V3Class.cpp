@@ -29,12 +29,12 @@
 
 //######################################################################
 
-class ClassVisitor final : public AstNVisitor {
+class ClassVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstClass::user1()       -> bool.  True if iterated already
     //  AstVar::user1p()        -> AstVarScope*  Scope used with this var
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // MEMBERS
     string m_prefix;  // String prefix to add to name based on hier

@@ -46,7 +46,7 @@ void V3Global::checkTree() const { rootp()->checkTree(); }
 void V3Global::readFiles() {
     // NODE STATE
     //   AstNode::user4p()      // VSymEnt*    Package and typedef symbol names
-    const AstUser4InUse inuser4;
+    const VNUser4InUse inuser4;
 
     VInFilter filter(v3Global.opt.pipeFilter());
     V3ParseSym parseSyms(v3Global.rootp());  // Symbol table must be common across all parsing

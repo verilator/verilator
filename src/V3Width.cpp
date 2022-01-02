@@ -180,7 +180,7 @@ std::ostream& operator<<(std::ostream& str, const WidthVP* vup) {
 //######################################################################
 
 class WidthClearVisitor final {
-    // Rather than a AstNVisitor, can just quickly touch every node
+    // Rather than a VNVisitor, can just quickly touch every node
     void clearWidthRecurse(AstNode* nodep) {
         for (; nodep; nodep = nodep->nextp()) {
             nodep->didWidth(false);
@@ -203,10 +203,10 @@ public:
 
 //######################################################################
 
-class WidthVisitor final : public AstNVisitor {
+class WidthVisitor final : public VNVisitor {
 private:
     // TYPES
-    using TableMap = std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*>;
+    using TableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
     using PatVecMap = std::map<int, AstPatMember*>;
 
     // STATE
@@ -1337,34 +1337,34 @@ private:
         if (nodep->dimp()) userIterateAndNext(nodep->dimp(), WidthVP(SELF, BOTH).p());
         // Don't iterate children, don't want to lose VarRef.
         switch (nodep->attrType()) {
-        case AstAttrType::VAR_BASE:
-        case AstAttrType::MEMBER_BASE:
-        case AstAttrType::ENUM_BASE:
+        case VAttrType::VAR_BASE:
+        case VAttrType::MEMBER_BASE:
+        case VAttrType::ENUM_BASE:
             // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
             break;
-        case AstAttrType::DIM_DIMENSIONS:
-        case AstAttrType::DIM_UNPK_DIMENSIONS: {
+        case VAttrType::DIM_DIMENSIONS:
+        case VAttrType::DIM_UNPK_DIMENSIONS: {
             UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
             const std::pair<uint32_t, uint32_t> dim = nodep->fromp()->dtypep()->dimensions(true);
-            const int val = (nodep->attrType() == AstAttrType::DIM_UNPK_DIMENSIONS
-                                 ? dim.second
-                                 : (dim.first + dim.second));
+            const int val
+                = (nodep->attrType() == VAttrType::DIM_UNPK_DIMENSIONS ? dim.second
+                                                                       : (dim.first + dim.second));
             nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Signed32(), val));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             break;
         }
-        case AstAttrType::DIM_BITS:
-        case AstAttrType::DIM_HIGH:
-        case AstAttrType::DIM_INCREMENT:
-        case AstAttrType::DIM_LEFT:
-        case AstAttrType::DIM_LOW:
-        case AstAttrType::DIM_RIGHT:
-        case AstAttrType::DIM_SIZE: {
+        case VAttrType::DIM_BITS:
+        case VAttrType::DIM_HIGH:
+        case VAttrType::DIM_INCREMENT:
+        case VAttrType::DIM_LEFT:
+        case VAttrType::DIM_LOW:
+        case VAttrType::DIM_RIGHT:
+        case VAttrType::DIM_SIZE: {
             UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
             AstNodeDType* const dtypep = nodep->fromp()->dtypep();
             if (VN_IS(dtypep, QueueDType)) {
                 switch (nodep->attrType()) {
-                case AstAttrType::DIM_SIZE: {
+                case VAttrType::DIM_SIZE: {
                     AstNode* const newp = new AstCMethodHard(
                         nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size", nullptr);
                     newp->dtypeSetSigned32();
@@ -1374,15 +1374,15 @@ private:
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     break;
                 }
-                case AstAttrType::DIM_LEFT:
-                case AstAttrType::DIM_LOW: {
+                case VAttrType::DIM_LEFT:
+                case VAttrType::DIM_LOW: {
                     AstNode* const newp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     break;
                 }
-                case AstAttrType::DIM_RIGHT:
-                case AstAttrType::DIM_HIGH: {
+                case VAttrType::DIM_RIGHT:
+                case VAttrType::DIM_HIGH: {
                     AstNode* const sizep = new AstCMethodHard(
                         nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size", nullptr);
                     sizep->dtypeSetSigned32();
@@ -1395,14 +1395,14 @@ private:
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     break;
                 }
-                case AstAttrType::DIM_INCREMENT: {
+                case VAttrType::DIM_INCREMENT: {
                     AstNode* const newp
                         = new AstConst(nodep->fileline(), AstConst::Signed32(), -1);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     break;
                 }
-                case AstAttrType::DIM_BITS: {
+                case VAttrType::DIM_BITS: {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for queue");
                     break;
                 }
@@ -1446,7 +1446,7 @@ private:
             }
             break;
         }
-        case AstAttrType::TYPENAME: {
+        case VAttrType::TYPENAME: {
             UASSERT_OBJ(nodep->fromp(), nodep, "Unprovided expression");
             const string result = nodep->fromp()->dtypep()->prettyDTypeName();
             AstNode* const newp = new AstConst(nodep->fileline(), AstConst::String(), result);
@@ -1482,7 +1482,7 @@ private:
                 UASSERT_OBJ(basicp->width() <= 1, basicp,
                             "must be 1 bit but actually " << basicp->width() << " bits");
                 AstBasicDType* const newp = new AstBasicDType(
-                    basicp->fileline(), AstBasicDTypeKwd::LOGIC, basicp->numeric());
+                    basicp->fileline(), VBasicDTypeKwd::LOGIC, basicp->numeric());
                 newp->widthForce(1, 1);
                 basicp->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(basicp), basicp);
@@ -1684,13 +1684,13 @@ private:
             const bool assoc = maxval > ENUM_LOOKUP_BITS;
             AstNode* testp = nullptr;
             if (assoc) {
-                AstVar* const varp = enumVarp(enumDtp, AstAttrType::ENUM_VALID, true, 0);
+                AstVar* const varp = enumVarp(enumDtp, VAttrType::ENUM_VALID, true, 0);
                 testp = new AstAssocSel{fl, newVarRefDollarUnit(varp),
                                         nodep->fromp()->cloneTree(false)};
             } else {
                 const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
                 AstVar* const varp
-                    = enumVarp(enumDtp, AstAttrType::ENUM_VALID, false, (1ULL << selwidth) - 1);
+                    = enumVarp(enumDtp, VAttrType::ENUM_VALID, false, (1ULL << selwidth) - 1);
                 FileLine* const fl_nowarn = new FileLine(fl);
                 fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
                 testp = new AstCond{
@@ -2615,13 +2615,13 @@ private:
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->name() == "name" || nodep->name() == "next" || nodep->name() == "prev") {
-            AstAttrType attrType;
+            VAttrType attrType;
             if (nodep->name() == "name") {
-                attrType = AstAttrType::ENUM_NAME;
+                attrType = VAttrType::ENUM_NAME;
             } else if (nodep->name() == "next") {
-                attrType = AstAttrType::ENUM_NEXT;
+                attrType = VAttrType::ENUM_NEXT;
             } else if (nodep->name() == "prev") {
-                attrType = AstAttrType::ENUM_PREV;
+                attrType = VAttrType::ENUM_PREV;
             } else {
                 nodep->v3fatalSrc("Bad case");
             }
@@ -3872,7 +3872,7 @@ private:
                 //                 do body while (index__Vfirst || 0 != array.next(index))
                 varp->dtypeFrom(adtypep->keyDTypep());
                 AstVar* const first_varp = new AstVar{
-                    fl, AstVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
+                    fl, VVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
                 first_varp->usedLoopIdx(true);
                 AstNode* const firstp = new AstMethodCall{
                     fl, fromp->cloneTree(false), "first",
@@ -4172,10 +4172,10 @@ private:
             string text = nodep->fmtp()->text();
             if (text.empty()) text = "Elaboration system task message (IEEE 1800-2017 20.11)";
             switch (nodep->displayType()) {
-            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, text); break;
-            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, text); break;
-            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, text); break;
-            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, text); break;
+            case VDisplayType::DT_INFO: nodep->v3warn(USERINFO, text); break;
+            case VDisplayType::DT_ERROR: nodep->v3warn(USERERROR, text); break;
+            case VDisplayType::DT_WARNING: nodep->v3warn(USERWARN, text); break;
+            case VDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, text); break;
             default: UASSERT_OBJ(false, nodep, "Unexpected elaboration display type");
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -4619,11 +4619,11 @@ private:
                 }
                 if (portDtypep->basicp()->width() != pinDtypep->basicp()->width()
                     || (portDtypep->basicp()->keyword() != pinDtypep->basicp()->keyword()
-                        && !(portDtypep->basicp()->keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT
-                             && pinDtypep->basicp()->keyword() == AstBasicDTypeKwd::LOGIC)
-                        && !(portDtypep->basicp()->keyword() == AstBasicDTypeKwd::LOGIC
+                        && !(portDtypep->basicp()->keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT
+                             && pinDtypep->basicp()->keyword() == VBasicDTypeKwd::LOGIC)
+                        && !(portDtypep->basicp()->keyword() == VBasicDTypeKwd::LOGIC
                              && pinDtypep->basicp()->keyword()
-                                    == AstBasicDTypeKwd::LOGIC_IMPLICIT))) {
+                                    == VBasicDTypeKwd::LOGIC_IMPLICIT))) {
                     pinp->v3warn(E_UNSUPPORTED,
                                  "Shape of the argument does not match the shape of the parameter "
                                      << "(" << pinDtypep->basicp()->prettyDTypeNameQ() << " v.s. "
@@ -4683,13 +4683,13 @@ private:
                     // Connection list is now incorrect (has extra args in it).
                     goto reloop;  // so exit early; next loop will correct it
                 }  //
-                else if (portp->basicp() && portp->basicp()->keyword() == AstBasicDTypeKwd::STRING
+                else if (portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::STRING
                          && !VN_IS(pinp, CvtPackString)
                          && !VN_IS(pinp, SFormatF)  // Already generates a string
                          && !VN_IS(portp->dtypep(), UnpackArrayDType)  // Unpacked array must match
                          && !(VN_IS(pinp, VarRef)
                               && VN_AS(pinp, VarRef)->varp()->basicp()->keyword()
-                                     == AstBasicDTypeKwd::STRING)) {
+                                     == VBasicDTypeKwd::STRING)) {
                     UINFO(4, "   Add CvtPackString: " << pinp << endl);
                     VNRelinker handle;
                     pinp->unlinkFrBack(&handle);  // No next, that's the next pin
@@ -5530,7 +5530,7 @@ private:
         } else if (VN_IS(underp->dtypep(), ClassRefDType)
                    || (VN_IS(underp->dtypep(), BasicDType)
                        && VN_AS(underp->dtypep(), BasicDType)->keyword()
-                              == AstBasicDTypeKwd::CHANDLE)) {
+                              == VBasicDTypeKwd::CHANDLE)) {
             // Allow warning-free "if (handle)"
             VL_DO_DANGLING(fixWidthReduce(underp), underp);  // Changed
         } else if (!underp->dtypep()->basicp()) {
@@ -5788,15 +5788,15 @@ private:
         if (!nodep->dtypep()) nodep->dtypeFrom(nodep->lhsp());
         // To simplify callers, some node types don't need to change
         switch (nodep->type()) {
-        case AstType::atEq: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case AstType::atNeq: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case AstType::atEqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case AstType::atNeqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case AstType::atEqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case AstType::atNeqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case AstType::atAdd: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case AstType::atSub: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case AstType::atShiftL: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atEq: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atNeq: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atEqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atNeqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atEqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atNeqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atAdd: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atSub: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::atShiftL: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
         default: break;
         }
         FileLine* const fl = nodep->fileline();
@@ -5804,22 +5804,22 @@ private:
         AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeBiop* newp = nullptr;
         switch (nodep->type()) {
-        case AstType::atGt: newp = new AstGtS(fl, lhsp, rhsp); break;
-        case AstType::atGtS: newp = new AstGt(fl, lhsp, rhsp); break;
-        case AstType::atGte: newp = new AstGteS(fl, lhsp, rhsp); break;
-        case AstType::atGteS: newp = new AstGte(fl, lhsp, rhsp); break;
-        case AstType::atLt: newp = new AstLtS(fl, lhsp, rhsp); break;
-        case AstType::atLtS: newp = new AstLt(fl, lhsp, rhsp); break;
-        case AstType::atLte: newp = new AstLteS(fl, lhsp, rhsp); break;
-        case AstType::atLteS: newp = new AstLte(fl, lhsp, rhsp); break;
-        case AstType::atDiv: newp = new AstDivS(fl, lhsp, rhsp); break;
-        case AstType::atDivS: newp = new AstDiv(fl, lhsp, rhsp); break;
-        case AstType::atModDiv: newp = new AstModDivS(fl, lhsp, rhsp); break;
-        case AstType::atModDivS: newp = new AstModDiv(fl, lhsp, rhsp); break;
-        case AstType::atMul: newp = new AstMulS(fl, lhsp, rhsp); break;
-        case AstType::atMulS: newp = new AstMul(fl, lhsp, rhsp); break;
-        case AstType::atShiftR: newp = new AstShiftRS(fl, lhsp, rhsp); break;
-        case AstType::atShiftRS: newp = new AstShiftR(fl, lhsp, rhsp); break;
+        case VNType::atGt: newp = new AstGtS(fl, lhsp, rhsp); break;
+        case VNType::atGtS: newp = new AstGt(fl, lhsp, rhsp); break;
+        case VNType::atGte: newp = new AstGteS(fl, lhsp, rhsp); break;
+        case VNType::atGteS: newp = new AstGte(fl, lhsp, rhsp); break;
+        case VNType::atLt: newp = new AstLtS(fl, lhsp, rhsp); break;
+        case VNType::atLtS: newp = new AstLt(fl, lhsp, rhsp); break;
+        case VNType::atLte: newp = new AstLteS(fl, lhsp, rhsp); break;
+        case VNType::atLteS: newp = new AstLte(fl, lhsp, rhsp); break;
+        case VNType::atDiv: newp = new AstDivS(fl, lhsp, rhsp); break;
+        case VNType::atDivS: newp = new AstDiv(fl, lhsp, rhsp); break;
+        case VNType::atModDiv: newp = new AstModDivS(fl, lhsp, rhsp); break;
+        case VNType::atModDivS: newp = new AstModDiv(fl, lhsp, rhsp); break;
+        case VNType::atMul: newp = new AstMulS(fl, lhsp, rhsp); break;
+        case VNType::atMulS: newp = new AstMul(fl, lhsp, rhsp); break;
+        case VNType::atShiftR: newp = new AstShiftRS(fl, lhsp, rhsp); break;
+        case VNType::atShiftRS: newp = new AstShiftR(fl, lhsp, rhsp); break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs sign change, but bad case: " << nodep);
             break;
@@ -5840,25 +5840,25 @@ private:
         AstNodeBiop* newp = nullptr;
         // No width change on output;...                // All below have bool or double outputs
         switch (nodep->type()) {
-        case AstType::atAdd: newp = new AstAddD(fl, lhsp, rhsp); break;
-        case AstType::atSub: newp = new AstSubD(fl, lhsp, rhsp); break;
-        case AstType::atPow: newp = new AstPowD(fl, lhsp, rhsp); break;
-        case AstType::atEq:
-        case AstType::atEqCase: newp = new AstEqD(fl, lhsp, rhsp); break;
-        case AstType::atNeq:
-        case AstType::atNeqCase: newp = new AstNeqD(fl, lhsp, rhsp); break;
-        case AstType::atGt:
-        case AstType::atGtS: newp = new AstGtD(fl, lhsp, rhsp); break;
-        case AstType::atGte:
-        case AstType::atGteS: newp = new AstGteD(fl, lhsp, rhsp); break;
-        case AstType::atLt:
-        case AstType::atLtS: newp = new AstLtD(fl, lhsp, rhsp); break;
-        case AstType::atLte:
-        case AstType::atLteS: newp = new AstLteD(fl, lhsp, rhsp); break;
-        case AstType::atDiv:
-        case AstType::atDivS: newp = new AstDivD(fl, lhsp, rhsp); break;
-        case AstType::atMul:
-        case AstType::atMulS: newp = new AstMulD(fl, lhsp, rhsp); break;
+        case VNType::atAdd: newp = new AstAddD(fl, lhsp, rhsp); break;
+        case VNType::atSub: newp = new AstSubD(fl, lhsp, rhsp); break;
+        case VNType::atPow: newp = new AstPowD(fl, lhsp, rhsp); break;
+        case VNType::atEq:
+        case VNType::atEqCase: newp = new AstEqD(fl, lhsp, rhsp); break;
+        case VNType::atNeq:
+        case VNType::atNeqCase: newp = new AstNeqD(fl, lhsp, rhsp); break;
+        case VNType::atGt:
+        case VNType::atGtS: newp = new AstGtD(fl, lhsp, rhsp); break;
+        case VNType::atGte:
+        case VNType::atGteS: newp = new AstGteD(fl, lhsp, rhsp); break;
+        case VNType::atLt:
+        case VNType::atLtS: newp = new AstLtD(fl, lhsp, rhsp); break;
+        case VNType::atLte:
+        case VNType::atLteS: newp = new AstLteD(fl, lhsp, rhsp); break;
+        case VNType::atDiv:
+        case VNType::atDivS: newp = new AstDivD(fl, lhsp, rhsp); break;
+        case VNType::atMul:
+        case VNType::atMulS: newp = new AstMulD(fl, lhsp, rhsp); break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep);
             break;
@@ -5879,18 +5879,18 @@ private:
         AstNodeBiop* newp = nullptr;
         // No width change on output;...                // All below have bool or double outputs
         switch (nodep->type()) {
-        case AstType::atEq:
-        case AstType::atEqCase: newp = new AstEqN(fl, lhsp, rhsp); break;
-        case AstType::atNeq:
-        case AstType::atNeqCase: newp = new AstNeqN(fl, lhsp, rhsp); break;
-        case AstType::atGt:
-        case AstType::atGtS: newp = new AstGtN(fl, lhsp, rhsp); break;
-        case AstType::atGte:
-        case AstType::atGteS: newp = new AstGteN(fl, lhsp, rhsp); break;
-        case AstType::atLt:
-        case AstType::atLtS: newp = new AstLtN(fl, lhsp, rhsp); break;
-        case AstType::atLte:
-        case AstType::atLteS: newp = new AstLteN(fl, lhsp, rhsp); break;
+        case VNType::atEq:
+        case VNType::atEqCase: newp = new AstEqN(fl, lhsp, rhsp); break;
+        case VNType::atNeq:
+        case VNType::atNeqCase: newp = new AstNeqN(fl, lhsp, rhsp); break;
+        case VNType::atGt:
+        case VNType::atGtS: newp = new AstGtN(fl, lhsp, rhsp); break;
+        case VNType::atGte:
+        case VNType::atGteS: newp = new AstGteN(fl, lhsp, rhsp); break;
+        case VNType::atLt:
+        case VNType::atLtS: newp = new AstLtN(fl, lhsp, rhsp); break;
+        case VNType::atLte:
+        case VNType::atLteS: newp = new AstLteN(fl, lhsp, rhsp); break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to string, but bad case: " << nodep);
             break;
@@ -5909,7 +5909,7 @@ private:
         AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
         AstNodeUniop* newp = nullptr;
         switch (nodep->type()) {
-        case AstType::atNegate: newp = new AstNegateD(fl, lhsp); break;
+        case VNType::atNegate: newp = new AstNegateD(fl, lhsp); break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep);
             break;
@@ -5986,7 +5986,7 @@ private:
         return dtnodep;
     }
 
-    AstConst* dimensionValue(FileLine* fileline, AstNodeDType* nodep, AstAttrType attrType,
+    AstConst* dimensionValue(FileLine* fileline, AstNodeDType* nodep, VAttrType attrType,
                              int dim) {
         // Return the dimension value for the specified attribute and constant dimension
         AstNodeDType* dtypep = nodep->skipRefp();
@@ -6011,7 +6011,7 @@ private:
         AstConst* valp = nullptr;  // If nullptr, construct from val
         int val = 0;
         switch (attrType) {
-        case AstAttrType::DIM_BITS: {
+        case VAttrType::DIM_BITS: {
             int bits = 1;
             while (dtypep) {
                 // UINFO(9, "   bits at "<<bits<<"  "<<dtypep<<endl);
@@ -6039,14 +6039,14 @@ private:
             }
             break;  // LCOV_EXCL_LINE
         }
-        case AstAttrType::DIM_HIGH: val = !declRange.ranged() ? 0 : declRange.hi(); break;
-        case AstAttrType::DIM_LEFT: val = !declRange.ranged() ? 0 : declRange.left(); break;
-        case AstAttrType::DIM_LOW: val = !declRange.ranged() ? 0 : declRange.lo(); break;
-        case AstAttrType::DIM_RIGHT: val = !declRange.ranged() ? 0 : declRange.right(); break;
-        case AstAttrType::DIM_INCREMENT:
+        case VAttrType::DIM_HIGH: val = !declRange.ranged() ? 0 : declRange.hi(); break;
+        case VAttrType::DIM_LEFT: val = !declRange.ranged() ? 0 : declRange.left(); break;
+        case VAttrType::DIM_LOW: val = !declRange.ranged() ? 0 : declRange.lo(); break;
+        case VAttrType::DIM_RIGHT: val = !declRange.ranged() ? 0 : declRange.right(); break;
+        case VAttrType::DIM_INCREMENT:
             val = (declRange.ranged() && declRange.littleEndian()) ? -1 : 1;
             break;
-        case AstAttrType::DIM_SIZE: val = !declRange.ranged() ? 0 : declRange.elements(); break;
+        case VAttrType::DIM_SIZE: val = !declRange.ranged() ? 0 : declRange.elements(); break;
         default: nodep->v3fatalSrc("Missing DIM ATTR type case"); break;
         }
         if (!valp) valp = new AstConst(fileline, AstConst::Signed32(), val);
@@ -6054,7 +6054,7 @@ private:
                                 << ")=" << valp << endl);
         return valp;
     }
-    AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {
+    AstVar* dimensionVarp(AstNodeDType* nodep, VAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
         const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
@@ -6063,7 +6063,7 @@ private:
                                       new AstRange(nodep->fileline(), msbdim, 0));
         AstInitArray* const initp = new AstInitArray(nodep->fileline(), vardtypep, nullptr);
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-        AstVar* const varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
+        AstVar* const varp = new AstVar(nodep->fileline(), VVarType::MODULETEMP,
                                         "__Vdimtab_" + VString::downcase(attrType.ascii())
                                             + cvtToStr(m_dtTables++),
                                         vardtypep);
@@ -6101,16 +6101,16 @@ private:
         }
         return maxval;
     }
-    AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, bool assoc, uint32_t msbdim) {
+    AstVar* enumVarp(AstEnumDType* nodep, VAttrType attrType, bool assoc, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
         const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
                                             << " max=" << msbdim << " for " << nodep << endl);
         AstNodeDType* basep;
-        if (attrType == AstAttrType::ENUM_NAME) {
+        if (attrType == VAttrType::ENUM_NAME) {
             basep = nodep->findStringDType();
-        } else if (attrType == AstAttrType::ENUM_VALID) {
+        } else if (attrType == VAttrType::ENUM_VALID) {
             // TODO in theory we could bit-pack the bits in the table, but
             // would require additional operations to extract, so only
             // would be worth it for larger tables which perhaps could be
@@ -6128,7 +6128,7 @@ private:
         }
         AstInitArray* const initp = new AstInitArray(nodep->fileline(), vardtypep, nullptr);
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-        AstVar* const varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
+        AstVar* const varp = new AstVar(nodep->fileline(), VVarType::MODULETEMP,
                                         "__Venumtab_" + VString::downcase(attrType.ascii())
                                             + cvtToStr(m_dtTables++),
                                         vardtypep);
@@ -6139,11 +6139,11 @@ private:
         v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
 
         // Default for all unspecified values
-        if (attrType == AstAttrType::ENUM_NAME) {
+        if (attrType == VAttrType::ENUM_NAME) {
             initp->defaultp(new AstConst(nodep->fileline(), AstConst::String(), ""));
-        } else if (attrType == AstAttrType::ENUM_NEXT || attrType == AstAttrType::ENUM_PREV) {
+        } else if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
             initp->defaultp(new AstConst(nodep->fileline(), V3Number(nodep, nodep->width(), 0)));
-        } else if (attrType == AstAttrType::ENUM_VALID) {
+        } else if (attrType == VAttrType::ENUM_VALID) {
             initp->defaultp(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
         } else {
             nodep->v3fatalSrc("Bad case");
@@ -6161,13 +6161,13 @@ private:
                 const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
                 UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
                 const vluint64_t i = vconstp->toUQuad();
-                if (attrType == AstAttrType::ENUM_NAME) {
+                if (attrType == VAttrType::ENUM_NAME) {
                     values[i] = new AstConst(nodep->fileline(), AstConst::String(), itemp->name());
-                } else if (attrType == AstAttrType::ENUM_NEXT) {
+                } else if (attrType == VAttrType::ENUM_NEXT) {
                     values[i] = (nextp ? nextp : firstp)->valuep()->cloneTree(false);  // A const
-                } else if (attrType == AstAttrType::ENUM_PREV) {
+                } else if (attrType == VAttrType::ENUM_PREV) {
                     values[i] = prevp->valuep()->cloneTree(false);  // A const
-                } else if (attrType == AstAttrType::ENUM_VALID) {
+                } else if (attrType == VAttrType::ENUM_VALID) {
                     values[i] = new AstConst(nodep->fileline(), AstConst::BitTrue{});
                 } else {
                     nodep->v3fatalSrc("Bad case");

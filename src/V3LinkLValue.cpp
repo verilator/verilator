@@ -30,7 +30,7 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkLValueVisitor final : public AstNVisitor {
+class LinkLValueVisitor final : public VNVisitor {
 private:
     // NODE STATE
 

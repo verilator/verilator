@@ -32,7 +32,7 @@
 class V3Hasher final {
     // NODE STATE
     //  AstNode::user4()    -> V3Hash.  Hash value of this node (hash of 0 is illegal)
-    const AstUser4InUse m_inuser4;
+    const VNUser4InUse m_inuser4;
 
 public:
     // CONSTRUCTORS

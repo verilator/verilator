@@ -28,7 +28,7 @@
 //######################################################################
 // Emit statements and math operators
 
-class EmitXmlFileVisitor final : public AstNVisitor {
+class EmitXmlFileVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
     // AstNode::user1           -> uint64_t, number to connect crossrefs
@@ -184,7 +184,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         outputChildrenEnd(nodep, "");
     }
     virtual void visit(AstVar* nodep) override {
-        const AstVarType typ = nodep->varType();
+        const VVarType typ = nodep->varType();
         const string kw = nodep->verilogKwd();
         const string vt = nodep->dtypep()->name();
         outputTag(nodep, "");
@@ -193,7 +193,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
             putsQuoted(kw);
             if (nodep->pinNum() != 0) puts(" pinIndex=\"" + cvtToStr(nodep->pinNum()) + "\"");
             puts(" vartype=");
-            putsQuoted(!vt.empty() ? vt : typ == AstVarType::PORT ? "port" : "unknown");
+            putsQuoted(!vt.empty() ? vt : typ == VVarType::PORT ? "port" : "unknown");
         } else {
             puts(" vartype=");
             putsQuoted(!vt.empty() ? vt : kw);
@@ -321,7 +321,7 @@ public:
 //######################################################################
 // List of module files xml visitor
 
-class ModuleFilesXmlVisitor final : public AstNVisitor {
+class ModuleFilesXmlVisitor final : public VNVisitor {
 private:
     // MEMBERS
     std::ostream& m_os;
@@ -369,7 +369,7 @@ public:
 //######################################################################
 // Hierarchy of Cells visitor
 
-class HierCellsXmlVisitor final : public AstNVisitor {
+class HierCellsXmlVisitor final : public VNVisitor {
 private:
     // MEMBERS
     std::ostream& m_os;

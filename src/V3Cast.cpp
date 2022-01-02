@@ -49,12 +49,12 @@
 //######################################################################
 // Cast state, as a visitor of each AstNode
 
-class CastVisitor final : public AstNVisitor {
+class CastVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     //   AstNode::user()                // bool.  Indicates node is of known size
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
 

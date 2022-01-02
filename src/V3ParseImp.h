@@ -119,7 +119,7 @@ struct V3ParseBisonYYSType {
         V3ImportProperty iprop;
         VSigning::en signstate;
         V3ErrorCode::en errcodeen;
-        AstAttrType::en attrtypeen;
+        VAttrType::en attrtypeen;
         VLifetime::en lifetime;
 
 #include "V3Ast__gen_yystype.h"

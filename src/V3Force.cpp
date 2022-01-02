@@ -52,7 +52,7 @@
 //######################################################################
 // Force shared state
 
-class ForceBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class ForceBaseVisitor VL_NOT_FINAL : public VNVisitor {
     // TYPES
 public:
     // Enum value must correspond to which user#p is used
@@ -99,7 +99,7 @@ public:
                     << nodep->warnMore()
                     << "... Suggest assign it to/from a temporary net and force/release that");
         }
-        auto* const newp = new AstVar{nodep->fileline(), AstVarType::MODULETEMP,
+        auto* const newp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
                                       nodep->name() + fvarName(fvar), nodep};
         newp->user1(true);
         UINFO(9, "getForceVar for " << nodep << endl);
@@ -189,10 +189,10 @@ class ForceVisitor final : public ForceBaseVisitor {
 private:
     // NODE STATE
     // See ForceBaseVisitor
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
 
     // STATE
     bool m_anyForce = false;  // Any force, need reconciliation step

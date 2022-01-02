@@ -36,7 +36,7 @@
 //######################################################################
 // Width state, as a visitor of each AstNode
 
-class WidthSelVisitor final : public AstNVisitor {
+class WidthSelVisitor final : public VNVisitor {
 private:
     // IMPORTANT
     //**** This is not a normal visitor, in that all iteration is instead

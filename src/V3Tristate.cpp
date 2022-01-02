@@ -72,7 +72,7 @@
 
 //######################################################################
 
-class TristateBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class TristateBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -122,7 +122,7 @@ public:
 class TristateGraph final {
     // NODE STATE
     //   AstVar::user5p         -> TristateVertex* for variable being built
-    // AstUser5InUse     m_inuser5;   // In visitor below
+    // VNUser5InUse     m_inuser5;   // In visitor below
 
     // TYPES
 public:
@@ -330,11 +330,11 @@ class TristateVisitor final : public TristateBaseVisitor {
     // See TristateGraph:
     //   AstVar::user5p         -> TristateVertex* for variable being built
     //   AstStmt*::user5p       -> TristateVertex* for this statement
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
-    const AstUser5InUse m_inuser5;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
+    const VNUser5InUse m_inuser5;
 
     // TYPES
     using RefVec = std::vector<AstVarRef*>;
@@ -395,7 +395,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstVar* getCreateEnVarp(AstVar* invarp) {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
-            AstVar* const newp = new AstVar(invarp->fileline(), AstVarType::MODULETEMP,
+            AstVar* const newp = new AstVar(invarp->fileline(), VVarType::MODULETEMP,
                                             invarp->name() + "__en", invarp);
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
@@ -406,7 +406,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstVar* getCreateOutVarp(AstVar* invarp) {
         // Return the master __out for the specified input variable
         if (!invarp->user4p()) {
-            AstVar* const newp = new AstVar(invarp->fileline(), AstVarType::MODULETEMP,
+            AstVar* const newp = new AstVar(invarp->fileline(), VVarType::MODULETEMP,
                                             invarp->name() + "__out", invarp);
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
@@ -415,7 +415,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         return VN_AS(invarp->user4p(), Var);
     }
     AstVar* getCreateUnconnVarp(AstNode* fromp, AstNodeDType* dtypep) {
-        AstVar* const newp = new AstVar(fromp->fileline(), AstVarType::MODULETEMP,
+        AstVar* const newp = new AstVar(fromp->fileline(), VVarType::MODULETEMP,
                                         "__Vtriunconn" + cvtToStr(m_unique++), dtypep);
         UINFO(9, "       newunc " << newp << endl);
         modAddStmtp(newp, newp);
@@ -565,7 +565,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             const int w = lhsp->width();
 
             // create the new lhs driver for this var
-            AstVar* const newlhsp = new AstVar(lhsp->fileline(), AstVarType::MODULETEMP,
+            AstVar* const newlhsp = new AstVar(lhsp->fileline(), VVarType::MODULETEMP,
                                                lhsp->name() + "__out" + cvtToStr(m_unique),
                                                VFlagBitPacked(), w);  // 2-state ok; sep enable
             UINFO(9, "       newout " << newlhsp << endl);
@@ -574,7 +574,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             refp->name(newlhsp->name());
 
             // create a new var for this drivers enable signal
-            AstVar* const newenp = new AstVar(lhsp->fileline(), AstVarType::MODULETEMP,
+            AstVar* const newenp = new AstVar(lhsp->fileline(), VVarType::MODULETEMP,
                                               lhsp->name() + "__en" + cvtToStr(m_unique++),
                                               VFlagBitPacked(), w);  // 2-state ok
             UINFO(9, "       newenp " << newenp << endl);
@@ -1159,7 +1159,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             // Create the output enable pin, connect to new signal
             AstNode* enrefp;
             {
-                AstVar* const enVarp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
+                AstVar* const enVarp = new AstVar(nodep->fileline(), VVarType::MODULETEMP,
                                                   nodep->name() + "__en" + cvtToStr(m_unique++),
                                                   VFlagBitPacked(), enModVarp->width());
                 enModVarp->direction(VDirection::INPUT);

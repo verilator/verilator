@@ -307,7 +307,7 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
     }
     emitDispState.pushFormat(pfmt);
     if (!ignore) {
-        if (argp->dtypep()->basicp()->keyword() == AstBasicDTypeKwd::STRING) {
+        if (argp->dtypep()->basicp()->keyword() == VBasicDTypeKwd::STRING) {
             // string in SystemVerilog is std::string in C++ which is not POD
             emitDispState.pushArg(' ', nullptr, "-1");
         } else {
@@ -684,7 +684,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
                                                  depth + 1, suffix + "[" + ivar + "]");
         const string post = "}\n";
         return below.empty() ? "" : pre + below + post;
-    } else if (basicp && basicp->keyword() == AstBasicDTypeKwd::STRING) {
+    } else if (basicp && basicp->keyword() == VBasicDTypeKwd::STRING) {
         // String's constructor deals with it
         return "";
     } else if (basicp) {

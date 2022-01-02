@@ -40,11 +40,11 @@ constexpr int STATIC_CONST_MIN_WIDTH = 256;  // Minimum size to extract to stati
 //######################################################################
 // Structure for global state
 
-class PremitAssignVisitor final : public AstNVisitor {
+class PremitAssignVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstVar::user3()         // bool; occurs on LHS of current assignment
-    const AstUser3InUse m_inuser3;
+    const VNUser3InUse m_inuser3;
 
     // STATE
     bool m_noopt = false;  // Disable optimization of variables in this block
@@ -54,7 +54,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) override {
-        // AstNode::user3ClearTree();  // Implied by AstUser3InUse
+        // AstNode::user3ClearTree();  // Implied by VNUser3InUse
         // LHS first as fewer varrefs
         iterateAndNextNull(nodep->lhsp());
         // Now find vars marked as lhs
@@ -86,15 +86,15 @@ public:
 //######################################################################
 // Premit state, as a visitor of each AstNode
 
-class PremitVisitor final : public AstNVisitor {
+class PremitVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstNodeMath::user()     -> bool.  True if iterated already
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
     //  *::user3()              -> See PremitAssignVisitor
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current block
@@ -185,7 +185,7 @@ private:
             ++m_extractedToConstPool;
         } else {
             // Keep as local temporary. Name based on hash of node for output stability.
-            varp = new AstVar(fl, AstVarType::STMTTEMP, m_tempNames.get(nodep), nodep->dtypep());
+            varp = new AstVar(fl, VVarType::STMTTEMP, m_tempNames.get(nodep), nodep->dtypep());
             m_cfuncp->addInitsp(varp);
             // Put assignment before the referencing statement
             insertBeforeStmt(new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE), nodep));

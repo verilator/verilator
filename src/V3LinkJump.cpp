@@ -41,7 +41,7 @@
 
 //######################################################################
 
-class LinkJumpVisitor final : public AstNVisitor {
+class LinkJumpVisitor final : public VNVisitor {
 private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -153,8 +153,8 @@ private:
         AstNode* const countp = nodep->countp()->unlinkFrBackWithNext();
         const string name = string("__Vrepeat") + cvtToStr(m_modRepeatNum++);
         // Spec says value is integral, if negative is ignored
-        AstVar* const varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
-                                        nodep->findSigned32DType());
+        AstVar* const varp
+            = new AstVar(nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType());
         varp->usedLoopIdx(true);
         m_modp->addStmtp(varp);
         AstNode* initsp = new AstAssign(

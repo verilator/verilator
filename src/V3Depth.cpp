@@ -35,7 +35,7 @@
 
 //######################################################################
 
-class DepthVisitor final : public AstNVisitor {
+class DepthVisitor final : public VNVisitor {
 private:
     // NODE STATE
 
@@ -52,7 +52,7 @@ private:
     void createDeepTemp(AstNode* nodep) {
         UINFO(6, "  Deep  " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
-        AstVar* const varp = new AstVar{nodep->fileline(), AstVarType::STMTTEMP,
+        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
         UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
         m_cfuncp->addInitsp(varp);

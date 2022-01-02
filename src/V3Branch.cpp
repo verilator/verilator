@@ -35,12 +35,12 @@
 //######################################################################
 // Branch state, as a visitor of each AstNode
 
-class BranchVisitor final : public AstNVisitor {
+class BranchVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     //  AstFTask::user1()       -> int.  Number of references
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     int m_likely = false;  // Excuses for branch likely taken

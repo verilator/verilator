@@ -38,11 +38,11 @@
 //######################################################################
 // Expand state, as a visitor of each AstNode
 
-class ExpandVisitor final : public AstNVisitor {
+class ExpandVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstNode* m_stmtp = nullptr;  // Current statement

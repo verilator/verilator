@@ -43,7 +43,7 @@ constexpr int GATE_DEDUP_MAX_DEPTH = 20;
 
 //######################################################################
 
-class GateBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class GateBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -309,8 +309,8 @@ private:
     // AstVarScope::user2       -> bool: Signal used in SenItem in *this* always statement
     // AstVar::user2            -> bool: Warned about SYNCASYNCNET
     // AstNodeVarRef::user2     -> bool: ConcatOffset visited
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
@@ -905,11 +905,11 @@ private:
     //                     Set to nullptr if this assign's tree was later replaced
     // Ast*::user5p     -> AstNode* of assign if condition, for isSame() in test for duplicate
     //                     Set to nullptr if this assign's tree was later replaced
-    // AstUser1InUse    m_inuser1;      (Allocated for use in GateVisitor)
-    // AstUser2InUse    m_inuser2;      (Allocated for use in GateVisitor)
-    const AstUser3InUse m_inuser3;
-    // AstUser4InUse    m_inuser4;      (Allocated for use in V3Hasher via V3DupFinder)
-    const AstUser5InUse m_inuser5;
+    // VNUser1InUse    m_inuser1;      (Allocated for use in GateVisitor)
+    // VNUser2InUse    m_inuser2;      (Allocated for use in GateVisitor)
+    const VNUser3InUse m_inuser3;
+    // VNUser4InUse    m_inuser4;      (Allocated for use in V3Hasher via V3DupFinder)
+    const VNUser5InUse m_inuser5;
 
     V3DupFinder m_dupFinder;  // Duplicate finder for rhs of assigns
     std::unordered_set<AstNode*> m_nodeDeleteds;  // Any node in this hash was deleted
@@ -1125,7 +1125,7 @@ class GateDedupeGraphVisitor final : public GateGraphBaseVisitor {
 private:
     // NODE STATE
     // AstVarScope::user2p      -> bool: already visited
-    // AstUser2InUse            m_inuser2;      (Allocated for use in GateVisitor)
+    // VNUser2InUse            m_inuser2;      (Allocated for use in GateVisitor)
     VDouble0 m_numDeduped;  // Statistic tracking
     GateDedupeVarVisitor m_varVisitor;  // Looks for a dupe of the logic
     int m_depth = 0;  // Iteration depth

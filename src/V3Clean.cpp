@@ -35,16 +35,16 @@
 //######################################################################
 // Clean state, as a visitor of each AstNode
 
-class CleanVisitor final : public AstNVisitor {
+class CleanVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     //  AstNode::user()         -> CleanState.  For this node, 0==UNKNOWN
     //  AstNode::user2()        -> bool.  True indicates widthMin has been propagated
     //  AstNodeDType::user3()   -> AstNodeDType*.  Alternative node with C size
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // TYPES
     enum CleanState : uint8_t { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };

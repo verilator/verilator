@@ -45,7 +45,7 @@
 
 //######################################################################
 
-class DeadModVisitor final : public AstNVisitor {
+class DeadModVisitor final : public VNVisitor {
     // In a module that is dead, cleanup the in-use counts of the modules
 private:
     // NODE STATE
@@ -68,7 +68,7 @@ public:
 //######################################################################
 // Dead state, as a visitor of each AstNode
 
-class DeadVisitor final : public AstNVisitor {
+class DeadVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire Netlist:
@@ -76,7 +76,7 @@ private:
     //  AstVar::user1()         -> int. Count of number of references
     //  AstVarScope::user1()    -> int. Count of number of references
     //  AstNodeDType::user1()   -> int. Count of number of references
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // TYPES
     using AssignMap = std::multimap<AstVarScope*, AstNodeAssign*>;

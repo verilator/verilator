@@ -24,11 +24,11 @@
 //######################################################################
 // Visitor that computes node hashes
 
-class HasherVisitor final : public AstNVisitor {
+class HasherVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstNode::user4() -> V3Hash.  Hash value of this node (hash of 0 is illegal)
-    // AstUser4InUse     in V3Hasher.h
+    // VNUser4InUse     in V3Hasher.h
 
     // STATE
     V3Hash m_hash;  // Hash value accumulator

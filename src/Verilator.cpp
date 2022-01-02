@@ -589,7 +589,7 @@ static void verilate(const string& argString) {
 
     // Internal tests (after option parsing as need debug() setting,
     // and after removing files as may make debug output)
-    AstBasicDTypeKwd::selfTest();
+    VBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();

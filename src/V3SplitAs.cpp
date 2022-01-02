@@ -33,7 +33,7 @@
 
 //######################################################################
 
-class SplitAsBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class SplitAsBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -128,7 +128,7 @@ class SplitAsVisitor final : public SplitAsBaseVisitor {
 private:
     // NODE STATE
     //  AstAlways::user()       -> bool.  True if already processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     VDouble0 m_statSplits;  // Statistic tracking

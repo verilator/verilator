@@ -234,7 +234,7 @@ void EmitCBaseVisitor::emitModCUse(const AstNodeModule* modp, VUseType useType) 
     puts(nl);
 }
 
-void EmitCBaseVisitor::emitTextSection(const AstNodeModule* modp, AstType type) {
+void EmitCBaseVisitor::emitTextSection(const AstNodeModule* modp, VNType type) {
     int last_line = -999;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (const AstNodeText* const textp = VN_CAST(nodep, NodeText)) {

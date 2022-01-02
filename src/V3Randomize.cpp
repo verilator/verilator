@@ -32,12 +32,12 @@
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
-class RandomizeMarkVisitor final : public AstNVisitor {
+class RandomizeMarkVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     using DerivedSet = std::unordered_set<AstClass*>;
     using BaseToDerivedMap = std::unordered_map<AstClass*, DerivedSet>;
@@ -112,14 +112,14 @@ public:
 //######################################################################
 // Visitor that defines a randomize method where needed
 
-class RandomizeVisitor final : public AstNVisitor {
+class RandomizeVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
     //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
-    // AstUser1InUse    m_inuser1;      (Allocated for use in RandomizeMarkVisitor)
-    const AstUser2InUse m_inuser2;
+    // VNUser1InUse    m_inuser1;      (Allocated for use in RandomizeMarkVisitor)
+    const VNUser2InUse m_inuser2;
 
     // STATE
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
@@ -136,7 +136,7 @@ private:
         AstInitArray* const initp = new AstInitArray(nodep->fileline(), vardtypep, nullptr);
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
         AstVar* const varp
-            = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
+            = new AstVar(nodep->fileline(), VVarType::MODULETEMP,
                          "__Venumvaltab_" + cvtToStr(m_enumValueTabCount++), vardtypep);
         varp->isConst(true);
         varp->isStatic(true);
@@ -182,7 +182,7 @@ private:
                 auto* const randp = new AstRand(fl, nullptr, false);
                 auto* const moddivp
                     = new AstModDiv(fl, randp, new AstConst(fl, enumDtp->itemCount()));
-                randp->dtypep(varrefp->findBasicDType(AstBasicDTypeKwd::UINT32));
+                randp->dtypep(varrefp->findBasicDType(VBasicDTypeKwd::UINT32));
                 moddivp->dtypep(enumDtp);
                 valp = new AstArraySel(fl, tabRefp, moddivp);
             } else {
@@ -264,7 +264,7 @@ AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {
     if (!funcp) {
         auto* const dtypep
             = nodep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says int return of 0/1
-        auto* const fvarp = new AstVar(nodep->fileline(), AstVarType::MEMBER, "randomize", dtypep);
+        auto* const fvarp = new AstVar(nodep->fileline(), VVarType::MEMBER, "randomize", dtypep);
         fvarp->lifetime(VLifetime::AUTOMATIC);
         fvarp->funcLocal(true);
         fvarp->funcReturn(true);

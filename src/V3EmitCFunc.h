@@ -34,10 +34,10 @@ constexpr int EMITC_NUM_CONSTW = 8;
 //######################################################################
 // Emit lazy forward declarations
 
-class EmitCLazyDecls final : public AstNVisitor {
+class EmitCLazyDecls final : public VNVisitor {
     // NODE STATE/TYPES
     //  AstNode::user2() -> bool. Already emitted decl for symbols.
-    const AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     // MEMBERS
     std::unordered_set<string> m_emittedManually;  // Set of names already declared manually.

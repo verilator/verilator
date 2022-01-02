@@ -199,7 +199,7 @@ public:
 //######################################################################
 // Collect existing active names
 
-class ActiveBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class ActiveBaseVisitor VL_NOT_FINAL : public VNVisitor {
 protected:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -299,7 +299,7 @@ private:
     // NODE STATE
     // Input:
     //  AstVar::user1p // V2LatchGraphVertex* The vertex handling this node
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
     // STATE
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS

@@ -41,7 +41,7 @@
 class LifeState final {
     // NODE STATE
     //   See below
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
 public:
@@ -267,7 +267,7 @@ public:
 //######################################################################
 // Life state, as a visitor of each AstNode
 
-class LifeVisitor final : public AstNVisitor {
+class LifeVisitor final : public VNVisitor {
 private:
     // STATE
     LifeState* const m_statep;  // Current state
@@ -449,7 +449,7 @@ public:
 
 //######################################################################
 
-class LifeTopVisitor final : public AstNVisitor {
+class LifeTopVisitor final : public VNVisitor {
     // Visit all top nodes searching for functions that are entry points we want to start
     // finding code within.
 private:

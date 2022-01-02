@@ -824,7 +824,7 @@ public:
                          AstSenTree* domainp, bool user3mark)
         : EmitVBaseVisitor{false, domainp}
         , m_formatter{os, prefix, flWidth} {
-        if (user3mark) AstUser3InUse::check();
+        if (user3mark) VNUser3InUse::check();
         iterate(nodep);
     }
     virtual ~EmitVPrefixedVisitor() override = default;

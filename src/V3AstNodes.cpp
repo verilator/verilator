@@ -303,17 +303,17 @@ bool AstVar::isScBigUint() const {
             && !isScBv());
 }
 
-void AstVar::combineType(AstVarType type) {
+void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
     // We don't test varType for certain types, instead set flags since
     // when we combine wires cross-hierarchy we need a union of all characteristics.
     m_varType = type;
     // These flags get combined with the existing settings of the flags.
-    if (type == AstVarType::TRIWIRE || type == AstVarType::TRI0 || type == AstVarType::TRI1) {
+    if (type == VVarType::TRIWIRE || type == VVarType::TRI0 || type == VVarType::TRI1) {
         m_tristate = true;
     }
-    if (type == AstVarType::TRI0) m_isPulldown = true;
-    if (type == AstVarType::TRI1) m_isPullup = true;
+    if (type == VVarType::TRI0) m_isPulldown = true;
+    if (type == VVarType::TRI1) m_isPullup = true;
 }
 
 string AstVar::verilogKwd() const {
@@ -321,11 +321,11 @@ string AstVar::verilogKwd() const {
         return direction().verilogKwd();
     } else if (isTristate()) {
         return "tri";
-    } else if (varType() == AstVarType::WIRE) {
+    } else if (varType() == VVarType::WIRE) {
         return "wire";
-    } else if (varType() == AstVarType::WREAL) {
+    } else if (varType() == VVarType::WREAL) {
         return "wreal";
-    } else if (varType() == AstVarType::IFACEREF) {
+    } else if (varType() == VVarType::IFACEREF) {
         return "ifaceref";
     } else {
         return dtypep()->name();
@@ -355,10 +355,10 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 string AstVar::vlEnumType() const {
     string arg;
     const AstBasicDType* const bdtypep = basicp();
-    const bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
-    if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
+    const bool strtype = bdtypep && bdtypep->keyword() == VBasicDTypeKwd::STRING;
+    if (bdtypep && bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
         return "VLVT_PTR";
-    } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) {
+    } else if (bdtypep && bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR) {
         return "VLVT_PTR";
     } else if (strtype) {
         arg += "VLVT_STRING";
@@ -485,7 +485,7 @@ public:
     }
     virtual string primitive(const AstVar* varp) const {
         string type;
-        const AstBasicDTypeKwd keyword = varp->basicp()->keyword();
+        const VBasicDTypeKwd keyword = varp->basicp()->keyword();
         if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
         type += keyword.dpiType();
         return type;
@@ -517,8 +517,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
             virtual string primitive(const AstVar* varp) const override {
                 string type = dpiTypesToStringConverter::primitive(varp);
                 if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                    if (!varp->isWritable()
-                        && varp->basicp()->keyword() != AstBasicDTypeKwd::STRING)
+                    if (!varp->isWritable() && varp->basicp()->keyword() != VBasicDTypeKwd::STRING)
                         type = "const " + type;
                     type += "*";
                 }
@@ -559,7 +558,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
         virtual string primitive(const AstVar* varp) const override {
             string type = dpiTypesToStringConverter::primitive(varp);
             if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (!varp->isWritable() && varp->basicp()->keyword() == AstBasicDTypeKwd::CHANDLE)
+                if (!varp->isWritable() && varp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE)
                     type = "const " + type;
             }
             type += ' ' + m_name + arraySuffix(varp, 0);
@@ -688,9 +687,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         const string bitvec = (!bdtypep->isOpaque() && !v3Global.opt.protectIds())
                                   ? "/*" + cvtToStr(dtypep->width() - 1) + ":0*/"
                                   : "";
-        if (bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
+        if (bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
             info.m_type = "const char*";
-        } else if (bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) {
+        } else if (bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR) {
             info.m_type = "const VerilatedScope*";
         } else if (bdtypep->keyword().isDouble()) {
             info.m_type = "double";
@@ -799,7 +798,7 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
             continue;
         }
         // AstNodeSelPre stashes the associated variable under an ATTROF
-        // of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
+        // of VAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
         else if (VN_IS(nodep, AttrOf)) {
             nodep = VN_AS(nodep, AttrOf)->fromp();
             continue;
@@ -902,7 +901,7 @@ bool AstSenTree::hasCombo() const {
 
 AstTypeTable::AstTypeTable(FileLine* fl)
     : ASTGEN_SUPER_TypeTable(fl) {
-    for (int i = 0; i < AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = nullptr;
+    for (int i = 0; i < VBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = nullptr;
 }
 
 void AstTypeTable::clearCache() {
@@ -953,7 +952,7 @@ AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
     return m_queueIndexp;
 }
 
-AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) {
+AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];
     //
     AstBasicDType* const new1p = new AstBasicDType(fl, kwd);
@@ -971,7 +970,7 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) 
     return newp;
 }
 
-AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width,
+AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width,
                                                int widthMin, VSigning numeric) {
     AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
     AstBasicDType* const newp = findInsertSameDType(new1p);
@@ -983,7 +982,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
     return newp;
 }
 
-AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
+AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
                                                const VNumRange& range, int widthMin,
                                                VSigning numeric) {
     AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
@@ -1018,7 +1017,7 @@ AstConstPool::AstConstPool(FileLine* fl)
 
 AstVarScope* AstConstPool::createNewEntry(const string& name, AstNode* initp) {
     FileLine* const fl = initp->fileline();
-    AstVar* const varp = new AstVar(fl, AstVarType::MODULETEMP, name, initp->dtypep());
+    AstVar* const varp = new AstVar(fl, VVarType::MODULETEMP, name, initp->dtypep());
     varp->isConst(true);
     varp->isStatic(true);
     varp->valuep(initp->cloneTree(false));
@@ -1627,10 +1626,10 @@ void AstMTaskBody::dump(std::ostream& str) const {
 }
 void AstTypeTable::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    for (int i = 0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+    for (int i = 0; i < static_cast<int>(VBasicDTypeKwd::_ENUM_MAX); ++i) {
         if (AstBasicDType* const subnodep = m_basicps[i]) {
             str << '\n';  // Newline from caller, so newline first
-            str << "\t\t" << std::setw(8) << AstBasicDTypeKwd(i).ascii();
+            str << "\t\t" << std::setw(8) << VBasicDTypeKwd(i).ascii();
             str << "  -> ";
             subnodep->dump(str);
         }

@@ -40,7 +40,7 @@
 //######################################################################
 // Convert every WRITE AstVarRef to a READ ref
 
-class ConvertWriteRefsToRead final : public AstNVisitor {
+class ConvertWriteRefsToRead final : public VNVisitor {
 private:
     // MEMBERS
     AstNode* m_result = nullptr;
@@ -68,12 +68,12 @@ public:
 //######################################################################
 // Clock state, as a visitor of each AstNode
 
-class ClockVisitor final : public AstNVisitor {
+class ClockVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared each Module:
     //  AstVarScope::user1p()   -> AstVarScope*.  Temporary signal that was created.
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -99,7 +99,7 @@ private:
         }
         const string newvarname
             = (string("__Vclklast__") + vscp->scopep()->nameDotless() + "__" + varp->name());
-        AstVar* const newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname,
+        AstVar* const newvarp = new AstVar(vscp->fileline(), VVarType::MODULETEMP, newvarname,
                                            VFlagLogicPacked(), 1);
         newvarp->noReset(true);  // Reset by below assign
         m_modp->addStmtp(newvarp);

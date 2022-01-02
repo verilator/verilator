@@ -29,7 +29,7 @@
 //######################################################################
 // GenClk state, as a visitor of each AstNode
 
-class GenClkBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class GenClkBaseVisitor VL_NOT_FINAL : public VNVisitor {
 protected:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -43,8 +43,8 @@ private:
     // Cleared on top scope
     //  AstVarScope::user2()    -> AstVarScope*.  Signal replacing activation with
     //  AstVarRef::user3()      -> bool.  Signal is replaced activation (already done)
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // STATE
     const AstActive* m_activep = nullptr;  // Inside activate statement
@@ -76,7 +76,7 @@ private:
             //          ...
             //          ASSIGN(VARREF(inpclk), VARREF(var))
             AstVar* const newvarp
-                = new AstVar(varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
+                = new AstVar(varp->fileline(), VVarType::MODULETEMP, newvarname, varp);
             m_topModp->addStmtp(newvarp);
             AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
             m_scopetopp->addVarp(newvscp);
@@ -141,7 +141,7 @@ private:
     // NODE STATE
     // Cleared on top scope
     //  AstVarScope::user()     -> bool.  Set when the var has been used as clock
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     bool m_tracingCall = false;  // Iterating into a call to a cfunc

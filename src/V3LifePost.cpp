@@ -40,7 +40,7 @@
 //######################################################################
 // LifePost class functions
 
-class LifePostElimVisitor final : public AstNVisitor {
+class LifePostElimVisitor final : public VNVisitor {
 private:
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
 
@@ -128,12 +128,12 @@ struct LifePostLocation {
 //######################################################################
 // LifePost delay elimination
 
-class LifePostDlyVisitor final : public AstNVisitor {
+class LifePostDlyVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on entire tree
     //  AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var
-    const AstUser4InUse m_inuser4;
+    const VNUser4InUse m_inuser4;
 
     // STATE
     uint32_t m_sequence = 0;  // Sequence number of assigns/varrefs,

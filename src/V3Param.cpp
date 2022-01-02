@@ -226,8 +226,8 @@ class ParamProcessor final {
     //   AstGenFor::user5()     // bool   True if processed
     //   AstVar::user5()        // bool   True if constant propagated
     //   AstCell::user5p()      // string* Generate portion of hierarchical name
-    const AstUser4InUse m_inuser4;
-    const AstUser5InUse m_inuser5;
+    const VNUser4InUse m_inuser4;
+    const VNUser5InUse m_inuser5;
     // User1/2/3 used by constant function simulations
 
     // TYPES
@@ -835,7 +835,7 @@ public:
 //######################################################################
 // Process parameter visitor
 
-class ParamVisitor final : public AstNVisitor {
+class ParamVisitor final : public VNVisitor {
     // STATE
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
     UnrollStateful m_unroller;  // Loop unroller

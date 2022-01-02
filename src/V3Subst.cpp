@@ -36,7 +36,7 @@
 //######################################################################
 // Common debugging baseclass
 
-class SubstBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class SubstBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -227,8 +227,8 @@ private:
     // Passed to SubstUseVisitor
     // AstVar::user1p           -> SubstVar* for usage var, 0=not set yet
     // AstVar::user2            -> int step number for last assignment, 0=not set yet
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     std::vector<SubstVarEntry*> m_entryps;  // Nodes to delete when we are finished

@@ -525,13 +525,13 @@ def write_impl(filename):
                 fh.write("return ")
                 if re.search(r'^Node', typen):
                     fh.write(
-                        "static_cast<int>(nodep->type()) >= static_cast<int>(AstType::first"
+                        "static_cast<int>(nodep->type()) >= static_cast<int>(VNType::first"
                         + typen + ") && ")
                     fh.write(
-                        "static_cast<int>(nodep->type()) <= static_cast<int>(AstType::last"
+                        "static_cast<int>(nodep->type()) <= static_cast<int>(VNType::last"
                         + typen + "); ")
                 else:
-                    fh.write("nodep->type() == AstType::at" + typen + "; ")
+                    fh.write("nodep->type() == VNType::at" + typen + "; ")
             fh.write("}\n")
 
 
@@ -619,7 +619,7 @@ def write_macros(filename):
                     typen = match.group(1)
                     base = match.group(4)
                     if not typen.startswith("Node"):
-                        macro = "#define ASTGEN_SUPER_{t}(...) {b}(AstType::at{t}, __VA_ARGS__)\n" \
+                        macro = "#define ASTGEN_SUPER_{t}(...) {b}(VNType::at{t}, __VA_ARGS__)\n" \
                                 .format(b=base, t=typen)
                         fh.write(macro)
 

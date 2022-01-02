@@ -61,7 +61,7 @@ public:
     ~SimStackNode() = default;
 };
 
-class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
+class SimulateVisitor VL_NOT_FINAL : public VNVisitor {
     // Simulate a node tree, returning value of variables
     // Two major operating modes:
     //   Test the tree to see if it is conformant
@@ -72,9 +72,9 @@ class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on each always/assignw
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // Checking:
     //  AstVar(Scope)::user1()  -> VarUsage.  Set true to indicate tracking as lvalue/rvalue
@@ -1100,12 +1100,12 @@ private:
         if (m_params) {
             AstConst* const textp = fetchConst(nodep->fmtp());
             switch (nodep->displayType()) {
-            case AstDisplayType::DT_DISPLAY:  // FALLTHRU
-            case AstDisplayType::DT_INFO: v3warn(USERINFO, textp->name()); break;
-            case AstDisplayType::DT_ERROR: v3warn(USERERROR, textp->name()); break;
-            case AstDisplayType::DT_WARNING: v3warn(USERWARN, textp->name()); break;
-            case AstDisplayType::DT_FATAL: v3warn(USERFATAL, textp->name()); break;
-            case AstDisplayType::DT_WRITE:  // FALLTHRU
+            case VDisplayType::DT_DISPLAY:  // FALLTHRU
+            case VDisplayType::DT_INFO: v3warn(USERINFO, textp->name()); break;
+            case VDisplayType::DT_ERROR: v3warn(USERERROR, textp->name()); break;
+            case VDisplayType::DT_WARNING: v3warn(USERWARN, textp->name()); break;
+            case VDisplayType::DT_FATAL: v3warn(USERFATAL, textp->name()); break;
+            case VDisplayType::DT_WRITE:  // FALLTHRU
             default: clearOptimizable(nodep, "Unexpected display type");
             }
         }

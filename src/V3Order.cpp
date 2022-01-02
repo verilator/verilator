@@ -152,7 +152,7 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
 
 // Predicate returning true if the LHS of the given assignment is a signal marked as clocker
 static bool isClockerAssignment(AstNodeAssign* nodep) {
-    class Visitor final : public AstNVisitor {
+    class Visitor final : public VNVisitor {
     public:
         bool m_clkAss = false;  // There is signals marked as clocker in the assignment
     private:
@@ -203,7 +203,7 @@ void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
 // produce a CLKDATA warning if so.
 //
 
-class OrderClkMarkVisitor final : public AstNVisitor {
+class OrderClkMarkVisitor final : public VNVisitor {
     bool m_hasClk = false;  // flag indicating whether there is clock signal on rhs
     bool m_inClocked = false;  // Currently inside a sequential block
     bool m_newClkMarked;  // Flag for deciding whether a new run is needed
@@ -356,7 +356,7 @@ public:
 // OrderBuildVisitor builds the ordering graph of the entire netlist, and
 // removes any nodes that are no longer required once the graph is built
 
-class OrderBuildVisitor final : public AstNVisitor {
+class OrderBuildVisitor final : public VNVisitor {
     // TYPES
     enum VarUsage : uint8_t { VU_CON = 0x1, VU_GEN = 0x2 };
     using VarVertexType = OrderUser::VarVertexType;
@@ -364,8 +364,8 @@ class OrderBuildVisitor final : public AstNVisitor {
     // NODE STATE
     //  AstVarScope::user1    -> OrderUser instance for variable (via m_orderUser)
     //  AstVarScope::user2    -> VarUsage within logic blocks
-    const AstUser1InUse user1InUse;
-    const AstUser2InUse user2InUse;
+    const VNUser1InUse user1InUse;
+    const VNUser2InUse user2InUse;
     AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
@@ -1041,7 +1041,7 @@ class OrderProcess final : VNDeleter {
     // NODE STATE
     //  AstNodeModule::user3  -> int: Number of AstCFuncs created under this module
     //  AstNode::user4        -> Used by V3Const::constifyExpensiveEdit
-    const AstUser3InUse user3InUse;
+    const VNUser3InUse user3InUse;
 
     // STATE
     OrderGraph& m_graph;  // The ordering graph

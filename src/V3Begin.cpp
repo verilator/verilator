@@ -41,7 +41,7 @@ private:
     // NODE STATE
     // Entire netlist:
     // AstNodeFTask::user1      -> bool, 1=processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
     bool m_anyFuncInBegin = false;
 
 public:
@@ -56,7 +56,7 @@ public:
 
 //######################################################################
 
-class BeginVisitor final : public AstNVisitor {
+class BeginVisitor final : public VNVisitor {
 private:
     // STATE
     BeginState* const m_statep;  // Current global state
@@ -271,7 +271,7 @@ public:
 
 //######################################################################
 
-class BeginRelinkVisitor final : public AstNVisitor {
+class BeginRelinkVisitor final : public VNVisitor {
     // Replace tasks with new pointer
 private:
     // NODE STATE

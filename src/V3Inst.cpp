@@ -34,12 +34,12 @@
 //######################################################################
 // Inst state, as a visitor of each AstNode
 
-class InstVisitor final : public AstNVisitor {
+class InstVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared each Cell:
     //  AstPin::user1p()        -> bool.  True if created assignment already
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell
@@ -139,7 +139,7 @@ public:
 
 //######################################################################
 
-class InstDeModVarVisitor final : public AstNVisitor {
+class InstDeModVarVisitor final : public VNVisitor {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
@@ -190,7 +190,7 @@ public:
 
 //######################################################################
 
-class InstDeVisitor final : public AstNVisitor {
+class InstDeVisitor final : public VNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
@@ -564,7 +564,7 @@ public:
                    // Prevent name conflict if both tri & non-tri add signals
                    + (forTristate ? "t" : "") + "__" + cellp->name() + "__" + pinp->name());
             AstVar* const newvarp
-                = new AstVar(pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
+                = new AstVar(pinVarp->fileline(), VVarType::MODULETEMP, newvarname, pinVarp);
             // Important to add statement next to cell, in case there is a
             // generate with same named cell
             cellp->addNextHere(newvarp);

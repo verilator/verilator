@@ -243,7 +243,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitModCUse(modp, VUseType::INT_FWD_CLASS);
 
         // From `systemc_header
-        emitTextSection(modp, AstType::atScHdr);
+        emitTextSection(modp, VNType::atScHdr);
 
         // Open class body {{{
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
@@ -271,7 +271,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitFuncDecls(modp, /* inClassBody: */ true);
 
         // From `systemc_interface
-        emitTextSection(modp, AstType::atScInt);
+        emitTextSection(modp, VNType::atScInt);
 
         // Close class body
         if (!VN_IS(modp, Class)) {

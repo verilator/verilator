@@ -47,7 +47,7 @@
 
 //######################################################################
 
-class LinkIncVisitor final : public AstNVisitor {
+class LinkIncVisitor final : public VNVisitor {
 private:
     // TYPES
     enum InsertMode : uint8_t {
@@ -205,7 +205,7 @@ private:
         // Prepare a temporary variable
         FileLine* const fl = backp->fileline();
         const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
-        AstVar* const varp = new AstVar(fl, AstVarType::BLOCKTEMP, name, VFlagChildDType(),
+        AstVar* const varp = new AstVar(fl, VVarType::BLOCKTEMP, name, VFlagChildDType(),
                                         varrefp->varp()->subDTypep()->cloneTree(true));
 
         // Declare the variable

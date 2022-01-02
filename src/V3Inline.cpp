@@ -44,7 +44,7 @@ static const int INLINE_MODS_SMALLER = 100;  // If a mod is < this # nodes, can 
 //######################################################################
 // Inline state, as a visitor of each AstNode
 
-class InlineMarkVisitor final : public AstNVisitor {
+class InlineMarkVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Output
@@ -53,9 +53,9 @@ private:
     //  AstNodeModule::user2()  // CIL_*. Allowed to automatically inline module
     //  AstNodeModule::user3()  // int. Number of cells referencing this module
     //  AstNodeModule::user4()  // int. Statements in module
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
 
     // For the user2 field:
     enum : uint8_t {
@@ -127,7 +127,7 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstPragma* nodep) override {
-        if (nodep->pragType() == AstPragmaType::INLINE_MODULE) {
+        if (nodep->pragType() == VPragmaType::INLINE_MODULE) {
             // UINFO(0, "PRAG MARK " << m_modp << endl);
             if (!m_modp) {
                 nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
@@ -136,7 +136,7 @@ private:
             }
             // Remove so don't propagate to upper cell...
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
+        } else if (nodep->pragType() == VPragmaType::NO_INLINE_MODULE) {
             if (!m_modp) {
                 nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
             } else if (!v3Global.opt.flatten()) {
@@ -235,7 +235,7 @@ public:
 // Using clonep(), find cell cross references.
 // clone() must not be called inside this visitor
 
-class InlineCollectVisitor final : public AstNVisitor {
+class InlineCollectVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Output:
@@ -262,7 +262,7 @@ public:
 //######################################################################
 // After cell is cloned, relink the new module's contents
 
-class InlineRelinkVisitor final : public AstNVisitor {
+class InlineRelinkVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Input:
@@ -480,7 +480,7 @@ public:
 //######################################################################
 // Inline state, as a visitor of each AstNode
 
-class InlineVisitor final : public AstNVisitor {
+class InlineVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared entire netlist
@@ -493,10 +493,10 @@ private:
     //                          // is a direct connect to
     //   AstVar::user3()        // bool    Don't alias the user2, keep it as signal
     //   AstCell::user4         // AstCell* of the created clone
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
-    const AstUser5InUse m_inuser5;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
+    const VNUser5InUse m_inuser5;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -620,11 +620,11 @@ public:
 //######################################################################
 // Track interface references under the Cell they reference
 
-class InlineIntfRefVisitor final : public AstNVisitor {
+class InlineIntfRefVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //   AstVar::user1p()   // AstCell which this Var points to
-    const AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     string m_scope;  // Scope name
 
@@ -708,8 +708,8 @@ public:
 
 void V3Inline::inlineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    const AstUser1InUse m_inuser1;  // output of InlineMarkVisitor,
-                                    // input to InlineVisitor.
+    const VNUser1InUse m_inuser1;  // output of InlineMarkVisitor,
+                                   // input to InlineVisitor.
     // Scoped to clean up temp userN's
     { InlineMarkVisitor{nodep}; }
     { InlineVisitor{nodep}; }

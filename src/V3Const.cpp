@@ -38,7 +38,7 @@
 //######################################################################
 // Utilities
 
-class ConstVarMarkVisitor final : public AstNVisitor {
+class ConstVarMarkVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, Var marked, 0=not set yet
 private:
@@ -57,7 +57,7 @@ public:
     virtual ~ConstVarMarkVisitor() override = default;
 };
 
-class ConstVarFindVisitor final : public AstNVisitor {
+class ConstVarFindVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, input from ConstVarMarkVisitor
     // MEMBERS
@@ -106,11 +106,11 @@ static int countTrailingZeroes(uint64_t val) {
 // This visitor can be used in the post-expanded Ast from V3Expand, where the Ast satisfies:
 // - Constants are 64 bit at most (because words are accessed via AstWordSel)
 // - Variables are scoped.
-class ConstBitOpTreeVisitor final : public AstNVisitor {
+class ConstBitOpTreeVisitor final : public VNVisitor {
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
     // AstVarScope::user4u    -> Same as AstVarRef::user4
-    const AstUser4InUse m_inuser4;
+    const VNUser4InUse m_inuser4;
 
     // TYPES
 
@@ -806,7 +806,7 @@ public:
 //######################################################################
 // Const state, as a visitor of each AstNode
 
-class ConstVisitor final : public AstNVisitor {
+class ConstVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // ** only when m_warn/m_doExpensive is set.  If state is needed other times,
@@ -1978,7 +1978,7 @@ private:
             if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
                 // done as unique visitor
-                const AstUser4InUse m_inuser4;
+                const VNUser4InUse m_inuser4;
                 const ConstVarMarkVisitor mark{nodep->lhsp()};
                 const ConstVarFindVisitor find{nodep->rhsp()};
                 if (find.found()) need_temp = true;
@@ -2029,10 +2029,10 @@ private:
                 // We could create just one temp variable, but we'll get better optimization
                 // if we make one per term.
                 AstVar* const temp1p
-                    = new AstVar(sel1p->fileline(), AstVarType::BLOCKTEMP,
+                    = new AstVar(sel1p->fileline(), VVarType::BLOCKTEMP,
                                  m_concswapNames.get(sel1p), VFlagLogicPacked(), msb1 - lsb1 + 1);
                 AstVar* const temp2p
-                    = new AstVar(sel2p->fileline(), AstVarType::BLOCKTEMP,
+                    = new AstVar(sel2p->fileline(), VVarType::BLOCKTEMP,
                                  m_concswapNames.get(sel2p), VFlagLogicPacked(), msb2 - lsb2 + 1);
                 m_modp->addStmtp(temp1p);
                 m_modp->addStmtp(temp2p);
@@ -2698,7 +2698,7 @@ private:
             // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
             // other SENITEM(x).
             {
-                const AstUser4InUse m_inuse4;
+                const VNUser4InUse m_inuse4;
                 // Mark x in SENITEM(x)
                 for (AstSenItem* senp = nodep->sensesp(); senp;
                      senp = VN_AS(senp->nextp(), SenItem)) {
@@ -2900,10 +2900,10 @@ private:
         AstDisplay* const prevp = VN_CAST(nodep->backp(), Display);
         if (!prevp) return false;
         if (!((prevp->displayType() == nodep->displayType())
-              || (prevp->displayType() == AstDisplayType::DT_WRITE
-                  && nodep->displayType() == AstDisplayType::DT_DISPLAY)
-              || (prevp->displayType() == AstDisplayType::DT_DISPLAY
-                  && nodep->displayType() == AstDisplayType::DT_WRITE)))
+              || (prevp->displayType() == VDisplayType::DT_WRITE
+                  && nodep->displayType() == VDisplayType::DT_DISPLAY)
+              || (prevp->displayType() == VDisplayType::DT_DISPLAY
+                  && nodep->displayType() == VDisplayType::DT_WRITE)))
             return false;
         if ((prevp->filep() && !nodep->filep()) || (!prevp->filep() && nodep->filep())
             || !prevp->filep()->sameTree(nodep->filep()))
@@ -2928,8 +2928,8 @@ private:
         //
         UINFO(9, "DISPLAY(SF({a})) DISPLAY(SF({b})) -> DISPLAY(SF({a}+{b}))" << endl);
         // Convert DT_DISPLAY to DT_WRITE as may allow later optimizations
-        if (prevp->displayType() == AstDisplayType::DT_DISPLAY) {
-            prevp->displayType(AstDisplayType::DT_WRITE);
+        if (prevp->displayType() == VDisplayType::DT_DISPLAY) {
+            prevp->displayType(VDisplayType::DT_WRITE);
             pformatp->text(pformatp->text() + "\n");
         }
         // We can't replace prev() as the edit tracking iterators will get confused.
