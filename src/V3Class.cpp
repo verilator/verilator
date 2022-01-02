@@ -151,9 +151,7 @@ private:
     virtual void visit(AstInitial* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);
-        if (m_packageScopep) {
-            m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
-        }
+        if (m_packageScopep) { m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep)); }
     }
 
     virtual void visit(AstNodeMath* nodep) override {}  // Short circuit
