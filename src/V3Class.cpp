@@ -130,7 +130,6 @@ private:
             }
         }
     }
-
     virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class

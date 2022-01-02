@@ -2113,8 +2113,9 @@ private:
         // Legal under a DOT: AstDot, AstParseRef, AstPackageRef, AstNodeSel
         //    also a DOT can be part of an expression, but only above plus
         //    AstFTaskRef are legal children
-        // DOT(PACKAGEREF, PARSEREF(text))
-        // DOT(DOT(DOT(PARSEREF(text), ...
+        // Dot(PackageRef, ParseRef(text))
+        // Dot(Dot(ClassOrPackageRef,ClassOrPackageRef), ParseRef(text))
+        // Dot(Dot(Dot(ParseRef(text), ...
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
         const DotStates lastStates = m_ds;
