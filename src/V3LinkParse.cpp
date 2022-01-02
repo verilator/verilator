@@ -272,7 +272,11 @@ private:
                 auto* const assp
                     = new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
                                     nodep->valuep()->unlinkFrBack());
-                nodep->addNextHere(new AstInitial(newfl, assp));
+                if (nodep->lifetime().isAutomatic()) {
+                    nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
+                } else {
+                    nodep->addNextHere(new AstInitial{newfl, assp});
+                }
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
                 nodep->addNextHere(new AstAssign(fl,

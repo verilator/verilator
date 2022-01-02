@@ -112,7 +112,7 @@ private:
     AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
-    std::vector<AstInitial*> m_initialps;  // Initial blocks to move
+    std::vector<AstInitialAutomatic*> m_initialps;  // Initial blocks to move
 
 public:
     // METHODS
@@ -246,7 +246,7 @@ private:
             iterateChildren(nodep);
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
-        for (AstInitial* initialp : m_initialps) {
+        for (AstInitialAutomatic* initialp : m_initialps) {
             if (AstNode* const newp = initialp->bodysp()) {
                 newp->unlinkFrBackWithNext();
                 if (!m_ctorp->stmtsp()) {
@@ -261,7 +261,7 @@ private:
         m_ctorp = nullptr;
         m_classp = nullptr;
     }
-    virtual void visit(AstInitial* nodep) override {
+    virtual void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
         iterateChildren(nodep);
     }

@@ -217,6 +217,8 @@ struct SplitVarImpl {
             insertBeginCore(ap, stmtp, modp);
         } else if (AstInitial* const ap = VN_CAST(backp, Initial)) {
             insertBeginCore(ap, stmtp, modp);
+        } else if (auto* const ap = VN_CAST(backp, Initial)) {
+            insertBeginCore(ap, stmtp, modp);
         }
     }
 

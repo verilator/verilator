@@ -80,7 +80,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstInitial* nodep) override {
+    virtual void visit(AstInitialAutomatic* nodep) override {
         iterateChildren(nodep);
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial

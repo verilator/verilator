@@ -715,6 +715,7 @@ private:
 
     // Ignores
     virtual void visit(AstInitial*) override {}
+    virtual void visit(AstInitialAutomatic*) override {}
     virtual void visit(AstTraceDecl*) override {}
     virtual void visit(AstCoverToggle*) override {}
     virtual void visit(AstNodeDType*) override {}

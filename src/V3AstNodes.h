@@ -3401,6 +3401,15 @@ public:
     ASTNODE_NODE_FUNCS(Initial)
 };
 
+class AstInitialAutomatic final : public AstNodeProcedure {
+    // initial for automatic variables
+    // That is, it runs every function start, or class construction
+public:
+    AstInitialAutomatic(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER_InitialAutomatic(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(InitialAutomatic)
+};
+
 class AstAlways final : public AstNodeProcedure {
     const VAlwaysKwd m_keyword;
 
