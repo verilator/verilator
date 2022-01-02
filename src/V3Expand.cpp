@@ -727,21 +727,6 @@ private:
         return true;
     }
 
-    virtual void visit(AstChangeXor* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
-        iterateChildren(nodep);
-        UINFO(8, "    Wordize ChangeXor " << nodep << endl);
-        // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
-        FileLine* const fl = nodep->fileline();
-        AstNode* newp = nullptr;
-        for (int w = 0; w < nodep->lhsp()->widthWords(); ++w) {
-            AstNode* const eqp = new AstXor{fl, newAstWordSelClone(nodep->lhsp(), w),
-                                            newAstWordSelClone(nodep->rhsp(), w)};
-            newp = newp ? new AstOr{fl, newp, eqp} : eqp;
-        }
-        VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
-    }
-
     void visitEqNeq(AstNodeBiop* nodep) {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);

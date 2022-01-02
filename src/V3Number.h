@@ -421,7 +421,6 @@ public:
     V3Number& opPowSS(const V3Number& lhs, const V3Number& rhs);  // Signed lhs, signed rhs
     V3Number& opPowUS(const V3Number& lhs, const V3Number& rhs);  // Unsigned lhs, signed rhs
     V3Number& opAnd(const V3Number& lhs, const V3Number& rhs);
-    V3Number& opChangeXor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opXor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opOr(const V3Number& lhs, const V3Number& rhs);
     V3Number& opShiftR(const V3Number& lhs, const V3Number& rhs);

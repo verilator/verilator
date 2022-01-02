@@ -1320,14 +1320,6 @@ V3Number& V3Number::opOr(const V3Number& lhs, const V3Number& rhs) {
     return *this;
 }
 
-V3Number& V3Number::opChangeXor(const V3Number& lhs, const V3Number& rhs) {
-    NUM_ASSERT_OP_ARGS2(lhs, rhs);
-    NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
-    // 32 bit result
-    opEq(lhs, rhs);
-    return *this;
-}
-
 V3Number& V3Number::opXor(const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, careful need to X/Z extend.
     NUM_ASSERT_OP_ARGS2(lhs, rhs);

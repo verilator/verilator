@@ -3317,7 +3317,6 @@ private:
     // AstLogAnd/AstLogOr already converted to AstAnd/AstOr for these rules
     // AstAdd->ShiftL(#,1) but uncommon
     TREEOP ("AstAnd    {operandsSame($lhsp,,$rhsp)}",   "replaceWLhs(nodep)");
-    TREEOP ("AstChangeXor{operandsSame($lhsp,,$rhsp)}", "replaceZero(nodep)");
     TREEOP ("AstDiv    {operandsSame($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstDivS   {operandsSame($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstOr     {operandsSame($lhsp,,$rhsp)}",   "replaceWLhs(nodep)");

@@ -4821,34 +4821,6 @@ public:
     AstJumpLabel* labelp() const { return m_labelp; }
 };
 
-class AstChangeXor final : public AstNodeBiComAsv {
-    // A comparison to determine change detection, common & must be fast.
-    // Returns 32-bit or 64-bit value where 0 indicates no change.
-    // Parents: OR or LOGOR
-    // Children: VARREF
-public:
-    AstChangeXor(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER_ChangeXor(fl, lhsp, rhsp) {
-        dtypeSetUInt32();  // Always used on, and returns word entities
-    }
-    ASTNODE_NODE_FUNCS(ChangeXor)
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstChangeXor(this->fileline(), lhsp, rhsp);
-    }
-    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
-        out.opChangeXor(lhs, rhs);
-    }
-    virtual string emitVerilog() override { return "%k(%l %f^ %r)"; }
-    virtual string emitC() override { return "VL_CHANGEXOR_%li(%lw, %P, %li, %ri)"; }
-    virtual string emitSimpleOperator() override { return "^"; }
-    virtual bool cleanOut() const override { return false; }  // Lclean && Rclean
-    virtual bool cleanLhs() const override { return true; }
-    virtual bool cleanRhs() const override { return true; }
-    virtual bool sizeMattersLhs() const override { return false; }
-    virtual bool sizeMattersRhs() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs(); }
-};
-
 class AstChangeDet final : public AstNodeStmt {
     // A comparison to determine change detection, common & must be fast.
 public:
