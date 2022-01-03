@@ -1463,8 +1463,8 @@ private:
                                             -1,  // Pin# not relevant
                                             nodep->name(), exprp);
             cellp->addParamsp(pinp);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstPort* nodep) override {
         // Port: Stash the pin number
