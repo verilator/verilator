@@ -15,5 +15,9 @@ compile(
     expect_filename => $Self->{golden_filename},
     );
 
+execute(
+    check_finished => 1,
+    ) if !$Self->{vlt_all};
+
 ok(1);
 1;
