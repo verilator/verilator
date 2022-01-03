@@ -1860,7 +1860,7 @@ private:
     VSymEnt* m_pinSymp = nullptr;  // SymEnt for pin lookups
     const AstCell* m_cellp = nullptr;  // Current cell
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     int m_modportNum = 0;  // Uniqueify modport numbers
 
     struct DotStates {
@@ -2748,11 +2748,8 @@ private:
                 if (foundp) {
                     if (VN_IS(foundp->nodep(), Var) && m_ds.m_dotText == "" && m_ftaskp
                         && m_ftaskp->name() == foundp->nodep()->name()) {
-                        // This is a recursive reference to the function itself, not to the var
-                        nodep->taskp(m_ftaskp);
-                        nodep->classOrPackagep(foundp->classOrPackagep());
-                        UINFO(7, "         Resolved recursive " << nodep
-                                                                << endl);  // Also prints taskp
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function call "
+                                                         << nodep->prettyNameQ());
                     } else {
                         nodep->v3error("Found definition of '"
                                        << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
