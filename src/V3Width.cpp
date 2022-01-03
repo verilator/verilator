@@ -4538,7 +4538,8 @@ private:
         // Grab width from the output variable (if it's a function)
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call: "
+                                             << nodep->prettyNameQ());
             nodep->dtypeSetBit();
             nodep->didWidth(true);
             return;
