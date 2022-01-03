@@ -1802,12 +1802,13 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
 void AstNodeFTask::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (classMethod()) str << " [METHOD]";
-    if (taskPublic()) str << " [PUBLIC]";
-    if (prototype()) str << " [PROTOTYPE]";
-    if (dpiImport()) str << " [DPII]";
     if (dpiExport()) str << " [DPIX]";
+    if (dpiImport()) str << " [DPII]";
     if (dpiOpenChild()) str << " [DPIOPENCHILD]";
     if (dpiOpenParent()) str << " [DPIOPENPARENT]";
+    if (prototype()) str << " [PROTOTYPE]";
+    if (recursive()) str << " [RECURSIVE]";
+    if (taskPublic()) str << " [PUBLIC]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
 void AstNodeBlock::dump(std::ostream& str) const {

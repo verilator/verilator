@@ -4538,8 +4538,10 @@ private:
         // Grab width from the output variable (if it's a function)
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call");
-            nodep->dtypeSetBit();
+            UINFO(5, "Recursive function or task call: " << nodep);
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call: "
+                                             << nodep->prettyNameQ());
+            nodep->recursive(true);
             nodep->didWidth(true);
             return;
         }
@@ -4554,7 +4556,8 @@ private:
         // Would use user1 etc, but V3Width called from too many places to spend a user
         nodep->doingWidth(true);
         m_ftaskp = nodep;
-        userIterateChildren(nodep, nullptr);
+        // First width the function variable, as if is a recursive function we need data type
+        if (nodep->fvarp()) userIterate(nodep->fvarp(), nullptr);
         if (nodep->isConstructor()) {
             // Pretend it's void so less special casing needed when look at dtypes
             nodep->dtypeSetVoid();
@@ -4563,6 +4566,7 @@ private:
             UASSERT_OBJ(m_funcp, nodep, "FTask with function variable, but isn't a function");
             nodep->dtypeFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
         }
+        userIterateChildren(nodep, nullptr);
         nodep->didWidth(true);
         nodep->doingWidth(false);
         m_funcp = nullptr;

@@ -977,6 +977,13 @@ private:
         VL_DANGLING(funcp);  // Make sure we've sized the function
         funcp = nodep->taskp();
         UASSERT_OBJ(funcp, nodep, "Not linked");
+        if (funcp->recursive()) {
+            // Because we attach values to nodes rather then making a stack, this is a mess
+            // When we do support this, we need a stack depth limit of 1K or something,
+            // and the t_func_recurse_param_bad.v test should check that limit's error message
+            clearOptimizable(funcp, "Unsupported: Recursive constant functions");
+            return;
+        }
         // Apply function call values to function
         V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         // Must do this in two steps, eval all params, then apply them
