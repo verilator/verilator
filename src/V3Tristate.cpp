@@ -546,8 +546,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             UINFO(9, "     TRISTATE propagates up with " << lhsp << endl);
             // Create an output enable port (__en)
             // May already be created if have foo === 1'bz somewhere
-            envarp = getCreateEnVarp(invarp);
-            envarp->varType2Out();
+            envarp = getCreateEnVarp(invarp);  // direction will be sen in visit(AstPin*)
             //
             outvarp->user1p(envarp);
             outvarp->user3p(invarp->user3p());  // AstPull* propagation
@@ -1162,7 +1161,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                 AstVar* const enVarp = new AstVar(nodep->fileline(), VVarType::MODULETEMP,
                                                   nodep->name() + "__en" + cvtToStr(m_unique++),
                                                   VFlagBitPacked(), enModVarp->width());
-                enModVarp->direction(VDirection::INPUT);
+                if (inDeclProcessing) {  // __en(from-resolver-const) or __en(from-resolver-wire)
+                    enModVarp->varType2In();
+                } else {
+                    enModVarp->varType2Out();
+                }
                 UINFO(9, "       newenv " << enVarp << endl);
                 AstPin* const enpinp
                     = new AstPin(nodep->fileline(), nodep->pinNum(),
