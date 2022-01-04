@@ -36,6 +36,7 @@ Verilator 4.217 devel
 * Fix $random not updating seed (#3238). [Julie Schwartz]
 * Fix spurious UNUSED by ignoring inout pin connections (#3242). [Julie Schwartz]
 * Fix splitting of _eval and other top level functions. [Geza Lore, Shunyao CAD]
+* Fix internal error by inout port (#3258). [Yutetsu TAKATSUKASA]
 
 
 Verilator 4.216 2021-12-05
