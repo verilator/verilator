@@ -140,7 +140,10 @@ public:
         getFTaskVertex(nodep)->cFuncp(cfuncp);
     }
     void checkPurity(AstNodeFTask* nodep) { checkPurity(nodep, getFTaskVertex(nodep)); }
+
+private:
     void checkPurity(AstNodeFTask* nodep, TaskBaseVertex* vxp) {
+        if (nodep->recursive()) return;  // Impure, but no warning
         if (!vxp->pure()) {
             nodep->v3warn(
                 IMPURE, "Unsupported: External variable referenced by non-inlined function/task: "
@@ -156,8 +159,6 @@ public:
             checkPurity(nodep, static_cast<TaskBaseVertex*>(edgep->top()));
         }
     }
-
-private:
     TaskFTaskVertex* getFTaskVertex(AstNodeFTask* nodep) {
         if (!nodep->user4p()) nodep->user4p(new TaskFTaskVertex(&m_callGraph, nodep));
         return static_cast<TaskFTaskVertex*>(nodep->user4u().toGraphVertex());
@@ -209,6 +210,7 @@ private:
             m_curVxp = getFTaskVertex(nodep);
             if (nodep->dpiImport()) m_curVxp->noInline(true);
             if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
+            if (nodep->recursive()) m_curVxp->noInline(true);
             if (nodep->isConstructor()) {
                 m_curVxp->noInline(true);
                 m_ctorp = nodep;
@@ -726,6 +728,24 @@ private:
         return new AstCStmt(portp->fileline(), stmt);
     }
 
+    void unlinkAndClone(AstNodeFTask* funcp, AstNode* nodep, bool withNext) {
+        UASSERT_OBJ(nodep, funcp, "null in function object clone");
+        VNRelinker relinkHandle;
+        if (withNext) {
+            nodep->unlinkFrBackWithNext(&relinkHandle);
+        } else {
+            nodep->unlinkFrBack(&relinkHandle);
+        }
+        if (funcp->recursive()) {
+            // Recursive functions require the original argument list to
+            // still be live for linking purposes.
+            // The old function gets clone, so that node pointers are mostly
+            // retained through the V3Task transformations
+            AstNode* const newp = nodep->cloneTree(withNext);
+            relinkHandle.relink(newp);
+        }
+    }
+
     static AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
                                               const string& toSuffix) {
         const string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
@@ -1149,7 +1169,7 @@ private:
             if (ftaskNoInline || nodep->dpiExport()) {
                 portp->funcReturn(false);  // Converting return to 'outputs'
             }
-            portp->unlinkFrBack();
+            unlinkAndClone(nodep, portp, false);
             rtnvarp = portp;
             rtnvarp->funcLocal(true);
             rtnvarp->name(rtnvarp->name()
@@ -1260,7 +1280,7 @@ private:
                 } else {
                     if (portp->isIO()) {
                         // Move it to new function
-                        portp->unlinkFrBack();
+                        unlinkAndClone(nodep, portp, false);
                         portp->funcLocal(true);
                         cfuncp->addArgsp(portp);
                     } else {
@@ -1282,10 +1302,21 @@ private:
         if (rtnvarp) cfuncp->addArgsp(rtnvarp);
 
         // Move body
-        AstNode* const bodysp = nodep->stmtsp();
+        AstNode* bodysp = nodep->stmtsp();
         if (bodysp) {
-            bodysp->unlinkFrBackWithNext();
-            cfuncp->addStmtsp(bodysp);
+            unlinkAndClone(nodep, bodysp, true);
+            AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", bodysp};
+            VL_DANGLING(bodysp);
+            // If we cloned due to recursion, now need to rip out the ports
+            // (that remained in place) then got cloned
+            for (AstNode *nextp, *stmtp = tempp->stmtsp(); stmtp; stmtp = nextp) {
+                nextp = stmtp->nextp();
+                if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+                    if (portp->isIO()) portp->unlinkFrBack();
+                }
+            }
+            if (tempp->stmtsp()) cfuncp->addStmtsp(tempp->stmtsp()->unlinkFrBackWithNext());
+            VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
         if (nodep->dpiImport()) bodyDpiImportFunc(nodep, rtnvscp, cfuncp, dpiFuncp);
 
@@ -1455,7 +1486,7 @@ private:
         if (visitp) iterateAndNextNull(visitp);
     }
     virtual void visit(AstNodeFTask* nodep) override {
-        UINFO(4, " Inline   " << nodep << endl);
+        UINFO(4, " visitFTask   " << nodep << endl);
         VL_RESTORER(m_insMode);
         VL_RESTORER(m_insStmtp);
         m_insMode = IM_BEFORE;
