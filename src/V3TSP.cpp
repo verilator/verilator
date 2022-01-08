@@ -141,7 +141,7 @@ private:
     }
 
     struct EdgeListCmp final {
-        bool operator()(const EdgeList* ap, const EdgeList* bp) {
+        bool operator()(const EdgeList* ap, const EdgeList* bp) const {
             // Simply compare heads
             return edgeCmp(bp->back(), ap->back());
         }
