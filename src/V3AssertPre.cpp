@@ -22,6 +22,7 @@
 
 #include "V3Global.h"
 #include "V3AssertPre.h"
+#include "V3Ast.h"
 
 //######################################################################
 // Assert class functions

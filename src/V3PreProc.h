@@ -22,6 +22,7 @@
 
 #include "V3Error.h"
 #include "V3FileLine.h"
+#include "V3Global.h"
 
 #include <map>
 #include <list>

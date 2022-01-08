@@ -20,9 +20,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
-#include "V3Ast.h"
-
+class AstNetlist;
 class VInFilter;
 class V3ParseSym;
 

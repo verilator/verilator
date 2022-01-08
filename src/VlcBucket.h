@@ -20,6 +20,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#define V3ERROR_NO_GLOBAL_
+#include "V3Error.h"
+
 //********************************************************************
 // VlcBuckets - Container of all coverage point hits for a given test
 // This is a bitmap array - we store a single bit to indicate a test

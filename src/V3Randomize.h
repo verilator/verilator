@@ -20,7 +20,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Ast.h"
+class AstClass;
+class AstFunc;
+class AstNetlist;
 
 class V3Randomize final {
 public:

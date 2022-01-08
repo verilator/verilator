@@ -20,11 +20,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "verilated_cov_key.h"
-
 #include <vector>
 #include <iomanip>
+#include <map>
 #include <unordered_map>
+
+#define V3ERROR_NO_GLOBAL_
+#include "V3Error.h"
+#include "verilated_cov_key.h"
 
 //********************************************************************
 // VlcPoint - A coverage point (across all tests)

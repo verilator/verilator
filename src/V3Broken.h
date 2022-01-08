@@ -23,8 +23,8 @@
 //============================================================================
 
 // Forward declare so we can include this in V3Ast.h
-class AstNode;
 class AstNetlist;
+class AstNode;
 
 class V3Broken final {
 public:

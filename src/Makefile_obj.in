@@ -75,7 +75,9 @@ VPATH += . $(bldsrc) $(srcdir)
 TGT = ../../verilator_bin$(EXEEXT)
 
 #################
-ifeq ($(VL_DEBUG),)
+ifeq ($(VL_NOOPT),1)
+CPPFLAGS += -O0
+else ifeq ($(VL_DEBUG),)
 # Optimize
 CPPFLAGS += -O2
 else
@@ -272,6 +274,11 @@ NC_OBJS += \
 VLCOV_OBJS = \
 	VlcMain.o \
 
+NON_STANDALONE_HEADERS = \
+	V3AstInlines.h  \
+	V3AstNodes.h  \
+	V3WidthCommit.h  \
+
 #### Linking
 
 ifeq ($(VL_VLCOV),)
@@ -348,6 +355,15 @@ V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
 
 V3PreLex.yy.cpp: V3PreLex_pregen.yy.cpp $(FLEXFIX)
 	$(PYTHON3) $(FLEXFIX) V3PreLex <$< >$@
+
+# For t_dist_header_cc
+HEADER_CC_H := $(filter-out $(NON_STANDALONE_HEADERS), $(notdir $(wildcard $(srcdir)/*.h)))
+
+.PHONY: header_cc
+header_cc: $(addsuffix __header_cc.o, $(basename $(HEADER_CC_H)))
+
+%__header_cc.cpp: %.h
+	$(PERL) $(srcdir)/../bin/verilator_includer $^ > $@
 
 .SUFFIXES:
 

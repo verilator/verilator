@@ -32,8 +32,8 @@
 #include <unordered_set>
 #include <vector>
 
-class AstNodeModule;
 class AstNetlist;
+class AstNodeModule;
 class AstVar;
 
 //######################################################################
