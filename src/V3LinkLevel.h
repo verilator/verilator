@@ -23,6 +23,8 @@
 #include "V3Error.h"
 #include "V3Ast.h"
 
+#include <vector>
+
 //============================================================================
 
 class V3LinkLevel final {

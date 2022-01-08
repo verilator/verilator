@@ -26,9 +26,11 @@
 #include "V3String.h"
 
 #include <cstdarg>
-#include <map>
 #include <iomanip>
+#include <map>
 #include <memory>
+#include <unordered_set>
+#include <vector>
 
 class VSymGraph;
 class VSymEnt;

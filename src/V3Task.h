@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3Ast.h"
 
+#include <utility>
 #include <vector>
 
 //============================================================================

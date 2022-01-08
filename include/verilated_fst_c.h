@@ -180,7 +180,7 @@ public:
     }
 
     // Internal class access
-    inline VerilatedFst* spTrace() { return &m_sptrace; };
+    inline VerilatedFst* spTrace() { return &m_sptrace; }
 };
 
 #endif  // guard

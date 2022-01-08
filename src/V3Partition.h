@@ -24,6 +24,7 @@
 #include "V3OrderGraph.h"
 
 #include <list>
+#include <unordered_map>
 
 class LogicMTask;
 using Vx2MTaskMap = std::unordered_map<const MTaskMoveVertex*, LogicMTask*>;

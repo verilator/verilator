@@ -512,8 +512,9 @@ public:
                     if (it2 != m_scopeAliasMap[samn].end()) {
                         srcp = it2->second;
                         continue;
-                    } else
+                    } else {
                         break;
+                    }
                 }
                 UINFO(9, "  iiasa: Insert alias se" << lhsp << " (" << lhsp->nodep()->typeName()
                                                     << ") <- se" << srcp << " " << srcp->nodep()
@@ -623,8 +624,9 @@ public:
                                 }
                                 break;
                             }
-                        } else
+                        } else {
                             break;
+                        }
                     }
                     if (!lookupSymp) return nullptr;  // Not found
                 }

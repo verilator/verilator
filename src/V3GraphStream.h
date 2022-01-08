@@ -23,6 +23,8 @@
 
 #include "V3Graph.h"
 
+#include <functional>
+#include <map>
 #include <set>
 #include <unordered_map>
 

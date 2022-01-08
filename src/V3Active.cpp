@@ -163,9 +163,9 @@ public:
         LatchDetectGraphVertex* outVertexp;
         if (!nodep->varp()->user1p()) {  // Not seen this output before
             outVertexp = addOutputVertex(nodep);
-        } else
+        } else {
             outVertexp = castVertexp(nodep->varp()->user1p());
-
+        }
         new V3GraphEdge(this, m_curVertexp, outVertexp, 1);
     }
     // Run latchCheckInternal on each variable assigned by the always block to see if all control

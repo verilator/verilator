@@ -117,7 +117,7 @@ public:
         m_words[word].m_complex = true;
     }
     void assignComplex() { m_whole.m_complex = true; }
-    void consumeWhole() {  //==consumeComplex as we don't know the difference
+    void consumeWhole() {  // ==consumeComplex as we don't know the difference
         m_whole.m_use = true;
     }
     void consumeWord(int word) {

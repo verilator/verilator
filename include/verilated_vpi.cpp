@@ -1697,7 +1697,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
     // Maximum required size is for binary string, one byte per bit plus null termination
     static VL_THREAD_LOCAL char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     // cppcheck-suppress variableScope
-    const static VL_THREAD_LOCAL int t_outStrSz = sizeof(t_outStr) - 1;
+    static const VL_THREAD_LOCAL int t_outStrSz = sizeof(t_outStr) - 1;
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
     // This may cause backward compatibility issues with older code.
     if (valuep->format == vpiVectorVal) {

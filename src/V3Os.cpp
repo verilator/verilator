@@ -52,16 +52,16 @@
 // These macros taken from gdbsupport/gdb_wait.h in binutils-gdb
 # ifndef WIFEXITED
 #  ifdef __MINGW32__
-#   define WIFEXITED(w)	(((w) & 0xC0000000) == 0)
-#   define WEXITSTATUS(w)	((w) & ~0xC0000000)
+#   define WIFEXITED(w) (((w) & 0xC0000000) == 0)
+#   define WEXITSTATUS(w) ((w) & ~0xC0000000)
 #  else
-#   define WIFEXITED(w)	(((w) & 0377) == 0)
-#   define WEXITSTATUS(w)	(((w) >> 8) & 0377)
+#   define WIFEXITED(w) (((w) & 0377) == 0)
+#   define WEXITSTATUS(w) (((w) >> 8) & 0377)
 #  endif
 # endif
 #else
 # include <sys/time.h>
-# include <sys/wait.h> // Needed on FreeBSD for WIFEXITED
+# include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
 # include <unistd.h>  // usleep
 #endif
 // clang-format on

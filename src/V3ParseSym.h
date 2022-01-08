@@ -26,6 +26,7 @@
 #include "V3SymTable.h"
 
 #include <deque>
+#include <vector>
 
 //######################################################################
 // Symbol table for parsing

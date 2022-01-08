@@ -29,8 +29,9 @@
 
 #include "V3Error.h"
 
-#include <set>
+#include <functional>
 #include <map>
+#include <set>
 #include <unordered_map>
 
 //######################################################################

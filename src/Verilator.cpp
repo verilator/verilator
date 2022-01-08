@@ -246,7 +246,7 @@ static void process() {
         }
     }
 
-    //--PRE-FLAT OPTIMIZATIONS------------------
+    // --PRE-FLAT OPTIMIZATIONS------------------
 
     // Initial const/dead to reduce work for ordering code
     V3Const::constifyAll(v3Global.rootp());
@@ -257,7 +257,7 @@ static void process() {
 
     V3Error::abortIfErrors();
 
-    //--FLATTENING---------------
+    // --FLATTENING---------------
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // We're going to flatten the hierarchy, so as many optimizations that
@@ -277,7 +277,7 @@ static void process() {
         V3Class::classAll(v3Global.rootp());
     }
 
-    //--SCOPE BASED OPTIMIZATIONS--------------
+    // --SCOPE BASED OPTIMIZATIONS--------------
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Cleanup
@@ -412,7 +412,7 @@ static void process() {
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Scoped");
     }
 
-    //--MODULE OPTIMIZATIONS--------------
+    // --MODULE OPTIMIZATIONS--------------
 
     if (!v3Global.opt.xmlOnly()) {
         // Split deep blocks to appease MSVC++.  Must be before Localize.
@@ -435,7 +435,7 @@ static void process() {
 
     V3Error::abortIfErrors();
 
-    //--GENERATION------------------
+    // --GENERATION------------------
 
     if (!v3Global.opt.xmlOnly()) {
         // Remove unused vars
@@ -580,7 +580,7 @@ static void verilate(const string& argString) {
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
     }  // LCOV_EXCL_STOP
 
-    //--FRONTEND------------------
+    // --FRONTEND------------------
 
     // Cleanup
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");

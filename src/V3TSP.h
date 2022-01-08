@@ -23,6 +23,8 @@
 
 #include "V3Error.h"
 
+#include <vector>
+
 namespace V3TSP {
 // Perform a "Traveling Salesman Problem" optimizing sort
 // on any type you like -- so long as inherits from TspStateBase.

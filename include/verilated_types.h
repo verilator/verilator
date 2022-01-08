@@ -849,8 +849,8 @@ template <class T_Value, std::size_t T_Depth> struct VlUnpacked final {
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
 
-    T_Value& operator[](size_t index) { return m_storage[index]; };
-    const T_Value& operator[](size_t index) const { return m_storage[index]; };
+    T_Value& operator[](size_t index) { return m_storage[index]; }
+    const T_Value& operator[](size_t index) const { return m_storage[index]; }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {

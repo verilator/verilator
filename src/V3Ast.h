@@ -27,8 +27,12 @@
 #include "V3Broken.h"
 
 #include <cmath>
+#include <map>
+#include <set>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "V3Ast__gen_classes.h"  // From ./astgen
 // Things like:

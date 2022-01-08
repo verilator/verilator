@@ -276,13 +276,13 @@ private:
         UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
 
         AstNode* nonXp = nullptr;
-        if (!dropop[0])
+        if (!dropop[0]) {
             nonXp = nodep->rhsp();
-        else if (!dropop[1])
+        } else if (!dropop[1]) {
             nonXp = nodep->thsp();
-        else if (!dropop[2])
+        } else if (!dropop[2]) {
             nonXp = nodep->fhsp();
-        else {  // Was all X-s
+        } else {  // Was all X-s
             UINFO(4, " COUNTBITS('x)->0 " << nodep << endl);
             AstConst* const newp = new AstConst(nodep->fileline(), AstConst::BitFalse());
             nodep->replaceWith(newp);

@@ -271,8 +271,9 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
                 } else if (isalnum(*cp)) {
                     fileline->v3error("Unknown escape sequence: \\" << *cp);
                     break;
-                } else
+                } else {
                     newtext += *cp;
+                }
             }
         } else if (*cp == '\\') {
             quoted = true;

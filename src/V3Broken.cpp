@@ -225,7 +225,7 @@ private:
         while (nodep) {
             processAndIterate(nodep);
             nodep = nodep->nextp();
-        };
+        }
     }
     void pushLocalScope() {
         if (m_cfuncp) m_localsStack.emplace_back();

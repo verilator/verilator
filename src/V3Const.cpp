@@ -951,8 +951,9 @@ private:
         } else if (VN_IS(nodep->rhsp(), And)) {
             andp = VN_AS(nodep->rhsp(), And);
             ap = nodep->lhsp();
-        } else
+        } else {
             return false;
+        }
         const AstNodeUniop* notp;
         AstNode* cp;
         if (VN_IS(andp->lhsp(), Not)) {
@@ -3204,11 +3205,11 @@ private:
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",        "replaceWRhs(nodep)");
-    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, isTPure($rhsp)}",        "replaceWLhs(nodep)");  //->allOnes
+    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, isTPure($rhsp)}",        "replaceWLhs(nodep)");  // ->allOnes
     TREEOP ("AstLogOr {$lhsp.isNeqZero, $rhsp}",        "replaceNum(nodep,1)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",        "replaceWLhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhs(nodep)");
-    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  //->allOnes
+    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  // ->allOnes
     TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp), nodep->isPure()}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");

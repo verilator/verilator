@@ -37,7 +37,8 @@
 // FileLineSingleton class functions
 
 string FileLineSingleton::filenameLetters(int fileno) {
-    const int size = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
+    constexpr int size
+        = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];
     char* op = out + size - 1;
     *--op = '\0';  // We build backwards

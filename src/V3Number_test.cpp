@@ -99,8 +99,9 @@ void test(const string& lhss, const string& op, const string& rhss, const string
         gotnum.opLogAnd(lhnum, rhnum);
     } else if (op == "||") {
         gotnum.opLogOr(lhnum, rhnum);
-    } else
+    } else {
         v3fatalSrc("Bad opcode: " << op);
+    }
 
     UINFO(0, "------- Test:\n"
                  << "       " << lhnum << " " << op << endl

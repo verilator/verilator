@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include <map>
+#include <utility>
 #include <vector>
 
 //********************************************************************

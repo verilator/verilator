@@ -371,7 +371,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
                 *logp << "\tn" << edgep->fromp()->dotName() << fromVnum << " -> n"
                       << edgep->top()->dotName() << toVnum
                       << " ["
-                      //<<"fontsize=8 label=\""<<(edgep->name()!="" ? edgep->name() : "\\E")<<"\""
+                      // <<"fontsize=8 label=\""<<(edgep->name()!="" ? edgep->name() : "\\E")<<"\""
                       << "fontsize=8 label=\""
                       << (edgep->dotLabel() != "" ? edgep->dotLabel() : "") << "\""
                       << " weight=" << edgep->weight() << " color=" << edgep->dotColor();

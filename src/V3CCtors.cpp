@@ -118,7 +118,7 @@ public:
                 rootFuncp->addStmtsp(callp);
             }
         }
-    };
+    }
 
 private:
     VL_UNCOPYABLE(V3CCtorsBuilder);

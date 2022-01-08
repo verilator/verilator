@@ -79,8 +79,9 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
             if (needComma) {
                 if (pos[1] == ' ') {
                     nextComma = ", ";
-                } else
+                } else {
                     nextComma = ",";
+                }
                 needComma = false;
             }
             if (pos[1] == ' ') ++pos;  // Must do even if no nextComma
