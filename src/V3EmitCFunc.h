@@ -134,7 +134,7 @@ public:
 
     // ACCESSORS
     void splitSizeInc(int count) { m_splitSize += count; }
-    void splitSizeInc(AstNode* nodep) { splitSizeInc(EmitCBaseCounterVisitor(nodep).count()); }
+    void splitSizeInc(AstNode* nodep) { splitSizeInc(nodep->nodeCount()); }
     void splitSizeReset() { m_splitSize = 0; }
     bool splitNeeded() const {
         return v3Global.opt.outputSplit() && m_splitSize >= v3Global.opt.outputSplit();

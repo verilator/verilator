@@ -44,28 +44,6 @@
 #include <vector>
 
 //######################################################################
-
-class DeadModVisitor final : public VNVisitor {
-    // In a module that is dead, cleanup the in-use counts of the modules
-private:
-    // NODE STATE
-    // ** Shared with DeadVisitor **
-    // VISITORS
-    virtual void visit(AstCell* nodep) override {
-        iterateChildren(nodep);
-        nodep->modp()->user1Inc(-1);
-    }
-    //-----
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit DeadModVisitor(AstNodeModule* nodep) { iterate(nodep); }
-    virtual ~DeadModVisitor() override = default;
-};
-
-//######################################################################
 // Dead state, as a visitor of each AstNode
 
 class DeadVisitor final : public VNVisitor {
@@ -328,7 +306,9 @@ private:
                     // And its children may now be killable too; correct counts
                     // Recurse, as cells may not be directly under the module but in a generate
                     if (!modp->dead()) {  // If was dead didn't increment user1's
-                        DeadModVisitor{modp};
+                        modp->foreach<AstCell>([](const AstCell* cellp) {  //
+                            cellp->modp()->user1Inc(-1);
+                        });
                     }
                     VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
                     retry = true;

@@ -27,6 +27,7 @@
 #include "V3Broken.h"
 
 #include <cmath>
+#include <functional>
 #include <map>
 #include <set>
 #include <type_traits>
@@ -1866,8 +1867,16 @@ private:
     void iterateListBackwards(VNVisitor& v);
 
     // For internal use only.
+    // Note: specializations for particular node types are provided by 'astgen'
     template <typename T> inline static bool privateTypeTest(const AstNode* nodep);
 
+    // For internal use only.
+    // Note: specializations for particular node types are provided below
+    template <typename T_Node> inline static bool privateMayBeUnder(const AstNode* nodep) {
+        return true;
+    }
+
+    // For internal use only.
     template <typename TargetType, typename DeclType> constexpr static bool uselessCast() {
         using NonRef = typename std::remove_reference<DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
@@ -1875,6 +1884,7 @@ private:
         return std::is_base_of<TargetType, NonCV>::value;
     }
 
+    // For internal use only.
     template <typename TargetType, typename DeclType> constexpr static bool impossibleCast() {
         using NonRef = typename std::remove_reference<DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
@@ -1921,10 +1931,116 @@ public:
                                                                               << "'");
         return reinterpret_cast<const T*>(nodep);
     }
+
+    // Predicate that returns true if the given 'nodep' might have a descendant of type 'T_Node'.
+    // This is conservative and is used to speed up traversals.
+    template <typename T_Node> inline static bool mayBeUnder(const AstNode* nodep) {
+        static_assert(!std::is_const<T_Node>::value,
+                      "Type parameter 'T_Node' should not be const qualified");
+        static_assert(std::is_base_of<AstNode, T_Node>::value,
+                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        return privateMayBeUnder<T_Node>(nodep);
+    }
+
+private:
+    template <typename T_Arg, bool VisitNext>
+    static void foreachImpl(
+        // Using std::conditional for const correctness in the public 'foreach' functions
+        typename std::conditional<std::is_const<T_Arg>::value, const AstNode*, AstNode*>::type
+            nodep,
+        std::function<void(T_Arg*)> f) {
+
+        // Note: Using a loop to iterate the nextp() chain, instead of tail recursion, because
+        // debug builds don't eliminate tail calls, causing stack overflow on long lists of nodes.
+        do {
+            // Prefetch children and next
+            ASTNODE_PREFETCH(nodep->op1p());
+            ASTNODE_PREFETCH(nodep->op2p());
+            ASTNODE_PREFETCH(nodep->op3p());
+            ASTNODE_PREFETCH(nodep->op4p());
+            if /* TODO: 'constexpr' in C++17 */ (VisitNext) ASTNODE_PREFETCH(nodep->nextp());
+
+            // Apply function in pre-order
+            if (privateTypeTest<typename std::remove_const<T_Arg>::type>(nodep)) {
+                f(static_cast<T_Arg*>(nodep));
+            }
+
+            // Traverse children (including their 'nextp()' chains), unless futile
+            if (mayBeUnder<typename std::remove_const<T_Arg>::type>(nodep)) {
+                if (AstNode* const op1p = nodep->op1p()) foreachImpl<T_Arg, true>(op1p, f);
+                if (AstNode* const op2p = nodep->op2p()) foreachImpl<T_Arg, true>(op2p, f);
+                if (AstNode* const op3p = nodep->op3p()) foreachImpl<T_Arg, true>(op3p, f);
+                if (AstNode* const op4p = nodep->op4p()) foreachImpl<T_Arg, true>(op4p, f);
+            }
+
+            // Traverse 'nextp()' chain if requested
+            if /* TODO: 'constexpr' in C++17 */ (VisitNext) {
+                nodep = nodep->nextp();
+            } else {
+                break;
+            }
+        } while (nodep);
+    }
+
+public:
+    // Traverse subtree and call given function 'f' in pre-order on each node that has type 'T'.
+    // Prefer 'foreach' over simple VNVisitor that only needs to handle a single (or a few) node
+    // types, as it's easier to write, but more importantly, the dispatch to the operation function
+    // in 'foreach' should be completely predictable by branch target caches in modern CPUs,
+    // while it is basically unpredictable for VNVisitor.
+    template <typename T_Node> void foreach (std::function<void(T_Node*)> f) {
+        static_assert(!std::is_const<T_Node>::value,
+                      "Type parameter 'T_Node' should not be const qualified");
+        static_assert(std::is_base_of<AstNode, T_Node>::value,
+                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        foreachImpl<T_Node, /* VisitNext: */ false>(this, f);
+    }
+
+    // Same as above, but for 'const' nodes
+    template <typename T_Node> void foreach (std::function<void(const T_Node*)> f) const {
+        static_assert(!std::is_const<T_Node>::value,
+                      "Type parameter 'T_Node' should not be const qualified");
+        static_assert(std::is_base_of<AstNode, T_Node>::value,
+                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        foreachImpl<const T_Node, /* VisitNext: */ false>(this, f);
+    }
+
+    // Same as 'foreach' but also follows 'this->nextp()'
+    template <typename T_Node> void foreachAndNext(std::function<void(T_Node*)> f) {
+        static_assert(!std::is_const<T_Node>::value,
+                      "Type parameter 'T_Node' should not be const qualified");
+        static_assert(std::is_base_of<AstNode, T_Node>::value,
+                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        foreachImpl<T_Node, /* VisitNext: */ true>(this, f);
+    }
+
+    // Same as 'foreach' but also follows 'this->nextp()'
+    template <typename T_Node> void foreachAndNext(std::function<void(const T_Node*)> f) const {
+        static_assert(!std::is_const<T_Node>::value,
+                      "Type parameter 'T_Node' should not be const qualified");
+        static_assert(std::is_base_of<AstNode, T_Node>::value,
+                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        foreachImpl<const T_Node, /* VisitNext: */ true>(this, f);
+    }
+
+    int nodeCount() const {
+        // TODO: this should really return size_t, but need to fix use sites
+        int count = 0;
+        this->foreach<AstNode>([&count](const AstNode*) { ++count; });
+        return count;
+    }
 };
 
-// Specialisations of privateIs/privateCast
+// Specialisations of privateTypeTest
 #include "V3Ast__gen_impl.h"  // From ./astgen
+
+// Specializations of privateMayBeUnder
+template <> inline bool AstNode::mayBeUnder<AstCell>(const AstNode* nodep) {
+    return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
+}
+template <> inline bool AstNode::mayBeUnder<AstNodeAssign>(const AstNode* nodep) {
+    return !VN_IS(nodep, NodeMath);
+}
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
     if (!rhs) {

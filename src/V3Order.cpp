@@ -82,7 +82,6 @@
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3Const.h"
-#include "V3EmitCBase.h"
 #include "V3EmitV.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -1831,8 +1830,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
                 newFuncpr->addStmtsp(nodep);
                 if (v3Global.opt.outputSplitCFuncs()) {
                     // Add in the number of nodes we're adding
-                    const EmitCBaseCounterVisitor visitor{nodep};
-                    newStmtsr += visitor.count();
+                    newStmtsr += nodep->nodeCount();
                 }
             }
 

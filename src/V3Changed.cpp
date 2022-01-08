@@ -32,7 +32,6 @@
 #include "V3Global.h"
 #include "V3Ast.h"
 #include "V3Changed.h"
-#include "V3EmitCBase.h"
 
 #include <algorithm>
 
@@ -154,8 +153,7 @@ private:
 
         // Later code will expand words which adds to GCC compile time,
         // so add penalty based on word width also
-        const EmitCBaseCounterVisitor visitor{initp};
-        m_statep->m_numStmts += visitor.count() + m_varEqnp->widthWords();
+        m_statep->m_numStmts += initp->nodeCount() + m_varEqnp->widthWords();
     }
 
     virtual void visit(AstBasicDType*) override {  //

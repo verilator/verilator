@@ -38,46 +38,6 @@
 //######################################################################
 // Utilities
 
-class ConstVarMarkVisitor final : public VNVisitor {
-    // NODE STATE
-    // AstVar::user4p           -> bool, Var marked, 0=not set yet
-private:
-    // VISITORS
-    virtual void visit(AstVarRef* nodep) override {
-        if (nodep->varp()) nodep->varp()->user4(1);
-    }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit ConstVarMarkVisitor(AstNode* nodep) {
-        AstNode::user4ClearTree();  // Check marked InUse before we're called
-        iterate(nodep);
-    }
-    virtual ~ConstVarMarkVisitor() override = default;
-};
-
-class ConstVarFindVisitor final : public VNVisitor {
-    // NODE STATE
-    // AstVar::user4p           -> bool, input from ConstVarMarkVisitor
-    // MEMBERS
-    bool m_found = false;
-
-private:
-    // VISITORS
-    virtual void visit(AstVarRef* nodep) override {
-        if (nodep->varp() && nodep->varp()->user4()) m_found = true;
-    }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit ConstVarFindVisitor(AstNode* nodep) { iterateAndNextNull(nodep); }
-    virtual ~ConstVarFindVisitor() override = default;
-    // METHODS
-    bool found() const { return m_found; }
-};
-
 static bool isConst(const AstNode* nodep, uint64_t v) {
     const AstConst* const constp = VN_CAST(nodep, Const);
     return constp && constp->toUQuad() == v;
@@ -811,7 +771,7 @@ private:
     // NODE STATE
     // ** only when m_warn/m_doExpensive is set.  If state is needed other times,
     // ** must track down everywhere V3Const is called and make sure no overlaps.
-    // AstVar::user4p           -> Used by ConstVarMarkVisitor/ConstVarFindVisitor
+    // AstVar::user4p           -> Used by variable marking/finding
     // AstJumpLabel::user4      -> bool.  Set when AstJumpGo uses this label
     // AstEnum::user4           -> bool.  Recursing.
 
@@ -1980,9 +1940,12 @@ private:
                 // Note only do this (need user4) when m_warn, which is
                 // done as unique visitor
                 const VNUser4InUse m_inuser4;
-                const ConstVarMarkVisitor mark{nodep->lhsp()};
-                const ConstVarFindVisitor find{nodep->rhsp()};
-                if (find.found()) need_temp = true;
+                nodep->lhsp()->foreach<AstVarRef>([](const AstVarRef* nodep) {
+                    if (nodep->varp()) nodep->varp()->user4(1);
+                });
+                nodep->rhsp()->foreach<AstVarRef>([&need_temp](const AstVarRef* nodep) {
+                    if (nodep->varp() && nodep->varp()->user4()) need_temp = true;
+                });
             }
             if (need_temp) {
                 // The first time we constify, there may be the same variable on the LHS

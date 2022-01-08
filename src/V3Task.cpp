@@ -287,41 +287,6 @@ public:
 };
 
 //######################################################################
-
-class TaskRelinkVisitor final : public VNVisitor {
-    // Replace varrefs with new var pointer
-private:
-    // NODE STATE
-    //  Input:
-    //   AstVar::user2p         // AstVarScope* to replace varref with
-
-    // VISITORS
-    virtual void visit(AstVarRef* nodep) override {
-        // Similar code in V3Inline
-        if (nodep->varp()->user2p()) {  // It's being converted to an alias.
-            UINFO(9,
-                  "    relinkVar " << cvtToHex(nodep->varp()->user2p()) << " " << nodep << endl);
-            AstVarScope* const newvscp = VN_AS(nodep->varp()->user2p(), VarScope);
-            UASSERT_OBJ(newvscp, nodep, "not linked");
-            nodep->varScopep(newvscp);
-            nodep->varp(nodep->varScopep()->varp());
-            nodep->name(nodep->varp()->name());
-        }
-        iterateChildren(nodep);
-    }
-
-    //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit TaskRelinkVisitor(AstBegin* nodep) {  // Passed temporary tree
-        iterate(nodep);
-    }
-    virtual ~TaskRelinkVisitor() override = default;
-};
-
-//######################################################################
 // DPI related utility functions
 
 struct TaskDpiUtils {
@@ -366,39 +331,6 @@ struct TaskDpiUtils {
 };
 
 //######################################################################
-// Gather non-local variables written by an AstCFunc
-
-class TaskGatherWrittenVisitor final : public VNVisitor {
-    // NODE STATE
-    // AstVarScope::user5 -> Already considered variable
-    const VNUser5InUse m_user5InUse;
-
-    std::vector<AstVarScope*> m_writtenVariables;  // Variables written
-
-    virtual void visit(AstVarRef* nodep) override {
-        if (nodep->access().isReadOnly()) return;  // Ignore read reference
-        AstVarScope* const varScopep = nodep->varScopep();
-        if (varScopep->user5()) return;  // Ignore already processed variable
-        varScopep->user5(true);  // Mark as already processed
-        // Note: We are ignoring function locals as they should not be referenced anywhere outside
-        // of the enclosing AstCFunc, and therefore they are irrelevant for code ordering. This is
-        // simply an optimization to avoid adding useless nodes to the ordering graph in V3Order.
-        if (varScopep->varp()->isFuncLocal()) return;
-        m_writtenVariables.push_back(varScopep);
-    }
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-    explicit TaskGatherWrittenVisitor(AstNode* nodep) { iterate(nodep); }
-
-public:
-    // Gather all written non-local variables
-    static const std::vector<AstVarScope*> gather(AstCFunc* funcp) {
-        const TaskGatherWrittenVisitor visitor{funcp};
-        return std::move(visitor.m_writtenVariables);
-    }
-};
-
-//######################################################################
 // Task state, as a visitor of each AstNode
 
 class TaskVisitor final : public VNVisitor {
@@ -407,7 +339,7 @@ private:
     // Each module:
     //    AstNodeFTask::user1   // True if its been expanded
     // Each funccall
-    //  to TaskRelinkVisitor:
+    //  to 'relink' function:
     //    AstVar::user2p        // AstVarScope* to replace varref with
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
@@ -469,6 +401,18 @@ private:
             m_scopep->addVarp(newvscp);
             return newvscp;
         }
+    }
+
+    // Replace varrefs with new var pointer
+    void relink(AstNode* nodep) {
+        nodep->foreachAndNext<AstVarRef>([](AstVarRef* refp) {
+            if (refp->varp()->user2p()) {  // It's being converted to an alias.
+                AstVarScope* const newvscp = VN_AS(refp->varp()->user2p(), VarScope);
+                refp->varScopep(newvscp);
+                refp->varp(refp->varScopep()->varp());
+                refp->name(refp->varp()->name());
+            }
+        });
     }
 
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
@@ -581,13 +525,7 @@ private:
             refp->taskp()->fvarp()->user2p(outvscp);
         }
         // Replace variable refs
-        // Iteration requires a back, so put under temporary node
-        {
-            AstBegin* const tempp = new AstBegin(beginp->fileline(), "[EditWrapper]", beginp);
-            const TaskRelinkVisitor visitor{tempp};
-            tempp->stmtsp()->unlinkFrBackWithNext();
-            VL_DO_DANGLING(tempp->deleteTree(), tempp);
-        }
+        relink(beginp);
         //
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-iotask: ");
         return beginp;
@@ -1326,18 +1264,30 @@ private:
                 rtnvscp->fileline(), new AstVarRef(rtnvscp->fileline(), rtnvscp, VAccess::READ)));
         }
         // Replace variable refs
-        // Iteration requires a back, so put under temporary node
-        {
-            AstBegin* const tempp = new AstBegin(cfuncp->fileline(), "[EditWrapper]", cfuncp);
-            const TaskRelinkVisitor visitor{tempp};
-            tempp->stmtsp()->unlinkFrBackWithNext();
-            VL_DO_DANGLING(tempp->deleteTree(), tempp);
-        }
+        relink(cfuncp);
 
         if (cfuncp->dpiExportImpl()) {
             // Mark all non-local variables written by the DPI exported function as being updated
             // by DPI exports. This ensures correct ordering and change detection later.
-            const std::vector<AstVarScope*> writtenps = TaskGatherWrittenVisitor::gather(cfuncp);
+
+            // Gather non-local variables written by the exported function
+            std::vector<AstVarScope*> writtenps;
+            {
+                const VNUser5InUse user5InUse;  // AstVarScope::user5 -> Already added variable
+                cfuncp->foreach<AstVarRef>([&writtenps](AstVarRef* refp) {
+                    if (refp->access().isReadOnly()) return;  // Ignore read reference
+                    AstVarScope* const varScopep = refp->varScopep();
+                    if (varScopep->user5()) return;  // Ignore already added variable
+                    varScopep->user5(true);  // Mark as already added
+                    // Note: We are ignoring function locals as they should not be referenced
+                    // anywhere outside of the enclosing AstCFunc, and therefore they are
+                    // irrelevant for code ordering. This is simply an optimization to avoid adding
+                    // useless nodes to the ordering graph in V3Order.
+                    if (varScopep->varp()->isFuncLocal()) return;
+                    writtenps.push_back(varScopep);
+                });
+            }
+
             if (!writtenps.empty()) {
                 AstVarScope* const dpiExportTriggerp = makeDpiExporTrigger();
                 FileLine* const fl = cfuncp->fileline();
