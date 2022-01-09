@@ -305,7 +305,7 @@ public:
     AstClassPackage(FileLine* fl, const string& name)
         : ASTGEN_SUPER_ClassPackage(fl, name) {}
     ASTNODE_NODE_FUNCS(ClassPackage)
-    virtual string verilogKwd() const override { return "/*class*/package"; }
+    virtual string verilogKwd() const override { return "classpackage"; }
     virtual const char* broken() const override;
     virtual void cloneRelink() override;
     virtual bool timescaleMatters() const override { return false; }
@@ -2730,6 +2730,7 @@ public:
     ASTNODE_NODE_FUNCS(Iface)
     // Interfaces have `timescale applicability but lots of code seems to
     // get false warnings if we enable this
+    virtual string verilogKwd() const override { return "interface"; }
     virtual bool timescaleMatters() const override { return false; }
 };
 

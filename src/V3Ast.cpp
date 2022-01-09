@@ -21,6 +21,7 @@
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Broken.h"
+#include "V3EmitV.h"
 #include "V3String.h"
 
 #include <iomanip>
@@ -1141,6 +1142,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
             }
         }
     }
+    if (doDump && v3Global.opt.debugEmitV()) V3EmitV::debugEmitV(filename + ".v");
     if (doCheck && (v3Global.opt.debugCheck() || v3Global.opt.dumpTree())) {
         // Error check
         checkTree();

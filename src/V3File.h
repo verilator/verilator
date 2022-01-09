@@ -154,7 +154,8 @@ public:
         puts(strg);
     }
     bool exceededWidth() const { return m_column > m_commaWidth; }
-    bool tokenStart(const char* cp, const char* cmp);
+    bool tokenMatch(const char* cp, const char* cmp);
+    bool tokenStart(const char* cp);
     bool tokenEnd(const char* cp);
     void indentInc() { m_indentLevel += m_blockIndent; }
     void indentDec() {

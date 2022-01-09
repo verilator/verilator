@@ -636,8 +636,8 @@ string V3OutFormatter::indentSpaces(int num) {
     return st;
 }
 
-bool V3OutFormatter::tokenStart(const char* cp, const char* cmp) {
-    while (*cmp == *cp) {
+bool V3OutFormatter::tokenMatch(const char* cp, const char* cmp) {
+    while (*cmp && *cmp == *cp) {
         ++cp;
         ++cmp;
     }
@@ -646,8 +646,18 @@ bool V3OutFormatter::tokenStart(const char* cp, const char* cmp) {
     return true;
 }
 
+bool V3OutFormatter::tokenStart(const char* cp) {
+    return (tokenMatch(cp, "begin") || tokenMatch(cp, "case") || tokenMatch(cp, "casex")
+            || tokenMatch(cp, "casez") || tokenMatch(cp, "class") || tokenMatch(cp, "function")
+            || tokenMatch(cp, "interface") || tokenMatch(cp, "module") || tokenMatch(cp, "package")
+            || tokenMatch(cp, "task"));
+}
+
 bool V3OutFormatter::tokenEnd(const char* cp) {
-    return (tokenStart(cp, "end") || tokenStart(cp, "endcase") || tokenStart(cp, "endmodule"));
+    return (tokenMatch(cp, "end") || tokenMatch(cp, "endcase") || tokenMatch(cp, "endclass")
+            || tokenMatch(cp, "endfunction") || tokenMatch(cp, "endinterface")
+            || tokenMatch(cp, "endmodule") || tokenMatch(cp, "endpackage")
+            || tokenMatch(cp, "endtask"));
 }
 
 int V3OutFormatter::endLevels(const char* strg) {
@@ -698,6 +708,10 @@ void V3OutFormatter::puts(const char* strg) {
     bool equalsForBracket = false;  // Looking for "= {"
     for (const char* cp = strg; *cp; cp++) {
         putcNoTracking(*cp);
+        if (isalpha(*cp)) {
+            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp)) indentInc();
+            if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
+        }
         switch (*cp) {
         case '\n':
             m_lineno++;
@@ -774,26 +788,6 @@ void V3OutFormatter::puts(const char* strg) {
                 indentDec();
                 if (cp > strg && cp[-1] == '/') indentDec();  // < ..... /> stays same level
             }
-            break;
-        case 'b':
-            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp, "begin")) indentInc();
-            wordstart = false;
-            break;
-        case 'c':
-            if (wordstart && m_lang == LA_VERILOG
-                && (tokenStart(cp, "case") || tokenStart(cp, "casex")
-                    || tokenStart(cp, "casez"))) {
-                indentInc();
-            }
-            wordstart = false;
-            break;
-        case 'e':
-            if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
-            wordstart = false;
-            break;
-        case 'm':
-            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp, "module")) indentInc();
-            wordstart = false;
             break;
         default: wordstart = false; break;
         }

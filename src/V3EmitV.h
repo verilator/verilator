@@ -31,7 +31,7 @@ public:
     static void verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix,
                                     int flWidth, AstSenTree* domainp, bool user3mark);
     static void emitvFiles();
-    static void debugEmitV(const string& stage);
+    static void debugEmitV(const string& filename);
 };
 
 #endif  // Guard

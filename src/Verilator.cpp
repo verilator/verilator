@@ -111,7 +111,6 @@ static void reportStatsIfEnabled() {
         V3Stats::statsFinalAll(v3Global.rootp());
         V3Stats::statsReport();
     }
-    if (v3Global.opt.debugEmitV()) V3EmitV::debugEmitV("final");
 }
 
 static void process() {
@@ -376,7 +375,6 @@ static void process() {
         V3ActiveTop::activeTopAll(v3Global.rootp());
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
-        if (v3Global.opt.debugEmitV()) V3EmitV::debugEmitV("preorder");
 
         // Order the code; form SBLOCKs and BLOCKCALLs
         V3Order::orderAll(v3Global.rootp());
