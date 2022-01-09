@@ -138,32 +138,6 @@ public:
 bool V3Broken::isLinkable(const AstNode* nodep) { return s_linkableTable.isLinkable(nodep); }
 
 //######################################################################
-// Mark every node in the tree
-
-class BrokenMarkVisitor final : public VNVisitor {
-private:
-    const uint8_t m_brokenCntCurrent = s_brokenCntGlobal.get();
-
-    // VISITORS
-    virtual void visit(AstNode* nodep) override {
-#ifdef VL_LEAK_CHECKS
-        UASSERT_OBJ(s_allocTable.isAllocated(nodep), nodep,
-                    "AstNode is in tree, but not allocated");
-#endif
-        UASSERT_OBJ(nodep->brokenState() != m_brokenCntCurrent, nodep,
-                    "AstNode is already in tree at another location");
-        if (nodep->maybePointedTo()) s_linkableTable.addLinkable(nodep);
-        nodep->brokenState(m_brokenCntCurrent);
-        iterateChildrenConst(nodep);
-    }
-
-public:
-    // CONSTRUCTORS
-    explicit BrokenMarkVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenMarkVisitor() override = default;
-};
-
-//######################################################################
 // Check every node in tree
 
 class BrokenCheckVisitor final : public VNVisitor {
@@ -343,8 +317,23 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         UINFO(1, "Broken called under broken, skipping recursion.\n");  // LCOV_EXCL_LINE
     } else {
         inBroken = true;
-        const BrokenMarkVisitor mvisitor{nodep};
+
+        // Mark every node in the tree
+        const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
+        nodep->foreach<AstNode>([brokenCntCurrent](AstNode* nodep) {
+#ifdef VL_LEAK_CHECKS
+            UASSERT_OBJ(s_allocTable.isAllocated(nodep), nodep,
+                        "AstNode is in tree, but not allocated");
+#endif
+            UASSERT_OBJ(nodep->brokenState() != brokenCntCurrent, nodep,
+                        "AstNode is already in tree at another location");
+            if (nodep->maybePointedTo()) s_linkableTable.addLinkable(nodep);
+            nodep->brokenState(brokenCntCurrent);
+        });
+
+        // Check every node in tree
         const BrokenCheckVisitor cvisitor{nodep};
+
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();
         s_brokenCntGlobal.inc();

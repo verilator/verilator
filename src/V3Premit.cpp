@@ -38,52 +38,6 @@
 constexpr int STATIC_CONST_MIN_WIDTH = 256;  // Minimum size to extract to static constant
 
 //######################################################################
-// Structure for global state
-
-class PremitAssignVisitor final : public VNVisitor {
-private:
-    // NODE STATE
-    //  AstVar::user3()         // bool; occurs on LHS of current assignment
-    const VNUser3InUse m_inuser3;
-
-    // STATE
-    bool m_noopt = false;  // Disable optimization of variables in this block
-
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
-    // VISITORS
-    virtual void visit(AstNodeAssign* nodep) override {
-        // AstNode::user3ClearTree();  // Implied by VNUser3InUse
-        // LHS first as fewer varrefs
-        iterateAndNextNull(nodep->lhsp());
-        // Now find vars marked as lhs
-        iterateAndNextNull(nodep->rhsp());
-    }
-    virtual void visit(AstVarRef* nodep) override {
-        // it's LHS var is used so need a deep temporary
-        if (nodep->access().isWriteOrRW()) {
-            nodep->varp()->user3(true);
-        } else {
-            if (nodep->varp()->user3()) {
-                if (!m_noopt) UINFO(4, "Block has LHS+RHS var: " << nodep << endl);
-                m_noopt = true;
-            }
-        }
-    }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit PremitAssignVisitor(AstNodeAssign* nodep) {
-        UINFO(4, "  PremitAssignVisitor on " << nodep << endl);
-        iterate(nodep);
-    }
-    virtual ~PremitAssignVisitor() override = default;
-    bool noOpt() const { return m_noopt; }
-};
-
-//######################################################################
 // Premit state, as a visitor of each AstNode
 
 class PremitVisitor final : public VNVisitor {
@@ -92,7 +46,7 @@ private:
     //  AstNodeMath::user()     -> bool.  True if iterated already
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
-    //  *::user3()              -> See PremitAssignVisitor
+    //  *::user3()              -> Used when visiting AstNodeAssign
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
@@ -231,7 +185,17 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         startStatement(nodep);
         {
-            const bool noopt = PremitAssignVisitor(nodep).noOpt();
+            bool noopt = false;
+            {
+                const VNUser3InUse user3InUse;
+                nodep->lhsp()->foreach<AstVarRef>([](const AstVarRef* refp) {
+                    if (refp->access().isWriteOrRW()) refp->varp()->user3(true);
+                });
+                nodep->rhsp()->foreach<AstVarRef>([&noopt](const AstVarRef* refp) {
+                    if (refp->access().isReadOnly() && refp->varp()->user3()) noopt = true;
+                });
+            }
+
             if (noopt && !nodep->user1()) {
                 nodep->user1(true);
                 // Need to do this even if not wide, as e.g. a select may be on a wide operator

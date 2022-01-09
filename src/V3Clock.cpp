@@ -33,7 +33,6 @@
 #include "V3Global.h"
 #include "V3Clock.h"
 #include "V3Ast.h"
-#include "V3EmitCBase.h"
 
 #include <algorithm>
 
@@ -207,7 +206,7 @@ private:
     }
     void splitCheck(AstCFunc* ofuncp) {
         if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
-        if (EmitCBaseCounterVisitor(ofuncp).count() < v3Global.opt.outputSplitCFuncs()) return;
+        if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;
 
         int funcnum = 0;
         int func_stmts = 0;
@@ -219,7 +218,7 @@ private:
         if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
         while (tempp->stmtsp()) {
             AstNode* const itemp = tempp->stmtsp()->unlinkFrBack();
-            const int stmts = EmitCBaseCounterVisitor(itemp).count();
+            const int stmts = itemp->nodeCount();
             if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
                 // Make a new function
                 funcp

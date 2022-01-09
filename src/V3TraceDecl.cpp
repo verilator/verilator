@@ -170,7 +170,7 @@ private:
             m_topFuncps.push_back(funcp);
         }
         m_topFuncps.back()->addStmtsp(stmtp);
-        m_topFuncSize += EmitCBaseCounterVisitor{stmtp}.count();
+        m_topFuncSize += stmtp->nodeCount();
     }
 
     void addToSubFunc(AstNodeStmt* stmtp) {
@@ -185,7 +185,7 @@ private:
             m_subFuncps.push_back(funcp);
         }
         m_subFuncps.back()->addStmtsp(stmtp);
-        m_subFuncSize += EmitCBaseCounterVisitor{stmtp}.count();
+        m_subFuncSize += stmtp->nodeCount();
     }
 
     std::string getScopeChar(VltTraceScope sct) { return std::string(1, (char)(0x80 + sct)); }

@@ -113,24 +113,4 @@ public:
     virtual ~EmitCBaseVisitor() override = default;
 };
 
-//######################################################################
-// Count operations under the given node, as a visitor of each AstNode
-
-class EmitCBaseCounterVisitor final : public VNVisitor {
-private:
-    // MEMBERS
-    int m_count = 0;  // Number of statements
-    // VISITORS
-    virtual void visit(AstNode* nodep) override {
-        ++m_count;
-        iterateChildren(nodep);
-    }
-
-public:
-    // CONSTRUCTORS
-    explicit EmitCBaseCounterVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~EmitCBaseCounterVisitor() override = default;
-    int count() const { return m_count; }
-};
-
 #endif  // guard

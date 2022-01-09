@@ -244,36 +244,6 @@ public:
 };
 
 //######################################################################
-// Using clonep(), find cell cross references.
-// clone() must not be called inside this visitor
-
-class InlineCollectVisitor final : public VNVisitor {
-private:
-    // NODE STATE
-    //  Output:
-    //   AstCell::user4p()      // AstCell* of the created clone
-
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
-    // VISITORS
-    virtual void visit(AstCell* nodep) override {
-        // clonep is nullptr when inlining the last instance, if so the use original node
-        nodep->user4p(nodep->clonep() ? nodep->clonep() : nodep);
-    }
-    //--------------------
-    virtual void visit(AstNodeStmt*) override {}  // Accelerate
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit InlineCollectVisitor(AstNodeModule* nodep) {  // passed OLD module, not new one
-        iterate(nodep);
-    }
-};
-
-//######################################################################
 // After cell is cloned, relink the new module's contents
 
 class InlineRelinkVisitor final : public VNVisitor {
@@ -546,7 +516,10 @@ private:
             newmodp = nodep->modp();
         }
         // Find cell cross-references
-        InlineCollectVisitor{nodep->modp()};
+        nodep->modp()->foreach<AstCell>([](AstCell* cellp) {
+            // clonep is nullptr when inlining the last instance, if so the use original node
+            cellp->user4p(cellp->clonep() ? cellp->clonep() : cellp);
+        });
         // Create data for dotted variable resolution
         AstCellInline* const inlinep
             = new AstCellInline(nodep->fileline(), nodep->name(), nodep->modp()->origName(),

@@ -591,7 +591,7 @@ private:
                     AstTraceInc* const incp
                         = new AstTraceInc(declp->fileline(), declp, /* full: */ true);
                     subFuncp->addStmtsp(incp);
-                    subStmts += EmitCBaseCounterVisitor(incp).count();
+                    subStmts += incp->nodeCount();
 
                     // Track partitioning
                     nCodes += declp->codeInc();
@@ -659,7 +659,7 @@ private:
                     ifp = new AstIf(flp, condp, nullptr, nullptr);
                     if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subFuncp->addStmtsp(ifp);
-                    subStmts += EmitCBaseCounterVisitor(ifp).count();
+                    subStmts += ifp->nodeCount();
                     prevActSet = &actSet;
                 }
 
@@ -667,7 +667,7 @@ private:
                 AstTraceInc* const incp
                     = new AstTraceInc(declp->fileline(), declp, /* full: */ false, baseCode);
                 ifp->addIfsp(incp);
-                subStmts += EmitCBaseCounterVisitor(incp).count();
+                subStmts += incp->nodeCount();
 
                 // Track partitioning
                 nCodes += declp->codeInc();

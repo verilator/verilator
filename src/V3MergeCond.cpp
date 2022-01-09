@@ -109,23 +109,6 @@ public:
     }
 };
 
-class MarkVarsVisitor final : public VNVisitor {
-private:
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
-    // VISITORS
-    virtual void visit(AstVarRef* nodep) override { nodep->varp()->user1(1); }
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-public:
-    // Remove marks from AstVars (clear user1)
-    static void clear() { AstNode::user1ClearTree(); }
-
-    // Mark all AstVars referenced by setting user1
-    void mark(AstNode* node) { iterate(node); }
-};
-
 class MergeCondVisitor final : public VNVisitor {
 private:
     // NODE STATE
@@ -146,7 +129,6 @@ private:
     uint32_t m_listLenght = 0;  // Length of current list
 
     CheckMergeableVisitor m_checkMergeable;  // Sub visitor for encapsulation & speed
-    MarkVarsVisitor m_markVars;  // Sub visitor for encapsulation & speed
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -337,7 +319,7 @@ private:
         m_mgCondp = nullptr;
         m_mgLastp = nullptr;
         m_mgNextp = nullptr;
-        m_markVars.clear();
+        AstNode::user1ClearTree();  // Clear marked variables
         AstNode::user2ClearTree();
         // Merge recursively within the branches
         if (recursivep) {
@@ -407,7 +389,8 @@ private:
             m_mgFirstp = nodep;
             m_mgCondp = condp;
             m_listLenght = 0;
-            m_markVars.mark(condp);
+            // Mark variable references in the condition
+            condp->foreach<AstVarRef>([](const AstVarRef* nodep) { nodep->varp()->user1(1); });
             // Add any preceding nodes to the list that would allow us to extend the merge range
             for (;;) {
                 AstNode* const backp = m_mgFirstp->backp();
@@ -521,10 +504,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit MergeCondVisitor(AstNetlist* nodep) {
-        m_markVars.clear();
-        iterate(nodep);
-    }
+    explicit MergeCondVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~MergeCondVisitor() override {
         V3Stats::addStat("Optimizations, MergeCond merges", m_statMerges);
         V3Stats::addStat("Optimizations, MergeCond merged items", m_statMergedItems);
