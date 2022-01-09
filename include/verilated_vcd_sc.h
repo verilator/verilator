@@ -26,6 +26,8 @@
 #include "verilated_sc.h"
 #include "verilated_vcd_c.h"
 
+#include <string>
+
 //=============================================================================
 // VerilatedVcdSc
 ///

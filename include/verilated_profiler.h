@@ -25,6 +25,9 @@
 #include "verilatedos.h"
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
+#include <deque>
+#include <string>
+
 // Profile record, private class used only by this header
 class VerilatedProfilerRec final {
     const std::string m_name;  // Hashed name of mtask/etc

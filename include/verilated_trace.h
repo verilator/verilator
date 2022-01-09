@@ -27,6 +27,7 @@
 #include "verilated.h"
 #include "verilated_trace_defs.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 

@@ -92,7 +92,7 @@
 # define VL_ATTR_NORETURN  ///< Attribute that function does not ever return
 #endif
 #ifndef VL_ATTR_NO_SANITIZE_ALIGN
-# define VL_ATTR_NO_SANITIZE_ALIGN ///< Attribute that the function contains intended unaligned access
+# define VL_ATTR_NO_SANITIZE_ALIGN  ///< Attribute that function contains intended unaligned access
 #endif
 #ifndef VL_ATTR_PRINTF
 # define VL_ATTR_PRINTF(fmtArgNum)  ///< Attribute for function with printf format checking
@@ -499,7 +499,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # ifdef __x86_64__
 #  define VL_X86_64 1
 # endif
-#endif // VL_PORTABLE_ONLY
+#endif  // VL_PORTABLE_ONLY
 // clang-format on
 
 //=========================================================================

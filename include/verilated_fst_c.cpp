@@ -195,9 +195,9 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
             // If the scope ends with a non-ascii character, it will be 0x80 + fstScopeType
             fstWriterSetScope(m_fst, static_cast<fstScopeType>(new_it->back() & 0x7f),
                               tmpModName.c_str(), nullptr);
-        } else
+        } else {
             fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
-
+        }
         m_curScope.push_back(*new_it);
         new_it = tokens.erase(new_it);
     }

@@ -26,6 +26,8 @@
 #include "verilated_sc.h"
 #include "verilated_fst_c.h"
 
+#include <string>
+
 //=============================================================================
 // VerilatedFstSc
 ///

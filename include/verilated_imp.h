@@ -32,10 +32,14 @@
 #include "verilated.h"
 #include "verilated_syms.h"
 
+#include <algorithm>
 #include <deque>
-#include <set>
-#include <vector>
+#include <map>
 #include <numeric>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #ifdef VL_THREADED
 # include <functional>
 # include <queue>

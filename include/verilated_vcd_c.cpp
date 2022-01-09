@@ -426,8 +426,9 @@ void VerilatedVcd::dumpHeader() {
                 case VLT_TRACE_SCOPE_UNION: printStr("union "); break;
                 default: printStr("module ");
                 }
-            } else
+            } else {
                 printStr("module ");
+            }
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {

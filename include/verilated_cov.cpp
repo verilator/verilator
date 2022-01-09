@@ -29,6 +29,7 @@
 #include <deque>
 #include <fstream>
 #include <map>
+#include <utility>
 
 //=============================================================================
 // VerilatedCovConst

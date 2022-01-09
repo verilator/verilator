@@ -28,6 +28,14 @@
 #error "verilated_types.h should only be included by verilated.h"
 #endif
 
+#include <algorithm>
+#include <deque>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_set>
+#include <utility>
+
 //===================================================================
 // String formatters (required by below containers)
 
