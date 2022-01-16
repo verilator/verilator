@@ -718,6 +718,10 @@ void V3Options::notify() {
                 "--xml-only or --E option");
     }
 
+    if (cdc()) {
+        cmdfl->v3warn(DEPRECATED, "Option --cdc is deprecated and is planned for removal");
+    }
+
     if (m_build && (m_gmake || m_cmake)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }

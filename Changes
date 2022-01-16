@@ -16,6 +16,8 @@ Verilator 4.217 devel
 * Primary inputs and outputs (VL_INW/VL_OUTW) now use VlWide type.
   In general this should be backward compatible, but may lead to some
   wrapper code needing changes.
+* Option --cdc is deprecated and is planned for removal,
+  file a bug if this is still being used.
 
 **Minor:**
 
