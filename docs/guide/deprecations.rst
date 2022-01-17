@@ -16,10 +16,6 @@ Verilated_heavy.h
   "verilated.h". Verilated_heavy.h is planned for removal no sooner than
   July 2022.
 
-Configuration File -msg
-  The :vlopt:`lint_off` "-msg" option has been replaced with the "-rule"
-  option.  "-msg" is planned for removal no sooner than January 2021.
-
 XML locations
   The XML "fl" attribute has been replaced with the "loc" attribute.  "fl"
   is planned for removal no sooner than January 2021.

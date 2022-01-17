@@ -142,7 +142,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-match"            { FL; return yVLT_D_MATCH; }
   -?"-model"            { FL; return yVLT_D_MODEL; }
   -?"-module"           { FL; return yVLT_D_MODULE; }
-  -?"-msg"              { FL; return yVLT_D_MSG; }
   -?"-mtask"            { FL; return yVLT_D_MTASK; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
   -?"-task"             { FL; return yVLT_D_TASK; }

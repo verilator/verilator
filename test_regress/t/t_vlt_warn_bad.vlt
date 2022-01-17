@@ -9,7 +9,7 @@
 lint_off -rule CASEINCOMPLETE -file "t/t_vlt_warn.v"
 lint_off -rule WIDTH          -file "t/t_vlt_warn.v" -lines 18
 // Test wildcard filenames
-lint_off -msg WIDTH          -file "*/t_vlt_warn.v" -lines 19-19
+lint_off -rule WIDTH          -file "*/t_vlt_warn.v" -lines 19-19
 // Test global disables
 lint_off                      -file "*/t_vlt_warn.v" -lines 20-20
 

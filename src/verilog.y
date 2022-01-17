@@ -370,7 +370,6 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_MATCH    "--match"
 %token<fl>              yVLT_D_MODEL    "--model"
 %token<fl>              yVLT_D_MODULE   "--module"
-%token<fl>              yVLT_D_MSG      "--msg"
 %token<fl>              yVLT_D_MTASK    "--mtask"
 %token<fl>              yVLT_D_RULE     "--rule"
 %token<fl>              yVLT_D_TASK     "--task"
@@ -6436,10 +6435,6 @@ vltOffFront<errcodeen>:
 		yVLT_COVERAGE_OFF			{ $$ = V3ErrorCode::I_COVERAGE; }
 	|	yVLT_TRACING_OFF			{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_OFF				{ $$ = V3ErrorCode::I_LINT; }
-	|	yVLT_LINT_OFF yVLT_D_MSG idAny
-			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3); }
-			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."); }
 	|	yVLT_LINT_OFF yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
@@ -6449,10 +6444,6 @@ vltOnFront<errcodeen>:
 		yVLT_COVERAGE_ON			{ $$ = V3ErrorCode::I_COVERAGE; }
 	|	yVLT_TRACING_ON				{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_ON				{ $$ = V3ErrorCode::I_LINT; }
-	|	yVLT_LINT_ON yVLT_D_MSG idAny
-			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  }
-			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."); }
 	|	yVLT_LINT_ON yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
