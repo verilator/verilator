@@ -61,7 +61,7 @@ class EmitXmlFileVisitor final : public VNVisitor {
     void outputTag(AstNode* nodep, const string& tagin) {
         string tag = tagin;
         if (tag == "") tag = VString::downcase(nodep->typeName());
-        puts("<" + tag + " " + nodep->fileline()->xml());
+        puts("<" + tag);
         puts(" " + nodep->fileline()->xmlDetailedLocation());
         if (VN_IS(nodep, NodeDType)) {
             puts(" id=");
@@ -386,8 +386,7 @@ private:
         if (nodep->level() >= 0
             && nodep->level() <= 2) {  // ==2 because we don't add wrapper when in XML mode
             m_os << "<cells>\n";
-            m_os << "<cell " << nodep->fileline()->xml() << " "
-                 << nodep->fileline()->xmlDetailedLocation()  //
+            m_os << "<cell " << nodep->fileline()->xmlDetailedLocation()  //
                  << " name=\"" << nodep->prettyName() << "\""
                  << " submodname=\"" << nodep->prettyName() << "\""
                  << " hier=\"" << nodep->prettyName() << "\"";
@@ -405,8 +404,8 @@ private:
     virtual void visit(AstCell* nodep) override {
         if (nodep->modp()->dead()) return;
         if (!m_hasChildren) m_os << ">\n";
-        m_os << "<cell " << nodep->fileline()->xml() << " "
-             << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name() << "\""
+        m_os << "<cell " << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name()
+             << "\""
              << " submodname=\"" << nodep->modName() << "\""
              << " hier=\"" << m_hier + nodep->name() << "\"";
         const std::string hier = m_hier;

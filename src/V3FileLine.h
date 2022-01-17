@@ -200,7 +200,6 @@ public:
     string filebasenameNoExt() const;
     string firstColumnLetters() const;
     string profileFuncname() const;
-    string xml() const { return "fl=\"" + filenameLetters() + cvtToStr(lastLineno()) + "\""; }
     string xmlDetailedLocation() const;
     string lineDirectiveStrg(int enterExit) const;
 

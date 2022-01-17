@@ -16,10 +16,6 @@ Verilated_heavy.h
   "verilated.h". Verilated_heavy.h is planned for removal no sooner than
   July 2022.
 
-XML locations
-  The XML "fl" attribute has been replaced with the "loc" attribute.  "fl"
-  is planned for removal no sooner than January 2021.
-
 Option `--cdc`
   The experimental `--cdc` option is believed to be generally unused and is
   planned for removeal no sooner than January 2023.

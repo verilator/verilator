@@ -18,12 +18,12 @@ compile(
 );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<module fl="e56" loc=".*?" name="l1" origName="l1"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e62" loc=".*?" name="l2" origName="l2"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e69" loc=".*?" name="l3" origName="l3"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e76" loc=".*?" name="l4" origName="l4"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e83" loc=".*?" name="l5__P2" origName="l5"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e83" loc=".*?" name="l5__P1" origName="l5"\>/i);
+    file_grep("$out_filename", qr/\<module loc="e,56,.*?" name="l1" origName="l1"\>/i);
+    file_grep("$out_filename", qr/\<module loc="e,62,.*?" name="l2" origName="l2"\>/i);
+    file_grep("$out_filename", qr/\<module loc="e,69,.*?" name="l3" origName="l3"\>/i);
+    file_grep("$out_filename", qr/\<module loc="e,76,.*?" name="l4" origName="l4"\>/i);
+    file_grep("$out_filename", qr/\<module loc="e,83,.*?" name="l5__P2" origName="l5"\>/i);
+    file_grep("$out_filename", qr/\<module loc="e,83,.*?" name="l5__P1" origName="l5"\>/i);
 }
 
 execute(

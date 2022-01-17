@@ -14,6 +14,7 @@ Verilator 4.219 devel
 **Minor:**
 
 * Removed the deprecated lint_off flag -msg; use -rule instead.
+* Removed the deprecated "fl" attribute in XML output; use "loc" attribute instead.
 
 
 Verilator 4.218 2022-01-17
