@@ -28,6 +28,7 @@ Verilator 4.217 devel
 * Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
 * Reduce .rodata footprint of trace initialization (#3250). [Geza Lore, Shunyao CAD]
 * Use C++11 standard types for MacOS portability (#3254) (#3257). [Adrien Le Masle]
+* Fix make support for BSD ar (#2999) (#3256). [Julie Schwartz]
 * Fix bad ending address on $readmem (#3205). [Julie Schwartz]
 * Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
 * Fix break under foreach loop (#3230).
