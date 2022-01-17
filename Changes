@@ -27,20 +27,23 @@ Verilator 4.217 devel
 * Support lower dimension looping in foreach loops (#3172). [Ehab Ibrahim]
 * Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
 * Reduce .rodata footprint of trace initialization (#3250). [Geza Lore, Shunyao CAD]
+* Support FST tracing in hierarchical Verilation (#3251). [Yutetsu TAKATSUKASA]
 * Use C++11 standard types for MacOS portability (#3254) (#3257). [Adrien Le Masle]
 * Fix make support for BSD ar (#2999) (#3256). [Julie Schwartz]
 * Fix bad ending address on $readmem (#3205). [Julie Schwartz]
 * Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
 * Fix break under foreach loop (#3230).
-* Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235)
+* Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235). [Adrien Le Masle]
 * Fix $sformat of inputs/outputs (#3236). [Adrien Le Masle]
 * Fix associative array first method as statement (#3228). [Adrien Le Masle]
 * Fix associative array foreach loop (#3229).
 * Fix $fclose not accepting expressions (#3237). [Julie Schwartz]
 * Fix $random not updating seed (#3238). [Julie Schwartz]
+* Fix top level param overwrite when package has same param (#3241) (#3247). [Adrien Le Masle]
 * Fix spurious UNUSED by ignoring inout pin connections (#3242). [Julie Schwartz]
 * Fix splitting of _eval and other top level functions. [Geza Lore, Shunyao CAD]
 * Fix internal error by inout port (#3258). [Yutetsu TAKATSUKASA]
+* Fix GCC 11 compile error (#3273). [HungMingWu]
 
 
 Verilator 4.216 2021-12-05
