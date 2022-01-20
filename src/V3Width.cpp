@@ -4403,26 +4403,26 @@ private:
             modDTypep = modDTypep->skipRefp();
             conDTypep = conDTypep->skipRefp();
             AstNodeDType* subDTypep = modDTypep;
-            const int pinwidth = modDTypep->width();
+            const int modwidth = modDTypep->width();
             const int conwidth = conDTypep->width();
             if (conDTypep == modDTypep  // If match, we're golden
                 || similarDTypeRecurse(conDTypep, modDTypep)) {
                 userIterateAndNext(nodep->exprp(), WidthVP(subDTypep, FINAL).p());
             } else if (m_cellp->rangep()) {
                 const int numInsts = m_cellp->rangep()->elementsConst();
-                if (conwidth == pinwidth) {
+                if (conwidth == modwidth) {
                     // Arrayed instants: widths match so connect to each instance
                     subDTypep = conDTypep;  // = same expr dtype
-                } else if (conwidth == numInsts * pinwidth) {
+                } else if (conwidth == numInsts * modwidth) {
                     // Arrayed instants: one bit for each of the instants (each
-                    // assign is 1 pinwidth wide)
+                    // assign is 1 modwidth wide)
                     subDTypep = conDTypep;  // = same expr dtype (but numInst*pin_dtype)
                 } else {
                     // Must be a error according to spec
                     // (Because we need to know if to connect to one or all instants)
                     nodep->v3error(ucfirst(nodep->prettyOperatorName())
                                    << " as part of a module instance array"
-                                   << " requires " << pinwidth << " or " << pinwidth * numInsts
+                                   << " requires " << modwidth << " or " << modwidth * numInsts
                                    << " bits, but connection's "
                                    << nodep->exprp()->prettyTypeName() << " generates " << conwidth
                                    << " bits. (IEEE 1800-2017 23.3.3)");
@@ -4438,12 +4438,12 @@ private:
                                    << " data type but connection is "
                                    << conDTypep->prettyDTypeNameQ() << " data type.");
                 } else if (nodep->modVarp()->isTristate()) {
-                    if (pinwidth != conwidth) {
+                    if (modwidth != conwidth) {
                         // Ideally should call pinReconnectSimple which would tolerate this
                         // then have a conversion warning
                         nodep->v3warn(E_UNSUPPORTED,
                                       "Unsupported: " << ucfirst(nodep->prettyOperatorName())
-                                                      << " to inout signal requires " << pinwidth
+                                                      << " to inout signal requires " << modwidth
                                                       << " bits, but connection's "
                                                       << nodep->exprp()->prettyTypeName()
                                                       << " generates " << conwidth << " bits.");
@@ -4524,9 +4524,9 @@ private:
             // Very much like like an pin
             const AstNodeDType* const conDTypep = nodep->exprp()->dtypep();
             const int numInsts = nodep->rangep()->elementsConst();
-            const int pinwidth = numInsts;
+            const int modwidth = numInsts;
             const int conwidth = conDTypep->width();
-            if (conwidth == 1 && pinwidth > 1) {  // Multiple connections
+            if (conwidth == 1 && modwidth > 1) {  // Multiple connections
                 AstNodeDType* const subDTypep = nodep->findLogicDType(1, 1, conDTypep->numeric());
                 userIterateAndNext(nodep->exprp(), WidthVP(subDTypep, FINAL).p());
                 AstNode* const newp = new AstReplicate(nodep->fileline(),
