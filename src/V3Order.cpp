@@ -535,6 +535,22 @@ class OrderBuildVisitor final : public VNVisitor {
                 }
             }
 
+            // Roles of vertices:
+            // VarVertexType::STD:  Data dependencies for combinational logic and delayed
+            //                      assignment updates (AssignPost).
+            // VarVertexType::POST: Ensures all sequential blocks reading a signal do so before
+            //                      any combinational or delayed assignments update that signal.
+            // VarVertexType::PORD: Ensures a _d = _q AssignPre is the first write of a _d,
+            //                      before any sequential blocks write to that _d.
+            // VarVertexType::PRE:  This is an optimization. Try to ensure that a _d = _q
+            //                      AssignPre is the last read of a _q, after all reads of that
+            //                      _q by sequential logic. Note: The model is still correct if we
+            //                      cannot satisfy this due to other constraints. If this ordering
+            //                      is possible, then combined with the PORD constraint we get
+            //                      that all writes to _d are after all reads of a _q, which then
+            //                      allows us to eliminate the _d completely and assign to the _q
+            //                      directly (this is what V3LifePost does).
+
             // Variable is produced
             if (gen) {
                 // Update VarUsage
