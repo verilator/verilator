@@ -1183,7 +1183,7 @@ Verilator ideally would support all of IEEE, and has the goal to get close
 to full support. However the following IEEE sections and features are not
 anticipated to be ever implemented for the reasons indicated.
 
-IEEE 1800-2017 3.3 recursive modules
+IEEE 1800-2017 3.3 modules within modules
     Little/no tool support, and arguably not a good practice.
 IEEE 1800-2017 6.12 "shortreal"
     Little/no tool support, and easily simply promoted to real.
