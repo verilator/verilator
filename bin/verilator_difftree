@@ -38,10 +38,10 @@ def diff_dir(a, b):
 
     anyfile = False
     for base in sorted(files.keys()):
+        if (not 'a' in files[base]) or (not 'b' in files[base]):
+            continue
         a = files[base]['a']
         b = files[base]['b']
-        if not a or not b:
-            continue
         print("=" * 70)
         print("= %s <-> %s" % (a, b))
         diff_file(a, b)
