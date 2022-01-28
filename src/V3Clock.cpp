@@ -322,8 +322,8 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Link to global function
-        if (nodep->formCallTree()) {
-            UINFO(4, "    formCallTree " << nodep << endl);
+        if (nodep->isFinal()) {
+            UINFO(4, "    isFinal " << nodep << endl);
             AstCCall* const callp = new AstCCall(nodep->fileline(), nodep);
             m_finalFuncp->addStmtsp(callp);
         }

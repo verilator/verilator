@@ -8874,7 +8874,7 @@ private:
     bool m_isTrace : 1;  // Function is related to tracing
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
     bool m_declPrivate : 1;  // Declare it private
-    bool m_formCallTree : 1;  // Make a global function to call entire tree of functions
+    bool m_isFinal : 1;  // This is a function corresponding to a SystemVerilog 'final' block
     bool m_slow : 1;  // Slow routine, called once or just at init time
     bool m_funcPublic : 1;  // From user public task/function
     bool m_isConstructor : 1;  // Is C class constructor
@@ -8903,7 +8903,7 @@ public:
         m_isTrace = false;
         m_dontCombine = false;
         m_declPrivate = false;
-        m_formCallTree = false;
+        m_isFinal = false;
         m_slow = false;
         m_funcPublic = false;
         m_isConstructor = false;
@@ -8961,8 +8961,8 @@ public:
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
     void declPrivate(bool flag) { m_declPrivate = flag; }
-    bool formCallTree() const { return m_formCallTree; }
-    void formCallTree(bool flag) { m_formCallTree = flag; }
+    bool isFinal() const { return m_isFinal; }
+    void isFinal(bool flag) { m_isFinal = flag; }
     bool slow() const { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool funcPublic() const { return m_funcPublic; }
