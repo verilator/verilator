@@ -1,5 +1,5 @@
 $date
-	Tue Aug 10 15:48:40 2021
+	Wed Feb 23 00:01:51 2022
 
 $end
 $version
@@ -10,24 +10,24 @@ $timescale
 $end
 $scope module top $end
 $var wire 1 ! clk $end
-$var wire 5 " state $end
+$var wire 5 " state [4:0] $end
 $scope module t $end
 $var wire 1 ! clk $end
-$var int 32 # cyc $end
+$var int 32 # cyc [31:0] $end
 $var logic 1 $ rstn $end
-$var wire 5 " state $end
+$var wire 5 " state [4:0] $end
 $var real_parameter 64 % fst_gparam_real $end
 $var real_parameter 64 & fst_lparam_real $end
 $var real 64 % fst_real $end
-$var integer 32 ' fst_integer $end
+$var integer 32 ' fst_integer [31:0] $end
 $var bit 1 ( fst_bit $end
 $var logic 1 ) fst_logic $end
-$var int 32 * fst_int $end
-$var shortint 16 + fst_shortint $end
-$var longint 64 , fst_longint $end
-$var byte 8 - fst_byte $end
-$var parameter 32 . fst_parameter $end
-$var parameter 32 / fst_lparam $end
+$var int 32 * fst_int [31:0] $end
+$var shortint 16 + fst_shortint [15:0] $end
+$var longint 64 , fst_longint [63:0] $end
+$var byte 8 - fst_byte [7:0] $end
+$var parameter 32 . fst_parameter [31:0] $end
+$var parameter 32 / fst_lparam [31:0] $end
 $var supply0 1 0 fst_supply0 $end
 $var supply1 1 1 fst_supply1 $end
 $var tri0 1 2 fst_tri0 $end
@@ -37,16 +37,16 @@ $var wire 1 5 fst_wire $end
 $scope module test $end
 $var wire 1 ! clk $end
 $var wire 1 $ rstn $end
-$var wire 5 " state $end
-$var logic 5 6 state_w $end
-$var logic 5 7 state_array[0] $end
-$var logic 5 8 state_array[1] $end
-$var logic 5 9 state_array[2] $end
-$scope module unnamedblk2 $end
-$var int 32 : i $end
-$upscope $end
+$var wire 5 " state [4:0] $end
+$var logic 5 6 state_w [4:0] $end
+$var logic 5 7 state_array[0] [4:0] $end
+$var logic 5 8 state_array[1] [4:0] $end
+$var logic 5 9 state_array[2] [4:0] $end
 $scope module unnamedblk1 $end
-$var int 32 ; i $end
+$var int 32 : i [31:0] $end
+$upscope $end
+$scope module unnamedblk2 $end
+$var int 32 ; i [31:0] $end
 $upscope $end
 $upscope $end
 $upscope $end
@@ -90,7 +90,7 @@ b10100 6
 b00001 7
 b00001 8
 b00001 9
-b00000000000000000000000000000011 ;
+b00000000000000000000000000000011 :
 #15
 0!
 #20
@@ -149,7 +149,7 @@ b00000000000000000000000000001011 #
 b00000000000000000000000000001100 #
 b10100 9
 b01010 6
-b00000000000000000000000000000010 :
+b00000000000000000000000000000010 ;
 #125
 0!
 #130

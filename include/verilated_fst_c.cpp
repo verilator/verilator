@@ -158,7 +158,8 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elem
 }
 
 void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+                           fstVarType vartype, bool array, int arraynum, bool bussed, int msb,
+                           int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
     VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
@@ -205,6 +206,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
     std::stringstream name_ss;
     name_ss << symbol_name;
     if (array) name_ss << "[" << arraynum << "]";
+    if (bussed) name_ss << " [" << msb << ":" << lsb << "]";
     std::string name_str = name_ss.str();
 
     if (dtypenum > 0) {
@@ -223,23 +225,23 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
 void VerilatedFst::declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 0, 0);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declQuad(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                             fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                              fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 63, 0);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 63, 0);
 }
 
 // Note: emit* are only ever called from one place (full* in

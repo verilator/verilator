@@ -54,7 +54,7 @@ private:
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
     void declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                 fstVarType vartype, bool array, int arraynum, int msb, int lsb);
+                 fstVarType vartype, bool array, int arraynum, bool bussed, int msb, int lsb);
 
 protected:
     //=========================================================================
