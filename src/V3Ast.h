@@ -2043,6 +2043,47 @@ inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
 inline void VNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 
 //######################################################################
+
+// VNRef is std::reference_wrapper that can only hold AstNode subtypes
+template <typename T_Node>  //
+class VNRef final : public std::reference_wrapper<T_Node> {
+    static_assert(std::is_base_of<AstNode, T_Node>::value,
+                  "Type parameter 'T_Node' must be a subtype of AstNode");
+
+public:
+    template <typename U>
+    VNRef(U&& x)
+        : std::reference_wrapper<T_Node>{x} {}
+
+    VNRef(const VNRef& other) noexcept
+        : std::reference_wrapper<T_Node>{other} {}
+};
+
+static_assert(sizeof(VNRef<AstNode>) == sizeof(std::reference_wrapper<AstNode>),
+              "VNRef should not contain extra members");
+
+// Specializations of std::hash and std::equal_to for VNRef. This in turn
+// enables us to use for example std::unordered_set<VNRef<AstNode>> for
+// sets using equality (AstNode::sameTree) rather than identity comparisons,
+// without having to copy nodes into the collections.
+
+// Forward declaration to avoid including V3Hasher.h which needs V3Ast.h (this file).
+size_t V3HasherUncachedHash(AstNode&);
+
+// Specialization of std::hash for VNRef
+template <typename T_Node>  //
+struct std::hash<VNRef<T_Node>> final {
+    size_t operator()(VNRef<T_Node> r) const { return V3HasherUncachedHash(r); }
+};
+
+// Specialization of std::equal_to for VNRef
+template <typename T_Node>  //
+struct std::equal_to<VNRef<T_Node>> final {
+    size_t operator()(VNRef<T_Node> ra, VNRef<T_Node> rb) const {
+        return ra.get().sameTree(&(rb.get()));
+    }
+};
+
 //######################################################################
 //=== AstNode* : Derived generic node types
 

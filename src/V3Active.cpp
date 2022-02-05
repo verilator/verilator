@@ -32,9 +32,7 @@
 #include "V3Global.h"
 #include "V3Active.h"
 #include "V3Ast.h"
-#include "V3EmitCBase.h"
 #include "V3Const.h"
-#include "V3SenTree.h"  // for SenTreeSet
 #include "V3Graph.h"
 
 #include <unordered_map>
@@ -211,9 +209,8 @@ private:
     AstActive* m_iActivep = nullptr;  // For current scope, the IActive we're building
     AstActive* m_cActivep = nullptr;  // For current scope, the SActive(combo) we're building
 
-    SenTreeSet m_activeSens;  // Sen lists for each active we've made
-    using ActiveMap = std::unordered_map<AstSenTree*, AstActive*>;
-    ActiveMap m_activeMap;  // Map sentree to active, for folding.
+    // Map from AstSenTree (equivalence) to the corresponding AstActive created.
+    std::unordered_map<VNRef<AstSenTree>, AstActive*> m_activeMap;
 
     // METHODS
     void addActive(AstActive* nodep) {
@@ -225,7 +222,6 @@ private:
         m_scopep = nodep;
         m_iActivep = nullptr;
         m_cActivep = nullptr;
-        m_activeSens.clear();
         m_activeMap.clear();
         iterateChildren(nodep);
         // Don't clear scopep, the namer persists beyond this visit
@@ -259,29 +255,20 @@ public:
         }
         return m_iActivep;
     }
+
+    // Return an AstActive that is sensitive to a SenTree equivalent to the given sentreep.
     AstActive* getActive(FileLine* fl, AstSenTree* sensesp) {
-        // Return a sentree in this scope that matches given sense list.
 
-        AstActive* activep = nullptr;
-        AstSenTree* const activeSenp = m_activeSens.find(sensesp);
-        if (activeSenp) {
-            const auto it = m_activeMap.find(activeSenp);
-            UASSERT(it != m_activeMap.end(), "Corrupt active map");
-            activep = it->second;
-        }
+        auto it = m_activeMap.find(*sensesp);
+        // If found matching AstActive, return it
+        if (it != m_activeMap.end()) return it->second;
 
-        // Not found, form a new one
-        if (!activep) {
-            AstSenTree* const newsenp = sensesp->cloneTree(false);
-            activep = new AstActive(fl, "sequent", newsenp);
-            activep->sensesStorep(activep->sensesp());
-            UINFO(8, "    New ACTIVE " << activep << endl);
-            // Form the sensitivity list
-            addActive(activep);
-            m_activeMap[newsenp] = activep;
-            m_activeSens.add(newsenp);
-            // Note actives may have also been added above in the Active visitor
-        }
+        // No such AstActive yet, creat it, and add to map.
+        AstSenTree* const newsenp = sensesp->cloneTree(false);
+        AstActive* const activep = new AstActive(fl, "sequent", newsenp);
+        activep->sensesStorep(activep->sensesp());
+        addActive(activep);
+        m_activeMap.emplace(*newsenp, activep);
         return activep;
     }
 

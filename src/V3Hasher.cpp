@@ -520,3 +520,11 @@ V3Hash V3Hasher::uncachedHash(const AstNode* nodep) {
     const HasherVisitor visitor{nodep, HasherVisitor::Uncached{}};
     return visitor.finalHash();
 }
+
+//######################################################################
+// This is used by the std::hash specialization for VNRef.
+// Declared separately to avoid a circular header dependency.
+
+size_t V3HasherUncachedHash(AstNode& node) {
+    return static_cast<size_t>(V3Hasher::uncachedHash(&node).value());
+}
