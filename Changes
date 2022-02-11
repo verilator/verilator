@@ -15,6 +15,7 @@ Verilator 4.219 devel
 
 * Removed the deprecated lint_off flag -msg; use -rule instead.
 * Removed the deprecated "fl" attribute in XML output; use "loc" attribute instead.
+* Fix skipping public enum values with four-state values (#3303).
 
 
 Verilator 4.218 2022-01-17

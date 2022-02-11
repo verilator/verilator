@@ -192,6 +192,12 @@ class EmitCHeader final : public EmitCConstInit {
                 puts("enum " + tdefp->name() + " {\n");
                 for (const AstEnumItem* itemp = edtypep->itemsp(); itemp;
                      itemp = VN_AS(itemp->nextp(), EnumItem)) {
+                    if (const AstConst* const constp = VN_CAST(itemp->valuep(), Const)) {
+                        if (constp->num().isFourState()) {
+                            puts("// " + itemp->nameProtect() + " is four-state\n");
+                            continue;
+                        }
+                    }
                     puts(itemp->nameProtect());
                     puts(" = ");
                     iterate(itemp->valuep());
