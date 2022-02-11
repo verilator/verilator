@@ -8,7 +8,7 @@ internalsDump:
 -V{t#,#}+++++TOP Evaluate Vt_verilated_debug::eval_step
 -V{t#,#}+    Vt_verilated_debug___024root___eval_debug_assertions
 -V{t#,#}+    Vt_verilated_debug___024root___eval_initial
--V{t#,#}+    Vt_verilated_debug___024root___initial__TOP__1
+-V{t#,#}+    Vt_verilated_debug___024root___initial__TOP__0
   Data: w96: 000000aa 000000bb 000000cc 
 -V{t#,#}+ Initial loop
 -V{t#,#}+    Vt_verilated_debug___024root___eval_settle
@@ -19,6 +19,6 @@ internalsDump:
 -V{t#,#}+    Vt_verilated_debug___024root___eval_debug_assertions
 -V{t#,#}+ Clock loop
 -V{t#,#}+    Vt_verilated_debug___024root___eval
--V{t#,#}+    Vt_verilated_debug___024root___sequent__TOP__2
+-V{t#,#}+    Vt_verilated_debug___024root___sequent__TOP__0
 *-* All Finished *-*
 -V{t#,#}+    Vt_verilated_debug___024root___final

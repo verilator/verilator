@@ -1054,8 +1054,8 @@ public:
 
 class OrderProcess final : VNDeleter {
     // NODE STATE
-    //  AstNodeModule::user3  -> int: Number of AstCFuncs created under this module
-    //  AstNode::user4        -> Used by V3Const::constifyExpensiveEdit
+    //  AstNode::user3  -> Used by loop reporting
+    //  AstNode::user4  -> Used by V3Const::constifyExpensiveEdit
     const VNUser3InUse user3InUse;
 
     // STATE
@@ -1073,6 +1073,7 @@ class OrderProcess final : VNDeleter {
     friend class OrderMoveDomScope;
     V3List<OrderMoveDomScope*> m_pomReadyDomScope;  // List of ready domain/scope pairs, by loopId
     std::vector<OrderVarStdVertex*> m_unoptflatVars;  // Vector of variables in UNOPTFLAT loop
+    std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;  // Function ordinals
 
     // STATS
     std::array<VDouble0, OrderVEdgeType::_ENUM_END> m_statCut;  // Count of each edge type cut
@@ -1115,16 +1116,14 @@ class OrderProcess final : VNDeleter {
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep,
                      AstNode* forWhatp) {
-        modp->user3Inc();
-        const int funcnum = modp->user3();
-        string name = (domainp->hasCombo()
-                           ? "_combo"
-                           : (domainp->hasInitial()
-                                  ? "_initial"
-                                  : (domainp->hasSettle()
-                                         ? "_settle"
-                                         : (domainp->isMulti() ? "_multiclk" : "_sequent"))));
-        name = name + "__" + scopep->nameDotless() + "__" + cvtToStr(funcnum);
+        string name = domainp->hasCombo()     ? "_combo"
+                      : domainp->hasInitial() ? "_initial"
+                      : domainp->hasSettle()  ? "_settle"
+                      : domainp->isMulti()    ? "_multiclk"
+                                              : "_sequent";
+        name = name + "__" + scopep->nameDotless();
+        const unsigned funcnum = m_funcNums.emplace(std::make_pair(modp, name), 0).first->second++;
+        name = name + "__" + cvtToStr(funcnum);
         if (v3Global.opt.profCFuncs()) {
             name += "__PROF__" + forWhatp->fileline()->profileFuncname();
         }

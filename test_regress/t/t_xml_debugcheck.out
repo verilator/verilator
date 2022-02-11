@@ -28,7 +28,7 @@
       <topscope loc="d,10,8,10,9">
         <scope loc="d,10,8,10,9" name="TOP"/>
       </topscope>
-      <cfunc loc="d,60,4,60,10" name="_sequent__TOP__1">
+      <cfunc loc="d,60,4,60,10" name="_sequent__TOP__0">
         <var loc="d,22,13,22,16" name="__Vdly__t.cyc" dtype_id="3" vartype="integer" origName="__Vdly__t__DOT__cyc"/>
         <var loc="d,23,9,23,10" name="__Vdly__t.e" dtype_id="2" vartype="my_t" origName="__Vdly__t__DOT__e"/>
         <var loc="d,67,119,67,123" name="__Vtemp_h########__0" dtype_id="4" vartype="string" origName="__Vtemp_h########__0"/>
@@ -842,7 +842,7 @@
           <varref loc="d,64,3,64,4" name="t.e" dtype_id="5"/>
         </assignpost>
       </cfunc>
-      <cfunc loc="d,22,19,22,20" name="_initial__TOP__2">
+      <cfunc loc="d,22,19,22,20" name="_initial__TOP__0">
         <var loc="d,27,11,27,14" name="t.all" dtype_id="4" vartype="string" origName="t__DOT__all"/>
         <var loc="d,51,17,51,18" name="t.unnamedblk1.e" dtype_id="2" vartype="my_t" origName="t__DOT__unnamedblk1__DOT__e"/>
         <var loc="d,48,123,48,127" name="__Vtemp_h########__0" dtype_id="4" vartype="string" origName="__Vtemp_h########__0"/>
@@ -1398,7 +1398,7 @@
             </not>
           </and>
           <begin>
-            <ccall loc="d,60,4,60,10" func="_sequent__TOP__1"/>
+            <ccall loc="d,60,4,60,10" func="_sequent__TOP__0"/>
           </begin>
         </if>
         <assign loc="d,14,10,14,13" dtype_id="8">
@@ -1411,7 +1411,7 @@
           <varref loc="d,14,10,14,13" name="clk" dtype_id="8"/>
           <varref loc="d,14,10,14,13" name="__Vclklast__TOP__clk" dtype_id="8"/>
         </assign>
-        <ccall loc="d,22,19,22,20" func="_initial__TOP__2"/>
+        <ccall loc="d,22,19,22,20" func="_initial__TOP__0"/>
       </cfunc>
       <cfunc loc="d,10,8,10,9" name="_eval_settle"/>
       <cfunc loc="d,10,8,10,9" name="_final"/>
