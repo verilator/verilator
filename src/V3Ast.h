@@ -2025,11 +2025,14 @@ public:
 #include "V3Ast__gen_impl.h"  // From ./astgen
 
 // Specializations of privateMayBeUnder
-template <> inline bool AstNode::mayBeUnder<AstCell>(const AstNode* nodep) {
+template <> inline bool AstNode::privateMayBeUnder<AstCell>(const AstNode* nodep) {
     return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
 }
-template <> inline bool AstNode::mayBeUnder<AstNodeAssign>(const AstNode* nodep) {
+template <> inline bool AstNode::privateMayBeUnder<AstNodeAssign>(const AstNode* nodep) {
     return !VN_IS(nodep, NodeMath);
+}
+template <> inline bool AstNode::privateMayBeUnder<AstVarScope>(const AstNode* nodep) {
+    return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
 }
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {

@@ -53,9 +53,7 @@ private:
 
     // METHODS
     AstVarScope* genInpClk(AstVarScope* vscp) {
-        if (vscp->user2p()) {
-            return VN_AS(vscp->user2p(), VarScope);
-        } else {
+        if (!vscp->user2p()) {
             // In order to create a __VinpClk* for a signal, it needs to be marked circular.
             // The DPI export trigger is never marked circular by V3Order (see comments in
             // OrderVisitor::nodeMarkCircular). The only other place where one might mark
@@ -86,22 +84,15 @@ private:
             m_scopetopp->addFinalClkp(asninitp);
             //
             vscp->user2p(newvscp);
-            return newvscp;
         }
+        return VN_AS(vscp->user2p(), VarScope);
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) override {
-        AstNode::user2ClearTree();  // user2p() used on entire tree
-        iterateChildren(nodep);
-    }
-    //----
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
-        AstVarScope* const vscp = nodep->varScopep();
-        UASSERT_OBJ(vscp, nodep, "Scope not assigned");
-        if (m_activep && !nodep->user3()) {
-            nodep->user3(true);
+        if (m_activep && !nodep->user3SetOnce()) {
+            AstVarScope* const vscp = nodep->varScopep();
             if (vscp->isCircular()) {
                 UINFO(8, "  VarActReplace " << nodep << endl);
                 // Replace with the new variable
@@ -115,10 +106,8 @@ private:
     }
     virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
-        UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
         iterate(nodep->sensesp());
         m_activep = nullptr;
-        iterateChildren(nodep);
     }
 
     //-----
@@ -141,7 +130,6 @@ private:
     // NODE STATE
     // Cleared on top scope
     //  AstVarScope::user()     -> bool.  Set when the var has been used as clock
-    const VNUser1InUse m_inuser1;
 
     // STATE
     bool m_tracingCall = false;  // Iterating into a call to a cfunc
@@ -151,13 +139,13 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) override {
-        AstNode::user1ClearTree();  // user1p() used on entire tree
-        iterateChildren(nodep);
         {
-            // Make the new clock signals and replace any activate references
-            // See rename, it does some AstNode::userClearTree()'s
-            GenClkRenameVisitor{nodep, m_topModp};
+            const VNUser1InUse user1InUse;
+            iterateChildren(nodep);
         }
+        // Make the new clock signals and replace any activate references
+        // See rename, it does some AstNode::userClearTree()'s
+        GenClkRenameVisitor{nodep, m_topModp};
     }
     virtual void visit(AstNodeModule* nodep) override {
         // Only track the top scopes, not lower level functions

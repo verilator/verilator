@@ -117,8 +117,8 @@ public:
 class ChangedInsertVisitor final : public VNVisitor {
 private:
     // STATE
-    ChangedState* m_statep = nullptr;  // Shared state across visitors
-    AstVarScope* m_vscp = nullptr;  // Original (non-change) variable we're change-detecting
+    ChangedState& m_state;  // Shared state across visitors
+    AstVarScope* const m_vscp;  // Original (non-change) variable we're change-detecting
     AstVarScope* m_newvscp = nullptr;  // New (change detect) variable we're change-detecting
     AstNode* m_varEqnp = nullptr;  // Original var's equation to get var value
     AstNode* m_newLvEqnp = nullptr;  // New var's equation to read value
@@ -126,34 +126,32 @@ private:
     uint32_t m_detects = 0;  // # detects created
 
     // CONSTANTS
-    enum MiscConsts {
-        DETECTARRAY_MAX_INDEXES = 256  // How many indexes before error
-        // Ok to increase this, but may result in much slower model
-    };
+    // How many indexes before error. Ok to increase this, but may result in much slower model
+    static constexpr uint32_t DETECTARRAY_MAX_INDEXES = 256;
 
     void newChangeDet() {
         if (++m_detects > DETECTARRAY_MAX_INDEXES) {
             m_vscp->v3warn(E_DETECTARRAY,
                            "Unsupported: Can't detect more than "
-                               << cvtToStr(DETECTARRAY_MAX_INDEXES)
+                               << DETECTARRAY_MAX_INDEXES
                                << " array indexes (probably with UNOPTFLAT warning suppressed): "
                                << m_vscp->prettyName() << '\n'
                                << m_vscp->warnMore()
                                << "... Could recompile with DETECTARRAY_MAX_INDEXES increased");
             return;
         }
-        m_statep->maybeCreateChgFuncp();
+        m_state.maybeCreateChgFuncp();
 
         AstChangeDet* const changep = new AstChangeDet{
             m_vscp->fileline(), m_varEqnp->cloneTree(true), m_newRvEqnp->cloneTree(true)};
-        m_statep->m_chgFuncp->addStmtsp(changep);
+        m_state.m_chgFuncp->addStmtsp(changep);
         AstAssign* const initp = new AstAssign{m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
                                                m_varEqnp->cloneTree(true)};
-        m_statep->m_chgFuncp->addFinalsp(initp);
+        m_state.m_chgFuncp->addFinalsp(initp);
 
         // Later code will expand words which adds to GCC compile time,
         // so add penalty based on word width also
-        m_statep->m_numStmts += initp->nodeCount() + m_varEqnp->widthWords();
+        m_state.m_numStmts += initp->nodeCount() + m_varEqnp->widthWords();
     }
 
     virtual void visit(AstBasicDType*) override {  //
@@ -202,13 +200,13 @@ private:
 
 public:
     // CONSTRUCTORS
-    ChangedInsertVisitor(AstVarScope* vscp, ChangedState* statep) {
+    ChangedInsertVisitor(AstVarScope* vscp, ChangedState& state)
+        : m_state{state}
+        , m_vscp{vscp} {
         // DPI export trigger should never need change detect. See similar assertions in V3Order
         // (OrderVisitor::nodeMarkCircular), and V3GenClk (GenClkRenameVisitor::genInpClk).
         UASSERT_OBJ(vscp != v3Global.rootp()->dpiExportTriggerp(), vscp,
                     "DPI export trigger should not need change detect");
-        m_statep = statep;
-        m_vscp = vscp;
         {
             AstVar* const varp = m_vscp->varp();
             const string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"
@@ -219,9 +217,9 @@ public:
             //          CHANGEDET(VARREF(_last), VARREF(var))
             AstVar* const newvarp
                 = new AstVar{varp->fileline(), VVarType::MODULETEMP, newvarname, varp};
-            m_statep->m_topModp->addStmtp(newvarp);
-            m_newvscp = new AstVarScope{m_vscp->fileline(), m_statep->m_scopetopp, newvarp};
-            m_statep->m_scopetopp->addVarp(m_newvscp);
+            m_state.m_topModp->addStmtp(newvarp);
+            m_newvscp = new AstVarScope{m_vscp->fileline(), m_state.m_scopetopp, newvarp};
+            m_state.m_scopetopp->addVarp(m_newvscp);
 
             m_varEqnp = new AstVarRef{m_vscp->fileline(), m_vscp, VAccess::READ};
             m_newLvEqnp = new AstVarRef{m_vscp->fileline(), m_newvscp, VAccess::WRITE};
@@ -237,71 +235,21 @@ public:
 };
 
 //######################################################################
-// Changed state, as a visitor of each AstNode
-
-class ChangedVisitor final : public VNVisitor {
-private:
-    // NODE STATE
-    // Entire netlist:
-    //  AstVarScope::user1()            -> bool.  True indicates processed
-    const VNUser1InUse m_inuser1;
-
-    // STATE
-    ChangedState* const m_statep;  // Shared state across visitors
-
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
-    void genChangeDet(AstVarScope* vscp) {
-        vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: " << vscp->prettyNameQ());
-        { ChangedInsertVisitor{vscp, m_statep}; }
-    }
-
-    // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
-        UINFO(4, " MOD   " << nodep << endl);
-        if (nodep->isTop()) m_statep->m_topModp = nodep;
-        iterateChildren(nodep);
-    }
-
-    virtual void visit(AstTopScope* nodep) override {
-        UINFO(4, " TS " << nodep << endl);
-        // Clearing
-        AstNode::user1ClearTree();
-        // Prep for if make change detection function
-        AstScope* const scopep = nodep->scopep();
-        UASSERT_OBJ(scopep, nodep, "No scope found on top level, perhaps you have no statements?");
-        m_statep->m_scopetopp = scopep;
-
-        iterateChildren(nodep);
-    }
-    virtual void visit(AstVarScope* nodep) override {
-        if (nodep->isCircular()) {
-            UINFO(8, "  CIRC " << nodep << endl);
-            if (!nodep->user1SetOnce()) genChangeDet(nodep);
-        }
-    }
-    //--------------------
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    ChangedVisitor(AstNetlist* nodep, ChangedState* statep)
-        : m_statep{statep} {
-        iterate(nodep);
-    }
-    virtual ~ChangedVisitor() override = default;
-};
-
-//######################################################################
 // Changed class functions
 
 void V3Changed::changedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {
-        ChangedState state;
-        ChangedVisitor{nodep, &state};
-    }  // Destruct before checking
+
+    ChangedState state;
+    state.m_scopetopp = nodep->topScopep()->scopep();
+    state.m_topModp = nodep->topModulep();
+    nodep->foreach<AstVarScope>([&state](AstVarScope* vscp) {
+        if (vscp->isCircular()) {
+            vscp->v3warn(IMPERFECTSCH,
+                         "Imperfect scheduling of variable: " << vscp->prettyNameQ());
+            ChangedInsertVisitor{vscp, state};
+        }
+    });
+
     V3Global::dumpCheckGlobalTree("changed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
