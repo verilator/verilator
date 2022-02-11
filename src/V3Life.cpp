@@ -457,6 +457,10 @@ private:
     LifeState* const m_statep;  // Current state
 
     // VISITORS
+    virtual void visit(AstEval* nodep) override {
+        // Usage model 1: Simulate all C code, doing lifetime analysis
+        LifeVisitor{nodep, m_statep};
+    }
     virtual void visit(AstCFunc* nodep) override {
         if (nodep->entryPoint()) {
             // Usage model 1: Simulate all C code, doing lifetime analysis

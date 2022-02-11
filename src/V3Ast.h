@@ -269,14 +269,15 @@ public:
         ET_LOWEDGE,  // Is low now (latches)
         // Not involving anything
         ET_COMBO,  // Sensitive to all combo inputs to this block
-        ET_INITIAL,  // User initial statements
-        ET_SETTLE,  // Like combo but for initial wire resolutions after initial statement
+        ET_STATIC,  // static variable initializers (runs before 'initial')
+        ET_INITIAL,  // 'initial' statements
+        ET_FINAL,  // 'final' statements
         ET_NEVER  // Never occurs (optimized away)
     };
     enum en m_e;
     bool clockedStmt() const {
         static const bool clocked[]
-            = {false, false, true, true, true, true, true, false, false, false};
+            = {false, false, true, true, true, true, true, false, false, false, false, false};
         return clocked[m_e];
     }
     VEdgeType invert() const {
@@ -293,14 +294,14 @@ public:
     }
     const char* ascii() const {
         static const char* const names[]
-            = {"%E-edge", "ANY",   "BOTH",    "POS",    "NEG",  "HIGH",
-               "LOW",     "COMBO", "INITIAL", "SETTLE", "NEVER"};
+            = {"%E-edge", "ANY",   "BOTH",   "POS",     "NEG",   "HIGH",
+               "LOW",     "COMBO", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
         static const char* const names[]
-            = {"%E-edge", "[any]", "edge",      "posedge",  "negedge", "[high]",
-               "[low]",   "*",     "[initial]", "[settle]", "[never]"};
+            = {"%E-edge", "[any]", "edge",     "posedge",   "negedge", "[high]",
+               "[low]",   "*",     "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions
@@ -2033,6 +2034,12 @@ template <> inline bool AstNode::privateMayBeUnder<AstNodeAssign>(const AstNode*
 }
 template <> inline bool AstNode::privateMayBeUnder<AstVarScope>(const AstNode* nodep) {
     return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
+}
+template <> inline bool AstNode::privateMayBeUnder<AstActive>(const AstNode* nodep) {
+    return !VN_IS(nodep, Active);  // AstActives do not nest
+}
+template <> inline bool AstNode::privateMayBeUnder<AstScope>(const AstNode* nodep) {
+    return !VN_IS(nodep, Scope);  // AstScopes do not nest
 }
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {

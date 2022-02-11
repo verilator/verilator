@@ -33,6 +33,7 @@
 #include "V3Global.h"
 #include "V3Clock.h"
 #include "V3Ast.h"
+#include "V3Sched.h"
 
 #include <algorithm>
 
@@ -76,15 +77,11 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    const AstTopScope* m_topScopep = nullptr;  // Current top scope
     AstScope* m_scopep = nullptr;  // Current scope
-    AstCFunc* m_evalFuncp = nullptr;  // Top eval function we are creating
-    AstCFunc* m_initFuncp = nullptr;  // Top initial function we are creating
-    AstCFunc* m_finalFuncp = nullptr;  // Top final function we are creating
-    AstCFunc* m_settleFuncp = nullptr;  // Top settlement function we are creating
+    AstCFunc* const m_initp;  // Top initial function (already created)
+    AstEval* const m_evalp;  // Top eval function (already created)
     AstSenTree* m_lastSenp = nullptr;  // Last sensitivity match, so we can detect duplicates.
     AstIf* m_lastIfp = nullptr;  // Last sensitivity if active to add more under
-    AstMTaskBody* m_mtaskBodyp = nullptr;  // Current mtask body
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -110,12 +107,12 @@ private:
         if (v3Global.opt.xInitialEdge()) fromp = new AstNot(fromp->fileline(), fromp);
         AstNode* const newinitp = new AstAssign(
             vscp->fileline(), new AstVarRef(newvarp->fileline(), newvscp, VAccess::WRITE), fromp);
-        addToInitial(newinitp);
+        m_initp->addStmtsp(newinitp);
         // At bottom, assign them
         AstAssign* const finalp = new AstAssign(
             vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
             new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
-        m_evalFuncp->addFinalsp(finalp);
+        m_evalp->addFinalp(finalp);
         //
         UINFO(4, "New Last: " << newvscp << endl);
         return newvscp;
@@ -192,68 +189,14 @@ private:
         m_lastSenp = nullptr;
         m_lastIfp = nullptr;
     }
-    AstCFunc* makeTopFunction(const string& name, bool slow = false) {
-        AstCFunc* const funcp = new AstCFunc{m_topScopep->fileline(), name, m_topScopep->scopep()};
-        funcp->dontCombine(true);
-        funcp->isStatic(false);
-        funcp->isLoose(true);
-        funcp->entryPoint(true);
-        funcp->slow(slow);
-        funcp->isConst(false);
-        funcp->declPrivate(true);
-        m_topScopep->scopep()->addActivep(funcp);
-        return funcp;
-    }
-    void splitCheck(AstCFunc* ofuncp) {
-        if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
-        if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;
-
-        int funcnum = 0;
-        int func_stmts = 0;
-        AstCFunc* funcp = nullptr;
-
-        // Unlink all statements, then add item by item to new sub-functions
-        AstBegin* const tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
-                                             ofuncp->stmtsp()->unlinkFrBackWithNext()};
-        if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
-        while (tempp->stmtsp()) {
-            AstNode* const itemp = tempp->stmtsp()->unlinkFrBack();
-            const int stmts = itemp->nodeCount();
-            if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
-                // Make a new function
-                funcp
-                    = new AstCFunc{ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcnum++),
-                                   m_topScopep->scopep()};
-                funcp->dontCombine(true);
-                funcp->isStatic(false);
-                funcp->isLoose(true);
-                funcp->slow(ofuncp->slow());
-                m_topScopep->scopep()->addActivep(funcp);
-                //
-                AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
-                ofuncp->addStmtsp(callp);
-                func_stmts = 0;
-            }
-            funcp->addStmtsp(itemp);
-            func_stmts += stmts;
-        }
-        VL_DO_DANGLING(tempp->deleteTree(), tempp);
-    }
-
     // VISITORS
     virtual void visit(AstTopScope* nodep) override {
         UINFO(4, " TOPSCOPE   " << nodep << endl);
-        m_topScopep = nodep;
         m_scopep = nodep->scopep();
         UASSERT_OBJ(m_scopep, nodep,
                     "No scope found on top level, perhaps you have no statements?");
         // VV*****  We reset all user1p()
         AstNode::user1ClearTree();
-        // Make top functions
-        m_evalFuncp = makeTopFunction("_eval");
-        m_initFuncp = makeTopFunction("_eval_initial", /* slow: */ true);
-        m_settleFuncp = makeTopFunction("_eval_settle", /* slow: */ true);
-        m_finalFuncp = makeTopFunction("_final", /* slow: */ true);
         // Process the activates
         iterateChildren(nodep);
         UINFO(4, " TOPSCOPE iter done " << nodep << endl);
@@ -263,17 +206,11 @@ private:
             AstAssign* const assignp
                 = new AstAssign{fl, new AstVarRef{fl, dpiExportTriggerp, VAccess::WRITE},
                                 new AstConst{fl, AstConst::BitFalse{}}};
-            m_evalFuncp->addFinalsp(assignp);
+            m_evalp->addFinalp(assignp);
         }
-        // Split large functions
-        splitCheck(m_evalFuncp);
-        splitCheck(m_initFuncp);
-        splitCheck(m_finalFuncp);
-        splitCheck(m_settleFuncp);
         // Done, clear so we can detect errors
         UINFO(4, " TOPSCOPEDONE " << nodep << endl);
         clearLastSen();
-        m_topScopep = nullptr;
         m_scopep = nullptr;
     }
     virtual void visit(AstNodeModule* nodep) override {
@@ -288,19 +225,11 @@ private:
         // UINFO(4, " SCOPE   " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
-        if (AstNode* const movep = nodep->finalClksp()) {
-            UASSERT_OBJ(m_topScopep, nodep, "Final clocks under non-top scope");
-            movep->unlinkFrBackWithNext();
-            m_evalFuncp->addFinalsp(movep);
+        if (AstNodeStmt* const stmtp = nodep->finalClksp()) {
+            stmtp->unlinkFrBackWithNext();
+            m_evalp->addFinalp(stmtp);
         }
         m_scopep = nullptr;
-    }
-    virtual void visit(AstNodeProcedure* nodep) override {
-        if (AstNode* const stmtsp = nodep->bodysp()) {
-            stmtsp->unlinkFrBackWithNext();
-            nodep->addNextHere(stmtsp);
-        }
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstCoverToggle* nodep) override {
         // nodep->dumpTree(cout, "ct:");
@@ -319,109 +248,45 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCFunc* nodep) override {
-        iterateChildren(nodep);
-        // Link to global function
-        if (nodep->isFinal()) {
-            UINFO(4, "    isFinal " << nodep << endl);
-            AstCCall* const callp = new AstCCall(nodep->fileline(), nodep);
-            m_finalFuncp->addStmtsp(callp);
-        }
-    }
     virtual void visit(AstSenTree* nodep) override {
         // Delete it later; Actives still pointing to it
         nodep->unlinkFrBack();
         pushDeletep(nodep);
     }
-    void addToEvalLoop(AstNode* stmtsp) {
-        m_evalFuncp->addStmtsp(stmtsp);  // add to top level function
-    }
-    void addToSettleLoop(AstNode* stmtsp) {
-        m_settleFuncp->addStmtsp(stmtsp);  // add to top level function
-    }
-    void addToInitial(AstNode* stmtsp) {
-        m_initFuncp->addStmtsp(stmtsp);  // add to top level function
-    }
     virtual void visit(AstActive* nodep) override {
         // Careful if adding variables here, ACTIVES can be under other ACTIVES
         // Need to save and restore any member state in AstUntilStable block
-        if (!m_topScopep || !nodep->stmtsp()) {
-            // Not at the top or empty block...
-            // Only empty blocks should be leftover on the non-top.  Killem.
-            UASSERT_OBJ(!nodep->stmtsp(), nodep, "Non-empty lower active");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (m_mtaskBodyp) {
-            UINFO(4, "  TR ACTIVE  " << nodep << endl);
-            AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
-            if (nodep->hasClocked()) {
-                UASSERT_OBJ(!nodep->hasInitial(), nodep,
-                            "Initial block should not have clock sensitivity");
-                if (m_lastSenp && nodep->sensesp()->sameTree(m_lastSenp)) {
-                    UINFO(4, "    sameSenseTree\n");
-                } else {
-                    clearLastSen();
-                    m_lastSenp = nodep->sensesp();
-                    // Make a new if statement
-                    m_lastIfp = makeActiveIf(m_lastSenp);
-                    m_mtaskBodyp->addStmtsp(m_lastIfp);
-                }
-                // Move statements to if
-                m_lastIfp->addIfsp(stmtsp);
-            } else if (nodep->hasInitial() || nodep->hasSettle()) {
-                nodep->v3fatalSrc("MTask should not include initial/settle logic.");
-            } else {
-                // Combo logic. Move statements to mtask func.
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not have been created if empty");
+        AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
+        if (nodep->hasClocked()) {
+            // Create 'if' statement, if needed
+            if (!m_lastSenp || !nodep->sensesp()->sameTree(m_lastSenp)) {
                 clearLastSen();
-                m_mtaskBodyp->addStmtsp(stmtsp);
+                m_lastSenp = nodep->sensesp();
+                // Make a new if statement
+                m_lastIfp = makeActiveIf(m_lastSenp);
+                relinker.relink(m_lastIfp);
             }
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            // Move statements to if
+            m_lastIfp->addIfsp(stmtsp);
+        } else if (nodep->hasCombo()) {
+            clearLastSen();
+            // Move statements to body
+            relinker.relink(stmtsp);
         } else {
-            UINFO(4, "  ACTIVE  " << nodep << endl);
-            AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
-            if (nodep->hasClocked()) {
-                // Remember the latest sensitivity so we can compare it next time
-                UASSERT_OBJ(!nodep->hasInitial(), nodep,
-                            "Initial block should not have clock sensitivity");
-                if (m_lastSenp && nodep->sensesp()->sameTree(m_lastSenp)) {
-                    UINFO(4, "    sameSenseTree\n");
-                } else {
-                    clearLastSen();
-                    m_lastSenp = nodep->sensesp();
-                    // Make a new if statement
-                    m_lastIfp = makeActiveIf(m_lastSenp);
-                    addToEvalLoop(m_lastIfp);
-                }
-                // Move statements to if
-                m_lastIfp->addIfsp(stmtsp);
-            } else if (nodep->hasInitial()) {
-                // Don't need to: clearLastSen();, as we're adding it to different cfunc
-                // Move statements to function
-                addToInitial(stmtsp);
-            } else if (nodep->hasSettle()) {
-                // Don't need to: clearLastSen();, as we're adding it to different cfunc
-                // Move statements to function
-                addToSettleLoop(stmtsp);
-            } else {
-                // Combo
-                clearLastSen();
-                // Move statements to function
-                addToEvalLoop(stmtsp);
-            }
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            nodep->v3fatalSrc("Should have been removed by V3Sched::schedule");
         }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstExecGraph* nodep) override {
-        for (m_mtaskBodyp = VN_AS(nodep->op1p(), MTaskBody); m_mtaskBodyp;
-             m_mtaskBodyp = VN_AS(m_mtaskBodyp->nextp(), MTaskBody)) {
+        for (AstMTaskBody* mtaskBodyp = VN_AS(nodep->op1p(), MTaskBody); mtaskBodyp;
+             mtaskBodyp = VN_AS(mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
-            iterate(m_mtaskBodyp);
+            iterate(mtaskBodyp);
         }
         clearLastSen();
-        // Move the ExecGraph into _eval. Its location marks the
-        // spot where the graph will execute, relative to other
-        // (serial) logic in the cycle.
-        nodep->unlinkFrBack();
-        addToEvalLoop(nodep);
     }
 
     //--------------------
@@ -429,11 +294,12 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ClockVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-        // Allow downstream modules to find _eval()
-        // easily without iterating through the tree.
-        nodep->evalp(m_evalFuncp);
+    explicit ClockVisitor(AstNetlist* netlistp)
+        : m_initp{netlistp->initp()}
+        , m_evalp{netlistp->evalp()} {
+        iterate(netlistp);
+        // Split large functions
+        V3Sched::splitCheck(m_initp);
     }
     virtual ~ClockVisitor() override = default;
 };

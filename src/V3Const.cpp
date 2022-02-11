@@ -2163,6 +2163,15 @@ private:
             iterateChildren(nodep);
         }
     }
+    virtual void visit(AstEval* nodep) override {
+        // No ASSIGNW removals under evals, we've long eliminated INITIALs
+        // (We should perhaps rename the assignw's to just assigns)
+        VL_RESTORER(m_wremove);
+        {
+            m_wremove = false;
+            iterateChildren(nodep);
+        }
+    }
     virtual void visit(AstCFunc* nodep) override {
         // No ASSIGNW removals under funcs, we've long eliminated INITIALs
         // (We should perhaps rename the assignw's to just assigns)

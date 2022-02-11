@@ -80,6 +80,7 @@
 #include "V3ProtectLib.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
+#include "V3Sched.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
 #include "V3Slice.h"
@@ -376,8 +377,11 @@ static void process() {
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
 
-        // Order the code; form SBLOCKs and BLOCKCALLs
-        V3Order::orderAll(v3Global.rootp());
+        // Propagate 'clocker' attribute through logic
+        V3Order::orderMarkClocks(v3Global.rootp());
+
+        // Schedule the logic
+        V3Sched::schedule(v3Global.rootp());
 
         // Change generated clocks to look at delayed signals
         V3GenClk::genClkAll(v3Global.rootp());

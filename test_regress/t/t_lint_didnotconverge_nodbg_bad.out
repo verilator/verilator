@@ -1,2 +1,2 @@
-%Error: t/t_lint_didnotconverge_bad.v:7: Verilated model didn't converge
+%Error: t/t_lint_didnotconverge_bad.v:7: Verilated model didn't converge (_eval_settle)
 Aborting...

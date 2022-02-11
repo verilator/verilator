@@ -453,7 +453,8 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         iterate(subnodep);
         comma = true;
     }
-    if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)) {
+    if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)
+        || (VN_IS(nodep->backp(), Assign) && VN_AS(nodep->backp(), Assign)->rhsp() == nodep)) {
         // We should have a separate CCall for math and statement usage, but...
         puts(")");
     } else {

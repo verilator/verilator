@@ -70,15 +70,6 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        // Copy combo tree to settlement tree with duplicated statements
-        if (sensesp->hasCombo()) {
-            AstSenTree* const newsentreep = new AstSenTree(
-                nodep->fileline(), new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
-            AstActive* const newp = new AstActive(nodep->fileline(), "settle", newsentreep);
-            newp->sensesStorep(newsentreep);
-            if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->cloneTree(true));
-            nodep->addNextHere(newp);
-        }
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
         AstSenTree* const wantp = m_finder.getSenTree(sensesp);

@@ -70,7 +70,6 @@ struct OrderVEdgeType {
         VERTEX_VARPRE,
         VERTEX_VARPOST,
         VERTEX_VARPORD,
-        VERTEX_VARSETTLE,
         VERTEX_MOVE,
         EDGE_STD,
         EDGE_COMBOCUT,
@@ -79,11 +78,10 @@ struct OrderVEdgeType {
         _ENUM_END
     };
     const char* ascii() const {
-        static const char* const names[]
-            = {"%E-vedge",      "VERTEX_INPUTS",  "VERTEX_LOGIC",   "VERTEX_VARSTD",
-               "VERTEX_VARPRE", "VERTEX_VARPOST", "VERTEX_VARPORD", "VERTEX_VARSETTLE",
-               "VERTEX_MOVE",   "EDGE_STD",       "EDGE_COMBOCUT",  "EDGE_PRECUT",
-               "EDGE_POSTCUT",  "_ENUM_END"};
+        static const char* const names[] = {
+            "%E-vedge",       "VERTEX_INPUTS",  "VERTEX_LOGIC", "VERTEX_VARSTD", "VERTEX_VARPRE",
+            "VERTEX_VARPOST", "VERTEX_VARPORD", "VERTEX_MOVE",  "EDGE_STD",      "EDGE_COMBOCUT",
+            "EDGE_PRECUT",    "EDGE_POSTCUT",   "_ENUM_END"};
         return names[m_e];
     }
     enum en m_e;
@@ -168,7 +166,7 @@ public:
     virtual string dotColor() const override { return "green"; }
     virtual string dotName() const override { return ""; }
     virtual string dotShape() const override { return "invhouse"; }
-    virtual bool domainMatters() override { return false; }
+    virtual bool domainMatters() override { return true; }
 };
 
 class OrderLogicVertex final : public OrderEitherVertex {

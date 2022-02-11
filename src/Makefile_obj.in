@@ -239,6 +239,7 @@ RAW_OBJS = \
 	V3ProtectLib.o \
 	V3Randomize.o \
 	V3Reloop.o \
+	V3Sched.o \
 	V3Scope.o \
 	V3Scoreboard.o \
 	V3Slice.o \

@@ -832,7 +832,7 @@ private:
         if (!m_finding) {  // If public, we need a unique activity code to allow for sets
                            // directly in this func
             if (nodep->funcPublic() || nodep->dpiExportImpl()
-                || nodep == v3Global.rootp()->evalp()) {
+                || nodep == v3Global.rootp()->evalBodyp()) {
                 V3GraphVertex* const activityVtxp = getActivityVertexp(nodep, nodep->slow());
                 new V3GraphEdge(&m_graph, activityVtxp, funcVtxp, 1);
             }

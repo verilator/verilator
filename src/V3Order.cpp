@@ -93,6 +93,7 @@
 #include "V3SenTree.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
+#include "V3Sched.h"
 
 #include "V3Order.h"
 #include "V3OrderGraph.h"
@@ -115,8 +116,7 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     // be active on the same eval pass, or false if we can't prove this.
     //
     // This detects the case of 'always @(posedge clk)'
-    // and 'always @(negedge clk)' being exclusive. It also detects
-    // that initial/settle blocks and post-initial blocks are exclusive.
+    // and 'always @(negedge clk)' being exclusive.
     //
     // Are there any other cases we need to handle? Maybe not,
     // because these are not exclusive:
@@ -124,10 +124,6 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     //   always @(negedge A)
     //
     // ... unless you know more about A and B, which sounds hard.
-
-    const bool toInitial = top->hasInitial() || top->hasSettle();
-    const bool fromInitial = fromp->hasInitial() || fromp->hasSettle();
-    if (toInitial != fromInitial) return true;
 
     const AstSenItem* const fromSenListp = fromp->sensesp();
     const AstSenItem* const toSenListp = top->sensesp();
@@ -383,8 +379,7 @@ class OrderBuildVisitor final : public VNVisitor {
 
     // Current AstScope being processed
     AstScope* m_scopep = nullptr;
-    // Sensitivity list for non-combinational logic (incl. initial and settle),
-    // nullptr for combinational logic
+    // Sensitivity list for clocked logic, nullptr for combinational logic
     AstSenTree* m_domainp = nullptr;
 
     bool m_inClocked = false;  // Underneath clocked AstActive
@@ -416,18 +411,6 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstSenTree* nodep) override {
-        // This should only find the global AstSenTrees under the AstTopScope, which we ignore
-        // here. We visit AstSenTrees separately when encountering the AstActive that references
-        // them.
-        UASSERT_OBJ(!m_scopep, nodep, "AstSenTrees should have been made global in V3ActiveTop");
-    }
-    virtual void visit(AstScope* nodep) override {
-        UASSERT_OBJ(!m_scopep, nodep, "Should not nest");
-        m_scopep = nodep;
-        iterateChildren(nodep);
-        m_scopep = nullptr;
-    }
     virtual void visit(AstActive* nodep) override {
         UASSERT_OBJ(!nodep->sensesStorep(), nodep,
                     "AstSenTrees should have been made global in V3ActiveTop");
@@ -656,9 +639,12 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
-    virtual void visit(AstInitial* nodep) override {  //
-        iterateLogic(nodep);
-    }
+    virtual void visit(AstInitial* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("AstInitial should not need ordering");
+    }  // LCOV_EXCL_STOP
+    virtual void visit(AstInitialStatic* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("AstInitialStatic should not need ordering");
+    }  // LCOV_EXCL_STOP
     virtual void visit(AstInitialAutomatic* nodep) override {  //
         iterateLogic(nodep);
     }
@@ -678,7 +664,7 @@ class OrderBuildVisitor final : public VNVisitor {
         m_inPostponed = false;
     }
     virtual void visit(AstFinal* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("AstFinal should have been removed already");
+        nodep->v3fatalSrc("AstFinal should not need ordering");
     }  // LCOV_EXCL_STOP
 
     //--- Logic akin go SystemVerilog continuous assignments
@@ -734,7 +720,7 @@ class OrderBuildVisitor final : public VNVisitor {
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
-    OrderBuildVisitor(AstNetlist* nodep) {
+    OrderBuildVisitor(AstNetlist* nodep, const std::vector<const V3Sched::LogicByScope*>& coll) {
         // Enable debugging (3 is default if global debug; we want acyc debugging)
         if (debug()) m_graphp->debug(5);
 
@@ -748,15 +734,22 @@ class OrderBuildVisitor final : public VNVisitor {
         }
 
         // Build the rest of the graph
-        iterate(nodep);
+        for (const V3Sched::LogicByScope* const logicByScopep : coll) {
+            for (const auto& pair : *logicByScopep) {
+                m_scopep = pair.first;
+                for (AstActive* const activep : pair.second) { iterate(activep); }
+                m_scopep = nullptr;
+            }
+        }
     }
     virtual ~OrderBuildVisitor() = default;
 
 public:
     // Process the netlist and return the constructed ordering graph. It's 'process' because
     // this visitor does change the tree (removes some nodes related to DPI export trigger).
-    static std::unique_ptr<OrderGraph> process(AstNetlist* nodep) {
-        return std::unique_ptr<OrderGraph>{OrderBuildVisitor{nodep}.m_graphp};
+    static std::unique_ptr<OrderGraph>
+    process(AstNetlist* nodep, const std::vector<const V3Sched::LogicByScope*>& coll) {
+        return std::unique_ptr<OrderGraph>{OrderBuildVisitor{nodep, coll}.m_graphp};
     }
 };
 
@@ -932,7 +925,7 @@ private:
                 madeDeps = true;
             } else {
                 // This is an OrderVarVertex or other vertex representing
-                // data. (Could be var, settle, or input type vertex.)
+                // data. (Could be var, or input type vertex.)
                 const V3GraphVertex* nonLogicVxp = edgep->top();
                 const VxDomPair key(nonLogicVxp, domainp);
                 if (!m_var2move[key]) {
@@ -1005,9 +998,6 @@ public:
                                          const OrderEitherVertex* varVertexp,
                                          const AstScope* scopep,
                                          const AstSenTree* domainp) override {
-        // Exclude initial/settle logic from the mtasks graph.
-        // We'll output time-zero logic separately.
-        if (domainp->hasInitial() || domainp->hasSettle()) return nullptr;
         return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, scopep, domainp);
     }
     virtual void freeVertexp(MTaskMoveVertex* freeMep) override {
@@ -1064,7 +1054,9 @@ class OrderProcess final : VNDeleter {
     SenTreeFinder m_finder;  // Global AstSenTree manager
     AstSenTree* const m_comboDomainp;  // The combinational domain AstSenTree
     AstSenTree* const m_deleteDomainp;  // Dummy AstSenTree indicating needs deletion
-    AstScope& m_scopetop;  // The top level AstScope
+    const bool m_settle;  // Ordering combinational logic for settle loop
+    std::vector<AstActive*> m_resultST;  // The result nodes for a single threaded model
+    AstExecGraph* m_resultMT = nullptr;  // The result node for a multi threaded model
 
     AstCFunc* m_pomNewFuncp = nullptr;  // Current function being created
     int m_pomNewStmts = 0;  // Statements in function being created
@@ -1081,7 +1073,7 @@ class OrderProcess final : VNDeleter {
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    void process();
+    void process(bool multiThreaded);
     void processCircular();
     using VertexVec = std::deque<OrderEitherVertex*>;
     void processInputs();
@@ -1111,16 +1103,13 @@ class OrderProcess final : VNDeleter {
         MTaskState() = default;
     };
     void processMTasks();
-    enum InitialLogicE : uint8_t { LOGIC_INITIAL, LOGIC_SETTLE };
-    void processMTasksInitial(InitialLogicE logic_type);
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep,
                      AstNode* forWhatp) {
-        string name = domainp->hasCombo()     ? "_combo"
-                      : domainp->hasInitial() ? "_initial"
-                      : domainp->hasSettle()  ? "_settle"
-                      : domainp->isMulti()    ? "_multiclk"
-                                              : "_sequent";
+        string name = m_settle              ? "_settle"
+                      : domainp->hasCombo() ? "_combo"
+                      : domainp->isMulti()  ? "_multiclk"
+                                            : "_sequent";
         name = name + "__" + scopep->nameDotless();
         const unsigned funcnum = m_funcNums.emplace(std::make_pair(modp, name), 0).first->second++;
         name = name + "__" + cvtToStr(funcnum);
@@ -1136,70 +1125,57 @@ class OrderProcess final : VNDeleter {
         AstVarScope* const nodep = vertexp->varScp();
         UASSERT(nodep != v3Global.rootp()->dpiExportTriggerp(),
                 "DPI export trigger should not be marked circular");
-        const OrderLogicVertex* fromLVtxp = nullptr;
-        const OrderLogicVertex* toLVtxp = nullptr;
-        if (edgep) {
-            fromLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
-            toLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->top());
-        }
-        //
-        if ((fromLVtxp && VN_IS(fromLVtxp->nodep(), Initial))
-            || (toLVtxp && VN_IS(toLVtxp->nodep(), Initial))) {
-            // IEEE does not specify ordering between initial blocks, so we
-            // can do whatever we want. We especially do not want to
-            // evaluate multiple times, so do not mark the edge circular
+
+        nodep->circular(true);
+        ++m_statCut[vertexp->type()];
+        if (edgep) ++m_statCut[edgep->type()];
+
+        if (m_settle) return;
+
+        if (vertexp->isClock()) {
+            // Seems obvious; no warning yet
+            // nodep->v3warn(GENCLK, "Signal unoptimizable: Generated clock:
+            // "<<nodep->prettyNameQ());
+        } else if (nodep->varp()->isSigPublic()) {
+            nodep->v3warn(UNOPT,
+                          "Signal unoptimizable: Feedback to public clock or circular logic: "
+                              << nodep->prettyNameQ());
+            if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)
+                && !nodep->fileline()->lastWarnWaived()) {
+                nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT,
+                                                 true);  // Complain just once
+                // Give the user an example.
+                const bool tempWeight = (edgep && edgep->weight() == 0);
+                // Else the below loop detect can't see the loop
+                if (tempWeight) edgep->weight(1);
+                // Calls OrderGraph::loopsVertexCb
+                m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp);
+                if (tempWeight) edgep->weight(0);
+            }
         } else {
-            nodep->circular(true);
-            ++m_statCut[vertexp->type()];
-            if (edgep) ++m_statCut[edgep->type()];
-            //
-            if (vertexp->isClock()) {
-                // Seems obvious; no warning yet
-                // nodep->v3warn(GENCLK, "Signal unoptimizable: Generated clock:
-                // "<<nodep->prettyNameQ());
-            } else if (nodep->varp()->isSigPublic()) {
-                nodep->v3warn(UNOPT,
-                              "Signal unoptimizable: Feedback to public clock or circular logic: "
-                                  << nodep->prettyNameQ());
-                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)
-                    && !nodep->fileline()->lastWarnWaived()) {
-                    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT,
-                                                     true);  // Complain just once
-                    // Give the user an example.
-                    const bool tempWeight = (edgep && edgep->weight() == 0);
-                    // Else the below loop detect can't see the loop
-                    if (tempWeight) edgep->weight(1);
-                    // Calls OrderGraph::loopsVertexCb
-                    m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp);
-                    if (tempWeight) edgep->weight(0);
-                }
-            } else {
-                // We don't use UNOPT, as there are lots of V2 places where
-                // it was needed, that aren't any more
-                // First v3warn not inside warnIsOff so we can see the suppressions with --debug
-                nodep->v3warn(UNOPTFLAT,
-                              "Signal unoptimizable: Feedback to clock or circular logic: "
-                                  << nodep->prettyNameQ());
-                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)
-                    && !nodep->fileline()->lastWarnWaived()) {
-                    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT,
-                                                     true);  // Complain just once
-                    // Give the user an example.
-                    const bool tempWeight = (edgep && edgep->weight() == 0);
-                    // Else the below loop detect can't see the loop
-                    if (tempWeight) edgep->weight(1);
-                    // Calls OrderGraph::loopsVertexCb
-                    m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp);
-                    if (tempWeight) edgep->weight(0);
-                    if (v3Global.opt.reportUnoptflat()) {
-                        // Report candidate variables for splitting
-                        reportLoopVars(vertexp);
-                        // Do a subgraph for the UNOPTFLAT loop
-                        OrderGraph loopGraph;
-                        m_graph.subtreeLoops(&OrderEdge::followComboConnected, vertexp,
-                                             &loopGraph);
-                        loopGraph.dumpDotFilePrefixedAlways("unoptflat");
-                    }
+            // We don't use UNOPT, as there are lots of V2 places where
+            // it was needed, that aren't any more
+            // First v3warn not inside warnIsOff so we can see the suppressions with --debug
+            nodep->v3warn(UNOPTFLAT, "Signal unoptimizable: Feedback to clock or circular logic: "
+                                         << nodep->prettyNameQ());
+            if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)
+                && !nodep->fileline()->lastWarnWaived()) {
+                nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT,
+                                                 true);  // Complain just once
+                // Give the user an example.
+                const bool tempWeight = (edgep && edgep->weight() == 0);
+                // Else the below loop detect can't see the loop
+                if (tempWeight) edgep->weight(1);
+                // Calls OrderGraph::loopsVertexCb
+                m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp);
+                if (tempWeight) edgep->weight(0);
+                if (v3Global.opt.reportUnoptflat()) {
+                    // Report candidate variables for splitting
+                    reportLoopVars(vertexp);
+                    // Do a subgraph for the UNOPTFLAT loop
+                    OrderGraph loopGraph;
+                    m_graph.subtreeLoops(&OrderEdge::followComboConnected, vertexp, &loopGraph);
+                    loopGraph.dumpDotFilePrefixedAlways("unoptflat");
                 }
             }
         }
@@ -1310,18 +1286,18 @@ class OrderProcess final : VNDeleter {
 
     // Only for member initialization in constructor
     static AstSenTree* makeDeleteDomainSenTree(FileLine* fl) {
-        // TODO: Using "Never" instead of "Settle" causes a test failure, it probably shouldn't ...
-        return new AstSenTree{fl, new AstSenItem{fl, AstSenItem::Settle{}}};
+        return new AstSenTree{fl, new AstSenItem{fl, AstSenItem::Combo{}}};
     }
 
     // CONSTRUCTOR
-    OrderProcess(AstNetlist* netlistp, OrderGraph& graph)
+    OrderProcess(AstNetlist* netlistp, OrderGraph& graph, bool settle)
         : m_graph{graph}
         , m_inputsVtx{findInputVertex(graph)}
         , m_finder{netlistp}
         , m_comboDomainp{m_finder.getComb()}
         , m_deleteDomainp{makeDeleteDomainSenTree(netlistp->fileline())}
-        , m_scopetop{*netlistp->topScopep()->scopep()} {
+        , m_settle{settle} {
+        m_inputsVtx.domainp(m_comboDomainp);
         pushDeletep(m_deleteDomainp);
     }
 
@@ -1337,8 +1313,15 @@ class OrderProcess final : VNDeleter {
 
 public:
     // Order the logic
-    static void main(AstNetlist* netlistp, OrderGraph& graph) {
-        OrderProcess{netlistp, graph}.process();
+    static std::vector<AstActive*> mainST(AstNetlist* netlistp, OrderGraph& graph, bool settle) {
+        OrderProcess visitor{netlistp, graph, settle};
+        visitor.process(false);
+        return std::move(visitor.m_resultST);
+    }
+    static AstExecGraph* mainMT(AstNetlist* netlistp, OrderGraph& graph) {
+        OrderProcess visitor{netlistp, graph, false};
+        visitor.process(true);
+        return visitor.m_resultMT;
     }
 };
 
@@ -1534,10 +1517,13 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
     //     else, if all inputs are from flops, it's end-of-sequential code
     //     else, it's full combo code
     if (vertexp->domainp()) return;  // Already processed, or sequential logic
+    if (m_settle) {
+        vertexp->domainp(m_comboDomainp);
+        return;
+    }
     UINFO(5, "    pdi: " << vertexp << endl);
     OrderVarVertex* const vvertexp = dynamic_cast<OrderVarVertex*>(vertexp);
     AstSenTree* domainp = nullptr;
-    if (vvertexp && vvertexp->varScp()->varp()->isNonOutput()) domainp = m_comboDomainp;
     if (vvertexp && vvertexp->varScp()->isCircular()) domainp = m_comboDomainp;
     if (!domainp) {
         for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
@@ -1545,64 +1531,48 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
             if (edgep->weight() && fromVertexp->domainMatters()) {
                 UINFO(9, "     from d=" << cvtToHex(fromVertexp->domainp()) << " " << fromVertexp
                                         << endl);
-                if (!domainp  // First input to this vertex
-                    || domainp->hasSettle()  // or, we can ignore being in the settle domain
-                    || domainp->hasInitial()) {
-                    domainp = fromVertexp->domainp();
-                } else if (domainp->hasCombo()) {
-                    // Once in combo, keep in combo; already as severe as we can get
-                } else if (fromVertexp->domainp()->hasCombo()) {
-                    // Any combo input means this vertex must remain combo
-                    domainp = m_comboDomainp;
-                } else if (fromVertexp->domainp()->hasSettle()
-                           || fromVertexp->domainp()->hasInitial()) {
-                    // Ignore that we have a constant (initial) input
-                } else if (domainp != fromVertexp->domainp()) {
+
+                UASSERT(!fromVertexp->domainp()->hasStatic(), "Does not need ordering");
+                UASSERT(!fromVertexp->domainp()->hasInitial(), "Does not need ordering");
+                UASSERT(!fromVertexp->domainp()->hasFinal(), "Does not need ordering");
+
+                // Irrelevant input vertex (never triggered)
+                if (fromVertexp->domainp() == m_deleteDomainp) continue;
+
+                // First input to this vertex
+                if (!domainp) domainp = fromVertexp->domainp();
+
+                // Any combo input means this vertex must remain combo
+                if (fromVertexp->domainp()->hasCombo()) domainp = m_comboDomainp;
+
+                // Once in combo, keep in combo; already as severe as we can get
+                if (domainp->hasCombo()) break;
+
+                if (domainp != fromVertexp->domainp()) {
                     // Make a domain that merges the two domains
-                    const bool ddebug = debug() >= 9;
-
-                    if (ddebug) {  // LCOV_EXCL_START
-
-                        cout << endl;
-                        UINFO(0, "      conflicting domain " << fromVertexp << endl);
-                        UINFO(0, "         dorig=" << domainp << endl);
-                        domainp->dumpTree(cout);
-                        UINFO(0, "         d2   =" << fromVertexp->domainp() << endl);
-                        fromVertexp->domainp()->dumpTree(cout);
-                    }  // LCOV_EXCL_STOP
                     AstSenTree* const newtreep = domainp->cloneTree(false);
-                    AstSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
-                    UASSERT_OBJ(newtree2p, fromVertexp->domainp(),
-                                "No senitem found under clocked domain");
-                    newtreep->addSensesp(newtree2p);
-                    newtree2p = nullptr;  // Below edit may replace it
+                    newtreep->addSensesp(fromVertexp->domainp()->sensesp()->cloneTree(true));
                     V3Const::constifyExpensiveEdit(newtreep);  // Remove duplicates
                     newtreep->multi(true);  // Comment that it was made from 2 clock domains
                     domainp = m_finder.getSenTree(newtreep);
-                    if (ddebug) {  // LCOV_EXCL_START
-                        UINFO(0, "         dnew =" << newtreep << endl);
-                        newtreep->dumpTree(cout);
-                        UINFO(0, "         find =" << domainp << endl);
-                        domainp->dumpTree(cout);
-                        cout << endl;
-                    }  // LCOV_EXCL_STOP
                     VL_DO_DANGLING(newtreep->deleteTree(), newtreep);
                 }
             }
         }  // next input edgep
         // Default the domain
         // This is a node which has only constant inputs, or is otherwise indeterminate.
-        // It should have already been copied into the settle domain.  Presumably it has
-        // inputs which we never trigger, or nothing it's sensitive to, so we can rip it out.
+        // Presumably it has inputs which we never trigger, or nothing it's sensitive to,
+        // so we can rip it out.
         if (!domainp && vertexp->scopep()) domainp = m_deleteDomainp;
     }
-    //
-    vertexp->domainp(domainp);
-    if (vertexp->domainp()) {
+    if (domainp) {
+        vertexp->domainp(domainp);
         UINFO(5, "      done d=" << cvtToHex(vertexp->domainp())
-                                 << (vertexp->domainp()->hasCombo() ? " [COMB]" : "")
-                                 << (vertexp->domainp()->isMulti() ? " [MULT]" : "") << " "
-                                 << vertexp << endl);
+                                 << (domainp == m_deleteDomainp       ? " [DEL]"
+                                     : vertexp->domainp()->hasCombo() ? " [COMB]"
+                                     : vertexp->domainp()->isMulti()  ? " [MULT]"
+                                                                      : "")
+                                 << " " << vertexp << endl);
     }
 }
 
@@ -1778,7 +1748,7 @@ void OrderProcess::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
                              << " s=" << cvtToHex(scopep) << " " << lvertexp << endl);
     AstActive* const newActivep
         = processMoveOneLogic(lvertexp, m_pomNewFuncp /*ref*/, m_pomNewStmts /*ref*/);
-    if (newActivep) m_scopetop.addActivep(newActivep);
+    if (newActivep) m_resultST.push_back(newActivep);
     processMoveDoneOne(vertexp);
 }
 
@@ -1798,16 +1768,18 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
 
         // Process procedures per statement (unless profCFuncs), so we can split CFuncs within
         // procedures. Everything else is handled in one go
-        AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
-        if (procp && !v3Global.opt.profCFuncs()) {
+        if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
             nodep = procp->bodysp();
             pushDeletep(procp);
         }
 
+        // When profCFuncs, create a new function for all logic block
+        if (v3Global.opt.profCFuncs()) newFuncpr = nullptr;
+
         while (nodep) {
-            // Make or borrow a CFunc to contain the new statements
-            if (v3Global.opt.profCFuncs()
-                || (v3Global.opt.outputSplitCFuncs()
+            // Split the CFunc if too large (but not when profCFuncs)
+            if (!v3Global.opt.profCFuncs()
+                && (v3Global.opt.outputSplitCFuncs()
                     && v3Global.opt.outputSplitCFuncs() < newStmtsr)) {
                 // Put every statement into a unique function to ease profiling or reduce function
                 // size
@@ -1818,8 +1790,8 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
                 newFuncpr = new AstCFunc(nodep->fileline(), name, scopep);
                 newFuncpr->isStatic(false);
                 newFuncpr->isLoose(true);
+                newFuncpr->slow(m_settle);
                 newStmtsr = 0;
-                if (domainp->hasInitial() || domainp->hasSettle()) newFuncpr->slow(true);
                 scopep->addActivep(newFuncpr);
                 // Create top call to it
                 AstCCall* const callp = new AstCCall(nodep->fileline(), newFuncpr);
@@ -1839,14 +1811,11 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             if (nodep->backp()) nodep->unlinkFrBack();
 
             if (domainp == m_deleteDomainp) {
-                UINFO(4, " Ordering deleting pre-settled " << nodep << endl);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {
                 newFuncpr->addStmtsp(nodep);
-                if (v3Global.opt.outputSplitCFuncs()) {
-                    // Add in the number of nodes we're adding
-                    newStmtsr += nodep->nodeCount();
-                }
+                // Add in the number of nodes we're adding
+                if (v3Global.opt.outputSplitCFuncs()) newStmtsr += nodep->nodeCount();
             }
 
             nodep = nextp;
@@ -1855,38 +1824,11 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
     return activep;
 }
 
-void OrderProcess::processMTasksInitial(InitialLogicE logic_type) {
-    // Emit initial/settle logic. Initial blocks won't be part of the
-    // mtask partition, aren't eligible for parallelism.
-    //
-    int initStmts = 0;
-    AstCFunc* initCFunc = nullptr;
-    const AstScope* lastScopep = nullptr;
-    for (V3GraphVertex* initVxp = m_graph.verticesBeginp(); initVxp;
-         initVxp = initVxp->verticesNextp()) {
-        OrderLogicVertex* const initp = dynamic_cast<OrderLogicVertex*>(initVxp);
-        if (!initp) continue;
-        if ((logic_type == LOGIC_INITIAL) && !initp->domainp()->hasInitial()) continue;
-        if ((logic_type == LOGIC_SETTLE) && !initp->domainp()->hasSettle()) continue;
-        if (initp->scopep() != lastScopep) {
-            // Start new cfunc, don't let the cfunc cross scopes
-            initCFunc = nullptr;
-            lastScopep = initp->scopep();
-        }
-        AstActive* const newActivep
-            = processMoveOneLogic(initp, initCFunc /*ref*/, initStmts /*ref*/);
-        if (newActivep) m_scopetop.addActivep(newActivep);
-    }
-}
-
 void OrderProcess::processMTasks() {
     // For nondeterminism debug:
     V3Partition::hashGraphDebug(&m_graph, "V3Order's m_graph");
 
-    processMTasksInitial(LOGIC_INITIAL);
-    processMTasksInitial(LOGIC_SETTLE);
-
-    // We already produced a graph of every var, input, logic, and settle
+    // We already produced a graph of every var, input, and logic
     // block and all dependencies; this is 'm_graph'.
     //
     // Now, starting from m_graph, make a slightly-coarsened graph representing
@@ -1955,7 +1897,7 @@ void OrderProcess::processMTasks() {
     // of the MTask graph.
     FileLine* const rootFlp = v3Global.rootp()->fileline();
     AstExecGraph* const execGraphp = new AstExecGraph(rootFlp);
-    m_scopetop.addActivep(execGraphp);
+    m_resultMT = execGraphp;
     v3Global.rootp()->execGraphp(execGraphp);
 
     // Create CFuncs and bodies for each MTask.
@@ -2015,7 +1957,7 @@ void OrderProcess::processMTasks() {
 //######################################################################
 // OrderVisitor - Top processing
 
-void OrderProcess::process() {
+void OrderProcess::process(bool multiThreaded) {
     // Dump data
     m_graph.dumpDotFilePrefixed("orderg_pre");
 
@@ -2048,7 +1990,7 @@ void OrderProcess::process() {
 
     if (debug() && v3Global.opt.dumpTree()) processEdgeReport();
 
-    if (!v3Global.opt.mtasks()) {
+    if (!multiThreaded) {
         UINFO(2, "  Construct Move Graph...\n");
         processMoveBuildGraph();
         if (debug() >= 4) {
@@ -2083,16 +2025,24 @@ void OrderProcess::process() {
 //######################################################################
 // Order class functions
 
-void V3Order::orderAll(AstNetlist* netlistp) {
+void V3Order::orderMarkClocks(AstNetlist* netlistp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Propagate 'clocker' attribute through logic
     OrderClkMarkVisitor::process(netlistp);
-    // Build ordering graph
-    std::unique_ptr<OrderGraph> orderGraph = OrderBuildVisitor::process(netlistp);
-    // Order the netlist
-    OrderProcess::main(netlistp, *orderGraph.get());
-    // Reset debug level
-    orderGraph.get()->debug(V3Error::debugDefault());
-    // Dump tree
-    V3Global::dumpCheckGlobalTree("order", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
+
+namespace V3Sched {
+
+std::vector<AstActive*>
+orderST(AstNetlist* netlistp, const std::vector<const V3Sched::LogicByScope*>& coll, bool settle) {
+    const std::unique_ptr<OrderGraph> graph = OrderBuildVisitor::process(netlistp, coll);
+    return OrderProcess::mainST(netlistp, *graph.get(), settle);
+}
+
+AstExecGraph* orderMT(AstNetlist* netlistp,
+                      const std::vector<const V3Sched::LogicByScope*>& coll) {
+    const std::unique_ptr<OrderGraph> graph = OrderBuildVisitor::process(netlistp, coll);
+    return OrderProcess::mainMT(netlistp, *graph.get());
+}
+
+}  // namespace V3Sched

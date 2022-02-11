@@ -75,6 +75,7 @@ private:
     const bool m_elimDTypes;  // Allow removal of DTypes
     const bool m_elimCells;  // Allow removal of Cells
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
+    AstScope* const m_scopeTopp;  // The top level AstScope
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -118,6 +119,10 @@ private:
                 }
             }
         }
+    }
+    virtual void visit(AstEval* nodep) override {
+        iterateChildren(nodep);
+        m_scopeTopp->user1Inc();
     }
     virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
@@ -427,7 +432,8 @@ public:
                 bool elimCells)
         : m_elimUserVars{elimUserVars}
         , m_elimDTypes{elimDTypes}
-        , m_elimCells{elimCells} {
+        , m_elimCells{elimCells}
+        , m_scopeTopp{nodep->topScopep() ? nodep->topScopep()->scopep() : nullptr} {
         // Prepare to remove some datatypes
         nodep->typeTablep()->clearCache();
         // Operate on whole netlist

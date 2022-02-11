@@ -93,7 +93,7 @@ private:
     AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
-    bool m_inInitial = false;  // True in initial blocks
+    bool m_inInitial = false;  // True in static initializer and initial blocks
     using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
@@ -384,7 +384,7 @@ private:
         m_activep = nodep;
         VL_RESTORER(m_inInitial);
         {
-            m_inInitial = nodep->hasInitial();
+            m_inInitial = nodep->sensesp()->hasInitial() || nodep->sensesp()->hasStatic();
             // Two sets to same variable in different actives must use different vars.
             AstNode::user3ClearTree();
             iterateChildren(nodep);

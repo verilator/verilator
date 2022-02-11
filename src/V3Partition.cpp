@@ -1841,7 +1841,6 @@ private:
         for (V3GraphEdge* edgep = (*ovvIt)->inBeginp(); edgep; edgep = edgep->inNextp()) {
             const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
             if (!logicp) continue;
-            if (logicp->domainp()->hasInitial() || logicp->domainp()->hasSettle()) continue;
             LogicMTask* const writerMtaskp = m_olv2mtask.at(logicp);
             (*tasksByRankp)[writerMtaskp->rank()].insert(writerMtaskp);
         }
@@ -1849,7 +1848,6 @@ private:
         for (V3GraphEdge* edgep = (*ovvIt)->outBeginp(); edgep; edgep = edgep->outNextp()) {
             const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
             if (!logicp) continue;
-            if (logicp->domainp()->hasInitial() || logicp->domainp()->hasSettle()) continue;
             LogicMTask* const readerMtaskp = m_olv2mtask.at(logicp);
             (*tasksByRankp)[readerMtaskp->rank()].insert(readerMtaskp);
         }

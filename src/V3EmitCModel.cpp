@@ -314,104 +314,23 @@ class EmitCModel final : public EmitCFunc {
         puts("}\n");
     }
 
-    void emitSettleLoop(AstNodeModule* modp, bool initial) {
-        const string topModNameProtected = prefixNameProtect(modp);
-
-        putsDecoration("// Evaluate till stable\n");
-        if (v3Global.rootp()->changeRequest()) {
-            puts("int __VclockLoop = 0;\n");
-            puts("QData __Vchange = 1;\n");
-        }
-        if (v3Global.opt.trace()) puts("vlSymsp->__Vm_activity = true;\n");
-        puts("do {\n");
-        puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ ");
-        puts(initial ? "Initial" : "Clock");
-        puts(" loop\\n\"););\n");
-        if (initial)
-            puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
-
-        const string recName = "__Vprfloop";
-        if (v3Global.opt.profThreads() && !initial) {
-            puts("VlProfileRec* " + recName + " = nullptr;\n");
-            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-            puts("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n");
-            // Eval start
-            puts(/**/ recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n");
-            puts(/**/ recName + "->startEvalLoop(VL_RDTSC_Q());\n");
-            puts("}\n");
-        }
-
-        puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
-
-        if (v3Global.opt.profThreads() && !initial) {
-            puts("if (VL_UNLIKELY(" + recName + ")) " + recName + "->endRecord(VL_RDTSC_Q());\n");
-        }
-
-        if (v3Global.rootp()->changeRequest()) {
-            puts("if (VL_UNLIKELY(++__VclockLoop > " + cvtToStr(v3Global.opt.convergeLimit())
-                 + ")) {\n");
-            puts("// About to fail, so enable debug to see what's not settling.\n");
-            puts("// Note you must run make with OPT=-DVL_DEBUG for debug prints.\n");
-            puts("int __Vsaved_debug = Verilated::debug();\n");
-            puts("Verilated::debug(1);\n");
-            puts("__Vchange = " + topModNameProtected + "__" + protect("_change_request")
-                 + "(&(vlSymsp->TOP));\n");
-            puts("Verilated::debug(__Vsaved_debug);\n");
-            puts("VL_FATAL_MT(");
-            putsQuoted(protect(modp->fileline()->filename()));
-            puts(", ");
-            puts(cvtToStr(modp->fileline()->lineno()));
-            puts(", \"\",\n");
-            puts("\"Verilated model didn't ");
-            if (initial) puts("DC ");
-            puts("converge\\n\"\n");
-            puts("\"- See https://verilator.org/warn/DIDNOTCONVERGE\");\n");
-            puts("} else {\n");
-            puts("__Vchange = " + topModNameProtected + "__" + protect("_change_request")
-                 + "(&(vlSymsp->TOP));\n");
-            puts("}\n");
-        }
-        puts("} while ("
-             + (v3Global.rootp()->changeRequest() ? std::string{"VL_UNLIKELY(__Vchange)"}
-                                                  : std::string{"0"})
-             + ");\n");
-    }
-
     void emitStandardMethods1(AstNodeModule* modp) {
-        UASSERT_OBJ(modp->isTop(), modp, "Attempting to emitWrapEval for non-top class");
-
         const string topModNameProtected = prefixNameProtect(modp);
         const string selfDecl = "(" + topModNameProtected + "* vlSelf)";
 
-        putSectionDelimiter("Evaluation loop");
+        putSectionDelimiter("Evaluation function");
 
         // Forward declarations
         puts("\n");
-        puts("void " + topModNameProtected + "__" + protect("_eval_initial") + selfDecl + ";\n");
-        puts("void " + topModNameProtected + "__" + protect("_eval_settle") + selfDecl + ";\n");
-        puts("void " + topModNameProtected + "__" + protect("_eval") + selfDecl + ";\n");
-        if (v3Global.rootp()->changeRequest()) {
-            puts("QData " + topModNameProtected + "__" + protect("_change_request") + selfDecl
-                 + ";\n");
-        }
         puts("#ifdef VL_DEBUG\n");
         puts("void " + topModNameProtected + "__" + protect("_eval_debug_assertions") + selfDecl
              + ";\n");
         puts("#endif  // VL_DEBUG\n");
-        puts("void " + topModNameProtected + "__" + protect("_final") + selfDecl + ";\n");
+        puts("void " + topModNameProtected + "__" + protect("_eval_static") + selfDecl + ";\n");
+        puts("void " + topModNameProtected + "__" + protect("_eval_initial") + selfDecl + ";\n");
+        puts("void " + topModNameProtected + "__" + protect("_eval_settle") + selfDecl + ";\n");
+        puts("void " + topModNameProtected + "__" + protect("_eval") + selfDecl + ";\n");
 
-        // _eval_initial_loop
-        puts("\nstatic void " + protect("_eval_initial_loop") + "(" + symClassVar() + ")"
-             + " {\n");
-        puts("vlSymsp->__Vm_didInit = true;\n");
-        puts(topModNameProtected + "__" + protect("_eval_initial") + "(&(vlSymsp->TOP));\n");
-        emitSettleLoop(modp, /* initial: */ true);
-        ensureNewLine();
-        puts("}\n");
-    }
-
-    void emitStandardMethods2(AstNodeModule* modp) {
-        const string topModNameProtected = prefixNameProtect(modp);
         // ::eval_step
         puts("\nvoid " + topClassName() + "::eval_step() {\n");
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate " + topClassName()
@@ -423,9 +342,15 @@ class EmitCModel final : public EmitCFunc {
              + "(&(vlSymsp->TOP));\n");
         puts("#endif  // VL_DEBUG\n");
 
-        putsDecoration("// Initialize\n");
-        puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) " + protect("_eval_initial_loop")
-             + "(vlSymsp);\n");
+        if (v3Global.opt.trace()) puts("vlSymsp->__Vm_activity = true;\n");
+
+        puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) {\n");
+        puts("vlSymsp->__Vm_didInit = true;\n");
+        puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Initial\\n\"););\n");
+        puts(topModNameProtected + "__" + protect("_eval_static") + "(&(vlSymsp->TOP));\n");
+        puts(topModNameProtected + "__" + protect("_eval_initial") + "(&(vlSymsp->TOP));\n");
+        puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
+        puts("}\n");
 
         if (v3Global.opt.threads() == 1) {
             const uint32_t mtaskId = 0;
@@ -491,7 +416,8 @@ class EmitCModel final : public EmitCFunc {
             puts("}\n");
         }
 
-        emitSettleLoop(modp, /* initial: */ false);
+        puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Eval\\n\"););\n");
+        puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
 
         putsDecoration("// Evaluate cleanup\n");
         if (v3Global.opt.threads() == 1) {
@@ -506,8 +432,10 @@ class EmitCModel final : public EmitCFunc {
         puts("}\n");
     }
 
-    void emitStandardMethods3(AstNodeModule* modp) {
+    void emitStandardMethods2(AstNodeModule* modp) {
         const string topModNameProtected = prefixNameProtect(modp);
+        const string selfDecl = "(" + topModNameProtected + "* vlSelf)";
+
         // ::eval_end_step
         if (v3Global.needTraceDumper() && !optSystemC()) {
             puts("\nvoid " + topClassName() + "::eval_end_step() {\n");
@@ -535,6 +463,9 @@ class EmitCModel final : public EmitCFunc {
         }
 
         putSectionDelimiter("Invoke final blocks");
+        // Forward declarations
+        puts("\n");
+        puts("void " + topModNameProtected + "__" + protect("_final") + selfDecl + ";\n");
         // ::final
         puts("\nVL_ATTR_COLD void " + topClassName() + "::final() {\n");
         puts(/**/ topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
@@ -661,7 +592,6 @@ class EmitCModel final : public EmitCFunc {
         emitDestructorImplementation();
         emitStandardMethods1(modp);
         emitStandardMethods2(modp);
-        emitStandardMethods3(modp);
         if (v3Global.opt.trace()) { emitTraceMethods(modp); }
         if (v3Global.opt.savable()) { emitSerializationFunctions(); }
 

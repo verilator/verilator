@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Block code ordering
+// DESCRIPTION: Verilator: Scheduling
 //
 // Code available from: https://verilator.org
 //
@@ -14,19 +14,37 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3ORDER_H_
-#define VERILATOR_V3ORDER_H_
+#ifndef VERILATOR_V3SCHED_H_
+#define VERILATOR_V3SCHED_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <utility>
+#include <vector>
+
+class AstScope;
+class AstActive;
+class AstExecGraph;
 class AstNetlist;
+class AstCFunc;
 
 //============================================================================
 
-class V3Order final {
-public:
-    static void orderMarkClocks(AstNetlist* nodep);
+namespace V3Sched {
+
+struct LogicByScope final : public std::vector<std::pair<AstScope*, std::vector<AstActive*>>> {
+    // Create copy, with the AstActives cloned
+    LogicByScope clone() const;
 };
+
+void schedule(AstNetlist*);
+
+void splitCheck(AstCFunc* funcp);
+
+std::vector<AstActive*> orderST(AstNetlist*, const std::vector<const V3Sched::LogicByScope*>&,
+                                bool);
+AstExecGraph* orderMT(AstNetlist*, const std::vector<const V3Sched::LogicByScope*>&);
+};  // namespace V3Sched
 
 #endif  // Guard

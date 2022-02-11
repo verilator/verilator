@@ -26,8 +26,8 @@
   <map from="PS8lsQ" to="_eval"/>
   <map from="PSKZ7c" to="_eval_debug_assertions"/>
   <map from="PSABAY" to="_eval_initial"/>
-  <map from="PSOLeN" to="_eval_initial_loop"/>
   <map from="PSBUJ6" to="_eval_settle"/>
+  <map from="PS0mmd" to="_eval_static"/>
   <map from="PSAsei" to="_final"/>
   <map from="PSQAYU" to="_sequent__TOP__0"/>
   <map from="PS18yi" to="_sequent__TOP__t__DOT__secret_inst__0"/>
