@@ -5049,7 +5049,7 @@ private:
 
     void visit_negate_not(AstNodeUniop* nodep, bool real_ok) {
         // CALLER: (real_ok=false) Not
-        // CALLER: (real_ok=true) Negate
+        // CALLER: (real_ok=true) Negate - allow real numbers
         // Signed: From lhs
         // IEEE-2012 Table 11-21:
         //    Widths: out width = lhs width
@@ -5076,7 +5076,14 @@ private:
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
             nodep->dtypep(expDTypep);  // Propagate expression type to negation
             AstNodeDType* const subDTypep = expDTypep;
-            iterateCheck(nodep, "LHS", nodep->lhsp(), CONTEXT, FINAL, subDTypep, EXTEND_EXP);
+            // Some warning suppressions
+            bool lhsWarn = true;
+            if (VN_IS(nodep, Negate)) {
+                // Warn if user wants extra bit from carry
+                if (subDTypep->widthMin() == (nodep->lhsp()->widthMin() + 1)) lhsWarn = false;
+            }
+            iterateCheck(nodep, "LHS", nodep->lhsp(), CONTEXT, FINAL, subDTypep, EXTEND_EXP,
+                         lhsWarn);
         }
     }
 
