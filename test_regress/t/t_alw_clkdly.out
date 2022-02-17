@@ -1,0 +1,9 @@
+@ posedge clk
+@ anyedge other
+@ posedge clk
+@ anyedge other
+@ posedge clk
+@ anyedge other
+@ posedge clk
+*-* All Finished *-*
+@ anyedge other

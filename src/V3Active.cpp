@@ -586,6 +586,12 @@ private:
                     nodep->edgeType(VEdgeType::ET_HIGHEDGE);
                 }
             }
+            // If it's width 1 and anyedge, it can remain sequential
+            bool onlyItemInTree
+                = !m_itemCombo && VN_IS(nodep->backp(), SenTree) && !nodep->nextp();
+            if (nodep->edgeType() == VEdgeType::ET_ANYEDGE && nodep->varrefp()->width1()
+                && onlyItemInTree)
+                nodep->edgeType(VEdgeType::ET_BOTHEDGE);
         }
         if (nodep->edgeType() == VEdgeType::ET_ANYEDGE) {
             m_itemCombo = true;
