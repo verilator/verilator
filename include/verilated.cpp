@@ -1844,7 +1844,7 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     m_fp = std::fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
-        VL_FATAL_MT(filename.c_str(), 0, "", "$readmem file not found");
+        VL_WARN_MT(filename.c_str(), 0, "", "$readmem file not found");
         // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
         return;
     }
