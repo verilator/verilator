@@ -204,12 +204,16 @@ public:
 };
 
 class SplitRVEdge final : public SplitEdge {
+    const int m_refRevision;
+
 public:
-    SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
-        : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
+    SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, SplitNodeVertex* top)
+        : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL}
+        , m_refRevision{top->nodep()->user4()} {}
     virtual ~SplitRVEdge() override = default;
     virtual bool followScoreboard() const override { return true; }
     virtual string dotColor() const override { return "green"; }
+    int refRevision() const { return m_refRevision; }
 };
 
 struct SplitScorebdEdge : public SplitEdge {
@@ -242,6 +246,7 @@ private:
     // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
     // Ast*::user3p             -> Statement SplitLogicVertex* (temporary only)
     // Ast*::user4              -> Current ordering number (reorderBlock usage)
+    // AstVarScope::user4       -> How many times this var is written (used only SplitVisitor)
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
@@ -254,6 +259,10 @@ protected:
     SplitPliVertex* m_pliVertexp;  // Element specifying PLI ordering
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
     bool m_inDly;  // Inside ASSIGNDLY
+    using LhsRevisions = std::unordered_map<const AstVarScope*, int>;
+    bool m_inPureCombo{false};  // in always_comb
+    // AstNodeIf* whose condition we're currently visiting
+    const AstNode* m_curIfConditional = nullptr;
 
     // CONSTRUCTORS
 public:
@@ -340,6 +349,18 @@ protected:
     // We don't do AstNodeFor/AstWhile loops, due to the standard question
     // of what is before vs. after
 
+    virtual void visit(AstActive* nodep) override {
+        m_inPureCombo = true;
+        for (AstSenItem* itemp = nodep->sensesp()->sensesp(); itemp;
+             itemp = VN_CAST(itemp->nextp(), SenItem)) {
+            if (!itemp->isCombo()) {
+                m_inPureCombo = false;
+                break;
+            }
+        }
+        iterateChildren(nodep);
+        m_inPureCombo = false;
+    }
     virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
         UINFO(4, "    ASSIGNDLY " << nodep << endl);
@@ -396,7 +417,12 @@ protected:
                     if (nodep->access().isWriteOrRW()) {
                         // Non-delay; need to maintain existing ordering
                         // with all consumers of the signal
-                        UINFO(4, "     VARREFLV: " << nodep << endl);
+                        // edge can be ignored if referring varRef is the last assignment in
+                        // always_comb
+                        const int newRev
+                            = (!m_curIfConditional && m_inPureCombo) ? (vscp->user4() + 1) : -1;
+                        vscp->user4(newRev);
+                        UINFO(4, "     VARREFLV: " << nodep << " rev:" << newRev << endl);
                         for (SplitLogicVertex* ivxp : m_stmtStackps) {
                             new SplitLVEdge(&m_graph, vstdp, ivxp);
                         }
@@ -842,20 +868,45 @@ public:
     }
 };
 
+class SplitScanVarRefVisitor final : public VNVisitor {
+    // MEMBERS
+    std::unordered_map<const AstVarScope*, int> m_lhsRefs;  // how many times a var is written
+
+    // VISITORS
+    virtual void visit(AstVarRef* nodep) override {
+        if (nodep->access().isReadOnly()) return;  // RHS is not counted
+        const AstVarScope* const vscp = nodep->varScopep();
+        UASSERT_OBJ(vscp, nodep, "Scoped in this phase");
+        ++m_lhsRefs[vscp];
+    }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit SplitScanVarRefVisitor(AstNetlist* netlistp) { iterate(netlistp); }
+
+    // METHODS
+    int numLhsCount(const AstVarScope* vscp) const {
+        auto it = m_lhsRefs.find(vscp);
+        const int count = it == m_lhsRefs.end() ? 0 : it->second;
+        return count;
+    }
+};
+
 class SplitVisitor final : public SplitReorderBaseVisitor {
 private:
     // Keys are original always blocks pending delete,
     // values are newly split always blocks pending insertion
     // at the same position as the originals:
     std::unordered_map<AstAlways*, AlwaysVec> m_replaceBlocks;
-
-    // AstNodeIf* whose condition we're currently visiting
-    const AstNode* m_curIfConditional = nullptr;
     VDouble0 m_statSplits;  // Statistic tracking
+    // Written count for each variable
+    SplitScanVarRefVisitor m_lhsCount;
 
     // CONSTRUCTORS
 public:
-    explicit SplitVisitor(AstNetlist* nodep) {
+    explicit SplitVisitor(AstNetlist* nodep)
+        : m_lhsCount{nodep} {
         iterate(nodep);
 
         // Splice newly-split blocks into the tree. Remove placeholders
@@ -890,6 +941,57 @@ protected:
         }
     }
 
+    void pruneDepsOnLastUpdatedSignalsInAlwaysComb() {
+        // If a variable is set only in the always_comb and all users of the variables refers the
+        // last assignment, prune the edge.
+        // e.g.
+        //   always_comb begin
+        //     sig_a = in_a + in_b;
+        //     sig_b = !sig_a;
+        //   end
+        // can be
+        //   always_comb sig_a = in_a + in_b;
+        //   always_comb sig_b = !sig_a;
+        // but
+        //   always_comb begin
+        //     sig_a = in_a + in_b;
+        //     sig_b = !sig_a;
+        //     sig_a = 0;
+        //   end
+        // cannot be split.
+        for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
+             vertexp = vertexp->verticesNextp()) {
+            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+                SplitRVEdge* const rvEdgep = dynamic_cast<SplitRVEdge*>(edgep);
+                if (!rvEdgep) continue;
+                const SplitNodeVertex* const assignVertexp
+                    = dynamic_cast<const SplitNodeVertex*>(edgep->fromp());
+                UASSERT(assignVertexp, "must be SplitNodeVertex");
+                UASSERT(assignVertexp == vertexp, "must be same");
+                if (!VN_IS(assignVertexp->nodep(), Assign)) continue;
+                // fromp() is nondelayed (blocking) assignment
+                const SplitNodeVertex* const varScopeVertexp
+                    = dynamic_cast<const SplitNodeVertex*>(edgep->top());
+                UASSERT(varScopeVertexp, "top must be SplitNodeVertex");
+                const AstVarScope* const vscp = VN_CAST(varScopeVertexp->nodep(), VarScope);
+                UASSERT_OBJ(vscp, varScopeVertexp->nodep(), "must be varscope");
+                const int lhsRev = vscp->user4();
+                if (vscp->varp()->isSignal() && lhsRev >= 0 && !vscp->user2p()) {
+                    // vscp is assigned by Nondelayed (i.e. blocking) in always_comb
+                    UASSERT_OBJ(lhsRev >= rvEdgep->refRevision(), vscp,
+                                lhsRev << " " << rvEdgep->refRevision());
+                    // If this RVEdge refers the last nondelayed assignment, vscp can be in a
+                    // different always_comb
+                    if (lhsRev == rvEdgep->refRevision()) {
+                        UASSERT(rvEdgep->refRevision() <= lhsRev, rvEdgep->refRevision()
+                                                                      << " " << lhsRev);
+                        rvEdgep->setIgnoreThisStep();
+                    }
+                }
+            }
+        }
+    }
+
     void colorAlwaysGraph() {
         // Color the graph to indicate subsets, each of which
         // we can split into its own always block.
@@ -902,6 +1004,7 @@ protected:
         // must be kept together.
         SplitEdge::incrementStep();
         pruneDepsOnInputs();
+        pruneDepsOnLastUpdatedSignalsInAlwaysComb();
 
         // For any 'if' node whose deps have all been pruned
         // (meaning, its conditional expression only looks at primary
@@ -974,6 +1077,9 @@ protected:
         // Map each AstNodeIf to the set of colors (split always blocks)
         // it must participate in. Also find the whole set of colors.
         const IfColorVisitor ifColor{nodep};
+
+        UINFO(4, "Color " << ifColor.colors().size() << " in " << nodep << " " << nodep->fileline()
+                          << endl);
 
         if (ifColor.colors().size() > 1) {
             // Counting original always blocks rather than newly-split
