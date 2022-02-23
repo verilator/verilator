@@ -1163,7 +1163,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             case 'e': m_oCase = flag; break;
             //    f
             case 'g': m_oGate = flag; break;
-            //    h
+            case 'h': m_oSplitAlwComb = flag; break;
             case 'i': m_oInline = flag; break;
             //    j
             case 'k': m_oSubstConst = flag; break;
@@ -1787,6 +1787,7 @@ void V3Options::optimize(int level) {
     m_oReloop = flag;
     m_oReorder = flag;
     m_oSplit = flag;
+    m_oSplitAlwComb = flag;
     m_oSubst = flag;
     m_oSubstConst = flag;
     m_oTable = flag;

@@ -1027,7 +1027,7 @@ protected:
         // must be kept together.
         SplitEdge::incrementStep();
         pruneDepsOnInputs();
-        pruneDepsOnLastUpdatedSignalsInAlwaysComb();
+        if (v3Global.opt.oSplitAlwComb()) pruneDepsOnLastUpdatedSignalsInAlwaysComb();
 
         // For any 'if' node whose deps have all been pruned
         // (meaning, its conditional expression only looks at primary

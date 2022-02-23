@@ -357,6 +357,7 @@ private:
     bool        m_oReloop;      // main switch: -Ov: reform loops
     bool        m_oReorder;     // main switch: -Or: reorder assignments in blocks
     bool        m_oSplit;       // main switch: -Os: always assignment splitting
+    bool        m_oSplitAlwComb;// main switch: -Oh: always_comb assignment splitting
     bool        m_oSubst;       // main switch: -Ou: substitute expression temp values
     bool        m_oSubstConst;  // main switch: -Ok: final constant substitution
     bool        m_oTable;       // main switch: -Oa: lookup table creation
@@ -586,6 +587,7 @@ public:
     bool oReloop() const { return m_oReloop; }
     bool oReorder() const { return m_oReorder; }
     bool oSplit() const { return m_oSplit; }
+    bool oSplitAlwComb() const { return m_oSplitAlwComb; }
     bool oSubst() const { return m_oSubst; }
     bool oSubstConst() const { return m_oSubstConst; }
     bool oTable() const { return m_oTable; }
