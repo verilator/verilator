@@ -16,7 +16,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
+    file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 12);
 }
 
 execute(

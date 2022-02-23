@@ -47,12 +47,6 @@ module t (/*AUTOARG*/
       f_split_1 = m_din;
    end
 
-   reg [15:0] l_split_1, l_split_2;
-   always @ (posedge clk) begin
-      l_split_2 <= l_split_1;
-      l_split_1 <= l_split_2 | m_din;
-   end
-
    reg [15:0] z_split_1, z_split_2;
    always @ (posedge clk) begin
       z_split_1 <= 0;

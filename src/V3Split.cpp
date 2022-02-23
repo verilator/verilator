@@ -791,21 +791,36 @@ private:
 };
 
 class RemovePlaceholdersVisitor final : public VNVisitor {
-    std::unordered_set<AstNode*> m_removeSet;  // placeholders to be removed
-public:
-    explicit RemovePlaceholdersVisitor(AstNode* nodep) {
-        iterate(nodep);
-        for (AstNode* np : m_removeSet) {
-            np->unlinkFrBack();  // Without next
-            VL_DO_DANGLING(np->deleteTree(), np);
+    // MEMBERS
+    int m_emptyAlways{0};
+
+    // CONSTRUCTORS
+    RemovePlaceholdersVisitor() = default;
+    virtual ~RemovePlaceholdersVisitor() override = default;
+
+    // VISITORS
+    virtual void visit(AstSplitPlaceholder* nodep) override { pushDeletep(nodep->unlinkFrBack()); }
+    virtual void visit(AstNodeIf* nodep) override {
+        iterateChildren(nodep);
+        if (!nodep->ifsp() && !nodep->elsesp()) { pushDeletep(nodep->unlinkFrBack()); }
+    }
+    virtual void visit(AstAlways* nodep) override {
+        iterateChildren(nodep);
+        if (!nodep->bodysp()) {
+            pushDeletep(nodep->unlinkFrBack());
+            ++m_emptyAlways;
         }
     }
-    virtual ~RemovePlaceholdersVisitor() override = default;
-    virtual void visit(AstSplitPlaceholder* nodep) override { m_removeSet.insert(nodep); }
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
-private:
     VL_UNCOPYABLE(RemovePlaceholdersVisitor);
+
+public:
+    static int exec(AstNode* nodep) {
+        RemovePlaceholdersVisitor visitor;
+        visitor.iterate(nodep);
+        return visitor.m_emptyAlways;
+    }
 };
 
 class SplitVisitor final : public SplitReorderBaseVisitor {
@@ -832,7 +847,8 @@ public:
             for (AlwaysVec::iterator addme = it->second.begin(); addme != it->second.end();
                  ++addme) {
                 origp->addNextHere(*addme);
-                RemovePlaceholdersVisitor{*addme};
+                const int numRemoved = RemovePlaceholdersVisitor::exec(*addme);
+                m_statSplits -= numRemoved;
             }
             origp->unlinkFrBack();  // Without next
             VL_DO_DANGLING(origp->deleteTree(), origp);
@@ -944,7 +960,7 @@ protected:
             // Counting original always blocks rather than newly-split
             // always blocks makes it a little easier to use this stat to
             // check the result of the t_alw_split test:
-            ++m_statSplits;
+            m_statSplits += ifColor.colors().size() - 1;  // -1 for the original always
 
             // Visit through the original always block one more time,
             // and emit the split always blocks into m_replaceBlocks:
