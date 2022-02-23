@@ -254,14 +254,11 @@ protected:
     SplitPliVertex* m_pliVertexp;  // Element specifying PLI ordering
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
     bool m_inDly;  // Inside ASSIGNDLY
-    VDouble0 m_statSplits;  // Statistic tracking
 
     // CONSTRUCTORS
 public:
     SplitReorderBaseVisitor() { scoreboardClear(); }
-    virtual ~SplitReorderBaseVisitor() override {
-        V3Stats::addStat("Optimizations, Split always", m_statSplits);
-    }
+    virtual ~SplitReorderBaseVisitor() override = default;
 
     // METHODS
 protected:
@@ -820,6 +817,7 @@ private:
 
     // AstNodeIf* whose condition we're currently visiting
     const AstNode* m_curIfConditional = nullptr;
+    VDouble0 m_statSplits;  // Statistic tracking
 
     // CONSTRUCTORS
 public:
@@ -841,7 +839,9 @@ public:
         }
     }
 
-    virtual ~SplitVisitor() override = default;
+    virtual ~SplitVisitor() override {
+        V3Stats::addStat("Optimizations, Split always", m_statSplits);
+    }
 
     // METHODS
 protected:
