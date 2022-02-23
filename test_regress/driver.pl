@@ -2434,7 +2434,7 @@ sub file_grep {
     return if ($contents eq "_Already_Errored_");
     if ($contents !~ /$regexp/) {
         $self->error("File_grep: $filename: Regexp not found: $regexp\n");
-    } elsif ($expvalue && $expvalue ne $1) {
+    } elsif (defined($expvalue) && $expvalue ne $1) {
         $self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
     }
 }
