@@ -207,9 +207,9 @@ class SplitRVEdge final : public SplitEdge {
     const int m_refRevision;
 
 public:
-    SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, SplitNodeVertex* top)
+    SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int refRevesion)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL}
-        , m_refRevision{top->nodep()->user4()} {}
+        , m_refRevision{refRevesion} {}
     virtual ~SplitRVEdge() override = default;
     virtual bool followScoreboard() const override { return true; }
     virtual string dotColor() const override { return "green"; }
@@ -246,23 +246,24 @@ private:
     // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
     // Ast*::user3p             -> Statement SplitLogicVertex* (temporary only)
     // Ast*::user4              -> Current ordering number (reorderBlock usage)
-    // AstVarScope::user4       -> How many times this var is written (used only SplitVisitor)
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
     const VNUser4InUse m_inuser4;
 
 protected:
+    using LhsRevisions = std::unordered_map<const AstVarScope*, int>;
     // STATE
     string m_noReorderWhy;  // Reason we can't reorder
     std::vector<SplitLogicVertex*> m_stmtStackps;  // Current statements being tracked
     SplitPliVertex* m_pliVertexp;  // Element specifying PLI ordering
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
     bool m_inDly;  // Inside ASSIGNDLY
-    using LhsRevisions = std::unordered_map<const AstVarScope*, int>;
-    bool m_inPureCombo{false};  // in always_comb
-    // AstNodeIf* whose condition we're currently visiting
-    const AstNode* m_curIfConditional = nullptr;
+    // Revision increases when a variable is updated in always_comb
+    LhsRevisions m_lhsRevision;
+    // How many times a variable is updated in an always_comb
+    LhsRevisions m_lhsTotalUpdateCount;
+    bool m_inCombo = false;  // in always_comb
 
     // CONSTRUCTORS
 public:
@@ -277,6 +278,8 @@ protected:
         // VV*****  We reset user1p() and user2p on each block!!!
         m_inDly = false;
         m_graph.clear();
+        m_lhsRevision.clear();
+        m_lhsTotalUpdateCount.clear();
         m_stmtStackps.clear();
         m_pliVertexp = nullptr;
         m_noReorderWhy = "";
@@ -350,16 +353,16 @@ protected:
     // of what is before vs. after
 
     virtual void visit(AstActive* nodep) override {
-        m_inPureCombo = true;
+        m_inCombo = true;
         for (AstSenItem* itemp = nodep->sensesp()->sensesp(); itemp;
              itemp = VN_CAST(itemp->nextp(), SenItem)) {
             if (!itemp->isCombo()) {
-                m_inPureCombo = false;
+                m_inCombo = false;
                 break;
             }
         }
         iterateChildren(nodep);
-        m_inPureCombo = false;
+        m_inCombo = false;
     }
     virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
@@ -417,11 +420,15 @@ protected:
                     if (nodep->access().isWriteOrRW()) {
                         // Non-delay; need to maintain existing ordering
                         // with all consumers of the signal
-                        // edge can be ignored if referring varRef is the last assignment in
+                        // edge can be ignored only referring varRef is the last assignment in
                         // always_comb
-                        const int newRev
-                            = (!m_curIfConditional && m_inPureCombo) ? (vscp->user4() + 1) : -1;
-                        vscp->user4(newRev);
+                        int newRev = -1;
+                        if (m_inCombo) {
+                            newRev = ++m_lhsRevision[vscp];
+                            ++m_lhsTotalUpdateCount[vscp];
+                        } else {
+                            m_lhsRevision[vscp] = -1;
+                        }
                         UINFO(4, "     VARREFLV: " << nodep << " rev:" << newRev << endl);
                         for (SplitLogicVertex* ivxp : m_stmtStackps) {
                             new SplitLVEdge(&m_graph, vstdp, ivxp);
@@ -469,7 +476,11 @@ public:
     // METHODS
 protected:
     virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
-        for (SplitLogicVertex* vxp : m_stmtStackps) new SplitRVEdge(&m_graph, vxp, vstdp);
+        AstVarScope* const vscp = VN_CAST(vstdp->nodep(), VarScope);
+        UASSERT_OBJ(vscp, vstdp->nodep(), "RHS should be VarScope");
+        auto it = m_lhsRevision.find(vscp);
+        const int rev = it == m_lhsRevision.end() ? 0 : it->second;
+        for (SplitLogicVertex* vxp : m_stmtStackps) new SplitRVEdge(&m_graph, vxp, vstdp, rev);
     }
 
     void cleanupBlockGraph(AstNode* nodep) {
@@ -900,6 +911,8 @@ private:
     // at the same position as the originals:
     std::unordered_map<AstAlways*, AlwaysVec> m_replaceBlocks;
     VDouble0 m_statSplits;  // Statistic tracking
+    // AstNodeIf* whose condition we're currently visiting
+    const AstNode* m_curIfConditional = nullptr;
     // Written count for each variable
     SplitScanVarRefVisitor m_lhsCount;
 
@@ -932,12 +945,16 @@ public:
     // METHODS
 protected:
     virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
+        AstVarScope* const vscp = VN_CAST(vstdp->nodep(), VarScope);
+        UASSERT_OBJ(vscp, vstdp->nodep(), "RHS should be VarScope");
+        auto it = m_lhsRevision.find(vscp);
+        const int rev = it == m_lhsRevision.end() ? 0 : it->second;
         // Each 'if' depends on rvalues in its own conditional ONLY,
         // not rvalues in the if/else bodies.
         for (auto it = m_stmtStackps.cbegin(); it != m_stmtStackps.cend(); ++it) {
             const AstNodeIf* const ifNodep = VN_CAST((*it)->nodep(), NodeIf);
             if (ifNodep && (m_curIfConditional != ifNodep)) continue;
-            new SplitRVEdge(&m_graph, *it, vstdp);
+            new SplitRVEdge(&m_graph, *it, vstdp, rev);
         }
     }
 
@@ -975,16 +992,22 @@ protected:
                 UASSERT(varScopeVertexp, "top must be SplitNodeVertex");
                 const AstVarScope* const vscp = VN_CAST(varScopeVertexp->nodep(), VarScope);
                 UASSERT_OBJ(vscp, varScopeVertexp->nodep(), "must be varscope");
-                const int lhsRev = vscp->user4();
+                auto it = m_lhsRevision.find(vscp);
+                const int lhsRev = it == m_lhsRevision.end() ? 0 : it->second;
+                it = m_lhsTotalUpdateCount.find(vscp);
+                const int lhsRefTotal = it == m_lhsTotalUpdateCount.end() ? 0 : it->second;
                 if (vscp->varp()->isSignal() && lhsRev >= 0 && !vscp->user2p()) {
                     // vscp is assigned by Nondelayed (i.e. blocking) in always_comb
                     UASSERT_OBJ(lhsRev >= rvEdgep->refRevision(), vscp,
                                 lhsRev << " " << rvEdgep->refRevision());
                     // If this RVEdge refers the last nondelayed assignment, vscp can be in a
                     // different always_comb
-                    if (lhsRev == rvEdgep->refRevision()) {
-                        UASSERT(rvEdgep->refRevision() <= lhsRev, rvEdgep->refRevision()
-                                                                      << " " << lhsRev);
+                    if (lhsRev == 0) {  // rhs is not written in this always_comb
+                        UASSERT(rvEdgep->refRevision() == 0, rvEdgep->refRevision());
+                        rvEdgep->setIgnoreThisStep();
+                    } else if (lhsRev == rvEdgep->refRevision()
+                               && lhsRefTotal == m_lhsCount.numLhsCount(vscp)) {
+                        // rhs is written only in this always_comb
                         rvEdgep->setIgnoreThisStep();
                     }
                 }
@@ -1098,8 +1121,23 @@ protected:
         m_curIfConditional = nodep;
         iterateAndNextNull(nodep->condp());
         m_curIfConditional = nullptr;
+        std::unordered_map<const AstVarScope*, int> lhsRevision = m_lhsRevision;
+
         scanBlock(nodep->ifsp());
+        m_lhsRevision.swap(lhsRevision);
+
         scanBlock(nodep->elsesp());
+        // Let's merge counters in then-clause and else-clause
+        for (auto&& vscpVer : lhsRevision) {
+            const auto it = m_lhsRevision.find(vscpVer.first);
+            if (it == m_lhsRevision.end()) {
+                m_lhsRevision.insert(vscpVer);
+            } else {
+                UASSERT_OBJ((it->second >= 0) == (vscpVer.second >= 0), vscpVer.first,
+                            it->second << " " << vscpVer.second);
+                it->second = std::max(vscpVer.second, it->second);
+            }
+        }
     }
 
 private:
