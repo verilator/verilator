@@ -17,12 +17,6 @@ module t (/*AUTOARG*/
    // We expect none of these blocks to split.
    // Blocks that can split should go in t_alw_split.v instead.
 
-   reg [15:0] b_split_1, b_split_2;
-   always @ (/*AS*/m_din) begin
-      b_split_1 = m_din;
-      b_split_2 = b_split_1;
-   end
-
    reg [15:0] c_split_1, c_split_2;
    always @ (/*AS*/m_din) begin
       c_split_1 = m_din;
@@ -60,8 +54,7 @@ module t (/*AUTOARG*/
       end else begin
          m_split_2 <= m_din;
       end
-  end
-
+   end
 
    reg [15:0] z_split_1, z_split_2;
    always @ (posedge clk) begin
@@ -110,7 +103,6 @@ module t (/*AUTOARG*/
       end
       if (cyc==4) begin
          m_din <= 16'he11e;
-         if (!(b_split_1==16'hfeed && b_split_2==16'hfeed)) $stop;
          if (!(c_split_1==16'h0112 && c_split_2==16'hfeed)) $stop;
          if (!(e_split_1==16'hfeed && e_split_2==16'hfeed)) $stop;
          if (!(f_split_1==16'hfeed && f_split_2==16'hfeed)) $stop;
@@ -119,7 +111,6 @@ module t (/*AUTOARG*/
       end
       if (cyc==5) begin
          m_din <= 16'he22e;
-         if (!(b_split_1==16'he11e && b_split_2==16'he11e)) $stop;
          if (!(c_split_1==16'h1ee1 && c_split_2==16'he11e)) $stop;
          // Two valid orderings, as we don't know which posedge clk gets evaled first
          if (!(e_split_1==16'hfeed && e_split_2==16'hfeed) && !(e_split_1==16'he11e && e_split_2==16'he11e)) $stop;
@@ -129,7 +120,6 @@ module t (/*AUTOARG*/
       end
       if (cyc==6) begin
          m_din <= 16'he33e;
-         if (!(b_split_1==16'he22e && b_split_2==16'he22e)) $stop;
          if (!(c_split_1==16'h1dd1 && c_split_2==16'he22e)) $stop;
          // Two valid orderings, as we don't know which posedge clk gets evaled first
          if (!(e_split_1==16'he11e && e_split_2==16'he11e) && !(e_split_1==16'he22e && e_split_2==16'he22e)) $stop;

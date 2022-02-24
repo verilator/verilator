@@ -23,6 +23,12 @@ module t (/*AUTOARG*/
       a_split_2 = m_din;
    end
 
+   reg [15:0] b_split_1, b_split_2;
+   always @ (/*AS*/m_din) begin
+      b_split_1 = m_din;
+      b_split_2 = b_split_1;
+   end
+
    reg [15:0] d_split_1, d_split_2;
    always @ (posedge clk) begin
       d_split_1 <= m_din;
@@ -69,18 +75,21 @@ module t (/*AUTOARG*/
 	    m_din <= 16'he11e;
 	    //$write(" A %x %x\n", a_split_1, a_split_2);
 	    if (!(a_split_1==16'hfeed && a_split_2==16'hfeed)) $stop;
+         if (!(b_split_1==16'hfeed && b_split_2==16'hfeed)) $stop;
 	    if (!(d_split_1==16'h0112 && d_split_2==16'h0112)) $stop;
             if (!(h_split_1==16'hfeed && h_split_2==16'h0112)) $stop;
 	 end
 	 if (cyc==5) begin
 	    m_din <= 16'he22e;
 	    if (!(a_split_1==16'he11e && a_split_2==16'he11e)) $stop;
+        if (!(b_split_1==16'he11e && b_split_2==16'he11e)) $stop;
 	    if (!(d_split_1==16'h0112 && d_split_2==16'h0112)) $stop;
             if (!(h_split_1==16'hfeed && h_split_2==16'h0112)) $stop;
 	 end
 	 if (cyc==6) begin
 	    m_din <= 16'he33e;
 	    if (!(a_split_1==16'he22e && a_split_2==16'he22e)) $stop;
+         if (!(b_split_1==16'he22e && b_split_2==16'he22e)) $stop;
 	    if (!(d_split_1==16'h1ee1 && d_split_2==16'h0112)) $stop;
             if (!(h_split_1==16'he11e && h_split_2==16'h1ee1)) $stop;
 	 end
