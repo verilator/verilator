@@ -1,5 +1,5 @@
 $date
-	Sun May  3 21:53:46 2020
+	Wed Feb 23 00:02:30 2022
 
 $end
 $version
@@ -11,32 +11,32 @@ $end
 $scope module top $end
 $var wire 1 ! clk $end
 $scope module t $end
-$var parameter 8 " P $end
+$var parameter 8 " P [0:7] $end
 $var wire 1 ! clk $end
-$var int 32 # cyc $end
-$var parameter 8 $ Q $end
-$var logic 1 % v_a $end
-$var logic 2 & v_b $end
-$var logic 8 ' v_c $end
-$var logic 9 ( v_d $end
-$var logic 16 ) v_e $end
-$var logic 17 * v_f $end
-$var logic 32 + v_g $end
-$var logic 33 , v_h $end
-$var logic 64 - v_i $end
-$var logic 65 . v_j $end
-$var logic 128 / v_k $end
-$var logic 129 0 v_l $end
-$var logic 256 1 v_m $end
-$var logic 257 2 v_n $end
-$var logic 512 3 v_o $end
-$var logic 3 4 v_p $end
-$var logic 15 5 v_q $end
-$var logic 31 6 v_r $end
-$var logic 63 7 v_s $end
-$var logic 127 8 v_t $end
-$var logic 255 9 v_u $end
-$var logic 511 : v_v $end
+$var int 32 # cyc [31:0] $end
+$var parameter 8 $ Q [0:7] $end
+$var logic 1 % v_a [0:0] $end
+$var logic 2 & v_b [0:1] $end
+$var logic 8 ' v_c [0:7] $end
+$var logic 9 ( v_d [0:8] $end
+$var logic 16 ) v_e [0:15] $end
+$var logic 17 * v_f [0:16] $end
+$var logic 32 + v_g [0:31] $end
+$var logic 33 , v_h [0:32] $end
+$var logic 64 - v_i [0:63] $end
+$var logic 65 . v_j [0:64] $end
+$var logic 128 / v_k [0:127] $end
+$var logic 129 0 v_l [0:128] $end
+$var logic 256 1 v_m [0:255] $end
+$var logic 257 2 v_n [0:256] $end
+$var logic 512 3 v_o [0:511] $end
+$var logic 3 4 v_p [-1:1] $end
+$var logic 15 5 v_q [-7:7] $end
+$var logic 31 6 v_r [-15:15] $end
+$var logic 63 7 v_s [-31:31] $end
+$var logic 127 8 v_t [-63:63] $end
+$var logic 255 9 v_u [-127:127] $end
+$var logic 511 : v_v [-255:255] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
