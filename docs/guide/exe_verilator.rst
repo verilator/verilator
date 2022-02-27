@@ -884,7 +884,7 @@ Summary:
 
    Using DPI imports/exports is allowed and generally relatively safe in
    terms of information disclosed, which is limited to the DPI function
-   prototyptes.  Use of the VPI is not recommended as many design details
+   prototypes.  Use of the VPI is not recommended as many design details
    may be exposed, and an INSECURE warning will be issued.
 
 .. option:: --protect-lib <name>
@@ -1514,7 +1514,7 @@ The grammar of configuration commands is as follows:
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
    Indicates that the signal is used as clock or not. This information is
-   used by Verilator to mark the signal and any derrived signals as
+   used by Verilator to mark the signal and any derived signals as
    clocker.  See :vlopt:`--clk`.
 
    Same as :option:`/*verilator&32;clocker*/` metacomment.
