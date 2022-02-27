@@ -792,7 +792,7 @@ private:
 
 class RemovePlaceholdersVisitor final : public VNVisitor {
     // MEMBERS
-    int m_emptyAlways{0};
+    int m_emptyAlways = 0;
 
     // CONSTRUCTORS
     RemovePlaceholdersVisitor() = default;
