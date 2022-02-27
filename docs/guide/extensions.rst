@@ -185,7 +185,7 @@ or "`ifdef`"'s may break other tools.
 .. option:: /*verilator&32;no_clocker*/
 
    Specifies that the signal is used as clock or not. This information is
-   used by Verilator to mark the signal and any derrived signals as
+   used by Verilator to mark the signal and any derived signals as
    clocker.  See :vlopt:`--clk`.
 
    Same as :option:`clocker` and :option:`no_clocker` in configuration

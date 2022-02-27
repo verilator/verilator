@@ -18,4 +18,4 @@ Verilated_heavy.h
 
 Option `--cdc`
   The experimental `--cdc` option is believed to be generally unused and is
-  planned for removeal no sooner than January 2023.
+  planned for removal no sooner than January 2023.

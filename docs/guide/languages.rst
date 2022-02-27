@@ -136,7 +136,7 @@ ___05F (5F is the hex code of an underscore.)
 Bind
 ----
 
-sVerilator only supports bind to a target module name, not to an
+Verilator only supports bind to a target module name, not to an
 instance path.
 
 
