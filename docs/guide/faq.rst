@@ -37,8 +37,8 @@ Does Verilator run under Windows?
 
 Yes, ideally run Ubuntu under Windows Subsystem for Linux (WSL2).
 Alternatively use Cygwin, though this tends to be slower and is not
-regulary tested.  Verilated output also compiles under Microsoft Visual
-C++, but this is also not regulary tested.
+regularly tested.  Verilated output also compiles under Microsoft Visual
+C++, but this is also not regularly tested.
 
 
 Can you provide binaries?
