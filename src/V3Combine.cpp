@@ -102,9 +102,7 @@ private:
             "Don't know how to combine functions that are referenced via AstAddrOfCFunc");
     }
     // LCOV_EXCL_END
-    // Speed things up
-    virtual void visit(AstNodeAssign*) override {}
-    virtual void visit(AstNodeMath*) override {}
+
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
