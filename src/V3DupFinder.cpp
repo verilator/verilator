@@ -30,6 +30,17 @@
 //######################################################################
 // V3DupFinder class functions
 
+V3DupFinder::size_type V3DupFinder::erase(AstNode* nodep) {
+    const auto& er = equal_range(m_hasher(nodep));
+    for (iterator it = er.first; it != er.second; ++it) {
+        if (nodep == it->second) {
+            erase(it);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 V3DupFinder::iterator V3DupFinder::findDuplicate(AstNode* nodep, V3DupFinderUserSame* checkp) {
     const auto& er = equal_range(m_hasher(nodep));
     for (iterator it = er.first; it != er.second; ++it) {
@@ -37,7 +48,7 @@ V3DupFinder::iterator V3DupFinder::findDuplicate(AstNode* nodep, V3DupFinderUser
         if (nodep == node2p) continue;  // Same node is not a duplicate
         if (checkp && !checkp->isSame(nodep, node2p)) continue;  // User says it is not a duplicate
         if (!nodep->sameTree(node2p)) continue;  // Not the same trees
-        // Found duplicate!
+        // Found duplicate
         return it;
     }
     return end();

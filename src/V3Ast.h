@@ -2877,6 +2877,7 @@ public:
     virtual bool isPure() const override;
     virtual bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
+    void funcp(AstCFunc* funcp) { m_funcp = funcp; }
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     // op1p reserved for AstCMethodCall

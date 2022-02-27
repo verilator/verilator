@@ -8956,7 +8956,7 @@ public:
     AstScope* scopep() const { return m_scopep; }
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     string rtnTypeVoid() const { return ((m_rtnType == "") ? "void" : m_rtnType); }
-    bool dontCombine() const { return m_dontCombine || isTrace(); }
+    bool dontCombine() const { return m_dontCombine || isTrace() || entryPoint(); }
     void dontCombine(bool flag) { m_dontCombine = flag; }
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }

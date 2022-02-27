@@ -27,193 +27,203 @@
 #include "V3DupFinder.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+#include "V3AstUserAllocator.h"
 
-#include <algorithm>
-#include <map>
+#include <list>
 #include <vector>
 
-//######################################################################
-
-class CombBaseVisitor VL_NOT_FINAL : public VNVisitor {
-protected:
-    // STATE
-
-    // METHODS
-    virtual ~CombBaseVisitor() override = default;
-    VL_DEBUG_FUNC;  // Declare debug()
-};
-
-//######################################################################
-// Combine replacement function
-
-class CombCallVisitor final : CombBaseVisitor {
-    // Find all CCALLS of each CFUNC, so that we can later rename them
-private:
+class CombineVisitor final : VNVisitor {
     // NODE STATE
-    std::multimap<AstCFunc*, AstCCall*> m_callMmap;  // Associative array of {function}{call}
-    // METHODS
-public:
-    void replaceFunc(AstCFunc* oldfuncp, AstCFunc* newfuncp) {
-        if (oldfuncp == newfuncp) return;
-        if (newfuncp) {
-            UINFO(4, "   Replace " << oldfuncp << " -WITH-> " << newfuncp << endl);
-        } else {
-            UINFO(4, "   Remove " << oldfuncp << endl);
-        }
-        // Note: m_callMmap modified in loop, so not using equal_range.
-        for (auto it = m_callMmap.find(oldfuncp); it != m_callMmap.end();
-             it = m_callMmap.find(oldfuncp)) {
-            AstCCall* const oldp = it->second;
-            UINFO(4, "     Called " << oldp << endl);
-            UASSERT_OBJ(oldp->funcp() == oldfuncp, oldp,
-                        "Call list broken, points to call w/different func");
-            if (newfuncp) {
-                // Replace call to oldfuncp with call to newfuncp
-                AstNode* const argsp
-                    = oldp->argsp() ? oldp->argsp()->unlinkFrBackWithNext() : nullptr;
-                AstCCall* const newp = new AstCCall(oldp->fileline(), newfuncp, argsp);
-                newp->selfPointer(oldp->selfPointer());
-                newp->argTypes(oldp->argTypes());
-                addCall(newp);  // Fix the table, in case the newfuncp itself gets replaced
-                oldp->replaceWith(newp);
-            } else {
-                // Just deleting empty function
-                oldp->unlinkFrBack();
-            }
-            VL_DO_DANGLING(pushDeletep(oldp), oldp);
-            m_callMmap.erase(it);  // Fix the table, This call has been replaced
-        }
-    }
-    // METHODS
-    void addCall(AstCCall* nodep) { m_callMmap.emplace(nodep->funcp(), nodep); }
+    // AstNodeModule::user1()   List of AstCFuncs in this module (via m_cfuncs)
+    // AstCFunc::user1()        List of AstCCalls to this function (via m_callSites)
+    // AstCFunc::user2()        bool: Already replaced (in 'process')
+    // AstCFunc::user3()        bool: Marks functions earlier in iteration order (in 'combinePass')
+    // *::user4()               Used by V3Hasher
+    const VNUser1InUse m_user1InUse;
 
-private:
-    // VISITORS
-    virtual void visit(AstCCall* nodep) override {
-        if (nodep->funcp()->dontCombine()) return;
-        addCall(nodep);
-    }
-    // LCOV_EXCL_START
-    virtual void visit(AstAddrOfCFunc* nodep) override {
-        // We cannot yet handle references via AstAddrOfCFunc, but currently those are
-        // only used in tracing functions, which are not combined. Blow up in case this changes.
-        if (nodep->funcp()->dontCombine()) return;
-        nodep->v3fatalSrc(
-            "Don't know how to combine functions that are referenced via AstAddrOfCFunc");
-    }
-    // LCOV_EXCL_END
-
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    CombCallVisitor() = default;
-    virtual ~CombCallVisitor() override = default;
-    void main(AstNetlist* nodep) { iterate(nodep); }
-};
-
-//######################################################################
-// Combine state, as a visitor of each AstNode
-
-class CombineVisitor final : CombBaseVisitor {
-private:
-    // NODE STATE
-    // Entire netlist:
-    const VNUser3InUse m_user3InUse;  // Marks replaced AstCFuncs
-    //  VNUser4InUse     part of V3Hasher in V3DupFinder
+    // TYPES
+    using funcit_t = std::list<AstCFunc*>::iterator;
+    struct CFuncs {
+        std::list<AstCFunc*> m_fast;
+        std::list<AstCFunc*> m_slow;
+    };
 
     // STATE
+    AstUser1Allocator<AstNodeModule, CFuncs> m_cfuncs;  // AstCFuncs under module
+    AstUser1Allocator<AstCFunc, std::vector<AstCCall*>> m_callSites;  // Call sites of the AstCFunc
+    AstNodeModule* m_modp = nullptr;  // Current module
+    const V3Hasher m_hasher;  // For hashing
     VDouble0 m_cfuncsCombined;  // Statistic tracking
-    CombCallVisitor m_call;  // Tracking of function call users
-    V3DupFinder m_dupFinder;  // Duplicate finder for CFuncs in module
 
     // METHODS
-    void walkEmptyFuncs() {
-        for (const auto& itr : m_dupFinder) {
-            AstCFunc* const oldfuncp = VN_AS(itr.second, CFunc);
-            UASSERT_OBJ(oldfuncp, itr.second, "Not a CFunc in hash");
-            if (!oldfuncp->emptyBody()) continue;
-            UASSERT_OBJ(!oldfuncp->dontCombine(), oldfuncp,
-                        "dontCombine function should not be in hash");
+    VL_DEBUG_FUNC;  // Declare debug()
 
-            // Remove calls to empty function
-            UASSERT_OBJ(!oldfuncp->user3(), oldfuncp, "Should not be processed yet");
-            UINFO(5, "     Drop empty CFunc " << itr.first << " " << oldfuncp << endl);
-            oldfuncp->user3SetOnce();  // Mark replaced
-            m_call.replaceFunc(oldfuncp, nullptr);
-            oldfuncp->unlinkFrBack();
-            VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
+    void removeEmptyFunctions(std::list<AstCFunc*>& funcps) {
+        for (funcit_t it = funcps.begin(), nit; it != funcps.end(); it = nit) {
+            AstCFunc* const funcp = *it;
+            nit = it;
+            ++nit;
+
+            if (funcp->emptyBody()) {
+                // Delete call sites
+                for (AstCCall* const callp : m_callSites(funcp)) {
+                    VL_DO_DANGLING(callp->unlinkFrBack()->deleteTree(), callp);
+                }
+                m_callSites(funcp).clear();
+                // Remove from list
+                funcps.erase(it);
+                // Delete function
+                VL_DO_DANGLING(funcp->unlinkFrBack()->deleteTree(), funcp);
+            }
         }
     }
 
-    void walkDupFuncs() {
-        // Do non-slow first as then favors naming functions based on fast name
-        for (const bool slow : {false, true}) {
-            for (auto newIt = m_dupFinder.begin(); newIt != m_dupFinder.end(); ++newIt) {
-                AstCFunc* const newfuncp = VN_AS(newIt->second, CFunc);
-                UASSERT_OBJ(newfuncp, newIt->second, "Not a CFunc in hash");
-                if (newfuncp->user3()) continue;  // Already replaced
-                if (newfuncp->slow() != slow) continue;
-                auto oldIt = newIt;
-                ++oldIt;  // Skip over current position
-                for (; oldIt != m_dupFinder.end(); ++oldIt) {
-                    AstCFunc* const oldfuncp = VN_AS(oldIt->second, CFunc);
-                    UASSERT_OBJ(oldfuncp, oldIt->second, "Not a CFunc in hash");
-                    UASSERT_OBJ(newfuncp != oldfuncp, newfuncp,
-                                "Same function hashed multiple times");
-                    if (newIt->first != oldIt->first) break;  // Iterate over same hashes only
-                    if (oldfuncp->user3()) continue;  // Already replaced
-                    if (!newfuncp->sameTree(oldfuncp)) continue;  // Different functions
+    // One pass of combining. Returns true if did replacement.
+    bool combinePass(std::list<AstCFunc*>& funcps, V3DupFinder& dupFinder) {
+        const VNUser3InUse user3InUse;
 
-                    // Replace calls to oldfuncp with calls to newfuncp
-                    UINFO(5, "     Replace CFunc " << newIt->first << " " << newfuncp << endl);
-                    UINFO(5, "              with " << oldIt->first << " " << oldfuncp << endl);
-                    ++m_cfuncsCombined;
-                    oldfuncp->user3SetOnce();  // Mark replaced
-                    m_call.replaceFunc(oldfuncp, newfuncp);
-                    oldfuncp->unlinkFrBack();
-                    // Replacement may promote a slow routine to fast path
-                    if (!oldfuncp->slow()) newfuncp->slow(false);
-                    VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
+        bool replaced = false;
+
+        // Replace all identical functions with the first function in the list
+        for (funcit_t it = funcps.begin(), nit; it != funcps.end(); it = nit) {
+            AstCFunc* const funcp = *it;
+            nit = it;
+            ++nit;
+
+            // Remove functions already replaced in the previous iteration
+            if (funcp->user2()) {
+                funcps.erase(it);
+                VL_DO_DANGLING(funcp->unlinkFrBack()->deleteTree(), funcp);
+                continue;
+            }
+
+            while (true) {
+                auto dit = dupFinder.findDuplicate(funcp);
+                if (dit == dupFinder.end()) break;
+
+                AstCFunc* oldp = VN_AS(dit->second, CFunc);
+                AstCFunc* newp = funcp;
+                UASSERT_OBJ(!oldp->user2(), oldp, "Should have been removed from dupFinder");
+
+                // Swap them, if the duplicate is earlier in the list of functions. This is
+                // necessary because replacing a call site in a later function might have made that
+                // function equivalent to an earlier function, but we want the first equivalent
+                // function in the list to be the canonical one.
+                if (oldp->user3()) std::swap(oldp, newp);
+
+                // Something is being replaced
+                UINFO(9, "Replacing " << oldp << endl);
+                UINFO(9, "     with " << newp << endl);
+                ++m_cfuncsCombined;
+                replaced = true;
+
+                // Mark as replaced
+                oldp->user2(true);
+
+                // Redirect the calls
+                for (AstCCall* const callp : m_callSites(oldp)) {
+                    // For sanity check only
+                    const V3Hash oldHash = m_hasher(callp);
+
+                    // Redirect the call
+                    callp->funcp(newp);
+
+                    // When redirecting a call to an equivalent function, we do not need to re-hash
+                    // the caller, because the hash of the two calls must be the same, and hence
+                    // the hash of the caller should not change.
+                    UASSERT_OBJ(oldHash == m_hasher.rehash(callp), callp, "Hash changed");
                 }
+
+                // Erase the replaced duplicate
+                UASSERT_OBJ(dupFinder.erase(oldp) == 1, oldp, "Replaced node not in dupFinder");
+
+                // If we just replaced the function we are iterating (because there was an
+                // equivalent earlier in the list), then move on, as this is on longer a candidate
+                if (oldp == funcp) break;
+            }
+
+            // Mark as function earlier in list of functions.
+            funcp->user3(true);
+        }
+
+        return replaced;
+    }
+
+    void process(AstNetlist* netlistp) {
+        // First, remove empty functions. We need to do this separately, because removing
+        // calls can change the hashes of the callers.
+        for (AstNodeModule* modulep = netlistp->modulesp(); modulep;
+             modulep = VN_AS(modulep->nextp(), NodeModule)) {
+            removeEmptyFunctions(m_cfuncs(modulep).m_fast);
+            removeEmptyFunctions(m_cfuncs(modulep).m_slow);
+        }
+
+        // Combine functions within each module
+        for (AstNodeModule* modulep = netlistp->modulesp(); modulep;
+             modulep = VN_AS(modulep->nextp(), NodeModule)) {
+            // Put fast functions first, so they are preferred over slow functions
+            auto funcps = std::move(m_cfuncs(modulep).m_fast);
+            funcps.splice(funcps.end(), m_cfuncs(modulep).m_slow);
+
+            V3DupFinder dupFinder{m_hasher};
+
+            // First, hash all functions
+            for (AstCFunc* const funcp : funcps) dupFinder.insert(funcp);
+
+            // Iterate to fixed point
+            {
+                const VNUser2InUse user2InUse;
+                while (combinePass(funcps, dupFinder)) {}
             }
         }
     }
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) override {
-        m_call.main(nodep);  // Track all call sites of each function
-        iterateChildren(nodep);
+        // Gather functions and references
+        iterateChildrenConst(nodep);
+        // Combine functions
+        process(nodep);
     }
     virtual void visit(AstNodeModule* nodep) override {
-        UINFO(4, " MOD   " << nodep << endl);
-        m_dupFinder.clear();
-        // Compute hash of all CFuncs in the module
-        iterateChildren(nodep);
-        if (debug() >= 9) m_dupFinder.dumpFilePrefixed("combine");
-        // Walk the hashes removing empty functions
-        walkEmptyFuncs();
-        // Walk the hashes looking for duplicate functions
-        walkDupFuncs();
+        UASSERT_OBJ(!m_modp, nodep, "Should not nest");
+        m_modp = nodep;
+        iterateChildrenConst(nodep);
+        m_modp = nullptr;
     }
     virtual void visit(AstCFunc* nodep) override {
+        iterateChildrenConst(nodep);
         if (nodep->dontCombine()) return;
-        // Hash the entire function
-        m_dupFinder.insert(nodep);
+        auto& coll = nodep->slow() ? m_cfuncs(m_modp).m_slow : m_cfuncs(m_modp).m_fast;
+        coll.emplace_back(nodep);
+    }
+    virtual void visit(AstCCall* nodep) override {
+        iterateChildrenConst(nodep);
+        AstCFunc* const funcp = nodep->funcp();
+        if (funcp->dontCombine()) return;
+        m_callSites(funcp).emplace_back(nodep);
+    }
+
+    virtual void visit(AstAddrOfCFunc* nodep) override {
+        iterateChildrenConst(nodep);
+        if (nodep->funcp()->dontCombine()) return;
+        // LCOV_EXCL_START
+        // We cannot yet handle references via AstAddrOfCFunc, but currently those are
+        // only used in tracing functions, which are not combined. Blow up in case this changes.
+        nodep->v3fatalSrc(
+            "Don't know how to combine functions that are referenced via AstAddrOfCFunc");
+        // LCOV_EXCL_END
     }
 
     //--------------------
-    // Default: Just iterate
-    virtual void visit(AstVar*) override {}  // Accelerate
-    virtual void visit(AstNodeStmt* nodep) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
-public:
     // CONSTRUCTORS
     explicit CombineVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~CombineVisitor() override {
-        V3Stats::addStat("Optimizations, Combined CFuncs", m_cfuncsCombined);
-    }
+    ~CombineVisitor() { V3Stats::addStat("Optimizations, Combined CFuncs", m_cfuncsCombined); }
+
+public:
+    static void apply(AstNetlist* netlistp) { CombineVisitor{netlistp}; }
 };
 
 //######################################################################
@@ -221,6 +231,6 @@ public:
 
 void V3Combine::combineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CombineVisitor{nodep}; }  // Destruct before checking
+    CombineVisitor::apply(nodep);
     V3Global::dumpCheckGlobalTree("combine", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

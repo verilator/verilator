@@ -28,6 +28,7 @@
 #include "V3Hasher.h"
 
 #include <map>
+#include <memory>
 
 //============================================================================
 
@@ -43,12 +44,20 @@ class V3DupFinder final : private std::multimap<V3Hash, AstNode*> {
     using Super = std::multimap<V3Hash, AstNode*>;
 
     // MEMBERS
-    const V3Hasher m_hasher;
+    const V3Hasher* const m_hasherp;  // Pointer to owned hasher
+    const V3Hasher& m_hasher;  // Reference to hasher
 
 public:
     // CONSTRUCTORS
-    V3DupFinder(){};
-    ~V3DupFinder() = default;
+    V3DupFinder()
+        : m_hasherp{new V3Hasher}
+        , m_hasher{*m_hasherp} {}
+    V3DupFinder(const V3Hasher& hasher)
+        : m_hasherp{nullptr}
+        , m_hasher{hasher} {}
+    ~V3DupFinder() {
+        if (m_hasherp) delete m_hasherp;
+    }
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -63,9 +72,13 @@ public:
     using Super::end;
     using Super::erase;
     using Super::iterator;
+    using Super::size_type;
 
     // Insert node into data structure
     iterator insert(AstNode* nodep) { return emplace(m_hasher(nodep), nodep); }
+
+    // Erase node from data structure
+    size_type erase(AstNode* nodep);
 
     // Return duplicate, if one was inserted, with optional user check for sameness
     iterator findDuplicate(AstNode* nodep, V3DupFinderUserSame* checkp = nullptr);

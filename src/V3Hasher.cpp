@@ -516,6 +516,12 @@ V3Hash V3Hasher::operator()(AstNode* nodep) const {
     return V3Hash(nodep->user4());
 }
 
+V3Hash V3Hasher::rehash(AstNode* nodep) const {
+    nodep->user4(0);
+    HasherVisitor{nodep};
+    return V3Hash(nodep->user4());
+}
+
 V3Hash V3Hasher::uncachedHash(const AstNode* nodep) {
     const HasherVisitor visitor{nodep, HasherVisitor::Uncached{}};
     return visitor.finalHash();
