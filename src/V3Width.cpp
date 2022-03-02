@@ -6299,8 +6299,19 @@ private:
         const bool fromNumericable = VN_IS(fromBaseDtp, BasicDType)
                                      || VN_IS(fromBaseDtp, EnumDType)
                                      || VN_IS(fromBaseDtp, NodeUOrStructDType);
+
+        const AstNodeDType* toBaseDtp = toDtp;
+        while (const AstPackArrayDType* const packp = VN_CAST(toBaseDtp, PackArrayDType)) {
+            toBaseDtp = packp->subDTypep();
+            while (const AstRefDType* const refp = VN_CAST(toBaseDtp, RefDType)) {
+                toBaseDtp = refp->refDTypep();
+            }
+        }
+        const bool toNumericable = VN_IS(toBaseDtp, BasicDType)
+                                     || VN_IS(toBaseDtp, EnumDType)
+                                     || VN_IS(toBaseDtp, NodeUOrStructDType);
         // UNSUP unpacked struct/unions (treated like BasicDType)
-        if (VN_IS(toDtp, BasicDType) || VN_IS(toDtp, NodeUOrStructDType)) {
+        if (toNumericable) {
             if (fromNumericable) return COMPATIBLE;
         } else if (VN_IS(toDtp, EnumDType)) {
             if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp)) return ENUM_IMPLICIT;
