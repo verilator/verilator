@@ -86,6 +86,7 @@ class VerilatedCovContext;
 class VerilatedEvalMsgQueue;
 class VerilatedFst;
 class VerilatedFstC;
+class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
 class VerilatedVar;

@@ -18,6 +18,7 @@ Verilator 4.219 devel
 * Suppress WIDTH warning on negate using carry bit (#3295). [Peter Monsson]
 * Fix skipping public enum values with four-state values (#3303).
 * Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
+* Fix compile error with --trace-fst --sc (#3332). [leavinel]
 
 
 Verilator 4.218 2022-01-17
