@@ -157,7 +157,7 @@ The Verilated executable may produce the following:
    * - profile.vlt
      - -profile data file for :ref:`Thread PGO`
    * - profile_threads.dat
-     - -profile-threads data file for :command:`verilator_gnatt`
+     - -profile-threads data file for :command:`verilator_gantt`
 
 Verilator_gantt may produce the following:
 

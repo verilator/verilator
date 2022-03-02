@@ -447,7 +447,7 @@ List Of Warnings
               p0();
          endmodule
 
-   Other tools with similar warnings: Veriable's forbid_defparam_rule.
+   Other tools with similar warnings: Verible's forbid_defparam_rule.
 
 
 .. option:: DEPRECATED
@@ -1217,7 +1217,7 @@ List Of Warnings
    used to cause some important action at a later time, it might be an
    important difference.
 
-   Some possible work arounds:
+   Some possible workarounds:
 
    * Move the delayed statement into the C++ wrapper file, where the
      stimulus and clock generation can be done in C++.

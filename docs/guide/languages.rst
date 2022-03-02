@@ -340,7 +340,7 @@ Force statement
 ---------------
 
 Verilator supports the procedural `force` (and corresponding `release`)
-statement. The behaviour of the `force` statement however does not entirely
+statement. The behavior of the `force` statement however does not entirely
 comply with the IEEE 1800 SystemVerilog standard. According to the standard,
 when a procedural statement of the form `force a = b;` is executed, the
 simulation should behave as if from that point onwards, a continuous
@@ -350,7 +350,7 @@ More specifically: the value of `a` should be updated, whenever the value of
 Verilator instead evaluates the current value of `b` at the time the `force`
 statement is executed, and forces `a` to that value, without updating it
 until a new `force` or `release` statement is encountered that applies to
-`a`. This non-standard behaviour is nevertheless consistent with some other
+`a`. This non-standard behavior is nevertheless consistent with some other
 simulators.
 
 

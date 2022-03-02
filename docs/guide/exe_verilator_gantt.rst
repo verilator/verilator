@@ -13,7 +13,7 @@ For an overview of use of verilator_gantt, see :ref:`Profiling`.
 Gantt Chart VCD
 ---------------
 
-Verilated_gnatt creates a value change dump (VCD) format dump file which
+Verilated_gantt creates a value change dump (VCD) format dump file which
 may be viewed in a waveform viewer (e.g. C<GTKWave>):
 
 .. figure:: figures/fig_gantt_min.png
