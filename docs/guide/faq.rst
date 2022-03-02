@@ -45,7 +45,7 @@ Can you provide binaries?
 """""""""""""""""""""""""
 
 You can install Verilator via the system package manager (apt, yum, etc.)
-on many Linux distributions, including Debian, Ubuntu, SuSE, RedHat, and
+on many Linux distributions, including Debian, Ubuntu, SuSE, Red Hat, and
 others.  These packages are provided by the Linux distributions and
 generally will lag the version of the mainline Verilator repository.  If no
 binary package is available for your distribution, how about you set one

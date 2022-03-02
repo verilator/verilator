@@ -68,7 +68,7 @@ multi-core SoC.
 
 Verilator is run in hierarchical mode on the whole SoC.  Verilator will
 make two models, one for the CPU hierarchy block, and one for the SoC.  The
-Verialted code for the SoC will automatically call the CPU Verilated model.
+Verilated code for the SoC will automatically call the CPU Verilated model.
 
 The current hierarchical Verilation is based on :vlopt:`--lib-create`. Each
 hierarchy block is Verilated into a library. User modules of the hierarchy
