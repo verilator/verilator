@@ -6307,8 +6307,8 @@ private:
                 toBaseDtp = refp->refDTypep();
             }
         }
-        const bool toNumericable = VN_IS(toBaseDtp, BasicDType)
-                                   || VN_IS(toBaseDtp, NodeUOrStructDType);
+        const bool toNumericable
+            = VN_IS(toBaseDtp, BasicDType) || VN_IS(toBaseDtp, NodeUOrStructDType);
         // UNSUP unpacked struct/unions (treated like BasicDType)
         if (toNumericable) {
             if (fromNumericable) return COMPATIBLE;
