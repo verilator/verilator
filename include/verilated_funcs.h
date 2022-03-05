@@ -162,10 +162,6 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 // Base macros
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
-#define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
-#define VL_BITISSET_Q(data, bit) ((data) & (1ULL << VL_BITBIT_Q(bit)))
-#define VL_BITISSET_E(data, bit) ((data) & (VL_EUL(1) << VL_BITBIT_E(bit)))
-#define VL_BITISSET_W(data, bit) ((data)[VL_BITWORD_E(bit)] & (VL_EUL(1) << VL_BITBIT_E(bit)))
 #define VL_BITISSETLIMIT_W(data, width, bit) (((bit) < (width)) && VL_BITISSET_W(data, bit))
 
 // Shift appropriate word by bit. Does not account for wrapping between two words
@@ -343,13 +339,19 @@ double vl_time_multiplier(int scale) VL_PURE;
 vluint64_t vl_time_pow10(int n) VL_PURE;
 
 #ifdef VL_DEBUG
-/// Evaluate statement if Verilated::debug() enabled
+/// Evaluate statement if VL_DEBUG defined
+# define VL_DEBUG_IFDEF(stmt) \
+    do { \
+        stmt \
+    } while (false)
+/// Evaluate statement if VL_DEBUG defined and Verilated::debug() enabled
 # define VL_DEBUG_IF(stmt) \
     do { \
         if (VL_UNLIKELY(Verilated::debug())) {stmt} \
     } while (false)
 #else
 // We intentionally do not compile the stmt to improve compile speed
+# define VL_DEBUG_IFDEF(stmt) do {} while (false)
 # define VL_DEBUG_IF(stmt) do {} while (false)
 #endif
 

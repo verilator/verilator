@@ -328,6 +328,7 @@ template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const char* unitp);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const std::string& unit);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const char* unitp);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const std::string& unit);
+template <> void VerilatedTrace<VerilatedVcd>::dumpvars(int level, const std::string& hier);
 #endif  // DOXYGEN
 
 //=============================================================================
@@ -391,6 +392,11 @@ public:
     void set_time_resolution(const char* unit) VL_MT_SAFE { m_sptrace.set_time_resolution(unit); }
     void set_time_resolution(const std::string& unit) VL_MT_SAFE {
         m_sptrace.set_time_resolution(unit);
+    }
+    // Set variables to dump, using $dumpvars format
+    // If level = 0, dump everything and hier is then ignored
+    void dumpvars(int level, const std::string& hier) VL_MT_SAFE {
+        m_sptrace.dumpvars(level, hier);
     }
 
     // Internal class access

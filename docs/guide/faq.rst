@@ -134,7 +134,8 @@ B. Or, for finer-grained control, or C++ files with multiple Verilated
           ...
           Verilated::traceEverOn(true);
           VerilatedVcdC* tfp = new VerilatedVcdC;
-          topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
+          topp->trace(tfp, 99);  // Trace 99 levels of hierarchy (or see below)
+          // tfp->dumpvars(1, "t");  // trace 1 level under "t"
           tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
           ...
           while (contextp->time() < sim_time && !contextp->gotFinish()) {

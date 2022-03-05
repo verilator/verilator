@@ -16,6 +16,7 @@ Verilator 4.219 devel
 * Removed the deprecated lint_off flag -msg; use -rule instead.
 * Removed the deprecated "fl" attribute in XML output; use "loc" attribute instead.
 * Suppress WIDTH warning on negate using carry bit (#3295). [Peter Monsson]
+* Add trace dumpvars() call for selective runtime tracing (#3322). [Shunyao CAD]
 * Fix skipping public enum values with four-state values (#3303).
 * Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
 * Fix compile error with --trace-fst --sc (#3332). [leavinel]

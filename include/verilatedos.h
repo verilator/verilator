@@ -414,6 +414,12 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
 #define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in a EData
 
+// Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
+#define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
+#define VL_BITISSET_Q(data, bit) ((data) & (1ULL << VL_BITBIT_Q(bit)))
+#define VL_BITISSET_E(data, bit) ((data) & (VL_EUL(1) << VL_BITBIT_E(bit)))
+#define VL_BITISSET_W(data, bit) ((data)[VL_BITWORD_E(bit)] & (VL_EUL(1) << VL_BITBIT_E(bit)))
+
 //=========================================================================
 // Floating point
 // #defines, to avoid requiring math.h on all compile runs

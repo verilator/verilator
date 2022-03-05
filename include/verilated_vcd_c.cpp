@@ -463,7 +463,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
                            int arraynum, bool tri, bool bussed, int msb, int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    VerilatedTrace<VerilatedVcd>::declCode(code, bits, tri);
+    const bool enabled = VerilatedTrace<VerilatedVcd>::declCode(code, name, bits, tri);
 
     if (m_suffixes.size() <= nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE) {
         m_suffixes.resize(nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);
@@ -471,6 +471,8 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
 
     // Make sure write buffer is large enough (one character per bit), plus header
     bufferResize(bits + 1024);
+
+    if (!enabled) return;
 
     // Split name into basename
     // Spaces and tabs aren't legal in VCD signal names, so:
@@ -606,6 +608,7 @@ static inline void VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* s
 
 void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
     const char* const suffixp = m_suffixes.data() + code * VL_TRACE_SUFFIX_ENTRY_SIZE;
+    VL_DEBUG_IFDEF(assert(suffixp[0]););
     VerilatedVcdCCopyAndAppendNewLine(writep, suffixp);
 
     // Now write back the write pointer incremented by the actual size of the

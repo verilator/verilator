@@ -27,6 +27,7 @@
 #include "verilated.h"
 #include "verilated_trace_defs.h"
 
+#include <bitset>
 #include <memory>
 #include <string>
 #include <vector>
@@ -142,7 +143,9 @@ private:
     };
 
     vluint32_t* m_sigs_oldvalp;  // Old value store
+    EData* m_sigs_enabledp;  // Bit vector of enabled codes (nullptr = all on)
     vluint64_t m_timeLastDump;  // Last time we did a dump
+    std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize traciong
     std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
     std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
@@ -152,6 +155,7 @@ private:
     vluint32_t m_numSignals;  // Number of distinct signals
     vluint32_t m_maxBits;  // Number of bits in the widest signal
     std::vector<std::string> m_namePrefixStack{""};  // Path prefixes to add to signal names
+    std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
     char m_scopeEscape;
     double m_timeRes;  // Time resolution (ns/ms etc)
     double m_timeUnit;  // Time units (ns/ms etc)
@@ -171,26 +175,21 @@ private:
 #ifdef VL_TRACE_THREADED
     // Number of total trace buffers that have been allocated
     vluint32_t m_numTraceBuffers;
-
     // Size of trace buffers
     size_t m_traceBufferSize;
-
     // Buffers handed to worker for processing
     VerilatedThreadQueue<vluint32_t*> m_buffersToWorker;
     // Buffers returned from worker after processing
     VerilatedThreadQueue<vluint32_t*> m_buffersFromWorker;
+    // Write pointer into current buffer
+    vluint32_t* m_traceBufferWritep;
+    // End of trace buffer
+    vluint32_t* m_traceBufferEndp;
+    // The worker thread itself
+    std::unique_ptr<std::thread> m_workerThread;
 
     // Get a new trace buffer that can be populated. May block if none available
     vluint32_t* getTraceBuffer();
-
-    // Write pointer into current buffer
-    vluint32_t* m_traceBufferWritep;
-
-    // End of trace buffer
-    vluint32_t* m_traceBufferEndp;
-
-    // The worker thread itself
-    std::unique_ptr<std::thread> m_workerThread;
 
     // The function executed by the worker thread
     void workerThreadMain();
@@ -223,7 +222,8 @@ protected:
 
     void traceInit() VL_MT_UNSAFE;
 
-    void declCode(vluint32_t code, vluint32_t bits, bool tri);
+    // Declare new signal and return true if enabled
+    bool declCode(vluint32_t code, const char* namep, vluint32_t bits, bool tri);
 
     // Is this an escape?
     bool isScopeEscape(char c) { return std::isspace(c) || c == m_scopeEscape; }
@@ -259,6 +259,9 @@ public:
     // Set time resolution (s/ms, defaults to ns)
     void set_time_resolution(const char* unitp) VL_MT_SAFE;
     void set_time_resolution(const std::string& unit) VL_MT_SAFE;
+    // Set variables to dump, using $dumpvars format
+    // If level = 0, dump everything and hier is then ignored
+    void dumpvars(int level, const std::string& hier) VL_MT_SAFE;
 
     // Call
     void dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);

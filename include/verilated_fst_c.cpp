@@ -122,7 +122,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 
     // convert m_code2symbol into an array for fast lookup
     if (!m_symbolp) {
-        m_symbolp = new fstHandle[nextCode()];
+        m_symbolp = new fstHandle[nextCode()]{0};
         for (const auto& i : m_code2symbol) m_symbolp[i.first] = i.second;
     }
     m_code2symbol.clear();
@@ -162,7 +162,8 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
                            int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
+    const bool enabled = VerilatedTrace<VerilatedFst>::declCode(code, name, bits, false);
+    if (!enabled) return;
 
     std::string nameasstr = namePrefix() + name;
     std::istringstream nameiss{nameasstr};
@@ -250,12 +251,14 @@ void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, f
 
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitBit(vluint32_t code, CData newval) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
     char buf[VL_BYTESIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
@@ -263,6 +266,7 @@ void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
     char buf[VL_SHORTSIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
@@ -270,6 +274,7 @@ void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
     char buf[VL_IDATASIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
@@ -277,6 +282,7 @@ void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitQData(vluint32_t code, QData newval, int bits) {
     char buf[VL_QUADSIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
