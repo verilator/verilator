@@ -454,25 +454,33 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named = false;
     string arg;
     if (isWide() && isReadOnly()) arg += "const ";
-    if (widthMin() == 1) {
-        arg += "bool";
-    } else if (widthMin() <= VL_IDATASIZE) {
-        arg += "uint32_t";
-    } else if (widthMin() <= VL_QUADSIZE) {
-        arg += "vluint64_t";
-    } else {
-        arg += "uint32_t";  // []'s added later
-    }
-    if (isWide()) {
-        if (forReturn) {
-            v3warn(E_UNSUPPORTED, "Unsupported: Public functions with >64 bit outputs; "
-                                  "make an output of a public task instead");
+    const bool isRef = !forReturn && (isWritable() || direction().isRefOrConstRef());
+    if (VN_IS(dtypeSkipRefp(), BasicDType) && !dtypeSkipRefp()->isDouble()
+        && !dtypeSkipRefp()->isString()) {
+        // Backward compatible type declaration
+        if (widthMin() == 1) {
+            arg += "bool";
+        } else if (widthMin() <= VL_IDATASIZE) {
+            arg += "uint32_t";
+        } else if (widthMin() <= VL_QUADSIZE) {
+            arg += "vluint64_t";
+        } else {
+            arg += "uint32_t";  // []'s added later
         }
-        arg += " (& " + name();
-        arg += ")[" + cvtToStr(widthWords()) + "]";
+        if (isWide()) {
+            if (forReturn) {
+                v3warn(E_UNSUPPORTED, "Unsupported: Public functions with >64 bit outputs; "
+                                      "make an output of a public task instead");
+            }
+            arg += " (& " + name();
+            arg += ")[" + cvtToStr(widthWords()) + "]";
+        } else {
+            if (isRef) arg += "&";
+            if (named) arg += " " + name();
+        }
     } else {
-        if (!forReturn && (isWritable() || direction().isRefOrConstRef())) arg += "&";
-        if (named) arg += " " + name();
+        // Newer internal-compatible types
+        arg += dtypep()->cType((named ? name() : string{}), true, isRef);
     }
     return arg;
 }
