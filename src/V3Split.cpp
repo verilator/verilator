@@ -802,11 +802,20 @@ class RemovePlaceholdersVisitor final : public VNVisitor {
     virtual void visit(AstSplitPlaceholder* nodep) override { pushDeletep(nodep->unlinkFrBack()); }
     virtual void visit(AstNodeIf* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->ifsp() && !nodep->elsesp()) { pushDeletep(nodep->unlinkFrBack()); }
+        if (!nodep->ifsp() && !nodep->elsesp()) pushDeletep(nodep->unlinkFrBack());
     }
     virtual void visit(AstAlways* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->bodysp()) {
+        bool emptyOrCommentOnly = true;
+        for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+            // If this always block contains only AstComment, remove here.
+            // V3Gate will remove anyway.
+            if (!VN_IS(bodysp, Comment)) {
+                emptyOrCommentOnly = false;
+                break;
+            }
+        }
+        if (emptyOrCommentOnly) {
             pushDeletep(nodep->unlinkFrBack());
             ++m_emptyAlways;
         }
