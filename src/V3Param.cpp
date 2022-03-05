@@ -554,10 +554,15 @@ class ParamProcessor final {
             cellp->v3error("Exceeded maximum --module-recursion-depth of "
                            << v3Global.opt.moduleRecursionDepth());
         }
-        // Keep tree sorted by level
+        // Keep tree sorted by level. Append to end of sub-list at the same level. This is
+        // important because due to the way recursive modules are handled, different
+        // parametrizations of the same recursive module end up with the same level (which in
+        // itself is a bit unfortunate). Nevertheless, as a later parametrization must not be above
+        // an earlier parametrization of a recursive module, it is sufficient to add to the end of
+        // the sub-list to keep the modules topologically sorted.
         AstNodeModule* insertp = srcModp;
         while (VN_IS(insertp->nextp(), NodeModule)
-               && VN_AS(insertp->nextp(), NodeModule)->level() < newmodp->level()) {
+               && VN_AS(insertp->nextp(), NodeModule)->level() <= newmodp->level()) {
             insertp = VN_AS(insertp->nextp(), NodeModule);
         }
         insertp->addNextHere(newmodp);

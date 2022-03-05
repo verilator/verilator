@@ -45,6 +45,15 @@
         </port>
       </instance>
     </module>
+    <module loc="d,46,8,46,12" name="mod2" origName="mod2">
+      <var loc="d,48,10,48,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk"/>
+      <var loc="d,49,16,49,17" name="d" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="d"/>
+      <var loc="d,50,22,50,23" name="q" dtype_id="2" dir="output" pinIndex="3" vartype="logic" origName="q"/>
+      <contassign loc="d,53,13,53,14" dtype_id="2">
+        <varref loc="d,53,15,53,16" name="d" dtype_id="2"/>
+        <varref loc="d,53,11,53,12" name="q" dtype_id="2"/>
+      </contassign>
+    </module>
     <module loc="d,31,8,31,12" name="mod1__W4" origName="mod1">
       <var loc="d,32,15,32,20" name="WIDTH" dtype_id="3" vartype="logic" origName="WIDTH" param="true">
         <const loc="d,19,18,19,19" name="32&apos;sh4" dtype_id="3"/>
@@ -67,17 +76,8 @@
         </assigndly>
       </always>
     </module>
-    <module loc="d,46,8,46,12" name="mod2" origName="mod2">
-      <var loc="d,48,10,48,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk"/>
-      <var loc="d,49,16,49,17" name="d" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="d"/>
-      <var loc="d,50,22,50,23" name="q" dtype_id="2" dir="output" pinIndex="3" vartype="logic" origName="q"/>
-      <contassign loc="d,53,13,53,14" dtype_id="2">
-        <varref loc="d,53,15,53,16" name="d" dtype_id="2"/>
-        <varref loc="d,53,11,53,12" name="q" dtype_id="2"/>
-      </contassign>
-    </module>
     <typetable loc="a,0,0,0,0">
-      <basicdtype loc="d,48,10,48,13" id="1" name="logic"/>
+      <basicdtype loc="d,34,24,34,27" id="1" name="logic"/>
       <basicdtype loc="d,14,10,14,11" id="2" name="logic" left="3" right="0"/>
       <basicdtype loc="d,19,18,19,19" id="3" name="logic" left="31" right="0" signed="true"/>
     </typetable>

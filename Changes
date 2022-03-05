@@ -19,6 +19,7 @@ Verilator 4.219 devel
 * Fix skipping public enum values with four-state values (#3303).
 * Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
 * Fix compile error with --trace-fst --sc (#3332). [leavinel]
+* Fix crash in recursive module inlining (#3324). [Larry Doolittle]
 
 
 Verilator 4.218 2022-01-17
