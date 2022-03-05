@@ -792,6 +792,7 @@ private:
 
 class RemovePlaceholdersVisitor final : public VNVisitor {
     // MEMBERS
+    bool m_isPure = true;
     int m_emptyAlways = 0;
 
     // CONSTRUCTORS
@@ -801,31 +802,39 @@ class RemovePlaceholdersVisitor final : public VNVisitor {
     // VISITORS
     virtual void visit(AstSplitPlaceholder* nodep) override { pushDeletep(nodep->unlinkFrBack()); }
     virtual void visit(AstNodeIf* nodep) override {
+        VL_RESTORER(m_isPure);
+        m_isPure = true;
         iterateChildren(nodep);
-        if (!nodep->ifsp() && !nodep->elsesp()) pushDeletep(nodep->unlinkFrBack());
+        if (!nodep->ifsp() && !nodep->elsesp() && m_isPure) pushDeletep(nodep->unlinkFrBack());
     }
     virtual void visit(AstAlways* nodep) override {
+        m_isPure = true;
         iterateChildren(nodep);
-        bool emptyOrCommentOnly = true;
-        for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
-            // If this always block contains only AstComment, remove here.
-            // V3Gate will remove anyway.
-            if (!VN_IS(bodysp, Comment)) {
-                emptyOrCommentOnly = false;
-                break;
+        if (m_isPure) {
+            bool emptyOrCommentOnly = true;
+            for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+                // If this always block contains only AstComment, remove here.
+                // V3Gate will remove anyway.
+                if (!VN_IS(bodysp, Comment)) {
+                    emptyOrCommentOnly = false;
+                    break;
+                }
+            }
+            if (emptyOrCommentOnly) {
+                pushDeletep(nodep->unlinkFrBack());
+                ++m_emptyAlways;
             }
         }
-        if (emptyOrCommentOnly) {
-            pushDeletep(nodep->unlinkFrBack());
-            ++m_emptyAlways;
-        }
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override {
+        m_isPure &= nodep->isPure();
+        iterateChildren(nodep);  // must visit regardless of m_isPure to remove placeholders
+    }
 
     VL_UNCOPYABLE(RemovePlaceholdersVisitor);
 
 public:
-    static int exec(AstNode* nodep) {
+    static int exec(AstAlways* nodep) {
         RemovePlaceholdersVisitor visitor;
         visitor.iterate(nodep);
         return visitor.m_emptyAlways;
