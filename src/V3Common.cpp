@@ -71,7 +71,7 @@ static void makeToStringMiddle(AstClass* nodep) {
                 comma = ", ";
                 stmt += itemp->origNameProtect();
                 stmt += ":\" + ";
-                if (itemp->isWide()) {
+                if (VN_IS(itemp->dtypep()->skipRefp(), BasicDType) && itemp->isWide()) {
                     stmt += "VL_TO_STRING_W(";
                     stmt += cvtToStr(itemp->widthWords());
                     stmt += ", ";

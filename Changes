@@ -19,6 +19,7 @@ Verilator 4.219 devel
 * Add trace dumpvars() call for selective runtime tracing (#3322). [Shunyao CAD]
 * Fix skipping public enum values with four-state values (#3303).
 * Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
+* Fix class stringification on wide arrays (#3312). [Iru Cai]
 * Fix public function arguments that are arrayed (#3316). [pawel256]
 * Fix compile error with --trace-fst --sc (#3332). [leavinel]
 * Fix crash in recursive module inlining (#3324). [Larry Doolittle]
