@@ -808,6 +808,7 @@ class RemovePlaceholdersVisitor final : public VNVisitor {
         if (!nodep->ifsp() && !nodep->elsesp() && m_isPure) pushDeletep(nodep->unlinkFrBack());
     }
     virtual void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_isPure);
         m_isPure = true;
         iterateChildren(nodep);
         if (m_isPure) {
