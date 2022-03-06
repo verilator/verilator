@@ -1171,6 +1171,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             case 'm': m_oAssemble = flag; break;
             //    n
             case 'o': m_oConstBitOpTree = flag; break;  // Can remove ~2022-01 when stable
+            //    o will be used as an escape for a second character of optimization disables
             case 'p':
                 m_public = !flag;
                 break;  // With -Op so flag=0, we want public on so few optimizations done
