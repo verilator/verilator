@@ -236,7 +236,7 @@
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
 #else
-# error "Verilator requires a C++11 or newer compiler"
+//# error "Verilator requires a C++11 or newer compiler"
 #endif
 
 #ifndef VL_NO_LEGACY

@@ -856,9 +856,9 @@ void V3Options::notify() {
 // V3 Options accessors
 
 string V3Options::version() {
-    string ver = DTVERSION;
-    ver += " rev " + cvtToStr(DTVERSION_rev);
-    return ver;
+    //string ver = DTVERSION;
+    //ver += " rev " + cvtToStr(DTVERSION_rev);
+    return "rev";
 }
 
 string V3Options::protectKeyDefaulted() {
