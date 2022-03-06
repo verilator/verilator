@@ -24,6 +24,7 @@ Verilator 4.219 devel
 * Fix unnamedblk error on foreach (#3321). [Aliaksei Chapyzhenka]
 * Fix crash in recursive module inlining (#3324). [Larry Doolittle]
 * Fix compile error with --trace-fst --sc (#3332). [leavinel]
+* Fix Vdeeptemp error with --threads and --compiler clang (#3338). [Per Karlsson]
 
 
 Verilator 4.218 2022-01-17

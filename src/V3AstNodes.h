@@ -9185,6 +9185,13 @@ public:
     }
     AstNode* stmtsp() const { return op1p(); }
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
+    void addStmtsFirstp(AstNode* nodep) {
+        if (stmtsp()) {
+            stmtsp()->addHereThisAsNext(nodep);
+        } else {
+            addStmtsp(nodep);
+        }
+    }
     ExecMTask* execMTaskp() const { return m_execMTaskp; }
     void execMTaskp(ExecMTask* execMTaskp) { m_execMTaskp = execMTaskp; }
     virtual void dump(std::ostream& str = std::cout) const override;

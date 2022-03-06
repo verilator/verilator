@@ -41,6 +41,7 @@ private:
 
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current block
+    AstMTaskBody* m_mtaskbodyp = nullptr;  // Current mtaskbody
     AstNode* m_stmtp = nullptr;  // Current statement
     int m_depth = 0;  // How deep in an expression
     int m_maxdepth = 0;  // Maximum depth in an expression
@@ -54,8 +55,13 @@ private:
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
-        UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
-        m_cfuncp->addInitsp(varp);
+        if (m_cfuncp) {
+            m_cfuncp->addInitsp(varp);
+        } else if (m_mtaskbodyp) {
+            m_mtaskbodyp->addStmtsFirstp(varp);
+        } else {
+            nodep->v3fatalSrc("Deep expression not under a function");
+        }
         // Replace node tree with reference to var
         AstVarRef* const newp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
         nodep->replaceWith(newp);
@@ -71,11 +77,25 @@ private:
     // VISITORS
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_mtaskbodyp);
         {
             m_cfuncp = nodep;
+            m_mtaskbodyp = nullptr;
             m_depth = 0;
             m_maxdepth = 0;
             m_tempNames.reset();
+            iterateChildren(nodep);
+        }
+    }
+    virtual void visit(AstMTaskBody* nodep) override {
+        VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_mtaskbodyp);
+        {
+            m_cfuncp = nullptr;
+            m_mtaskbodyp = nodep;
+            m_depth = 0;
+            m_maxdepth = 0;
+            // We don't reset the names, as must share across tasks
             iterateChildren(nodep);
         }
     }
