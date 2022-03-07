@@ -56,6 +56,32 @@
 // better. Later modules (V3Gate, V3Order) run faster if they aren't
 // handling enormous blocks with long lists of inputs and outputs.
 //
+// In always block for combinational circuit that uses blocking assignment (=, not <=),
+// there is further opportunity to split into multiple always blocks.
+// If a variable is set only in the always_comb and all users of the variables refers the
+// last assignment, the assignment can be split.
+// This is done in SplitVisitor::pruneDepsOnLastUpdatedSignalsInAlwaysComb().
+//
+//     always_comb begin
+//       sig_a = in_a + in_b;
+//       sig_b = ~sig_a;
+//     end
+//
+// can be
+//
+//     always_comb sig_a = in_a + in_b;
+//     always_comb sig_b = ~sig_a;
+//
+// but
+//
+//     always_comb begin
+//       sig_a = in_a + in_b;
+//       sig_b = ~sig_a;
+//       sig_a = 0;
+//     end
+//
+// cannot be split.
+//
 // Furthermore, the optional reorder routine can optimize this:
 //      NODEASSIGN/NODEIF/WHILE
 //              S1: ASSIGN {v1} <= 0.   // Duplicate of below
@@ -961,21 +987,7 @@ protected:
     void pruneDepsOnLastUpdatedSignalsInAlwaysComb() {
         // If a variable is set only in the always_comb and all users of the variables refers the
         // last assignment, prune the edge.
-        // e.g.
-        //   always_comb begin
-        //     sig_a = in_a + in_b;
-        //     sig_b = !sig_a;
-        //   end
-        // can be
-        //   always_comb sig_a = in_a + in_b;
-        //   always_comb sig_b = !sig_a;
-        // but
-        //   always_comb begin
-        //     sig_a = in_a + in_b;
-        //     sig_b = !sig_a;
-        //     sig_a = 0;
-        //   end
-        // cannot be split.
+        // See the header for the examples.
         for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
              vertexp = vertexp->verticesNextp()) {
             for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
