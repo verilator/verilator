@@ -353,7 +353,7 @@ protected:
     // of what is before vs. after
 
     virtual void visit(AstActive* nodep) override {
-        VL_RESTORED(m_inCombo);
+        VL_RESTORER(m_inCombo);
         m_inCombo = true;
         for (const AstSenItem* itemp = nodep->sensesp()->sensesp(); itemp;
              itemp = VN_CAST(itemp->nextp(), SenItem)) {
