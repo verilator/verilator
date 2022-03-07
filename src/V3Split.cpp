@@ -204,7 +204,7 @@ public:
 };
 
 class SplitRVEdge final : public SplitEdge {
-    const int m_refRevision;
+    const int m_refRevision;  // Sequence of assigns within procedure
 
 public:
     SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int refRevesion)
@@ -353,8 +353,9 @@ protected:
     // of what is before vs. after
 
     virtual void visit(AstActive* nodep) override {
+        VL_RESTORED(m_inCombo);
         m_inCombo = true;
-        for (AstSenItem* itemp = nodep->sensesp()->sensesp(); itemp;
+        for (const AstSenItem* itemp = nodep->sensesp()->sensesp(); itemp;
              itemp = VN_CAST(itemp->nextp(), SenItem)) {
             if (!itemp->isCombo()) {
                 m_inCombo = false;
@@ -362,7 +363,6 @@ protected:
             }
         }
         iterateChildren(nodep);
-        m_inCombo = false;
     }
     virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
@@ -420,8 +420,8 @@ protected:
                     if (nodep->access().isWriteOrRW()) {
                         // Non-delay; need to maintain existing ordering
                         // with all consumers of the signal
-                        // edge can be ignored only referring varRef is the last assignment in
-                        // always_comb
+                        // Edge can be ignored only if the referring varRef is the
+                        // last assignment in always_comb
                         int newRev = -1;
                         if (m_inCombo) {
                             newRev = ++m_lhsRevision[vscp];
@@ -954,7 +954,7 @@ protected:
         for (auto it = m_stmtStackps.cbegin(); it != m_stmtStackps.cend(); ++it) {
             const AstNodeIf* const ifNodep = VN_CAST((*it)->nodep(), NodeIf);
             if (ifNodep && (m_curIfConditional != ifNodep)) continue;
-            new SplitRVEdge(&m_graph, *it, vstdp, rev);
+            new SplitRVEdge{&m_graph, *it, vstdp, rev};
         }
     }
 
