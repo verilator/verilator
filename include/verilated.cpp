@@ -1497,7 +1497,7 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
 IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
     FILE* const fp = VL_CVT_I_FP(fpi);
-    if (VL_UNLIKELY(!fp)) return 0;
+    if (VL_UNLIKELY(!fp)) return ~0U;  // -1
 
     va_list ap;
     va_start(ap, formatp);

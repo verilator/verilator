@@ -316,14 +316,14 @@ public:  // But only for verilated*.cpp
     IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
-        if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
+        if (VL_UNLIKELY(fdlist.size() != 1)) return ~0U;  // -1
         return static_cast<IData>(
             std::fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
     }
     IData fdTell(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
-        if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
+        if (VL_UNLIKELY(fdlist.size() != 1)) return ~0U;  // -1
         return static_cast<IData>(std::ftell(*fdlist.begin()));
     }
     void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
