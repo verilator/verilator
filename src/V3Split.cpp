@@ -264,6 +264,8 @@ public:
 
 //######################################################################
 // Split class functions
+class SplitVisitor;
+class ReorderVisitor;
 
 class SplitReorderBaseVisitor VL_NOT_FINAL : public VNVisitor {
 private:
@@ -272,13 +274,14 @@ private:
     // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
     // Ast*::user3p             -> Statement SplitLogicVertex* (temporary only)
     // Ast*::user4              -> Current ordering number (reorderBlock usage)
+    // AstVarScope::user4       -> Written count of a var in an always (used only in SplitVisitor)
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
     const VNUser4InUse m_inuser4;
+    const bool m_isSplitVisitor;
 
 protected:
-    using LhsRevisions = std::unordered_map<const AstVarScope*, int>;
     // STATE
     string m_noReorderWhy;  // Reason we can't reorder
     std::vector<SplitLogicVertex*> m_stmtStackps;  // Current statements being tracked
@@ -286,14 +289,19 @@ protected:
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
     bool m_inDly;  // Inside ASSIGNDLY
     // Revision increases when a variable is updated in always_comb
-    LhsRevisions m_lhsRevision;
-    // How many times a variable is updated in an always_comb
-    LhsRevisions m_lhsTotalUpdateCount;
+    std::map<const AstVarScope*, int> m_lhsRevision;
     bool m_inCombo = false;  // in always_comb
 
     // CONSTRUCTORS
 public:
-    SplitReorderBaseVisitor() { scoreboardClear(); }
+    explicit SplitReorderBaseVisitor(const SplitVisitor*)
+        : m_isSplitVisitor{true} {
+        scoreboardClear();
+    }
+    explicit SplitReorderBaseVisitor(const ReorderVisitor*)
+        : m_isSplitVisitor{false} {
+        scoreboardClear();
+    }
     virtual ~SplitReorderBaseVisitor() override = default;
 
     // METHODS
@@ -305,7 +313,6 @@ protected:
         m_inDly = false;
         m_graph.clear();
         m_lhsRevision.clear();
-        m_lhsTotalUpdateCount.clear();
         m_stmtStackps.clear();
         m_pliVertexp = nullptr;
         m_noReorderWhy = "";
@@ -451,7 +458,9 @@ protected:
                         int newRev = -1;
                         if (m_inCombo) {
                             newRev = ++m_lhsRevision[vscp];
-                            ++m_lhsTotalUpdateCount[vscp];
+                            // AstNode::user4 is also used in ReorderVisitor for different purpose,
+                            // so update user4 only when this is SplitVisitor
+                            if (m_isSplitVisitor) vscp->user4Inc();
                         } else {
                             m_lhsRevision[vscp] = -1;
                         }
@@ -496,7 +505,10 @@ private:
 class ReorderVisitor final : public SplitReorderBaseVisitor {
     // CONSTRUCTORS
 public:
-    explicit ReorderVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit ReorderVisitor(AstNetlist* nodep)
+        : SplitReorderBaseVisitor{this} {
+        iterate(nodep);
+    }
     virtual ~ReorderVisitor() override = default;
 
     // METHODS
@@ -907,7 +919,7 @@ public:
 
 class SplitScanVarRefVisitor final : public VNVisitor {
     // MEMBERS
-    std::unordered_map<const AstVarScope*, int> m_lhsRefs;  // how many times a var is written
+    std::unordered_map<const AstVarScope*, int> m_lhsRefs;  // How many times a var is written
 
     // VISITORS
     virtual void visit(AstVarRef* nodep) override {
@@ -945,7 +957,8 @@ private:
     // CONSTRUCTORS
 public:
     explicit SplitVisitor(AstNetlist* nodep)
-        : m_lhsCount{nodep} {
+        : SplitReorderBaseVisitor{this}
+        , m_lhsCount{nodep} {
         iterate(nodep);
 
         // Splice newly-split blocks into the tree. Remove placeholders
@@ -1006,8 +1019,7 @@ protected:
                 UASSERT_OBJ(vscp, varScopeVertexp->nodep(), "must be varscope");
                 auto it = m_lhsRevision.find(vscp);
                 const int lhsRev = it == m_lhsRevision.end() ? 0 : it->second;
-                it = m_lhsTotalUpdateCount.find(vscp);
-                const int lhsRefTotal = it == m_lhsTotalUpdateCount.end() ? 0 : it->second;
+                const int lhsRefTotal = vscp->user4();
                 if (vscp->varp()->isSignal() && lhsRev >= 0 && !vscp->user2p()) {
                     // vscp is assigned by Nondelayed (i.e. blocking) in always_comb
                     UASSERT_OBJ(lhsRev >= rvEdgep->refRevision(), vscp,
@@ -1133,7 +1145,7 @@ protected:
         m_curIfConditional = nodep;
         iterateAndNextNull(nodep->condp());
         m_curIfConditional = nullptr;
-        std::unordered_map<const AstVarScope*, int> lhsRevision = m_lhsRevision;
+        std::map<const AstVarScope*, int> lhsRevision = m_lhsRevision;
 
         scanBlock(nodep->ifsp());
         m_lhsRevision.swap(lhsRevision);
