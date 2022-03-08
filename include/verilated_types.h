@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
@@ -539,8 +540,19 @@ public:
 
 private:
     // MEMBERS
-    Map m_map;  // State of the assoc array
+    mutable Map m_map;  // State of the assoc array
     T_Value m_defaultValue;  // Default value
+
+    mutable std::vector<std::pair<T_Key, T_Value>> m_modify_input;
+
+    Map& map() const {
+        if (!m_modify_input.empty()) {
+            for (const auto& input : m_modify_input)
+                m_map.emplace(input.first, input.second);
+            m_modify_input.clear();
+        }
+        return m_map;
+    }
 
 public:
     // CONSTRUCTORS
@@ -557,29 +569,32 @@ public:
     const T_Value& atDefault() const { return m_defaultValue; }
 
     // Size of array. Verilog: function int size(), or int num()
-    int size() const { return m_map.size(); }
+    int size() const { return m_map.size() + m_modify_input.size(); }
     // Clear array. Verilog: function void delete([input index])
-    void clear() { m_map.clear(); }
-    void erase(const T_Key& index) { m_map.erase(index); }
+    void clear() {
+        m_map.clear();
+        m_modify_input.clear();
+    }
+    void erase(const T_Key& index) { map().erase(index); }
     // Return 0/1 if element exists. Verilog: function int exists(input index)
-    int exists(const T_Key& index) const { return m_map.find(index) != m_map.end(); }
+    int exists(const T_Key& index) const { const auto& map_ = map(); return map_.find(index) != map_.end(); }
     // Return first element.  Verilog: function int first(ref index);
     int first(T_Key& indexr) const {
-        const auto it = m_map.cbegin();
+        const auto it = map().cbegin();
         if (it == m_map.end()) return 0;
         indexr = it->first;
         return 1;
     }
     // Return last element.  Verilog: function int last(ref index)
     int last(T_Key& indexr) const {
-        const auto it = m_map.crbegin();
+        const auto it = map().crbegin();
         if (it == m_map.rend()) return 0;
         indexr = it->first;
         return 1;
     }
     // Return next element. Verilog: function int next(ref index)
     int next(T_Key& indexr) const {
-        auto it = m_map.find(indexr);
+        auto it = map().find(indexr);
         if (VL_UNLIKELY(it == m_map.end())) return 0;
         ++it;
         if (VL_UNLIKELY(it == m_map.end())) return 0;
@@ -588,7 +603,7 @@ public:
     }
     // Return prev element. Verilog: function int prev(ref index)
     int prev(T_Key& indexr) const {
-        auto it = m_map.find(indexr);
+        auto it = map().find(indexr);
         if (VL_UNLIKELY(it == m_map.end())) return 0;
         if (VL_UNLIKELY(it == m_map.begin())) return 0;
         --it;
@@ -601,14 +616,25 @@ public:
     T_Value& at(const T_Key& index) {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
-            std::pair<typename Map::iterator, bool> pit = m_map.emplace(index, m_defaultValue);
-            return pit.first->second;
+            if (m_modify_input.empty() ||
+                (!m_modify_input.empty() && m_modify_input.back().first < index)) {
+                m_modify_input.emplace_back(index, m_defaultValue);
+                return m_modify_input.back().second;
+            }
+            const auto pair = std::make_pair(index, m_defaultValue);
+            auto it2 = std::lower_bound(m_modify_input.begin(), m_modify_input.end(), pair,
+			    [](const auto &value, const auto &input) {
+                                   return value.first < input.first;
+			    });
+            if (index < it2->first)
+                it2 = m_modify_input.insert(it2, std::make_pair(index, m_defaultValue));
+            return it2->second;
         }
         return it->second;
     }
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(const T_Key& index) const {
-        const auto it = m_map.find(index);
+        const auto it = map().find(index);
         if (it == m_map.end()) {
             return m_defaultValue;
         } else {
@@ -626,14 +652,14 @@ public:
     }
 
     // For save/restore
-    const_iterator begin() const { return m_map.begin(); }
-    const_iterator end() const { return m_map.end(); }
+    const_iterator begin() const { const auto &map_ = map(); return map_.begin(); }
+    const_iterator end() const { const auto &map_ = map(); return map_.end(); }
 
     // Methods
     VlQueue<T_Value> unique() const {
         VlQueue<T_Value> out;
         std::set<T_Value> saw;
-        for (const auto& i : m_map) {
+        for (const auto& i : map()) {
             auto it = saw.find(i.second);
             if (it == saw.end()) {
                 saw.insert(it, i.second);
@@ -645,7 +671,7 @@ public:
     VlQueue<T_Key> unique_index() const {
         VlQueue<T_Key> out;
         std::set<T_Key> saw;
-        for (const auto& i : m_map) {
+        for (const auto& i : map()) {
             auto it = saw.find(i.second);
             if (it == saw.end()) {
                 saw.insert(it, i.second);
@@ -656,43 +682,47 @@ public:
     }
     template <typename Func> VlQueue<T_Value> find(Func with_func) const {
         VlQueue<T_Value> out;
-        for (const auto& i : m_map)
+        for (const auto& i : map())
             if (with_func(i.first, i.second)) out.push_back(i.second);
         return out;
     }
     template <typename Func> VlQueue<T_Key> find_index(Func with_func) const {
         VlQueue<T_Key> out;
-        for (const auto& i : m_map)
+        for (const auto& i : map())
             if (with_func(i.first, i.second)) out.push_back(i.first);
         return out;
     }
     template <typename Func> VlQueue<T_Value> find_first(Func with_func) const {
+        const auto& map_ = map();
         const auto it
-            = std::find_if(m_map.begin(), m_map.end(), [=](const std::pair<T_Key, T_Value>& i) {
+            = std::find_if(map_.begin(), map_.end(), [=](const std::pair<T_Key, T_Value>& i) {
                   return with_func(i.first, i.second);
               });
         if (it == m_map.end()) return VlQueue<T_Value>{};
         return VlQueue<T_Value>::cons(it->second);
     }
     template <typename Func> VlQueue<T_Key> find_first_index(Func with_func) const {
+        const auto& map_ = map();
         const auto it
-            = std::find_if(m_map.begin(), m_map.end(), [=](const std::pair<T_Key, T_Value>& i) {
+            = std::find_if(map_.begin(), map_.end(), [=](const std::pair<T_Key, T_Value>& i) {
                   return with_func(i.first, i.second);
               });
         if (it == m_map.end()) return VlQueue<T_Value>{};
         return VlQueue<T_Key>::cons(it->first);
     }
     template <typename Func> VlQueue<T_Value> find_last(Func with_func) const {
+        const auto& map_ = map();
         const auto it
-            = std::find_if(m_map.rbegin(), m_map.rend(), [=](const std::pair<T_Key, T_Value>& i) {
+            = std::find_if(map_.rbegin(), map_.rend(), [=](const std::pair<T_Key, T_Value>& i) {
                   return with_func(i.first, i.second);
               });
         if (it == m_map.rend()) return VlQueue<T_Value>{};
         return VlQueue<T_Value>::cons(it->second);
     }
     template <typename Func> VlQueue<T_Key> find_last_index(Func with_func) const {
+        const auto& map_ = map();
         const auto it
-            = std::find_if(m_map.rbegin(), m_map.rend(), [=](const std::pair<T_Key, T_Value>& i) {
+            = std::find_if(map_.rbegin(), map_.rend(), [=](const std::pair<T_Key, T_Value>& i) {
                   return with_func(i.first, i.second);
               });
         if (it == m_map.rend()) return VlQueue<T_Value>{};
@@ -701,7 +731,7 @@ public:
 
     // Reduction operators
     VlQueue<T_Value> min() const {
-        if (m_map.empty()) return VlQueue<T_Value>();
+        if (map().empty()) return VlQueue<T_Value>();
         const auto it = std::min_element(
             m_map.begin(), m_map.end(),
             [](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
@@ -710,7 +740,7 @@ public:
         return VlQueue<T_Value>::cons(it->second);
     }
     VlQueue<T_Value> max() const {
-        if (m_map.empty()) return VlQueue<T_Value>();
+        if (map().empty()) return VlQueue<T_Value>();
         const auto it = std::max_element(
             m_map.begin(), m_map.end(),
             [](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
@@ -721,16 +751,16 @@ public:
 
     T_Value r_sum() const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out += i.second;
+        for (const auto& i : map()) out += i.second;
         return out;
     }
     template <typename Func> T_Value r_sum(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out += with_func(i.first, i.second);
+        for (const auto& i : map()) out += with_func(i.first, i.second);
         return out;
     }
     T_Value r_product() const {
-        if (m_map.empty()) return T_Value(0);
+        if (map().empty()) return T_Value(0);
         auto it = m_map.begin();
         T_Value out{it->second};
         ++it;
@@ -738,7 +768,7 @@ public:
         return out;
     }
     template <typename Func> T_Value r_product(Func with_func) const {
-        if (m_map.empty()) return T_Value(0);
+        if (map().empty()) return T_Value(0);
         auto it = m_map.begin();
         T_Value out{with_func(it->first, it->second)};
         ++it;
@@ -746,7 +776,7 @@ public:
         return out;
     }
     T_Value r_and() const {
-        if (m_map.empty()) return T_Value(0);
+        if (map().empty()) return T_Value(0);
         auto it = m_map.begin();
         T_Value out{it->second};
         ++it;
@@ -754,7 +784,7 @@ public:
         return out;
     }
     template <typename Func> T_Value r_and(Func with_func) const {
-        if (m_map.empty()) return T_Value(0);
+        if (map().empty()) return T_Value(0);
         auto it = m_map.begin();
         T_Value out{with_func(it->first, it->second)};
         ++it;
@@ -763,28 +793,28 @@ public:
     }
     T_Value r_or() const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out |= i.second;
+        for (const auto& i : map()) out |= i.second;
         return out;
     }
     template <typename Func> T_Value r_or(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out |= with_func(i.first, i.second);
+        for (const auto& i : map()) out |= with_func(i.first, i.second);
         return out;
     }
     T_Value r_xor() const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out ^= i.second;
+        for (const auto& i : map()) out ^= i.second;
         return out;
     }
     template <typename Func> T_Value r_xor(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out ^= with_func(i.first, i.second);
+        for (const auto& i : map()) out ^= with_func(i.first, i.second);
         return out;
     }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {
-        if (m_map.empty()) return "'{}";  // No trailing space
+        if (map().empty()) return "'{}";  // No trailing space
         std::string out = "'{";
         std::string comma;
         for (const auto& i : m_map) {
