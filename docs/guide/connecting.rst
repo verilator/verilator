@@ -422,7 +422,7 @@ accesses the above signal "readme" would be:
 
 .. code-block:: bash
 
-     cat >sim_main.cpp <<'<<EOF'
+     cat >sim_main.cpp <<'EOF'
        #include "Vour.h"
        #include "verilated.h"
        #include "verilated_vpi.h"  // Required to get definitions
