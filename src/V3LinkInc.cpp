@@ -131,7 +131,16 @@ private:
         iterateAndNextNull(nodep->elsesp());
         m_insStmtp = nullptr;
     }
-    virtual void visit(AstNodeCase* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstCaseItem* nodep) override {
+        m_insMode = IM_BEFORE;
+        {
+            VL_RESTORER(m_unsupportedHere);
+            m_unsupportedHere = true;
+            iterateAndNextNull(nodep->condsp());
+        }
+        m_insStmtp = nullptr;  // Next thing should be new statement
+        iterateAndNextNull(nodep->bodysp());
+    }
     virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
