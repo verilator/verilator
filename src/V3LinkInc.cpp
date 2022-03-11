@@ -62,6 +62,9 @@ private:
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
         // See also AstNode::addBeforeStmt; this predates that function
@@ -86,7 +89,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        // Reset increments count
+        VL_RESTORER(m_modIncrementsNum);
         m_modIncrementsNum = 0;
         iterateChildren(nodep);
     }
@@ -146,10 +149,10 @@ private:
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void unsupported_visit(AstNode* nodep) {
+        VL_RESTORER(m_unsupportedHere);
         m_unsupportedHere = true;
         UINFO(9, "Marking unsupported " << nodep << endl);
         iterateChildren(nodep);
-        m_unsupportedHere = false;
     }
     virtual void visit(AstLogAnd* nodep) override { unsupported_visit(nodep); }
     virtual void visit(AstLogOr* nodep) override { unsupported_visit(nodep); }
@@ -262,5 +265,5 @@ public:
 void V3LinkInc::linkIncrements(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LinkIncVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkInc", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("linkinc", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
