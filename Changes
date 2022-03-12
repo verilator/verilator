@@ -17,6 +17,7 @@ Verilator 4.219 devel
 * Removed the deprecated "fl" attribute in XML output; use "loc" attribute instead.
 * Suppress WIDTH warning on negate using carry bit (#3295). [Peter Monsson]
 * Add trace dumpvars() call for selective runtime tracing (#3322). [Shunyao CAD]
+* Add VERILATOR_VERSION_INTEGER for determining API (#3343). [Larry Doolittle]
 * Fix skipping public enum values with four-state values (#3303).
 * Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
 * Fix class stringification on wide arrays (#3312). [Iru Cai]
