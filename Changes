@@ -18,6 +18,11 @@ Verilator 4.219 devel
 * Suppress WIDTH warning on negate using carry bit (#3295). [Peter Monsson]
 * Add trace dumpvars() call for selective runtime tracing (#3322). [Shunyao CAD]
 * Add VERILATOR_VERSION_INTEGER for determining API (#3343). [Larry Doolittle]
+* Improve various V3Combine algorithm details (#3328). [Yutetsu TAKATSUKASA]
+* Improve various V3Order algorithm details. [Geza Lore]
+* Fix macOS arm64 build (#3285) (#3291). [Guokai Chen]
+* Fix signed number operation (#3294) (#3308). [Raynard Qiao]
+* Fix FST traces to include vector range (#3296) (#3297). [Jamie Iles]
 * Fix skipping public enum values with four-state values (#3303).
 * Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
 * Fix class stringification on wide arrays (#3312). [Iru Cai]
@@ -25,7 +30,9 @@ Verilator 4.219 devel
 * Fix public function arguments that are arrayed (#3316). [pawel256]
 * Fix unnamedblk error on foreach (#3321). [Aliaksei Chapyzhenka]
 * Fix crash in recursive module inlining (#3324). [Larry Doolittle]
+* Fix VL_RESTORER behavior on passing a lvalue reference (#3326). [HungMingWu]
 * Fix compile error with --trace-fst --sc (#3332). [leavinel]
+* Fix cast to array types (#3333). [Todd Strader]
 * Fix Vdeeptemp error with --threads and --compiler clang (#3338). [Per Karlsson]
 
 
