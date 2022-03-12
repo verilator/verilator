@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -32,7 +32,7 @@
 class V3Hasher final {
     // NODE STATE
     //  AstNode::user4()    -> V3Hash.  Hash value of this node (hash of 0 is illegal)
-    const AstUser4InUse m_inuser4;
+    const VNUser4InUse m_inuser4;
 
 public:
     // CONSTRUCTORS
@@ -44,6 +44,9 @@ public:
 
     // Compute hash of node. This method caches the hash in the node's user4().
     V3Hash operator()(AstNode* nodep) const;
+
+    // Re-compute hash of this node, discarding cached value, but used cached hash of children.
+    V3Hash rehash(AstNode* nodep) const;
 
     // Compute hash of node, without caching in user4.
     static V3Hash uncachedHash(const AstNode* nodep);

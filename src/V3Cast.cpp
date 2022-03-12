@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -49,12 +49,12 @@
 //######################################################################
 // Cast state, as a visitor of each AstNode
 
-class CastVisitor final : public AstNVisitor {
+class CastVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     //   AstNode::user()                // bool.  Indicates node is of known size
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
 
@@ -63,7 +63,7 @@ private:
 
     void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedCast " << nodep << endl);
-        AstNRelinker relinkHandle;
+        VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
         AstCCast* const castp
@@ -102,7 +102,7 @@ private:
     void ensureNullChecked(AstNode* nodep) {
         // TODO optimize to track null checked values and avoid where possible
         if (!VN_IS(nodep->backp(), NullCheck)) {
-            AstNRelinker relinkHandle;
+            VNRelinker relinkHandle;
             nodep->unlinkFrBack(&relinkHandle);
             AstNode* const newp = new AstNullCheck{nodep->fileline(), nodep};
             relinkHandle.relink(newp);

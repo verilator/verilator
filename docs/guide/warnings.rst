@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 *******************
@@ -447,7 +447,7 @@ List Of Warnings
               p0();
          endmodule
 
-   Other tools with similar warnings: Veriable's forbid_defparam_rule.
+   Other tools with similar warnings: Verible's forbid_defparam_rule.
 
 
 .. option:: DEPRECATED
@@ -518,7 +518,7 @@ List Of Warnings
    Another way DIDNOTCONVERGE may occur is if # delays are used to generate
    clocks.  Verilator ignores the delays and gives an :option:`ASSIGNDLY`
    or :option:`STMTDLY` warning.  If these were suppressed, due to the
-   absense of the delay, the code may now oscillate.
+   absence of the delay, the code may now oscillate.
 
    Finally, rare, more difficult cases can be debugged like a C++ program;
    either enter :command:`gdb` and use its tracing facilities, or edit the
@@ -528,7 +528,7 @@ List Of Warnings
 .. option:: ENDCAPSULATED
 
    Warns that a class member is declared is local or protected, but is
-   being accessed from outside that class (if local) or a derrived class
+   being accessed from outside that class (if local) or a derived class
    (if protected).
 
    Ignoring this warning will only suppress the lint check, it will
@@ -924,7 +924,7 @@ List Of Warnings
    simulate correctly.
 
    Other tools with similar warnings: Icarus Verilog's portbind, "warning:
-   Instantiating module ... with dangling impot port (...)". Slang's
+   Instantiating module ... with dangling input port (...)". Slang's
    unconnected-port, "port '...' has no connection".
 
 
@@ -1217,7 +1217,7 @@ List Of Warnings
    used to cause some important action at a later time, it might be an
    important difference.
 
-   Some possible work arounds:
+   Some possible workarounds:
 
    * Move the delayed statement into the C++ wrapper file, where the
      stimulus and clock generation can be done in C++.

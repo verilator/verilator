@@ -32,6 +32,13 @@ module t (clk);
       $write("Hello in publicTop\n");
    endtask
 
+   task test_task(input [19:0] in [2], output [19:0] out [2]);
+      // Issue 3316
+      // verilator public
+      out[0] = in[1];
+      out[1] = in[0];
+   endtask
+
 endmodule
 
 module tpub (

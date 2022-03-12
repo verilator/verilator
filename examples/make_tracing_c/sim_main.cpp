@@ -103,8 +103,8 @@ int main(int argc, char** argv, char** env) {
         top->eval();
 
         // Read outputs
-        VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
-                  " -> oquad=%" VL_PRI64 "x owide=%x_%08x_%08x\n",
+        VL_PRINTF("[%" PRId64 "] clk=%x rstl=%x iquad=%" PRIx64 " -> oquad=%" PRIx64
+                  " owide=%x_%08x_%08x\n",
                   contextp->time(), top->clk, top->reset_l, top->in_quad, top->out_quad,
                   top->out_wide[2], top->out_wide[1], top->out_wide[0]);
     }

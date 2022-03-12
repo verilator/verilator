@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator Arguments
@@ -884,7 +884,7 @@ Summary:
 
    Using DPI imports/exports is allowed and generally relatively safe in
    terms of information disclosed, which is limited to the DPI function
-   prototyptes.  Use of the VPI is not recommended as many design details
+   prototypes.  Use of the VPI is not recommended as many design details
    may be exposed, and an INSECURE warning will be issued.
 
 .. option:: --protect-lib <name>
@@ -1364,9 +1364,10 @@ Summary:
    .. note::
 
       This option applies only to values which are explicitly written as X
-      in the Verilog source code. Initial values of clocks are set to 0
-      unless `--x-initial-edge` is specified. Initial values of all other
-      state holding variables are controlled with `--x-initial`.
+      in modules (not classes) in the Verilog source code. Initial values
+      of clocks are set to 0 unless `--x-initial-edge` is
+      specified. Initial values of all other state holding variables are
+      controlled with `--x-initial`.
 
 .. option:: --x-initial 0
 
@@ -1513,7 +1514,7 @@ The grammar of configuration commands is as follows:
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
    Indicates that the signal is used as clock or not. This information is
-   used by Verilator to mark the signal and any derrived signals as
+   used by Verilator to mark the signal and any derived signals as
    clocker.  See :vlopt:`--clk`.
 
    Same as :option:`/*verilator&32;clocker*/` metacomment.
@@ -1527,6 +1528,14 @@ The grammar of configuration commands is as follows:
    filename and line number.
 
    Same as :option:`/*verilator&32;coverage_block_off*/` metacomment.
+
+.. option:: forceable -module "<modulename>" -var "<signame>"
+
+   Generate public `<signame>__VforceEn` and `<signame>__VforceVal` signals
+   that can be used to force/release a signal from C++ code. The force control
+   signals are created as :option:`public_flat` signals.
+
+   Same as :option:`/*verilator&32;forceable*/` metacomment.
 
 .. option:: full_case -file "<filename>" -lines <lineno>
 

@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,6 +23,8 @@
 
 #include "V3Graph.h"
 
+#include <functional>
+#include <map>
 #include <set>
 #include <unordered_map>
 
@@ -43,7 +45,7 @@ private:
     class VxHolder final {
     public:
         // MEMBERS
-        const V3GraphVertex* m_vxp;  // [mtask] Vertex
+        const V3GraphVertex* const m_vxp;  // [mtask] Vertex
         const uint32_t m_pos;  // Sort position
         uint32_t m_numBlockingEdges;  // Number of blocking edges
         // CONSTRUCTORS
@@ -57,7 +59,7 @@ private:
         // newly unblocked
         bool unblock() {
             UASSERT_OBJ(m_numBlockingEdges > 0, vertexp(), "Underflow of blocking edges");
-            m_numBlockingEdges--;
+            --m_numBlockingEdges;
             return (m_numBlockingEdges == 0);
         }
     };

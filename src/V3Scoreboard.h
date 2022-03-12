@@ -13,7 +13,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,8 +29,9 @@
 
 #include "V3Error.h"
 
-#include <set>
+#include <functional>
 #include <map>
+#include <set>
 #include <unordered_map>
 
 //######################################################################
@@ -70,7 +71,7 @@ public:
         // MEMBERS
         typename KeySet::iterator m_keyIt;
         typename Val2Keys::iterator m_valIt;
-        SortByValueMap* m_sbvmp;
+        SortByValueMap* const m_sbvmp;
         bool m_end = true;  // At the end()
 
         // CONSTRUCTORS

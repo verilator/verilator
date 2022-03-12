@@ -44,6 +44,12 @@ module t (/*AUTOARG*/
          i = a.prev(k); `checkh(i, 0);
          v = $sformatf("%p", a); `checks(v, "'{'h2:\"bared\", 'h3:\"fooed\"} ");
 
+         a.first(k); `checks(k, 4'd2);
+         a.next(k); `checks(k, 4'd3);
+         a.next(k);
+         a.last(k); `checks(k, 4'd3);
+         a.prev(k); `checks(k, 4'd2);
+
          a.delete(4'd2);
          i = a.size(); `checkh(i, 1);
 
@@ -97,6 +103,16 @@ module t (/*AUTOARG*/
          logic [91:2] a [ logic [65:1] ];
          a[~65'hfe] = ~ 90'hfee;
          `checkh(a[~65'hfe], ~ 90'hfee);
+      end
+
+      begin
+         int a [string];
+         int sum;
+         sum = 0;
+         a["one"] = 1;
+         a["two"] = 2;
+         foreach (a[i]) sum += a[i];
+         `checkh(sum, 1 + 2);
       end
 
       $write("*-* All Finished *-*\n");

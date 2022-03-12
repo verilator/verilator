@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -51,6 +51,7 @@
 #include "V3EmitXml.h"
 #include "V3Expand.h"
 #include "V3File.h"
+#include "V3Force.h"
 #include "V3Gate.h"
 #include "V3GenClk.h"
 #include "V3Graph.h"
@@ -110,7 +111,6 @@ static void reportStatsIfEnabled() {
         V3Stats::statsFinalAll(v3Global.rootp());
         V3Stats::statsReport();
     }
-    if (v3Global.opt.debugEmitV()) V3EmitV::debugEmitV("final");
 }
 
 static void process() {
@@ -245,7 +245,7 @@ static void process() {
         }
     }
 
-    //--PRE-FLAT OPTIMIZATIONS------------------
+    // --PRE-FLAT OPTIMIZATIONS------------------
 
     // Initial const/dead to reduce work for ordering code
     V3Const::constifyAll(v3Global.rootp());
@@ -256,7 +256,7 @@ static void process() {
 
     V3Error::abortIfErrors();
 
-    //--FLATTENING---------------
+    // --FLATTENING---------------
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // We're going to flatten the hierarchy, so as many optimizations that
@@ -276,7 +276,7 @@ static void process() {
         V3Class::classAll(v3Global.rootp());
     }
 
-    //--SCOPE BASED OPTIMIZATIONS--------------
+    // --SCOPE BASED OPTIMIZATIONS--------------
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Cleanup
@@ -334,6 +334,10 @@ static void process() {
         // Create tracing sample points, before we start eliminating signals
         if (v3Global.opt.trace()) V3TraceDecl::traceDeclAll(v3Global.rootp());
 
+        // Convert forceable signals, process force/release statements.
+        // After V3TraceDecl so we don't trace additional signals inserted to implement forcing.
+        V3Force::forceAll(v3Global.rootp());
+
         // Gate-based logic elimination; eliminate signals and push constant across cell boundaries
         // Instant propagation makes lots-o-constant reduction possibilities.
         if (v3Global.opt.oGate()) {
@@ -371,7 +375,6 @@ static void process() {
         V3ActiveTop::activeTopAll(v3Global.rootp());
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
-        if (v3Global.opt.debugEmitV()) V3EmitV::debugEmitV("preorder");
 
         // Order the code; form SBLOCKs and BLOCKCALLs
         V3Order::orderAll(v3Global.rootp());
@@ -407,7 +410,7 @@ static void process() {
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Scoped");
     }
 
-    //--MODULE OPTIMIZATIONS--------------
+    // --MODULE OPTIMIZATIONS--------------
 
     if (!v3Global.opt.xmlOnly()) {
         // Split deep blocks to appease MSVC++.  Must be before Localize.
@@ -430,7 +433,7 @@ static void process() {
 
     V3Error::abortIfErrors();
 
-    //--GENERATION------------------
+    // --GENERATION------------------
 
     if (!v3Global.opt.xmlOnly()) {
         // Remove unused vars
@@ -542,6 +545,8 @@ static void process() {
         V3EmitC::emitcFiles();
     }
 
+    if (v3Global.opt.stats()) V3Stats::statsStage("emit");
+
     // Statistics
     reportStatsIfEnabled();
 
@@ -573,7 +578,7 @@ static void verilate(const string& argString) {
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
     }  // LCOV_EXCL_STOP
 
-    //--FRONTEND------------------
+    // --FRONTEND------------------
 
     // Cleanup
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
@@ -582,7 +587,7 @@ static void verilate(const string& argString) {
 
     // Internal tests (after option parsing as need debug() setting,
     // and after removing files as may make debug output)
-    AstBasicDTypeKwd::selfTest();
+    VBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();

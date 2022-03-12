@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -51,7 +51,7 @@
 class V3ParseGrammar {
 public:
     bool m_impliedDecl = false;  // Allow implied wire declarations
-    AstVarType m_varDecl;  // Type for next signal declaration (reg/wire/etc)
+    VVarType m_varDecl;  // Type for next signal declaration (reg/wire/etc)
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
     VDirection m_varIO;  // Direction for next signal declaration (reg/wire/etc)
     VLifetime m_varLifetime;  // Static/Automatic for next signal
@@ -74,7 +74,7 @@ public:
 
     // CONSTRUCTORS
     V3ParseGrammar() {
-        m_varDecl = AstVarType::UNKNOWN;
+        m_varDecl = VVarType::UNKNOWN;
         m_varIO = VDirection::NONE;
     }
     static V3ParseGrammar* singletonp() {
@@ -97,8 +97,7 @@ public:
         return new AstText(fileline, newtext);
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
-        AstDisplay* nodep
-            = new AstDisplay(fileline, AstDisplayType::DT_ERROR, "", nullptr, nullptr);
+        AstDisplay* nodep = new AstDisplay(fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr);
         nodep->addNext(new AstStop(fileline, true));
         return nodep;
     }
@@ -134,7 +133,7 @@ public:
                                                << name << "'");
         }
     }
-    void setVarDecl(AstVarType type) { m_varDecl = type; }
+    void setVarDecl(VVarType type) { m_varDecl = type; }
     void setDType(AstNodeDType* dtypep) {
         if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = nullptr);
         m_varDTypep = dtypep;
@@ -170,7 +169,7 @@ public:
                     if (dtypep->implicit()) {
                         // It's no longer implicit but a wire logic type
                         AstBasicDType* const newp = new AstBasicDType{
-                            dtypep->fileline(), AstBasicDTypeKwd::LOGIC, dtypep->numeric(),
+                            dtypep->fileline(), VBasicDTypeKwd::LOGIC, dtypep->numeric(),
                             dtypep->width(), dtypep->widthMin()};
                         VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
                         dtypep = newp;
@@ -189,8 +188,8 @@ public:
     }
 };
 
-const AstBasicDTypeKwd LOGIC = AstBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
-const AstBasicDTypeKwd LOGIC_IMPLICIT = AstBasicDTypeKwd::LOGIC_IMPLICIT;
+const VBasicDTypeKwd LOGIC = VBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
+const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
 
 int V3ParseGrammar::s_modTypeImpNum = 0;
 
@@ -224,7 +223,7 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
         GRAMMARP->m_varDeclTyped = false; \
     }
 #define VARDECL(type) \
-    { GRAMMARP->setVarDecl(AstVarType::type); }
+    { GRAMMARP->setVarDecl(VVarType::type); }
 #define VARIO(type) \
     { GRAMMARP->m_varIO = VDirection::type; }
 #define VARLIFE(flag) \
@@ -341,6 +340,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_COVERAGE_BLOCK_OFF     "coverage_block_off"
 %token<fl>              yVLT_COVERAGE_OFF           "coverage_off"
 %token<fl>              yVLT_COVERAGE_ON            "coverage_on"
+%token<fl>              yVLT_FORCEABLE              "forceable"
 %token<fl>              yVLT_FULL_CASE              "full_case"
 %token<fl>              yVLT_HIER_BLOCK             "hier_block"
 %token<fl>              yVLT_INLINE                 "inline"
@@ -370,7 +370,6 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_MATCH    "--match"
 %token<fl>              yVLT_D_MODEL    "--model"
 %token<fl>              yVLT_D_MODULE   "--module"
-%token<fl>              yVLT_D_MSG      "--msg"
 %token<fl>              yVLT_D_MTASK    "--mtask"
 %token<fl>              yVLT_D_RULE     "--rule"
 %token<fl>              yVLT_D_TASK     "--task"
@@ -812,6 +811,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_CLOCKER             "/*verilator clocker*/"
 %token<fl>              yVL_CLOCK_ENABLE        "/*verilator clock_enable*/"
 %token<fl>              yVL_COVERAGE_BLOCK_OFF  "/*verilator coverage_block_off*/"
+%token<fl>              yVL_FORCEABLE           "/*verilator forceable*/"
 %token<fl>              yVL_FULL_CASE           "/*verilator full_case*/"
 %token<fl>              yVL_HIER_BLOCK          "/*verilator hier_block*/"
 %token<fl>              yVL_INLINE_MODULE       "/*verilator inline_module*/"
@@ -1205,7 +1205,7 @@ udpFront<nodeModulep>:
 			{ $$ = new AstPrimitive($<fl>3, *$3); $$->inLibrary(true);
 			  $$->lifetime($2);
 			  $$->modTrace(false);
-			  $$->addStmtp(new AstPragma($<fl>3, AstPragmaType::INLINE_MODULE));
+			  $$->addStmtp(new AstPragma($<fl>3, VPragmaType::INLINE_MODULE));
 			  GRAMMARP->m_tracingParse = false;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
@@ -1281,7 +1281,7 @@ portAndTagE<nodep>:
 			{ int p = PINNUMINC();
 			  const string name = "__pinNumber" + cvtToStr(p);
 			  $$ = new AstPort{CRELINE(), p, name};
-			  AstVar* varp = new AstVar{CRELINE(), AstVarType::PORT, name, VFlagChildDType{},
+			  AstVar* varp = new AstVar{CRELINE(), VVarType::PORT, name, VFlagChildDType{},
 			                            new AstBasicDType{CRELINE(), LOGIC_IMPLICIT}};
 			  varp->declDirection(VDirection::INPUT);
 			  varp->direction(VDirection::INPUT);
@@ -1624,7 +1624,7 @@ list_of_genvar_identifiers<nodep>:	// IEEE: list_of_genvar_identifiers (for decl
 genvar_identifierDecl<varp>:		// IEEE: genvar_identifier (for declaration)
 		id/*new-genvar_identifier*/ sigAttrListE
 			{ VARRESET_NONLIST(GENVAR);
-			  VARDTYPE(new AstBasicDType($<fl>1, AstBasicDTypeKwd::INTEGER));
+			  VARDTYPE(new AstBasicDType($<fl>1, VBasicDTypeKwd::INTEGER));
 			  $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
 	;
 
@@ -1779,24 +1779,24 @@ tf_port_declaration<nodep>:	// ==IEEE: tf_port_declaration
 	;
 
 integer_atom_type<basicDTypep>:	// ==IEEE: integer_atom_type
-		yBYTE					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::BYTE); }
-	|	ySHORTINT				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::SHORTINT); }
-	|	yINT					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::INT); }
-	|	yLONGINT				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::LONGINT); }
-	|	yINTEGER				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::INTEGER); }
-	|	yTIME					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::TIME); }
+		yBYTE					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::BYTE); }
+	|	ySHORTINT				{ $$ = new AstBasicDType($1,VBasicDTypeKwd::SHORTINT); }
+	|	yINT					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::INT); }
+	|	yLONGINT				{ $$ = new AstBasicDType($1,VBasicDTypeKwd::LONGINT); }
+	|	yINTEGER				{ $$ = new AstBasicDType($1,VBasicDTypeKwd::INTEGER); }
+	|	yTIME					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::TIME); }
 	;
 
 integer_vector_type<basicDTypep>:	// ==IEEE: integer_atom_type
-		yBIT					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::BIT); }
-	|	yLOGIC					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::LOGIC); }
-	|	yREG					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::LOGIC); } // logic==reg
+		yBIT					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::BIT); }
+	|	yLOGIC					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::LOGIC); }
+	|	yREG					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::LOGIC); } // logic==reg
 	;
 
 non_integer_type<basicDTypep>:	// ==IEEE: non_integer_type
-		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
-	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
-	|	ySHORTREAL				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); UNSUPREAL($1); }
+		yREAL					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::DOUBLE); }
+	|	yREALTIME				{ $$ = new AstBasicDType($1,VBasicDTypeKwd::DOUBLE); }
+	|	ySHORTREAL				{ $$ = new AstBasicDType($1,VBasicDTypeKwd::DOUBLE); UNSUPREAL($1); }
 	;
 
 signingE<signstate>:		// IEEE: signing - plus empty
@@ -1859,19 +1859,19 @@ data_typeNoRef<nodeDTypep>:		// ==IEEE: data_type, excluding class_type etc refe
 													     SYMP,VFlagChildDType(),$1),$2,true); }
 	|	enumDecl				{ $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->s_modTypeImpNum++),
 										       SYMP,VFlagChildDType(),$1); }
-	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
-	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
-	|	yEVENT					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::EVENTVALUE); }
+	|	ySTRING					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::STRING); }
+	|	yCHANDLE				{ $$ = new AstBasicDType($1,VBasicDTypeKwd::CHANDLE); }
+	|	yEVENT					{ $$ = new AstBasicDType($1,VBasicDTypeKwd::EVENTVALUE); }
 	//			// Rules overlap virtual_interface_declaration
 	//			// Parameters here are SV2009
 	//			// IEEE has ['.' modport] but that will conflict with port
 	//			// declarations which decode '.' modport themselves, so
 	//			// instead see data_typeVar
 	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/
-			{ $$ = new AstBasicDType{$1, AstBasicDTypeKwd::CHANDLE};
+			{ $$ = new AstBasicDType{$1, VBasicDTypeKwd::CHANDLE};
 			  BBUNSUP($1, "Unsupported: virtual interface"); }
 	|	yVIRTUAL__anyID                id/*interface*/
-			{ $$ = new AstBasicDType{$1, AstBasicDTypeKwd::CHANDLE};
+			{ $$ = new AstBasicDType{$1, VBasicDTypeKwd::CHANDLE};
 			  BBUNSUP($1, "Unsupported: virtual data type"); }
 	|	type_reference				{ $$ = $1; }
 	//			// IEEE: class_scope: see data_type above
@@ -2050,7 +2050,7 @@ enumDecl<nodeDTypep>:
 	;
 
 enum_base_typeE<nodeDTypep>:	// IEEE: enum_base_type
-		/* empty */				{ $$ = new AstBasicDType(CRELINE(), AstBasicDTypeKwd::INT); }
+		/* empty */				{ $$ = new AstBasicDType(CRELINE(), VBasicDTypeKwd::INT); }
 	//			// Not in spec, but obviously "enum [1:0]" should work
 	//			// implicit_type expanded, without empty
 	//			// Note enum base types are always packed data types
@@ -2256,7 +2256,7 @@ dtypeAttrList<nodep>:
 	;
 
 dtypeAttr<nodep>:
-		yVL_PUBLIC				{ $$ = new AstAttrOf($1,AstAttrType::DT_PUBLIC); }
+		yVL_PUBLIC				{ $$ = new AstAttrOf($1,VAttrType::DT_PUBLIC); }
 	;
 
 vlTag:				// verilator tag handling
@@ -2294,16 +2294,16 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 			{ $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: interface decls within module decls"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// Verilator specific
-	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); }
-	|	yaSCINT					{ $$ = new AstScInt($<fl>1,*$1); }
-	|	yaSCIMP					{ $$ = new AstScImp($<fl>1,*$1); }
-	|	yaSCIMPH				{ $$ = new AstScImpHdr($<fl>1,*$1); }
-	|	yaSCCTOR				{ $$ = new AstScCtor($<fl>1,*$1); }
-	|	yaSCDTOR				{ $$ = new AstScDtor($<fl>1,*$1); }
-	|	yVL_HIER_BLOCK				{ $$ = new AstPragma($1,AstPragmaType::HIER_BLOCK); }
-	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
-	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
-	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); v3Global.dpi(true); }
+	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCINT					{ $$ = new AstScInt($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCIMP					{ $$ = new AstScImp($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCIMPH				{ $$ = new AstScImpHdr($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCCTOR				{ $$ = new AstScCtor($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yaSCDTOR				{ $$ = new AstScDtor($<fl>1,*$1); v3Global.setHasSCTextSections(); }
+	|	yVL_HIER_BLOCK				{ $$ = new AstPragma($1,VPragmaType::HIER_BLOCK); }
+	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,VPragmaType::INLINE_MODULE); }
+	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,VPragmaType::NO_INLINE_MODULE); }
+	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,VPragmaType::PUBLIC_MODULE); v3Global.dpi(true); }
 	;
 
 module_or_generate_item<nodep>:	// ==IEEE: module_or_generate_item
@@ -2647,19 +2647,20 @@ sigAttrList<nodep>:
 	;
 
 sigAttr<nodep>:
-		yVL_CLOCKER				{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCKER); }
-	|	yVL_NO_CLOCKER				{ $$ = new AstAttrOf($1,AstAttrType::VAR_NO_CLOCKER); }
-	|	yVL_CLOCK_ENABLE			{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCK_ENABLE); }
-	|	yVL_PUBLIC				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC); v3Global.dpi(true); }
-	|	yVL_PUBLIC_FLAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT); v3Global.dpi(true); }
-	|	yVL_PUBLIC_FLAT_RD			{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RD); v3Global.dpi(true); }
-	|	yVL_PUBLIC_FLAT_RW			{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RW); v3Global.dpi(true); }
-	|	yVL_PUBLIC_FLAT_RW attr_event_control	{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RW); v3Global.dpi(true);
+		yVL_CLOCKER				{ $$ = new AstAttrOf($1,VAttrType::VAR_CLOCKER); }
+	|	yVL_NO_CLOCKER				{ $$ = new AstAttrOf($1,VAttrType::VAR_NO_CLOCKER); }
+	|	yVL_CLOCK_ENABLE			{ $$ = new AstAttrOf($1,VAttrType::VAR_CLOCK_ENABLE); }
+	|	yVL_FORCEABLE			{ $$ = new AstAttrOf($1,VAttrType::VAR_FORCEABLE); }
+	|	yVL_PUBLIC				{ $$ = new AstAttrOf($1,VAttrType::VAR_PUBLIC); v3Global.dpi(true); }
+	|	yVL_PUBLIC_FLAT				{ $$ = new AstAttrOf($1,VAttrType::VAR_PUBLIC_FLAT); v3Global.dpi(true); }
+	|	yVL_PUBLIC_FLAT_RD			{ $$ = new AstAttrOf($1,VAttrType::VAR_PUBLIC_FLAT_RD); v3Global.dpi(true); }
+	|	yVL_PUBLIC_FLAT_RW			{ $$ = new AstAttrOf($1,VAttrType::VAR_PUBLIC_FLAT_RW); v3Global.dpi(true); }
+	|	yVL_PUBLIC_FLAT_RW attr_event_control	{ $$ = new AstAttrOf($1,VAttrType::VAR_PUBLIC_FLAT_RW); v3Global.dpi(true);
 							  $$ = $$->addNext(new AstAlwaysPublic($1,$2,nullptr)); }
-	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,AstAttrType::VAR_ISOLATE_ASSIGNMENTS); }
-	|	yVL_SC_BV				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SC_BV); }
-	|	yVL_SFORMAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SFORMAT); }
-	|	yVL_SPLIT_VAR				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SPLIT_VAR); }
+	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,VAttrType::VAR_ISOLATE_ASSIGNMENTS); }
+	|	yVL_SC_BV				{ $$ = new AstAttrOf($1,VAttrType::VAR_SC_BV); }
+	|	yVL_SFORMAT				{ $$ = new AstAttrOf($1,VAttrType::VAR_SFORMAT); }
+	|	yVL_SPLIT_VAR				{ $$ = new AstAttrOf($1,VAttrType::VAR_SPLIT_VAR); }
 	;
 
 rangeListE<nodeRangep>:		// IEEE: [{packed_dimension}]
@@ -2772,7 +2773,7 @@ instDecl<nodep>:
 			  } }
 	//			// IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
 	|	id/*interface*/ '.' id/*modport*/
-	/*mid*/		{ VARRESET_NONLIST(AstVarType::IFACEREF);
+	/*mid*/		{ VARRESET_NONLIST(VVarType::IFACEREF);
 			  VARDTYPE(new AstIfaceRefDType($<fl>1, $<fl>3, "", *$1, *$3)); }
 	/*cont*/    mpInstnameList ';'
 			{ $$ = VARDONEP($5,nullptr,nullptr); }
@@ -3089,10 +3090,10 @@ statement_item<nodep>:		// IEEE: statement_item
 	//UNSUP:			delay_or_event_controlE above
 	|	yDEASSIGN variable_lvalue ';'
 			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); }
-	|	yFORCE expr '=' expr ';'
-			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 force"); }
+	|	yFORCE variable_lvalue '=' expr ';'
+			{ $$ = new AstAssignForce{$1, $2, $4}; v3Global.setHasForceableSignals(); }
 	|	yRELEASE variable_lvalue ';'
-			{ $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 release"); }
+			{ $$ = new AstRelease{$1, $2}; v3Global.setHasForceableSignals(); }
 	//
 	//			// IEEE: case_statement
 	|	unique_priorityE caseStart caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
@@ -3233,7 +3234,7 @@ statementFor<beginp>:		// IEEE: part of statement
 	;
 
 statementVerilatorPragmas<nodep>:
-		yVL_COVERAGE_BLOCK_OFF			{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_BLOCK_OFF); }
+		yVL_COVERAGE_BLOCK_OFF			{ $$ = new AstPragma($1,VPragmaType::COVERAGE_BLOCK_OFF); }
 	;
 
 //UNSUPoperator_assignment<nodep>:  // IEEE: operator_assignment
@@ -3522,8 +3523,9 @@ for_step_assignment<nodep>:  // ==IEEE: for_step_assignment
 	;
 
 loop_variables<nodep>:		// IEEE: loop_variables
-		varRefBase				{ $$ = $1; }
-	|	loop_variables ',' varRefBase		{ $$ = $1; $1->addNext($3); }
+		parseRefBase				{ $$ = $1; }
+	|	loop_variables ',' parseRefBase		{ $$ = $1; $$->addNext($3); }
+	|	',' parseRefBase			{ $$ = new AstEmpty{$1}; $$->addNext($2); }
 	;
 
 //************************************************
@@ -3618,7 +3620,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
 	|	yD_EXIT parenE				{ $$ = new AstFinish($1); }
 	//
-	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
+	|	yD_FCLOSE '(' expr ')'			{ $$ = new AstFClose{$1, $3}; }
 	|	yD_FFLUSH parenE			{ $$ = new AstFFlush($1, nullptr); }
 	|	yD_FFLUSH '(' expr ')'			{ $$ = new AstFFlush($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }
@@ -3632,59 +3634,59 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_SWRITEH '(' expr ',' exprDispList ')'	{ $$ = new AstSFormat($1, $3, $5, 'h'); }
 	|	yD_SWRITEO '(' expr ',' exprDispList ')'	{ $$ = new AstSFormat($1, $3, $5, 'o'); }
 	//
-	|	yD_DISPLAY  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, nullptr); }
-	|	yD_DISPLAY  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, $3); }
-	|	yD_DISPLAYB  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, nullptr, 'b'); }
-	|	yD_DISPLAYB  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, $3, 'b'); }
-	|	yD_DISPLAYH  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, nullptr, 'h'); }
-	|	yD_DISPLAYH  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, $3, 'h'); }
-	|	yD_DISPLAYO  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, nullptr, 'o'); }
-	|	yD_DISPLAYO  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, $3, 'o'); }
-	|	yD_MONITOR   '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3); }
-	|	yD_MONITORB  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'b'); }
-	|	yD_MONITORH  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'h'); }
-	|	yD_MONITORO  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'o'); }
-	|	yD_STROBE   '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3); }
-	|	yD_STROBEB  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'b'); }
-	|	yD_STROBEH  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'h'); }
-	|	yD_STROBEO  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'o'); }
+	|	yD_DISPLAY  parenE			{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, nullptr, nullptr); }
+	|	yD_DISPLAY  '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, nullptr, $3); }
+	|	yD_DISPLAYB  parenE			{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, nullptr, nullptr, 'b'); }
+	|	yD_DISPLAYB  '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, nullptr, $3, 'b'); }
+	|	yD_DISPLAYH  parenE			{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, nullptr, nullptr, 'h'); }
+	|	yD_DISPLAYH  '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, nullptr, $3, 'h'); }
+	|	yD_DISPLAYO  parenE			{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, nullptr, nullptr, 'o'); }
+	|	yD_DISPLAYO  '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, nullptr, $3, 'o'); }
+	|	yD_MONITOR   '(' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_MONITOR, nullptr, $3); }
+	|	yD_MONITORB  '(' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_MONITOR, nullptr, $3, 'b'); }
+	|	yD_MONITORH  '(' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_MONITOR, nullptr, $3, 'h'); }
+	|	yD_MONITORO  '(' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_MONITOR, nullptr, $3, 'o'); }
+	|	yD_STROBE   '(' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_STROBE, nullptr, $3); }
+	|	yD_STROBEB  '(' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_STROBE, nullptr, $3, 'b'); }
+	|	yD_STROBEH  '(' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_STROBE, nullptr, $3, 'h'); }
+	|	yD_STROBEO  '(' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_STROBE, nullptr, $3, 'o'); }
 	|	yD_WRITE    parenE			{ $$ = nullptr; }  // NOP
-	|	yD_WRITE    '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   nullptr, $3); }
+	|	yD_WRITE    '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_WRITE,   nullptr, $3); }
 	|	yD_WRITEB   parenE			{ $$ = nullptr; }  // NOP
-	|	yD_WRITEB   '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   nullptr, $3, 'b'); }
+	|	yD_WRITEB   '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_WRITE,   nullptr, $3, 'b'); }
 	|	yD_WRITEH   parenE			{ $$ = nullptr; }  // NOP
-	|	yD_WRITEH   '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   nullptr, $3, 'h'); }
+	|	yD_WRITEH   '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_WRITE,   nullptr, $3, 'h'); }
 	|	yD_WRITEO   parenE			{ $$ = nullptr; }  // NOP
-	|	yD_WRITEO   '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   nullptr, $3, 'o'); }
-	|	yD_FDISPLAY '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, nullptr); }
-	|	yD_FDISPLAY '(' expr ',' exprDispList ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5); }
-	|	yD_FDISPLAYB '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, nullptr, 'b'); }
-	|	yD_FDISPLAYB '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'b'); }
-	|	yD_FDISPLAYH '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, nullptr, 'h'); }
-	|	yD_FDISPLAYH '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'h'); }
-	|	yD_FDISPLAYO '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, nullptr, 'o'); }
-	|	yD_FDISPLAYO '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'o'); }
-	|	yD_FMONITOR   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5); }
-	|	yD_FMONITORB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'b'); }
-	|	yD_FMONITORH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'h'); }
-	|	yD_FMONITORO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'o'); }
-	|	yD_FSTROBE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5); }
-	|	yD_FSTROBEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'b'); }
-	|	yD_FSTROBEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'h'); }
-	|	yD_FSTROBEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'o'); }
-	|	yD_FWRITE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5); }
-	|	yD_FWRITEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'b'); }
-	|	yD_FWRITEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'h'); }
-	|	yD_FWRITEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'o'); }
-	|	yD_INFO	    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    nullptr, nullptr); }
-	|	yD_INFO	    '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    nullptr, $3); }
-	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, nullptr, nullptr); }
-	|	yD_WARNING  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, nullptr, $3); }
+	|	yD_WRITEO   '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_WRITE,   nullptr, $3, 'o'); }
+	|	yD_FDISPLAY '(' expr ')'		{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, $3, nullptr); }
+	|	yD_FDISPLAY '(' expr ',' exprDispList ')' 	{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, $3, $5); }
+	|	yD_FDISPLAYB '(' expr ')'			{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, $3, nullptr, 'b'); }
+	|	yD_FDISPLAYB '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, $3, $5, 'b'); }
+	|	yD_FDISPLAYH '(' expr ')'			{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, $3, nullptr, 'h'); }
+	|	yD_FDISPLAYH '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, $3, $5, 'h'); }
+	|	yD_FDISPLAYO '(' expr ')'			{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, $3, nullptr, 'o'); }
+	|	yD_FDISPLAYO '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_DISPLAY, $3, $5, 'o'); }
+	|	yD_FMONITOR   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_MONITOR, $3, $5); }
+	|	yD_FMONITORB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_MONITOR, $3, $5, 'b'); }
+	|	yD_FMONITORH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_MONITOR, $3, $5, 'h'); }
+	|	yD_FMONITORO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_MONITOR, $3, $5, 'o'); }
+	|	yD_FSTROBE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_STROBE, $3, $5); }
+	|	yD_FSTROBEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_STROBE, $3, $5, 'b'); }
+	|	yD_FSTROBEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_STROBE, $3, $5, 'h'); }
+	|	yD_FSTROBEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_STROBE, $3, $5, 'o'); }
+	|	yD_FWRITE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_WRITE, $3, $5); }
+	|	yD_FWRITEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_WRITE, $3, $5, 'b'); }
+	|	yD_FWRITEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_WRITE, $3, $5, 'h'); }
+	|	yD_FWRITEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, VDisplayType::DT_WRITE, $3, $5, 'o'); }
+	|	yD_INFO	    parenE			{ $$ = new AstDisplay($1,VDisplayType::DT_INFO,    nullptr, nullptr); }
+	|	yD_INFO	    '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_INFO,    nullptr, $3); }
+	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,VDisplayType::DT_WARNING, nullptr, nullptr); }
+	|	yD_WARNING  '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_WARNING, nullptr, $3); }
 	|	yD_ERROR    parenE			{ $$ = GRAMMARP->createDisplayError($1); }
-	|	yD_ERROR    '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,   nullptr, $3);   $$->addNext(new AstStop($1, true)); }
-	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, nullptr); $$->addNext(new AstStop($1, false)); }
-	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, nullptr); $$->addNext(new AstStop($1, false)); DEL($3); }
-	|	yD_FATAL    '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, $5);   $$->addNext(new AstStop($1, false)); DEL($3); }
+	|	yD_ERROR    '(' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_ERROR,   nullptr, $3);   $$->addNext(new AstStop($1, true)); }
+	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,VDisplayType::DT_FATAL,   nullptr, nullptr); $$->addNext(new AstStop($1, false)); }
+	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,VDisplayType::DT_FATAL,   nullptr, nullptr); $$->addNext(new AstStop($1, false)); DEL($3); }
+	|	yD_FATAL    '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,VDisplayType::DT_FATAL,   nullptr, $5);   $$->addNext(new AstStop($1, false)); DEL($3); }
 	//
 	|	yD_MONITOROFF parenE			{ $$ = new AstMonitorOff($1, true); }
 	|	yD_MONITORON parenE			{ $$ = new AstMonitorOff($1, false); }
@@ -3740,8 +3742,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_ATAN '(' expr ')'			{ $$ = new AstAtanD($1,$3); }
 	|	yD_ATAN2 '(' expr ',' expr ')'  	{ $$ = new AstAtan2D($1,$3,$5); }
 	|	yD_ATANH '(' expr ')'			{ $$ = new AstAtanhD($1,$3); }
-	|	yD_BITS '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
-	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
+	|	yD_BITS '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,VAttrType::DIM_BITS,$3); }
+	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
 	|	yD_BITSTOSHORTREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); UNSUPREAL($1); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
@@ -3757,7 +3759,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 			{ $$ = new AstCountBits($1, $3, $5, $7, $9);
 			  BBUNSUP($11, "Unsupported: $countbits with more than 3 control fields"); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
-	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
+	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
 	|	yD_FELL '(' expr ')'			{ $$ = new AstFell($1,$3); }
 	|	yD_FELL '(' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $fell and clock arguments"); }
@@ -3773,20 +3775,20 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_FSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
 	|	yD_FSEEK '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstFSeek($1,$3,$5,$7); }
 	|	yD_FTELL '(' idClassSel ')'		{ $$ = new AstFTell($1, $3); }
-	|	yD_HIGH '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,nullptr); }
-	|	yD_HIGH '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,$5); }
+	|	yD_HIGH '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,VAttrType::DIM_HIGH,$3,nullptr); }
+	|	yD_HIGH '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_HIGH,$3,$5); }
 	|	yD_HYPOT '(' expr ',' expr ')'		{ $$ = new AstHypotD($1,$3,$5); }
-	|	yD_INCREMENT '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,nullptr); }
-	|	yD_INCREMENT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,$5); }
+	|	yD_INCREMENT '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_INCREMENT,$3,nullptr); }
+	|	yD_INCREMENT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_INCREMENT,$3,$5); }
 	|	yD_ISUNBOUNDED '(' expr ')'		{ $$ = new AstIsUnbounded($1, $3); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1, $3); }
 	|	yD_ITOR '(' expr ')'			{ $$ = new AstIToRD($1,$3); }
-	|	yD_LEFT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,nullptr); }
-	|	yD_LEFT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,$5); }
+	|	yD_LEFT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,VAttrType::DIM_LEFT,$3,nullptr); }
+	|	yD_LEFT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_LEFT,$3,$5); }
 	|	yD_LN '(' expr ')'			{ $$ = new AstLogD($1,$3); }
 	|	yD_LOG10 '(' expr ')'			{ $$ = new AstLog10D($1,$3); }
-	|	yD_LOW '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_LOW,$3,nullptr); }
-	|	yD_LOW '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_LOW,$3,$5); }
+	|	yD_LOW '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,VAttrType::DIM_LOW,$3,nullptr); }
+	|	yD_LOW '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_LOW,$3,$5); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
 	|	yD_PAST '(' expr ')'			{ $$ = new AstPast($1,$3, nullptr); }
@@ -3799,8 +3801,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1, VTimescale(VTimescale::NONE)); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
 	|	yD_REWIND '(' idClassSel ')'		{ $$ = new AstFSeek($1, $3, new AstConst($1, 0), new AstConst($1, 0)); }
-	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,nullptr); }
-	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
+	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,VAttrType::DIM_RIGHT,$3,nullptr); }
+	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_ROSE '(' expr ')'			{ $$ = new AstRose($1,$3); }
 	|	yD_ROSE '(' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $rose and clock arguments"); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
@@ -3810,8 +3812,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_SIN '(' expr ')'			{ $$ = new AstSinD($1,$3); }
 	|	yD_SINH '(' expr ')'			{ $$ = new AstSinhD($1,$3); }
-	|	yD_SIZE '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,nullptr); }
-	|	yD_SIZE '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,$5); }
+	|	yD_SIZE '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,VAttrType::DIM_SIZE,$3,nullptr); }
+	|	yD_SIZE '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_SIZE,$3,$5); }
 	|	yD_SQRT '(' expr ')'			{ $$ = new AstSqrtD($1,$3); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1, new AstTime($1, VTimescale(VTimescale::NONE)), 0, 32); }
@@ -3821,9 +3823,9 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_TIME	parenE				{ $$ = new AstTime($1, VTimescale(VTimescale::NONE)); }
-	|	yD_TYPENAME '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1, AstAttrType::TYPENAME, $3); }
+	|	yD_TYPENAME '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1, VAttrType::TYPENAME, $3); }
 	|	yD_UNGETC '(' expr ',' expr ')'		{ $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
-	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
+	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,VAttrType::DIM_UNPK_DIMENSIONS,$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1, $3); }
 	|	yD_URANDOM '(' expr ')'			{ $$ = new AstRand($1, $3, true); }
 	|	yD_URANDOM parenE			{ $$ = new AstRand($1, nullptr, true); }
@@ -3839,15 +3841,15 @@ elaboration_system_task<nodep>:	// IEEE: elaboration_system_task (1800-2009)
 
 elaboration_system_task_guts<nodep>:	// IEEE: part of elaboration_system_task (1800-2009)
 	//			// $fatal first argument is exit number, must be constant
-		yD_INFO	   parenE			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_INFO, nullptr); }
-	|	yD_INFO	   '(' exprList ')'		{ $$ = new AstElabDisplay($1, AstDisplayType::DT_INFO, $3); }
-	|	yD_WARNING parenE			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_WARNING, nullptr); }
-	|	yD_WARNING '(' exprList ')'		{ $$ = new AstElabDisplay($1, AstDisplayType::DT_WARNING, $3); }
-	|	yD_ERROR   parenE			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_ERROR, nullptr); }
-	|	yD_ERROR   '(' exprList ')'		{ $$ = new AstElabDisplay($1, AstDisplayType::DT_ERROR, $3); }
-	|	yD_FATAL   parenE			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_FATAL, nullptr); }
-	|	yD_FATAL   '(' expr ')'			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_FATAL, nullptr); DEL($3); }
-	|	yD_FATAL   '(' expr ',' exprListE ')'	{ $$ = new AstElabDisplay($1, AstDisplayType::DT_FATAL, $5); DEL($3); }
+		yD_INFO	   parenE			{ $$ = new AstElabDisplay($1, VDisplayType::DT_INFO, nullptr); }
+	|	yD_INFO	   '(' exprList ')'		{ $$ = new AstElabDisplay($1, VDisplayType::DT_INFO, $3); }
+	|	yD_WARNING parenE			{ $$ = new AstElabDisplay($1, VDisplayType::DT_WARNING, nullptr); }
+	|	yD_WARNING '(' exprList ')'		{ $$ = new AstElabDisplay($1, VDisplayType::DT_WARNING, $3); }
+	|	yD_ERROR   parenE			{ $$ = new AstElabDisplay($1, VDisplayType::DT_ERROR, nullptr); }
+	|	yD_ERROR   '(' exprList ')'		{ $$ = new AstElabDisplay($1, VDisplayType::DT_ERROR, $3); }
+	|	yD_FATAL   parenE			{ $$ = new AstElabDisplay($1, VDisplayType::DT_FATAL, nullptr); }
+	|	yD_FATAL   '(' expr ')'			{ $$ = new AstElabDisplay($1, VDisplayType::DT_FATAL, nullptr); DEL($3); }
+	|	yD_FATAL   '(' expr ',' exprListE ')'	{ $$ = new AstElabDisplay($1, VDisplayType::DT_FATAL, $5); DEL($3); }
 	;
 
 //UNSUPproperty_actual_arg<nodep>:  // ==IEEE: property_actual_arg
@@ -4051,8 +4053,8 @@ tf_item_declaration<nodep>:	// ==IEEE: tf_item_declaration
 	;
 
 tf_item_declarationVerilator<nodep>:	// Verilator extensions
-		yVL_PUBLIC				{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_TASK); v3Global.dpi(true); }
-	|	yVL_NO_INLINE_TASK			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_TASK); }
+		yVL_PUBLIC				{ $$ = new AstPragma($1,VPragmaType::PUBLIC_TASK); v3Global.dpi(true); }
+	|	yVL_NO_INLINE_TASK			{ $$ = new AstPragma($1,VPragmaType::NO_INLINE_TASK); }
 	;
 
 tf_port_listE<nodep>:		// IEEE: tf_port_list + empty
@@ -5007,11 +5009,19 @@ idArrayedForeach<nodep>:	// IEEE: id + select (under foreach expression)
 	//			// To avoid conflicts we allow expr as first element, must post-check
 	|	idArrayed '[' expr ',' loop_variables ']'
 			{ $3 = AstNode::addNextNull($3, $5); $$ = new AstSelLoopVars($2, $1, $3); }
+	|	idArrayed '[' ',' loop_variables ']'
+			{ $4 = AstNode::addNextNull(new AstEmpty{$3}, $4); $$ = new AstSelLoopVars($2, $1, $4); }
 	;
 
 // VarRef without any dots or vectorizaion
 varRefBase<varRefp>:
 		id					{ $$ = new AstVarRef($<fl>1, *$1, VAccess::READ); }
+	;
+
+// ParseRef
+parseRefBase<nodep>:
+		id
+			{ $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
 	;
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below
@@ -6216,8 +6226,7 @@ class_item<nodep>:			// ==IEEE: class_item
 	|	timeunits_declaration			{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
 	//			// local_parameter_declaration under parameter_declaration
-	|	parameter_declaration ';'
-			{ $$ = $1; BBUNSUP($2, "Unsupported: class parameters"); }  // 1800-2009
+	|	parameter_declaration ';'		{ $$ = $1; }
 	|	';'					{ $$ = nullptr; }
 	//
 	|	error ';'				{ $$ = nullptr; }
@@ -6413,7 +6422,7 @@ vltItem:
 	|	yVLT_FULL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
 			{ V3Config::addCaseFull(*$3, $5->toUInt()); }
 	|	yVLT_HIER_BLOCK vltDModuleE
-			{ V3Config::addModulePragma(*$2, AstPragmaType::HIER_BLOCK); }
+			{ V3Config::addModulePragma(*$2, VPragmaType::HIER_BLOCK); }
 	|	yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING
 			{ V3Config::addCaseParallel(*$3, 0); }
 	|	yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
@@ -6426,10 +6435,6 @@ vltOffFront<errcodeen>:
 		yVLT_COVERAGE_OFF			{ $$ = V3ErrorCode::I_COVERAGE; }
 	|	yVLT_TRACING_OFF			{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_OFF				{ $$ = V3ErrorCode::I_LINT; }
-	|	yVLT_LINT_OFF yVLT_D_MSG idAny
-			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3); }
-			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."); }
 	|	yVLT_LINT_OFF yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
@@ -6439,10 +6444,6 @@ vltOnFront<errcodeen>:
 		yVLT_COVERAGE_ON			{ $$ = V3ErrorCode::I_COVERAGE; }
 	|	yVLT_TRACING_ON				{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_ON				{ $$ = V3ErrorCode::I_LINT; }
-	|	yVLT_LINT_ON yVLT_D_MSG idAny
-			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  }
-			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."); }
 	|	yVLT_LINT_ON yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
@@ -6470,17 +6471,18 @@ vltVarAttrVarE<strp>:
 	;
 
 vltVarAttrFront<attrtypeen>:
-		yVLT_CLOCK_ENABLE           { $$ = AstAttrType::VAR_CLOCK_ENABLE; }
-	|	yVLT_CLOCKER                { $$ = AstAttrType::VAR_CLOCKER; }
-	|	yVLT_ISOLATE_ASSIGNMENTS    { $$ = AstAttrType::VAR_ISOLATE_ASSIGNMENTS; }
-	|	yVLT_NO_CLOCKER             { $$ = AstAttrType::VAR_NO_CLOCKER; }
-	|	yVLT_PUBLIC                 { $$ = AstAttrType::VAR_PUBLIC; v3Global.dpi(true); }
-	|	yVLT_PUBLIC_FLAT            { $$ = AstAttrType::VAR_PUBLIC_FLAT; v3Global.dpi(true); }
-	|	yVLT_PUBLIC_FLAT_RD         { $$ = AstAttrType::VAR_PUBLIC_FLAT_RD; v3Global.dpi(true); }
-	|	yVLT_PUBLIC_FLAT_RW         { $$ = AstAttrType::VAR_PUBLIC_FLAT_RW; v3Global.dpi(true); }
-	|	yVLT_SC_BV                  { $$ = AstAttrType::VAR_SC_BV; }
-	|	yVLT_SFORMAT                { $$ = AstAttrType::VAR_SFORMAT; }
-	|	yVLT_SPLIT_VAR              { $$ = AstAttrType::VAR_SPLIT_VAR; }
+		yVLT_CLOCK_ENABLE           { $$ = VAttrType::VAR_CLOCK_ENABLE; }
+	|	yVLT_CLOCKER                { $$ = VAttrType::VAR_CLOCKER; }
+	|	yVLT_ISOLATE_ASSIGNMENTS    { $$ = VAttrType::VAR_ISOLATE_ASSIGNMENTS; }
+	|	yVLT_NO_CLOCKER             { $$ = VAttrType::VAR_NO_CLOCKER; }
+	|	yVLT_FORCEABLE              { $$ = VAttrType::VAR_FORCEABLE; }
+	|	yVLT_PUBLIC                 { $$ = VAttrType::VAR_PUBLIC; v3Global.dpi(true); }
+	|	yVLT_PUBLIC_FLAT            { $$ = VAttrType::VAR_PUBLIC_FLAT; v3Global.dpi(true); }
+	|	yVLT_PUBLIC_FLAT_RD         { $$ = VAttrType::VAR_PUBLIC_FLAT_RD; v3Global.dpi(true); }
+	|	yVLT_PUBLIC_FLAT_RW         { $$ = VAttrType::VAR_PUBLIC_FLAT_RW; v3Global.dpi(true); }
+	|	yVLT_SC_BV                  { $$ = VAttrType::VAR_SC_BV; }
+	|	yVLT_SFORMAT                { $$ = VAttrType::VAR_SFORMAT; }
+	|	yVLT_SPLIT_VAR              { $$ = VAttrType::VAR_SPLIT_VAR; }
 	;
 
 //**********************************************************************

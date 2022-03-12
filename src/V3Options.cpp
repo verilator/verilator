@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -718,6 +718,10 @@ void V3Options::notify() {
                 "--xml-only or --E option");
     }
 
+    if (cdc()) {
+        cmdfl->v3warn(DEPRECATED, "Option --cdc is deprecated and is planned for removal");
+    }
+
     if (m_build && (m_gmake || m_cmake)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
@@ -1166,7 +1170,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             case 'l': m_oLife = flag; break;
             case 'm': m_oAssemble = flag; break;
             //    n
-            case 'o': m_oConstBitOpTree = flag; break;  // Can remove ~2022-01 when stable
+            case 'o':
+                m_oConstBitOpTree = flag;
+                break;  // Can remove ~2022-01 when stable
+            //    o will be used as an escape for a second character of optimization disables
             case 'p':
                 m_public = !flag;
                 break;  // With -Op so flag=0, we want public on so few optimizations done
@@ -1652,7 +1659,7 @@ void V3Options::showVersion(bool verbose) {
     if (!verbose) return;
 
     cout << endl;
-    cout << "Copyright 2003-2021 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "Copyright 2003-2022 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,12 +34,12 @@
 
 //######################################################################
 
-class DescopeVisitor final : public AstNVisitor {
+class DescopeVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Cleared entire netlist
     //   AstCFunc::user()               // bool.  Indicates processing completed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // TYPES
     using FuncMmap = std::multimap<std::string, AstCFunc*>;
@@ -73,8 +73,6 @@ private:
     // module.
     string descopedSelfPointer(const AstScope* scopep) {
         UASSERT(scopep, "Var/Func not scoped");
-        UASSERT(!VN_IS(scopep->modp(), Class), "References to classes handled elsewhere");
-
         // Static functions can't use relative references via 'this->'
         const bool relativeRefOk = !m_funcp->isStatic();
 
@@ -82,7 +80,11 @@ private:
         UINFO(8, "              ref to    " << scopep << endl);
         UINFO(8, "             aboveScope " << scopep->aboveScopep() << endl);
 
-        if (relativeRefOk && scopep == m_scopep) {
+        if (VN_IS(scopep->modp(), Class)) {
+            // Direct reference to class members are from within the class itself, references from
+            // outside the class must go via AstMemberSel
+            return "this";
+        } else if (relativeRefOk && scopep == m_scopep) {
             return "this";
         } else if (relativeRefOk && !m_modSingleton && scopep->aboveScopep() == m_scopep
                    && VN_IS(scopep->modp(), Module)) {
@@ -168,7 +170,7 @@ private:
                 // Not really any way the user could do this, and we'd need
                 // to come up with some return value
                 // newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
-                //                                   AstDisplayType::DT_WARNING,
+                //                                   VDisplayType::DT_WARNING,
                 //                                   string("%%Error: ")+name+"() called with bad
                 //                                   scope", nullptr));
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
@@ -224,15 +226,11 @@ private:
         } else if (scopep->modp() == v3Global.rootp()->constPoolp()->modp()) {
             // Reference to constant pool value need no self pointer
             nodep->selfPointer("");
-        } else if (VN_IS(scopep->modp(), Class)) {
-            // Direct reference to class members are from within the class itself, references from
-            // outside the class must go via AstMemberSel
-            nodep->selfPointer("this");
         } else {
             nodep->selfPointer(descopedSelfPointer(scopep));
         }
         nodep->varScopep(nullptr);
-        UINFO(9, "  refout " << nodep << endl);
+        UINFO(9, "  refout " << nodep << " selfPtr=" << nodep->selfPointer() << endl);
     }
     virtual void visit(AstCCall* nodep) override {
         // UINFO(9, "       " << nodep << endl);
@@ -240,13 +238,7 @@ private:
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         const AstScope* const scopep = nodep->funcp()->scopep();
-        if (VN_IS(scopep->modp(), Class)) {
-            // Direct call to class methods are from within the class itself, method calls from
-            // outside the class must go via AstCMethodCall
-            nodep->selfPointer("this");
-        } else {
-            nodep->selfPointer(descopedSelfPointer(scopep));
-        }
+        nodep->selfPointer(descopedSelfPointer(scopep));
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }

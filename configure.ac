@@ -1,13 +1,13 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2021 by Wilson Snyder. Verilator is free software; you
+# Copyright 2003-2022 by Wilson Snyder. Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.216 2021-12-05],
+AC_INIT([Verilator],[4.220 2022-03-12],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -22,6 +22,8 @@ AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 PACKAGE_VERSION_NUMBER=`AS_ECHO("$PACKAGE_VERSION") | sed 's/ .*//g'`
 AC_SUBST(PACKAGE_VERSION_NUMBER)
 AC_DEFINE_UNQUOTED([PACKAGE_VERSION_NUMBER_STRING],["$PACKAGE_VERSION_NUMBER"],[Package version as a number])
+VERILATOR_VERSION_INTEGER=`AS_ECHO("$PACKAGE_VERSION") | [sed 's/\([0-9]\)\.\([0-9][0-9][0-9]\) .*/\1\2000/g']`
+AC_SUBST(VERILATOR_VERSION_INTEGER)
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
@@ -143,10 +145,10 @@ AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
 # Compiler flags (ensure they are not empty to avoid configure defaults)
-CFLAGS+=" "
-CPPFLAGS+=" "
-CXXFLAGS+=" "
-LDFLAGS+=" "
+CFLAGS="$CFLAGS "
+CPPFLAGS="$CPPFLAGS "
+CXXFLAGS="$CXXFLAGS "
+LDFLAGS="$LDFLAGS "
 
 # Checks for programs.
 AC_PROG_CC

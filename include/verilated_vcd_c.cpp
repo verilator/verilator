@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -273,7 +273,7 @@ void VerilatedVcd::printStr(const char* str) {
 void VerilatedVcd::printQuad(vluint64_t n) {
     constexpr size_t LEN_STR_QUAD = 40;
     char buf[LEN_STR_QUAD];
-    VL_SNPRINTF(buf, LEN_STR_QUAD, "%" VL_PRI64 "u", n);
+    VL_SNPRINTF(buf, LEN_STR_QUAD, "%" PRIu64, n);
     printStr(buf);
 }
 
@@ -426,8 +426,9 @@ void VerilatedVcd::dumpHeader() {
                 case VLT_TRACE_SCOPE_UNION: printStr("union "); break;
                 default: printStr("module ");
                 }
-            } else
+            } else {
                 printStr("module ");
+            }
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
@@ -462,7 +463,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
                            int arraynum, bool tri, bool bussed, int msb, int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    VerilatedTrace<VerilatedVcd>::declCode(code, bits, tri);
+    const bool enabled = VerilatedTrace<VerilatedVcd>::declCode(code, name, bits, tri);
 
     if (m_suffixes.size() <= nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE) {
         m_suffixes.resize(nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);
@@ -471,16 +472,15 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     // Make sure write buffer is large enough (one character per bit), plus header
     bufferResize(bits + 1024);
 
+    if (!enabled) return;
+
     // Split name into basename
     // Spaces and tabs aren't legal in VCD signal names, so:
     // Space separates each level of scope
     // Tab separates final scope from signal name
     // Tab sorts before spaces, so signals nicely will print before scopes
     // Note the hiername may be nothing, if so we'll add "\t{name}"
-    std::string nameasstr = name;
-    if (!moduleName().empty()) {
-        nameasstr = moduleName() + scopeEscape() + nameasstr;  // Optional ->module prefix
-    }
+    std::string nameasstr = namePrefix() + name;
     std::string hiername;
     std::string basename;
     for (const char* cp = nameasstr.c_str(); *cp; cp++) {
@@ -608,6 +608,7 @@ static inline void VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* s
 
 void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
     const char* const suffixp = m_suffixes.data() + code * VL_TRACE_SUFFIX_ENTRY_SIZE;
+    VL_DEBUG_IFDEF(assert(suffixp[0]););
     VerilatedVcdCCopyAndAppendNewLine(writep, suffixp);
 
     // Now write back the write pointer incremented by the actual size of the
@@ -830,16 +831,19 @@ float flo = 0.0f;
 
 void vcdInit(void*, VerilatedVcd* vcdp, vluint32_t) {
     vcdp->scopeEscape('.');
-    vcdp->module("top");
+    vcdp->pushNamePrefix("top.");
     /**/ vcdp->declBus(0x2, "v1", -1, 0, 5, 1);
     /**/ vcdp->declBus(0x3, "v2", -1, 0, 6, 1);
-    /**/ vcdp->module("top.sub1");
+    /**/ vcdp->pushNamePrefix("sub1.");
     /***/ vcdp->declBit(0x4, "s1", -1, 0);
     /***/ vcdp->declBit(0x5, "ch", -1, 0);
-    /**/ vcdp->module("top.sub2");
+    /**/ vcdp->popNamePrefix();
+    /**/ vcdp->pushNamePrefix("sub2.");
     /***/ vcdp->declArray(0x6, "s2", -1, 0, 40, 3);
+    /**/ vcdp->popNamePrefix();
+    vcdp->popNamePrefix();
     // Note need to add 3 for next code.
-    vcdp->module("top2");
+    vcdp->pushNamePrefix("top2.");
     /**/ vcdp->declBus(0x2, "t2v1", -1, 0, 4, 1);
     /**/ vcdp->declTriBit(0x10, "io1", -1, 0);
     /**/ vcdp->declTriBus(0x12, "io5", -1, 0, 4, 0);
@@ -851,6 +855,7 @@ void vcdInit(void*, VerilatedVcd* vcdp, vluint32_t) {
     /**/  // Note need to add 4 for next code.
     /**/ vcdp->declTriQuad(0x24, "tq", -1, 0, 63, 0);
     /**/  // Note need to add 4 for next code.
+    vcdp->popNamePrefix();
 }
 
 void vcdFull(void*, VerilatedVcd* vcdp) {

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -35,14 +35,14 @@
 //######################################################################
 // Active class functions
 
-class ActiveTopVisitor final : public AstNVisitor {
+class ActiveTopVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Entire netlist
     //   AstNode::user()                bool. True if processed
     //  Each call to V3Const::constify
     //   AstNode::user4()               Used by V3Const::constify, called below
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope

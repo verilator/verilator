@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -38,12 +38,12 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkResolveVisitor final : public AstNVisitor {
+class LinkResolveVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()   // bool           Moved default caseitems
-    const AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     // Below state needs to be preserved between each module call.
@@ -80,7 +80,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstInitial* nodep) override {
+    virtual void visit(AstInitialAutomatic* nodep) override {
         iterateChildren(nodep);
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial
@@ -96,7 +96,7 @@ private:
     }
     virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
-        if (m_classp && !nodep->isParam()) nodep->varType(AstVarType::MEMBER);
+        if (m_classp && !nodep->isParam()) nodep->varType(VVarType::MEMBER);
         if (m_ftaskp) nodep->funcLocal(true);
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
@@ -156,7 +156,7 @@ private:
             if (sensp && !VN_IS(sensp, NodeVarRef) && !VN_IS(sensp, Const)) {
                 // Make a new temp wire
                 const string newvarname = "__Vsenitemexpr" + cvtToStr(++m_senitemCvtNum);
-                AstVar* const newvarp = new AstVar(sensp->fileline(), AstVarType::MODULETEMP,
+                AstVar* const newvarp = new AstVar(sensp->fileline(), VVarType::MODULETEMP,
                                                    newvarname, VFlagLogicPacked(), 1);
                 // We can't just add under the module, because we may be
                 // inside a generate, begin, etc.
@@ -223,20 +223,20 @@ private:
             AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
             if (AstNodeVarRef* const varrefp
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
                                            varrefp->cloneTree(false)));
             } else if (AstUnlinkedRef* const uvxrp
                        = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
                                            uvxrp->cloneTree(false)));
             } else if (auto* const fromp = VN_CAST(basefromp, LambdaArgRef)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
                                            fromp->cloneTree(false)));
             } else if (AstMemberSel* const fromp = VN_CAST(basefromp, MemberSel)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::MEMBER_BASE,
                                            fromp->cloneTree(false)));
             } else if (AstEnumItemRef* const fromp = VN_CAST(basefromp, EnumItemRef)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::ENUM_BASE,
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::ENUM_BASE,
                                            fromp->cloneTree(false)));
             } else if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
@@ -261,7 +261,7 @@ private:
     }
 
     virtual void visit(AstPragma* nodep) override {
-        if (nodep->pragType() == AstPragmaType::HIER_BLOCK) {
+        if (nodep->pragType() == VPragmaType::HIER_BLOCK) {
             UASSERT_OBJ(m_modp, nodep, "HIER_BLOCK not under a module");
             // If this is hierarchical mode which is to lib-create,
             // sub modules do not have hier_block meta comment in the source code.
@@ -271,18 +271,18 @@ private:
             m_modp->hierBlock(v3Global.opt.hierarchical());
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
+        } else if (nodep->pragType() == VPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == AstPragmaType::PUBLIC_TASK) {
+        } else if (nodep->pragType() == VPragmaType::PUBLIC_TASK) {
             UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
+        } else if (nodep->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
             if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize
                                                  // better without
                 nodep->unlinkFrBack();
@@ -544,7 +544,7 @@ public:
 //      Recurses cells backwards, so we can pick up those things that propagate
 //      from child cells up to the top module.
 
-class LinkBotupVisitor final : public AstNVisitor {
+class LinkBotupVisitor final : public VNVisitor {
 private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module

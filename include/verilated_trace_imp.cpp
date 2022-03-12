@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -282,6 +282,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::onExit(void* selfp) {
 template <>
 VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
     : m_sigs_oldvalp{nullptr}
+    , m_sigs_enabledp{nullptr}
     , m_timeLastDump{0}
     , m_fullDump{true}
     , m_nextCode{0}
@@ -302,6 +303,7 @@ VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
 
 template <> VerilatedTrace<VL_DERIVED_T>::~VerilatedTrace() {
     if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = nullptr);
+    if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
     Verilated::removeFlushCb(VerilatedTrace<VL_DERIVED_T>::onFlush, this);
     Verilated::removeExitCb(VerilatedTrace<VL_DERIVED_T>::onExit, this);
 #ifdef VL_TRACE_THREADED
@@ -320,9 +322,10 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     m_nextCode = 1;
     m_numSignals = 0;
     m_maxBits = 0;
+    m_sigs_enabledVec.clear();
 
     // Call all initialize callbacks, which will:
-    // - Call decl* for each signal
+    // - Call decl* for each signal (these eventually call ::declCode)
     // - Store the base code
     for (vluint32_t i = 0; i < m_initCbs.size(); ++i) {
         const CallbackRecord& cbr = m_initCbs[i];
@@ -337,6 +340,23 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     // Now that we know the number of codes, allocate space for the buffer
     // holding previous signal values.
     if (!m_sigs_oldvalp) m_sigs_oldvalp = new vluint32_t[nextCode()];
+
+    // Apply enables
+    if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
+    if (!m_sigs_enabledVec.empty()) {
+        // Else if was empty, m_sigs_enabledp = nullptr to short circuit tests
+        // But it isn't, so alloc one bit for each code to indicate enablement
+        // We don't want to still use m_signs_enabledVec as std::vector<bool> is not
+        // guarenteed to be fast
+        m_sigs_enabledp = new vluint32_t[1 + VL_WORDS_I(nextCode())]{0};
+        m_sigs_enabledVec.reserve(nextCode());
+        for (size_t code = 0; code < nextCode(); ++code) {
+            if (m_sigs_enabledVec[code]) {
+                m_sigs_enabledp[VL_BITWORD_I(code)] |= 1U << VL_BITBIT_I(code);
+            }
+        }
+        m_sigs_enabledVec.clear();
+    }
 
     // Set callback so flush/abort will flush this file
     Verilated::addFlushCb(VerilatedTrace<VL_DERIVED_T>::onFlush, this);
@@ -356,10 +376,38 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
 }
 
 template <>
-void VerilatedTrace<VL_DERIVED_T>::declCode(vluint32_t code, vluint32_t bits, bool tri) {
+bool VerilatedTrace<VL_DERIVED_T>::declCode(vluint32_t code, const char* namep, vluint32_t bits,
+                                            bool tri) {
     if (VL_UNCOVERABLE(!code)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
     }
+    // To keep it simple, this is O(enables * signals), but we expect few enables
+    std::string declName = namePrefix() + namep;
+    bool enabled = false;
+    if (m_dumpvars.empty()) enabled = true;
+    for (const auto& item : m_dumpvars) {
+        const int dumpvarsLevel = item.first;
+        const char* dvp = item.second.c_str();
+        const char* np = declName.c_str();
+        while (*dvp && *dvp == *np) {
+            ++dvp;
+            ++np;
+        }
+        if (*dvp) continue;  // Didn't match dumpvar item
+        if (*np && *np != ' ') continue;  // e.g. "t" isn't a match for "top"
+        int levels = 0;
+        while (*np) {
+            if (*np++ == ' ') ++levels;
+        }
+        if (levels > dumpvarsLevel) continue;  // Too deep
+        // We only need to set first code word if it's a multicode signal
+        // as that's all we'll check for later
+        if (m_sigs_enabledVec.size() <= code) m_sigs_enabledVec.resize((code + 1024) * 2);
+        m_sigs_enabledVec[code] = true;
+        enabled = true;
+        break;
+    }
+
     // Note: The tri-state flag is not used by Verilator, but is here for
     // compatibility with some foreign code.
     int codesNeeded = VL_WORDS_I(bits);
@@ -367,6 +415,7 @@ void VerilatedTrace<VL_DERIVED_T>::declCode(vluint32_t code, vluint32_t bits, bo
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
     ++m_numSignals;
     m_maxBits = std::max(m_maxBits, bits);
+    return enabled;
 }
 
 //=========================================================================
@@ -392,6 +441,19 @@ template <>
 void VerilatedTrace<VL_DERIVED_T>::set_time_resolution(const std::string& unit) VL_MT_SAFE {
     set_time_resolution(unit.c_str());
 }
+template <>
+void VerilatedTrace<VL_DERIVED_T>::dumpvars(int level, const std::string& hier) VL_MT_SAFE {
+    if (level == 0) {
+        m_dumpvars.clear();  // empty = everything on
+    } else {
+        // Convert Verilog . separators to trace space separators
+        std::string hierSpaced = hier;
+        for (auto& i : hierSpaced) {
+            if (i == '.') i = ' ';
+        }
+        m_dumpvars.push_back(std::make_pair(level, hierSpaced));
+    }
+}
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -400,8 +462,8 @@ void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m
     // chances are the data being dumped will have other problems
     const VerilatedLockGuard lock{m_mutex};
     if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
-        VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64
-                     "u, dump call ignored\n",
+        VL_PRINTF_MT("%%Warning: previous dump at t=%" PRIu64 ", requesting t=%" PRIu64
+                     ", dump call ignored\n",
                      m_timeLastDump, timeui);
         return;
     }  // LCOV_EXCL_STOP
@@ -504,9 +566,14 @@ template <> void VerilatedTrace<VL_DERIVED_T>::addCleanupCb(dumpCb_t cb, void* u
     CallbackRecord cbr{cb, userp};
     addCallbackRecord(m_cleanupCbs, cbr);
 }
-template <> void VerilatedTrace<VL_DERIVED_T>::module(const std::string& name) VL_MT_UNSAFE {
-    // Called via callbacks way above in call stack, which already hold m_mutex
-    m_moduleName = name;
+
+template <> void VerilatedTrace<VL_DERIVED_T>::pushNamePrefix(const std::string& prefix) {
+    m_namePrefixStack.push_back(m_namePrefixStack.back() + prefix);
+}
+
+template <> void VerilatedTrace<VL_DERIVED_T>::popNamePrefix(unsigned count) {
+    while (count--) m_namePrefixStack.pop_back();
+    assert(!m_namePrefixStack.empty());
 }
 
 //=========================================================================
@@ -518,44 +585,58 @@ template <> void VerilatedTrace<VL_DERIVED_T>::module(const std::string& name) V
 // the emit* functions can be inlined for performance.
 
 template <> void VerilatedTrace<VL_DERIVED_T>::fullBit(vluint32_t* oldp, CData newval) {
-    *oldp = newval;
-    self()->emitBit(oldp - m_sigs_oldvalp, newval);
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    self()->emitBit(code, newval);
 }
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::fullCData(vluint32_t* oldp, CData newval, int bits) {
-    *oldp = newval;
-    self()->emitCData(oldp - m_sigs_oldvalp, newval, bits);
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    self()->emitCData(code, newval, bits);
 }
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::fullSData(vluint32_t* oldp, SData newval, int bits) {
-    *oldp = newval;
-    self()->emitSData(oldp - m_sigs_oldvalp, newval, bits);
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    self()->emitSData(code, newval, bits);
 }
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::fullIData(vluint32_t* oldp, IData newval, int bits) {
-    *oldp = newval;
-    self()->emitIData(oldp - m_sigs_oldvalp, newval, bits);
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    self()->emitIData(code, newval, bits);
 }
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::fullQData(vluint32_t* oldp, QData newval, int bits) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
     *reinterpret_cast<QData*>(oldp) = newval;
-    self()->emitQData(oldp - m_sigs_oldvalp, newval, bits);
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    self()->emitQData(code, newval, bits);
 }
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::fullWData(vluint32_t* oldp, const WData* newvalp, int bits) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
     for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
-    self()->emitWData(oldp - m_sigs_oldvalp, newvalp, bits);
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    self()->emitWData(code, newvalp, bits);
 }
 
 template <> void VerilatedTrace<VL_DERIVED_T>::fullDouble(vluint32_t* oldp, double newval) {
-    // cppcheck-suppress invalidPointerCast
+    const uint32_t code = oldp - m_sigs_oldvalp;
     *reinterpret_cast<double*>(oldp) = newval;
-    self()->emitDouble(oldp - m_sigs_oldvalp, newval);
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    // cppcheck-suppress invalidPointerCast
+    self()->emitDouble(code, newval);
 }
 
 //=========================================================================
@@ -655,7 +736,7 @@ static inline void cvtQDataToStr(char* dstp, QData value) {
 void verilated_trace_imp_selftest() {
 #define SELF_CHECK(got, exp) \
     do { \
-        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest\n"); \
+        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest"); \
     } while (0)
 
 #define SELF_CHECK_TS(scale) \

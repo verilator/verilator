@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2012-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2012-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -43,7 +43,7 @@
 #if defined(__linux)
 # include <sched.h>  // For sched_getcpu()
 #endif
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !defined(__arm64__)
 # include <cpuid.h>  // For __cpuid_count()
 #endif
 // clang-format on
@@ -168,7 +168,7 @@ public:
     static int getcpu() {  // Return current executing CPU
 #if defined(__linux)
         return sched_getcpu();
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && !defined(__arm64__)
         vluint32_t info[4];
         __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
         // info[1] is EBX, bits 24-31 are APIC ID

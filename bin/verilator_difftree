@@ -38,10 +38,10 @@ def diff_dir(a, b):
 
     anyfile = False
     for base in sorted(files.keys()):
+        if (not 'a' in files[base]) or (not 'b' in files[base]):
+            continue
         a = files[base]['a']
         b = files[base]['b']
-        if not a or not b:
-            continue
         print("=" * 70)
         print("= %s <-> %s" % (a, b))
         diff_file(a, b)
@@ -113,7 +113,7 @@ directories, ignoring irrelevant pointer differences.
 For documentation see
 https://verilator.org/guide/latest/exe_verilator_difftree.html
 
-Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+Copyright 2005-2022 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

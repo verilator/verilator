@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -33,14 +33,13 @@
 #include "V3Global.h"
 #include "V3Clock.h"
 #include "V3Ast.h"
-#include "V3EmitCBase.h"
 
 #include <algorithm>
 
 //######################################################################
 // Convert every WRITE AstVarRef to a READ ref
 
-class ConvertWriteRefsToRead final : public AstNVisitor {
+class ConvertWriteRefsToRead final : public VNVisitor {
 private:
     // MEMBERS
     AstNode* m_result = nullptr;
@@ -68,12 +67,12 @@ public:
 //######################################################################
 // Clock state, as a visitor of each AstNode
 
-class ClockVisitor final : public AstNVisitor {
+class ClockVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared each Module:
     //  AstVarScope::user1p()   -> AstVarScope*.  Temporary signal that was created.
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -99,7 +98,7 @@ private:
         }
         const string newvarname
             = (string("__Vclklast__") + vscp->scopep()->nameDotless() + "__" + varp->name());
-        AstVar* const newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname,
+        AstVar* const newvarp = new AstVar(vscp->fileline(), VVarType::MODULETEMP, newvarname,
                                            VFlagLogicPacked(), 1);
         newvarp->noReset(true);  // Reset by below assign
         m_modp->addStmtp(newvarp);
@@ -207,8 +206,7 @@ private:
     }
     void splitCheck(AstCFunc* ofuncp) {
         if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
-        if (EmitCBaseCounterVisitor(ofuncp->stmtsp()).count() < v3Global.opt.outputSplitCFuncs())
-            return;
+        if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;
 
         int funcnum = 0;
         int func_stmts = 0;
@@ -220,11 +218,12 @@ private:
         if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
         while (tempp->stmtsp()) {
             AstNode* const itemp = tempp->stmtsp()->unlinkFrBack();
-            const int stmts = EmitCBaseCounterVisitor(itemp).count();
+            const int stmts = itemp->nodeCount();
             if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
                 // Make a new function
-                funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + cvtToStr(++funcnum),
-                                     m_topScopep->scopep()};
+                funcp
+                    = new AstCFunc{ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcnum++),
+                                   m_topScopep->scopep()};
                 funcp->dontCombine(true);
                 funcp->isStatic(false);
                 funcp->isLoose(true);
@@ -323,8 +322,8 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Link to global function
-        if (nodep->formCallTree()) {
-            UINFO(4, "    formCallTree " << nodep << endl);
+        if (nodep->isFinal()) {
+            UINFO(4, "    isFinal " << nodep << endl);
             AstCCall* const callp = new AstCCall(nodep->fileline(), nodep);
             m_finalFuncp->addStmtsp(callp);
         }

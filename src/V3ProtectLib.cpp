@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -28,7 +28,7 @@
 //######################################################################
 // ProtectLib top-level visitor
 
-class ProtectVisitor final : public AstNVisitor {
+class ProtectVisitor final : public VNVisitor {
 private:
     AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
     AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions
@@ -410,9 +410,9 @@ private:
                                   + "_protectlib_trace(void* vhandlep__V, void* tfp, int levels, "
                                     "int options) {\n");
             castPtr(fl, txtp);
-            txtp->addText(
-                fl,
-                /**/ "handlep__V->trace(static_cast<VerilatedVcdC*>(tfp), levels, options);\n");
+            txtp->addText(fl,
+                          /**/ "handlep__V->trace(static_cast<" + v3Global.opt.traceClassBase()
+                              + "C*>(tfp), levels, options);\n");
             txtp->addText(fl, "}\n\n");
         }
 
@@ -471,7 +471,7 @@ private:
 
     static void addLocalVariable(AstTextBlock* textp, AstVar* varp, const char* suffix) {
         AstVar* const newVarp
-            = new AstVar(varp->fileline(), AstVarType::VAR, varp->name() + suffix, varp->dtypep());
+            = new AstVar(varp->fileline(), VVarType::VAR, varp->name() + suffix, varp->dtypep());
         textp->addNodep(newVarp);
     }
 

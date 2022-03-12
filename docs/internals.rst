@@ -114,11 +114,11 @@ By convention, each function/method uses the variable ``nodep`` as a
 pointer to the ``AstNode`` currently being processed.
 
 
-``AstNVisitor``
+``VNVisitor``
 ^^^^^^^^^^^^^^^
 
 The passes are implemented by AST visitor classes. These are implemented by
-subclasses of the abstract class, ``AstNVisitor``. Each pass creates an
+subclasses of the abstract class, ``VNVisitor``. Each pass creates an
 instance of the visitor class, which in turn implements a method to perform
 the pass.
 
@@ -523,10 +523,10 @@ optimization passes. This allows separation of the pass algorithm from the
 AST on which it operates. Wikipedia provides an introduction to the concept
 at https://en.wikipedia.org/wiki/Visitor_pattern.
 
-As noted above, all visitors are derived classes of ``AstNVisitor``. All
+As noted above, all visitors are derived classes of ``VNVisitor``. All
 derived classes of ``AstNode`` implement the ``accept`` method, which takes
-as argument a reference to an instance or a ``AstNVisitor`` derived class
-and applies the visit method of the ``AstNVisitor`` to the invoking AstNode
+as argument a reference to an instance or a ``VNVisitor`` derived class
+and applies the visit method of the ``VNVisitor`` to the invoking AstNode
 instance (i.e. ``this``).
 
 One possible difficulty is that a call to ``accept`` may perform an edit
@@ -604,8 +604,8 @@ There are three ways data is passed between visitor functions.
 Iterators
 ---------
 
-``AstNVisitor`` provides a set of iterators to facilitate walking over
-the tree. Each operates on the current ``AstNVisitor`` class (as this)
+``VNVisitor`` provides a set of iterators to facilitate walking over
+the tree. Each operates on the current ``VNVisitor`` class (as this)
 and takes an argument type ``AstNode*``.
 
 ``iterate``
@@ -1183,7 +1183,7 @@ Verilator ideally would support all of IEEE, and has the goal to get close
 to full support. However the following IEEE sections and features are not
 anticipated to be ever implemented for the reasons indicated.
 
-IEEE 1800-2017 3.3 recursive modules
+IEEE 1800-2017 3.3 modules within modules
     Little/no tool support, and arguably not a good practice.
 IEEE 1800-2017 6.12 "shortreal"
     Little/no tool support, and easily simply promoted to real.
@@ -1208,7 +1208,7 @@ IEEE 1800-2017 33 Config
 Distribution
 ============
 
-Copyright 2008-2021 by Wilson Snyder. Verilator is free software; you can
+Copyright 2008-2022 by Wilson Snyder. Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

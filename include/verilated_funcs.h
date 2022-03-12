@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -28,6 +28,8 @@
 #error "verilated_funcs.h should only be included by verilated.h"
 #endif
 
+#include <string>
+
 //=========================================================================
 // Extern functions -- User may override -- See verilated.cpp
 
@@ -43,11 +45,16 @@ extern void vl_finish(const char* filename, int linenum, const char* hier);
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
 extern void vl_stop(const char* filename, int linenum, const char* hier);
 
-/// Routine to call for a couple of fatal messages
+/// Routine to call for fatal messages
 /// User code may wish to replace this function, to do so, define VL_USER_FATAL.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
 extern void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg);
+
+/// Routine to call for warning messages
+/// User code may wish to replace this function, to do so, define VL_USER_WARN.
+/// This code does not have to be thread safe.
+extern void vl_warn(const char* filename, int linenum, const char* hier, const char* msg);
 
 //=========================================================================
 // Extern functions -- Slow path
@@ -57,9 +64,12 @@ extern void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL
 /// Multithread safe wrapper for calls to $stop
 extern void VL_STOP_MT(const char* filename, int linenum, const char* hier,
                        bool maybe = true) VL_MT_SAFE;
-/// Multithread safe wrapper to call for a couple of fatal messages
+/// Multithread safe wrapper to call for fatal messages
 extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
                         const char* msg) VL_MT_SAFE;
+/// Multithread safe wrapper to call for warning messages
+extern void VL_WARN_MT(const char* filename, int linenum, const char* hier,
+                       const char* msg) VL_MT_SAFE;
 
 // clang-format off
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.
@@ -77,7 +87,8 @@ extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 inline IData VL_RANDOM_I() VL_MT_SAFE { return vl_rand64(); }
 inline QData VL_RANDOM_Q() VL_MT_SAFE { return vl_rand64(); }
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);
-extern IData VL_RANDOM_SEEDED_II(IData seed) VL_MT_SAFE;
+extern IData VL_RANDOM_SEEDED_II(IData& seedr) VL_MT_SAFE;
+extern IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     const vluint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {
@@ -151,10 +162,6 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 // Base macros
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
-#define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
-#define VL_BITISSET_Q(data, bit) ((data) & (1ULL << VL_BITBIT_Q(bit)))
-#define VL_BITISSET_E(data, bit) ((data) & (VL_EUL(1) << VL_BITBIT_E(bit)))
-#define VL_BITISSET_W(data, bit) ((data)[VL_BITWORD_E(bit)] & (VL_EUL(1) << VL_BITBIT_E(bit)))
 #define VL_BITISSETLIMIT_W(data, width, bit) (((bit) < (width)) && VL_BITISSET_W(data, bit))
 
 // Shift appropriate word by bit. Does not account for wrapping between two words
@@ -332,13 +339,19 @@ double vl_time_multiplier(int scale) VL_PURE;
 vluint64_t vl_time_pow10(int n) VL_PURE;
 
 #ifdef VL_DEBUG
-/// Evaluate statement if Verilated::debug() enabled
+/// Evaluate statement if VL_DEBUG defined
+# define VL_DEBUG_IFDEF(stmt) \
+    do { \
+        stmt \
+    } while (false)
+/// Evaluate statement if VL_DEBUG defined and Verilated::debug() enabled
 # define VL_DEBUG_IF(stmt) \
     do { \
         if (VL_UNLIKELY(Verilated::debug())) {stmt} \
     } while (false)
 #else
 // We intentionally do not compile the stmt to improve compile speed
+# define VL_DEBUG_IFDEF(stmt) do {} while (false)
 # define VL_DEBUG_IF(stmt) do {} while (false)
 #endif
 
@@ -1430,7 +1443,7 @@ static inline QData VL_STREAML_FAST_QQI(int lbits, QData ld, IData rd_log2) VL_P
     if (rd_log2) {
         const vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);
         const vluint32_t lbitsRem = lbits - lbitsFloor;
-        const QData msbMask = VL_MASK_Q(lbitsRem) << lbitsFloor;
+        const QData msbMask = lbitsFloor == 64 ? 0ULL : VL_MASK_Q(lbitsRem) << lbitsFloor;
         ret = (ret & ~msbMask) | ((ret & msbMask) << ((1ULL << rd_log2) - lbitsRem));
     }
     switch (rd_log2) {
@@ -1781,7 +1794,7 @@ static inline WDataOutP VL_SHIFTRS_WWW(int obits, int lbits, int rbits, WDataOut
                                        WDataInP const lwp, WDataInP const rwp) VL_MT_SAFE {
     EData overshift = 0;  // Huge shift 1>>32 or more
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) overshift |= rwp[i];
-    if (VL_UNLIKELY(overshift || rwp[0] >= obits)) {
+    if (VL_UNLIKELY(overshift || rwp[0] >= static_cast<IData>(obits))) {
         const int lmsw = VL_WORDS_I(obits) - 1;
         const EData sign = VL_SIGNONES_E(lbits, lwp[lmsw]);
         for (int j = 0; j <= lmsw; ++j) owp[j] = sign;
@@ -1800,7 +1813,7 @@ static inline IData VL_SHIFTRS_IIW(int obits, int lbits, int rbits, IData lhs,
                                    WDataInP const rwp) VL_MT_SAFE {
     EData overshift = 0;  // Huge shift 1>>32 or more
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) overshift |= rwp[i];
-    if (VL_UNLIKELY(overshift || rwp[0] >= obits)) {
+    if (VL_UNLIKELY(overshift || rwp[0] >= static_cast<IData>(obits))) {
         const IData sign = -(lhs >> (lbits - 1));  // ffff_ffff if negative
         return VL_CLEAN_II(obits, obits, sign);
     }
@@ -1810,7 +1823,7 @@ static inline QData VL_SHIFTRS_QQW(int obits, int lbits, int rbits, QData lhs,
                                    WDataInP const rwp) VL_MT_SAFE {
     EData overshift = 0;  // Huge shift 1>>32 or more
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) overshift |= rwp[i];
-    if (VL_UNLIKELY(overshift || rwp[0] >= obits)) {
+    if (VL_UNLIKELY(overshift || rwp[0] >= static_cast<IData>(obits))) {
         const QData sign = -(lhs >> (lbits - 1));  // ffff_ffff if negative
         return VL_CLEAN_QQ(obits, obits, sign);
     }
@@ -1962,42 +1975,33 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
 // Range assignments
 
 // EMIT_RULE: VL_ASSIGNRANGE:  rclean=dirty;
-static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, CData& lhsr,
-                                     IData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, int lsb, CData& lhsr, IData rhs) VL_PURE {
     _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, SData& lhsr,
-                                     IData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, int lsb, SData& lhsr, IData rhs) VL_PURE {
     _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, IData& lhsr,
-                                     IData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, int lsb, IData& lhsr, IData rhs) VL_PURE {
     _vl_insert_II(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QIII(int rbits, int obits, int lsb, QData& lhsr,
-                                     IData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_QI(int rbits, int obits, int lsb, QData& lhsr, IData rhs) VL_PURE {
     _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QQII(int rbits, int obits, int lsb, QData& lhsr,
-                                     QData rhs) VL_PURE {
-    _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
-}
-static inline void VL_ASSIGNSEL_QIIQ(int rbits, int obits, int lsb, QData& lhsr,
-                                     QData rhs) VL_PURE {
+static inline void VL_ASSIGNSEL_QQ(int rbits, int obits, int lsb, QData& lhsr, QData rhs) VL_PURE {
     _vl_insert_QQ(lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 // static inline void VL_ASSIGNSEL_IIIW(int obits, int lsb, IData& lhsr, WDataInP const rwp)
 // VL_MT_SAFE { Illegal, as lhs width >= rhs width
-static inline void VL_ASSIGNSEL_WIII(int rbits, int obits, int lsb, WDataOutP owp,
-                                     IData rhs) VL_MT_SAFE {
+static inline void VL_ASSIGNSEL_WI(int rbits, int obits, int lsb, WDataOutP owp,
+                                   IData rhs) VL_MT_SAFE {
     _vl_insert_WI(owp, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_WIIQ(int rbits, int obits, int lsb, WDataOutP owp,
-                                     QData rhs) VL_MT_SAFE {
+static inline void VL_ASSIGNSEL_WQ(int rbits, int obits, int lsb, WDataOutP owp,
+                                   QData rhs) VL_MT_SAFE {
     _vl_insert_WQ(owp, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_WIIW(int rbits, int obits, int lsb, WDataOutP owp,
-                                     WDataInP const rwp) VL_MT_SAFE {
+static inline void VL_ASSIGNSEL_WW(int rbits, int obits, int lsb, WDataOutP owp,
+                                   WDataInP const rwp) VL_MT_SAFE {
     _vl_insert_WW(owp, rwp, lsb + obits - 1, lsb, rbits);
 }
 
@@ -2036,40 +2040,40 @@ static inline WDataOutP VL_CONST_W_2X(int obits, WDataOutP o, EData d1, EData d0
 static inline WDataOutP VL_CONST_W_3X(int obits, WDataOutP o, EData d2, EData d1,
                                       EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;
-    VL_C_END_(obits,3);
+    VL_C_END_(obits, 3);
 }
 static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    VL_C_END_(obits,4);
+    VL_C_END_(obits, 4);
 }
 static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o,
                                       EData d4,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;
-    VL_C_END_(obits,5);
+    VL_C_END_(obits, 5);
 }
 static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o,
                                       EData d5, EData d4,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;
-    VL_C_END_(obits,6);
+    VL_C_END_(obits, 6);
 }
 static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o,
                                       EData d6, EData d5, EData d4,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;
-    VL_C_END_(obits,7);
+    VL_C_END_(obits, 7);
 }
 static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
                                       EData d7, EData d6, EData d5, EData d4,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
-    VL_C_END_(obits,8);
+    VL_C_END_(obits, 8);
 }
 //
 static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP obase,

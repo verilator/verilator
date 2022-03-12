@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -35,12 +35,13 @@
 
 //######################################################################
 
-class DepthVisitor final : public AstNVisitor {
+class DepthVisitor final : public VNVisitor {
 private:
     // NODE STATE
 
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current block
+    AstMTaskBody* m_mtaskbodyp = nullptr;  // Current mtaskbody
     AstNode* m_stmtp = nullptr;  // Current statement
     int m_depth = 0;  // How deep in an expression
     int m_maxdepth = 0;  // Maximum depth in an expression
@@ -52,17 +53,22 @@ private:
     void createDeepTemp(AstNode* nodep) {
         UINFO(6, "  Deep  " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
-        AstVar* const varp = new AstVar{nodep->fileline(), AstVarType::STMTTEMP,
+        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
-        UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
-        m_cfuncp->addInitsp(varp);
+        if (m_cfuncp) {
+            m_cfuncp->addInitsp(varp);
+        } else if (m_mtaskbodyp) {
+            m_mtaskbodyp->addStmtsFirstp(varp);
+        } else {
+            nodep->v3fatalSrc("Deep expression not under a function");
+        }
         // Replace node tree with reference to var
         AstVarRef* const newp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
         nodep->replaceWith(newp);
         // Put assignment before the referencing statement
         AstAssign* const assp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, nodep};
-        AstNRelinker linker2;
+        VNRelinker linker2;
         m_stmtp->unlinkFrBack(&linker2);
         assp->addNext(m_stmtp);
         linker2.relink(assp);
@@ -71,11 +77,25 @@ private:
     // VISITORS
     virtual void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_mtaskbodyp);
         {
             m_cfuncp = nodep;
+            m_mtaskbodyp = nullptr;
             m_depth = 0;
             m_maxdepth = 0;
             m_tempNames.reset();
+            iterateChildren(nodep);
+        }
+    }
+    virtual void visit(AstMTaskBody* nodep) override {
+        VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_mtaskbodyp);
+        {
+            m_cfuncp = nullptr;
+            m_mtaskbodyp = nodep;
+            m_depth = 0;
+            m_maxdepth = 0;
+            // We don't reset the names, as must share across tasks
             iterateChildren(nodep);
         }
     }

@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -33,6 +33,7 @@
 
 // clang-format off
 #include "verilatedos.h"
+#include "verilated_config.h"
 #if VM_SC
 # include "verilated_sc.h"  // Get SYSTEMC_VERSION and time declarations
 #endif
@@ -86,6 +87,7 @@ class VerilatedCovContext;
 class VerilatedEvalMsgQueue;
 class VerilatedFst;
 class VerilatedFstC;
+class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
 class VerilatedVar;
@@ -823,8 +825,8 @@ public:
 public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
-    static const char* catName(const char* n1, const char* n2, int scopet = 0,
-                               const char* delimiter = ".");  // Returns static data
+    // Returns pointer to thread-local static data (overwritten on next call)
+    static const char* catName(const char* n1, const char* n2, const char* delimiter = ".");
 
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;

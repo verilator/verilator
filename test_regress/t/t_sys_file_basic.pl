@@ -13,7 +13,6 @@ scenarios(simulator => 1);
 unlink("$Self->{obj_dir}/t_sys_file_basic_test.log");
 
 compile(
-    v_flags2 => ['+incdir+../include'],
     # Build without cached objects, see bug363
     make_flags => 'VM_PARALLEL_BUILDS=0',
     );

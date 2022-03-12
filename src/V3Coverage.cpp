@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -37,7 +37,7 @@
 //######################################################################
 // Coverage state, as a visitor of each AstNode
 
-class CoverageVisitor final : public AstNVisitor {
+class CoverageVisitor final : public VNVisitor {
 private:
     // TYPES
     using LinenoSet = std::set<int>;
@@ -73,7 +73,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstIf::user1()                  -> bool.  True indicates ifelse processed
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     CheckState m_state;  // State save-restored on each new coverage scope/block
@@ -123,8 +123,8 @@ private:
 
         AstCoverInc* const incp = new AstCoverInc(fl, declp);
         if (!trace_var_name.empty() && v3Global.opt.traceCoverage()) {
-            AstVar* const varp = new AstVar(incp->fileline(), AstVarType::MODULETEMP,
-                                            trace_var_name, incp->findUInt32DType());
+            AstVar* const varp = new AstVar(incp->fileline(), VVarType::MODULETEMP, trace_var_name,
+                                            incp->findUInt32DType());
             varp->trace(true);
             varp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
             m_modp->addStmtp(varp);
@@ -280,7 +280,7 @@ private:
                 // Add signal to hold the old value
                 const string newvarname = string("__Vtogcov__") + nodep->shortName();
                 AstVar* const chgVarp
-                    = new AstVar(nodep->fileline(), AstVarType::MODULETEMP, newvarname, nodep);
+                    = new AstVar(nodep->fileline(), VVarType::MODULETEMP, newvarname, nodep);
                 chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
                 m_modp->addStmtp(chgVarp);
 
@@ -498,7 +498,7 @@ private:
         m_state.m_on = false;
     }
     virtual void visit(AstPragma* nodep) override {
-        if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
+        if (nodep->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
             // Skip all NEXT nodes under this block, and skip this if/case branch
             UINFO(4, "  OFF: h" << m_state.m_handle << " " << nodep << endl);
             m_state.m_on = false;

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -52,16 +52,16 @@
 // These macros taken from gdbsupport/gdb_wait.h in binutils-gdb
 # ifndef WIFEXITED
 #  ifdef __MINGW32__
-#   define WIFEXITED(w)	(((w) & 0xC0000000) == 0)
-#   define WEXITSTATUS(w)	((w) & ~0xC0000000)
+#   define WIFEXITED(w) (((w) & 0xC0000000) == 0)
+#   define WEXITSTATUS(w) ((w) & ~0xC0000000)
 #  else
-#   define WIFEXITED(w)	(((w) & 0377) == 0)
-#   define WEXITSTATUS(w)	(((w) >> 8) & 0377)
+#   define WIFEXITED(w) (((w) & 0377) == 0)
+#   define WEXITSTATUS(w) (((w) >> 8) & 0377)
 #  endif
 # endif
 #else
 # include <sys/time.h>
-# include <sys/wait.h> // Needed on FreeBSD for WIFEXITED
+# include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
 # include <unistd.h>  // usleep
 #endif
 // clang-format on
@@ -320,10 +320,9 @@ uint64_t V3Os::memUsageBytes() {
     FILE* fp = fopen(statmFilename, "r");
     if (!fp) return 0;
     vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    const int items = fscanf(fp,
-                             "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
-                             "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u",
-                             &size, &resident, &share, &text, &lib, &data, &dt);
+    const int items = fscanf(
+        fp, "%" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
+        &size, &resident, &share, &text, &lib, &data, &dt);
     fclose(fp);
     if (VL_UNCOVERABLE(7 != items)) return 0;
     return (text + data) * getpagesize();

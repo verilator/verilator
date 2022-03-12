@@ -1844,6 +1844,7 @@ sub _make_main {
         $fh->print("    std::unique_ptr<VerilatedFstSc> tfp{new VerilatedFstSc};\n") if $self->{trace_format} eq 'fst-sc';
         $fh->print("    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};\n") if $self->{trace_format} eq 'vcd-c';
         $fh->print("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n") if $self->{trace_format} eq 'vcd-sc';
+        $fh->print("    sc_core::sc_start(sc_core::SC_ZERO_TIME);  // Finish elaboration before trace and open\n") if $self->sc;
         $fh->print("    topp->trace(tfp.get(), 99);\n");
         $fh->print("    tfp->open(\"" . $self->trace_filename . "\");\n");
 
@@ -2433,7 +2434,7 @@ sub file_grep {
     return if ($contents eq "_Already_Errored_");
     if ($contents !~ /$regexp/) {
         $self->error("File_grep: $filename: Regexp not found: $regexp\n");
-    } elsif ($expvalue && $expvalue ne $1) {
+    } elsif (defined($expvalue) && $expvalue ne $1) {
         $self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
     }
 }
@@ -3062,7 +3063,7 @@ Command to use to invoke XSim xvlog
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

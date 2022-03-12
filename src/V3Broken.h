@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,8 +23,8 @@
 //============================================================================
 
 // Forward declare so we can include this in V3Ast.h
-class AstNode;
 class AstNetlist;
+class AstNode;
 
 class V3Broken final {
 public:

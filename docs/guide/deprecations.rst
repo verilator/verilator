@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 Deprecations
@@ -16,10 +16,6 @@ Verilated_heavy.h
   "verilated.h". Verilated_heavy.h is planned for removal no sooner than
   July 2022.
 
-Configuration File -msg
-  The :vlopt:`lint_off` "-msg" option has been replaced with the "-rule"
-  option.  "-msg" is planned for removal no sooner than January 2021.
-
-XML locations
-  The XML "fl" attribute has been replaced with the "loc" attribute.  "fl"
-  is planned for removal no sooner than January 2021.
+Option `--cdc`
+  The experimental `--cdc` option is believed to be generally unused and is
+  planned for removal no sooner than January 2023.

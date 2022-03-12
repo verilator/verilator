@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,6 +29,7 @@
 #include <deque>
 #include <fstream>
 #include <map>
+#include <utility>
 
 //=============================================================================
 // VerilatedCovConst
@@ -231,7 +232,7 @@ private:
         // Little selftest
 #define SELF_CHECK(got, exp) \
     do { \
-        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest\n"); \
+        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest"); \
     } while (0)
         SELF_CHECK(combineHier("a.b.c", "a.b.c"), "a.b.c");
         SELF_CHECK(combineHier("a.b.c", "a.b"), "a.b*");
@@ -358,7 +359,7 @@ public:
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
 #ifndef VM_COVERAGE
-        VL_FATAL_MT("", 0, "", "%Error: Called VerilatedCov::write when VM_COVERAGE disabled\n");
+        VL_FATAL_MT("", 0, "", "%Error: Called VerilatedCov::write when VM_COVERAGE disabled");
 #endif
         selftest();
 

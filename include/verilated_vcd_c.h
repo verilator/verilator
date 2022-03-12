@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -328,6 +328,7 @@ template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const char* unitp);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const std::string& unit);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const char* unitp);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const std::string& unit);
+template <> void VerilatedTrace<VerilatedVcd>::dumpvars(int level, const std::string& hier);
 #endif  // DOXYGEN
 
 //=============================================================================
@@ -346,7 +347,7 @@ public:
     explicit VerilatedVcdC(VerilatedVcdFile* filep = nullptr)
         : m_sptrace{filep} {}
     /// Destruct, flush, and close the dump
-    ~VerilatedVcdC() { close(); }
+    virtual ~VerilatedVcdC() { close(); }
 
 public:
     // METHODS - User called
@@ -356,7 +357,7 @@ public:
     /// Open a new VCD file
     /// This includes a complete header dump each time it is called,
     /// just as if this object was deleted and reconstructed.
-    void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
+    virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
     /// Continue a VCD dump by rotating to a new file name
     /// The header is only in the first file created, this allows
     /// "cat" to be used to combine the header plus any number of data files.
@@ -391,6 +392,11 @@ public:
     void set_time_resolution(const char* unit) VL_MT_SAFE { m_sptrace.set_time_resolution(unit); }
     void set_time_resolution(const std::string& unit) VL_MT_SAFE {
         m_sptrace.set_time_resolution(unit);
+    }
+    // Set variables to dump, using $dumpvars format
+    // If level = 0, dump everything and hier is then ignored
+    void dumpvars(int level, const std::string& hier) VL_MT_SAFE {
+        m_sptrace.dumpvars(level, hier);
     }
 
     // Internal class access

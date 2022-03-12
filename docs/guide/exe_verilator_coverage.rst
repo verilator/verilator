@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator_coverage
@@ -67,7 +67,7 @@ which have low coverage are written to the output directory.
 
 Specifies if the coverage point does not include the count number of
 coverage hits, then the coverage point will be considered above the
-threashold, and the coverage report will put a "%" to indicate the coverage
+threshold, and the coverage report will put a "%" to indicate the coverage
 is not sufficient.  Defaults to 10.
 
 .. option:: --help

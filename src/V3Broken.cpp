@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -138,35 +138,9 @@ public:
 bool V3Broken::isLinkable(const AstNode* nodep) { return s_linkableTable.isLinkable(nodep); }
 
 //######################################################################
-// Mark every node in the tree
-
-class BrokenMarkVisitor final : public AstNVisitor {
-private:
-    const uint8_t m_brokenCntCurrent = s_brokenCntGlobal.get();
-
-    // VISITORS
-    virtual void visit(AstNode* nodep) override {
-#ifdef VL_LEAK_CHECKS
-        UASSERT_OBJ(s_allocTable.isAllocated(nodep), nodep,
-                    "AstNode is in tree, but not allocated");
-#endif
-        UASSERT_OBJ(nodep->brokenState() != m_brokenCntCurrent, nodep,
-                    "AstNode is already in tree at another location");
-        if (nodep->maybePointedTo()) s_linkableTable.addLinkable(nodep);
-        nodep->brokenState(m_brokenCntCurrent);
-        iterateChildrenConst(nodep);
-    }
-
-public:
-    // CONSTRUCTORS
-    explicit BrokenMarkVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenMarkVisitor() override = default;
-};
-
-//######################################################################
 // Check every node in tree
 
-class BrokenCheckVisitor final : public AstNVisitor {
+class BrokenCheckVisitor final : public VNVisitor {
     bool m_inScope = false;  // Under AstScope
 
     // Constants for marking we are under/not under a node
@@ -225,7 +199,7 @@ private:
         while (nodep) {
             processAndIterate(nodep);
             nodep = nodep->nextp();
-        };
+        }
     }
     void pushLocalScope() {
         if (m_cfuncp) m_localsStack.emplace_back();
@@ -245,6 +219,12 @@ private:
                       && VN_IS(nodep->lhsp(), NodeVarRef)
                       && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
+    }
+    virtual void visit(AstRelease* nodep) override {
+        processAndIterate(nodep);
+        UASSERT_OBJ(!(v3Global.assertDTypesResolved() && VN_IS(nodep->lhsp(), NodeVarRef)
+                      && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
+                    nodep, "Release LHS is not an lvalue");
     }
     virtual void visit(AstScope* nodep) override {
         VL_RESTORER(m_inScope);
@@ -343,8 +323,23 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         UINFO(1, "Broken called under broken, skipping recursion.\n");  // LCOV_EXCL_LINE
     } else {
         inBroken = true;
-        const BrokenMarkVisitor mvisitor{nodep};
+
+        // Mark every node in the tree
+        const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
+        nodep->foreach<AstNode>([brokenCntCurrent](AstNode* nodep) {
+#ifdef VL_LEAK_CHECKS
+            UASSERT_OBJ(s_allocTable.isAllocated(nodep), nodep,
+                        "AstNode is in tree, but not allocated");
+#endif
+            UASSERT_OBJ(nodep->brokenState() != brokenCntCurrent, nodep,
+                        "AstNode is already in tree at another location");
+            if (nodep->maybePointedTo()) s_linkableTable.addLinkable(nodep);
+            nodep->brokenState(brokenCntCurrent);
+        });
+
+        // Check every node in tree
         const BrokenCheckVisitor cvisitor{nodep};
+
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();
         s_brokenCntGlobal.inc();

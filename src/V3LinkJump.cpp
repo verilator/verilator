@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,12 +41,12 @@
 
 //######################################################################
 
-class LinkJumpVisitor final : public AstNVisitor {
+class LinkJumpVisitor final : public VNVisitor {
 private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    AstWhile* m_loopp = nullptr;  // Current loop
+    AstNode* m_loopp = nullptr;  // Current loop
     bool m_loopInc = false;  // In loop increment
     bool m_inFork = false;  // Under fork
     int m_modRepeatNum = 0;  // Repeat counter
@@ -66,6 +66,13 @@ private:
             underp = VN_AS(nodep, NodeBlock)->stmtsp();
         } else if (VN_IS(nodep, NodeFTask)) {
             underp = VN_AS(nodep, NodeFTask)->stmtsp();
+        } else if (VN_IS(nodep, Foreach)) {
+            if (endOfIter) {
+                underp = VN_AS(nodep, Foreach)->bodysp();
+            } else {
+                underp = nodep;
+                under_and_next = false;  // IE we skip the entire foreach
+            }
         } else if (VN_IS(nodep, While)) {
             if (endOfIter) {
                 // Note we jump to end of bodysp; a FOR loop has its
@@ -93,7 +100,7 @@ private:
             AstJumpLabel* const labelp = new AstJumpLabel(nodep->fileline(), blockp);
             blockp->labelp(labelp);
 
-            AstNRelinker repHandle;
+            VNRelinker repHandle;
             if (under_and_next) {
                 underp->unlinkFrBackWithNext(&repHandle);
             } else {
@@ -146,8 +153,8 @@ private:
         AstNode* const countp = nodep->countp()->unlinkFrBackWithNext();
         const string name = string("__Vrepeat") + cvtToStr(m_modRepeatNum++);
         // Spec says value is integral, if negative is ignored
-        AstVar* const varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
-                                        nodep->findSigned32DType());
+        AstVar* const varp
+            = new AstVar(nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType());
         varp->usedLoopIdx(true);
         m_modp->addStmtp(varp);
         AstNode* initsp = new AstAssign(
@@ -190,6 +197,13 @@ private:
             iterateAndNextNull(nodep->bodysp());
             m_loopInc = true;
             iterateAndNextNull(nodep->incsp());
+        }
+    }
+    virtual void visit(AstForeach* nodep) override {
+        VL_RESTORER(m_loopp);
+        {
+            m_loopp = nodep;
+            iterateAndNextNull(nodep->bodysp());
         }
     }
     virtual void visit(AstReturn* nodep) override {
@@ -288,5 +302,5 @@ public:
 void V3LinkJump::linkJump(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LinkJumpVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("link", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("linkjump", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

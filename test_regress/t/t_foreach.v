@@ -16,6 +16,8 @@ module t (/*AUTOARG*/);
    reg [2:1] [4:3] array [5:6] [7:8];
    reg [1:2] [3:4] larray [6:5] [8:7];
    bit [31:0]      depth1_array [0:0];
+   int             oned [3:1];
+   int             twod [3:1][9:8];
 
    typedef struct packed {
       reg [1:0] [63:0] subarray;
@@ -69,8 +71,15 @@ module t (/*AUTOARG*/);
       end
       `checkh(sum, 64'h0030128ab2a8e557);
 
-      //
+      // comma syntax
+      sum = 0;
+      foreach (array[,index_b]) begin
+         $display(index_b);
+         sum = crc(sum, 0, index_b, 0, 0);
+      end
+      `checkh(sum, 64'h0000000006000000);
 
+      //
       sum = 0;
       foreach (larray[index_a]) begin
          sum = crc(sum, index_a, 0, 0, 0);
@@ -109,6 +118,39 @@ module t (/*AUTOARG*/);
           add += strarray[s].mid.subarray[ss];
       `checkh(add, 'h19);
 `endif
+
+      add = 0;
+      foreach (oned[i]) begin
+         ++add;
+         break;
+      end
+      `checkh(add, 1);  // 9
+
+      add = 0;
+      foreach (oned[i]) begin
+         ++add;
+         continue;
+         add += 100;
+      end
+      `checkh(add, 3);  // 9, 8, 7
+
+      add = 0;
+      foreach (twod[i, j]) begin
+         ++add;
+         break;
+      end
+      // See https://www.accellera.org/images/eda/sv-bc/10303.html
+      `checkh(add, 1);  // 3,9
+
+      add = 0;
+      foreach (twod[i, j]) begin
+         ++add;
+         continue;
+         add += 100;
+      end
+      `checkh(add, 6);
+
+      foreach (twod[i, j]);  // Null body check
 
       $write("*-* All Finished *-*\n");
       $finish;

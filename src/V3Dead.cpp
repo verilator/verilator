@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -44,31 +44,9 @@
 #include <vector>
 
 //######################################################################
-
-class DeadModVisitor final : public AstNVisitor {
-    // In a module that is dead, cleanup the in-use counts of the modules
-private:
-    // NODE STATE
-    // ** Shared with DeadVisitor **
-    // VISITORS
-    virtual void visit(AstCell* nodep) override {
-        iterateChildren(nodep);
-        nodep->modp()->user1Inc(-1);
-    }
-    //-----
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit DeadModVisitor(AstNodeModule* nodep) { iterate(nodep); }
-    virtual ~DeadModVisitor() override = default;
-};
-
-//######################################################################
 // Dead state, as a visitor of each AstNode
 
-class DeadVisitor final : public AstNVisitor {
+class DeadVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire Netlist:
@@ -76,13 +54,14 @@ private:
     //  AstVar::user1()         -> int. Count of number of references
     //  AstVarScope::user1()    -> int. Count of number of references
     //  AstNodeDType::user1()   -> int. Count of number of references
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // TYPES
     using AssignMap = std::multimap<AstVarScope*, AstNodeAssign*>;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
     // List of all encountered to avoid another loop through tree
     std::vector<AstVar*> m_varsp;
     std::vector<AstNode*> m_dtypesp;
@@ -113,6 +92,7 @@ private:
         if (!nodep->generic()  // Don't remove generic types
             && m_elimDTypes  // dtypes stick around until post-widthing
             && !VN_IS(nodep, MemberDType)  // Keep member names iff upper type exists
+            && !nodep->undead()  // VoidDType or something Netlist points to
         ) {
             m_dtypesp.push_back(nodep);
         }
@@ -249,6 +229,13 @@ private:
         }
         checkAll(nodep);
     }
+    virtual void visit(AstSelLoopVars* nodep) override {
+        // Var under a SelLoopVars means we haven't called V3Width to remove them yet
+        VL_RESTORER(m_selloopvarsp);
+        m_selloopvarsp = nodep;
+        iterateChildren(nodep);
+        checkAll(nodep);
+    }
     virtual void visit(AstTypedef* nodep) override {
         iterateChildren(nodep);
         if (m_elimCells && !nodep->attrPublic()) {
@@ -270,6 +257,7 @@ private:
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->isSigPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
+        if (m_selloopvarsp) nodep->user1Inc();
         if (mightElimVar(nodep)) m_varsp.push_back(nodep);
     }
     virtual void visit(AstNodeAssign* nodep) override {
@@ -318,7 +306,9 @@ private:
                     // And its children may now be killable too; correct counts
                     // Recurse, as cells may not be directly under the module but in a generate
                     if (!modp->dead()) {  // If was dead didn't increment user1's
-                        DeadModVisitor{modp};
+                        modp->foreach<AstCell>([](const AstCell* cellp) {  //
+                            cellp->modp()->user1Inc(-1);
+                        });
                     }
                     VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
                     retry = true;

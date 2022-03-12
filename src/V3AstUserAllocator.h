@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -24,6 +24,7 @@
 #include "V3Ast.h"
 
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 template <class T_Node, class T_Data, int T_UserN> class AstUserAllocatorBase VL_NOT_FINAL {
@@ -72,15 +73,15 @@ protected:
     AstUserAllocatorBase() {
         // This simplifies statically as T_UserN is constant. In C++17, use 'if constexpr'.
         if (T_UserN == 1) {
-            AstUser1InUse::check();
+            VNUser1InUse::check();
         } else if (T_UserN == 2) {
-            AstUser2InUse::check();
+            VNUser2InUse::check();
         } else if (T_UserN == 3) {
-            AstUser3InUse::check();
+            VNUser3InUse::check();
         } else if (T_UserN == 4) {
-            AstUser4InUse::check();
+            VNUser4InUse::check();
         } else {
-            AstUser5InUse::check();
+            VNUser5InUse::check();
         }
     }
 
@@ -89,12 +90,15 @@ protected:
         for (T_Data* const p : m_allocated) { delete p; }
     }
 
+    VL_UNCOPYABLE(AstUserAllocatorBase);
+
 public:
-    // Get a reference to the user data
-    T_Data& operator()(T_Node* nodep) {
+    // Get a reference to the user data. If does not exist, construct it with given arguments.
+    template <typename... Args>  //
+    T_Data& operator()(T_Node* nodep, Args&&... args) {
         T_Data* userp = getUserp(nodep);
         if (!userp) {
-            userp = new T_Data;
+            userp = new T_Data{std::forward<Args>(args)...};
             m_allocated.push_back(userp);
             setUserp(nodep, userp);
         }
@@ -107,6 +111,9 @@ public:
         UASSERT_OBJ(userp, nodep, "Missing User data on const AstNode");
         return *userp;
     }
+
+    // Get a pointer to the user data if exists, otherwise nullptr
+    T_Data* tryGet(const T_Node* nodep) { return getUserp(nodep); }
 };
 
 // User pointer allocator classes. T_Node is the type of node the allocator should be applied to

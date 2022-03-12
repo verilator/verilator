@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_func_recurse_param_bad.v:9:27: Unsupported: Recursive function or task call: 'recurse_self'
+                                                     : ... In instance t
+    9 |    function automatic int recurse_self;
+      |                           ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_func_recurse_param_bad.v:15:26: Expecting expression to be constant, but can't determine constant for FUNCREF 'recurse_self'
+                                          : ... In instance t
+        t/t_func_recurse_param_bad.v:9:27: ... Location of non-constant FUNC 'recurse_self': Unsupported: Recursive constant functions
+   15 |    localparam int HUGE = recurse_self(10000);   
+      |                          ^~~~~~~~~~~~
+%Error: Exiting due to

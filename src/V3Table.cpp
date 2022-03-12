@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -144,7 +144,7 @@ public:
 //######################################################################
 // Table class functions
 
-class TableVisitor final : public AstNVisitor {
+class TableVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on each always/assignw
@@ -247,7 +247,7 @@ private:
 
         // We will need a table index variable, create it here.
         AstVar* const indexVarp
-            = new AstVar(fl, AstVarType::BLOCKTEMP, "__Vtableidx" + cvtToStr(m_modTables),
+            = new AstVar(fl, VVarType::BLOCKTEMP, "__Vtableidx" + cvtToStr(m_modTables),
                          VFlagBitPacked(), m_inWidthBits);
         m_modp->addStmtp(indexVarp);
         AstVarScope* const indexVscp = new AstVarScope(indexVarp->fileline(), m_scopep, indexVarp);

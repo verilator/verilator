@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2009-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -119,7 +119,7 @@ struct V3ParseBisonYYSType {
         V3ImportProperty iprop;
         VSigning::en signstate;
         V3ErrorCode::en errcodeen;
-        AstAttrType::en attrtypeen;
+        VAttrType::en attrtypeen;
         VLifetime::en lifetime;
 
 #include "V3Ast__gen_yystype.h"
@@ -137,18 +137,18 @@ class V3ParseImp final {
     VInFilter* const m_filterp;  // Reading filter
     V3ParseSym* m_symp;  // Symbol table
 
-    V3Lexer* m_lexerp;  // Current FlexLexer
+    V3Lexer* m_lexerp = nullptr;  // Current FlexLexer
     static V3ParseImp* s_parsep;  // Current THIS, bison() isn't class based
-    FileLine* m_lexFileline;  // Filename/linenumber currently active for lexing
+    FileLine* m_lexFileline = nullptr;  // Filename/linenumber currently active for lexing
 
     FileLine* m_bisonLastFileline;  // Filename/linenumber of last token
 
-    bool m_inLibrary;  // Currently reading a library vs. regular file
-    int m_lexKwdDepth;  // Inside a `begin_keywords
+    bool m_inLibrary = false;  // Currently reading a library vs. regular file
+    int m_lexKwdDepth = 0;  // Inside a `begin_keywords
     int m_lexKwdLast;  // Last LEX state in `begin_keywords
     VOptionBool m_unconnectedDrive;  // Last unconnected drive
 
-    int m_lexPrevToken;  // previous parsed token (for lexer)
+    int m_lexPrevToken = 0;  // previous parsed token (for lexer)
     std::deque<V3ParseBisonYYSType> m_tokensAhead;  // Tokens we parsed ahead of parser
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup
@@ -156,7 +156,7 @@ class V3ParseImp final {
     std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
     std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
 
-    AstNode* m_tagNodep;  // Points to the node to set to m_tag or nullptr to not set.
+    AstNode* m_tagNodep = nullptr;  // Points to the node to set to m_tag or nullptr to not set.
     VTimescale m_timeLastUnit;  // Last `timescale's unit
 
 public:
@@ -293,13 +293,7 @@ public:
         : m_rootp{rootp}
         , m_filterp{filterp}
         , m_symp{parserSymp} {
-        m_lexFileline = nullptr;
-        m_lexerp = nullptr;
-        m_inLibrary = false;
-        m_lexKwdDepth = 0;
         m_lexKwdLast = stateVerilogRecent();
-        m_lexPrevToken = 0;
-        m_tagNodep = nullptr;
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }
     ~V3ParseImp();

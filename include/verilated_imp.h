@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -32,10 +32,14 @@
 #include "verilated.h"
 #include "verilated_syms.h"
 
+#include <algorithm>
 #include <deque>
-#include <set>
-#include <vector>
+#include <map>
 #include <numeric>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #ifdef VL_THREADED
 # include <functional>
 # include <queue>
@@ -312,14 +316,14 @@ public:  // But only for verilated*.cpp
     IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
-        if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
+        if (VL_UNLIKELY(fdlist.size() != 1)) return ~0U;  // -1
         return static_cast<IData>(
             std::fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
     }
     IData fdTell(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
-        if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
+        if (VL_UNLIKELY(fdlist.size() != 1)) return ~0U;  // -1
         return static_cast<IData>(std::ftell(*fdlist.begin()));
     }
     void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE_EXCLUDES(m_fdMutex) {

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -78,7 +78,7 @@ unsigned VarTspSorter::s_serialNext = 0;
 class VariableOrder final {
     // NODE STATE
     //  AstVar::user1()    -> attributes, via m_attributes
-    const AstUser1InUse m_user1InUse;  // AstVar
+    const VNUser1InUse m_user1InUse;  // AstVar
 
     struct VarAttributes {
         uint32_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding

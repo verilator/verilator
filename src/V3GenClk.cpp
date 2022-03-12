@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,7 +29,7 @@
 //######################################################################
 // GenClk state, as a visitor of each AstNode
 
-class GenClkBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class GenClkBaseVisitor VL_NOT_FINAL : public VNVisitor {
 protected:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -43,8 +43,8 @@ private:
     // Cleared on top scope
     //  AstVarScope::user2()    -> AstVarScope*.  Signal replacing activation with
     //  AstVarRef::user3()      -> bool.  Signal is replaced activation (already done)
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // STATE
     const AstActive* m_activep = nullptr;  // Inside activate statement
@@ -53,9 +53,7 @@ private:
 
     // METHODS
     AstVarScope* genInpClk(AstVarScope* vscp) {
-        if (vscp->user2p()) {
-            return VN_AS(vscp->user2p(), VarScope);
-        } else {
+        if (!vscp->user2p()) {
             // In order to create a __VinpClk* for a signal, it needs to be marked circular.
             // The DPI export trigger is never marked circular by V3Order (see comments in
             // OrderVisitor::nodeMarkCircular). The only other place where one might mark
@@ -76,7 +74,7 @@ private:
             //          ...
             //          ASSIGN(VARREF(inpclk), VARREF(var))
             AstVar* const newvarp
-                = new AstVar(varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
+                = new AstVar(varp->fileline(), VVarType::MODULETEMP, newvarname, varp);
             m_topModp->addStmtp(newvarp);
             AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
             m_scopetopp->addVarp(newvscp);
@@ -86,22 +84,15 @@ private:
             m_scopetopp->addFinalClkp(asninitp);
             //
             vscp->user2p(newvscp);
-            return newvscp;
         }
+        return VN_AS(vscp->user2p(), VarScope);
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) override {
-        AstNode::user2ClearTree();  // user2p() used on entire tree
-        iterateChildren(nodep);
-    }
-    //----
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
-        AstVarScope* const vscp = nodep->varScopep();
-        UASSERT_OBJ(vscp, nodep, "Scope not assigned");
-        if (m_activep && !nodep->user3()) {
-            nodep->user3(true);
+        if (m_activep && !nodep->user3SetOnce()) {
+            AstVarScope* const vscp = nodep->varScopep();
             if (vscp->isCircular()) {
                 UINFO(8, "  VarActReplace " << nodep << endl);
                 // Replace with the new variable
@@ -115,10 +106,8 @@ private:
     }
     virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
-        UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
         iterate(nodep->sensesp());
         m_activep = nullptr;
-        iterateChildren(nodep);
     }
 
     //-----
@@ -141,7 +130,6 @@ private:
     // NODE STATE
     // Cleared on top scope
     //  AstVarScope::user()     -> bool.  Set when the var has been used as clock
-    const AstUser1InUse m_inuser1;
 
     // STATE
     bool m_tracingCall = false;  // Iterating into a call to a cfunc
@@ -151,13 +139,13 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) override {
-        AstNode::user1ClearTree();  // user1p() used on entire tree
-        iterateChildren(nodep);
         {
-            // Make the new clock signals and replace any activate references
-            // See rename, it does some AstNode::userClearTree()'s
-            GenClkRenameVisitor{nodep, m_topModp};
+            const VNUser1InUse user1InUse;
+            iterateChildren(nodep);
         }
+        // Make the new clock signals and replace any activate references
+        // See rename, it does some AstNode::userClearTree()'s
+        GenClkRenameVisitor{nodep, m_topModp};
     }
     virtual void visit(AstNodeModule* nodep) override {
         // Only track the top scopes, not lower level functions

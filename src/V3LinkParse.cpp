@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,14 +34,14 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkParseVisitor final : public AstNVisitor {
+class LinkParseVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on netlist
     //  AstNode::user1()        -> bool.  True if processed
     //  AstNode::user2()        -> bool.  True if fileline recomputed
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // TYPES
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
@@ -232,11 +232,11 @@ private:
 
         if (v3Global.opt.publicFlatRW()) {
             switch (nodep->varType()) {
-            case AstVarType::VAR:  // FALLTHRU
-            case AstVarType::GPARAM:  // FALLTHRU
-            case AstVarType::LPARAM:  // FALLTHRU
-            case AstVarType::PORT:  // FALLTHRU
-            case AstVarType::WIRE: nodep->sigUserRWPublic(true); break;
+            case VVarType::VAR:  // FALLTHRU
+            case VVarType::GPARAM:  // FALLTHRU
+            case VVarType::LPARAM:  // FALLTHRU
+            case VVarType::PORT:  // FALLTHRU
+            case VVarType::WIRE: nodep->sigUserRWPublic(true); break;
             default: break;
             }
         }
@@ -272,7 +272,11 @@ private:
                 auto* const assp
                     = new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
                                     nodep->valuep()->unlinkFrBack());
-                nodep->addNextHere(new AstInitial(newfl, assp));
+                if (nodep->lifetime().isAutomatic()) {
+                    nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
+                } else {
+                    nodep->addNextHere(new AstInitial{newfl, assp});
+                }
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
                 nodep->addNextHere(new AstAssign(fl,
@@ -294,41 +298,46 @@ private:
     virtual void visit(AstAttrOf* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
-        if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
+        if (nodep->attrType() == VAttrType::DT_PUBLIC) {
             AstTypedef* const typep = VN_AS(nodep->backp(), Typedef);
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
+        } else if (nodep->attrType() == VAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClockEn(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_PUBLIC) {
+        } else if (nodep->attrType() == VAttrType::VAR_FORCEABLE) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->setForceable();
+            v3Global.setHasForceableSignals();
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_PUBLIC) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             m_varp->sigModPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT) {
+        } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RD) {
+        } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT_RD) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRdPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RW) {
+        } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT_RW) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
+        } else if (nodep->attrType() == VAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrIsolateAssign(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_SFORMAT) {
+        } else if (nodep->attrType() == VAttrType::VAR_SFORMAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrSFormat(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_SPLIT_VAR) {
+        } else if (nodep->attrType() == VAttrType::VAR_SPLIT_VAR) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             if (!VN_IS(m_modp, Module)) {
                 m_varp->v3warn(
@@ -340,15 +349,15 @@ private:
                 m_varp->attrSplitVar(true);
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_SC_BV) {
+        } else if (nodep->attrType() == VAttrType::VAR_SC_BV) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_CLOCKER) {
+        } else if (nodep->attrType() == VAttrType::VAR_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(VVarAttrClocker::CLOCKER_YES);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_NO_CLOCKER) {
+        } else if (nodep->attrType() == VAttrType::VAR_NO_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(VVarAttrClocker::CLOCKER_NO);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -413,13 +422,8 @@ private:
     }
 
     virtual void visit(AstForeach* nodep) override {
-        // FOREACH(array,loopvars,body)
-        // -> BEGIN(declare vars, loopa=lowest; WHILE(loopa<=highest, ... body))
-        // nodep->dumpTree(cout, "-foreach-old:");
+        // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep << endl);
-        // nodep->dumpTree(cout, "-foreach-in:");
-        AstNode* newp = nodep->bodysp();
-        if (newp) newp->unlinkFrBackWithNext();
         // Separate iteration vars from base from variable
         // Input:
         //      v--- arrayp
@@ -433,81 +437,23 @@ private:
         //   3. ASTSELLOOPVARS(first, var0..var1))
         //   4. DOT(DOT(first, second), ASTSELBIT(third, var0))
         AstNode* bracketp = nodep->arrayp();
-        AstNode* firstVarsp = nullptr;
-        while (AstDot* dotp = VN_CAST(bracketp, Dot)) { bracketp = dotp->rhsp(); }
+        while (AstDot* dotp = VN_CAST(bracketp, Dot)) bracketp = dotp->rhsp();
         if (AstSelBit* const selp = VN_CAST(bracketp, SelBit)) {
-            firstVarsp = selp->rhsp()->unlinkFrBackWithNext();
-            selp->replaceWith(selp->fromp()->unlinkFrBack());
+            // Convert to AstSelLoopVars so V3LinkDot knows what's being defined
+            AstNode* const newp
+                = new AstSelLoopVars{selp->fileline(), selp->fromp()->unlinkFrBack(),
+                                     selp->rhsp()->unlinkFrBackWithNext()};
+            selp->replaceWith(newp);
             VL_DO_DANGLING(selp->deleteTree(), selp);
         } else if (AstSelLoopVars* const selp = VN_CAST(bracketp, SelLoopVars)) {
-            firstVarsp = selp->elementsp()->unlinkFrBackWithNext();
-            selp->replaceWith(selp->fromp()->unlinkFrBack());
-            VL_DO_DANGLING(selp->deleteTree(), selp);
+            // Ok
         } else {
             nodep->v3error(
-                "Syntax error; foreach missing bracketed index variable (IEEE 1800-2017 12.7.3)");
+                "Syntax error; foreach missing bracketed loop variable (IEEE 1800-2017 12.7.3)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        AstNode* const arrayp = nodep->arrayp();  // Maybe different node since bracketp looked
-        if (!VN_IS(arrayp, ParseRef) && !VN_IS(arrayp, Dot)) {
-            // Code below needs to use other then attributes to figure out the bounds
-            // Also need to deal with queues, etc
-            arrayp->v3warn(E_UNSUPPORTED, "Unsupported: foreach on non-simple variable reference");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
-        // Split into for loop
-        // Must do innermost (last) variable first
-        int dimension = 1;
-        AstNode* lastVarsp = firstVarsp;
-        while (lastVarsp->nextp()) {
-            lastVarsp = lastVarsp->nextp();
-            dimension++;
-        }
-        for (AstNode* varsp = lastVarsp; varsp; varsp = varsp->backp()) {
-            UINFO(9, "foreachVar " << varsp << endl);
-            FileLine* const fl = varsp->fileline();
-            AstNode* const varp
-                = new AstVar(fl, AstVarType::BLOCKTEMP, varsp->name(), nodep->findSigned32DType());
-            // These will be the left and right dimensions and size of the array:
-            AstNode* const leftp = new AstAttrOf(
-                fl, AstAttrType::DIM_LEFT, arrayp->cloneTree(false), new AstConst(fl, dimension));
-            AstNode* const rightp = new AstAttrOf(
-                fl, AstAttrType::DIM_RIGHT, arrayp->cloneTree(false), new AstConst(fl, dimension));
-            AstNode* const sizep = new AstAttrOf(
-                fl, AstAttrType::DIM_SIZE, arrayp->cloneTree(false), new AstConst(fl, dimension));
-            AstNode* const stmtsp = varp;
-            // Assign left-dimension into the loop var:
-            stmtsp->addNext(
-                new AstAssign(fl, new AstVarRef(fl, varp->name(), VAccess::WRITE), leftp));
-            // This will turn into a constant bool for static arrays
-            AstNode* const notemptyp = new AstGt(fl, sizep, new AstConst(fl, 0));
-            // This will turn into a bool constant, indicating whether
-            // we count the loop variable up or down:
-            AstNode* const countupp
-                = new AstLte(fl, leftp->cloneTree(true), rightp->cloneTree(true));
-            AstNode* const comparep = new AstCond(
-                fl, countupp->cloneTree(true),
-                // Left increments up to right
-                new AstLte(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
-                           rightp->cloneTree(true)),
-                // Left decrements down to right
-                new AstGte(fl, new AstVarRef(fl, varp->name(), VAccess::READ), rightp));
-            // This will reduce to comparep for static arrays
-            AstNode* const condp = new AstAnd(fl, notemptyp, comparep);
-            AstNode* const incp = new AstAssign(
-                fl, new AstVarRef(fl, varp->name(), VAccess::WRITE),
-                new AstAdd(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
-                           new AstCond(fl, countupp, new AstConst(fl, 1), new AstConst(fl, -1))));
-            stmtsp->addNext(new AstWhile(fl, condp, newp, incp));
-            newp = new AstBegin(nodep->fileline(), "", stmtsp, false, true);
-            dimension--;
-        }
-        // newp->dumpTree(cout, "-foreach-new:");
-        VL_DO_DANGLING(firstVarsp->deleteTree(), firstVarsp);
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstNodeModule* nodep) override {

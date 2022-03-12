@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -235,17 +235,17 @@ public:
 //######################################################################
 // Split class functions
 
-class SplitReorderBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class SplitReorderBaseVisitor VL_NOT_FINAL : public VNVisitor {
 private:
     // NODE STATE
     // AstVarScope::user1p      -> Var SplitNodeVertex* for usage var, 0=not set yet
     // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
     // Ast*::user3p             -> Statement SplitLogicVertex* (temporary only)
     // Ast*::user4              -> Current ordering number (reorderBlock usage)
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
-    const AstUser4InUse m_inuser4;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
 
 protected:
     // STATE
@@ -254,14 +254,11 @@ protected:
     SplitPliVertex* m_pliVertexp;  // Element specifying PLI ordering
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
     bool m_inDly;  // Inside ASSIGNDLY
-    VDouble0 m_statSplits;  // Statistic tracking
 
     // CONSTRUCTORS
 public:
     SplitReorderBaseVisitor() { scoreboardClear(); }
-    virtual ~SplitReorderBaseVisitor() override {
-        V3Stats::addStat("Optimizations, Split always", m_statSplits);
-    }
+    virtual ~SplitReorderBaseVisitor() override = default;
 
     // METHODS
 protected:
@@ -543,7 +540,7 @@ protected:
         if (leaveAlone) {
             UINFO(6, "   No changes\n");
         } else {
-            AstNRelinker replaceHandle;  // Where to add the list
+            VNRelinker replaceHandle;  // Where to add the list
             AstNode* newListp = nullptr;
             for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
                 AstNode* const nextp = it->second;
@@ -623,7 +620,7 @@ private:
 using ColorSet = std::unordered_set<uint32_t>;
 using AlwaysVec = std::vector<AstAlways*>;
 
-class IfColorVisitor final : public AstNVisitor {
+class IfColorVisitor final : public VNVisitor {
     // MEMBERS
     ColorSet m_colors;  // All colors in the original always block
 
@@ -681,7 +678,7 @@ private:
     VL_UNCOPYABLE(IfColorVisitor);
 };
 
-class EmitSplitVisitor final : public AstNVisitor {
+class EmitSplitVisitor final : public VNVisitor {
     // MEMBERS
     const AstAlways* const m_origAlwaysp;  // Block that *this will split
     const IfColorVisitor* const m_ifColorp;  // Digest of results of prior coloring
@@ -793,22 +790,56 @@ private:
     VL_UNCOPYABLE(EmitSplitVisitor);
 };
 
-class RemovePlaceholdersVisitor final : public AstNVisitor {
-    std::unordered_set<AstNode*> m_removeSet;  // placeholders to be removed
-public:
-    explicit RemovePlaceholdersVisitor(AstNode* nodep) {
-        iterate(nodep);
-        for (AstNode* np : m_removeSet) {
-            np->unlinkFrBack();  // Without next
-            VL_DO_DANGLING(np->deleteTree(), np);
+class RemovePlaceholdersVisitor final : public VNVisitor {
+    // MEMBERS
+    bool m_isPure = true;
+    int m_emptyAlways = 0;
+
+    // CONSTRUCTORS
+    RemovePlaceholdersVisitor() = default;
+    virtual ~RemovePlaceholdersVisitor() override = default;
+
+    // VISITORS
+    virtual void visit(AstSplitPlaceholder* nodep) override { pushDeletep(nodep->unlinkFrBack()); }
+    virtual void visit(AstNodeIf* nodep) override {
+        VL_RESTORER(m_isPure);
+        m_isPure = true;
+        iterateChildren(nodep);
+        if (!nodep->ifsp() && !nodep->elsesp() && m_isPure) pushDeletep(nodep->unlinkFrBack());
+    }
+    virtual void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_isPure);
+        m_isPure = true;
+        iterateChildren(nodep);
+        if (m_isPure) {
+            bool emptyOrCommentOnly = true;
+            for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+                // If this always block contains only AstComment, remove here.
+                // V3Gate will remove anyway.
+                if (!VN_IS(bodysp, Comment)) {
+                    emptyOrCommentOnly = false;
+                    break;
+                }
+            }
+            if (emptyOrCommentOnly) {
+                pushDeletep(nodep->unlinkFrBack());
+                ++m_emptyAlways;
+            }
         }
     }
-    virtual ~RemovePlaceholdersVisitor() override = default;
-    virtual void visit(AstSplitPlaceholder* nodep) override { m_removeSet.insert(nodep); }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override {
+        m_isPure &= nodep->isPure();
+        iterateChildren(nodep);  // must visit regardless of m_isPure to remove placeholders
+    }
 
-private:
     VL_UNCOPYABLE(RemovePlaceholdersVisitor);
+
+public:
+    static int exec(AstAlways* nodep) {
+        RemovePlaceholdersVisitor visitor;
+        visitor.iterate(nodep);
+        return visitor.m_emptyAlways;
+    }
 };
 
 class SplitVisitor final : public SplitReorderBaseVisitor {
@@ -820,6 +851,7 @@ private:
 
     // AstNodeIf* whose condition we're currently visiting
     const AstNode* m_curIfConditional = nullptr;
+    VDouble0 m_statSplits;  // Statistic tracking
 
     // CONSTRUCTORS
 public:
@@ -834,14 +866,17 @@ public:
             for (AlwaysVec::iterator addme = it->second.begin(); addme != it->second.end();
                  ++addme) {
                 origp->addNextHere(*addme);
-                RemovePlaceholdersVisitor{*addme};
+                const int numRemoved = RemovePlaceholdersVisitor::exec(*addme);
+                m_statSplits -= numRemoved;
             }
             origp->unlinkFrBack();  // Without next
             VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
 
-    virtual ~SplitVisitor() override = default;
+    virtual ~SplitVisitor() override {
+        V3Stats::addStat("Optimizations, Split always", m_statSplits);
+    }
 
     // METHODS
 protected:
@@ -944,7 +979,7 @@ protected:
             // Counting original always blocks rather than newly-split
             // always blocks makes it a little easier to use this stat to
             // check the result of the t_alw_split test:
-            ++m_statSplits;
+            m_statSplits += ifColor.colors().size() - 1;  // -1 for the original always
 
             // Visit through the original always block one more time,
             // and emit the split always blocks into m_replaceBlocks:

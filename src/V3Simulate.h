@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -42,6 +42,9 @@
 
 #include <deque>
 #include <sstream>
+#include <stack>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 //============================================================================
@@ -52,8 +55,8 @@
 class SimStackNode final {
 public:
     // MEMBERS
-    AstFuncRef* m_funcp;
-    V3TaskConnects* m_tconnects;
+    AstFuncRef* const m_funcp;
+    V3TaskConnects* const m_tconnects;
     // CONSTRUCTORS
     SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects)
         : m_funcp{funcp}
@@ -61,7 +64,7 @@ public:
     ~SimStackNode() = default;
 };
 
-class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
+class SimulateVisitor VL_NOT_FINAL : public VNVisitor {
     // Simulate a node tree, returning value of variables
     // Two major operating modes:
     //   Test the tree to see if it is conformant
@@ -72,9 +75,9 @@ class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on each always/assignw
-    const AstUser1InUse m_inuser1;
-    const AstUser2InUse m_inuser2;
-    const AstUser3InUse m_inuser3;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // Checking:
     //  AstVar(Scope)::user1()  -> VarUsage.  Set true to indicate tracking as lvalue/rvalue
@@ -753,7 +756,9 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
-        if (VN_IS(nodep, AssignDly)) {
+        if (VN_IS(nodep, AssignForce)) {
+            clearOptimizable(nodep, "Force");
+        } else if (VN_IS(nodep, AssignDly)) {
             if (m_anyAssignComb) clearOptimizable(nodep, "Mix of dly/non-dly assigns");
             m_anyAssignDly = true;
             m_inDlyAssign = true;
@@ -975,6 +980,13 @@ private:
         VL_DANGLING(funcp);  // Make sure we've sized the function
         funcp = nodep->taskp();
         UASSERT_OBJ(funcp, nodep, "Not linked");
+        if (funcp->recursive()) {
+            // Because we attach values to nodes rather then making a stack, this is a mess
+            // When we do support this, we need a stack depth limit of 1K or something,
+            // and the t_func_recurse_param_bad.v test should check that limit's error message
+            clearOptimizable(funcp, "Unsupported: Recursive constant functions");
+            return;
+        }
         // Apply function call values to function
         V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         // Must do this in two steps, eval all params, then apply them
@@ -1098,12 +1110,12 @@ private:
         if (m_params) {
             AstConst* const textp = fetchConst(nodep->fmtp());
             switch (nodep->displayType()) {
-            case AstDisplayType::DT_DISPLAY:  // FALLTHRU
-            case AstDisplayType::DT_INFO: v3warn(USERINFO, textp->name()); break;
-            case AstDisplayType::DT_ERROR: v3warn(USERERROR, textp->name()); break;
-            case AstDisplayType::DT_WARNING: v3warn(USERWARN, textp->name()); break;
-            case AstDisplayType::DT_FATAL: v3warn(USERFATAL, textp->name()); break;
-            case AstDisplayType::DT_WRITE:  // FALLTHRU
+            case VDisplayType::DT_DISPLAY:  // FALLTHRU
+            case VDisplayType::DT_INFO: v3warn(USERINFO, textp->name()); break;
+            case VDisplayType::DT_ERROR: v3warn(USERERROR, textp->name()); break;
+            case VDisplayType::DT_WARNING: v3warn(USERWARN, textp->name()); break;
+            case VDisplayType::DT_FATAL: v3warn(USERFATAL, textp->name()); break;
+            case VDisplayType::DT_WRITE:  // FALLTHRU
             default: clearOptimizable(nodep, "Unexpected display type");
             }
         }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,35 +34,64 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitor {
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
+    uint32_t tabModulus(AstNodeDType* dtypep) {
+        const uint32_t elemBytes = dtypep->widthTotalBytes();
+        return dtypep->isString() ? 1  // String
+               : elemBytes <= 2   ? 8  // CData, SData
+               : elemBytes <= 4   ? 4  // IData
+               : elemBytes <= 8   ? 2  // QData
+                                  : 1;
+    }
+
 protected:
     // VISITORS
     virtual void visit(AstInitArray* nodep) override {
-        const AstUnpackArrayDType* const dtypep
-            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
-        UASSERT_OBJ(dtypep, nodep, "Array initializer has non-array dtype");
-        const uint32_t size = dtypep->elementsConst();
-        const uint32_t elemBytes = dtypep->subDTypep()->widthTotalBytes();
-        const uint32_t tabMod = dtypep->subDTypep()->isString() ? 1  // String
-                                : elemBytes <= 2                ? 8  // CData, SData
-                                : elemBytes <= 4                ? 4  // IData
-                                : elemBytes <= 8                ? 2  // QData
-                                                                : 1;
         VL_RESTORER(m_inUnpacked);
         VL_RESTORER(m_unpackedWord);
         m_inUnpacked = true;
-        // Note the double {{ initializer. The first { starts the initializer of the VlUnpacked,
-        // and the second starts the initializer of m_storage within the VlUnpacked.
-        puts("{");
-        ofp()->putsNoTracking("{");
-        puts("\n");
-        for (uint32_t n = 0; n < size; ++n) {
-            m_unpackedWord = n;
-            if (n) puts((n % tabMod) ? ", " : ",\n");
-            iterate(nodep->getIndexDefaultedValuep(n));
+        if (const AstAssocArrayDType* const dtypep
+            = VN_CAST(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
+            // Note the double {{ initializer. The first { starts the initializer of the
+            // VlUnpacked, and the second starts the initializer of m_storage within the
+            // VlUnpacked.
+            puts("{");
+            ofp()->putsNoTracking("{");
+            puts("\n");
+            int comma = 0;
+            const auto& mapr = nodep->map();
+            for (const auto& itr : mapr) {
+                if (comma++) putbs(",\n");
+                puts(cvtToStr(itr.first));
+                ofp()->printf("%" PRIx64 "ULL", itr.first);
+                ofp()->putsNoTracking(":");
+                ofp()->putsNoTracking("{");
+                iterate(nodep->getIndexValuep(itr.first));
+                ofp()->putsNoTracking("}");
+            }
+            puts("\n");
+            puts("}");
+            ofp()->putsNoTracking("}");
+        } else if (const AstUnpackArrayDType* const dtypep
+                   = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+            const vluint64_t size = dtypep->elementsConst();
+            const uint32_t tabMod = tabModulus(dtypep->subDTypep());
+            // Note the double {{ initializer. The first { starts the initializer of the
+            // VlUnpacked, and the second starts the initializer of m_storage within the
+            // VlUnpacked.
+            puts("{");
+            ofp()->putsNoTracking("{");
+            puts("\n");
+            for (vluint64_t n = 0; n < size; ++n) {
+                m_unpackedWord = n;
+                if (n) puts((n % tabMod) ? ", " : ",\n");
+                iterate(nodep->getIndexDefaultedValuep(n));
+            }
+            puts("\n");
+            puts("}");
+            ofp()->putsNoTracking("}");
+        } else {
+            nodep->v3fatalSrc("Array initializer has non-array dtype");
         }
-        puts("\n");
-        puts("}");
-        ofp()->putsNoTracking("}");
     }
 
     virtual void visit(AstInitItem* nodep) override {  // LCOV_EXCL_START

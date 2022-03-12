@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1317,14 +1317,6 @@ V3Number& V3Number::opOr(const V3Number& lhs, const V3Number& rhs) {
             setBit(bit, 'x');
         }
     }
-    return *this;
-}
-
-V3Number& V3Number::opChangeXor(const V3Number& lhs, const V3Number& rhs) {
-    NUM_ASSERT_OP_ARGS2(lhs, rhs);
-    NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
-    // 32 bit result
-    opEq(lhs, rhs);
     return *this;
 }
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -31,12 +31,13 @@
 
 #include "V3Global.h"
 #include "V3Width.h"
+#include "V3Ast.h"
 #include "V3Const.h"
 
 //######################################################################
 // Width state, as a visitor of each AstNode
 
-class WidthSelVisitor final : public AstNVisitor {
+class WidthSelVisitor final : public VNVisitor {
 private:
     // IMPORTANT
     //**** This is not a normal visitor, in that all iteration is instead

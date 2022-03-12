@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ******************************
@@ -37,15 +37,15 @@ Does Verilator run under Windows?
 
 Yes, ideally run Ubuntu under Windows Subsystem for Linux (WSL2).
 Alternatively use Cygwin, though this tends to be slower and is not
-regurally tested.  Verilated output also compiles under Microsoft Visual
-C++, but this is also not regurally tested.
+regularly tested.  Verilated output also compiles under Microsoft Visual
+C++, but this is also not regularly tested.
 
 
 Can you provide binaries?
 """""""""""""""""""""""""
 
 You can install Verilator via the system package manager (apt, yum, etc.)
-on many Linux distributions, including Debian, Ubuntu, SuSE, RedHat, and
+on many Linux distributions, including Debian, Ubuntu, SuSE, Red Hat, and
 others.  These packages are provided by the Linux distributions and
 generally will lag the version of the mainline Verilator repository.  If no
 binary package is available for your distribution, how about you set one
@@ -134,7 +134,8 @@ B. Or, for finer-grained control, or C++ files with multiple Verilated
           ...
           Verilated::traceEverOn(true);
           VerilatedVcdC* tfp = new VerilatedVcdC;
-          topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
+          topp->trace(tfp, 99);  // Trace 99 levels of hierarchy (or see below)
+          // tfp->dumpvars(1, "t");  // trace 1 level under "t"
           tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
           ...
           while (contextp->time() < sim_time && !contextp->gotFinish()) {

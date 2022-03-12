@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_func_recurse2.v:9:27: Unsupported: Recursive function or task call: 'recurse_1'
+                                            : ... In instance t
+    9 |    function automatic int recurse_1;
+      |                           ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator_gantt
@@ -13,7 +13,7 @@ For an overview of use of verilator_gantt, see :ref:`Profiling`.
 Gantt Chart VCD
 ---------------
 
-Verilated_gnatt creates a value change dump (VCD) format dump file which
+Verilated_gantt creates a value change dump (VCD) format dump file which
 may be viewed in a waveform viewer (e.g. C<GTKWave>):
 
 .. figure:: figures/fig_gantt_min.png

@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -54,7 +54,7 @@ private:
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
     void declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                 fstVarType vartype, bool array, int arraynum, int msb, int lsb);
+                 fstVarType vartype, bool array, int arraynum, bool bussed, int msb, int lsb);
 
 protected:
     //=========================================================================
@@ -121,6 +121,7 @@ template <> void VerilatedTrace<VerilatedFst>::set_time_unit(const char* unitp);
 template <> void VerilatedTrace<VerilatedFst>::set_time_unit(const std::string& unit);
 template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const char* unitp);
 template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const std::string& unit);
+template <> void VerilatedTrace<VerilatedFst>::dumpvars(int level, const std::string& hier);
 #endif
 
 //=============================================================================
@@ -139,7 +140,7 @@ public:
     explicit VerilatedFstC(void* filep = nullptr)
         : m_sptrace{filep} {}
     /// Destruct, flush, and close the dump
-    ~VerilatedFstC() { close(); }
+    virtual ~VerilatedFstC() { close(); }
 
     // METHODS - User called
 
@@ -178,9 +179,14 @@ public:
     void set_time_resolution(const std::string& unit) VL_MT_SAFE {
         m_sptrace.set_time_resolution(unit);
     }
+    // Set variables to dump, using $dumpvars format
+    // If level = 0, dump everything and hier is then ignored
+    void dumpvars(int level, const std::string& hier) VL_MT_SAFE {
+        m_sptrace.dumpvars(level, hier);
+    }
 
     // Internal class access
-    inline VerilatedFst* spTrace() { return &m_sptrace; };
+    inline VerilatedFst* spTrace() { return &m_sptrace; }
 };
 
 #endif  // guard

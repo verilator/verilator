@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -152,14 +152,14 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
     UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
                          << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : "") << endl);
-    if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == AstVarType::PORT) {
+    if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == VVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
         if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
         return nullptr;
     }
-    if (GRAMMARP->m_varDecl == AstVarType::WREAL) {
+    if (GRAMMARP->m_varDecl == VVarType::WREAL) {
         // dtypep might not be null, might be implicit LOGIC before we knew better
-        dtypep = new AstBasicDType(fileline, AstBasicDTypeKwd::DOUBLE);
+        dtypep = new AstBasicDType(fileline, VBasicDTypeKwd::DOUBLE);
     }
     if (!dtypep) {  // Created implicitly
         dtypep = new AstBasicDType(fileline, LOGIC_IMPLICIT);
@@ -168,15 +168,15 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
     // UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<"
     // io="<<GRAMMARP->m_varIO.ascii()<<endl);
-    AstVarType type = GRAMMARP->m_varDecl;
-    if (type == AstVarType::UNKNOWN) {
+    VVarType type = GRAMMARP->m_varDecl;
+    if (type == VVarType::UNKNOWN) {
         if (GRAMMARP->m_varIO.isAny()) {
-            type = AstVarType::PORT;
+            type = VVarType::PORT;
         } else {
             fileline->v3fatalSrc("Unknown signal type declared: " << type.ascii());
         }
     }
-    if (type == AstVarType::GENVAR) {
+    if (type == VVarType::GENVAR) {
         if (arrayp) fileline->v3error("Genvars may not be arrayed: " << name);
     }
 
@@ -189,16 +189,16 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     nodep->ansi(m_pinAnsi);
     nodep->declTyped(m_varDeclTyped);
     nodep->lifetime(m_varLifetime);
-    if (GRAMMARP->m_varDecl != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
+    if (GRAMMARP->m_varDecl != VVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != VDirection::NONE) {
         nodep->declDirection(GRAMMARP->m_varIO);
         nodep->direction(GRAMMARP->m_varIO);
     }
 
-    if (GRAMMARP->m_varDecl == AstVarType::SUPPLY0) {
+    if (GRAMMARP->m_varDecl == VVarType::SUPPLY0) {
         nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0));
     }
-    if (GRAMMARP->m_varDecl == AstVarType::SUPPLY1) {
+    if (GRAMMARP->m_varDecl == VVarType::SUPPLY1) {
         nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
@@ -271,8 +271,9 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
                 } else if (isalnum(*cp)) {
                     fileline->v3error("Unknown escape sequence: \\" << *cp);
                     break;
-                } else
+                } else {
                     newtext += *cp;
+                }
             }
         } else if (*cp == '\\') {
             quoted = true;

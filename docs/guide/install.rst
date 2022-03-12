@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Installation:
@@ -77,7 +77,7 @@ OS Requirements
 ---------------
 
 Verilator is developed and has primary testing on Ubuntu, with additional
-testing on FreeBSD and Apple OS-X. Versions have also built on Redhat
+testing on FreeBSD and Apple OS-X. Versions have also built on Red Hat
 Linux, and other flavors of GNU/Linux-ish platforms. Verilator also works
 on Windows Subsystem for Linux (WSL2), Windows under Cygwin, and Windows
 under MinGW (gcc -mno-cygwin). Verilated output (not Verilator itself)

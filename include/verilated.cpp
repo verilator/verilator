@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -168,6 +168,19 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
 }
 #endif
 
+#ifndef VL_USER_WARN  ///< Define this to override the vl_warn function
+void vl_warn(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
+    if (false && hier) {}
+    if (filename && filename[0]) {
+        // Not VL_PRINTF_MT, already on main thread
+        VL_PRINTF("%%Warning: %s:%d: %s\n", filename, linenum, msg);
+    } else {
+        VL_PRINTF("%%Warning: %s\n", msg);
+    }
+    Verilated::runFlushCallbacks();
+}
+#endif
+
 //===========================================================================
 // Wrapper to call certain functions via messages when multithreaded
 
@@ -198,6 +211,16 @@ void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char
     }});
 #else
     vl_fatal(filename, linenum, hier, msg);
+#endif
+}
+
+void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+#ifdef VL_THREADED
+    VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
+        vl_warn(filename, linenum, hier, msg);
+    }});
+#else
+    vl_warn(filename, linenum, hier, msg);
 #endif
 }
 
@@ -248,13 +271,13 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     va_start(ap, formatp);
     const std::string out = _vl_string_vprintf(formatp, ap);
     va_end(ap);
-    // printf("-imm-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(),
+    // printf("-imm-V{t%d,%" PRId64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(),
     // out.c_str());
 
     // Using VL_PRINTF not VL_PRINTF_MT so that we can call VL_DBG_MSGF
     // from within the guts of the thread execution machinery (and it goes
     // to the screen and not into the queues we're debugging)
-    VL_PRINTF("-V{t%u,%" VL_PRI64 "u}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
+    VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
 #ifdef VL_THREADED
@@ -314,11 +337,17 @@ WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     return outwp;
 }
 
-IData VL_RANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
+IData VL_RANDOM_SEEDED_II(IData& seedr) VL_MT_SAFE {
+    // $random - seed is a new seed to apply, then we return new seed
+    Verilated::threadContextp()->randSeed(static_cast<int>(seedr));
+    seedr = VL_RANDOM_I();
+    return VL_RANDOM_I();
+}
+IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
+    // $urandom - seed is a new seed to apply
     Verilated::threadContextp()->randSeed(static_cast<int>(seed));
     return VL_RANDOM_I();
 }
-
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     IData data = ~0;
@@ -678,18 +707,17 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
             if (!fracDigits) {
                 digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s%s", ptr, suffix.c_str());
             } else {
-                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s.%0*" VL_PRI64 "u%s", ptr,
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%s.%0*" PRIu64 "%s", ptr,
                                      fracDigits, VL_SET_QW(frac), suffix.c_str());
             }
         } else {
             const vluint64_t integer64 = VL_SET_QW(integer);
             if (!fracDigits) {
-                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u%s", integer64,
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRIu64 "%s", integer64,
                                      suffix.c_str());
             } else {
-                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH,
-                                     "%" VL_PRI64 "u.%0*" VL_PRI64 "u%s", integer64, fracDigits,
-                                     VL_SET_QW(frac), suffix.c_str());
+                digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRIu64 ".%0*" PRIu64 "%s",
+                                     integer64, fracDigits, VL_SET_QW(frac), suffix.c_str());
             }
         }
     } else {
@@ -851,7 +879,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     std::string append;
                     if (lbits <= VL_QUADSIZE) {
                         digits = VL_SNPRINTF(
-                            t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "d",
+                            t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRId64,
                             static_cast<vlsint64_t>(VL_EXTENDS_QQ(lbits, lbits, ld)));
                         append = t_tmp;
                     } else {
@@ -880,8 +908,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     int digits = 0;
                     std::string append;
                     if (lbits <= VL_QUADSIZE) {
-                        digits
-                            = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u", ld);
+                        digits = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRIu64, ld);
                         append = t_tmp;
                     } else {
                         append = VL_DECIMAL_NW(lbits, lwp);
@@ -1157,7 +1184,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "0123456789+-xXzZ?_");
                     if (!t_tmp[0]) goto done;
                     vlsint64_t ld = 0;
-                    std::sscanf(t_tmp, "%30" VL_PRI64 "d", &ld);
+                    std::sscanf(t_tmp, "%30" PRId64, &ld);
                     VL_SET_WQ(owp, ld);
                     break;
                 }
@@ -1182,7 +1209,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "0123456789+-xXzZ?_");
                     if (!t_tmp[0]) goto done;
                     QData ld = 0;
-                    std::sscanf(t_tmp, "%30" VL_PRI64 "u", &ld);
+                    std::sscanf(t_tmp, "%30" PRIu64, &ld);
                     VL_SET_WQ(owp, ld);
                     break;
                 }
@@ -1470,7 +1497,7 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
 IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
     FILE* const fp = VL_CVT_I_FP(fpi);
-    if (VL_UNLIKELY(!fp)) return 0;
+    if (VL_UNLIKELY(!fp)) return ~0U;  // -1
 
     va_list ap;
     va_start(ap, formatp);
@@ -1616,7 +1643,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     switch (std::tolower(fmt)) {
     case 'd': {
         vlsint64_t lld = 0;
-        std::sscanf(dp, "%30" VL_PRI64 "d", &lld);
+        std::sscanf(dp, "%30" PRId64, &lld);
         VL_SET_WQ(rwp, lld);
         break;
     }
@@ -1817,7 +1844,7 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     m_fp = std::fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
-        VL_FATAL_MT(filename.c_str(), 0, "", "$readmem file not found");
+        VL_WARN_MT(filename.c_str(), 0, "", "$readmem file not found");
         // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
         return;
     }
@@ -1876,6 +1903,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
                 ignore_to_eol = true;
             } else if (c == '@') {
                 reading_addr = true;
+                m_anyAddr = true;
                 m_addr = 0;
             }
             // Check for hex or binary digits as file format requests
@@ -1902,9 +1930,9 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         lastc = c;
     }
 
-    if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end)) {
-        VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
-                    "$readmem file ended before specified final address (IEEE 2017 21.4)");
+    if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
+        VL_WARN_MT(m_filename.c_str(), m_linenum, "",
+                   "$readmem file ended before specified final address (IEEE 2017 21.4)");
     }
 
     return false;  // EOF
@@ -1969,7 +1997,7 @@ VlWriteMem::~VlWriteMem() {
 void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
     if (VL_UNLIKELY(!m_fp)) return;
     if (addr != m_addr && addrstamp) {  // Only assoc has time stamps
-        fprintf(m_fp, "@%" VL_PRI64 "x\n", addr);
+        fprintf(m_fp, "@%" PRIx64 "\n", addr);
     }
     m_addr = addr + 1;
     if (m_bits <= 8) {
@@ -2625,14 +2653,11 @@ void Verilated::debug(int level) VL_MT_SAFE {
     }
 }
 
-const char* Verilated::catName(const char* n1, const char* n2, int scopet,
-                               const char* delimiter) VL_MT_SAFE {
-    // Returns new'ed data
+const char* Verilated::catName(const char* n1, const char* n2, const char* delimiter) VL_MT_SAFE {
     // Used by symbol table creation to make module names
     static VL_THREAD_LOCAL char* t_strp = nullptr;
     static VL_THREAD_LOCAL size_t t_len = 0;
-    const size_t newlen
-        = std::strlen(n1) + std::strlen(n2) + std::strlen(delimiter) + (scopet > 0 ? 2 : 1);
+    const size_t newlen = std::strlen(n1) + std::strlen(n2) + std::strlen(delimiter) + 1;
     if (VL_UNLIKELY(!t_strp || newlen > t_len)) {
         if (t_strp) delete[] t_strp;
         t_strp = new char[newlen];
@@ -2640,8 +2665,6 @@ const char* Verilated::catName(const char* n1, const char* n2, int scopet,
     }
     char* dp = t_strp;
     for (const char* sp = n1; *sp;) *dp++ = *sp++;
-    // Add scope type
-    if (scopet) *dp++ = (char)(0x80 + scopet);
     for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
     for (const char* sp = n2; *sp;) *dp++ = *sp++;
     *dp++ = '\0';

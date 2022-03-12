@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -36,10 +36,10 @@
 // Visit within a module all nodes and data types they reference, finding
 // any classes so we can make sure they are defined when Verilated code
 // compiles
-class CUseVisitor final : public AstNVisitor {
+class CUseVisitor final : public VNVisitor {
     // NODE STATE
     //  AstNode::user1()     -> bool.  True if already visited
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // MEMBERS
     bool m_impOnly = false;  // In details needed only for implementation

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,12 +34,12 @@
 //######################################################################
 // Inst state, as a visitor of each AstNode
 
-class InstVisitor final : public AstNVisitor {
+class InstVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared each Cell:
     //  AstPin::user1p()        -> bool.  True if created assignment already
-    const AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell
@@ -139,7 +139,7 @@ public:
 
 //######################################################################
 
-class InstDeModVarVisitor final : public AstNVisitor {
+class InstDeModVarVisitor final : public VNVisitor {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
@@ -190,7 +190,7 @@ public:
 
 //######################################################################
 
-class InstDeVisitor final : public AstNVisitor {
+class InstDeVisitor final : public VNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
@@ -320,7 +320,7 @@ private:
         if (!nodep->exprp()) return;  // No-connect
         if (m_cellRangep) {
             UINFO(4, "   PIN  " << nodep << endl);
-            const int pinwidth = nodep->modVarp()->width();
+            const int modwidth = nodep->modVarp()->width();
             const int expwidth = nodep->exprp()->width();
             const std::pair<uint32_t, uint32_t> pinDim
                 = nodep->modVarp()->dtypep()->dimensions(false);
@@ -328,7 +328,7 @@ private:
                 = nodep->exprp()->dtypep()->dimensions(false);
             UINFO(4, "   PINVAR  " << nodep->modVarp() << endl);
             UINFO(4, "   EXP     " << nodep->exprp() << endl);
-            UINFO(4, "   pinwidth ew=" << expwidth << " pw=" << pinwidth << "  ed=" << expDim.first
+            UINFO(4, "   modwidth ew=" << expwidth << " pw=" << modwidth << "  ed=" << expDim.first
                                        << "," << expDim.second << "  pd=" << pinDim.first << ","
                                        << pinDim.second << endl);
             if (expDim.first == pinDim.first && expDim.second == pinDim.second + 1) {
@@ -341,11 +341,11 @@ private:
                 AstNode* exprp = nodep->exprp()->unlinkFrBack();
                 exprp = new AstArraySel(exprp->fileline(), exprp, arraySelNum);
                 nodep->exprp(exprp);
-            } else if (expwidth == pinwidth) {
+            } else if (expwidth == modwidth) {
                 // NOP: Arrayed instants: widths match so connect to each instance
-            } else if (expwidth == pinwidth * m_cellRangep->elementsConst()) {
+            } else if (expwidth == modwidth * m_cellRangep->elementsConst()) {
                 // Arrayed instants: one bit for each of the instants (each
-                // assign is 1 pinwidth wide)
+                // assign is 1 modwidth wide)
                 if (m_cellRangep->littleEndian()) {
                     nodep->exprp()->v3warn(LITENDIAN, "Little endian instance range connecting to "
                                                       "vector: left < right of instance range: ["
@@ -362,7 +362,7 @@ private:
                                                  "with output connections to non-wires.");
                     // Note spec allows more complicated matches such as slices and such
                 }
-                exprp = new AstSel(exprp->fileline(), exprp, pinwidth * m_instSelNum, pinwidth);
+                exprp = new AstSel(exprp->fileline(), exprp, modwidth * m_instSelNum, modwidth);
                 nodep->exprp(exprp);
             } else {
                 nodep->v3fatalSrc("Width mismatch; V3Width should have errored out.");
@@ -564,7 +564,7 @@ public:
                    // Prevent name conflict if both tri & non-tri add signals
                    + (forTristate ? "t" : "") + "__" + cellp->name() + "__" + pinp->name());
             AstVar* const newvarp
-                = new AstVar(pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
+                = new AstVar(pinVarp->fileline(), VVarType::MODULETEMP, newvarname, pinVarp);
             // Important to add statement next to cell, in case there is a
             // generate with same named cell
             cellp->addNextHere(newvarp);

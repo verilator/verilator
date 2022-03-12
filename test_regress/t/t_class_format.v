@@ -15,6 +15,7 @@ class Cls;
    bit b;
    int i;
    bit [15:0] carray4 [4];
+   bit [64:0] cwide[2];
    string     name;
    task debug();
       $display("DEBUG: %s (@%0t) %s", this.name, $realtime, "message");

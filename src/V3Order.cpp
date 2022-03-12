@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -82,7 +82,6 @@
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3Const.h"
-#include "V3EmitCBase.h"
 #include "V3EmitV.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -152,7 +151,7 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
 
 // Predicate returning true if the LHS of the given assignment is a signal marked as clocker
 static bool isClockerAssignment(AstNodeAssign* nodep) {
-    class Visitor final : public AstNVisitor {
+    class Visitor final : public VNVisitor {
     public:
         bool m_clkAss = false;  // There is signals marked as clocker in the assignment
     private:
@@ -203,7 +202,7 @@ void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
 // produce a CLKDATA warning if so.
 //
 
-class OrderClkMarkVisitor final : public AstNVisitor {
+class OrderClkMarkVisitor final : public VNVisitor {
     bool m_hasClk = false;  // flag indicating whether there is clock signal on rhs
     bool m_inClocked = false;  // Currently inside a sequential block
     bool m_newClkMarked;  // Flag for deciding whether a new run is needed
@@ -356,7 +355,7 @@ public:
 // OrderBuildVisitor builds the ordering graph of the entire netlist, and
 // removes any nodes that are no longer required once the graph is built
 
-class OrderBuildVisitor final : public AstNVisitor {
+class OrderBuildVisitor final : public VNVisitor {
     // TYPES
     enum VarUsage : uint8_t { VU_CON = 0x1, VU_GEN = 0x2 };
     using VarVertexType = OrderUser::VarVertexType;
@@ -364,8 +363,8 @@ class OrderBuildVisitor final : public AstNVisitor {
     // NODE STATE
     //  AstVarScope::user1    -> OrderUser instance for variable (via m_orderUser)
     //  AstVarScope::user2    -> VarUsage within logic blocks
-    const AstUser1InUse user1InUse;
-    const AstUser2InUse user2InUse;
+    const VNUser1InUse user1InUse;
+    const VNUser2InUse user2InUse;
     AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
@@ -536,6 +535,22 @@ class OrderBuildVisitor final : public AstNVisitor {
                 }
             }
 
+            // Roles of vertices:
+            // VarVertexType::STD:  Data dependencies for combinational logic and delayed
+            //                      assignment updates (AssignPost).
+            // VarVertexType::POST: Ensures all sequential blocks reading a signal do so before
+            //                      any combinational or delayed assignments update that signal.
+            // VarVertexType::PORD: Ensures a _d = _q AssignPre is the first write of a _d,
+            //                      before any sequential blocks write to that _d.
+            // VarVertexType::PRE:  This is an optimization. Try to ensure that a _d = _q
+            //                      AssignPre is the last read of a _q, after all reads of that
+            //                      _q by sequential logic. Note: The model is still correct if we
+            //                      cannot satisfy this due to other constraints. If this ordering
+            //                      is possible, then combined with the PORD constraint we get
+            //                      that all writes to _d are after all reads of a _q, which then
+            //                      allows us to eliminate the _d completely and assign to the _q
+            //                      directly (this is what V3LifePost does).
+
             // Variable is produced
             if (gen) {
                 // Update VarUsage
@@ -642,6 +657,9 @@ class OrderBuildVisitor final : public AstNVisitor {
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
     virtual void visit(AstInitial* nodep) override {  //
+        iterateLogic(nodep);
+    }
+    virtual void visit(AstInitialAutomatic* nodep) override {  //
         iterateLogic(nodep);
     }
     virtual void visit(AstAlways* nodep) override {  //
@@ -1034,11 +1052,11 @@ public:
 //######################################################################
 // OrderProcess class
 
-class OrderProcess final : AstNDeleter {
+class OrderProcess final : VNDeleter {
     // NODE STATE
-    //  AstNodeModule::user3  -> int: Number of AstCFuncs created under this module
-    //  AstNode::user4        -> Used by V3Const::constifyExpensiveEdit
-    const AstUser3InUse user3InUse;
+    //  AstNode::user3  -> Used by loop reporting
+    //  AstNode::user4  -> Used by V3Const::constifyExpensiveEdit
+    const VNUser3InUse user3InUse;
 
     // STATE
     OrderGraph& m_graph;  // The ordering graph
@@ -1055,6 +1073,7 @@ class OrderProcess final : AstNDeleter {
     friend class OrderMoveDomScope;
     V3List<OrderMoveDomScope*> m_pomReadyDomScope;  // List of ready domain/scope pairs, by loopId
     std::vector<OrderVarStdVertex*> m_unoptflatVars;  // Vector of variables in UNOPTFLAT loop
+    std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;  // Function ordinals
 
     // STATS
     std::array<VDouble0, OrderVEdgeType::_ENUM_END> m_statCut;  // Count of each edge type cut
@@ -1097,16 +1116,14 @@ class OrderProcess final : AstNDeleter {
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep,
                      AstNode* forWhatp) {
-        modp->user3Inc();
-        const int funcnum = modp->user3();
-        string name = (domainp->hasCombo()
-                           ? "_combo"
-                           : (domainp->hasInitial()
-                                  ? "_initial"
-                                  : (domainp->hasSettle()
-                                         ? "_settle"
-                                         : (domainp->isMulti() ? "_multiclk" : "_sequent"))));
-        name = name + "__" + scopep->nameDotless() + "__" + cvtToStr(funcnum);
+        string name = domainp->hasCombo()     ? "_combo"
+                      : domainp->hasInitial() ? "_initial"
+                      : domainp->hasSettle()  ? "_settle"
+                      : domainp->isMulti()    ? "_multiclk"
+                                              : "_sequent";
+        name = name + "__" + scopep->nameDotless();
+        const unsigned funcnum = m_funcNums.emplace(std::make_pair(modp, name), 0).first->second++;
+        name = name + "__" + cvtToStr(funcnum);
         if (v3Global.opt.profCFuncs()) {
             name += "__PROF__" + forWhatp->fileline()->profileFuncname();
         }
@@ -1828,8 +1845,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
                 newFuncpr->addStmtsp(nodep);
                 if (v3Global.opt.outputSplitCFuncs()) {
                     // Add in the number of nodes we're adding
-                    const EmitCBaseCounterVisitor visitor{nodep};
-                    newStmtsr += visitor.count();
+                    newStmtsr += nodep->nodeCount();
                 }
             }
 

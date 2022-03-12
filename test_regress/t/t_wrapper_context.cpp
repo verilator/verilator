@@ -15,6 +15,11 @@
 
 #include VM_PREFIX_INCLUDE
 
+// Check we properly define the version integer
+#if VERILATOR_VERSION_INTEGER < 4219000  // Added in 4.219
+#error "VERILATOR_VERSION_INTEGER not set"
+#endif
+
 double sc_time_stamp() { return 0; }
 
 int errors = 0;

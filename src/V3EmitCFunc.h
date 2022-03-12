@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,10 +34,10 @@ constexpr int EMITC_NUM_CONSTW = 8;
 //######################################################################
 // Emit lazy forward declarations
 
-class EmitCLazyDecls final : public AstNVisitor {
+class EmitCLazyDecls final : public VNVisitor {
     // NODE STATE/TYPES
     //  AstNode::user2() -> bool. Already emitted decl for symbols.
-    const AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     // MEMBERS
     std::unordered_set<string> m_emittedManually;  // Set of names already declared manually.
@@ -115,9 +115,9 @@ public:
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 private:
-    AstVarRef* m_wideTempRefp;  // Variable that _WW macros should be setting
-    int m_labelNum;  // Next label number
-    int m_splitSize;  // # of cfunc nodes placed into output file
+    AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
+    int m_labelNum = 0;  // Next label number
+    int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
     bool m_emitConstInit = false;  // Emitting constant initializer
@@ -134,7 +134,7 @@ public:
 
     // ACCESSORS
     void splitSizeInc(int count) { m_splitSize += count; }
-    void splitSizeInc(AstNode* nodep) { splitSizeInc(EmitCBaseCounterVisitor(nodep).count()); }
+    void splitSizeInc(AstNode* nodep) { splitSizeInc(nodep->nodeCount()); }
     void splitSizeReset() { m_splitSize = 0; }
     bool splitNeeded() const {
         return v3Global.opt.outputSplit() && m_splitSize >= v3Global.opt.outputSplit();
@@ -283,7 +283,6 @@ public:
             } else {
                 putbs("VL_ASSIGNSEL_");
                 emitIQW(selp->fromp());
-                puts("II");
                 emitIQW(nodep->rhsp());
                 puts("(");
                 puts(cvtToStr(selp->fromp()->widthMin()) + ",");
@@ -441,9 +440,6 @@ public:
         puts(") { return ");
         iterateAndNextNull(nodep->exprp());
         puts("; }\n");
-    }
-    virtual void visit(AstIntfRef* nodep) override {
-        putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()), nodep->protect()));
     }
     virtual void visit(AstNodeCase* nodep) override {  // LCOV_EXCL_LINE
         // In V3Case...
@@ -1229,11 +1225,7 @@ public:
     }
 
     EmitCFunc()
-        : m_lazyDecls(*this) {
-        m_wideTempRefp = nullptr;
-        m_labelNum = 0;
-        m_splitSize = 0;
-    }
+        : m_lazyDecls(*this) {}
     EmitCFunc(AstNode* nodep, V3OutCFile* ofp, bool trackText = false)
         : EmitCFunc{} {
         m_ofp = ofp;

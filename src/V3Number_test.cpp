@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -99,8 +99,9 @@ void test(const string& lhss, const string& op, const string& rhss, const string
         gotnum.opLogAnd(lhnum, rhnum);
     } else if (op == "||") {
         gotnum.opLogOr(lhnum, rhnum);
-    } else
+    } else {
         v3fatalSrc("Bad opcode: " << op);
+    }
 
     UINFO(0, "------- Test:\n"
                  << "       " << lhnum << " " << op << endl

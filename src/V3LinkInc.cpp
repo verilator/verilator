@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,7 +47,7 @@
 
 //######################################################################
 
-class LinkIncVisitor final : public AstNVisitor {
+class LinkIncVisitor final : public VNVisitor {
 private:
     // TYPES
     enum InsertMode : uint8_t {
@@ -61,6 +61,9 @@ private:
     InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
+
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
@@ -86,7 +89,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        // Reset increments count
+        VL_RESTORER(m_modIncrementsNum);
         m_modIncrementsNum = 0;
         iterateChildren(nodep);
     }
@@ -107,6 +110,22 @@ private:
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
+    virtual void visit(AstForeach* nodep) override {
+        // Special, as statements need to be put in different places
+        // Body insert just before themselves
+        m_insStmtp = nullptr;  // First thing should be new statement
+        iterateChildren(nodep);
+        // Done the loop
+        m_insStmtp = nullptr;  // Next thing should be new statement
+    }
+    virtual void visit(AstJumpBlock* nodep) override {
+        // Special, as statements need to be put in different places
+        // Body insert just before themselves
+        m_insStmtp = nullptr;  // First thing should be new statement
+        iterateChildren(nodep);
+        // Done the loop
+        m_insStmtp = nullptr;  // Next thing should be new statement
+    }
     virtual void visit(AstNodeIf* nodep) override {
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
@@ -114,6 +133,16 @@ private:
         iterateAndNextNull(nodep->ifsp());
         iterateAndNextNull(nodep->elsesp());
         m_insStmtp = nullptr;
+    }
+    virtual void visit(AstCaseItem* nodep) override {
+        m_insMode = IM_BEFORE;
+        {
+            VL_RESTORER(m_unsupportedHere);
+            m_unsupportedHere = true;
+            iterateAndNextNull(nodep->condsp());
+        }
+        m_insStmtp = nullptr;  // Next thing should be new statement
+        iterateAndNextNull(nodep->bodysp());
     }
     virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
@@ -130,10 +159,10 @@ private:
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void unsupported_visit(AstNode* nodep) {
+        VL_RESTORER(m_unsupportedHere);
         m_unsupportedHere = true;
         UINFO(9, "Marking unsupported " << nodep << endl);
         iterateChildren(nodep);
-        m_unsupportedHere = false;
     }
     virtual void visit(AstLogAnd* nodep) override { unsupported_visit(nodep); }
     virtual void visit(AstLogOr* nodep) override { unsupported_visit(nodep); }
@@ -189,7 +218,7 @@ private:
         // Prepare a temporary variable
         FileLine* const fl = backp->fileline();
         const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
-        AstVar* const varp = new AstVar(fl, AstVarType::BLOCKTEMP, name, VFlagChildDType(),
+        AstVar* const varp = new AstVar(fl, VVarType::BLOCKTEMP, name, VFlagChildDType(),
                                         varrefp->varp()->subDTypep()->cloneTree(true));
 
         // Declare the variable
@@ -246,5 +275,5 @@ public:
 void V3LinkInc::linkIncrements(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LinkIncVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkInc", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("linkinc", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

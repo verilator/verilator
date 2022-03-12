@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -122,7 +122,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 
     // convert m_code2symbol into an array for fast lookup
     if (!m_symbolp) {
-        m_symbolp = new fstHandle[nextCode()];
+        m_symbolp = new fstHandle[nextCode()]{0};
         for (const auto& i : m_code2symbol) m_symbolp[i.first] = i.second;
     }
     m_code2symbol.clear();
@@ -158,18 +158,20 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elem
 }
 
 void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+                           fstVarType vartype, bool array, int arraynum, bool bussed, int msb,
+                           int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
+    const bool enabled = VerilatedTrace<VerilatedFst>::declCode(code, name, bits, false);
+    if (!enabled) return;
 
-    std::istringstream nameiss{name};
+    std::string nameasstr = namePrefix() + name;
+    std::istringstream nameiss{nameasstr};
     std::istream_iterator<std::string> beg(nameiss);
     std::istream_iterator<std::string> end;
     std::list<std::string> tokens(beg, end);  // Split name
     std::string symbol_name{tokens.back()};
     tokens.pop_back();  // Remove symbol name from hierarchy
-    tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
     std::string tmpModName;
 
     // Find point where current and new scope diverge
@@ -195,9 +197,9 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
             // If the scope ends with a non-ascii character, it will be 0x80 + fstScopeType
             fstWriterSetScope(m_fst, static_cast<fstScopeType>(new_it->back() & 0x7f),
                               tmpModName.c_str(), nullptr);
-        } else
+        } else {
             fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
-
+        }
         m_curScope.push_back(*new_it);
         new_it = tokens.erase(new_it);
     }
@@ -205,6 +207,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
     std::stringstream name_ss;
     name_ss << symbol_name;
     if (array) name_ss << "[" << arraynum << "]";
+    if (bussed) name_ss << " [" << msb << ":" << lsb << "]";
     std::string name_str = name_ss.str();
 
     if (dtypenum > 0) {
@@ -223,23 +226,23 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
 void VerilatedFst::declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 0, 0);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declQuad(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                             fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                              fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 63, 0);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 63, 0);
 }
 
 // Note: emit* are only ever called from one place (full* in
@@ -248,12 +251,14 @@ void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, f
 
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitBit(vluint32_t code, CData newval) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
     char buf[VL_BYTESIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
@@ -261,6 +266,7 @@ void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
     char buf[VL_SHORTSIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
@@ -268,6 +274,7 @@ void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
     char buf[VL_IDATASIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
@@ -275,6 +282,7 @@ void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitQData(vluint32_t code, QData newval, int bits) {
     char buf[VL_QUADSIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }

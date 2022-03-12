@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -226,8 +226,8 @@ class ParamProcessor final {
     //   AstGenFor::user5()     // bool   True if processed
     //   AstVar::user5()        // bool   True if constant propagated
     //   AstCell::user5p()      // string* Generate portion of hierarchical name
-    const AstUser4InUse m_inuser4;
-    const AstUser5InUse m_inuser5;
+    const VNUser4InUse m_inuser4;
+    const VNUser5InUse m_inuser5;
     // User1/2/3 used by constant function simulations
 
     // TYPES
@@ -351,7 +351,7 @@ class ParamProcessor final {
         }
         return string("z") + cvtToStr(num);
     }
-    string moduleCalcName(AstNodeModule* srcModp, const string& longname) {
+    string moduleCalcName(const AstNodeModule* srcModp, const string& longname) {
         string newname = longname;
         if (longname.length() > 30) {
             const auto iter = m_longMap.find(longname);
@@ -554,10 +554,15 @@ class ParamProcessor final {
             cellp->v3error("Exceeded maximum --module-recursion-depth of "
                            << v3Global.opt.moduleRecursionDepth());
         }
-        // Keep tree sorted by level
+        // Keep tree sorted by level. Append to end of sub-list at the same level. This is
+        // important because due to the way recursive modules are handled, different
+        // parametrizations of the same recursive module end up with the same level (which in
+        // itself is a bit unfortunate). Nevertheless, as a later parametrization must not be above
+        // an earlier parametrization of a recursive module, it is sufficient to add to the end of
+        // the sub-list to keep the modules topologically sorted.
         AstNodeModule* insertp = srcModp;
         while (VN_IS(insertp->nextp(), NodeModule)
-               && VN_AS(insertp->nextp(), NodeModule)->level() < newmodp->level()) {
+               && VN_AS(insertp->nextp(), NodeModule)->level() <= newmodp->level()) {
             insertp = VN_AS(insertp->nextp(), NodeModule);
         }
         insertp->addNextHere(newmodp);
@@ -641,10 +646,11 @@ class ParamProcessor final {
                 longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                 any_overridesr = true;
             } else {
+                V3Const::constifyParamsEdit(pinp->exprp());
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 const AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
-                    // if (debug()) pinp->dumpTree(cout, "error:");
+                    if (debug()) pinp->dumpTree(cout, "-nodes: ");
                     pinp->v3error("Can't convert defparam value to constant: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                     pinp->exprp()->replaceWith(new AstConst(
@@ -834,7 +840,7 @@ public:
 //######################################################################
 // Process parameter visitor
 
-class ParamVisitor final : public AstNVisitor {
+class ParamVisitor final : public VNVisitor {
     // STATE
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
     UnrollStateful m_unroller;  // Loop unroller

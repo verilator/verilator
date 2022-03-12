@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ***************
@@ -136,7 +136,7 @@ ___05F (5F is the hex code of an underscore.)
 Bind
 ----
 
-sVerilator only supports bind to a target module name, not to an
+Verilator only supports bind to a target module name, not to an
 instance path.
 
 
@@ -334,6 +334,24 @@ coverage section.
 
 Verilator does not support SEREs yet.  All assertion and coverage
 statements must be simple expressions that complete in one cycle.
+
+
+Force statement
+---------------
+
+Verilator supports the procedural `force` (and corresponding `release`)
+statement. The behavior of the `force` statement however does not entirely
+comply with the IEEE 1800 SystemVerilog standard. According to the standard,
+when a procedural statement of the form `force a = b;` is executed, the
+simulation should behave as if from that point onwards, a continuous
+assignment `assign a = b;` have been added to override the drivers of `a`.
+More specifically: the value of `a` should be updated, whenever the value of
+`b` changes, all the way until a `release a;` statement is executed.
+Verilator instead evaluates the current value of `b` at the time the `force`
+statement is executed, and forces `a` to that value, without updating it
+until a new `force` or `release` statement is encountered that applies to
+`a`. This non-standard behavior is nevertheless consistent with some other
+simulators.
 
 
 Encrypted Verilog

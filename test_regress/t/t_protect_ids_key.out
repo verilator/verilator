@@ -29,8 +29,8 @@
   <map from="PSOLeN" to="_eval_initial_loop"/>
   <map from="PSBUJ6" to="_eval_settle"/>
   <map from="PSAsei" to="_final"/>
-  <map from="PSV5uq" to="_sequent__TOP__1"/>
-  <map from="PS8sdG" to="_sequent__TOP__t__DOT__secret_inst__1"/>
+  <map from="PSQAYU" to="_sequent__TOP__0"/>
+  <map from="PS18yi" to="_sequent__TOP__t__DOT__secret_inst__0"/>
   <map from="PScyq8" to="clk"/>
   <map from="PSnRoO" to="secret_inst"/>
   <map from="PSS3Gk" to="secret_sub"/>

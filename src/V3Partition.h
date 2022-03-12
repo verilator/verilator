@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -24,6 +24,7 @@
 #include "V3OrderGraph.h"
 
 #include <list>
+#include <unordered_map>
 
 class LogicMTask;
 using Vx2MTaskMap = std::unordered_map<const MTaskMoveVertex*, LogicMTask*>;
@@ -36,7 +37,7 @@ using Vx2MTaskMap = std::unordered_map<const MTaskMoveVertex*, LogicMTask*>;
 
 class V3Partition final {
     // MEMBERS
-    V3Graph* m_fineDepsGraphp;  // Fine-grained dependency graph
+    V3Graph* const m_fineDepsGraphp;  // Fine-grained dependency graph
 public:
     // CONSTRUCTORS
     explicit V3Partition(V3Graph* fineDepsGraphp)

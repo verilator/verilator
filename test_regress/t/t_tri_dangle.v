@@ -29,4 +29,6 @@ module sub (/*AUTOARG*/
    // verilator no_inline_module
    inout AVDD;
    inout AVSS;
+   tri NON_IO;
+   initial if (NON_IO !== 'z) $stop;
 endmodule

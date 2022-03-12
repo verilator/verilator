@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -33,6 +33,10 @@
 #include <list>
 #include <map>
 #include <set>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 //======================================================================
 // Internal constants
@@ -534,7 +538,7 @@ public:
         if (VL_UNCOVERABLE(cb_data_p->reason >= CB_ENUM_MAX_VALUE)) {
             VL_FATAL_MT(__FILE__, __LINE__, "", "vpi bb reason too large");
         }
-        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" VL_PRI64 "d obj=%p\n",
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" PRId64 " obj=%p\n",
                                     cb_data_p->reason, id, cb_data_p->obj););
         VerilatedVpioVar* varop = nullptr;
         if (cb_data_p->reason == cbValueChange) varop = VerilatedVpioVar::castp(cb_data_p->obj);
@@ -542,8 +546,8 @@ public:
     }
     static void cbTimedAdd(vluint64_t id, const s_cb_data* cb_data_p, QData time) {
         // The passed cb_data_p was property of the user, so need to recreate
-        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" VL_PRI64
-                                    "d delay=%" VL_PRI64 "u\n",
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" PRId64
+                                    " delay=%" PRIu64 "\n",
                                     cb_data_p->reason, id, time););
         s().m_timedCbs.emplace(std::piecewise_construct,
                                std::forward_as_tuple(std::make_pair(time, id)),
@@ -573,7 +577,7 @@ public:
                 ++it;
                 if (VL_UNLIKELY(!ho.invalid())) {
                     VL_DEBUG_IF_PLI(
-                        VL_DBG_MSGF("- vpi: timed_callback id=%" VL_PRI64 "d\n", ho.id()););
+                        VL_DBG_MSGF("- vpi: timed_callback id=%" PRId64 "\n", ho.id()););
                     ho.invalidate();  // Timed callbacks are one-shot
                     (ho.cb_rtnp())(ho.cb_datap());
                 }
@@ -602,7 +606,7 @@ public:
                 continue;
             }
             VerilatedVpiCbHolder& ho = *it;
-            VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback reason=%d id=%" VL_PRI64 "d\n",
+            VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback reason=%d id=%" PRId64 "\n",
                                         reason, ho.id()););
             (ho.cb_rtnp())(ho.cb_datap());
             called = true;
@@ -636,9 +640,9 @@ public:
                                             *(static_cast<CData*>(prevDatap)), newDatap,
                                             prevDatap););
                 if (std::memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
-                    VL_DEBUG_IF_PLI(
-                        VL_DBG_MSGF("- vpi: value_callback %" VL_PRI64 "d %s v[0]=%d\n", ho.id(),
-                                    varop->fullname(), *(static_cast<CData*>(newDatap))););
+                    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" PRId64 " %s v[0]=%d\n",
+                                                ho.id(), varop->fullname(),
+                                                *(static_cast<CData*>(newDatap))););
                     update.insert(varop);
                     vpi_get_value(ho.cb_datap()->obj, ho.cb_datap()->value);
                     (ho.cb_rtnp())(ho.cb_datap());
@@ -1697,7 +1701,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
     // Maximum required size is for binary string, one byte per bit plus null termination
     static VL_THREAD_LOCAL char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     // cppcheck-suppress variableScope
-    const static VL_THREAD_LOCAL int t_outStrSz = sizeof(t_outStr) - 1;
+    static const VL_THREAD_LOCAL int t_outStrSz = sizeof(t_outStr) - 1;
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
     // This may cause backward compatibility issues with older code.
     if (valuep->format == vpiVectorVal) {

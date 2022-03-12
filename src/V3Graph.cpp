@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -371,7 +371,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
                 *logp << "\tn" << edgep->fromp()->dotName() << fromVnum << " -> n"
                       << edgep->top()->dotName() << toVnum
                       << " ["
-                      //<<"fontsize=8 label=\""<<(edgep->name()!="" ? edgep->name() : "\\E")<<"\""
+                      // <<"fontsize=8 label=\""<<(edgep->name()!="" ? edgep->name() : "\\E")<<"\""
                       << "fontsize=8 label=\""
                       << (edgep->dotLabel() != "" ? edgep->dotLabel() : "") << "\""
                       << " weight=" << edgep->weight() << " color=" << edgep->dotColor();

@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -28,6 +28,14 @@
 #error "verilated_types.h should only be included by verilated.h"
 #endif
 
+#include <algorithm>
+#include <deque>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_set>
+#include <utility>
+
 //===================================================================
 // String formatters (required by below containers)
 
@@ -45,22 +53,22 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 #define VL_SIG16(name, msb, lsb) SData name  ///< Declare signal, 9-16 bits
 #define VL_SIG64(name, msb, lsb) QData name  ///< Declare signal, 33-64 bits
 #define VL_SIG(name, msb, lsb) IData name  ///< Declare signal, 17-32 bits
-#define VL_SIGW(name, msb, lsb, words) WData name[words]  ///< Declare signal, 65+ bits
+#define VL_SIGW(name, msb, lsb, words) VlWide<words> name  ///< Declare signal, 65+ bits
 #define VL_IN8(name, msb, lsb) CData name  ///< Declare input signal, 1-8 bits
 #define VL_IN16(name, msb, lsb) SData name  ///< Declare input signal, 9-16 bits
 #define VL_IN64(name, msb, lsb) QData name  ///< Declare input signal, 33-64 bits
 #define VL_IN(name, msb, lsb) IData name  ///< Declare input signal, 17-32 bits
-#define VL_INW(name, msb, lsb, words) WData name[words]  ///< Declare input signal, 65+ bits
+#define VL_INW(name, msb, lsb, words) VlWide<words> name  ///< Declare input signal, 65+ bits
 #define VL_INOUT8(name, msb, lsb) CData name  ///< Declare bidir signal, 1-8 bits
 #define VL_INOUT16(name, msb, lsb) SData name  ///< Declare bidir signal, 9-16 bits
 #define VL_INOUT64(name, msb, lsb) QData name  ///< Declare bidir signal, 33-64 bits
 #define VL_INOUT(name, msb, lsb) IData name  ///< Declare bidir signal, 17-32 bits
-#define VL_INOUTW(name, msb, lsb, words) WData name[words]  ///< Declare bidir signal, 65+ bits
+#define VL_INOUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare bidir signal, 65+ bits
 #define VL_OUT8(name, msb, lsb) CData name  ///< Declare output signal, 1-8 bits
 #define VL_OUT16(name, msb, lsb) SData name  ///< Declare output signal, 9-16 bits
 #define VL_OUT64(name, msb, lsb) QData name  ///< Declare output signal, 33-64bits
 #define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
-#define VL_OUTW(name, msb, lsb, words) WData name[words]  ///< Declare output signal, 65+ bits
+#define VL_OUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare output signal, 65+ bits
 
 //===================================================================
 // Shuffle RNG
@@ -86,6 +94,7 @@ class VlReadMem final {
     FILE* m_fp;  // File handle for filename
     QData m_addr;  // Next address to read
     int m_linenum;  // Line number last read from file
+    bool m_anyAddr = false;  // Had address directive in the file
 public:
     VlReadMem(bool hex, int bits, const std::string& filename, QData start, QData end);
     ~VlReadMem();
@@ -848,8 +857,8 @@ template <class T_Value, std::size_t T_Depth> struct VlUnpacked final {
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
 
-    T_Value& operator[](size_t index) { return m_storage[index]; };
-    const T_Value& operator[](size_t index) const { return m_storage[index]; };
+    T_Value& operator[](size_t index) { return m_storage[index]; }
+    const T_Value& operator[](size_t index) const { return m_storage[index]; }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {

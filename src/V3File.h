@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -154,7 +154,8 @@ public:
         puts(strg);
     }
     bool exceededWidth() const { return m_column > m_commaWidth; }
-    bool tokenStart(const char* cp, const char* cmp);
+    bool tokenMatch(const char* cp, const char* cmp);
+    bool tokenStart(const char* cp);
     bool tokenEnd(const char* cp);
     void indentInc() { m_indentLevel += m_blockIndent; }
     void indentDec() {
@@ -182,7 +183,7 @@ public:
 
 class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     // MEMBERS
-    FILE* m_fp;
+    FILE* m_fp = nullptr;
 
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);

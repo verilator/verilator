@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,12 +29,12 @@
 /// we'll count instructions from either the 'if' or the 'else' branch,
 /// whichever is larger. We know we won't run both.
 
-class InstrCountVisitor final : public AstNVisitor {
+class InstrCountVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost + 1, 0 means don't dump
     //  AstNode::user5()        -> bool. Processed if assertNoDups
-    const AstUser4InUse m_inuser4;
+    const VNUser4InUse m_inuser4;
 
     // MEMBERS
     uint32_t m_instrCount = 0;  // Running count of instructions
@@ -42,7 +42,7 @@ private:
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_inCFunc = false;  // Inside AstCFunc
     const bool m_assertNoDups;  // Check for duplicates
-    const std::ostream* m_osp;  // Dump file
+    const std::ostream* const m_osp;  // Dump file
 
     // TYPES
     // Little class to cleanly call startVisitBase/endVisitBase
@@ -258,13 +258,13 @@ private:
 };
 
 // Iterate the graph printing the critical path marked by previous visitation
-class InstrCountDumpVisitor final : public AstNVisitor {
+class InstrCountDumpVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost, 0 means don't dump
 
     // MEMBERS
-    std::ostream* m_osp;  // Dump file
+    std::ostream* const m_osp;  // Dump file
     unsigned m_depth = 0;  // Current tree depth for printing indent
 
 public:

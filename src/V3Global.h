@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -43,7 +43,8 @@ class V3HierBlockPlan;
 /// end-of-stope.
 // Object must be named, or it will not persist until end-of-scope.
 // Constructor needs () or GCC 4.8 false warning.
-#define VL_RESTORER(var) const VRestorer<decltype(var)> restorer_##var(var);
+#define VL_RESTORER(var) \
+    const VRestorer<typename std::decay<decltype(var)>::type> restorer_##var(var);
 
 // Object used by VL_RESTORER.  This object must be an auto variable, not
 // allocated on the heap or otherwise.
@@ -89,9 +90,12 @@ inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 
 class V3Global final {
     // Globals
-    AstNetlist* m_rootp;  // Root of entire netlist
-    V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, nullptr unless hier_block
-    VWidthMinUsage m_widthMinUsage;  // What AstNode::widthMin() is used for
+    AstNetlist* m_rootp = nullptr;  // Root of entire netlist,
+    // created by makeInitNetlist(} so static constructors run first
+    V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical verilation plan,
+    // nullptr unless hier_block, set via hierPlanp(V3HierBlockPlan*}
+    VWidthMinUsage m_widthMinUsage
+        = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
     int m_debugFileNumber = 0;  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
@@ -100,6 +104,8 @@ class V3Global final {
     // Experimenting with always requiring heavy, see (#2701)
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
+    bool m_hasForceableSignals = false;  // Need to apply V3Force pass
+    bool m_hasSCTextSections = false;  // Has `systemc_* sections that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
 
@@ -112,10 +118,7 @@ public:
     V3Options opt;  // All options; let user see them directly
 
     // CONSTRUCTORS
-    V3Global()
-        : m_rootp{nullptr}  // created by makeInitNetlist(} so static constructors run first
-        , m_hierPlanp{nullptr}  // Set via hierPlanp(V3HierBlockPlan*} when use hier_block
-        , m_widthMinUsage{VWidthMinUsage::LINT_WIDTH} {}
+    V3Global() {}
     AstNetlist* makeNetlist();
     void boot() {
         UASSERT(!m_rootp, "call once");
@@ -145,6 +148,10 @@ public:
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    bool hasForceableSignals() const { return m_hasForceableSignals; }
+    void setHasForceableSignals() { m_hasForceableSignals = true; }
+    bool hasSCTextSections() const { return m_hasSCTextSections; }
+    void setHasSCTextSections() { m_hasSCTextSections = true; }
     V3HierBlockPlan* hierPlanp() const { return m_hierPlanp; }
     void hierPlanp(V3HierBlockPlan* plan) {
         UASSERT(!m_hierPlanp, "call once");

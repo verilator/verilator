@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -24,11 +24,11 @@
 //######################################################################
 // Visitor that computes node hashes
 
-class HasherVisitor final : public AstNVisitor {
+class HasherVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstNode::user4() -> V3Hash.  Hash value of this node (hash of 0 is illegal)
-    // AstUser4InUse     in V3Hasher.h
+    // VNUser4InUse     in V3Hasher.h
 
     // STATE
     V3Hash m_hash;  // Hash value accumulator
@@ -39,6 +39,7 @@ private:
 
     V3Hash hashNodeAndIterate(AstNode* nodep, bool hashDType, bool hashChildren,
                               std::function<void()>&& f) {
+        // See comments in visit(AstCFunc) about this breaking recursion
         if (m_cacheInUser4 && nodep->user4()) {
             return V3Hash(nodep->user4());
         } else {
@@ -351,17 +352,30 @@ private:
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
     virtual void visit(AstInitArray* nodep) override {
-        // Hash unpacked array initializers by value, as the order of initializer nodes does not
-        // matter, and we want semantically equivalent initializers to map to the same hash.
-        const AstUnpackArrayDType* const dtypep = VN_CAST(nodep->dtypep(), UnpackArrayDType);
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, /* hashChildren: */ !dtypep, [=]() {
-            if (dtypep) {
-                const uint32_t size = dtypep->elementsConst();
-                for (uint32_t n = 0; n < size; ++n) {  //
-                    iterateNull(nodep->getIndexDefaultedValuep(n));
-                }
+        if (const AstAssocArrayDType* const dtypep = VN_CAST(nodep->dtypep(), AssocArrayDType)) {
+            if (nodep->defaultp()) {
+                m_hash
+                    += hashNodeAndIterate(nodep->defaultp(), HASH_DTYPE, HASH_CHILDREN, [=]() {});
             }
-        });
+            const auto& mapr = nodep->map();
+            for (const auto& itr : mapr) {  // mapr is sorted, so hash should get stable results
+                m_hash += itr.first;
+                m_hash += hashNodeAndIterate(itr.second, HASH_DTYPE, HASH_CHILDREN, [=]() {});
+            }
+        } else if (const AstUnpackArrayDType* const dtypep
+                   = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+            // Hash unpacked array initializers by value, as the order of initializer nodes does
+            // not matter, and we want semantically equivalent initializers to map to the same
+            // hash.
+            m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, /* hashChildren: */ !dtypep, [=]() {
+                if (dtypep) {
+                    const uint32_t size = dtypep->elementsConst();
+                    for (uint32_t n = 0; n < size; ++n) {  //
+                        iterateNull(nodep->getIndexDefaultedValuep(n));
+                    }
+                }
+            });
+        }
     }
     virtual void visit(AstPragma* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
@@ -380,6 +394,12 @@ private:
     }
     virtual void visit(AstCFunc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
+            // We might be in a recursive function, if so on *second* call
+            // here we need to break what would be an infinite loop.
+            nodep->user4(V3Hash(1).value());  // Set this "first" call
+            // So that a second call will then exit hashNodeAndIterate
+            // Having a constant in the hash just means the recursion will
+            // end, it shouldn't change the CFunc having a unique hash itself.
             m_hash += nodep->isLoose();
         });
     }
@@ -475,11 +495,12 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit HasherVisitor(AstNode* nodep)
+    HasherVisitor(AstNode* nodep)
         : m_cacheInUser4{true} {
         iterate(nodep);
     }
-    explicit HasherVisitor(const AstNode* nodep)
+    class Uncached {};
+    HasherVisitor(const AstNode* nodep, Uncached)
         : m_cacheInUser4{false} {
         iterate(const_cast<AstNode*>(nodep));
     }
@@ -491,11 +512,25 @@ public:
 // V3Hasher methods
 
 V3Hash V3Hasher::operator()(AstNode* nodep) const {
-    if (!nodep->user4()) { HasherVisitor{nodep}; }
+    if (!nodep->user4()) HasherVisitor{nodep};
+    return V3Hash(nodep->user4());
+}
+
+V3Hash V3Hasher::rehash(AstNode* nodep) const {
+    nodep->user4(0);
+    HasherVisitor{nodep};
     return V3Hash(nodep->user4());
 }
 
 V3Hash V3Hasher::uncachedHash(const AstNode* nodep) {
-    const HasherVisitor visitor{nodep};
+    const HasherVisitor visitor{nodep, HasherVisitor::Uncached{}};
     return visitor.finalHash();
+}
+
+//######################################################################
+// This is used by the std::hash specialization for VNRef.
+// Declared separately to avoid a circular header dependency.
+
+size_t V3HasherUncachedHash(AstNode& node) {
+    return static_cast<size_t>(V3Hasher::uncachedHash(&node).value());
 }

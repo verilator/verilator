@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Connecting:
@@ -422,7 +422,7 @@ accesses the above signal "readme" would be:
 
 .. code-block:: bash
 
-     cat >sim_main.cpp <<'<<EOF'
+     cat >sim_main.cpp <<'EOF'
        #include "Vour.h"
        #include "verilated.h"
        #include "verilated_vpi.h"  // Required to get definitions

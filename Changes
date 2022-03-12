@@ -8,6 +8,72 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 4.220 2022-03-12
+==========================
+
+**Minor:**
+
+* Removed the deprecated lint_off flag -msg; use -rule instead.
+* Removed the deprecated "fl" attribute in XML output; use "loc" attribute instead.
+* Suppress WIDTH warning on negate using carry bit (#3295). [Peter Monsson]
+* Add trace dumpvars() call for selective runtime tracing (#3322). [Shunyao CAD]
+* Add VERILATOR_VERSION_INTEGER for determining API (#3343). [Larry Doolittle]
+* Improve various V3Combine algorithm details (#3328). [Yutetsu TAKATSUKASA]
+* Improve various V3Order algorithm details. [Geza Lore]
+* Fix macOS arm64 build (#3285) (#3291). [Guokai Chen]
+* Fix signed number operation (#3294) (#3308). [Raynard Qiao]
+* Fix FST traces to include vector range (#3296) (#3297). [Jamie Iles]
+* Fix skipping public enum values with four-state values (#3303).
+* Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
+* Fix class stringification on wide arrays (#3312). [Iru Cai]
+* Fix $fscanf etc to return -1 on EOF (#3313). [Jose Tejada]
+* Fix public function arguments that are arrayed (#3316). [pawel256]
+* Fix unnamedblk error on foreach (#3321). [Aliaksei Chapyzhenka]
+* Fix crash in recursive module inlining (#3324). [Larry Doolittle]
+* Fix VL_RESTORER behavior on passing a lvalue reference (#3326). [HungMingWu]
+* Fix compile error with --trace-fst --sc (#3332). [leavinel]
+* Fix cast to array types (#3333). [Todd Strader]
+* Fix Vdeeptemp error with --threads and --compiler clang (#3338). [Per Karlsson]
+
+
+Verilator 4.218 2022-01-17
+==========================
+
+**Major:**
+
+* Primary inputs and outputs (VL_INW/VL_OUTW) now use VlWide type.
+  In general this should be backward compatible, but may lead to some
+  wrapper code needing changes.
+* Option --cdc is deprecated and is planned for removal,
+  file a bug if this is still being used.
+
+**Minor:**
+
+* Support class static members (#2233).
+* Support force/release (#2431) (#2593). [Shunyao CAD]
+* Add 'forceable' attribute to allow forcing from C++. (#3272). [Geza Lore, Shunyao CAD]
+* Support lower dimension looping in foreach loops (#3172). [Ehab Ibrahim]
+* Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
+* Reduce .rodata footprint of trace initialization (#3250). [Geza Lore, Shunyao CAD]
+* Support FST tracing in hierarchical Verilation (#3251). [Yutetsu TAKATSUKASA]
+* Use C++11 standard types for MacOS portability (#3254) (#3257). [Adrien Le Masle]
+* Fix make support for BSD ar (#2999) (#3256). [Julie Schwartz]
+* Fix bad ending address on $readmem (#3205). [Julie Schwartz]
+* Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
+* Fix break under foreach loop (#3230).
+* Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235). [Adrien Le Masle]
+* Fix $sformat of inputs/outputs (#3236). [Adrien Le Masle]
+* Fix associative array first method as statement (#3228). [Adrien Le Masle]
+* Fix associative array foreach loop (#3229).
+* Fix $fclose not accepting expressions (#3237). [Julie Schwartz]
+* Fix $random not updating seed (#3238). [Julie Schwartz]
+* Fix top level param overwrite when package has same param (#3241) (#3247). [Adrien Le Masle]
+* Fix spurious UNUSED by ignoring inout pin connections (#3242). [Julie Schwartz]
+* Fix splitting of _eval and other top level functions. [Geza Lore, Shunyao CAD]
+* Fix internal error by inout port (#3258). [Yutetsu TAKATSUKASA]
+* Fix GCC 11 compile error (#3273). [HungMingWu]
+
+
 Verilator 4.216 2021-12-05
 ==========================
 
@@ -3762,7 +3828,7 @@ Verilator 0.0 1994-07-08
 Copyright
 =========
 
-Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

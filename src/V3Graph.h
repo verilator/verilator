@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -282,7 +282,7 @@ protected:
     bool m_cutable;  // Interconnect may be broken in order sorting
     union {
         void* m_userp;  // Marker for some algorithms
-        uint32_t m_user;  // Marker for some algorithms
+        uint64_t m_user;  // Marker for some algorithms
     };
     // METHODS
     void init(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
@@ -326,8 +326,8 @@ public:
     void cutable(bool cutable) { m_cutable = cutable; }
     void userp(void* user) { m_userp = user; }
     void* userp() const { return m_userp; }
-    void user(uint32_t user) { m_user = user; }
-    uint32_t user() const { return m_user; }
+    void user(uint64_t user) { m_user = user; }
+    uint64_t user() const { return m_user; }
     V3GraphVertex* fromp() const { return m_fromp; }
     V3GraphVertex* top() const { return m_top; }
     V3GraphVertex* closerp(GraphWay way) const { return way.forward() ? fromp() : top(); }

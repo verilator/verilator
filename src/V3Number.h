@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3Hash.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <vector>
@@ -421,7 +422,6 @@ public:
     V3Number& opPowSS(const V3Number& lhs, const V3Number& rhs);  // Signed lhs, signed rhs
     V3Number& opPowUS(const V3Number& lhs, const V3Number& rhs);  // Unsigned lhs, signed rhs
     V3Number& opAnd(const V3Number& lhs, const V3Number& rhs);
-    V3Number& opChangeXor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opXor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opOr(const V3Number& lhs, const V3Number& rhs);
     V3Number& opShiftR(const V3Number& lhs, const V3Number& rhs);
