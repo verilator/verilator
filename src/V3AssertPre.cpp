@@ -167,16 +167,14 @@ private:
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
         // Block is the new expression to evaluate
         AstNode* blockp = nodep->propp()->unlinkFrBack();
-        if (nodep->disablep()) {
-            m_disablep = nodep->disablep()->cloneTree(false);
+        if (AstNode* const disablep = nodep->disablep()) {
+            m_disablep = disablep->cloneTree(false);
             if (VN_IS(nodep->backp(), Cover)) {
-                blockp = new AstAnd(
-                    nodep->disablep()->fileline(),
-                    new AstNot(nodep->disablep()->fileline(), nodep->disablep()->unlinkFrBack()),
-                    blockp);
+                blockp = new AstAnd(disablep->fileline(),
+                                    new AstNot(disablep->fileline(), disablep->unlinkFrBack()),
+                                    blockp);
             } else {
-                blockp = new AstOr(nodep->disablep()->fileline(),
-                                   nodep->disablep()->unlinkFrBack(), blockp);
+                blockp = new AstOr(disablep->fileline(), disablep->unlinkFrBack(), blockp);
             }
         }
         // Unlink and just keep a pointer to it, convert to sentree as needed
