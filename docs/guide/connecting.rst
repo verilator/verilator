@@ -257,7 +257,9 @@ with respect to that top level module, then the scope could be set with
 
      #include "svdpi.h"
      ...
-     svSetScope(svGetScopeFromName("TOP.dut"));
+     const svScope scope = svGetScopeFromName("TOP.dut");
+     assert(scope);  // Check for nullptr if scope not found
+     svSetScope(scope);
 
 (Remember that Verilator adds a "TOP" to the top of the module hierarchy.)
 
