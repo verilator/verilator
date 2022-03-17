@@ -476,6 +476,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # elif defined(__powerpc64__)
 #  define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
 # elif defined(__loongarch__)
+// LoongArch does not currently have a yield/pause instruction
 #  define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
 # else
 #  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
