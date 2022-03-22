@@ -1847,7 +1847,7 @@ private:
         }
         // Find all reader tasks for this variable, group by rank.
         for (V3GraphEdge* edgep = (*ovvIt)->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
+            const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->top());
             if (!logicp) continue;
             if (logicp->domainp()->hasInitial() || logicp->domainp()->hasSettle()) continue;
             LogicMTask* const readerMtaskp = m_olv2mtask.at(logicp);
