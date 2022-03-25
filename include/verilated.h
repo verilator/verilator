@@ -344,10 +344,10 @@ protected:
     struct NonSerialized {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
-        vluint64_t m_profThreadsStart = 1;  // +prof+threads starting time
-        vluint32_t m_profThreadsWindow = 2;  // +prof+threads window size
+        vluint64_t m_profExecStart = 1;  // +prof+exec+start time
+        vluint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
-        std::string m_profThreadsFilename;  // +prof+threads filename
+        std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
     } m_ns;
 
@@ -518,13 +518,13 @@ public:  // But for internal use only
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
     std::string dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
 
-    // Internal: --prof-threads related settings
-    void profThreadsStart(vluint64_t flag) VL_MT_SAFE;
-    vluint64_t profThreadsStart() const VL_MT_SAFE { return m_ns.m_profThreadsStart; }
-    void profThreadsWindow(vluint64_t flag) VL_MT_SAFE;
-    vluint32_t profThreadsWindow() const VL_MT_SAFE { return m_ns.m_profThreadsWindow; }
-    void profThreadsFilename(const std::string& flag) VL_MT_SAFE;
-    std::string profThreadsFilename() const VL_MT_SAFE;
+    // Internal: --prof-exec related settings
+    void profExecStart(vluint64_t flag) VL_MT_SAFE;
+    vluint64_t profExecStart() const VL_MT_SAFE { return m_ns.m_profExecStart; }
+    void profExecWindow(vluint64_t flag) VL_MT_SAFE;
+    vluint32_t profExecWindow() const VL_MT_SAFE { return m_ns.m_profExecWindow; }
+    void profExecFilename(const std::string& flag) VL_MT_SAFE;
+    std::string profExecFilename() const VL_MT_SAFE;
     void profVltFilename(const std::string& flag) VL_MT_SAFE;
     std::string profVltFilename() const VL_MT_SAFE;
 

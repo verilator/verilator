@@ -2280,7 +2280,7 @@ VerilatedContext::VerilatedContext()
     : m_impdatap{new VerilatedContextImpData} {
     Verilated::lastContextp(this);
     Verilated::threadContextp(this);
-    m_ns.m_profThreadsFilename = "profile_threads.dat";
+    m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
@@ -2348,21 +2348,21 @@ void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_gotFinish = flag;
 }
-void VerilatedContext::profThreadsStart(vluint64_t flag) VL_MT_SAFE {
+void VerilatedContext::profExecStart(vluint64_t flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    m_ns.m_profThreadsStart = flag;
+    m_ns.m_profExecStart = flag;
 }
-void VerilatedContext::profThreadsWindow(vluint64_t flag) VL_MT_SAFE {
+void VerilatedContext::profExecWindow(vluint64_t flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    m_ns.m_profThreadsWindow = flag;
+    m_ns.m_profExecWindow = flag;
 }
-void VerilatedContext::profThreadsFilename(const std::string& flag) VL_MT_SAFE {
+void VerilatedContext::profExecFilename(const std::string& flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    m_ns.m_profThreadsFilename = flag;
+    m_ns.m_profExecFilename = flag;
 }
-std::string VerilatedContext::profThreadsFilename() const VL_MT_SAFE {
+std::string VerilatedContext::profExecFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    return m_ns.m_profThreadsFilename;
+    return m_ns.m_profExecFilename;
 }
 void VerilatedContext::profVltFilename(const std::string& flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
@@ -2524,12 +2524,15 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
                         "Exiting due to command line argument (not an error)");
         } else if (arg == "+verilator+noassert") {
             assertOn(false);
-        } else if (commandArgVlUint64(arg, "+verilator+prof+threads+start+", u64)) {
-            profThreadsStart(u64);
-        } else if (commandArgVlUint64(arg, "+verilator+prof+threads+window+", u64, 1)) {
-            profThreadsWindow(u64);
-        } else if (commandArgVlString(arg, "+verilator+prof+threads+file+", str)) {
-            profThreadsFilename(str);
+        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+start+", u64)
+                   || commandArgVlUint64(arg, "+verilator+prof+threads+start+", u64)) {
+            profExecStart(u64);
+        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+window+", u64, 1)
+                   || commandArgVlUint64(arg, "+verilator+prof+threads+window+", u64, 1)) {
+            profExecWindow(u64);
+        } else if (commandArgVlString(arg, "+verilator+prof+exec+file+", str)
+                   || commandArgVlString(arg, "+verilator+prof+threads+file+", str)) {
+            profExecFilename(str);
         } else if (commandArgVlString(arg, "+verilator+prof+vlt+file+", str)) {
             profVltFilename(str);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {

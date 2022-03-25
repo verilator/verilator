@@ -265,7 +265,7 @@ This will limit memory to socket 0, and threads to cores 0, 1, 2, 3,
 (presumably on socket 0) optimizing performance.  Of course this must be
 adjusted if you want another simulator using e.g. socket 1, or if you
 Verilated with a different number of threads.  To see what CPUs are
-actually used, use :vlopt:`--prof-threads`.
+actually used, use :vlopt:`--prof-exec`.
 
 
 Multithreaded Verilog and Library Support

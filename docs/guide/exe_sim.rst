@@ -38,33 +38,45 @@ Summary:
 
    Display help and exit.
 
-.. option:: +verilator+prof+threads+file+<filename>
+.. option:: +verilator+prof+exec+file+<filename>
 
-   When a model was Verilated using :vlopt:`--prof-threads`, sets the
+   When a model was Verilated using :vlopt:`--prof-exec`, sets the
    simulation runtime filename to dump to.  Defaults to
-   :file:`profile_threads.dat`.
+   :file:`profile_exec.dat`.
 
-.. option:: +verilator+prof+threads+start+<value>
+.. option:: +verilator+prof+exec+start+<value>
 
-   When a model was Verilated using :vlopt:`--prof-threads`, the simulation
+   When a model was Verilated using :vlopt:`--prof-exec`, the simulation
    runtime will wait until $time is at this value (expressed in units of
    the time precision), then start the profiling warmup, then
    capturing. Generally this should be set to some time that is well within
    the normal operation of the simulation, i.e. outside of reset. If 0, the
    dump is disabled. Defaults to 1.
 
-.. option:: +verilator+prof+threads+window+<value>
+.. option:: +verilator+prof+exec+window+<value>
 
-   When a model was Verilated using :vlopt:`--prof-threads`, after $time
-   reaches :vlopt:`+verilator+prof+threads+start+\<value\>`, Verilator will
+   When a model was Verilated using :vlopt:`--prof-exec`, after $time
+   reaches :vlopt:`+verilator+prof+exec+start+\<value\>`, Verilator will
    warm up the profiling for this number of eval() calls, then will capture
    the profiling of this number of eval() calls.  Defaults to 2, which
    makes sense for a single-clock-domain module where it's typical to want
    to capture one posedge eval() and one negedge eval().
 
+.. option:: +verilator+prof+threads+file+<filename>
+
+   Deprecated. Alias for :vlopt:`+verilator+prof+exec+file+\<filename\>`
+
+.. option:: +verilator+prof+threads+start+<value>
+
+   Deprecated. Alias for :vlopt:`+verilator+prof+exec+start+\<value\>`
+
+.. option:: +verilator+prof+threads+window+<value>
+
+   Deprecated. Alias for :vlopt:`+verilator+prof+exec+window+\<filename\>`
+
 .. option:: +verilator+prof+vlt+file+<filename>
 
-   When a model was Verilated using :vlopt:`--prof-threads`, sets the
+   When a model was Verilated using :vlopt:`--prof-pgo`, sets the
    profile-guided optimization data runtime filename to dump to.  Defaults
    to :file:`profile.vlt`.
 

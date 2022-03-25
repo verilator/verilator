@@ -1,7 +1,7 @@
-VLPROFTHREAD 1.1 # Verilator thread profile dump version 1.1
-VLPROF arg --threads 4
-VLPROF arg +verilator+prof+threads+start+1
-VLPROF arg +verilator+prof+threads+window+2
+VLPROFVERSION 2.0
+VLPROF arg +verilator+prof+exec+start+1
+VLPROF arg +verilator+prof+exec+window+2
+VLPROF stat threads 2
 VLPROF stat yields 51
 VLPROFPROC processor	: 0
 VLPROFPROC model name	: Phytium,FT-2500/128
@@ -43,11 +43,20 @@ VLPROFPROC CPU variant	: 0x1
 VLPROFPROC CPU part	: 0x663
 VLPROFPROC CPU revision	: 3
 VLPROFPROC 
-VLPROF eval start 57709 elapsed 1745979 cpu 2 on thread 1
-VLPROF eval_loop start 58532 elapsed 1744353 cpu 2 on thread 1
-VLPROF mtask 85 start 90465 elapsed 64569 predict_start 14315 predict_cost 30533 cpu 2 on thread 1
-VLPROF mtask 79 start 156555 elapsed 137754 predict_start 44848 predict_cost 48001 cpu 2 on thread 1
-VLPROF mtask 90 start 77352 elapsed 1159 predict_start 14315 predict_cost 21592 cpu 3 on thread 2
-VLPROF mtask 81 start 79799 elapsed 868 predict_start 35907 predict_cost 29215 cpu 3 on thread 2
-VLPROF mtask 87 start 81746 elapsed 887 predict_start 65147 predict_cost 33809 cpu 3 on thread 2
+VLPROFTHREAD 0
+VLPROFEXEC EVAL_BEGIN 57709
+VLPROFEXEC EVAL_LOOP_BEGIN 58532
+VLPROFEXEC MTASK_BEGIN 90465 id 85 predictStart 14315 cpu 2
+VLPROFEXEC MTASK_END 155034 id 85 predictCost 30533
+VLPROFEXEC MTASK_BEGIN 156555 id 79 predictStart 44848 cpu 2
+VLPROFEXEC MTASK_END 294309 id 79 predictCost 48001
+VLPROFEXEC EVAL_LOOP_END 18028850
+VLPROFEXEC EVAL_END 1803680
+VLPROFTHREAD 1
+VLPROFEXEC MTASK_BEGIN 77352 id 90 predictStart 14315 cpu 3
+VLPROFEXEC MTASK_END 78511 id 90 predictCost 21592
+VLPROFEXEC MTASK_BEGIN 79799 id 81 predictStart 35907 cpu 3
+VLPROFEXEC MTASK_END 80667 id 81 predictCost 29215
+VLPROFEXEC MTASK_BEGIN 81746 id 87 predictStart 65147 cpu 3
+VLPROFEXEC MTASK_END 82633 id 87 predictCost 33809
 VLPROF stat ticks 180832

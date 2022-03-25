@@ -438,7 +438,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #if defined(__i386__) || defined(__x86_64__)
 // The vluint64_t argument is loaded with a high-performance counter for profiling
 // or 0x0 if not implemented on this platform
-#define VL_RDTSC(val) \
+#define VL_GET_CPU_TICK(val) \
     { \
         vluint32_t hi, lo; \
         asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); \
@@ -446,14 +446,14 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
     }
 #elif defined(__aarch64__)
 // 1 GHz virtual system timer on SBSA level 5 compliant systems, else often 100 MHz
-# define VL_RDTSC(val) \
+# define VL_GET_CPU_TICK(val) \
     { \
         asm volatile("isb" : : : "memory"); \
         asm volatile("mrs %[rt],CNTVCT_EL0" : [rt] "=r"(val)); \
     }
 #else
 // We just silently ignore unknown OSes, as only leads to missing statistics
-# define VL_RDTSC(val) (val) = 0;
+# define VL_GET_CPU_TICK(val) (val) = 0;
 #endif
 
 //=========================================================================

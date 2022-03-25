@@ -255,7 +255,8 @@ private:
     bool m_ppComments = false;      // main switch: --pp-comments
     bool m_profC = false;           // main switch: --prof-c
     bool m_profCFuncs = false;      // main switch: --prof-cfuncs
-    bool m_profThreads = false;     // main switch: --prof-threads
+    bool m_profExec = false;        // main switch: --prof-exec
+    bool m_profPgo = false;         // main switch: --prof-pgo
     bool m_protectIds = false;      // main switch: --protect-ids
     bool m_public = false;          // main switch: --public
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
@@ -468,7 +469,9 @@ public:
     bool ppComments() const { return m_ppComments; }
     bool profC() const { return m_profC; }
     bool profCFuncs() const { return m_profCFuncs; }
-    bool profThreads() const { return m_profThreads; }
+    bool profExec() const { return m_profExec; }
+    bool profPgo() const { return m_profPgo; }
+    bool usesProfiler() const { return profExec() || profPgo(); }
     bool protectIds() const { return m_protectIds; }
     bool allPublic() const { return m_public; }
     bool publicFlatRW() const { return m_publicFlatRW; }

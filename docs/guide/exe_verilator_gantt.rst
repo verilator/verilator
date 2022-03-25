@@ -72,7 +72,7 @@ verilator_gantt Arguments
 
 .. option:: <filename>
 
-The filename to read data from, defaults to "profile_threads.dat".
+The filename to read data from, defaults to "profile_exec.dat".
 
 .. option:: --help
 

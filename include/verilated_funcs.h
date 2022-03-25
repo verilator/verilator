@@ -112,15 +112,6 @@ extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);
 
-#if VL_THREADED
-/// Return high-precision counter for profiling, or 0x0 if not available
-inline QData VL_RDTSC_Q() {
-    vluint64_t val;
-    VL_RDTSC(val);
-    return val;
-}
-#endif
-
 extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                               const VerilatedContext* contextp) VL_MT_SAFE;
 

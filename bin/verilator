@@ -370,7 +370,8 @@ detailed descriptions of these arguments.
     --prefix <topname>          Name of top level class
     --prof-c                    Compile C++ code with profiling
     --prof-cfuncs               Name functions for profiling
-    --prof-threads              Enable generating gantt chart data for threads
+    --prof-exec                 Enable generating execution profile for gantt chart
+    --prof-pgo                  Enable generating profiling data for PGO
     --protect-key <key>         Key for symbol protection
     --protect-ids               Hash identifier names for obscurity
     --protect-lib <name>        Create a DPI protected library
@@ -445,10 +446,10 @@ description of these arguments.
      +verilator+error+limit+<value>    Set error limit
      +verilator+help                   Display help
      +verilator+noassert               Disable assert checking
-     +verilator+prof+threads+file+<filename>  Set profile filename
-     +verilator+prof+threads+start+<value>    Set profile starting point
-     +verilator+prof+threads+window+<value>   Set profile duration
-     +verilator+prof+vlt+file+<filename>      Set profile guided filename
+     +verilator+prof+exec+file+<filename>  Set execution profile filename
+     +verilator+prof+exec+start+<value>    Set execution profile starting point
+     +verilator+prof+exec+window+<value>   Set execution profile duration
+     +verilator+prof+vlt+file+<filename>   Set PGO profile filename
      +verilator+rand+reset+<value>     Set random reset technique
      +verilator+seed+<value>           Set random seed
      +verilator+V                      Verbose version and config

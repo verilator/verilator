@@ -395,7 +395,7 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.needTraceDumper()) {
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
     }
-    if (v3Global.opt.profThreads()) puts("#include \"verilated_profiler.h\"\n");
+    if (v3Global.opt.usesProfiler()) puts("#include \"verilated_profiler.h\"\n");
 
     puts("\n// INCLUDE MODEL CLASS\n");
     puts("\n#include \"" + topClassName() + ".h\"\n");
@@ -445,18 +445,15 @@ void EmitCSyms::emitSymHdr() {
     }
     puts("bool __Vm_didInit = false;\n");
 
+    if (v3Global.opt.profExec()) {
+        puts("\n// EXECUTION PROFILING\n");
+        puts("VlExecutionProfiler __Vm_executionProfiler;\n");
+    }
+
     if (v3Global.opt.mtasks()) {
+        puts("\n// MULTI-THREADING\n");
         puts("VlThreadPool* const __Vm_threadPoolp;\n");
         puts("bool __Vm_even_cycle = false;\n");
-
-        if (v3Global.opt.profThreads()) {
-            // rdtsc() at current cycle start
-            puts("vluint64_t __Vm_profile_cycle_start = 0;\n");
-            // Time we finished analysis
-            puts("vluint64_t __Vm_profile_time_finished = 0;\n");
-            // Track our position in the cache warmup and actual profile window
-            puts("vluint32_t __Vm_profile_window_ct = 0;\n");
-        }
     }
 
     puts("\n// MODULE INSTANCE STATE\n");
@@ -477,8 +474,8 @@ void EmitCSyms::emitSymHdr() {
         puts("];\n");
     }
 
-    if (v3Global.opt.profThreads()) {
-        puts("\n// PROFILING\n");
+    if (v3Global.opt.profPgo()) {
+        puts("\n// PGO PROFILING\n");
         vluint64_t maxProfilerId = 0;
         if (v3Global.opt.mtasks()) {
             for (const V3GraphVertex* vxp
@@ -490,7 +487,7 @@ void EmitCSyms::emitSymHdr() {
             }
         }
         ++maxProfilerId;  // As size must include 0
-        puts("VerilatedProfiler<" + cvtToStr(maxProfilerId) + "> _vm_profiler;\n");
+        puts("VlPgoProfiler<" + cvtToStr(maxProfilerId) + "> _vm_pgoProfiler;\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names
@@ -682,8 +679,8 @@ void EmitCSyms::emitSymImp() {
         puts("if (__Vm_dumping) _traceDumpClose();\n");
         puts("#endif  // VM_TRACE\n");
     }
-    if (v3Global.opt.profThreads()) {
-        puts("_vm_profiler.write(\"" + topClassName()
+    if (v3Global.opt.profPgo()) {
+        puts("_vm_pgoProfiler.write(\"" + topClassName()
              + "\", _vm_contextp__->profVltFilename());\n");
     }
     if (v3Global.opt.mtasks()) puts("delete __Vm_threadPoolp;\n");
@@ -719,8 +716,8 @@ void EmitCSyms::emitSymImp() {
         // that calls eval() becomes the final Nth thread for the
         // duration of the eval call.
         puts("    , __Vm_threadPoolp{new VlThreadPool{_vm_contextp__, "
-             + cvtToStr(v3Global.opt.threads() - 1) + ", " + cvtToStr(v3Global.opt.profThreads())
-             + "}}\n");
+             + cvtToStr(v3Global.opt.threads() - 1) + ", "
+             + (v3Global.opt.profExec() ? "&__Vm_executionProfiler" : "nullptr") + "}}\n");
     }
 
     puts("    // Setup module instances\n");
@@ -741,14 +738,14 @@ void EmitCSyms::emitSymImp() {
     }
     puts("{\n");
 
-    if (v3Global.opt.profThreads()) {
-        puts("// Configure profiling\n");
+    if (v3Global.opt.profPgo()) {
+        puts("// Configure profiling for PGO\n");
         if (v3Global.opt.mtasks()) {
             for (const V3GraphVertex* vxp
                  = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
                  vxp; vxp = vxp->verticesNextp()) {
                 ExecMTask* const mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
-                puts("_vm_profiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
+                puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
                      + mtp->hashName() + "\");\n");
             }
         }

@@ -279,26 +279,25 @@ To use profiling:
    is being spent.
 
 
-.. _Thread Profiling:
+.. _Execution Profiling:
 
-Thread Profiling
-================
+Execution Profiling
+===================
 
-When using multithreaded mode (:vlopt:`--threads`), it is useful to see
-statistics and visualize how well the multiple CPUs are being utilized.
+For performance optimization, it is useful to see statistics and visualize how
+execution time is distributed in a verilated model.
 
-With the :vlopt:`--prof-threads` option, Verilator will:
+With the :vlopt:`--prof-exec` option, Verilator will:
 
-* Add code to the Verilated model to record the start and end time of each
-  macro-task across a number of calls to eval. (What is a macro-task?  See
-  the Verilator internals document (:file:`docs/internals.rst` in the
-  distribution.)
+* Add code to the Verilated model to record execution flow.
 
 * Add code to save profiling data in non-human-friendly form to the file
-  specified with :vlopt:`+verilator+prof+threads+file+\<filename\>`.
+  specified with :vlopt:`+verilator+prof+exec+file+\<filename\>`.
 
-* Add code to save profiling data for thread profile-guided
-  optimization. See :ref:`Thread PGO`.
+* In multi-threaded models, add code to record the start and end time of each
+  macro-task across a number of calls to eval. (What is a macro-task?  See the
+  Verilator internals document (:file:`docs/internals.rst` in the
+  distribution.)
 
 The :command:`verilator_gantt` program may then be run to transform the
 saved profiling file into a nicer visual format and produce some related
@@ -406,8 +405,8 @@ others as they prove beneficial.
 Thread Profile-Guided Optimization
 ----------------------------------
 
-Verilator supports thread profile-guided optimization (Thread PGO) to
-improve multithreaded performance.
+Verilator supports profile-guided optimization (verilation) of multi-threaded
+models (Thread PGO) to improve performance.
 
 When using multithreading, Verilator computes how long macro tasks take and
 tries to balance those across threads.  (What is a macro-task?  See the
@@ -417,13 +416,14 @@ balanced, leading to decreased performance.  Thread PGO allows collecting
 profiling data to replace the estimates and better optimize these
 decisions.
 
-To use Thread PGO, Verilate the model with the :vlopt:`--prof-threads`
-option.
+To use Thread PGO, Verilate the model with the :vlopt:`--prof-pgo` option. This
+will code to the verilated model to save profiling data for profile-guided
+optimization.
 
 Run the model executable. When the executable exits, it will create a
 profile.vlt file.
 
-Rerun Verilator, optionally omitting the :vlopt:`--prof-threads` option,
+Rerun Verilator, optionally omitting the :vlopt:`--prof-pgo` option,
 and adding the profile.vlt generated earlier to the command line.
 
 Note there is no Verilator equivalent to GCC's --fprofile-use. Verilator's
