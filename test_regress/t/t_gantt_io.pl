@@ -16,7 +16,7 @@ run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_gantt"
 
 files_identical("$Self->{obj_dir}/gantt.log", $Self->{golden_filename});
 
-vcd_identical("$Self->{obj_dir}/profile_threads.vcd", "$Self->{t_dir}/$Self->{name}.vcd.out");
+vcd_identical("$Self->{obj_dir}/profile_exec.vcd", "$Self->{t_dir}/$Self->{name}.vcd.out");
 
 ok(1);
 1;

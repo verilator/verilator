@@ -330,21 +330,14 @@ class EmitCModel final : public EmitCFunc {
         if (initial)
             puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
 
-        const string recName = "__Vprfloop";
-        if (v3Global.opt.profThreads() && !initial) {
-            puts("VlProfileRec* " + recName + " = nullptr;\n");
-            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-            puts("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n");
-            // Eval start
-            puts(/**/ recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n");
-            puts(/**/ recName + "->startEvalLoop(VL_RDTSC_Q());\n");
-            puts("}\n");
+        if (v3Global.opt.profExec() && !initial) {
+            puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalLoopBegin();\n");
         }
 
         puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
 
-        if (v3Global.opt.profThreads() && !initial) {
-            puts("if (VL_UNLIKELY(" + recName + ")) " + recName + "->endRecord(VL_RDTSC_Q());\n");
+        if (v3Global.opt.profExec() && !initial) {
+            puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalLoopEnd();\n");
         }
 
         if (v3Global.rootp()->changeRequest()) {
@@ -434,61 +427,9 @@ class EmitCModel final : public EmitCFunc {
             puts("Verilated::mtaskId(" + cvtToStr(mtaskId) + ");\n");
         }
 
-        if (v3Global.opt.profThreads()) {
-            puts("if (VL_UNLIKELY((vlSymsp->_vm_contextp__->profThreadsStart() != "
-                 "vlSymsp->__Vm_profile_time_finished)\n");
-            puts(" && (VL_TIME_Q() > vlSymsp->_vm_contextp__->profThreadsStart())\n");
-            puts(" && (vlSymsp->_vm_contextp__->profThreadsWindow() >= 1))) {\n");
-            // Within a profile (either starting, middle, or end)
-            puts(/**/ "if (vlSymsp->__Vm_profile_window_ct == 0) {\n");  // Opening file?
-            puts(/**/ "VL_DEBUG_IF(VL_DBG_MSGF(\"+ profile start warmup\\n\"););\n");
-            // Start profile on this cycle. We'll capture a window worth, then
-            // only analyze the next window worth. The idea is that the first window
-            // capture will hit some cache-cold stuff (eg printf) but it'll be warm
-            // by the time we hit the second window, we hope.
-            puts(/****/ "vlSymsp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
-            // "* 2" as first half is warmup, second half is collection
-            puts(/****/ "vlSymsp->__Vm_profile_window_ct"
-                        " = vlSymsp->_vm_contextp__->profThreadsWindow()"
-                        " * 2 + 1;\n");
-            puts(/**/ "}\n");
-            puts(/**/ "--(vlSymsp->__Vm_profile_window_ct);\n");
-            puts(/**/ "if (vlSymsp->__Vm_profile_window_ct"
-                      " == vlSymsp->_vm_contextp__->profThreadsWindow()) {\n");
-            // This barrier record in every threads' profile demarcates the
-            // cache-warm-up cycles before the barrier from the actual profile
-            // cycles afterward.
-            puts(/****/ "vlSymsp->__Vm_threadPoolp->profileAppendAll(");
-            puts(/****/ "VlProfileRec{VlProfileRec::Barrier{}});\n");
-            puts(/****/ "vlSymsp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
-            puts(/**/ "}\n");
-            // Ending trace file?
-            puts(/**/ "else if (vlSymsp->__Vm_profile_window_ct == 0) {\n");
-            puts(/****/ "vluint64_t tick_end = VL_RDTSC_Q();\n");
-            puts(/****/ "VL_DEBUG_IF(VL_DBG_MSGF(\"+ profile end\\n\"););\n");
-            puts(/****/ "vlSymsp->__Vm_threadPoolp->profileDump("
-                        "vlSymsp->_vm_contextp__->profThreadsFilename().c_str(), "
-                        "vlSymsp->__Vm_profile_cycle_start, "
-                        "tick_end);\n");
-            // This turns off the test to enter the profiling code, but still
-            // allows the user to collect another profile by changing
-            // profThreadsStart
-            puts(/****/ "vlSymsp->__Vm_profile_time_finished = "
-                        "vlSymsp->_vm_contextp__->profThreadsStart();\n");
-            puts(/****/ "vlSymsp->__Vm_profile_cycle_start = 0;\n");
-            puts(/**/ "}\n");
-            puts("}\n");
-        }
-
-        const string recName = "__Vprfeval";
-        if (v3Global.opt.profThreads()) {
-            puts("VlProfileRec* " + recName + " = nullptr;\n");
-            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-            puts("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n");
-            // Eval start
-            puts(/**/ recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n");
-            puts(/**/ recName + "->startEval(VL_RDTSC_Q());\n");
-            puts("}\n");
+        if (v3Global.opt.profExec()) {
+            puts("vlSymsp->__Vm_executionProfiler.configure(*(vlSymsp->_vm_contextp__));\n");
+            puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalBegin();\n");
         }
 
         emitSettleLoop(modp, /* initial: */ false);
@@ -499,10 +440,7 @@ class EmitCModel final : public EmitCFunc {
         }
         if (v3Global.opt.threads()) puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
 
-        if (v3Global.opt.profThreads()) {
-            // End eval record
-            puts("if (VL_UNLIKELY(" + recName + ")) " + recName + "->endRecord(VL_RDTSC_Q());\n");
-        }
+        if (v3Global.opt.profExec()) puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalEnd();\n");
         puts("}\n");
     }
 

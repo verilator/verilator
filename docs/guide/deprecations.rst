@@ -19,3 +19,14 @@ Verilated_heavy.h
 Option `--cdc`
   The experimental `--cdc` option is believed to be generally unused and is
   planned for removal no sooner than January 2023.
+
+Option `--prof-threads`
+  The `--prof-threads` option has been superseded by the `--prof-exec` and
+  `--prof-pgo` options and is planned for removal no sooner than April 2023.
+
+Verilated model options `+verilator+prof+threads+*`
+  The `+verilator+prof+threads+start`, `+verilator+prof+threads+window` and
+  `+verilator+prof+threads+file` options have been superseded by the
+  `+verilator+prof+exec+start`, `+verilator+prof+exec+window` and
+  `+verilator+prof+exec+file` options respectively and are planned for removal
+  no sooner than April 2023.

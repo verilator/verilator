@@ -1,24 +1,44 @@
-VLPROFTHREAD 1.1 # Verilator thread profile dump version 1.1
-VLPROF arg --threads 2
-VLPROF arg +verilator+prof+threads+start+2
-VLPROF arg +verilator+prof+threads+window+2
+VLPROFVERSION 2.0
+VLPROF arg +verilator+prof+exec+start+2
+VLPROF arg +verilator+prof+exec+window+2
+VLPROF stat threads 2
 VLPROF stat yields 0
-VLPROF eval start 595 elapsed 11655 cpu 19 on thread 1
-VLPROF eval_loop start 945 elapsed 11235 cpu 19 on thread 1
-VLPROF mtask 6 start 2695 elapsed 210 predict_start 0 predict_cost 30 cpu 19 on thread 1
-VLPROF mtask 10 start 9695 elapsed 175 predict_start 196 predict_cost 30 cpu 19 on thread 1
-VLPROF eval start 13720 elapsed 8610 cpu 19 on thread 1
-VLPROF eval_loop start 14000 elapsed 8085 cpu 19 on thread 1
-VLPROF mtask 6 start 15610 elapsed 210 predict_start 0 predict_cost 30 cpu 19 on thread 1
-VLPROF mtask 10 start 21700 elapsed 175 predict_start 196 predict_cost 30 cpu 19 on thread 1
-VLPROF mtask 5 start 5495 elapsed 595 predict_start 0 predict_cost 30 cpu 10 on thread 2
-VLPROF mtask 7 start 6300 elapsed 595 predict_start 30 predict_cost 30 cpu 10 on thread 2
-VLPROF mtask 8 start 7490 elapsed 1050 predict_start 60 predict_cost 107 cpu 10 on thread 2
-VLPROF mtask 9 start 9135 elapsed 595 predict_start 167 predict_cost 30 cpu 10 on thread 2
-VLPROF mtask 11 start 10255 elapsed 805 predict_start 197 predict_cost 30 cpu 10 on thread 2
-VLPROF mtask 5 start 18375 elapsed 595 predict_start 0 predict_cost 30 cpu 10 on thread 2
-VLPROF mtask 7 start 19145 elapsed 175 predict_start 30 predict_cost 30 cpu 10 on thread 2
-VLPROF mtask 8 start 19670 elapsed 140 predict_start 60 predict_cost 107 cpu 10 on thread 2
-VLPROF mtask 9 start 20650 elapsed 70 predict_start 167 predict_cost 30 cpu 10 on thread 2
-VLPROF mtask 11 start 21140 elapsed 105 predict_start 197 predict_cost 30 cpu 10 on thread 2
+VLPROFTHREAD 0
+VLPROFEXEC EVAL_BEGIN 595
+VLPROFEXEC EVAL_LOOP_BEGIN 945
+VLPROFEXEC MTASK_BEGIN 2695 id 6 predictStart 0 cpu 19
+VLPROFEXEC MTASK_END 2905 id 6 predictCost 30
+VLPROFEXEC MTASK_BEGIN 9695 id 10 predictStart 196 cpu 19
+VLPROFEXEC MTASK_END 9870 id 10 predictCost 30
+VLPROFEXEC EVAL_LOOP_END 12180
+VLPROFEXEC EVAL_END 12250
+VLPROFEXEC EVAL_BEGIN 13720
+VLPROFEXEC EVAL_LOOP_BEGIN 14000
+VLPROFEXEC MTASK_BEGIN 15610 id 6 predictStart 0 cpu 19
+VLPROFEXEC MTASK_END 15820 id 6 predictCost 30
+VLPROFEXEC MTASK_BEGIN 21700 id 10 predictStart 196 cpu 19
+VLPROFEXEC MTASK_END 21875 id 10 predictCost 30
+VLPROFEXEC EVAL_LOOP_END 22085
+VLPROFEXEC EVAL_END 22330
+VLPROFTHREAD 1
+VLPROFEXEC MTASK_BEGIN 5495 id 5 predictStart 0 cpu 10
+VLPROFEXEC MTASK_END 6090 id 5 predictCost 30
+VLPROFEXEC MTASK_BEGIN 6300 id 7 predictStart 30 cpu 10
+VLPROFEXEC MTASK_END 6895 id 7 predictCost 30
+VLPROFEXEC MTASK_BEGIN 7490 id 8 predictStart 60 cpu 10
+VLPROFEXEC MTASK_END 8540 id 8 predictCost 107
+VLPROFEXEC MTASK_BEGIN 9135 id 9 predictStart 167 cpu 10
+VLPROFEXEC MTASK_END 9730 id 9 predictCost 30
+VLPROFEXEC MTASK_BEGIN 10255 id 11 predictStart 197 cpu 10
+VLPROFEXEC MTASK_END 11060 id 11 predictCost 30
+VLPROFEXEC MTASK_BEGIN 18375 id 5 predictStart 0 cpu 10
+VLPROFEXEC MTASK_END 18970 id 5 predictCost 30
+VLPROFEXEC MTASK_BEGIN 19145 id 7 predictStart 30 cpu 10
+VLPROFEXEC MTASK_END 19320 id 7 predictCost 30
+VLPROFEXEC MTASK_BEGIN 19670 id 8 predictStart 60 cpu 10
+VLPROFEXEC MTASK_END 19810 id 8 predictCost 107
+VLPROFEXEC MTASK_BEGIN 20650 id 9 predictStart 167 cpu 10
+VLPROFEXEC MTASK_END 20720 id 9 predictCost 30
+VLPROFEXEC MTASK_BEGIN 21140 id 11 predictStart 197 cpu 10
+VLPROFEXEC MTASK_END 21245 id 11 predictCost 30
 VLPROF stat ticks 23415

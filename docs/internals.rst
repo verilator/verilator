@@ -301,7 +301,7 @@ prerequisites on other threads have finished.
 
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
-source of overhead in this approach. The ``--prof-threads`` switch and the
+source of overhead in this approach. The ``--prof-exec`` switch and the
 ``verilator_gantt`` script can visualize the time lost to such
 fragmentation.
 

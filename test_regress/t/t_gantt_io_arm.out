@@ -1,9 +1,8 @@
 Verilator Gantt report
 
 Argument settings:
-  +verilator+prof+threads+start+1
-  +verilator+prof+threads+window+2
-  --threads 4
+  +verilator+prof+exec+start+1
+  +verilator+prof+exec+window+2
 
 Analysis:
   Total threads             = 2
@@ -23,7 +22,7 @@ Prediction (what Verilator used for scheduling):
   All-thread efficiency     = 82.4%
   All-thread speedup        = 1.6
 
-Statistics:
+MTask statistics:
   min log(p2e) = -1.054  from mtask 79 (predict 48001, elapsed 137754)
   max log(p2e) = 3.641  from mtask 87 (predict 33809, elapsed 887)
   mean = 1.656
@@ -34,4 +33,4 @@ CPUs:
   cpu 2: cpu_time=202323  Phytium,FT-2500/128
   cpu 3: cpu_time=2914  Phytium,FT-2500/128
 
-Writing profile_threads.vcd
+Writing profile_exec.vcd

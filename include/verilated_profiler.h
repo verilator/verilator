@@ -12,7 +12,7 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Verilated general profiling header
+/// \brief Verilated run-time profiling header
 ///
 /// This file is not part of the Verilated public-facing API.
 /// It is only for internal use by Verilated library routines.
@@ -23,58 +23,204 @@
 #define VERILATOR_VERILATED_PROFILER_H_
 
 #include "verilatedos.h"
-#include "verilated.h"  // for VerilatedMutex and clang annotations
 
-#include <deque>
+#ifndef VL_PROFILER
+#error "verilated_profiler.h/cpp expects VL_PROFILER (from --prof-{exec, pgo}"
+#endif
+
+#include "verilated.h"
+
+#include <array>
+#include <atomic>
+#include <cassert>
 #include <string>
+#include <type_traits>
+#include <vector>
 
-// Profile record, private class used only by this header
-class VerilatedProfilerRec final {
-    const std::string m_name;  // Hashed name of mtask/etc
-    const size_t m_counterNumber = 0;  // Which counter has data
+class VlExecutionProfiler;
+
+//=============================================================================
+// Macros to simplify generated code
+
+#define VL_EXEC_TRACE_ADD_RECORD(vlSymsp) \
+    if (VL_UNLIKELY((vlSymsp)->__Vm_executionProfiler.enabled())) \
+    (vlSymsp)->__Vm_executionProfiler.addRecord()
+
+//=============================================================================
+// Return high-precision counter for profiling, or 0x0 if not available
+VL_ATTR_ALWINLINE
+inline QData VL_CPU_TICK() {
+    vluint64_t val;
+    VL_GET_CPU_TICK(val);
+    return val;
+}
+
+//=============================================================================
+// Private class used by VlExecutionProfiler
+
+#define _VL_FOREACH_APPLY(macro, arg) macro(arg, #arg)
+
+// clang-format off
+#define FOREACH_VlExecutionRecord_TYPE(macro) \
+    _VL_FOREACH_APPLY(macro, EVAL_BEGIN) \
+    _VL_FOREACH_APPLY(macro, EVAL_END) \
+    _VL_FOREACH_APPLY(macro, EVAL_LOOP_BEGIN) \
+    _VL_FOREACH_APPLY(macro, EVAL_LOOP_END) \
+    _VL_FOREACH_APPLY(macro, MTASK_BEGIN) \
+    _VL_FOREACH_APPLY(macro, MTASK_END)
+// clang-format on
+
+class VlExecutionRecord final {
+    friend class VlExecutionProfiler;
+
+    // TYPES
+    enum class Type : uint8_t {
+#define VL_FOREACH_MACRO(id, name) id,
+        FOREACH_VlExecutionRecord_TYPE(VL_FOREACH_MACRO)
+#undef VL_FOREACH_MACRO
+    };
+
+    static constexpr const char* const s_ascii[] = {
+#define VL_FOREACH_MACRO(id, name) name,
+        FOREACH_VlExecutionRecord_TYPE(VL_FOREACH_MACRO)
+#undef VL_FOREACH_MACRO
+    };
+
+    union Payload {
+        struct {
+            vluint32_t m_id;  // MTask id
+            vluint32_t m_predictStart;  // Time scheduler predicted would start
+            vluint32_t m_cpu;  // Executing CPU id
+        } mtaskBegin;
+        struct {
+            vluint32_t m_id;  // MTask id
+            vluint32_t m_predictCost;  // How long scheduler predicted would take
+        } mtaskEnd;
+    };
+
+    // STATE
+    // Layout below allows efficient packing.
+    const vluint64_t m_tick = VL_CPU_TICK();  // Tick at construction
+    Payload m_payload;  // The record payload
+    Type m_type;  // The record type
+    static_assert(alignof(vluint64_t) >= alignof(Payload), "Padding not allowed");
+    static_assert(alignof(Payload) >= alignof(Type), "Padding not allowed");
+
+    static vluint16_t getcpu();  // Return currently executing CPU id
+
 public:
+    // CONSTRUCTOR
+    VlExecutionRecord() = default;
+
     // METHODS
-    VerilatedProfilerRec(size_t counterNumber, const std::string& name)
-        : m_name{name}
-        , m_counterNumber{counterNumber} {}
-    VerilatedProfilerRec() = default;
-    size_t counterNumber() const { return m_counterNumber; }
-    std::string name() const { return m_name; }
+    void evalBegin() { m_type = Type::EVAL_BEGIN; }
+    void evalEnd() { m_type = Type::EVAL_END; }
+    void evalLoopBegin() { m_type = Type::EVAL_LOOP_BEGIN; }
+    void evalLoopEnd() { m_type = Type::EVAL_LOOP_END; }
+    void mtaskBegin(vluint32_t id, vluint32_t predictStart) {
+        m_payload.mtaskBegin.m_id = id;
+        m_payload.mtaskBegin.m_predictStart = predictStart;
+        m_payload.mtaskBegin.m_cpu = getcpu();
+        m_type = Type::MTASK_BEGIN;
+    }
+    void mtaskEnd(vluint32_t id, vluint32_t predictCost) {
+        m_payload.mtaskEnd.m_id = id;
+        m_payload.mtaskEnd.m_predictCost = predictCost;
+        m_type = Type::MTASK_END;
+    }
 };
 
-// Create some number of bucketed profilers
-template <std::size_t T_Entries> class VerilatedProfiler final {
-    // Counters are stored packed, all together, versus in VerilatedProfilerRec to
-    // reduce cache effects
-    std::array<vluint64_t, T_Entries> m_counters{};  // Time spent on this record
-    std::deque<VerilatedProfilerRec> m_records;  // Record information
+static_assert(std::is_trivially_destructible<VlExecutionRecord>::value,
+              "VlExecutionRecord should be trivially destructible for fast buffer clearing");
+
+//=============================================================================
+// VlExecutionProfiler is for collecting profiling data about model execution
+
+class VlExecutionProfiler final {
+    // CONSTANTS
+
+    // In order to try to avoid dynamic memory allocations during the actual profiling phase,
+    // trace buffers are pre-allocated to be able to hold [a multiple] of this many records.
+    static constexpr size_t RESERVED_TRACE_CAPACITY = 4096;
+
+    // TYPES
+
+    // Execution traces are recorded into thread local vectors. We can append records of profiling
+    // events to this vector with very low overhead, and then dump them out later. This prevents
+    // the overhead of printf/malloc/IO from corrupting the profiling data. It's super cheap to
+    // append a VlProfileRec struct on the end of a pre-allocated vector; this is the only cost we
+    // pay in real-time during a profiling cycle. Internal note: Globals may multi-construct, see
+    // verilated.cpp top.
+    using ExecutionTrace = std::vector<VlExecutionRecord>;
+
+    // STATE
+    static VL_THREAD_LOCAL ExecutionTrace t_trace;  // thread-local trace buffers
+    VerilatedMutex m_mutex;
+    // Map from thread id to &t_trace of given thread
+    std::map<uint32_t, ExecutionTrace*> m_traceps VL_GUARDED_BY(m_mutex);
+
+    bool m_enabled = false;  // Is profiling currently enabled
+
+    vluint64_t m_tickBegin = 0;  // Sample time (rdtsc() on x86) at beginning of collection
+    vluint64_t m_lastStartReq = 0;  // Last requested profiling start (in simulation time)
+    vluint32_t m_windowCount = 0;  // Track our position in the cache warmup and profile window
+
+public:
+    // CONSTRUCTOR
+    VlExecutionProfiler();
+
+    // METHODS
+
+    // Is profiling enabled
+    inline bool enabled() const { return m_enabled; }
+    // Append a trace record to the trace buffer of the current thread
+    inline VlExecutionRecord& addRecord() {
+        t_trace.emplace_back();
+        return t_trace.back();
+    }
+    // Configure profiler (called in beginning of 'eval')
+    void configure(const VerilatedContext&);
+    // Setup profiling on a particular thread;
+    void setupThread(uint32_t threadId);
+    // Clear all profiling data
+    void clear() VL_MT_SAFE_EXCLUDES(m_mutex);
+    // Write profiling data into file
+    void dump(const char* filenamep, vluint64_t tickEnd) VL_MT_SAFE_EXCLUDES(m_mutex);
+};
+
+//=============================================================================
+// VlPgoProfiler is for collecting profiling data for PGO
+
+template <std::size_t T_Entries> class VlPgoProfiler final {
+    // TYPES
+    struct Record final {
+        const std::string m_name;  // Hashed name of mtask/etc
+        const size_t m_counterNumber = 0;  // Which counter has data
+    };
+
+    // Counters are stored packed, all together to reduce cache effects
+    std::array<vluint64_t, T_Entries> m_counters;  // Time spent on this record
+    std::vector<Record> m_records;  // Record information
 
 public:
     // METHODS
-    VerilatedProfiler() = default;
-    ~VerilatedProfiler() = default;
+    VlPgoProfiler() = default;
+    ~VlPgoProfiler() = default;
     void write(const char* modelp, const std::string& filename) VL_MT_SAFE;
     void addCounter(size_t counter, const std::string& name) {
         VL_DEBUG_IF(assert(counter < T_Entries););
-        m_records.emplace_back(VerilatedProfilerRec{counter, name});
+        m_records.emplace_back(Record{name, counter});
     }
     void startCounter(size_t counter) {
-        vluint64_t val;
-        VL_RDTSC(val);
-        // -= so when we add end time in stopCounter, we already subtracted
-        // out, without needing to hold another temporary
-        m_counters[counter] -= val;
+        // -= so when we add end time in stopCounter, the net effect is adding the difference,
+        // without needing to hold onto a temporary
+        m_counters[counter] -= VL_CPU_TICK();
     }
-    void stopCounter(size_t counter) {
-        vluint64_t val;
-        VL_RDTSC(val);
-        m_counters[counter] += val;
-    }
+    void stopCounter(size_t counter) { m_counters[counter] += VL_CPU_TICK(); }
 };
 
 template <std::size_t T_Entries>
-void VerilatedProfiler<T_Entries>::write(const char* modelp,
-                                         const std::string& filename) VL_MT_SAFE {
+void VlPgoProfiler<T_Entries>::write(const char* modelp, const std::string& filename) VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};
 
@@ -88,14 +234,9 @@ void VerilatedProfiler<T_Entries>::write(const char* modelp,
 
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+vlt+file writing to '%s'\n", filename.c_str()););
 
-    FILE* fp = nullptr;
-    if (!s_firstCall) fp = std::fopen(filename.c_str(), "a");
-    if (VL_UNLIKELY(!fp))
-        fp = std::fopen(filename.c_str(), "w");  // firstCall, or doesn't exist yet
+    FILE* const fp = std::fopen(filename.c_str(), s_firstCall ? "w" : "a");
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "+prof+vlt+file file not writable");
-        // cppcheck-suppress resourceLeak   // bug, doesn't realize fp is nullptr
-        return;  // LCOV_EXCL_LINE
     }
     s_firstCall = false;
 
@@ -104,10 +245,9 @@ void VerilatedProfiler<T_Entries>::write(const char* modelp,
     fprintf(fp, "// Verilated model profile-guided optimization data dump file\n");
     fprintf(fp, "`verilator_config\n");
 
-    for (const auto& it : m_records) {
-        const std::string& name = it.name();
+    for (const Record& rec : m_records) {
         fprintf(fp, "profile_data -model \"%s\" -mtask \"%s\" -cost 64'd%" PRIu64 "\n", modelp,
-                name.c_str(), m_counters[it.counterNumber()]);
+                rec.m_name.c_str(), m_counters[rec.m_counterNumber]);
     }
 
     std::fclose(fp);

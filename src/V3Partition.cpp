@@ -2918,42 +2918,38 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
         addStrStmt("vlSelf->" + name + +".waitUntilUpstreamDone(even_cycle);\n");
     }
 
-    string recName;
-    if (v3Global.opt.profThreads()) {
-        recName = "__Vprfthr_" + cvtToStr(mtaskp->id());
-        addStrStmt("VlProfileRec* " + recName + " = nullptr;\n");
-        // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
-        addStrStmt("if (VL_UNLIKELY(vlSymsp->__Vm_profile_cycle_start)) {\n" +  //
-                   recName + " = vlSymsp->__Vm_threadPoolp->profileAppend();\n" +  //
-                   recName + "->startRecord(VL_RDTSC_Q()," +  //
-                   " " + cvtToStr(mtaskp->id()) + "," +  //
-                   " " + cvtToStr(mtaskp->predictStart()) + "," +  //
-                   " " + cvtToStr(mtaskp->cost()) + ");\n" +  //
-                   "}\n");
+    if (v3Global.opt.profExec()) {
+        const string& id = cvtToStr(mtaskp->id());
+        const string& predictStart = cvtToStr(mtaskp->predictStart());
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(" + id + ", " + predictStart
+                   + ");\n");
     }
-    if (v3Global.opt.profThreads()) {
+    if (v3Global.opt.profPgo()) {
         // No lock around startCounter, as counter numbers are unique per thread
-        addStrStmt("vlSymsp->_vm_profiler.startCounter(" + cvtToStr(mtaskp->profilerId())
+        addStrStmt("vlSymsp->_vm_pgoProfiler.startCounter(" + cvtToStr(mtaskp->profilerId())
                    + ");\n");
     }
 
     //
     addStrStmt("Verilated::mtaskId(" + cvtToStr(mtaskp->id()) + ");\n");
 
-    // Move the the actual body of calls to leaf functions into this function
+    // Move the actual body of calls to leaf functions into this function
     funcp->addStmtsp(mtaskp->bodyp()->unlinkFrBack());
-
-    if (v3Global.opt.profThreads()) {
-        // No lock around stopCounter, as counter numbers are unique per thread
-        addStrStmt("vlSymsp->_vm_profiler.stopCounter(" + cvtToStr(mtaskp->profilerId()) + ");\n");
-    }
-    if (v3Global.opt.profThreads()) {
-        addStrStmt("if (VL_UNLIKELY(" + recName + ")) "  //
-                   + recName + "->endRecord(VL_RDTSC_Q());\n");
-    }
 
     // Flush message queue
     addStrStmt("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
+
+    if (v3Global.opt.profPgo()) {
+        // No lock around stopCounter, as counter numbers are unique per thread
+        addStrStmt("vlSymsp->_vm_pgoProfiler.stopCounter(" + cvtToStr(mtaskp->profilerId())
+                   + ");\n");
+    }
+    if (v3Global.opt.profExec()) {
+        const string& id = cvtToStr(mtaskp->id());
+        const string& predictConst = cvtToStr(mtaskp->cost());
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(" + id + ", " + predictConst
+                   + ");\n");
+    }
 
     // For any dependent mtask that's on another thread, signal one dependency completion.
     for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {

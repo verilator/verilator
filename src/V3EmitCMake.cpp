@@ -178,6 +178,9 @@ class CMakeEmitter final {
         if (v3Global.opt.mtasks()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
         }
+        if (v3Global.opt.usesProfiler()) {
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_profiler.cpp");
+        }
         if (!v3Global.opt.libCreate().empty()) {
             global.emplace_back(v3Global.opt.makeDir() + "/" + v3Global.opt.libCreate() + ".cpp");
         }

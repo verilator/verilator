@@ -118,9 +118,9 @@ compile(
     );
 
 execute(
-    all_run_flags => ["+verilator+prof+threads+start+100",
-                      " +verilator+prof+threads+window+2",
-                      " +verilator+prof+threads+file+$Self->{obj_dir}/profile_threads.dat",
+    all_run_flags => ["+verilator+prof+exec+start+100",
+                      " +verilator+prof+exec+window+2",
+                      " +verilator+prof+exec+file+$Self->{obj_dir}/profile_exec.dat",
                       " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
     check_finished => 1,

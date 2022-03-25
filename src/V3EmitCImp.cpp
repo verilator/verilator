@@ -63,7 +63,7 @@ class EmitCGatherDependencies final : VNVisitor {
             UASSERT_OBJ(selfPointer.find("vlSymsp") != string::npos, nodep,
                         "Unknown self pointer: '" << selfPointer << "'");
             // Dereferencing vlSymsp, so we need it's definition...
-            m_dependencies.insert(EmitCBaseVisitor::symClassName());
+            addSymsDependency();
         }
     }
 
@@ -117,9 +117,7 @@ class EmitCGatherDependencies final : VNVisitor {
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstNodeSimpleText* nodep) override {
-        if (nodep->text().find("vlSymsp") != string::npos) {
-            m_dependencies.insert(EmitCBaseVisitor::symClassName());
-        }
+        if (nodep->text().find("vlSymsp") != string::npos) addSymsDependency();
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
