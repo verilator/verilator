@@ -193,6 +193,10 @@ VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
 # but keeping the distinction for compatibility for now.
 VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 
+# Need to re-build if the generated makefile changes, as compiler options might
+# have changed.
+$(VK_GLOBAL_OBJS): $(VM_PREFIX).mk
+
 ifneq ($(VM_PARALLEL_BUILDS),1)
   # Fast build for small designs: All .cpp files in one fell swoop. This
   # saves total compute, but can be slower if only a little changes. It is
