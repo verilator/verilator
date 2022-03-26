@@ -55,6 +55,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <cstdlib>
 #include <sstream>
 #include <sys/stat.h>  // mkdir
 #include <list>
@@ -2506,13 +2507,16 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
 
 void VerilatedContextImp::commandArgVl(const std::string& arg) {
     if (0 == std::strncmp(arg.c_str(), "+verilator+", std::strlen("+verilator+"))) {
-        std::string value;
+        std::string str;
+        uint64_t u64;
         if (arg == "+verilator+debug") {
             Verilated::debug(4);
-        } else if (commandArgVlValue(arg, "+verilator+debugi+", value /*ref*/)) {
-            Verilated::debug(std::atoi(value.c_str()));
-        } else if (commandArgVlValue(arg, "+verilator+error+limit+", value /*ref*/)) {
-            errorLimit(std::atoi(value.c_str()));
+        } else if (commandArgVlUint64(arg, "+verilator+debugi+", u64, 0,
+                                      std::numeric_limits<int>::max())) {
+            Verilated::debug(static_cast<int>(u64));
+        } else if (commandArgVlUint64(arg, "+verilator+error+limit+", u64, 0,
+                                      std::numeric_limits<int>::max())) {
+            errorLimit(static_cast<int>(u64));
         } else if (arg == "+verilator+help") {
             VerilatedImp::versionDump();
             VL_PRINTF_MT("For help, please see 'verilator --help'\n");
@@ -2520,18 +2524,19 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
                         "Exiting due to command line argument (not an error)");
         } else if (arg == "+verilator+noassert") {
             assertOn(false);
-        } else if (commandArgVlValue(arg, "+verilator+prof+threads+start+", value /*ref*/)) {
-            profThreadsStart(std::atoll(value.c_str()));
-        } else if (commandArgVlValue(arg, "+verilator+prof+threads+window+", value /*ref*/)) {
-            profThreadsWindow(std::atol(value.c_str()));
-        } else if (commandArgVlValue(arg, "+verilator+prof+threads+file+", value /*ref*/)) {
-            profThreadsFilename(value);
-        } else if (commandArgVlValue(arg, "+verilator+prof+vlt+file+", value /*ref*/)) {
-            profVltFilename(value);
-        } else if (commandArgVlValue(arg, "+verilator+rand+reset+", value /*ref*/)) {
-            randReset(std::atoi(value.c_str()));
-        } else if (commandArgVlValue(arg, "+verilator+seed+", value /*ref*/)) {
-            randSeed(std::atoi(value.c_str()));
+        } else if (commandArgVlUint64(arg, "+verilator+prof+threads+start+", u64)) {
+            profThreadsStart(u64);
+        } else if (commandArgVlUint64(arg, "+verilator+prof+threads+window+", u64, 1)) {
+            profThreadsWindow(u64);
+        } else if (commandArgVlString(arg, "+verilator+prof+threads+file+", str)) {
+            profThreadsFilename(str);
+        } else if (commandArgVlString(arg, "+verilator+prof+vlt+file+", str)) {
+            profVltFilename(str);
+        } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {
+            randReset(static_cast<int>(u64));
+        } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 1,
+                                      std::numeric_limits<int>::max())) {
+            randSeed(static_cast<int>(u64));
         } else if (arg == "+verilator+V") {
             VerilatedImp::versionDump();  // Someday more info too
             VL_FATAL_MT("COMMAND_LINE", 0, "",
@@ -2541,12 +2546,14 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             VL_FATAL_MT("COMMAND_LINE", 0, "",
                         "Exiting due to command line argument (not an error)");
         } else {
-            VL_PRINTF_MT("%%Warning: Unknown +verilator runtime argument: '%s'\n", arg.c_str());
+            const std::string msg = "Unknown runtime argument: " + arg;
+            VL_FATAL_MT("COMMAND_LINE", 0, "", msg.c_str());
         }
     }
 }
-bool VerilatedContextImp::commandArgVlValue(const std::string& arg, const std::string& prefix,
-                                            std::string& valuer) {
+
+bool VerilatedContextImp::commandArgVlString(const std::string& arg, const std::string& prefix,
+                                             std::string& valuer) {
     const size_t len = prefix.length();
     if (0 == std::strncmp(prefix.c_str(), arg.c_str(), len)) {
         valuer = arg.substr(len);
@@ -2554,6 +2561,30 @@ bool VerilatedContextImp::commandArgVlValue(const std::string& arg, const std::s
     } else {
         return false;
     }
+}
+
+bool VerilatedContextImp::commandArgVlUint64(const std::string& arg, const std::string& prefix,
+                                             uint64_t& valuer, uint64_t min, uint64_t max) {
+    std::string str;
+    if (commandArgVlString(arg, prefix, str)) {
+        const auto fail = [&](const std::string& extra = "") {
+            std::stringstream ss;
+            ss << "Argument '" << prefix << "' must be an unsigned integer";
+            if (min != std::numeric_limits<uint64_t>::min()) ss << ", greater than " << min - 1;
+            if (max != std::numeric_limits<uint64_t>::max()) ss << ", less than " << max + 1;
+            if (!extra.empty()) ss << ". " << extra;
+            const std::string& msg = ss.str();
+            VL_FATAL_MT("COMMAND_LINE", 0, "", msg.c_str());
+        };
+
+        if (std::any_of(str.begin(), str.end(), [](int c) { return !std::isdigit(c); })) fail();
+        char* end;
+        valuer = std::strtoull(str.c_str(), &end, 10);
+        if (errno == ERANGE) fail("Value out of range of uint64_t");
+        if (valuer < min || valuer > max) fail();
+        return true;
+    }
+    return false;
 }
 
 //======================================================================

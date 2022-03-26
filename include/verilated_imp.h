@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <set>
@@ -394,7 +395,11 @@ protected:
     // METHODS - protected
     void commandArgsAddGuts(int argc, const char** argv);
     void commandArgVl(const std::string& arg);
-    bool commandArgVlValue(const std::string& arg, const std::string& prefix, std::string& valuer);
+    bool commandArgVlString(const std::string& arg, const std::string& prefix,
+                            std::string& valuer);
+    bool commandArgVlUint64(const std::string& arg, const std::string& prefix, uint64_t& valuer,
+                            uint64_t min = std::numeric_limits<uint64_t>::min(),
+                            uint64_t max = std::numeric_limits<uint64_t>::max());
     void commandArgDump() const VL_MT_SAFE_EXCLUDES(m_argMutex);
 };
 
