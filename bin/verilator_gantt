@@ -83,7 +83,7 @@ def read_data(filename):
                 EvalLoops[start]['start'] = start
                 EvalLoops[start]['end'] = start + elapsed_time
             elif re.match(r'^VLPROFTHREAD', line):
-                None  # pylint: disable=pointless-statement
+                pass
             elif re_arg1.match(line):
                 match = re_arg1.match(line)
                 Global['args'][match.group(1)] = match.group(2)
@@ -105,7 +105,7 @@ def read_data(filename):
                 value = re.sub(r'\s+$', '', value)
                 Global['cpuinfo'][cpu][term] = value
             elif re.match(r'^#', line):
-                None  # pylint: disable=pointless-statement
+                pass
             elif Args.debug:
                 print("-Unk: %s" % line)
             # TODO -- this is parsing text printed by a client.

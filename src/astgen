@@ -217,9 +217,9 @@ class Cpt:
             argtext = func + "\000"  # EOF character
             for tok in argtext:
                 if tok == "\000":
-                    None  # pylint: disable=pointless-statement
+                    pass
                 elif re.match(r'\s+', tok):
-                    None  # pylint: disable=pointless-statement
+                    pass
                 elif tok == "{":
                     newref = [forming]
                     if not aref:
@@ -262,7 +262,7 @@ class Cpt:
         elif func == "NEVER":
             out += "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");"
         elif func == "DONE":
-            None  # pylint: disable=pointless-statement
+            pass
         else:
             self.error("Unknown execution function format: " + func + "\n")
         return out
