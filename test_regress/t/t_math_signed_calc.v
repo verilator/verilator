@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
 `endif
       if (out !== 'hfffe) $stop;
       $write("*-* All Finished *-*\n");
-      $finish; 
+      $finish;
    end
 
 endmodule
@@ -45,5 +45,3 @@ module Test(in0, in1, out);
 
   assign out = $signed({1'b0, in0}) * in1;      // this operator should be  signed multiplication
 endmodule
-
-

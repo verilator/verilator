@@ -33,4 +33,3 @@ module testbench;
    end
 
 endmodule
-

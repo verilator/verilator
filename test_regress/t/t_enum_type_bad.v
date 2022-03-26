@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   
+
    typedef enum {ZERO, ONE, TWO} e_t;
 
    typedef enum {THREE=3, FOUR, FIVE} o_t;

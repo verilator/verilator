@@ -40,4 +40,3 @@ module testbench(
    end
 
 endmodule
-
