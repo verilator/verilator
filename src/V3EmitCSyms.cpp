@@ -726,14 +726,16 @@ void EmitCSyms::emitSymImp() {
         const AstNodeModule* const modp = i.second;
         puts("    , ");
         puts(protect(scopep->nameDotless()));
+        puts("{this");
         if (modp->isTop()) {
-            puts("(namep)\n");
+            puts(", namep");
         } else {
             // The "." is added by catName
-            puts("(Verilated::catName(namep, ");
+            puts(", Verilated::catName(namep, ");
             putsQuoted(protectWordsIf(scopep->prettyName(), scopep->protect()));
-            puts("))\n");
+            puts(")");
         }
+        puts("}\n");
         ++m_numStmts;
     }
     puts("{\n");
@@ -793,7 +795,7 @@ void EmitCSyms::emitSymImp() {
         const bool first = !modp->user1();
         modp->user1(true);
         puts(protectIf(scopep->nameDotless(), scopep->protect()) + "." + protect("__Vconfigure")
-             + "(this, " + (first ? "true" : "false") + ");\n");
+             + "(" + (first ? "true" : "false") + ");\n");
         ++m_numStmts;
     }
 
