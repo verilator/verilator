@@ -90,7 +90,7 @@ extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);
 extern IData VL_RANDOM_SEEDED_II(IData& seedr) VL_MT_SAFE;
 extern IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
-    const vluint64_t rnd = vl_rand64();
+    const uint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {
         // (hi - lo + 1) can be zero when hi is UINT_MAX and lo is zero
         if (VL_UNLIKELY(hi - lo + 1 == 0)) return rnd;
@@ -210,29 +210,27 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
 // Return double from lhs (numeric) unsigned
 double VL_ITOR_D_W(int lbits, WDataInP const lwp) VL_PURE;
 static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {
-    return static_cast<double>(static_cast<vluint32_t>(lhs));
+    return static_cast<double>(static_cast<uint32_t>(lhs));
 }
 static inline double VL_ITOR_D_Q(int, QData lhs) VL_PURE {
-    return static_cast<double>(static_cast<vluint64_t>(lhs));
+    return static_cast<double>(static_cast<uint64_t>(lhs));
 }
 // Return double from lhs (numeric) signed
 double VL_ISTOR_D_W(int lbits, WDataInP const lwp) VL_PURE;
 static inline double VL_ISTOR_D_I(int lbits, IData lhs) VL_PURE {
-    if (lbits == 32) return static_cast<double>(static_cast<vlsint32_t>(lhs));
+    if (lbits == 32) return static_cast<double>(static_cast<int32_t>(lhs));
     VlWide<VL_WQ_WORDS_E> lwp;
     VL_SET_WI(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
 }
 static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_PURE {
-    if (lbits == 64) return static_cast<double>(static_cast<vlsint64_t>(lhs));
+    if (lbits == 64) return static_cast<double>(static_cast<int64_t>(lhs));
     VlWide<VL_WQ_WORDS_E> lwp;
     VL_SET_WQ(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
 }
 // Return QData from double (numeric)
-static inline IData VL_RTOI_I_D(double lhs) VL_PURE {
-    return static_cast<vlsint32_t>(VL_TRUNC(lhs));
-}
+static inline IData VL_RTOI_I_D(double lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
@@ -281,28 +279,28 @@ extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
 #if defined(SYSTEMC_VERSION)
 /// Return current simulation time
 // Already defined: extern sc_time sc_time_stamp();
-inline vluint64_t vl_time_stamp64() { return sc_time_stamp().value(); }
+inline uint64_t vl_time_stamp64() { return sc_time_stamp().value(); }
 #else  // Non-SystemC
 # if !defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY)
 #  ifdef VL_TIME_STAMP64
 // vl_time_stamp64() may be optionally defined by the user to return time.
 // On MSVC++ weak symbols are not supported so must be declared, or define
 // VL_TIME_CONTEXT.
-extern vluint64_t vl_time_stamp64() VL_ATTR_WEAK;
+extern uint64_t vl_time_stamp64() VL_ATTR_WEAK;
 #  else
 // sc_time_stamp() may be optionally defined by the user to return time.
 // On MSVC++ weak symbols are not supported so must be declared, or define
 // VL_TIME_CONTEXT.
 extern double sc_time_stamp() VL_ATTR_WEAK;  // Verilator 4.032 and newer
-inline vluint64_t vl_time_stamp64() {
+inline uint64_t vl_time_stamp64() {
     // clang9.0.1 requires & although we really do want the weak symbol value
-    return VL_LIKELY(&sc_time_stamp) ? static_cast<vluint64_t>(sc_time_stamp()) : 0;
+    return VL_LIKELY(&sc_time_stamp) ? static_cast<uint64_t>(sc_time_stamp()) : 0;
 }
 #  endif
 # endif
 #endif
 
-inline vluint64_t VerilatedContext::time() const VL_MT_SAFE {
+inline uint64_t VerilatedContext::time() const VL_MT_SAFE {
     // When using non-default context, fastest path is return time
     if (VL_LIKELY(m_s.m_time)) return m_s.m_time;
 #if defined(SYSTEMC_VERSION) || (!defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY))
@@ -327,7 +325,7 @@ inline vluint64_t VerilatedContext::time() const VL_MT_SAFE {
 // Return time precision as multiplier of time units
 double vl_time_multiplier(int scale) VL_PURE;
 // Return power of 10. e.g. returns 100 if n==2
-vluint64_t vl_time_pow10(int n) VL_PURE;
+uint64_t vl_time_pow10(int n) VL_PURE;
 
 #ifdef VL_DEBUG
 /// Evaluate statement if VL_DEBUG defined
@@ -873,46 +871,46 @@ static inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) V
 static inline IData VL_GTS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     // For lbits==32, this becomes just a single instruction, otherwise ~5.
     // GCC 3.3.4 sign extension bugs on AMD64 architecture force us to use quad logic
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed > rhs_signed;
 }
 static inline IData VL_GTS_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed > rhs_signed;
 }
 
 static inline IData VL_GTES_III(int lbits, IData lhs, IData rhs) VL_PURE {
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed >= rhs_signed;
 }
 static inline IData VL_GTES_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed >= rhs_signed;
 }
 
 static inline IData VL_LTS_III(int lbits, IData lhs, IData rhs) VL_PURE {
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed < rhs_signed;
 }
 static inline IData VL_LTS_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed < rhs_signed;
 }
 
 static inline IData VL_LTES_III(int lbits, IData lhs, IData rhs) VL_PURE {
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed <= rhs_signed;
 }
 static inline IData VL_LTES_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed <= rhs_signed;
 }
 
@@ -1006,13 +1004,13 @@ static inline WDataOutP VL_MUL_W(int words, WDataOutP owp, WDataInP const lwp,
 }
 
 static inline IData VL_MULS_III(int lbits, IData lhs, IData rhs) VL_PURE {
-    const vlsint32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
-    const vlsint32_t rhs_signed = VL_EXTENDS_II(32, lbits, rhs);
+    const int32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
+    const int32_t rhs_signed = VL_EXTENDS_II(32, lbits, rhs);
     return lhs_signed * rhs_signed;
 }
 static inline QData VL_MULS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
+    const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
+    const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed * rhs_signed;
 }
 
@@ -1058,30 +1056,30 @@ static inline IData VL_DIVS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
     // -MAX / -1 cannot be represented in twos complement, and will cause SIGFPE
     if (VL_UNLIKELY(lhs == 0x80000000 && rhs == 0xffffffff)) return 0;
-    const vlsint32_t lhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, lhs);
-    const vlsint32_t rhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, rhs);
+    const int32_t lhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, lhs);
+    const int32_t rhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
 static inline QData VL_DIVS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
     // -MAX / -1 cannot be represented in twos complement, and will cause SIGFPE
     if (VL_UNLIKELY(lhs == 0x8000000000000000ULL && rhs == 0xffffffffffffffffULL)) return 0;
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, lhs);
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, rhs);
+    const int64_t lhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, lhs);
+    const int64_t rhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
 static inline IData VL_MODDIVS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
     if (VL_UNLIKELY(lhs == 0x80000000 && rhs == 0xffffffff)) return 0;
-    const vlsint32_t lhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, lhs);
-    const vlsint32_t rhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, rhs);
+    const int32_t lhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, lhs);
+    const int32_t rhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, rhs);
     return lhs_signed % rhs_signed;
 }
 static inline QData VL_MODDIVS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
     if (VL_UNLIKELY(lhs == 0x8000000000000000ULL && rhs == 0xffffffffffffffffULL)) return 0;
-    const vlsint64_t lhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, lhs);
-    const vlsint64_t rhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, rhs);
+    const int64_t lhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, lhs);
+    const int64_t rhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, rhs);
     return lhs_signed % rhs_signed;
 }
 
@@ -1412,8 +1410,8 @@ static inline IData VL_STREAML_FAST_III(int lbits, IData ld, IData rd_log2) VL_P
     //   ret = 10324---
     IData ret = ld;
     if (rd_log2) {
-        const vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);  // max multiple of rd <= lbits
-        const vluint32_t lbitsRem = lbits - lbitsFloor;  // number of bits in most-sig slice (MSS)
+        const uint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);  // max multiple of rd <= lbits
+        const uint32_t lbitsRem = lbits - lbitsFloor;  // number of bits in most-sig slice (MSS)
         const IData msbMask = VL_MASK_I(lbitsRem) << lbitsFloor;  // mask to sel only bits in MSS
         ret = (ret & ~msbMask) | ((ret & msbMask) << ((VL_UL(1) << rd_log2) - lbitsRem));
     }
@@ -1432,8 +1430,8 @@ static inline QData VL_STREAML_FAST_QQI(int lbits, QData ld, IData rd_log2) VL_P
     // Pre-shift bits in most-significant slice (see comment in VL_STREAML_FAST_III)
     QData ret = ld;
     if (rd_log2) {
-        const vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);
-        const vluint32_t lbitsRem = lbits - lbitsFloor;
+        const uint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);
+        const uint32_t lbitsRem = lbits - lbitsFloor;
         const QData msbMask = lbitsFloor == 64 ? 0ULL : VL_MASK_Q(lbitsRem) << lbitsFloor;
         ret = (ret & ~msbMask) | ((ret & msbMask) << ((1ULL << rd_log2) - lbitsRem));
     }
@@ -1931,8 +1929,8 @@ static inline QData VL_RTOIROUND_Q_D(double lhs) VL_PURE {
     if (lhs == 0.0) return 0;
     const QData q = VL_CVT_Q_D(lhs);
     const int lsb = static_cast<int>((q >> 52ULL) & VL_MASK_Q(11)) - 1023 - 52;
-    const vluint64_t mantissa = (q & VL_MASK_Q(52)) | (1ULL << 52);
-    vluint64_t out = 0;
+    const uint64_t mantissa = (q & VL_MASK_Q(52)) | (1ULL << 52);
+    uint64_t out = 0;
     if (lsb < 0) {
         out = mantissa >> -lsb;
     } else if (lsb < 64) {
@@ -1952,7 +1950,7 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
     if (lhs == 0.0) return owp;
     const QData q = VL_CVT_Q_D(lhs);
     const int lsb = static_cast<int>((q >> 52ULL) & VL_MASK_Q(11)) - 1023 - 52;
-    const vluint64_t mantissa = (q & VL_MASK_Q(52)) | (1ULL << 52);
+    const uint64_t mantissa = (q & VL_MASK_Q(52)) | (1ULL << 52);
     if (lsb < 0) {
         VL_SET_WQ(owp, mantissa >> -lsb);
     } else if (lsb < obits) {

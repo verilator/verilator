@@ -697,7 +697,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             const bool needNext = VN_IS(subTypep, UnpackArrayDType);  // Still unpacked array.
             std::vector<AstVar*> vars;
             // Add the split variables
-            for (vlsint32_t i = 0; i < dtypep->elementsConst(); ++i) {
+            for (int32_t i = 0; i < dtypep->elementsConst(); ++i) {
                 // Unpacked array is traced as var(idx), not var[idx].
                 const std::string name
                     = varp->name() + AstNode::encodeName('(' + cvtToStr(i + dtypep->lo()) + ')');

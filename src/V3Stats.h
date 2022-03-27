@@ -35,7 +35,7 @@ public:
     ~VDouble0() = default;
 
     // Implicit conversion operators:
-    explicit VDouble0(const vluint64_t v)
+    explicit VDouble0(const uint64_t v)
         : m_d{static_cast<double>(v)} {}
     operator double() const { return m_d; }
 

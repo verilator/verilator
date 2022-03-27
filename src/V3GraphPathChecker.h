@@ -34,7 +34,7 @@ class GraphPathChecker final : GraphAlg<const V3Graph> {
     // the graph. Each node is marked with the last generation that scanned
     // it, to enable asserting there are no cycles, and to avoid recursing
     // through the same node twice while searching for a path.
-    vluint64_t m_generation = 0;
+    uint64_t m_generation = 0;
 
 public:
     // CONSTRUCTORS

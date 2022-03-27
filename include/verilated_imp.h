@@ -65,7 +65,7 @@ public:
 
 private:
     // MEMBERS
-    vluint32_t m_mtaskId;  // MTask that did enqueue
+    uint32_t m_mtaskId;  // MTask that did enqueue
     std::function<void()> m_cb;  // Lambda to execute when message received
 public:
     // CONSTRUCTORS
@@ -78,7 +78,7 @@ public:
     VerilatedMsg& operator=(const VerilatedMsg&) = default;
     VerilatedMsg& operator=(VerilatedMsg&&) = default;
     // METHODS
-    vluint32_t mtaskId() const { return m_mtaskId; }
+    uint32_t mtaskId() const { return m_mtaskId; }
     // Execute the lambda function
     void run() const { m_cb(); }
 };
@@ -89,7 +89,7 @@ public:
 class VerilatedEvalMsgQueue final {
     using VerilatedThreadQueue = std::multiset<VerilatedMsg, VerilatedMsg::Cmp>;
 
-    std::atomic<vluint64_t> m_depth;  // Current depth of queue (see comments below)
+    std::atomic<uint64_t> m_depth;  // Current depth of queue (see comments below)
 
     VerilatedMutex m_mutex;  // Mutex protecting queue
     VerilatedThreadQueue m_queue VL_GUARDED_BY(m_mutex);  // Message queue
@@ -245,8 +245,8 @@ public:  // But only for verilated*.cpp
     // METHODS - extending into VerilatedContext, call via impp()->
 
     // Random seed handling
-    vluint64_t randSeedDefault64() const VL_MT_SAFE;
-    static vluint32_t randSeedEpoch() VL_MT_SAFE { return s().s_randSeedEpoch; }
+    uint64_t randSeedDefault64() const VL_MT_SAFE;
+    static uint32_t randSeedEpoch() VL_MT_SAFE { return s().s_randSeedEpoch; }
 
     // METHODS - timeformat
     int timeFormatUnits() const VL_MT_SAFE {

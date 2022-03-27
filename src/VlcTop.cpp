@@ -47,10 +47,10 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
                 if (line[secspace] == '\'' && line[secspace + 1] == ' ') break;
             }
             const string point = line.substr(3, secspace - 3);
-            vluint64_t hits = std::atoll(line.c_str() + secspace + 1);
+            uint64_t hits = std::atoll(line.c_str() + secspace + 1);
             // UINFO(9,"   point '"<<point<<"'"<<" "<<hits<<endl);
 
-            vluint64_t pointnum = points().findAddPoint(point, hits);
+            uint64_t pointnum = points().findAddPoint(point, hits);
             if (pointnum) {}  // Prevent unused
             if (opt.rank()) {  // Only if ranking - uses a lot of memory
                 if (hits >= VlcBuckets::sufficient()) {
@@ -117,7 +117,7 @@ void VlcTop::writeInfo(const string& filename) {
             const int lineno = li.first;
             VlcSource::ColumnMap& cmap = li.second;
             bool first = true;
-            vluint64_t min_count = 0;  // Minimum across all columns on line
+            uint64_t min_count = 0;  // Minimum across all columns on line
             for (auto& ci : cmap) {
                 VlcSourceCount& col = ci.second;
                 if (first) {
@@ -146,7 +146,7 @@ struct CmpComputrons {
 
 void VlcTop::rank() {
     UINFO(2, "rank...\n");
-    vluint64_t nextrank = 1;
+    uint64_t nextrank = 1;
 
     // Sort by computrons, so fast tests get selected first
     std::vector<VlcTest*> bytime;
@@ -174,10 +174,10 @@ void VlcTop::rank() {
             remaining.dump();  // LCOV_EXCL_LINE
         }
         VlcTest* bestTestp = nullptr;
-        vluint64_t bestRemain = 0;
+        uint64_t bestRemain = 0;
         for (const auto& testp : bytime) {
             if (!testp->rank()) {
-                vluint64_t remain = testp->buckets().dataPopCount(remaining);
+                uint64_t remain = testp->buckets().dataPopCount(remaining);
                 if (remain > bestRemain) {
                     bestTestp = testp;
                     bestRemain = remain;

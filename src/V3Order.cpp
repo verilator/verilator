@@ -1025,8 +1025,8 @@ public:
     virtual bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
         const MTaskMoveVertex* const l_vxp = dynamic_cast<const MTaskMoveVertex*>(lhsp);
         const MTaskMoveVertex* const r_vxp = dynamic_cast<const MTaskMoveVertex*>(rhsp);
-        vluint64_t l_id = m_ids.findId(l_vxp->domainp());
-        vluint64_t r_id = m_ids.findId(r_vxp->domainp());
+        uint64_t l_id = m_ids.findId(l_vxp->domainp());
+        uint64_t r_id = m_ids.findId(r_vxp->domainp());
         if (l_id < r_id) return true;
         if (l_id > r_id) return false;
         l_id = m_ids.findId(l_vxp->scopep());

@@ -63,8 +63,8 @@ static const char* const VLTSAVE_TRAILER_STR = "vltsaved";
 bool VerilatedDeserialize::readDiffers(const void* __restrict datap,
                                        size_t size) VL_MT_UNSAFE_ONE {
     bufferCheck();
-    const vluint8_t* __restrict dp = static_cast<const vluint8_t* __restrict>(datap);
-    vluint8_t miss = 0;
+    const uint8_t* __restrict dp = static_cast<const uint8_t* __restrict>(datap);
+    uint8_t miss = 0;
     while (size--) miss |= (*dp++ ^ *m_cp++);
     return (miss != 0);
 }
@@ -192,7 +192,7 @@ void VerilatedRestore::close() VL_MT_UNSAFE_ONE {
 void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
-    const vluint8_t* wp = m_bufp;
+    const uint8_t* wp = m_bufp;
     while (true) {
         const ssize_t remaining = (m_cp - wp);
         if (remaining == 0) break;
@@ -219,8 +219,8 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     // Move remaining characters down to start of buffer.  (No memcpy, overlaps allowed)
-    vluint8_t* rp = m_bufp;
-    for (vluint8_t* sp = m_cp; sp < m_endp; *rp++ = *sp++) {}  // Overlaps
+    uint8_t* rp = m_bufp;
+    for (uint8_t* sp = m_cp; sp < m_endp; *rp++ = *sp++) {}  // Overlaps
     m_endp = m_bufp + (m_endp - m_cp);
     m_cp = m_bufp;  // Reset buffer
     // Read into buffer starting at m_endp

@@ -144,12 +144,12 @@ void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
     fstWriterFlushContext(m_fst);
 }
 
-void VerilatedFst::emitTimeChange(vluint64_t timeui) { fstWriterEmitTimeChange(m_fst, timeui); }
+void VerilatedFst::emitTimeChange(uint64_t timeui) { fstWriterEmitTimeChange(m_fst, timeui); }
 
 //=============================================================================
 // Decl
 
-void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
+void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, uint32_t elements,
                                  unsigned int minValbits, const char** itemNamesp,
                                  const char** itemValuesp) {
     const fstEnumHandle enumNum
@@ -157,7 +157,7 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elem
     m_local2fstdtype[dtypenum] = enumNum;
 }
 
-void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum, bool bussed, int msb,
                            int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
@@ -224,23 +224,23 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
     }
 }
 
-void VerilatedFst::declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+void VerilatedFst::declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
 }
-void VerilatedFst::declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+void VerilatedFst::declBus(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declQuad(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+void VerilatedFst::declQuad(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                             fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+void VerilatedFst::declArray(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                              fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 63, 0);
 }
@@ -250,13 +250,13 @@ void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, f
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitBit(vluint32_t code, CData newval) {
+void VerilatedFst::emitBit(uint32_t code, CData newval) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
+void VerilatedFst::emitCData(uint32_t code, CData newval, int bits) {
     char buf[VL_BYTESIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
@@ -264,7 +264,7 @@ void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
+void VerilatedFst::emitSData(uint32_t code, SData newval, int bits) {
     char buf[VL_SHORTSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
@@ -272,7 +272,7 @@ void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
+void VerilatedFst::emitIData(uint32_t code, IData newval, int bits) {
     char buf[VL_IDATASIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
@@ -280,7 +280,7 @@ void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitQData(vluint32_t code, QData newval, int bits) {
+void VerilatedFst::emitQData(uint32_t code, QData newval, int bits) {
     char buf[VL_QUADSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
@@ -288,7 +288,7 @@ void VerilatedFst::emitQData(vluint32_t code, QData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
+void VerilatedFst::emitWData(uint32_t code, const WData* newvalp, int bits) {
     int words = VL_WORDS_I(bits);
     char* wp = m_strbuf;
     // Convert the most significant word
@@ -304,6 +304,6 @@ void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitDouble(vluint32_t code, double newval) {
+void VerilatedFst::emitDouble(uint32_t code, double newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }

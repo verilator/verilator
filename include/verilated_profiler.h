@@ -50,7 +50,7 @@ class VlExecutionProfiler;
 // Return high-precision counter for profiling, or 0x0 if not available
 VL_ATTR_ALWINLINE
 inline QData VL_CPU_TICK() {
-    vluint64_t val;
+    uint64_t val;
     VL_GET_CPU_TICK(val);
     return val;
 }
@@ -88,25 +88,25 @@ class VlExecutionRecord final {
 
     union Payload {
         struct {
-            vluint32_t m_id;  // MTask id
-            vluint32_t m_predictStart;  // Time scheduler predicted would start
-            vluint32_t m_cpu;  // Executing CPU id
+            uint32_t m_id;  // MTask id
+            uint32_t m_predictStart;  // Time scheduler predicted would start
+            uint32_t m_cpu;  // Executing CPU id
         } mtaskBegin;
         struct {
-            vluint32_t m_id;  // MTask id
-            vluint32_t m_predictCost;  // How long scheduler predicted would take
+            uint32_t m_id;  // MTask id
+            uint32_t m_predictCost;  // How long scheduler predicted would take
         } mtaskEnd;
     };
 
     // STATE
     // Layout below allows efficient packing.
-    const vluint64_t m_tick = VL_CPU_TICK();  // Tick at construction
+    const uint64_t m_tick = VL_CPU_TICK();  // Tick at construction
     Payload m_payload;  // The record payload
     Type m_type;  // The record type
-    static_assert(alignof(vluint64_t) >= alignof(Payload), "Padding not allowed");
+    static_assert(alignof(uint64_t) >= alignof(Payload), "Padding not allowed");
     static_assert(alignof(Payload) >= alignof(Type), "Padding not allowed");
 
-    static vluint16_t getcpu();  // Return currently executing CPU id
+    static uint16_t getcpu();  // Return currently executing CPU id
 
 public:
     // CONSTRUCTOR
@@ -117,13 +117,13 @@ public:
     void evalEnd() { m_type = Type::EVAL_END; }
     void evalLoopBegin() { m_type = Type::EVAL_LOOP_BEGIN; }
     void evalLoopEnd() { m_type = Type::EVAL_LOOP_END; }
-    void mtaskBegin(vluint32_t id, vluint32_t predictStart) {
+    void mtaskBegin(uint32_t id, uint32_t predictStart) {
         m_payload.mtaskBegin.m_id = id;
         m_payload.mtaskBegin.m_predictStart = predictStart;
         m_payload.mtaskBegin.m_cpu = getcpu();
         m_type = Type::MTASK_BEGIN;
     }
-    void mtaskEnd(vluint32_t id, vluint32_t predictCost) {
+    void mtaskEnd(uint32_t id, uint32_t predictCost) {
         m_payload.mtaskEnd.m_id = id;
         m_payload.mtaskEnd.m_predictCost = predictCost;
         m_type = Type::MTASK_END;
@@ -161,9 +161,9 @@ class VlExecutionProfiler final {
 
     bool m_enabled = false;  // Is profiling currently enabled
 
-    vluint64_t m_tickBegin = 0;  // Sample time (rdtsc() on x86) at beginning of collection
-    vluint64_t m_lastStartReq = 0;  // Last requested profiling start (in simulation time)
-    vluint32_t m_windowCount = 0;  // Track our position in the cache warmup and profile window
+    uint64_t m_tickBegin = 0;  // Sample time (rdtsc() on x86) at beginning of collection
+    uint64_t m_lastStartReq = 0;  // Last requested profiling start (in simulation time)
+    uint32_t m_windowCount = 0;  // Track our position in the cache warmup and profile window
 
 public:
     // CONSTRUCTOR
@@ -185,7 +185,7 @@ public:
     // Clear all profiling data
     void clear() VL_MT_SAFE_EXCLUDES(m_mutex);
     // Write profiling data into file
-    void dump(const char* filenamep, vluint64_t tickEnd) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void dump(const char* filenamep, uint64_t tickEnd) VL_MT_SAFE_EXCLUDES(m_mutex);
 };
 
 //=============================================================================
@@ -199,7 +199,7 @@ template <std::size_t T_Entries> class VlPgoProfiler final {
     };
 
     // Counters are stored packed, all together to reduce cache effects
-    std::array<vluint64_t, T_Entries> m_counters;  // Time spent on this record
+    std::array<uint64_t, T_Entries> m_counters;  // Time spent on this record
     std::vector<Record> m_records;  // Record information
 
 public:

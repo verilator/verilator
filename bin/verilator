@@ -348,7 +348,7 @@ detailed descriptions of these arguments.
     --mod-prefix <topname>      Name to prepend to lower classes
     --no-clk <signal-name>      Prevent marking specified signal as clock
     --no-decoration             Disable comments and symbol decorations
-    --no-pins64                 Don't use vluint64_t's for 33-64 bit sigs
+    --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --no-skip-identical         Disable skipping identical output
      +notimingchecks            Ignored
      -O0                        Disable optimizations

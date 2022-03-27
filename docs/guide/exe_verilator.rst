@@ -768,7 +768,7 @@ Summary:
 .. option:: --pins-bv <width>
 
    Specifies SystemC inputs/outputs of greater than or equal to <width>
-   bits wide should use sc_bv's instead of uint32/vluint64_t's.  The
+   bits wide should use sc_bv's instead of uint32/uint64_t's.  The
    default is "--pins-bv 65", and the value must be less than or equal
    to 65.  Versions before Verilator 3.671 defaulted to "--pins-bv 33".
    The more sc_bv is used, the worse for performance.  Use the
@@ -1647,7 +1647,7 @@ The grammar of configuration commands is as follows:
 .. option:: sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
    Sets the port to be of :code:`sc_bv<{width}>` type, instead of bool,
-   vluint32_t or vluint64_t.  Same as :option:`/*verilator&32;sc_bv*/`
+   uint32_t or uint64_t.  Same as :option:`/*verilator&32;sc_bv*/`
    metacomment.
 
 .. option:: sformat [-module "<modulename>"] [-task "<taskname>"] -var "<signame>"

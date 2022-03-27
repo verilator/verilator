@@ -59,7 +59,7 @@ public:  // But only local to this file
         }
     }
     virtual ~VerilatedCovImpItem() = default;
-    virtual vluint64_t count() const = 0;
+    virtual uint64_t count() const = 0;
     virtual void zero() const = 0;
 };
 
@@ -76,7 +76,7 @@ private:
 public:
     // METHODS
     // cppcheck-suppress truncLongCastReturn
-    virtual vluint64_t count() const override { return *m_countp; }
+    virtual uint64_t count() const override { return *m_countp; }
     virtual void zero() const override { *m_countp = 0; }
     // CONSTRUCTORS
     // cppcheck-suppress noExplicitConstructor
@@ -372,7 +372,7 @@ public:
         os << "# SystemC::Coverage-3\n";
 
         // Build list of events; totalize if collapsing hierarchy
-        std::map<const std::string, std::pair<std::string, vluint64_t>> eventCounts;
+        std::map<const std::string, std::pair<std::string, uint64_t>> eventCounts;
         for (const auto& itemp : m_items) {
             std::string name;
             std::string hier;
@@ -439,11 +439,11 @@ void VerilatedCovContext::clearNonMatch(const char* matchp) VL_MT_SAFE {
 }
 void VerilatedCovContext::zero() VL_MT_SAFE { impp()->zero(); }
 void VerilatedCovContext::write(const char* filenamep) VL_MT_SAFE { impp()->write(filenamep); }
-void VerilatedCovContext::_inserti(vluint32_t* itemp) VL_MT_SAFE {
-    impp()->inserti(new VerilatedCoverItemSpec<vluint32_t>{itemp});
+void VerilatedCovContext::_inserti(uint32_t* itemp) VL_MT_SAFE {
+    impp()->inserti(new VerilatedCoverItemSpec<uint32_t>{itemp});
 }
-void VerilatedCovContext::_inserti(vluint64_t* itemp) VL_MT_SAFE {
-    impp()->inserti(new VerilatedCoverItemSpec<vluint64_t>{itemp});
+void VerilatedCovContext::_inserti(uint64_t* itemp) VL_MT_SAFE {
+    impp()->inserti(new VerilatedCoverItemSpec<uint64_t>{itemp});
 }
 void VerilatedCovContext::_insertf(const char* filename, int lineno) VL_MT_SAFE {
     impp()->insertf(filename, lineno);

@@ -77,10 +77,10 @@ public:
     void priority(uint32_t pri) { m_priority = pri; }
     virtual uint32_t cost() const override { return m_cost; }
     void cost(uint32_t cost) { m_cost = cost; }
-    void predictStart(vluint64_t time) { m_predictStart = time; }
-    vluint64_t predictStart() const { return m_predictStart; }
-    void profilerId(vluint64_t id) { m_profilerId = id; }
-    vluint64_t profilerId() const { return m_profilerId; }
+    void predictStart(uint64_t time) { m_predictStart = time; }
+    uint64_t predictStart() const { return m_predictStart; }
+    void profilerId(uint64_t id) { m_profilerId = id; }
+    uint64_t profilerId() const { return m_profilerId; }
     string cFuncName() const {
         // If this MTask maps to a C function, this should be the name
         return string("__Vmtask") + "__" + cvtToStr(m_id);

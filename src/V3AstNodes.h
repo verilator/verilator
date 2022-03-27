@@ -115,14 +115,14 @@ public:
         dtypeSetLogicUnsized(32, m_num.widthMin(), VSigning::SIGNED);
     }
     class Unsized64 {};  // for creator type-overload selection
-    AstConst(FileLine* fl, Unsized64, vluint64_t num)
+    AstConst(FileLine* fl, Unsized64, uint64_t num)
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 64, 0) {
         m_num.setQuad(num);
         dtypeSetLogicSized(64, VSigning::UNSIGNED);
     }
     class SizedEData {};  // for creator type-overload selection
-    AstConst(FileLine* fl, SizedEData, vluint64_t num)
+    AstConst(FileLine* fl, SizedEData, uint64_t num)
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, VL_EDATASIZE, 0) {
         m_num.setQuad(num);
@@ -166,8 +166,8 @@ public:
     const V3Number& num() const { return m_num; }  // * = Value
     V3Number& num() { return m_num; }  // * = Value
     uint32_t toUInt() const { return num().toUInt(); }
-    vlsint32_t toSInt() const { return num().toSInt(); }
-    vluint64_t toUQuad() const { return num().toUQuad(); }
+    int32_t toSInt() const { return num().toSInt(); }
+    uint64_t toUQuad() const { return num().toUQuad(); }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -5019,7 +5019,7 @@ class AstInitArray final : public AstNode {
     // Parents: ASTVAR::init()
     // Children: AstInitItem
 public:
-    using KeyItemMap = std::map<vluint64_t, AstInitItem*>;
+    using KeyItemMap = std::map<uint64_t, AstInitItem*>;
 
 private:
     KeyItemMap m_map;  // Node value for each array index
@@ -5054,7 +5054,7 @@ public:
     AstNode* initsp() const { return op2p(); }  // op2 = Initial value expressions
     void addValuep(AstNode* newp) { addIndexValuep(m_map.size(), newp); }
     const KeyItemMap& map() const { return m_map; }
-    AstNode* addIndexValuep(vluint64_t index, AstNode* newp) {
+    AstNode* addIndexValuep(uint64_t index, AstNode* newp) {
         // Returns old value, caller must garbage collect
         AstNode* oldp = nullptr;
         const auto it = m_map.find(index);
@@ -5068,7 +5068,7 @@ public:
         }
         return oldp;
     }
-    AstNode* getIndexValuep(vluint64_t index) const {
+    AstNode* getIndexValuep(uint64_t index) const {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
             return nullptr;
@@ -5076,7 +5076,7 @@ public:
             return it->second->valuep();
         }
     }
-    AstNode* getIndexDefaultedValuep(vluint64_t index) const {
+    AstNode* getIndexDefaultedValuep(uint64_t index) const {
         AstNode* valuep = getIndexValuep(index);
         if (!valuep) valuep = defaultp();
         return valuep;

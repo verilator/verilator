@@ -302,7 +302,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
-        const vluint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
+        const uint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
         m_sideEffect = false;
         iterateAndNextNull(nodep->rhsp());
         if (lastEdit != AstNode::editCountGbl()) {

@@ -350,8 +350,8 @@ class EmitCImp final : EmitCFunc {
                         hash.insert(varp->dtypep()->width());
                     }
                 }
-                ofp()->printf("vluint64_t __Vcheckval = 0x%" PRIx64 "ULL;\n",
-                              static_cast<vluint64_t>(hash.digestUInt64()));
+                ofp()->printf("uint64_t __Vcheckval = 0x%" PRIx64 "ULL;\n",
+                              static_cast<uint64_t>(hash.digestUInt64()));
                 if (de) {
                     puts("os.readAssert(__Vcheckval);\n");
                 } else {
@@ -783,7 +783,7 @@ class EmitCTrace final : EmitCFunc {
             AstVar* const varp = varrefp->varp();
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {
-                puts("(vluint32_t*)");
+                puts("(uint32_t*)");
             } else if (emitTraceIsScBv(nodep)) {
                 puts("VL_SC_BV_DATAP(");
             }

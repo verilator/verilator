@@ -445,7 +445,7 @@ the signal, as you would any other member variable.
 Signals are the smallest of 8-bit unsigned chars (equivalent to uint8_t),
 16-bit unsigned shorts (uint16_t), 32-bit unsigned longs (uint32_t), or
 64-bit unsigned long longs (uint64_t) that fits the width of the signal.
-Generally, you can use just uint32_t's for 1 to 32 bits, or vluint64_t for
+Generally, you can use just uint32_t's for 1 to 32 bits, or uint64_t for
 1 to 64 bits, and the compiler will properly up-convert smaller entities.
 Note even signed ports are declared as unsigned; you must sign extend
 yourself to the appropriate signal width.

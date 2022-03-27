@@ -83,7 +83,7 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 #define VN_AS(nodep, nodetypename) (AstNode::privateAs<Ast##nodetypename, decltype(nodep)>(nodep))
 
 // (V)erilator (N)ode deleted: Pointer to deleted AstNode (for assertions only)
-#define VN_DELETED(nodep) VL_UNLIKELY((vluint64_t)(nodep) == 0x1)
+#define VN_DELETED(nodep) VL_UNLIKELY((uint64_t)(nodep) == 0x1)
 
 //######################################################################
 
@@ -1398,10 +1398,10 @@ class AstNode VL_NOT_FINAL {
     AstNodeDType* m_dtypep = nullptr;  // Data type of output or assignment (etc)
     AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
     FileLine* m_fileline;  // Where it was declared
-    vluint64_t m_editCount;  // When it was last edited
-    static vluint64_t s_editCntGbl;  // Global edit counter
+    uint64_t m_editCount;  // When it was last edited
+    static uint64_t s_editCntGbl;  // Global edit counter
     // Global edit counter, last value for printing * near node #s
-    static vluint64_t s_editCntLast;
+    static uint64_t s_editCntLast;
 
     AstNode* m_clonep
         = nullptr;  // Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
@@ -1559,7 +1559,7 @@ public:
     }
     static string
     encodeName(const string& namein);  // Encode user name into internal C representation
-    static string encodeNumber(vlsint64_t num);  // Encode number into internal C representation
+    static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
@@ -1666,12 +1666,12 @@ public:
     static void user5ClearTree() { VNUser5InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
 
-    vluint64_t editCount() const { return m_editCount; }
+    uint64_t editCount() const { return m_editCount; }
     void editCountInc() {
         m_editCount = ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
     }
-    static vluint64_t editCountLast() { return s_editCntLast; }
-    static vluint64_t editCountGbl() { return s_editCntGbl; }
+    static uint64_t editCountLast() { return s_editCntLast; }
+    static uint64_t editCountGbl() { return s_editCntGbl; }
     static void editCountSetLast() { s_editCntLast = editCountGbl(); }
 
     // ACCESSORS for specific types

@@ -60,7 +60,7 @@ using VlExecFnp = void (*)(VlSelfP, bool);
 // Track dependencies for a single MTask.
 class VlMTaskVertex final {
     // MEMBERS
-    static std::atomic<vluint64_t> s_yields;  // Statistics
+    static std::atomic<uint64_t> s_yields;  // Statistics
 
     // On even cycles, _upstreamDepsDone increases as upstream
     // dependencies complete. When it reaches _upstreamDepCount,
@@ -78,8 +78,8 @@ class VlMTaskVertex final {
     // during done-notification. Nobody's quantified that cost though.
     // If we were really serious about shrinking this class, we could
     // use 16-bit types here...)
-    std::atomic<vluint32_t> m_upstreamDepsDone;
-    const vluint32_t m_upstreamDepCount;
+    std::atomic<uint32_t> m_upstreamDepsDone;
+    const uint32_t m_upstreamDepCount;
 
 public:
     // CONSTRUCTORS
@@ -87,10 +87,10 @@ public:
     // 'upstreamDepCount' is the number of upstream MTaskVertex's
     // that must notify this MTaskVertex before it will become ready
     // to run.
-    explicit VlMTaskVertex(vluint32_t upstreamDepCount);
+    explicit VlMTaskVertex(uint32_t upstreamDepCount);
     ~VlMTaskVertex() = default;
 
-    static vluint64_t yields() { return s_yields; }
+    static uint64_t yields() { return s_yields; }
     static void yieldThread() {
         ++s_yields;  // Statistics
         std::this_thread::yield();
@@ -101,19 +101,19 @@ public:
     // false while it's still waiting on more dependencies.
     inline bool signalUpstreamDone(bool evenCycle) {
         if (evenCycle) {
-            const vluint32_t upstreamDepsDone
+            const uint32_t upstreamDepsDone
                 = 1 + m_upstreamDepsDone.fetch_add(1, std::memory_order_release);
             assert(upstreamDepsDone <= m_upstreamDepCount);
             return (upstreamDepsDone == m_upstreamDepCount);
         } else {
-            const vluint32_t upstreamDepsDone_prev
+            const uint32_t upstreamDepsDone_prev
                 = m_upstreamDepsDone.fetch_sub(1, std::memory_order_release);
             assert(upstreamDepsDone_prev > 0);
             return (upstreamDepsDone_prev == 1);
         }
     }
     inline bool areUpstreamDepsDone(bool evenCycle) const {
-        const vluint32_t target = evenCycle ? m_upstreamDepCount : 0;
+        const uint32_t target = evenCycle ? m_upstreamDepCount : 0;
         return m_upstreamDepsDone.load(std::memory_order_acquire) == target;
     }
     inline void waitUntilUpstreamDone(bool evenCycle) const {

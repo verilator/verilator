@@ -5766,12 +5766,12 @@ private:
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             if (const AstConst* const constp = VN_CAST(nodep, Const)) {
-                // We convert to/from vlsint32 rather than use floor() as want to make sure is
+                // We convert to/from int32_t rather than use floor() as want to make sure is
                 // representable in integer's number of bits
                 if (constp->isDouble()
                     && v3EpsilonEqual(
                         constp->num().toDouble(),
-                        static_cast<double>(static_cast<vlsint32_t>(constp->num().toDouble())))) {
+                        static_cast<double>(static_cast<int32_t>(constp->num().toDouble())))) {
                     warnOn = false;
                 }
             }
@@ -6168,7 +6168,7 @@ private:
 
         // Find valid values and populate
         UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
-        std::map<vluint64_t, AstNode*> values;
+        std::map<uint64_t, AstNode*> values;
         {
             AstEnumItem* const firstp = nodep->itemsp();
             const AstEnumItem* prevp = firstp;  // Prev must start with last item
@@ -6177,7 +6177,7 @@ private:
                 AstEnumItem* const nextp = VN_AS(itemp->nextp(), EnumItem);
                 const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
                 UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-                const vluint64_t i = vconstp->toUQuad();
+                const uint64_t i = vconstp->toUQuad();
                 if (attrType == VAttrType::ENUM_NAME) {
                     values[i] = new AstConst(nodep->fileline(), AstConst::String(), itemp->name());
                 } else if (attrType == VAttrType::ENUM_NEXT) {
@@ -6197,7 +6197,7 @@ private:
         if (assoc) {
             for (const auto& itr : values) initp->addIndexValuep(itr.first, itr.second);
         } else {
-            for (vluint64_t i = 0; i < (msbdim + 1); ++i) {
+            for (uint64_t i = 0; i < (msbdim + 1); ++i) {
                 if (values[i]) initp->addIndexValuep(i, values[i]);
             }
         }

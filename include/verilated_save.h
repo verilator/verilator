@@ -40,8 +40,8 @@ class VerilatedSerialize VL_NOT_FINAL {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
-    vluint8_t* m_cp;  // Current pointer into m_bufp buffer
-    vluint8_t* m_bufp;  // Output buffer
+    uint8_t* m_cp;  // Current pointer into m_bufp buffer
+    uint8_t* m_bufp;  // Output buffer
     bool m_isOpen = false;  // True indicates open file/stream
     std::string m_filename;  // Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
@@ -58,7 +58,7 @@ protected:
 public:
     /// Construct
     VerilatedSerialize() {
-        m_bufp = new vluint8_t[bufferSize()];
+        m_bufp = new uint8_t[bufferSize()];
         m_cp = m_bufp;
     }
     /// Flish, close, and destruct
@@ -77,12 +77,12 @@ public:
     virtual void flush() VL_MT_UNSAFE_ONE {}
     /// Write data to stream
     VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
-        const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
+        const uint8_t* __restrict dp = (const uint8_t* __restrict)datap;
         while (size) {
             bufferCheck();
             size_t blk = size;
             if (blk > bufferInsertSize()) blk = bufferInsertSize();
-            const vluint8_t* __restrict maxp = dp + blk;
+            const uint8_t* __restrict maxp = dp + blk;
             for (; dp < maxp; *m_cp++ = *dp++) {}
             size -= blk;
         }
@@ -111,9 +111,9 @@ class VerilatedDeserialize VL_NOT_FINAL {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
-    vluint8_t* m_cp;  // Current pointer into m_bufp buffer
-    vluint8_t* m_bufp;  // Output buffer
-    vluint8_t* m_endp = nullptr;  // Last valid byte in m_bufp buffer
+    uint8_t* m_cp;  // Current pointer into m_bufp buffer
+    uint8_t* m_bufp;  // Output buffer
+    uint8_t* m_endp = nullptr;  // Last valid byte in m_bufp buffer
     bool m_isOpen = false;  // True indicates open file/stream
     std::string m_filename;  // Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
@@ -131,7 +131,7 @@ protected:
 public:
     /// Construct
     VerilatedDeserialize() {
-        m_bufp = new vluint8_t[bufferSize()];
+        m_bufp = new uint8_t[bufferSize()];
         m_cp = m_bufp;
     }
     /// Destruct
@@ -150,12 +150,12 @@ public:
     virtual void flush() VL_MT_UNSAFE_ONE {}
     /// Read data from stream
     VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
-        vluint8_t* __restrict dp = static_cast<vluint8_t* __restrict>(datap);
+        uint8_t* __restrict dp = static_cast<uint8_t* __restrict>(datap);
         while (size) {
             bufferCheck();
             size_t blk = size;
             if (blk > bufferInsertSize()) blk = bufferInsertSize();
-            const vluint8_t* __restrict maxp = dp + blk;
+            const uint8_t* __restrict maxp = dp + blk;
             for (; dp < maxp; *dp++ = *m_cp++) {}
             size -= blk;
         }
@@ -165,7 +165,7 @@ public:
     // Internal use:
     // Read a datum and compare with expected value
     VerilatedDeserialize& readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
-    VerilatedDeserialize& readAssert(vluint64_t data) VL_MT_UNSAFE_ONE {
+    VerilatedDeserialize& readAssert(uint64_t data) VL_MT_UNSAFE_ONE {
         return readAssert(&data, sizeof(data));
     }
 
@@ -236,28 +236,28 @@ public:
 
 //=============================================================================
 
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const vluint64_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const uint64_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
-inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint64_t& rhs) {
+inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, uint64_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const vluint32_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const uint32_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
-inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint32_t& rhs) {
+inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, uint32_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const vluint16_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const uint16_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
-inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint16_t& rhs) {
+inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, uint16_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const vluint8_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const uint8_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
-inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint8_t& rhs) {
+inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, uint8_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
 inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const bool& rhs) {
@@ -279,12 +279,12 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, float& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
 inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const std::string& rhs) {
-    const vluint32_t len = rhs.length();
+    const uint32_t len = rhs.length();
     os << len;
     return os.write(rhs.data(), len);
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& rhs) {
-    vluint32_t len = 0;
+    uint32_t len = 0;
     os >> len;
     rhs.resize(len);
     return os.read((void*)rhs.data(), len);
@@ -295,7 +295,7 @@ VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhs
 template <class T_Key, class T_Value>
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
     os << rhs.atDefault();
-    const vluint32_t len = rhs.size();
+    const uint32_t len = rhs.size();
     os << len;
     for (const auto& i : rhs) {
         const T_Key index = i.first;  // Copy to get around const_iterator
@@ -307,10 +307,10 @@ VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Val
 template <class T_Key, class T_Value>
 VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
     os >> rhs.atDefault();
-    vluint32_t len = 0;
+    uint32_t len = 0;
     os >> len;
     rhs.clear();
-    for (vluint32_t i = 0; i < len; ++i) {
+    for (uint32_t i = 0; i < len; ++i) {
         T_Key index;
         T_Value value;
         os >> index;

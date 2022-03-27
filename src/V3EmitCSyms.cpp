@@ -476,7 +476,7 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.opt.profPgo()) {
         puts("\n// PGO PROFILING\n");
-        vluint64_t maxProfilerId = 0;
+        uint64_t maxProfilerId = 0;
         if (v3Global.opt.mtasks()) {
             for (const V3GraphVertex* vxp
                  = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();

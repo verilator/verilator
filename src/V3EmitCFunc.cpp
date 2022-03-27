@@ -543,7 +543,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             }
             for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
-                ofp()->printf(",0x%08" PRIx64, static_cast<vluint64_t>(nodep->num().edataWord(
+                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
                                                    word + chunks * EMITC_NUM_CONSTW)));
             }
             puts(")");
@@ -565,7 +565,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             }
             for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
-                ofp()->printf(",0x%08" PRIx64, static_cast<vluint64_t>(nodep->num().edataWord(
+                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
                                                    word + chunks * EMITC_NUM_CONSTW)));
             }
             puts(")");
@@ -580,7 +580,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             ofp()->printf("%.17e", nodep->num().toDouble());
         }
     } else if (nodep->isQuad()) {
-        const vluint64_t num = nodep->toUQuad();
+        const uint64_t num = nodep->toUQuad();
         if (num < 10) {
             ofp()->printf("%" PRIu64 "ULL", num);
         } else {
@@ -592,7 +592,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
         if (num < 10) {
             puts(cvtToStr(num));
         } else {
-            ofp()->printf("0x%" PRIx64, static_cast<vluint64_t>(num));
+            ofp()->printf("0x%" PRIx64, static_cast<uint64_t>(num));
         }
         // If signed, we'll do our own functions
         // But must be here, or <= comparisons etc may end up signed

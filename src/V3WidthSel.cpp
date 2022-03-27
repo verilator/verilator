@@ -114,7 +114,7 @@ private:
         return FromData(errp, ddtypep, fromRange);
     }
 
-    AstNode* newSubNeg(AstNode* lhsp, vlsint32_t rhs) {
+    AstNode* newSubNeg(AstNode* lhsp, int32_t rhs) {
         // Return lhs-rhs, but if rhs is negative use an add, so we won't
         // have to deal with signed math and related 32bit sign extension problems
         if (rhs == 0) {
@@ -142,7 +142,7 @@ private:
             return newp;
         }
     }
-    AstNode* newSubNeg(vlsint32_t lhs, AstNode* rhsp) {
+    AstNode* newSubNeg(int32_t lhs, AstNode* rhsp) {
         // Return lhs-rhs
         // We must make sure sub gets sign of original value
         AstNode* const newp = new AstSub(
@@ -337,9 +337,9 @@ private:
         AstNode* const fromp = nodep->fromp()->unlinkFrBack();
         AstNode* const msbp = nodep->rhsp()->unlinkFrBack();
         AstNode* const lsbp = nodep->thsp()->unlinkFrBack();
-        vlsint32_t msb = VN_AS(msbp, Const)->toSInt();
-        vlsint32_t lsb = VN_AS(lsbp, Const)->toSInt();
-        const vlsint32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
+        int32_t msb = VN_AS(msbp, Const)->toSInt();
+        int32_t lsb = VN_AS(lsbp, Const)->toSInt();
+        const int32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
         const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* const ddtypep = fromdata.m_dtypep;
         const VNumRange fromRange = fromdata.m_fromRange;
@@ -507,13 +507,13 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (VN_IS(rhsp, Const)) {  // Slice
-                const vlsint32_t rhs = VN_AS(rhsp, Const)->toSInt();
+                const int32_t rhs = VN_AS(rhsp, Const)->toSInt();
                 // down array: lsb/lo +: width
                 // down array: msb/hi -: width
                 // up array:   msb/lo +: width
                 // up array:   lsb/hi -: width
-                const vlsint32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
-                const vlsint32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
+                const int32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
+                const int32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
                 AstSliceSel* const newp = new AstSliceSel(
                     nodep->fileline(), fromp, VNumRange(msb, lsb, fromRange.littleEndian()));
                 nodep->replaceWith(newp);

@@ -38,11 +38,11 @@ constexpr const char* const VlExecutionRecord::s_ascii[];
 //=============================================================================
 // VlPgoProfiler implementation
 
-vluint16_t VlExecutionRecord::getcpu() {
+uint16_t VlExecutionRecord::getcpu() {
 #if defined(__linux)
     return sched_getcpu();  // TODO: this is a system call. Not exactly cheap.
 #elif defined(__APPLE__) && !defined(__arm64__)
-    vluint32_t info[4];
+    uint32_t info[4];
     __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
     // info[1] is EBX, bits 24-31 are APIC ID
     if ((info[3] & (1 << 9)) == 0) {
@@ -79,7 +79,7 @@ void VlExecutionProfiler::configure(const VerilatedContext& context) {
             clear();  // Clear the profile after the cache warm-up cycles.
             m_tickBegin = VL_CPU_TICK();
         } else if (VL_UNLIKELY(m_windowCount == 0)) {
-            const vluint64_t tickEnd = VL_CPU_TICK();
+            const uint64_t tickEnd = VL_CPU_TICK();
             VL_DEBUG_IF(VL_DBG_MSGF("+ profile end\n"););
             const std::string& fileName = context.profExecFilename();
             dump(fileName.c_str(), tickEnd);
@@ -88,7 +88,7 @@ void VlExecutionProfiler::configure(const VerilatedContext& context) {
         return;
     }
 
-    const vluint64_t startReq = context.profExecStart() + 1;  // + 1, so we can start at time 0
+    const uint64_t startReq = context.profExecStart() + 1;  // + 1, so we can start at time 0
 
     if (VL_UNLIKELY(m_lastStartReq < startReq && VL_TIME_Q() >= context.profExecStart())) {
         VL_DEBUG_IF(VL_DBG_MSGF("+ profile start warmup\n"););
@@ -121,7 +121,7 @@ void VlExecutionProfiler::clear() VL_MT_SAFE_EXCLUDES(m_mutex) {
     }
 }
 
-void VlExecutionProfiler::dump(const char* filenamep, vluint64_t tickEnd)
+void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+exec writing to '%s'\n", filenamep););
@@ -159,7 +159,7 @@ void VlExecutionProfiler::dump(const char* filenamep, vluint64_t tickEnd)
 
         for (const VlExecutionRecord& er : *tracep) {
             const char* const name = VlExecutionRecord::s_ascii[static_cast<uint8_t>(er.m_type)];
-            const vluint64_t time = er.m_tick - m_tickBegin;
+            const uint64_t time = er.m_tick - m_tickBegin;
             fprintf(fp, "VLPROFEXEC %s %" PRIu64, name, time);
 
             switch (er.m_type) {

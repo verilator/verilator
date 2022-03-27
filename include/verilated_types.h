@@ -73,7 +73,7 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 //===================================================================
 // Shuffle RNG
 
-extern vluint64_t vl_rand64() VL_MT_SAFE;
+extern uint64_t vl_rand64() VL_MT_SAFE;
 
 class VlURNG final {
 public:
@@ -241,7 +241,7 @@ public:
     int size() const { return m_deque.size(); }
     // Clear array. Verilog: function void delete([input index])
     void clear() { m_deque.clear(); }
-    void erase(vlsint32_t index) {
+    void erase(int32_t index) {
         if (VL_LIKELY(index >= 0 && index < m_deque.size()))
             m_deque.erase(m_deque.begin() + index);
     }
@@ -288,7 +288,7 @@ public:
     // Setting. Verilog: assoc[index] = v
     // Can't just overload operator[] or provide a "at" reference to set,
     // because we need to be able to insert only when the value is set
-    T_Value& at(vlsint32_t index) {
+    T_Value& at(int32_t index) {
         static T_Value s_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
@@ -299,7 +299,7 @@ public:
         }
     }
     // Accessing. Verilog: v = assoc[index]
-    const T_Value& at(vlsint32_t index) const {
+    const T_Value& at(int32_t index) const {
         static T_Value s_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
@@ -309,18 +309,18 @@ public:
         }
     }
     // function void q.insert(index, value);
-    void insert(vlsint32_t index, const T_Value& value) {
+    void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return;
         m_deque.insert(m_deque.begin() + index, value);
     }
 
     // Return slice q[lsb:msb]
-    VlQueue slice(vlsint32_t lsb, vlsint32_t msb) const {
+    VlQueue slice(int32_t lsb, int32_t msb) const {
         VlQueue out;
         if (VL_UNLIKELY(lsb < 0)) lsb = 0;
         if (VL_UNLIKELY(lsb >= m_deque.size())) lsb = m_deque.size() - 1;
         if (VL_UNLIKELY(msb >= m_deque.size())) msb = m_deque.size() - 1;
-        for (vlsint32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
+        for (int32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
         return out;
     }
 

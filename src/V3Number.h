@@ -111,9 +111,9 @@ public:
     void nodep(AstNode* nodep) { setNames(nodep); }
     FileLine* fileline() const { return m_fileline; }
     V3Number& setZero();
-    V3Number& setQuad(vluint64_t value);
+    V3Number& setQuad(uint64_t value);
     V3Number& setLong(uint32_t value);
-    V3Number& setLongS(vlsint32_t value);
+    V3Number& setLongS(int32_t value);
     V3Number& setDouble(double value);
     void setBit(int bit, char value) {  // Note must be pre-zeroed!
         if (bit >= m_width) return;
@@ -339,9 +339,9 @@ public:
     bool isAnyZ() const;
     bool isMsbXZ() const { return bitIsXZ(m_width); }
     uint32_t toUInt() const;
-    vlsint32_t toSInt() const;
-    vluint64_t toUQuad() const;
-    vlsint64_t toSQuad() const;
+    int32_t toSInt() const;
+    uint64_t toUQuad() const;
+    int64_t toSQuad() const;
     string toString() const;
     string toDecimalS() const;  // return ASCII signed decimal number
     string toDecimalU() const;  // return ASCII unsigned decimal number

@@ -78,14 +78,14 @@ class PartPtrIdMap final {
 private:
     // TYPES
     // MEMBERS
-    mutable vluint64_t m_nextId = 0;
-    mutable std::unordered_map<const void*, vluint64_t> m_id;
+    mutable uint64_t m_nextId = 0;
+    mutable std::unordered_map<const void*, uint64_t> m_id;
 
 public:
     // CONSTRUCTORS
     PartPtrIdMap() = default;
     // METHODS
-    vluint64_t findId(const void* ptrp) const {
+    uint64_t findId(const void* ptrp) const {
         const auto it = m_id.find(ptrp);
         if (it != m_id.end()) return it->second;
         m_id[ptrp] = m_nextId;

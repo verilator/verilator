@@ -307,7 +307,7 @@ private:
     }
     void go() {
         // Generate a pseudo-random graph
-        std::array<vluint64_t, 2> rngState
+        std::array<uint64_t, 2> rngState
             = {{0x12345678ULL, 0x9abcdef0ULL}};  // GCC 3.8.0 wants {{}}
         // Create 50 vertices
         for (auto& i : m_vx) i = new V3GraphVertex(&m_graph);
@@ -435,7 +435,7 @@ private:
     // graph. We'll mark each node with the last generation that scanned
     // it. We can use this to avoid recursing through the same node twice
     // while searching for a path.
-    vluint64_t m_generation = 0;
+    uint64_t m_generation = 0;
 
     // Redundant with the V3GraphEdge's, store a map of relatives so we can
     // quickly check if we have a given parent or child.
@@ -471,8 +471,8 @@ public:
         m_cost += otherp->m_cost;
     }
     virtual const VxList* vertexListp() const override { return &m_vertices; }
-    static vluint64_t incGeneration() {
-        static vluint64_t s_generation = 0;
+    static uint64_t incGeneration() {
+        static uint64_t s_generation = 0;
         ++s_generation;
         return s_generation;
     }
@@ -569,7 +569,7 @@ public:
 
 private:
     static bool pathExistsFromInternal(LogicMTask* fromp, LogicMTask* top,
-                                       const V3GraphEdge* excludedEdgep, vluint64_t generation) {
+                                       const V3GraphEdge* excludedEdgep, uint64_t generation) {
         // Q) Why does this take LogicMTask instead of generic V3GraphVertex?
         // A) We'll use the critical paths known to LogicMTask to prune the
         //    recursion for speed. Also store 'generation' in
@@ -718,16 +718,16 @@ private:
     // using another bit of the id to denote the actual subtype.
 
     // By using the bottom bits for flags, we can still use < to compare IDs without masking.
-    vluint64_t m_id;  // <63:2> Serial number for ordering, <1> subtype (SiblingMC), <0> removed
-    static constexpr vluint64_t REMOVED_MASK = 1ULL << 0;
-    static constexpr vluint64_t IS_SIBLING_MASK = 1ULL << 1;
-    static constexpr vluint64_t ID_INCREMENT = 1ULL << 2;
+    uint64_t m_id;  // <63:2> Serial number for ordering, <1> subtype (SiblingMC), <0> removed
+    static constexpr uint64_t REMOVED_MASK = 1ULL << 0;
+    static constexpr uint64_t IS_SIBLING_MASK = 1ULL << 1;
+    static constexpr uint64_t ID_INCREMENT = 1ULL << 2;
 
     bool isSiblingMC() const { return m_id & IS_SIBLING_MASK; }
 
     // CONSTRUCTORS
     explicit MergeCandidate(bool isSiblingMC) {
-        static vluint64_t serial = 0;
+        static uint64_t serial = 0;
         serial += ID_INCREMENT;  // +ID_INCREMENT so doesn't set the special bottom bits
         m_id = serial | (isSiblingMC * IS_SIBLING_MASK);
     }
@@ -746,7 +746,7 @@ public:
     bool operator<(const MergeCandidate& other) const { return m_id < other.m_id; }
 };
 
-static_assert(sizeof(MergeCandidate) == sizeof(vluint64_t), "Should not have a vtable");
+static_assert(sizeof(MergeCandidate) == sizeof(uint64_t), "Should not have a vtable");
 
 // A pair of associated LogicMTask's that are merge candidates for sibling
 // contraction
@@ -865,8 +865,8 @@ class OrderByPtrId final {
 
 public:
     virtual bool operator()(const OrderVarStdVertex* lhsp, const OrderVarStdVertex* rhsp) const {
-        const vluint64_t l_id = m_ids.findId(lhsp);
-        const vluint64_t r_id = m_ids.findId(rhsp);
+        const uint64_t l_id = m_ids.findId(lhsp);
+        const uint64_t r_id = m_ids.findId(rhsp);
         return l_id < r_id;
     }
 };
@@ -1580,8 +1580,8 @@ private:
     // runtime should be N*log(N) for a chain-shaped graph.
     //
     static void selfTestChain() {
-        const vluint64_t usecsSmall = partitionChainUsecs(5);
-        const vluint64_t usecsLarge = partitionChainUsecs(500);
+        const uint64_t usecsSmall = partitionChainUsecs(5);
+        const uint64_t usecsLarge = partitionChainUsecs(500);
         // Large input is 50x bigger than small input.
         // Its runtime should be about 10x longer -- not about 2500x longer
         // or worse which would suggest N^2 scaling or worse.
@@ -1590,9 +1590,9 @@ private:
                     << usecsSmall << ", large input runtime = " << usecsLarge);
     }
 
-    static vluint64_t partitionChainUsecs(unsigned chain_len) {
+    static uint64_t partitionChainUsecs(unsigned chain_len) {
         // NOTE: To get a dot file run with --debugi-V3Partition 4 or more.
-        const vluint64_t startUsecs = V3Os::timeUsecs();
+        const uint64_t startUsecs = V3Os::timeUsecs();
         V3Graph mtasks;
         LogicMTask* lastp = nullptr;
         for (unsigned i = 0; i < chain_len; ++i) {
@@ -1614,8 +1614,8 @@ private:
         PartParallelismEst check(&mtasks);
         check.traverse();
 
-        const vluint64_t endUsecs = V3Os::timeUsecs();
-        const vluint64_t elapsedUsecs = endUsecs - startUsecs;
+        const uint64_t endUsecs = V3Os::timeUsecs();
+        const uint64_t elapsedUsecs = endUsecs - startUsecs;
 
         if (debug() >= 6) {
             UINFO(0, "Chain self test stats:\n");
@@ -1927,7 +1927,7 @@ private:
 
 public:
     void go() {
-        vluint64_t startUsecs = 0;
+        uint64_t startUsecs = 0;
         if (debug() >= 3) startUsecs = V3Os::timeUsecs();
 
         // Build an OLV->mtask map and a set of OVVs
@@ -2682,21 +2682,21 @@ void V3Partition::go(V3Graph* mtasksp) {
     }
 }
 
-void add(std::unordered_map<int, vluint64_t>& cmap, int id, vluint64_t cost) { cmap[id] += cost; }
+void add(std::unordered_map<int, uint64_t>& cmap, int id, uint64_t cost) { cmap[id] += cost; }
 
-using EstimateAndProfiled = std::pair<uint64_t, vluint64_t>;  // cost est, cost profiled
+using EstimateAndProfiled = std::pair<uint64_t, uint64_t>;  // cost est, cost profiled
 using Costs = std::unordered_map<uint32_t, EstimateAndProfiled>;
 
 static void normalizeCosts(Costs& costs) {
-    const auto scaleCost = [](vluint64_t value, double multiplier) {
+    const auto scaleCost = [](uint64_t value, double multiplier) {
         double scaled = static_cast<double>(value) * multiplier;
         if (value && scaled < 1) scaled = 1;
         return static_cast<uint64_t>(scaled);
     };
 
     // For all costs with a profile, compute sum
-    vluint64_t sumCostProfiled = 0;  // For data with estimate and profile
-    vluint64_t sumCostEstimate = 0;  // For data with estimate and profile
+    uint64_t sumCostProfiled = 0;  // For data with estimate and profile
+    uint64_t sumCostEstimate = 0;  // For data with estimate and profile
     for (const auto& est : costs) {
         if (est.second.second) {
             sumCostEstimate += est.second.first;
@@ -2720,7 +2720,7 @@ static void normalizeCosts(Costs& costs) {
     }
 
     // COSTS can overflow a uint32.  Using maximum value of costs, scale all down
-    vluint64_t maxCost = 0;
+    uint64_t maxCost = 0;
     for (auto& est : costs) {
         const uint64_t& costEstimate = est.second.first;
         const uint64_t& costProfiled = est.second.second;
@@ -2729,7 +2729,7 @@ static void normalizeCosts(Costs& costs) {
         UINFO(9,
               "Post uint scale: ce = " << est.second.first << " cp=" << est.second.second << endl);
     }
-    const vluint64_t scaleDownTo = 10000000;  // Extra room for future algorithms to add costs
+    const uint64_t scaleDownTo = 10000000;  // Extra room for future algorithms to add costs
     if (maxCost > scaleDownTo) {
         const double scaleup = static_cast<double>(scaleDownTo) / static_cast<double>(maxCost);
         UINFO(5, "Scaling data to within 32-bits by multiply by=" << scaleup << ", maxCost="
@@ -2783,8 +2783,8 @@ static void fillinCosts(V3Graph* execMTaskGraphp) {
         mtp->hashName(m_uniqueNames.get(mtp->bodyp()));
 
         // This estimate is 64 bits, but the final mtask graph algorithm needs 32 bits
-        const vluint64_t costEstimate = V3InstrCount::count(mtp->bodyp(), false);
-        const vluint64_t costProfiled
+        const uint64_t costEstimate = V3InstrCount::count(mtp->bodyp(), false);
+        const uint64_t costProfiled
             = V3Config::getProfileData(v3Global.opt.prefix(), mtp->hashName());
         if (costProfiled) {
             UINFO(5, "Profile data for mtask " << mtp->id() << " " << mtp->hashName()
@@ -2868,7 +2868,7 @@ static void finalizeCosts(V3Graph* execMTaskGraphp) {
     }
 
     // Assign profiler IDs
-    vluint64_t profilerId = 0;
+    uint64_t profilerId = 0;
     for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
          vxp = vxp->verticesNextp()) {
         ExecMTask* const mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));

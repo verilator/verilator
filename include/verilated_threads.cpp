@@ -37,12 +37,12 @@
 
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-std::atomic<vluint64_t> VlMTaskVertex::s_yields;
+std::atomic<uint64_t> VlMTaskVertex::s_yields;
 
 //=============================================================================
 // VlMTaskVertex
 
-VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
+VlMTaskVertex::VlMTaskVertex(uint32_t upstreamDepCount)
     : m_upstreamDepsDone{0}
     , m_upstreamDepCount{upstreamDepCount} {
     assert(atomic_is_lock_free(&m_upstreamDepsDone));

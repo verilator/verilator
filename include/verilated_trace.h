@@ -92,7 +92,7 @@ class VerilatedTraceCommand final {
 public:
     // These must all fit in 4 bit at the moment, as the tracing routines
     // pack parameters in the top bits.
-    enum : vluint8_t {
+    enum : uint8_t {
         CHG_BIT_0 = 0x0,
         CHG_BIT_1 = 0x1,
         CHG_CDATA = 0x2,
@@ -120,7 +120,7 @@ public:
     //=========================================================================
     // Generic tracing internals
 
-    using initCb_t = void (*)(void*, T_Derived*, vluint32_t);  // Type of init callbacks
+    using initCb_t = void (*)(void*, T_Derived*, uint32_t);  // Type of init callbacks
     using dumpCb_t = void (*)(void*, T_Derived*);  // Type of all but init callbacks
 
 private:
@@ -142,18 +142,18 @@ private:
             , m_userp{userp} {}
     };
 
-    vluint32_t* m_sigs_oldvalp;  // Old value store
+    uint32_t* m_sigs_oldvalp;  // Old value store
     EData* m_sigs_enabledp;  // Bit vector of enabled codes (nullptr = all on)
-    vluint64_t m_timeLastDump;  // Last time we did a dump
+    uint64_t m_timeLastDump;  // Last time we did a dump
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize traciong
     std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
     std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
     std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
     bool m_fullDump;  // Whether a full dump is required on the next call to 'dump'
-    vluint32_t m_nextCode;  // Next code number to assign
-    vluint32_t m_numSignals;  // Number of distinct signals
-    vluint32_t m_maxBits;  // Number of bits in the widest signal
+    uint32_t m_nextCode;  // Next code number to assign
+    uint32_t m_numSignals;  // Number of distinct signals
+    uint32_t m_maxBits;  // Number of bits in the widest signal
     std::vector<std::string> m_namePrefixStack{""};  // Path prefixes to add to signal names
     std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
     char m_scopeEscape;
@@ -174,28 +174,28 @@ private:
 
 #ifdef VL_TRACE_THREADED
     // Number of total trace buffers that have been allocated
-    vluint32_t m_numTraceBuffers;
+    uint32_t m_numTraceBuffers;
     // Size of trace buffers
     size_t m_traceBufferSize;
     // Buffers handed to worker for processing
-    VerilatedThreadQueue<vluint32_t*> m_buffersToWorker;
+    VerilatedThreadQueue<uint32_t*> m_buffersToWorker;
     // Buffers returned from worker after processing
-    VerilatedThreadQueue<vluint32_t*> m_buffersFromWorker;
+    VerilatedThreadQueue<uint32_t*> m_buffersFromWorker;
     // Write pointer into current buffer
-    vluint32_t* m_traceBufferWritep;
+    uint32_t* m_traceBufferWritep;
     // End of trace buffer
-    vluint32_t* m_traceBufferEndp;
+    uint32_t* m_traceBufferEndp;
     // The worker thread itself
     std::unique_ptr<std::thread> m_workerThread;
 
     // Get a new trace buffer that can be populated. May block if none available
-    vluint32_t* getTraceBuffer();
+    uint32_t* getTraceBuffer();
 
     // The function executed by the worker thread
     void workerThreadMain();
 
     // Wait until given buffer is placed in m_buffersFromWorker
-    void waitForBuffer(const vluint32_t* bufferp);
+    void waitForBuffer(const uint32_t* bufferp);
 
     // Shut down and join worker, if it's running, otherwise do nothing
     void shutdownWorker();
@@ -210,11 +210,11 @@ protected:
 
     VerilatedMutex m_mutex;  // Ensure dump() etc only called from single thread
 
-    vluint32_t nextCode() const { return m_nextCode; }
-    vluint32_t numSignals() const { return m_numSignals; }
-    vluint32_t maxBits() const { return m_maxBits; }
+    uint32_t nextCode() const { return m_nextCode; }
+    uint32_t numSignals() const { return m_numSignals; }
+    uint32_t maxBits() const { return m_maxBits; }
     void fullDump(bool value) { m_fullDump = value; }
-    vluint64_t timeLastDump() { return m_timeLastDump; }
+    uint64_t timeLastDump() { return m_timeLastDump; }
 
     double timeRes() const { return m_timeRes; }
     double timeUnit() const { return m_timeUnit; }
@@ -223,7 +223,7 @@ protected:
     void traceInit() VL_MT_UNSAFE;
 
     // Declare new signal and return true if enabled
-    bool declCode(vluint32_t code, const char* namep, vluint32_t bits, bool tri);
+    bool declCode(uint32_t code, const char* namep, uint32_t bits, bool tri);
 
     // Is this an escape?
     bool isScopeEscape(char c) { return std::isspace(c) || c == m_scopeEscape; }
@@ -239,7 +239,7 @@ protected:
     // Virtual functions to be provided by the format specific implementation
 
     // Called when the trace moves forward to a new time point
-    virtual void emitTimeChange(vluint64_t timeui) = 0;
+    virtual void emitTimeChange(uint64_t timeui) = 0;
 
     // These hooks are called before a full or change based dump is produced.
     // The return value indicates whether to proceed with the dump.
@@ -264,7 +264,7 @@ public:
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE;
 
     // Call
-    void dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void dump(uint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);
 
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
@@ -288,69 +288,69 @@ public:
     // these here, but we cannot afford dynamic dispatch for calling these as
     // this is very hot code during tracing.
 
-    // duck-typed void emitBit(vluint32_t code, CData newval) = 0;
-    // duck-typed void emitCData(vluint32_t code, CData newval, int bits) = 0;
-    // duck-typed void emitSData(vluint32_t code, SData newval, int bits) = 0;
-    // duck-typed void emitIData(vluint32_t code, IData newval, int bits) = 0;
-    // duck-typed void emitQData(vluint32_t code, QData newval, int bits) = 0;
-    // duck-typed void emitWData(vluint32_t code, const WData* newvalp, int bits) = 0;
-    // duck-typed void emitDouble(vluint32_t code, double newval) = 0;
+    // duck-typed void emitBit(uint32_t code, CData newval) = 0;
+    // duck-typed void emitCData(uint32_t code, CData newval, int bits) = 0;
+    // duck-typed void emitSData(uint32_t code, SData newval, int bits) = 0;
+    // duck-typed void emitIData(uint32_t code, IData newval, int bits) = 0;
+    // duck-typed void emitQData(uint32_t code, QData newval, int bits) = 0;
+    // duck-typed void emitWData(uint32_t code, const WData* newvalp, int bits) = 0;
+    // duck-typed void emitDouble(uint32_t code, double newval) = 0;
 
-    vluint32_t* oldp(vluint32_t code) { return m_sigs_oldvalp + code; }
+    uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
 
     // Write to previous value buffer value and emit trace entry.
-    void fullBit(vluint32_t* oldp, CData newval);
-    void fullCData(vluint32_t* oldp, CData newval, int bits);
-    void fullSData(vluint32_t* oldp, SData newval, int bits);
-    void fullIData(vluint32_t* oldp, IData newval, int bits);
-    void fullQData(vluint32_t* oldp, QData newval, int bits);
-    void fullWData(vluint32_t* oldp, const WData* newvalp, int bits);
-    void fullDouble(vluint32_t* oldp, double newval);
+    void fullBit(uint32_t* oldp, CData newval);
+    void fullCData(uint32_t* oldp, CData newval, int bits);
+    void fullSData(uint32_t* oldp, SData newval, int bits);
+    void fullIData(uint32_t* oldp, IData newval, int bits);
+    void fullQData(uint32_t* oldp, QData newval, int bits);
+    void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
+    void fullDouble(uint32_t* oldp, double newval);
 
 #ifdef VL_TRACE_THREADED
     // Threaded tracing. Just dump everything in the trace buffer
-    inline void chgBit(vluint32_t code, CData newval) {
+    inline void chgBit(uint32_t code, CData newval) {
         m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_BIT_0 | newval;
         m_traceBufferWritep[1] = code;
         m_traceBufferWritep += 2;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgCData(vluint32_t code, CData newval, int bits) {
+    inline void chgCData(uint32_t code, CData newval, int bits) {
         m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_CDATA;
         m_traceBufferWritep[1] = code;
         m_traceBufferWritep[2] = newval;
         m_traceBufferWritep += 3;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgSData(vluint32_t code, SData newval, int bits) {
+    inline void chgSData(uint32_t code, SData newval, int bits) {
         m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_SDATA;
         m_traceBufferWritep[1] = code;
         m_traceBufferWritep[2] = newval;
         m_traceBufferWritep += 3;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgIData(vluint32_t code, IData newval, int bits) {
+    inline void chgIData(uint32_t code, IData newval, int bits) {
         m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_IDATA;
         m_traceBufferWritep[1] = code;
         m_traceBufferWritep[2] = newval;
         m_traceBufferWritep += 3;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgQData(vluint32_t code, QData newval, int bits) {
+    inline void chgQData(uint32_t code, QData newval, int bits) {
         m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_QDATA;
         m_traceBufferWritep[1] = code;
         *reinterpret_cast<QData*>(m_traceBufferWritep + 2) = newval;
         m_traceBufferWritep += 4;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgWData(vluint32_t code, const WData* newvalp, int bits) {
+    inline void chgWData(uint32_t code, const WData* newvalp, int bits) {
         m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_WDATA;
         m_traceBufferWritep[1] = code;
         m_traceBufferWritep += 2;
         for (int i = 0; i < (bits + 31) / 32; ++i) { *m_traceBufferWritep++ = newvalp[i]; }
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgDouble(vluint32_t code, double newval) {
+    inline void chgDouble(uint32_t code, double newval) {
         m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_DOUBLE;
         m_traceBufferWritep[1] = code;
         // cppcheck-suppress invalidPointerCast
@@ -369,27 +369,27 @@ public:
     // thread and are called chg*Impl
 
     // Check previous dumped value of signal. If changed, then emit trace entry
-    inline void CHG(Bit)(vluint32_t* oldp, CData newval) {
-        const vluint32_t diff = *oldp ^ newval;
+    inline void CHG(Bit)(uint32_t* oldp, CData newval) {
+        const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
-    inline void CHG(CData)(vluint32_t* oldp, CData newval, int bits) {
-        const vluint32_t diff = *oldp ^ newval;
+    inline void CHG(CData)(uint32_t* oldp, CData newval, int bits) {
+        const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullCData(oldp, newval, bits);
     }
-    inline void CHG(SData)(vluint32_t* oldp, SData newval, int bits) {
-        const vluint32_t diff = *oldp ^ newval;
+    inline void CHG(SData)(uint32_t* oldp, SData newval, int bits) {
+        const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullSData(oldp, newval, bits);
     }
-    inline void CHG(IData)(vluint32_t* oldp, IData newval, int bits) {
-        const vluint32_t diff = *oldp ^ newval;
+    inline void CHG(IData)(uint32_t* oldp, IData newval, int bits) {
+        const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullIData(oldp, newval, bits);
     }
-    inline void CHG(QData)(vluint32_t* oldp, QData newval, int bits) {
-        const vluint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
+    inline void CHG(QData)(uint32_t* oldp, QData newval, int bits) {
+        const uint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
-    inline void CHG(WData)(vluint32_t* oldp, const WData* newvalp, int bits) {
+    inline void CHG(WData)(uint32_t* oldp, const WData* newvalp, int bits) {
         for (int i = 0; i < (bits + 31) / 32; ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
                 fullWData(oldp, newvalp, bits);
@@ -397,7 +397,7 @@ public:
             }
         }
     }
-    inline void CHG(Double)(vluint32_t* oldp, double newval) {
+    inline void CHG(Double)(uint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
         if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
     }

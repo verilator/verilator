@@ -101,11 +101,11 @@ class VerilatedVcdSc;
 
 // clang-format off
 //    P                     // Packed data of bit type (C/S/I/Q/W)
-using CData = vluint8_t;    ///< Data representing 'bit' of 1-8 packed bits
-using SData = vluint16_t;   ///< Data representing 'bit' of 9-16 packed bits
-using IData = vluint32_t;   ///< Data representing 'bit' of 17-32 packed bits
-using QData = vluint64_t;   ///< Data representing 'bit' of 33-64 packed bits
-using EData = vluint32_t;   ///< Data representing one element of WData array
+using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
+using SData = uint16_t;   ///< Data representing 'bit' of 9-16 packed bits
+using IData = uint32_t;   ///< Data representing 'bit' of 17-32 packed bits
+using QData = uint64_t;   ///< Data representing 'bit' of 33-64 packed bits
+using EData = uint32_t;   ///< Data representing one element of WData array
 using WData = EData;        ///< Data representing >64 packed bits (used as pointer)
 //    F     = float;        // No typedef needed; Verilator uses float
 //    D     = double;       // No typedef needed; Verilator uses double
@@ -115,7 +115,7 @@ using WData = EData;        ///< Data representing >64 packed bits (used as poin
 using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
 using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
 
-enum VerilatedVarType : vluint8_t {
+enum VerilatedVarType : uint8_t {
     VLVT_UNKNOWN = 0,
     VLVT_PTR,  // Pointer to something
     VLVT_UINT8,  // AKA CData
@@ -143,7 +143,7 @@ enum VerilatedVarFlags {
 // Mutex and threading support
 
 // Return current thread ID (or 0), not super fast, cache if needed
-extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
+extern uint32_t VL_THREAD_ID() VL_MT_SAFE;
 
 #if VL_THREADED
 
@@ -226,7 +226,7 @@ public:
 class VerilatedAssertOneThread final {
     // MEMBERS
 #if defined(VL_THREADED) && defined(VL_DEBUG)
-    vluint32_t m_threadid;  // Thread that is legal
+    uint32_t m_threadid;  // Thread that is legal
 public:
     // CONSTRUCTORS
     // The constructor establishes the thread id for all later calls.
@@ -320,10 +320,10 @@ protected:
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
         bool m_gotError = false;  // A $finish statement executed
         bool m_gotFinish = false;  // A $finish or $stop statement executed
-        vluint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
+        uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
         // Slow path
-        vlsint8_t m_timeunit;  // Time unit as 0..15
-        vlsint8_t m_timeprecision;  // Time precision as 0..15
+        int8_t m_timeunit;  // Time unit as 0..15
+        int8_t m_timeprecision;  // Time precision as 0..15
         int m_errorCount = 0;  // Number of errors
         int m_errorLimit = 1;  // Stop on error number
         int m_randReset = 0;  // Random reset: 0=all 0s, 1=all 1s, 2=random
@@ -344,8 +344,8 @@ protected:
     struct NonSerialized {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
-        vluint64_t m_profExecStart = 1;  // +prof+exec+start time
-        vluint32_t m_profExecWindow = 2;  // +prof+exec+window size
+        uint64_t m_profExecStart = 1;  // +prof+exec+start time
+        uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
@@ -468,16 +468,16 @@ public:
     /// timeInc, operating on the thread's context.
     ///
     /// * Else, if VL_TIME_STAMP64 is defined, time comes from the legacy
-    /// 'vluint64_t vl_time_stamp64()' which must a function be defined by
+    /// 'uint64_t vl_time_stamp64()' which must a function be defined by
     /// the user's wrapper.
     ///
     /// * Else, time comes from the legacy 'double sc_time_stamp()' which
     /// must be a function defined by the user's wrapper.
-    vluint64_t time() const VL_MT_SAFE;
+    uint64_t time() const VL_MT_SAFE;
     /// Set current simulation time. See time() for side effect details
-    void time(vluint64_t value) VL_MT_SAFE { m_s.m_time = value; }
+    void time(uint64_t value) VL_MT_SAFE { m_s.m_time = value; }
     /// Advance current simulation time. See time() for side effect details
-    void timeInc(vluint64_t add) VL_MT_UNSAFE { m_s.m_time += add; }
+    void timeInc(uint64_t add) VL_MT_UNSAFE { m_s.m_time += add; }
     /// Return time units as power-of-ten
     int timeunit() const VL_MT_SAFE { return -m_s.m_timeunit; }
     /// Set time units as power-of-ten
@@ -519,10 +519,10 @@ public:  // But for internal use only
     std::string dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
 
     // Internal: --prof-exec related settings
-    void profExecStart(vluint64_t flag) VL_MT_SAFE;
-    vluint64_t profExecStart() const VL_MT_SAFE { return m_ns.m_profExecStart; }
-    void profExecWindow(vluint64_t flag) VL_MT_SAFE;
-    vluint32_t profExecWindow() const VL_MT_SAFE { return m_ns.m_profExecWindow; }
+    void profExecStart(uint64_t flag) VL_MT_SAFE;
+    uint64_t profExecStart() const VL_MT_SAFE { return m_ns.m_profExecStart; }
+    void profExecWindow(uint64_t flag) VL_MT_SAFE;
+    uint32_t profExecWindow() const VL_MT_SAFE { return m_ns.m_profExecWindow; }
     void profExecFilename(const std::string& flag) VL_MT_SAFE;
     std::string profExecFilename() const VL_MT_SAFE;
     void profVltFilename(const std::string& flag) VL_MT_SAFE;
@@ -559,7 +559,7 @@ public:  // But for internal use only
 
 class VerilatedScope final {
 public:
-    enum Type : vluint8_t {
+    enum Type : uint8_t {
         SCOPE_MODULE,
         SCOPE_OTHER
     };  // Type of a scope, currently module is only interesting
@@ -572,21 +572,21 @@ private:
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
     const char* m_namep = nullptr;  // Scope name (Slowpath)
     const char* m_identifierp = nullptr;  // Identifier of scope (with escapes removed)
-    vlsint8_t m_timeunit = 0;  // Timeunit in negative power-of-10
+    int8_t m_timeunit = 0;  // Timeunit in negative power-of-10
     Type m_type = SCOPE_OTHER;  // Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope() = default;
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, vlsint8_t timeunit, const Type& type) VL_MT_UNSAFE;
+                   const char* identifier, int8_t timeunit, const Type& type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap, bool isParam,
                    VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const { return m_namep; }
     const char* identifier() const { return m_identifierp; }
-    vlsint8_t timeunit() const { return m_timeunit; }
+    int8_t timeunit() const { return m_timeunit; }
     inline VerilatedSyms* symsp() const { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
@@ -636,9 +636,9 @@ class Verilated final {
         // Fast path
         VerilatedContext* t_contextp = nullptr;  // Thread's context
 #ifdef VL_THREADED
-        vluint32_t t_mtaskId = 0;  // mtask# executing on this thread
+        uint32_t t_mtaskId = 0;  // mtask# executing on this thread
         // Messages maybe pending on thread, needs end-of-eval calls
-        vluint32_t t_endOfEvalReqd = 0;
+        uint32_t t_endOfEvalReqd = 0;
 #endif
         const VerilatedScope* t_dpiScopep = nullptr;  // DPI context scope
         const char* t_dpiFilename = nullptr;  // DPI context filename
@@ -760,11 +760,11 @@ public:
     /// Return VerilatedContext::randSeed using current thread's VerilatedContext
     static int randSeed() VL_MT_SAFE { return Verilated::threadContextp()->randSeed(); }
     /// Call VerilatedContext::time using current thread's VerilatedContext
-    static void time(vluint64_t val) VL_MT_SAFE { Verilated::threadContextp()->time(val); }
+    static void time(uint64_t val) VL_MT_SAFE { Verilated::threadContextp()->time(val); }
     /// Return VerilatedContext::time using current thread's VerilatedContext
-    static vluint64_t time() VL_MT_SAFE { return Verilated::threadContextp()->time(); }
+    static uint64_t time() VL_MT_SAFE { return Verilated::threadContextp()->time(); }
     /// Call VerilatedContext::timeInc using current thread's VerilatedContext
-    static void timeInc(vluint64_t add) VL_MT_UNSAFE { Verilated::threadContextp()->timeInc(add); }
+    static void timeInc(uint64_t add) VL_MT_UNSAFE { Verilated::threadContextp()->timeInc(add); }
     // Deprecated
     static int timeunit() VL_MT_SAFE { return Verilated::threadContextp()->timeunit(); }
     static int timeprecision() VL_MT_SAFE { return Verilated::threadContextp()->timeprecision(); }
@@ -850,8 +850,8 @@ public:
 #ifdef VL_THREADED
     // Internal: Set the mtaskId, called when an mtask starts
     // Per thread, so no need to be in VerilatedContext
-    static void mtaskId(vluint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
-    static vluint32_t mtaskId() VL_MT_SAFE { return t_s.t_mtaskId; }
+    static void mtaskId(uint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
+    static uint32_t mtaskId() VL_MT_SAFE { return t_s.t_mtaskId; }
     static void endOfEvalReqdInc() VL_MT_SAFE { ++t_s.t_endOfEvalReqd; }
     static void endOfEvalReqdDec() VL_MT_SAFE { --t_s.t_endOfEvalReqd; }
 

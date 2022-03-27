@@ -338,7 +338,7 @@ public:
 
             // Look for an arbitrary edge we've not yet marked
             for (V3GraphEdge* edgep = cur_vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                const vluint32_t edgeId = getEdgeId(edgep);
+                const uint32_t edgeId = getEdgeId(edgep);
                 if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                     // This edge is not yet marked, so follow it.
                     markedEdgesp->insert(edgeId);
@@ -362,7 +362,7 @@ public:
                 recursed = false;
                 // Look for an arbitrary edge at vxp we've not yet marked
                 for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                    const vluint32_t edgeId = getEdgeId(edgep);
+                    const uint32_t edgeId = getEdgeId(edgep);
                     if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                         UINFO(6, "Recursing.\n");
                         findEulerTourRecurse(markedEdgesp, vxp, sortedOutp);
@@ -414,7 +414,7 @@ public:
         std::vector<T_Key> result;
         for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             const Vertex* const tspvp = castVertexp(vxp);
-            vluint32_t degree = 0;
+            uint32_t degree = 0;
             for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 degree++;
             }

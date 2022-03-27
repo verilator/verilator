@@ -36,7 +36,7 @@ public:
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addModulePragma(const string& module, VPragmaType pragma);
     static void addProfileData(FileLine* fl, const string& model, const string& key,
-                               vluint64_t cost);
+                               uint64_t cost);
     static void addWaiver(V3ErrorCode code, const string& filename, const string& message);
     static void addVarAttr(FileLine* fl, const string& module, const string& ftask,
                            const string& signal, VAttrType type, AstSenTree* nodep);
@@ -48,7 +48,7 @@ public:
     static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
 
-    static vluint64_t getProfileData(const string& model, const string& key);
+    static uint64_t getProfileData(const string& model, const string& key);
     static FileLine* getProfileDataFileLine();
     static bool waive(FileLine* filelinep, V3ErrorCode code, const string& message);
 };
