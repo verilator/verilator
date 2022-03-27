@@ -492,10 +492,8 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_STRCASECMP strcasecmp
 #endif
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(_MSC_VER)
 # define VL_LOCALTIME_R(timep, tmp) localtime_s((tmp), (timep))
-#elif defined(_MSC_VER)
-# define VL_LOCALTIME_R(timep, tmp) localtime_c((tmp), (timep))
 #else
 # define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
 #endif

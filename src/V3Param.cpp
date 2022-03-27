@@ -58,6 +58,7 @@
 #include "V3Unroll.h"
 #include "V3Hasher.h"
 
+#include <cctype>
 #include <deque>
 #include <map>
 #include <memory>
