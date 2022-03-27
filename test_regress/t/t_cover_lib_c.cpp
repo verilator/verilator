@@ -30,7 +30,7 @@ int errors = 0;
 
 const char* name() { return "main"; }
 
-void hier_insert(VerilatedCovContext* covContextp, vluint64_t* countp, const char* hierp,
+void hier_insert(VerilatedCovContext* covContextp, uint64_t* countp, const char* hierp,
                  const char* peri) {
     // This needs to be a function at one line number so all of the
     // line numbers for coverage are constant, otherwise instances won't combine.
@@ -38,8 +38,8 @@ void hier_insert(VerilatedCovContext* covContextp, vluint64_t* countp, const cha
 }
 
 int main() {
-    vluint32_t covers[1];
-    vluint64_t coverw[6];
+    uint32_t covers[1];
+    uint64_t coverw[6];
 
     VerilatedCovContext* covContextp = Verilated::defaultContextp()->coveragep();
 

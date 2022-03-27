@@ -108,7 +108,7 @@ module tpub (
 	    if (1'b1 != got_bool) $stop;
 	    $c("this->publicGetLong(this->got_long);");
 	    if (24'h11bca != got_long) $stop;
-	    $c("{ vluint64_t qq; this->publicGetQuad(qq); this->got_quad=qq; }");
+	    $c("{ uint64_t qq; this->publicGetQuad(qq); this->got_quad=qq; }");
 	    if (60'haaaa_bbbb_cccc != got_quad) $stop;
 	    $c("{ WData gw[3]; this->publicGetWide(gw); VL_ASSIGN_W(72,this->got_wide,gw); }");
 	    if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;

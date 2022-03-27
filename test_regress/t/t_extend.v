@@ -56,7 +56,7 @@ module t (/*AUTOARG*/
 #error "`systemc_header didn't work"
 #endif
    bool m_did_ctor;
-   vluint32_t my_function() {
+   uint32_t my_function() {
        if (!m_did_ctor) vl_fatal(__FILE__, __LINE__, __FILE__, "`systemc_ctor didn't work");
        return 1;
    }

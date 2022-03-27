@@ -28,12 +28,12 @@ int main()
     tb = new VM_PREFIX("tb");
 
 #ifdef SYSTEMC_VERSION
-    sc_signal<vluint32_t> i3;
-    sc_signal<vluint32_t> o3;
-    sc_signal<vluint32_t> i34[4];
-    sc_signal<vluint32_t> o34[4];
-    sc_signal<vluint32_t> i345[4][5];
-    sc_signal<vluint32_t> o345[4][5];
+    sc_signal<uint32_t> i3;
+    sc_signal<uint32_t> o3;
+    sc_signal<uint32_t> i34[4];
+    sc_signal<uint32_t> o34[4];
+    sc_signal<uint32_t> i345[4][5];
+    sc_signal<uint32_t> o345[4][5];
 
     tb->i3(i3);
     tb->o3(o3);

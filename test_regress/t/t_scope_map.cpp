@@ -69,13 +69,13 @@ int main(int argc, char** argv, char** env) {
             int varBits = varLeft + 1;
 
             // First expect an incrementing byte pattern
-            vluint8_t* varData = reinterpret_cast<vluint8_t*>(varp->datap());
+            uint8_t* varData = reinterpret_cast<uint8_t*>(varp->datap());
             for (int i = 0; i < varBits / 8; i++) {
 #ifdef TEST_VERBOSE
                 VL_PRINTF("%02x ", varData[i]);
 #endif
 
-                vluint8_t expected = i % 0xff;
+                const uint8_t expected = i % 0xff;
                 if (varData[i] != expected) {
                     VL_PRINTF("%%Error: Data mismatch, got 0x%02x, expected 0x%02x\n", varData[i],
                               expected);
@@ -85,8 +85,8 @@ int main(int argc, char** argv, char** env) {
 
             // Extra bits all set high initially
             if (varBits % 8 != 0) {
-                vluint8_t got = varData[varBits / 8];
-                vluint8_t expected = ~(0xff << (varBits % 8));
+                const uint8_t got = varData[varBits / 8];
+                const uint8_t expected = ~(0xff << (varBits % 8));
                 if (got != expected) {
                     VL_PRINTF("%%Error: Data mismatch, got 0x%02x, expected 0x%02x\n", got,
                               expected);
@@ -126,11 +126,11 @@ int main(int argc, char** argv, char** env) {
             const VerilatedVar* varp = &(varname.second);
             int varLeft = varp->packed().left();
             int varBits = varLeft + 1;
-            vluint8_t* varData = reinterpret_cast<vluint8_t*>(varp->datap());
+            uint8_t* varData = reinterpret_cast<uint8_t*>(varp->datap());
 
             // Check that all bits are high now
             for (int i = 0; i < varBits / 8; i++) {
-                vluint8_t expected = 0xff;
+                const uint8_t expected = 0xff;
                 if (varData[i] != expected) {
                     VL_PRINTF("%%Error: Data mismatch (%s), got 0x%02x, expected 0x%02x\n",
                               varname.first, varData[i], expected);
@@ -139,8 +139,8 @@ int main(int argc, char** argv, char** env) {
             }
 
             if (varBits % 8 != 0) {
-                vluint8_t got = varData[varBits / 8];
-                vluint8_t expected = ~(0xff << (varBits % 8));
+                const uint8_t got = varData[varBits / 8];
+                const uint8_t expected = ~(0xff << (varBits % 8));
                 if (got != expected) {
                     VL_PRINTF("%%Error: Data mismatch (%s), got 0x%02x, expected 0x%02x\n",
                               varname.first, got, expected);
