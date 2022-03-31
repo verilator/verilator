@@ -417,7 +417,7 @@ static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int narg
 }
 
 //======================================================================
-// DPI accessors that simply call above functions
+// DPI accessors that call above functions
 
 void* svGetArrElemPtr(const svOpenArrayHandle h, int indx1, ...) {
     const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(h);

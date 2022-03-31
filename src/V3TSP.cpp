@@ -142,7 +142,7 @@ private:
 
     struct EdgeListCmp final {
         bool operator()(const EdgeList* ap, const EdgeList* bp) const {
-            // Simply compare heads
+            // Compare heads
             return edgeCmp(bp->back(), ap->back());
         }
     };

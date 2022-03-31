@@ -4927,7 +4927,7 @@ private:
     bool m_generate;  // Underneath a generate
     const bool m_implied;  // Not inserted by user
 public:
-    // Node that simply puts name into the output stream
+    // Node that puts name into the output stream
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate = false,
              bool implied = false)
         : ASTGEN_SUPER_Begin(fl, name, stmtsp)
@@ -4951,7 +4951,7 @@ class AstFork final : public AstNodeBlock {
 private:
     VJoinType m_joinType;  // Join keyword type
 public:
-    // Node that simply puts name into the output stream
+    // Node that puts name into the output stream
     AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
         : ASTGEN_SUPER_Fork(fl, name, stmtsp) {}
     ASTNODE_NODE_FUNCS(Fork)

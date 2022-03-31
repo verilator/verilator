@@ -117,7 +117,7 @@ public:
 };
 
 // User pointer allocator classes. T_Node is the type of node the allocator should be applied to
-// and is simply there for a bit of extra type safety. T_Data is the type of the data structure
+// and is there for a bit of extra type safety. T_Data is the type of the data structure
 // managed by the allocator.
 template <class T_Node, class T_Data>
 class AstUser1Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 1> {};

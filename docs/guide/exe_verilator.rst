@@ -99,10 +99,10 @@ Summary:
 .. option:: --bbox-sys
 
    Black box any unknown $system task or function calls.  System tasks will
-   simply become no-operations, and system functions will be replaced with
-   unsized zero.  Arguments to such functions will be parsed, but not
-   otherwise checked.  This prevents errors when linting in the presence of
-   company specific PLI calls.
+   become no-operations, and system functions will be replaced with unsized
+   zero.  Arguments to such functions will be parsed, but not otherwise
+   checked.  This prevents errors when linting in the presence of company
+   specific PLI calls.
 
    Using this argument will likely cause incorrect simulation.
 

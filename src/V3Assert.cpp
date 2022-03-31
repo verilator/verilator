@@ -262,7 +262,7 @@ private:
                 if (itemp->isDefault()) has_default = true;
             }
             if (nodep->fullPragma() || nodep->priorityPragma()) {
-                // Simply need to add a default if there isn't one already
+                // Need to add a default if there isn't one already
                 ++m_statAsFull;
                 if (!has_default) {
                     nodep->addItemsp(new AstCaseItem(

@@ -1137,7 +1137,7 @@ public:
         } else if (nodep->isWide()) {
             UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
             emitConstant(nodep, m_wideTempRefp, "");
-            m_wideTempRefp = nullptr;  // We used it, barf if set it a second time
+            m_wideTempRefp = nullptr;  // We used it, fail if set it a second time
         } else {
             emitConstant(nodep, nullptr, "");
         }

@@ -1281,7 +1281,7 @@ private:
                     varScopep->user5(true);  // Mark as already added
                     // Note: We are ignoring function locals as they should not be referenced
                     // anywhere outside of the enclosing AstCFunc, and therefore they are
-                    // irrelevant for code ordering. This is simply an optimization to avoid adding
+                    // irrelevant for code ordering. This is an optimization to avoid adding
                     // useless nodes to the ordering graph in V3Order.
                     if (varScopep->varp()->isFuncLocal()) return;
                     writtenps.push_back(varScopep);
@@ -1426,7 +1426,7 @@ private:
                     "Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)");
             }
             // outvscp maybe non-nullptr if calling a function in a taskref,
-            // but if so we want to simply ignore the function result
+            // but if so we want to ignore the function result
             nodep->replaceWith(beginp);
         }
         // Cleanup

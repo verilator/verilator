@@ -489,7 +489,7 @@ public:
 public:  // But only for verilated.cpp
     // Symbol table destruction cleans up the entries for each scope.
     static void userEraseScope(const VerilatedScope* scopep) VL_MT_SAFE {
-        // Slow ok - called once/scope on destruction, so we simply iterate.
+        // Slow ok - called once/scope on destruction, so we only iterate.
         const VerilatedLockGuard lock{s().m_userMapMutex};
         for (auto it = s().m_userMap.begin(); it != s().m_userMap.end();) {
             if (it->first.first == scopep) {

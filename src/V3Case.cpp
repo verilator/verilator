@@ -384,7 +384,7 @@ private:
                         VL_DANGLING(iconstp);
                         condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
                     } else {
-                        // Not a caseX mask, we can simply build CASEEQ(cexpr icond)
+                        // Not a caseX mask, we can build CASEEQ(cexpr icond)
                         AstNode* const and1p = cexprp->cloneTree(false);
                         AstNode* const and2p = icondp;
                         condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);

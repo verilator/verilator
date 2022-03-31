@@ -92,7 +92,7 @@ appropriate code to detect failing cases at simulation runtime and print an
 
 Verilator likewise also asserts any "unique" or "priority" SystemVerilog
 keywords on case statement, as well as "unique" on if statements.  However,
-"priority if" is currently simply ignored.
+"priority if" is currently ignored.
 
 
 .. _Language Limitations:
@@ -174,9 +174,9 @@ Structures and Unions
 ---------------------
 
 Presently Verilator only supports packed structs and packed unions.  Rand
-and randc tags on members are simply ignored.  All structures and unions
-are represented as a single vector, which means that generating one member
-of a structure from blocking, and another from non-blocking assignments is
+and randc tags on members are ignored.  All structures and unions are
+represented as a single vector, which means that generating one member of a
+structure from blocking, and another from non-blocking assignments is
 unsupported.
 
 

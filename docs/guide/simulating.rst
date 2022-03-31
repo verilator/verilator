@@ -433,8 +433,8 @@ directly without any prefix.
 If results from multiple simulations are to be used in generating the
 optimization, multiple simulation's profile.vlt may be concatenated
 externally, or each of the files may be fed as separate command line
-options into Verilator.  Verilator will simply sum the profile results, so
-a longer running test will have proportionally more weight for optimization
+options into Verilator.  Verilator will sum the profile results, so a
+longer running test will have proportionally more weight for optimization
 than a shorter running test.
 
 If you provide any profile feedback data to Verilator, and it cannot use

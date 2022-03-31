@@ -344,7 +344,7 @@ private:
                         return true;
                     }
                 }
-                // Is it simply 'lhs = cond'?
+                // Is it 'lhs = cond'?
                 if (assignp->rhsp()->sameTree(m_mgCondp)) return true;
             }
         }

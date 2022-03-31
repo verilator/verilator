@@ -70,7 +70,7 @@ class SimulateVisitor VL_NOT_FINAL : public VNVisitor {
     //   Test the tree to see if it is conformant
     //   Given a set of input values, find the output values
     // Both are done in this same visitor to reduce risk; if a visitor
-    // is missing, we will simply not apply the optimization, rather then bomb.
+    // is missing, we will not apply the optimization, rather then bomb.
 
 private:
     // NODE STATE

@@ -1678,7 +1678,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
         VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
         break;
     }
-    default:  // Other simulators simply return 0 in these cases and don't error out
+    default:  // Other simulators return 0 in these cases and don't error out
         return 0;
     }
     _vl_clean_inplace_w(rbits, rwp);

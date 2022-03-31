@@ -200,7 +200,7 @@ DPI System Task/Functions
 -------------------------
 
 Verilator extends the DPI format to allow using the same scheme to
-efficiently add system functions.  Simply use a dollar-sign prefixed system
+efficiently add system functions.  Use a dollar-sign prefixed system
 function name for the import, but note it must be escaped.
 
 .. code-block:: sv
@@ -508,7 +508,7 @@ structure.  If a ``VerilatedContext`` is not created prior to creating a
 model, a default global one is created automatically.
 
 The ``Verilated::`` methods, including the ``Verilated::commandArgs`` call
-shown above, simply call VerilatedContext methods using the default global
+shown above, call VerilatedContext methods using the default global
 VerilatedContext.  (Technically they operate on the last one used by a
 given thread.)  If you are using multiple simulation contexts you should
 not use the Verilated:: methods, and instead always use VerilatedContext

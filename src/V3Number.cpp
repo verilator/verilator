@@ -698,7 +698,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
             // To get the number of digits required, we want to compute
             // log10(2**mantissabits) and round it up. To be able to handle
             // a very wide mantissa, we use log2(2**mantissabits)/log2(10),
-            // which is simply (+1.0 is for rounding bias):
+            // which is (+1.0 is for rounding bias):
             double dchars = mantissabits / 3.321928094887362 + 1.0;
             if (issigned) dchars++;  // space for sign
             fmtsize = cvtToStr(int(dchars));

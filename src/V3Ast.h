@@ -2562,7 +2562,7 @@ private:
     string m_text;
 
 protected:
-    // Node that simply puts text into the output stream
+    // Node that puts text into the output stream
     AstNodeText(VNType t, FileLine* fl, const string& textp)
         : AstNode{t, fl} {
         m_text = textp;  // Copy it

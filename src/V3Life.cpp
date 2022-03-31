@@ -178,7 +178,7 @@ public:
         }
     }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
-        // Variable rvalue.  If it references a constant, we can simply replace it
+        // Variable rvalue.  If it references a constant, we can replace it
         const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             if (AstConst* const constp = it->second.constNodep()) {

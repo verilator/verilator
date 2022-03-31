@@ -610,7 +610,7 @@ def getGcovCoverage(args):
         coverage_files = getFilteredCoverageFiles(coverage_files, args.excludepre)
         logging.info("Found {} coverage files after filtering".format(len(coverage_files)))
 
-    # We "zero" the "counters" by simply deleting all gcda files
+    # We "zero" the "counters" by deleting all gcda files
     if args.zerocounters:
         removeFiles(coverage_files)
         logging.info("Removed {} .gcda files".format(len(coverage_files)))

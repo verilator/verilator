@@ -259,7 +259,7 @@ public:
             // table's import wouldn't warn
         } else if (VN_IS(nodep, Begin) && VN_IS(fnodep, Begin)
                    && VN_AS(nodep, Begin)->generate()) {
-            // Begin: ... blocks often replicate under genif/genfor, so simply
+            // Begin: ... blocks often replicate under genif/genfor, so
             // suppress duplicate checks.  See t_gen_forif.v for an example.
         } else {
             UINFO(4, "name " << name << endl);  // Not always same as nodep->name
