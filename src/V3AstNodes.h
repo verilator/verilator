@@ -3468,6 +3468,9 @@ public:
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     // Special accessors
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
+    virtual bool isFirstInOneOfMyListOfStatements(AstNode* n) const {
+        return (n != nullptr && n == bodysp());
+    }
 };
 
 class AstAssign final : public AstNodeAssign {
@@ -3888,6 +3891,9 @@ public:
     void condsp(AstNode* nodep) { setOp1p(nodep); }
     void addBodysp(AstNode* newp) { addOp2p(newp); }
     bool isDefault() const { return condsp() == nullptr; }
+    virtual bool isFirstInOneOfMyListOfStatements(AstNode* n) const {
+        return (n != nullptr && n == bodysp());
+    }
 };
 
 class AstSFormatF final : public AstNode {
@@ -4578,6 +4584,9 @@ public:
     virtual bool isGateOptimizable() const override { return false; }
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
+    virtual bool isFirstInOneOfMyListOfStatements(AstNode* n) const {
+        return (n != nullptr && n == bodysp());
+    }
 };
 
 class AstRepeat final : public AstNodeStmt {
@@ -4595,6 +4604,9 @@ public:
     }  // Not relevant - converted to FOR
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* samep) const override { return true; }
+    virtual bool isFirstInOneOfMyListOfStatements(AstNode* n) const {
+        return (n != nullptr && n == bodysp());
+    }
 };
 
 class AstWait final : public AstNodeStmt {
@@ -4606,6 +4618,9 @@ public:
     }
     ASTNODE_NODE_FUNCS(Wait)
     AstNode* bodysp() const { return op3p(); }  // op3 = body of loop
+    virtual bool isFirstInOneOfMyListOfStatements(AstNode* n) const {
+        return (n != nullptr && n == bodysp());
+    }
 };
 
 class AstWhile final : public AstNodeStmt {
@@ -4632,6 +4647,9 @@ public:
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp) override;
     // Stop statement searchback here
     virtual void addNextStmt(AstNode* newp, AstNode* belowp) override;
+    virtual bool isFirstInOneOfMyListOfStatements(AstNode* n) const {
+        return (n != nullptr && n == bodysp());
+    }
 };
 
 class AstBreak final : public AstNodeStmt {
