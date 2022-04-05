@@ -1517,7 +1517,7 @@ public:
         return (!firstAbovep() ||  // we're 2nd or later in the list, so yes need ;
 
                 // If we're first in the list, check what backp() thinks of us:
-                backp() && backp()->isFirstInOneOfMyListOfStatements(this));
+                (backp() && backp()->isFirstInOneOfMyListOfStatements(this)));
     }
     uint8_t brokenState() const { return m_brokenState; }
     void brokenState(uint8_t value) { m_brokenState = value; }
