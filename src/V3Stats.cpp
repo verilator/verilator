@@ -275,11 +275,111 @@ public:
     }
 };
 
+
+
+class StorageCountisitor final : public AstNVisitor {
+private:
+    // NODE STATE/TYPES
+    // Input:
+    //  AstVar::user1 // Counts assignments to a signal, per instance
+    AstUser1InUse m_inuser1;
+    AstUser2InUse m_inuser2;
+
+    typedef std::vector<AstVarRef*> VarVec;
+
+    // STATE
+    bool m_countRegs = false;  // Set for sequential always blocks in PreActive stage only
+    VarVec m_potentialRams;
+
+    VDouble0 m_registerCount;  // Statistic tracking
+    VDouble0 m_registerBitCount;  // Statistic tracking
+    VDouble0 m_memoryCount;  // Statistic tracking
+    VDouble0 m_memoryBitCount;  // Statistic tracking
+
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
+    // VISITORS
+    virtual void visit(AstNodeModule* nodep) override {
+        AstNode::user1ClearTree(); // Start a fresh count for each module instance
+        m_potentialRams.clear();
+        iterateChildrenConst(nodep);
+        for (const auto& nodep : m_potentialRams) {
+            AstVar* varp = nodep->varp();
+            AstVarScope* varScopep = nodep->varScopep();
+            int depth = varp->dtypep()->arrayUnpackedElements();
+            int bits = depth * varp->width();
+            if (varScopep->user1() <= 2) { // Single or double assignment
+                std::ostringstream os;
+                os << "RAMs, " << varScopep->prettyName() << " (" << depth << "x" << varp->width() << ")";
+                V3Stats::addStat(os.str(), bits);
+                ++m_memoryCount;
+                m_memoryBitCount += bits;
+            } else {
+                ++m_registerCount;
+                m_registerBitCount += bits;
+            }
+        }
+    }
+    virtual void visit(AstActive* nodep) override {
+        m_countRegs = nodep->hasClocked();
+        iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstVarRef* nodep) {
+        AstVar* varp = nodep->varp();
+        AstVarScope* varScopep = nodep->varScopep();
+        if (m_countRegs && nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()) {
+            if (varScopep->user1()) { // Already seen at least one assignment to this var
+                // Only count assignments on different lines as different since loop unrolling can
+                // cause multiple AstVarRef nodes to the same Var on the same source line
+                if (nodep->fileline() != (FileLine*)varScopep->user2p()) {
+                    varScopep->user1(varScopep->user1() + 1);
+                    varScopep->user2p((AstNode*)nodep->fileline());
+                }
+            } else {
+                int depth = varp->dtypep()->arrayUnpackedElements();
+                int bits  = varp->width() * depth;
+                if ( VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType) && (depth > varp->width() && (bits >= 8192)) ) {
+                    m_potentialRams.push_back(nodep);
+                    varScopep->user2p((AstNode*)nodep->fileline());
+                } else {
+                    ++m_registerCount;
+                    m_registerBitCount += bits;
+                }
+                varScopep->user1(1);
+            }
+        }
+    }
+    virtual void visit(AstNode* nodep) override {
+        iterateChildrenConst(nodep);
+    }
+
+public:
+    // CONSTRUCTORS
+    StorageCountisitor(AstNetlist* nodep) {
+        iterate(nodep);
+    }
+    virtual ~StorageCountisitor() override {
+        if (m_memoryCount) {
+            V3Stats::addStat("RAMs, (depth>width arrays) count", m_memoryCount);
+            V3Stats::addStat("RAMs, (depth>width arrays) bits",  m_memoryBitCount);
+        }
+        if (m_registerCount) {
+            V3Stats::addStat("Registers, count", m_registerCount);
+            V3Stats::addStat("Registers, total bits", m_registerBitCount);
+        }
+    }
+};
+
+
 //######################################################################
 // Top Stats class
 
 void V3Stats::statsStageAll(AstNetlist* nodep, const string& stage, bool fast) {
+
     { StatsVisitor{nodep, stage, fast}; }
+
+    if (stage == "PreOrder") StorageCountisitor visitor(nodep);
 }
 
 void V3Stats::statsFinalAll(AstNetlist* nodep) {
