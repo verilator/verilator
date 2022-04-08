@@ -277,7 +277,7 @@ public:
 
 
 
-class StorageCountisitor final : public AstNVisitor {
+class StorageCountVisitor final : public AstNVisitor {
 private:
     // NODE STATE/TYPES
     // Input:
@@ -356,10 +356,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    StorageCountisitor(AstNetlist* nodep) {
+    StorageCountVisitor(AstNetlist* nodep) {
         iterate(nodep);
     }
-    virtual ~StorageCountisitor() override {
+    virtual ~StorageCountVisitor() override {
         if (m_memoryCount) {
             V3Stats::addStat("RAMs, (depth>width arrays) count", m_memoryCount);
             V3Stats::addStat("RAMs, (depth>width arrays) bits",  m_memoryBitCount);
@@ -379,7 +379,7 @@ void V3Stats::statsStageAll(AstNetlist* nodep, const string& stage, bool fast) {
 
     { StatsVisitor{nodep, stage, fast}; }
 
-    if (stage == "PreOrder") StorageCountisitor visitor(nodep);
+    if (stage == "PreOrder") StorageCountVisitor visitor(nodep);
 }
 
 void V3Stats::statsFinalAll(AstNetlist* nodep) {
