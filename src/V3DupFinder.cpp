@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,6 +30,17 @@
 //######################################################################
 // V3DupFinder class functions
 
+V3DupFinder::size_type V3DupFinder::erase(AstNode* nodep) {
+    const auto& er = equal_range(m_hasher(nodep));
+    for (iterator it = er.first; it != er.second; ++it) {
+        if (nodep == it->second) {
+            erase(it);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 V3DupFinder::iterator V3DupFinder::findDuplicate(AstNode* nodep, V3DupFinderUserSame* checkp) {
     const auto& er = equal_range(m_hasher(nodep));
     for (iterator it = er.first; it != er.second; ++it) {
@@ -37,14 +48,14 @@ V3DupFinder::iterator V3DupFinder::findDuplicate(AstNode* nodep, V3DupFinderUser
         if (nodep == node2p) continue;  // Same node is not a duplicate
         if (checkp && !checkp->isSame(nodep, node2p)) continue;  // User says it is not a duplicate
         if (!nodep->sameTree(node2p)) continue;  // Not the same trees
-        // Found duplicate!
+        // Found duplicate
         return it;
     }
     return end();
 }
 
 void V3DupFinder::dumpFile(const string& filename, bool tree) {
-    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
 
     std::unordered_map<int, int> dist;

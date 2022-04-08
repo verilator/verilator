@@ -21,19 +21,15 @@
 // clang-format on
 
 // Compile in place
-#include "Vt_trace_two_b.cpp"
-#include "Vt_trace_two_b__Slow.cpp"
-#include "Vt_trace_two_b__Syms.cpp"
-#include "Vt_trace_two_b__Trace.cpp"
-#include "Vt_trace_two_b__Trace__Slow.cpp"
+#include "Vt_trace_two_b__ALL.cpp"
 
 VM_PREFIX* ap;
 Vt_trace_two_b* bp;
-vluint64_t main_time = 0;
+uint64_t main_time = 0;
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
+    uint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
     Verilated::traceEverOn(true);

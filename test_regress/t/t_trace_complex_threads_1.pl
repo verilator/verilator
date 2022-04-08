@@ -21,17 +21,17 @@ execute(
     check_finished => 1,
     );
 
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_strp /);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_strp_strp /);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arrp /);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arrp_arrp /);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arrp_strp /);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru\(/);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arru\(/);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arrp\(/);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_strp\(/);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_strp /);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_strp_strp /);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_arrp /);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_arrp_arrp /);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_arrp_strp /);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_arru\[/);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arru\[/);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arrp\[/);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/ v_arru_strp\[/);
 
-vcd_identical ("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 ok(1);
 1;

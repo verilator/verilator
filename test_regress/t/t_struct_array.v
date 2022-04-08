@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package TEST_TYPES;
+   typedef struct a_struct_t;  // Forward
    typedef struct packed {
       logic 	  stuff;
    } a_struct_t;

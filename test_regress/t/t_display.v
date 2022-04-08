@@ -142,6 +142,12 @@ module t;
       $writeb; $displayb;
       $writeb("b: "); $writeb(nine); $writeb(" "); $displayb(nine);
       $writeo; $displayo;
+      $display("%d", $signed(32'haaaaaaaa));  // -1431655766
+      $display($signed(32'haaaaaaaa));  // -1431655766
+      $display("%d", $unsigned(-2));  // 4294967294
+      $display($unsigned(-2));  // 4294967294
+      $display("%d", 32'haaaaaaaa);  // 2863311530
+      $display(32'haaaaaaaa);  // 2863311530
 
       $display("[%0t] %s%s%s", $time,
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
@@ -149,6 +155,7 @@ module t;
       $write("hel", "lo, fr", "om a concatenated format string [%0t].\n", $time);
       $display("extra argument: ", $time);
       $display($time,, ": pre argument",, "after");
+      $display("empty: >%s<", "");
       $write("[%0t] Embedded tab '\t' and \r return\n", $time);
       $display("[%0t] Embedded\
 multiline", $time);
@@ -178,6 +185,16 @@ multiline", $time);
       // verilator lint_off REALCVT
       $display("log10(2) = %d", $log10(100));
       // verilator lint_on REALCVT
+
+      // unknown and high-impedance values
+      $display("%d", 1'bx);
+      $display("%h", 14'bx01010);
+      $display("%h %o", 12'b001xxx101x01, 12'b001xxx101x01);
+      $display("%d", 32'bx);
+      $display("%d", 32'bz);
+      $display("%d", 32'b11x11z111);
+      $display("%d", 32'b11111z111);
+      $display("%h", 12'b1zz1_zzzz_1x1z);
 
       $write("*-* All Finished *-*\n");
       $finish;

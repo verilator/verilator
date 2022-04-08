@@ -82,6 +82,15 @@ int main(int argc, char** argv, char** env) {
     TEST_CHECK_EQ(Verilated::timeunit(), 12);
     TEST_CHECK_EQ(Verilated::timeprecision(), 12);
 
+    TEST_CHECK_EQ(sizeof(vluint8_t), 1);  // Intentional use of old typedef
+    TEST_CHECK_EQ(sizeof(vluint16_t), 2);  // Intentional use of old typedef
+    TEST_CHECK_EQ(sizeof(vluint32_t), 4);  // Intentional use of old typedef
+    TEST_CHECK_EQ(sizeof(vluint64_t), 8);  // Intentional use of old typedef
+    TEST_CHECK_EQ(sizeof(vlsint8_t), 1);  // Intentional use of old typedef
+    TEST_CHECK_EQ(sizeof(vlsint16_t), 2);  // Intentional use of old typedef
+    TEST_CHECK_EQ(sizeof(vlsint32_t), 4);  // Intentional use of old typedef
+    TEST_CHECK_EQ(sizeof(vlsint64_t), 8);  // Intentional use of old typedef
+
     VM_PREFIX* topp = new VM_PREFIX();
 
     topp->eval();

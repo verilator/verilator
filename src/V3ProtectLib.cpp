@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -28,7 +28,7 @@
 //######################################################################
 // ProtectLib top-level visitor
 
-class ProtectVisitor final : public AstNVisitor {
+class ProtectVisitor final : public VNVisitor {
 private:
     AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
     AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions
@@ -57,8 +57,8 @@ private:
     AstTextBlock* m_cSeqClksp = nullptr;  // Sequential clock copy list
     AstTextBlock* m_cSeqOutsp = nullptr;  // Sequential output copy list
     AstTextBlock* m_cIgnoreParamsp = nullptr;  // Combo ignore parameter list
-    string m_libName;
-    string m_topName;
+    const string m_libName;
+    const string m_topName;
     bool m_foundTop = false;  // Have seen the top module
     bool m_hasClk = false;  // True if the top module has sequential logic
 
@@ -79,7 +79,7 @@ private:
         } else {
             UASSERT_OBJ(!m_foundTop, nodep, "Multiple root modules");
         }
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         // Need to know the existence of clk before createSvFile()
         m_hasClk = checkIfClockExists(nodep);
         createSvFile(fl, nodep);
@@ -87,7 +87,7 @@ private:
 
         iterateChildren(nodep);
 
-        V3Hash hash = V3Hasher::uncachedHash(m_cfilep);
+        const V3Hash hash = V3Hasher::uncachedHash(m_cfilep);
         m_hashValuep->addText(fl, cvtToStr(hash.value()) + ";\n");
         m_cHashValuep->addText(fl, cvtToStr(hash.value()) + "U;\n");
         m_foundTop = true;
@@ -102,9 +102,9 @@ private:
     }
 
     void initialComment(AstTextBlock* txtp, FileLine* fl) {
-        addComment(txtp, fl, "Creates an instance of the secret module at initial-time");
+        addComment(txtp, fl, "Creates an instance of the library module at initial-time");
         addComment(txtp, fl, "(one for each instance in the user's design) also evaluates");
-        addComment(txtp, fl, "the secret module's initial process");
+        addComment(txtp, fl, "the library module's initial process");
     }
 
     void comboComment(AstTextBlock* txtp, FileLine* fl) {
@@ -121,12 +121,17 @@ private:
     }
 
     void finalComment(AstTextBlock* txtp, FileLine* fl) {
-        addComment(txtp, fl, "Evaluates the secret module's final process");
+        addComment(txtp, fl, "Evaluates the library module's final process");
+    }
+
+    void traceComment(AstTextBlock* txtp, FileLine* fl) {
+        addComment(txtp, fl, "Enables the library module's tracing");
+        addComment(txtp, fl, "Only usable when used with called from Verilator");
     }
 
     void createSvFile(FileLine* fl, AstNodeModule* modp) {
         // Comments
-        AstTextBlock* txtp = new AstTextBlock(fl);
+        AstTextBlock* const txtp = new AstTextBlock(fl);
         addComment(txtp, fl, "Wrapper module for DPI protected library");
         addComment(txtp, fl,
                    "This module requires lib" + m_libName + ".a or lib" + m_libName
@@ -192,20 +197,39 @@ private:
         m_comboIgnorePortsp->addText(fl, "chandle handle__V\n");
         txtp->addNodep(m_comboIgnorePortsp);
         txtp->addText(fl, ");\n\n");
+
         finalComment(txtp, fl);
         txtp->addText(fl, "import \"DPI-C\" function void " + m_libName
                               + "_protectlib_final(chandle handle__V);\n\n");
 
+        if (v3Global.opt.trace() && !v3Global.opt.protectIds()) {
+            txtp->addText(fl, "`ifdef verilator\n");
+            traceComment(txtp, fl);
+            txtp->addText(fl, "import \"DPI-C\" function void " + m_libName
+                                  + "_protectlib_trace(chandle handle__V, "
+                                    "chandle tfp, int levels, int options)"
+                                  + " /*verilator trace_init_task*/;\n");
+            // Note V3EmitCModel.cpp requires the name "handle__V".
+            txtp->addText(fl, "`endif  // verilator\n");
+            txtp->addText(fl, "\n");
+        }
+
         // Local variables
-        txtp->addText(fl, "chandle handle__V;\n\n");
+        // Avoid tracing handle, as it is not a stable value, so breaks vcddiff
+        // Likewise other internals aren't interesting to the user
+        txtp->addText(fl, "// verilator tracing_off\n");
+
+        txtp->addText(fl, "chandle handle__V;\n");
+        txtp->addText(fl, "time last_combo_seqnum__V;\n");
+        if (m_hasClk) txtp->addText(fl, "time last_seq_seqnum__V;\n");
+        txtp->addText(fl, "\n");
+
         m_comboDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_comboDeclsp);
         m_seqDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_seqDeclsp);
         m_tmpDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_tmpDeclsp);
-        txtp->addText(fl, "\ntime last_combo_seqnum__V;\n");
-        if (m_hasClk) txtp->addText(fl, "time last_seq_seqnum__V;\n\n");
 
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
@@ -281,14 +305,14 @@ private:
 
     void castPtr(FileLine* fl, AstTextBlock* txtp) {
         txtp->addText(fl, m_topName
-                              + "_container* handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
+                              + "_container* const handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
                                 "static_cast<"
                               + m_topName + "_container*>(vhandlep__V);\n");
     }
 
     void createCppFile(FileLine* fl) {
         // Comments
-        AstTextBlock* txtp = new AstTextBlock(fl);
+        AstTextBlock* const txtp = new AstTextBlock(fl);
         addComment(txtp, fl, "Wrapper functions for DPI protected library\n");
 
         // Includes
@@ -314,23 +338,23 @@ private:
         txtp->addText(fl, "void " + m_libName
                               + "_protectlib_check_hash"
                                 "(int protectlib_hash__V) {\n");
-        m_cHashValuep = new AstTextBlock(fl, "int expected_hash__V = ");
+        m_cHashValuep = new AstTextBlock(fl, "const int expected_hash__V = ");
         txtp->addNodep(m_cHashValuep);
-        txtp->addText(fl, "if (protectlib_hash__V != expected_hash__V) {\n");
-        txtp->addText(fl, "fprintf(stderr, \"%%Error: cannot use " + m_libName
+        txtp->addText(fl, /**/ "if (protectlib_hash__V != expected_hash__V) {\n");
+        txtp->addText(fl, /****/ "fprintf(stderr, \"%%Error: cannot use " + m_libName
                               + " library, "
                                 "Verliog (%u) and library (%u) hash values do not "
                                 "agree\\n\", protectlib_hash__V, expected_hash__V);\n");
-        txtp->addText(fl, "std::exit(EXIT_FAILURE);\n");
-        txtp->addText(fl, "}\n");
+        txtp->addText(fl, /****/ "std::exit(EXIT_FAILURE);\n");
+        txtp->addText(fl, /**/ "}\n");
         txtp->addText(fl, "}\n\n");
 
         // Initial
         initialComment(txtp, fl);
         txtp->addText(fl, "void* " + m_libName + "_protectlib_create(const char* scopep__V) {\n");
-        txtp->addText(fl, m_topName + "_container* handlep__V = new " + m_topName
+        txtp->addText(fl, /**/ m_topName + "_container* const handlep__V = new " + m_topName
                               + "_container(scopep__V);\n");
-        txtp->addText(fl, "return handlep__V;\n");
+        txtp->addText(fl, /**/ "return handlep__V;\n");
         txtp->addText(fl, "}\n\n");
 
         // Updates
@@ -376,9 +400,21 @@ private:
         finalComment(txtp, fl);
         txtp->addText(fl, "void " + m_libName + "_protectlib_final(void* vhandlep__V) {\n");
         castPtr(fl, txtp);
-        txtp->addText(fl, "handlep__V->final();\n");
-        txtp->addText(fl, "delete handlep__V;\n");
+        txtp->addText(fl, /**/ "handlep__V->final();\n");
+        txtp->addText(fl, /**/ "delete handlep__V;\n");
         txtp->addText(fl, "}\n\n");
+
+        if (v3Global.opt.trace() && !v3Global.opt.protectIds()) {
+            traceComment(txtp, fl);
+            txtp->addText(fl, "void " + m_libName
+                                  + "_protectlib_trace(void* vhandlep__V, void* tfp, int levels, "
+                                    "int options) {\n");
+            castPtr(fl, txtp);
+            txtp->addText(fl,
+                          /**/ "handlep__V->trace(static_cast<" + v3Global.opt.traceClassBase()
+                              + "C*>(tfp), levels, options);\n");
+            txtp->addText(fl, "}\n\n");
+        }
 
         txtp->addText(fl, "}\n");
         m_cfilep->tblockp(txtp);
@@ -396,7 +432,7 @@ private:
         } else if (nodep->direction() == VDirection::OUTPUT) {
             handleOutput(nodep);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: protect-lib port direction: "
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: --lib-create port direction: "
                                              << nodep->direction().ascii());
         }
     }
@@ -408,7 +444,7 @@ private:
     }
 
     void handleClock(AstVar* varp) {
-        FileLine* fl = varp->fileline();
+        FileLine* const fl = varp->fileline();
         handleInput(varp);
         m_seqPortsp->addNodep(varp->cloneTree(false));
         if (m_hasClk) {
@@ -420,7 +456,7 @@ private:
     }
 
     void handleDataInput(AstVar* varp) {
-        FileLine* fl = varp->fileline();
+        FileLine* const fl = varp->fileline();
         handleInput(varp);
         m_comboPortsp->addNodep(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "\n");
@@ -434,13 +470,13 @@ private:
     void handleInput(AstVar* varp) { m_modPortsp->addNodep(varp->cloneTree(false)); }
 
     static void addLocalVariable(AstTextBlock* textp, AstVar* varp, const char* suffix) {
-        AstVar* newVarp
-            = new AstVar(varp->fileline(), AstVarType::VAR, varp->name() + suffix, varp->dtypep());
+        AstVar* const newVarp
+            = new AstVar(varp->fileline(), VVarType::VAR, varp->name() + suffix, varp->dtypep());
         textp->addNodep(newVarp);
     }
 
     void handleOutput(AstVar* varp) {
-        FileLine* fl = varp->fileline();
+        FileLine* const fl = varp->fileline();
         m_modPortsp->addNodep(varp->cloneTree(false));
         m_comboPortsp->addNodep(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "_combo__V\n");
@@ -471,7 +507,7 @@ private:
 
     static bool checkIfClockExists(AstNodeModule* modp) {
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->direction() == VDirection::INPUT
                     && (varp->isUsedClock()
                         || varp->attrClocker() == VVarAttrClocker::CLOCKER_YES)) {
@@ -484,7 +520,7 @@ private:
 
 public:
     explicit ProtectVisitor(AstNode* nodep)
-        : m_libName{v3Global.opt.protectLib()}
+        : m_libName{v3Global.opt.libCreate()}
         , m_topName{v3Global.opt.prefix()} {
         iterate(nodep);
     }

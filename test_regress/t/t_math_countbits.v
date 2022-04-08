@@ -70,7 +70,7 @@ module t(/*AUTOARG*/
 
    logic [31:0] val = 32'h70008421;
 
-   integer cyc=0;
+   integer cyc = 0;
    // Test loop
    always @ (posedge clk) begin
       cyc <= cyc + 1;

@@ -8,7 +8,7 @@ bit global_bit;
 
 module t (clk);
    input clk;
-   integer      cyc=0;
+   integer      cyc = 0;
 
    typedef struct packed {
       bit       b1;
@@ -92,9 +92,9 @@ module t (clk);
       v_string <= cyc[0] ? "foo" : "bar";
       v_arr_real[0] <= v_arr_real[0] + 0.2;
       v_arr_real[1] <= v_arr_real[1] + 0.3;
-      v_enumed <= v_enumed + 1;
-      v_enumed2 <= v_enumed2 + 2;
-      v_enumb <= v_enumb - 1;
+      v_enumed <= enumed_t'(v_enumed + 1);
+      v_enumed2 <= enumed_t'(v_enumed2 + 2);
+      v_enumb <= enumb_t'(v_enumb - 3'd1);
       v_enumb2_str <= {v_enumb, v_enumb};
       for (integer b=3; b<=4; b++) begin
          v_arru[b] <= ~v_arru[b];

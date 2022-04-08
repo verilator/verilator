@@ -5,9 +5,10 @@
 require 5.006_001;
 use warnings;
 use Cwd;
+
 BEGIN {
     if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
-        $ENV{VERILATOR_ROOT} = Cwd::getcwd()."/..";
+        $ENV{VERILATOR_ROOT} = Cwd::getcwd() . "/..";
     }
     $ENV{MAKE} ||= "make";
     $ENV{CXX} ||= "c++";
@@ -16,7 +17,7 @@ BEGIN {
 use Getopt::Long;
 use IO::File;
 use Pod::Usage;
-use Data::Dumper; $Data::Dumper::Sortkeys=1;
+use Data::Dumper; $Data::Dumper::Sortkeys = 1;
 use FindBin qw($RealBin);
 use strict;
 use vars qw($Debug %Vars $Driver $Fork);
@@ -30,7 +31,7 @@ $::Driver = 1;
 $::Have_Forker = 0;
 
 eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1, poll_interval=>10*1000); \$::Have_Forker=1;";
-$Fork = Forker->new(use_sig_child=>1) if !$Fork;
+$Fork = Forker->new(use_sig_child => 1) if !$Fork;
 my $forker_Min_Version = 1.258;
 if ($::Have_Forker && $Parallel::Forker::VERSION < $forker_Min_Version) {
     print STDERR "driver.pl: Parallel::Forker is older than $forker_Min_Version, suggest 'cpan install Parallel::Forker'\n";
@@ -62,7 +63,7 @@ autoflush STDOUT 1;
 autoflush STDERR 1;
 
 our @Orig_ARGV = @ARGV;
-our @Orig_ARGV_Sw;  foreach (@Orig_ARGV) { push @Orig_ARGV_Sw, $_ if /^-/ && !/^-j/; }
+our @Orig_ARGV_Sw; foreach (@Orig_ARGV) { push @Orig_ARGV_Sw, $_ if /^-/ && !/^-j/; }
 our $Start = time();
 our $Vltmt_threads = 3;
 
@@ -133,7 +134,7 @@ if (! GetOptions(
     die "%Error: Bad usage, try '$0 --help'\n";
 }
 
-$opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
+$opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs == 0;
 $Fork->max_proc($opt_jobs);
 
 if ((scalar keys %opt_scenarios) < 1) {
@@ -142,10 +143,10 @@ if ((scalar keys %opt_scenarios) < 1) {
 }
 
 our @Test_Dirs = "t";
-push @Test_Dirs, split(/:/,$ENV{VERILATOR_TESTS_SITE})
-    if (($#opt_tests<0 ? $opt_site : 1) && $ENV{VERILATOR_TESTS_SITE});
+push @Test_Dirs, split(/:/, $ENV{VERILATOR_TESTS_SITE})
+    if (($#opt_tests < 0 ? $opt_site : 1) && $ENV{VERILATOR_TESTS_SITE});
 
-if ($#opt_tests<0) {  # Run everything
+if ($#opt_tests < 0) {  # Run everything
     my %uniq;
     foreach my $dir (@Test_Dirs) {
         my @stats = stat($dir);  # Uniquify by inode, so different paths to same place get combined
@@ -155,7 +156,7 @@ if ($#opt_tests<0) {  # Run everything
 }
 @opt_tests = _calc_hashset(@opt_tests) if $opt_hashset;
 
-if ($#opt_tests>=2 && $opt_jobs>=2) {
+if ($#opt_tests >= 2 && $opt_jobs >= 2) {
     # Without this tests such as t_debug_sigsegv_bt_bad.pl will occasionally
     # block on input and cause a SIGSTOP, then a "fg" was needed to resume testing.
     if (!$::Have_Forker) {
@@ -164,7 +165,6 @@ if ($#opt_tests>=2 && $opt_jobs>=2) {
     print STDERR "== Many jobs; redirecting STDIN\n";
     open(STDIN, "+>/dev/null");
 }
-
 
 mkdir "obj_dist";
 my $timestart = strftime("%Y%m%d_%H%M%S", localtime);
@@ -185,8 +185,8 @@ my $runner;
 }
 
 if ($opt_rerun && $runner->fail_count) {
-    print("="x70,"\n");
-    print("="x70,"\n");
+    print("=" x 70, "\n");
+    print("=" x 70, "\n");
     print("RERUN  ==\n\n");
 
     # Avoid parallel run to ensure that isn't causing problems
@@ -215,7 +215,7 @@ exit(10) if $runner->fail_count;
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
+    pod2usage(-verbose => 2, -exitval => 0, -output => \*STDOUT);
     exit(1);  # Unreachable
 }
 
@@ -232,7 +232,7 @@ sub parameter {
         ($param =~ /^(\d+)$/)
             or die "%Error: Expected number following $_Parameter_Next_Level: $param\n";
         push @Opt_Driver_Verilator_Flags, $param;
-        $_Parameter_Next_Level  = undef;
+        $_Parameter_Next_Level = undef;
     }
     elsif ($param =~ /\.pl/) {
         push @opt_tests, $param;
@@ -250,6 +250,7 @@ sub parameter {
 }
 
 our $_Max_Procs;
+
 sub max_procs {
     if (!defined $_Max_Procs) {
         $_Max_Procs = `python3 -c 'import multiprocessing\nprint(multiprocessing.cpu_count())'`;
@@ -272,7 +273,7 @@ sub calc_threads {
 sub calc_jobs {
     my $ok = max_procs();
     $ok && !$@ or die "%Error: Can't use -j: $@\n";
-    print "driver.pl: Found $ok cores, using -j ",$ok+1,"\n";
+    print "driver.pl: Found $ok cores, using -j ", $ok + 1, "\n";
     return $ok + 1;
 }
 
@@ -351,10 +352,10 @@ sub one_test {
                  open(STDOUT, ">/dev/null");
                  open(STDERR, ">&STDOUT");
              }
-             print("="x70,"\n");
+             print("=" x 70, "\n");
              my $test = VTest->new(@params,
                                    running_id => $process->{running_id});
-             $test->oprint("="x50,"\n");
+             $test->oprint("=" x 50, "\n");
              unlink $test->{status_filename};
              $test->_prep;
              $test->_read;
@@ -373,30 +374,30 @@ sub one_test {
              } elsif ($test->scenario_off && !$test->errors) {
              } elsif ($test->skips && !$test->errors) {
                  push @{$self->{skip_msgs}},
-                     ("\t#".$test->soprint("-Skip:  $test->{skips}\n"));
+                     ("\t#" . $test->soprint("-Skip:  $test->{skips}\n"));
                  $self->{skip_cnt}++;
              } elsif ($test->unsupporteds && !$test->errors) {
                  $self->{unsup_cnt}++;
              } else {
                  $test->oprint("FAILED: $test->{errors}\n");
-                 my $j = ($opt_jobs>1?" -j":"");
+                 my $j = ($opt_jobs > 1 ? " -j" : "");
                  my $makecmd = $ENV{VERILATOR_MAKE} || "$ENV{MAKE}$j &&";
                  my $upperdir = (Cwd::getcwd() =~ /test_regress/
                                  ? 'test_regress/' : '');
                  push @{$self->{fail_msgs}},
-                     ("\t#".$test->soprint("%Error: $test->{errors}\n")
-                      ."\t\t$makecmd "
-                      .$upperdir.$test->{pl_filename}
-                      ." ".join(' ', _manual_args())
-                      ." --".$test->{scenario}."\n");
+                     ("\t#" . $test->soprint("%Error: $test->{errors}\n")
+                      . "\t\t$makecmd "
+                      . $upperdir . $test->{pl_filename}
+                      . " " . join(' ', _manual_args())
+                      . " --" . $test->{scenario} . "\n");
                  push @{$self->{fail_tests}}, $test;
                  $self->{fail_cnt}++;
                  $self->report($self->{driver_log_filename});
                  my $other = "";
                  foreach my $proc ($::Fork->running) {
-                     $other .= "  ".$proc->{test_pl_filename};
+                     $other .= "  " . $proc->{test_pl_filename};
                  }
-                 $test->oprint("Simultaneous running tests:",$other,"\n")
+                 $test->oprint("Simultaneous running tests:", $other, "\n")
                      if $other && !$opt_quiet;
                  if ($opt_stop) { die "%Error: --stop and errors found\n"; }
              }
@@ -409,15 +410,15 @@ sub one_test {
 
 sub wait_and_report {
     my $self = shift;
-    $self->print_summary(force=>1);
+    $self->print_summary(force => 1);
     # Wait for all children to finish
     while ($::Fork->is_any_left) {
         $::Fork->poll;
         if ((time() - ($self->{_last_summary_time} || 0) >= 30)
             && (!$opt_gdb && !$opt_gdbsim)) {  # Don't show for interactive gdb etc
-            $self->print_summary(force=>1, show_running=>1);
+            $self->print_summary(force => 1, show_running => 1);
         }
-        Time::HiRes::usleep 100*1000;
+        Time::HiRes::usleep 100 * 1000;
     }
     $runner->report(undef);
     $runner->report($self->{driver_log_filename});
@@ -433,7 +434,7 @@ sub report {
     }
 
     $fh->print("\n");
-    $fh->print("="x70,"\n");
+    $fh->print("=" x 70, "\n");
     foreach my $f (sort @{$self->{fail_msgs}}) {
         chomp $f;
         $fh->print("$f\n");
@@ -445,7 +446,7 @@ sub report {
     my $sum = ($self->{fail_cnt} && "FAILED"
                || $self->{skip_cnt} && "PASSED w/SKIPS"
                || "PASSED");
-    $fh->print("TESTS DONE, $sum: ".$self->sprint_summary."\n");
+    $fh->print("TESTS DONE, $sum: " . $self->sprint_summary . "\n");
 }
 
 sub print_summary {
@@ -457,13 +458,13 @@ sub print_summary {
         || ($self->{left_cnt} < 5)
         || (time() - ($self->{_last_summary_time} || 0) >= 15)) {  # Don't show for interactive gdb etc
         $self->{_last_summary_time} = time();
-        print STDERR ("==SUMMARY: ".$self->sprint_summary."\n");
+        print STDERR ("==SUMMARY: " . $self->sprint_summary . "\n");
         if ($params{show_running}) {
             my $other;
             foreach my $proc ($::Fork->running) {
-                $other .= "  ".$proc->{test_pl_filename};
+                $other .= "  " . $proc->{test_pl_filename};
             }
-            print STDERR ("==STILL RUNNING: ".$other."\n");
+            print STDERR ("==STILL RUNNING: " . $other . "\n");
         }
     }
 }
@@ -473,7 +474,7 @@ sub sprint_summary {
 
     my $delta = time() - $::Start;
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
-    my $pct = int(100*($self->{left_cnt} / ($self->{all_cnt} + 0.001)) + 0.999);
+    my $pct = int(100 * ($self->{left_cnt} / ($self->{all_cnt} + 0.001)) + 0.999);
     # Fudge of 120% works out about right so ETA correctly predicts completion time
     my $eta = 1.2 * (($self->{all_cnt}
                       * ($delta / (($self->{all_cnt} - $self->{left_cnt})+0.001)))
@@ -487,8 +488,8 @@ sub sprint_summary {
     $out .= "  Failed-First $self->{fail1_cnt}" if $self->{fail1_cnt};
     $out .= "  Skipped $self->{skip_cnt}" if $self->{skip_cnt};
     $out .= "  Unsup $self->{unsup_cnt}";
-    $out .= sprintf("  Eta %d:%02d", int($eta/60), $eta%60) if $self->{left_cnt} > 10 && $eta > 10;
-    $out .= sprintf("  Time %d:%02d", int($delta/60), $delta%60);
+    $out .= sprintf("  Eta %d:%02d", int($eta / 60), $eta % 60) if $self->{left_cnt} > 10 && $eta > 10;
+    $out .= sprintf("  Time %d:%02d", int($delta / 60), $delta % 60);
     return $out;
 }
 
@@ -566,7 +567,7 @@ sub new {
         my $scen_dir = File::Spec->abs2rel("$self->{t_dir}/../obj_$self->{scenario}");
         $scen_dir =~ s!^t/\.\./!!;  # Simplify filenames on local runs
         mkdir $scen_dir;  # Not a mkpath so find out if trying to build somewhere odd
-        $self->{obj_dir} ="$scen_dir/$self->{name}";
+        $self->{obj_dir} = "$scen_dir/$self->{name}";
     }
 
     my $define_opt = defineOpt($self->{xsim});
@@ -588,26 +589,26 @@ sub new {
                             (-r 'input.vc' ? " -f input.vc " : ""))
                            .($self->{t_dir} !~ m!/test_regress!  # Don't include standard dir, only site's
                              ? " +incdir+$self->{t_dir} -y $self->{t_dir}" : "")
-                           . " ".$define_opt."TEST_OBJ_DIR=$self->{obj_dir}"
-                           .($opt_verbose ? " ".$define_opt."TEST_VERBOSE=1":"")
-                           .($opt_benchmark ? " ".$define_opt."TEST_BENCHMARK=$opt_benchmark":"")
-                           .($opt_trace ? " ".$define_opt."WAVES=1":"")
+                           . " " . $define_opt . "TEST_OBJ_DIR=$self->{obj_dir}"
+                           .($opt_verbose ? " " . $define_opt . "TEST_VERBOSE=1" : "")
+                           .($opt_benchmark ? " " . $define_opt . "TEST_BENCHMARK=$opt_benchmark" : "")
+                           .($opt_trace ? " " . $define_opt . "WAVES=1" : "")
                           ))],
         v_flags2 => [],  # Overridden in some sim files
         v_other_filenames => [],  # After the filename so we can spec multiple files
         all_run_flags => [],
         pli_flags => ["-I$ENV{VERILATOR_ROOT}/include/vltstd -fPIC -shared"
-                      .(($^O eq "darwin" )
-                        ? " -Wl,-undefined,dynamic_lookup"
-                        : " -export-dynamic")
-                      .($opt_verbose ? " -DTEST_VERBOSE=1":"")
-                      .(cfg_with_m32() ? " -m32" : "")
-                      ." -o $self->{obj_dir}/libvpi.so"],
+                      . (($^O eq "darwin" )
+                         ? " -Wl,-undefined,dynamic_lookup"
+                         : " -export-dynamic")
+                      . ($opt_verbose ? " -DTEST_VERBOSE=1" : "")
+                      . (cfg_with_m32() ? " -m32" : "")
+                      . " -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
         # ATSIM
         atsim => 0,
         atsim_define => 'ATSIM',
-        atsim_flags => [split(/\s+/,"-c +sv +define+ATSIM"),
+        atsim_flags => [split(/\s+/, "-c +sv +define+ATSIM"),
                         "+sv_dir+$self->{obj_dir}/.athdl_compile"],
         atsim_flags2 => [],  # Overridden in some sim files
         atsim_run_flags => [],
@@ -615,44 +616,44 @@ sub new {
         ghdl => 0,
         ghdl_define => 'GHDL',
         ghdl_work_dir => "$self->{obj_dir}/ghdl_compile",
-        ghdl_flags => [($::Debug?"-v":""),
+        ghdl_flags => [($::Debug ? "-v" : ""),
                        "--workdir=$self->{obj_dir}/ghdl_compile", ],
         ghdl_flags2 => [],  # Overridden in some sim files
         ghdl_run_flags => [],
         # IV
         iv => 0,
         iv_define => 'IVERILOG',
-        iv_flags => [split(/\s+/,"+define+IVERILOG -g2012 -o $self->{obj_dir}/simiv")],
+        iv_flags => [split(/\s+/, "+define+IVERILOG -g2012 -o $self->{obj_dir}/simiv")],
         iv_flags2 => [],  # Overridden in some sim files
         iv_pli => 0,  # need to use pli
         iv_run_flags => [],
         # VCS
         vcs => 0,
         vcs_define => 'VCS',
-        vcs_flags => [split(/\s+/,"+vcs+lic+wait +cli -debug_access +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
+        vcs_flags => [split(/\s+/, "+vcs+lic+wait +cli -debug_access +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
         vcs_flags2 => [],  # Overridden in some sim files
-        vcs_run_flags => [split(/\s+/,"+vcs+lic_wait")],
+        vcs_run_flags => [split(/\s+/, "+vcs+lic_wait")],
         # NC
         nc => 0,
         nc_define => 'NC',
-        nc_flags => [split(/\s+/,("+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c "
-                                  .($opt_trace ? " +access+r":"")))],
+        nc_flags => [split(/\s+/, ("+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c "
+                                   . ($opt_trace ? " +access+r" : "")))],
         nc_flags2 => [],  # Overridden in some sim files
-        nc_run_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
+        nc_run_flags => [split(/\s+/, "+licqueue -q +assert +sv -R")],
         # ModelSim
         ms => 0,
         ms_define => 'MS',
         ms_flags => [split(/\s+/, ("-sv -work $self->{obj_dir}/work +define+MS=1 -ccflags \"-DMS=1\""))],
         ms_flags2 => [],  # Overridden in some sim files
         ms_pli => 1,  # need to use pli
-        ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
+        ms_run_flags => [split(/\s+/, "-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
         # XSim
         xsim => 0,
         xsim_define => 'XSIM',
-        xsim_flags => [split(/\s+/,("--nolog --sv --define XSIM --work $self->{name}=$self->{obj_dir}/xsim"))],
+        xsim_flags => [split(/\s+/, ("--nolog --sv --define XSIM --work $self->{name}=$self->{obj_dir}/xsim"))],
         xsim_flags2 => [],  # Overridden in some sim files
-        xsim_run_flags => [split(/\s+/,("--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim"
-                                        .($opt_trace ? " --debug all":"")))],
+        xsim_run_flags => [split(/\s+/, ("--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim"
+                                         .($opt_trace ? " --debug all" : "")))],
         xsim_run_flags2 => [],  # Overridden in some sim files
         # Verilator
         vlt => 0,
@@ -674,15 +675,15 @@ sub new {
 
     $self->{vlt_all} = $self->{vlt} || $self->{vltmt};  # Any Verilator scenario
 
-    $self->{VM_PREFIX} ||= "V".$self->{name};
-    $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
-    $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
+    $self->{VM_PREFIX} ||= "V" . $self->{name};
+    $self->{stats} ||= "$self->{obj_dir}/V" . $self->{name} . "__stats.txt";
+    $self->{status_filename} ||= "$self->{obj_dir}/V" . $self->{name} . ".status";
     $self->{run_log_filename} ||= "$self->{obj_dir}/vlt_sim.log";
     $self->{coverage_filename} ||= "$self->{obj_dir}/coverage.dat";
     $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
     ($self->{top_filename} ||= $self->{pl_filename}) =~ s/\.pl$//;
     ($self->{golden_filename} ||= $self->{pl_filename}) =~ s/\.pl$/.out/;
-    if (-e ($self->{top_filename}.".vhd")) {  # If VHDL file exists
+    if (-e ($self->{top_filename} . ".vhd")) {  # If VHDL file exists
         $self->{vhdl} = 1;
         $self->{top_filename} .= ".vhd";
     } else {
@@ -693,13 +694,30 @@ sub new {
     } else {
         $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.v";
     }
-    $self->{pli_filename} ||= $self->{name}.".cpp";
+    $self->{pli_filename} ||= $self->{name} . ".cpp";
     return $self;
+}
+
+sub benchmarksim_filename {
+    my $self = (ref $_[0] ? shift : $Self);
+    return $self->{obj_dir} . "/$self->{name}_benchmarksim.csv";
+}
+
+sub init_benchmarksim {
+    my $self = (ref $_[0] ? shift : $Self);
+    # Simulations with benchmarksim enabled append to the same file between runs.
+    # Test files must ensure a clean benchmark data file before executing tests.
+    my $filename = $self->benchmarksim_filename();
+    my $fh = IO::File->new(">" . $filename) or die "%Error: $! " . $filename;
+    print $fh "# Verilator simulation benchmark data\n";
+    print $fh "# Test name: " . $self->{name} . "\n";
+    print $fh "# Top file: " . $self->{top_filename} . "\n";
+    print $fh "evals, time[s]\n";
 }
 
 sub soprint {
     my $self = (ref $_[0] ? shift : $Self);
-    my $str = "$self->{scenario}/$self->{name}: ".join('',@_);
+    my $str = "$self->{scenario}/$self->{name}: " . join('', @_);
     $str =~ s/\n\n+$/\n/s;
     return $str;
 }
@@ -711,35 +729,35 @@ sub oprint {
 
 sub error {
     my $self = (ref $_[0] ? shift : $Self);
-    my $msg = join('',@_);
+    my $msg = join('', @_);
     # Called from tests as: error("Reason message"[, ...]);
-    warn "%Warning: $self->{scenario}/$self->{name}: ".$msg."\n";
+    warn "%Warning: $self->{scenario}/$self->{name}: " . $msg . "\n";
     $self->{errors} ||= $msg;
 }
 
 sub error_keep_going {
     my $self = (ref $_[0] ? shift : $Self);
-    my $msg = join('',@_);
+    my $msg = join('', @_);
     # Called from tests as: error_keep_going("Reason message"[, ...]);
-    warn "%Warning: $self->{scenario}/$self->{name}: ".$msg."\n";
+    warn "%Warning: $self->{scenario}/$self->{name}: " . $msg . "\n";
     $self->{errors_keep_going} ||= $msg;
 }
 
 sub skip {
     my $self = (ref $_[0] ? shift : $Self);
-    my $msg = join('',@_);
+    my $msg = join('', @_);
     # Called from tests as: skip("Reason message"[, ...]);
-    warn "-Skip: $self->{scenario}/$self->{name}: ".$msg."\n";
-    $self->{skips} ||= "Skip: ".$msg;
+    warn "-Skip: $self->{scenario}/$self->{name}: " . $msg . "\n";
+    $self->{skips} ||= "Skip: " . $msg;
 }
 
 sub unsupported {
     my $self = (ref $_[0] ? shift : $Self);
-    my $msg = join('',@_);
+    my $msg = join('', @_);
     # Called from tests as: unsupported("Reason message"[, ...]);
-    warn "-Unsupported: $self->{scenario}/$self->{name}: ".$msg."\n";
+    warn "-Unsupported: $self->{scenario}/$self->{name}: " . $msg . "\n";
     if (!$::Opt_Unsupported) {
-        $self->{unsupporteds} ||= "Unsupported: ".$msg;
+        $self->{unsupporteds} ||= "Unsupported: " . $msg;
     }
 }
 
@@ -862,7 +880,7 @@ sub clean_objs {
 }
 
 sub compile_vlt_cmd {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my %param = (%{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
@@ -871,17 +889,17 @@ sub compile_vlt_cmd {
         $self->compile_vlt_flags(%param),
         $param{top_filename},
         @{$param{v_other_filenames}},
-        $param{stdout_filename}?"> ".$param{stdout_filename}:""
+        $param{stdout_filename} ? "> " . $param{stdout_filename} : ""
     );
     return @vlt_cmd;
 }
 
 sub compile_vlt_flags {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my %param = (%{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
-    my $checkflags = join(' ',@{$param{v_flags}},
+    my $checkflags = join(' ', @{$param{v_flags}},
                           @{$param{v_flags2}},
                           @{$param{verilator_flags}},
                           @{$param{verilator_flags2}},
@@ -896,6 +914,7 @@ sub compile_vlt_flags {
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
     $self->{sanitize} = $opt_sanitize unless exists($self->{sanitize});
+    $self->{benchmarksim} = 1 if ($param{benchmarksim});
 
     my @verilator_flags = @{$param{verilator_flags}};
     unshift @verilator_flags, "--gdb" if $opt_gdb;
@@ -914,24 +933,24 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
     unshift @verilator_flags, "--exe" if
         $param{make_main} && $param{verilator_make_gmake};
-    unshift @verilator_flags, "../".$self->{main_filename} if
+    unshift @verilator_flags, "../" . $self->{main_filename} if
         $param{make_main} && $param{verilator_make_gmake};
     if (defined $opt_optimize) {
         my $letters = "";
         if ($opt_optimize =~ /[a-zA-Z]/) {
             $letters = $opt_optimize;
         } else {  # Randomly turn on/off different optimizations
-            foreach my $l ('a'..'z') {
+            foreach my $l ('a' .. 'z') {
                 $letters .= ((rand() > 0.5) ? $l : uc $l);
             }
             unshift @verilator_flags, "--trace" if rand() > 0.5;
             unshift @verilator_flags, "--coverage" if rand() > 0.5;
         }
-        unshift @verilator_flags, "--O".$letters;
+        unshift @verilator_flags, "--O" . $letters;
     }
 
     my @cmdargs = (
-                   "--prefix ".$param{VM_PREFIX},
+                   "--prefix " . $param{VM_PREFIX},
                    @verilator_flags,
                    @{$param{verilator_flags2}},
                    @{$param{verilator_flags3}},
@@ -945,8 +964,8 @@ sub compile_vlt_flags {
 }
 
 sub driver_verilator_flags {
-    #my $self = (ref $_[0] ? shift : $Self);
-    return @Opt_Driver_Verilator_Flags
+    # my $self = (ref $_[0] ? shift : $Self);
+    return @Opt_Driver_Verilator_Flags;
 }
 
 sub lint {
@@ -963,7 +982,7 @@ sub lint {
 }
 
 sub compile {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
                  %{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
@@ -976,7 +995,7 @@ sub compile {
         = $self->{top_shell_filename} = "";
     } else {
         $param{top_shell_filename}
-        = $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.".$self->v_suffix;
+        = $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top." . $self->v_suffix;
     }
 
     if ($param{atsim}) {
@@ -984,7 +1003,7 @@ sub compile {
         $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/atsim_compile.log",
                     fails=>$param{fails},
-                    cmd=>[($ENV{VERILATOR_ATSIM}||"atsim"),
+                    cmd=>[($ENV{VERILATOR_ATSIM} || "atsim"),
                           @{$param{atsim_flags}},
                           @{$param{atsim_flags2}},
                           @{$param{v_flags}},
@@ -1000,9 +1019,9 @@ sub compile {
         $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/ghdl_compile.log",
                     fails=>$param{fails},
-                    cmd=>[($ENV{VERILATOR_GHDL}||"ghdl"),
+                    cmd=>[($ENV{VERILATOR_GHDL} || "ghdl"),
                           # Add -c here, as having -c twice freaks it out
-                          ((($ENV{VERILATOR_GHDL}||' ') =~ / -c\b/) ? "" : "-c"),
+                          ((($ENV{VERILATOR_GHDL} || ' ') =~ / -c\b/) ? "" : "-c"),
                           @{$param{ghdl_flags}},
                           @{$param{ghdl_flags2}},
                           #@{$param{v_flags}},  # Not supported
@@ -1018,10 +1037,10 @@ sub compile {
         $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/vcs_compile.log",
                     fails=>$param{fails},
-                    cmd=>[($ENV{VERILATOR_VCS}||"vcs"),
+                    cmd=>[($ENV{VERILATOR_VCS} || "vcs"),
                           @{$param{vcs_flags}},
                           @{$param{vcs_flags2}},
-                          ($opt_verbose ? " -CFLAGS -DTEST_VERBOSE=1":""),
+                          ($opt_verbose ? " -CFLAGS -DTEST_VERBOSE=1" : ""),
                           @{$param{v_flags}},
                           @{$param{v_flags2}},
                           $param{top_filename},
@@ -1035,12 +1054,12 @@ sub compile {
         my @more_args;
         if ($self->vhdl) {
             ((my $ts = $param{top_shell_filename}) =~ s!\.v!!);
-            $ts =~ s!.*/!!;;
+            $ts =~ s!.*/!!;
             push @more_args, "-vhdltop", $ts;
         }
         $self->_run(logfile=>"$self->{obj_dir}/nc_compile.log",
                     fails=>$param{fails},
-                    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
+                    cmd=>[($ENV{VERILATOR_NCVERILOG} || "ncverilog"),
                           @{$param{nc_flags}},
                           @{$param{nc_flags2}},
                           @{$param{v_flags}},
@@ -1057,7 +1076,7 @@ sub compile {
         $self->_run(logfile=>"$self->{obj_dir}/ms_compile.log",
                     fails=>$param{fails},
                     cmd=>[("vlib $self->{obj_dir}/work && "),
-                          ($ENV{VERILATOR_MODELSIM}||"vlog"),
+                          ($ENV{VERILATOR_MODELSIM} || "vlog"),
                           @{$param{ms_flags}},
                           @{$param{ms_flags2}},
                           @{$param{v_flags}},
@@ -1070,7 +1089,7 @@ sub compile {
     elsif ($param{iv}) {
         $param{tool_define} ||= $param{iv_define};
         $self->_make_top() if $param{make_top_shell};
-        my @cmd = (($ENV{VERILATOR_IVERILOG}||"iverilog"),
+        my @cmd = (($ENV{VERILATOR_IVERILOG} || "iverilog"),
                    @{$param{iv_flags}},
                    @{$param{iv_flags2}},
                    @{$param{v_flags}},
@@ -1089,7 +1108,7 @@ sub compile {
         $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/xsim_compile.log",
                     fails=>$param{fails},
-                    cmd=>[($ENV{VERILATOR_XVLOG}||"xvlog"),
+                    cmd=>[($ENV{VERILATOR_XVLOG} || "xvlog"),
                           @{$param{xsim_flags}},
                           @{$param{xsim_flags2}},
                           @{$param{v_flags}},
@@ -1147,16 +1166,16 @@ sub compile {
                         expect => $param{expect},
                         expect_filename => $param{expect_filename},
                         verilator_run => 1,
-                        cmd => ["cd \"".$self->{obj_dir}."\" && cmake",
-                                "\"".$self->{t_dir}."/..\"",
+                        cmd => ["cd \"" . $self->{obj_dir} . "\" && cmake",
+                                "\"" . $self->{t_dir} . "/..\"",
                                 "-DTEST_VERILATOR_ROOT=$ENV{VERILATOR_ROOT}",
                                 "-DTEST_NAME=$self->{name}",
                                 "-DTEST_CSOURCES=\"@csources\"",
                                 "-DTEST_VERILATOR_ARGS=\"@vlt_args\"",
                                 "-DTEST_VERILATOR_SOURCES=\"$param{top_filename} @{$param{v_other_filenames}}\"",
-                                "-DTEST_VERBOSE=\"".($self->{verbose} ? 1 : 0)."\"",
-                                "-DTEST_SYSTEMC=\"" .($self->sc ? 1 : 0). "\"",
-                                "-DCMAKE_PREFIX_PATH=\"".(($ENV{SYSTEMC_INCLUDE}||$ENV{SYSTEMC}||'')."/..\""),
+                                "-DTEST_VERBOSE=\"" . ($self->{verbose} ? 1 : 0) . "\"",
+                                "-DTEST_SYSTEMC=\""  . ($self->sc ? 1 : 0) . "\"",
+                                "-DCMAKE_PREFIX_PATH=\"" . (($ENV{SYSTEMC_INCLUDE} || $ENV{SYSTEMC} || '') . "/..\""),
                                 "-DTEST_OPT_FAST=\"" . ($param{benchmark} ? "-Os" : "-O0") . "\"",
                                 "-DTEST_OPT_GLOBAL=\"" . ($param{benchmark} ? "-Os" : "-O0") . "\"",
                                 "-DTEST_VERILATION=\"" . $::Opt_Verilation . "\"",
@@ -1169,17 +1188,17 @@ sub compile {
             $self->_run(logfile => "$self->{obj_dir}/vlt_gcc.log",
                         entering => "$self->{obj_dir}",
                         cmd => [$ENV{MAKE},
-                                "-C ".$self->{obj_dir},
-                                "-f ".$FindBin::RealBin."/Makefile_obj",
+                                "-C " . $self->{obj_dir},
+                                "-f " . $FindBin::RealBin . "/Makefile_obj",
                                 ($self->{verbose} ? "" : "--no-print-directory"),
                                 "VM_PREFIX=$self->{VM_PREFIX}",
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
-                                "CPPFLAGS_DRIVER=-D".uc($self->{name}),
-                                ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+                                "CPPFLAGS_DRIVER=-D" . uc($self->{name}),
+                                ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
                                 ($param{benchmark} ? "" : "OPT_FAST=-O0"),
                                 ($param{benchmark} ? "" : "OPT_GLOBAL=-O0"),
                                 "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
-                                ($param{make_flags}||""),
+                                ($param{make_flags} || ""),
                         ]);
         }
 
@@ -1188,7 +1207,7 @@ sub compile {
             $self->_run(logfile => "$self->{obj_dir}/vlt_cmake_build.log",
                         cmd => ["cmake",
                                 "--build", $self->{obj_dir},
-                                ($self->{verbose}?"--verbose":""),
+                                ($self->{verbose} ? "--verbose" : ""),
                         ]);
         }
     }
@@ -1199,8 +1218,8 @@ sub compile {
     if ($param{make_pli}) {
         $self->oprint("Compile vpi\n") if $self->{verbose};
         my @cmd = ($ENV{CXX}, @{$param{pli_flags}},
-                   "-D".$param{tool_define},
-                   "-DIS_VPI", ($ENV{CFLAGS}||''),
+                   "-D" . $param{tool_define},
+                   "-DIS_VPI", ($ENV{CFLAGS} || ''),
                    "$self->{t_dir}/$self->{pli_filename}");
 
         $self->_run(logfile=>"$self->{obj_dir}/pli_compile.log",
@@ -1212,7 +1231,7 @@ sub compile {
 }
 
 sub execute {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
     my %param = (%{$self}, @_);  # Default arguments are from $self
     # params may be expect or {tool}_expect
@@ -1227,7 +1246,7 @@ sub execute {
     if ($param{atsim}) {
         $self->_run(logfile=>"$self->{obj_dir}/atsim_sim.log",
                     fails=>$param{fails},
-                    cmd=>["echo q | ".$run_env."$self->{obj_dir}/athdl_sv",
+                    cmd=>["echo q | " . $run_env . "$self->{obj_dir}/athdl_sv",
                           @{$param{atsim_run_flags}},
                           @{$param{all_run_flags}},
                           ],
@@ -1239,7 +1258,7 @@ sub execute {
     elsif ($param{ghdl}) {
         $self->_run(logfile=>"$self->{obj_dir}/ghdl_sim.log",
                     fails=>$param{fails},
-                    cmd=>[$run_env."$self->{obj_dir}/simghdl",
+                    cmd=>[$run_env . "$self->{obj_dir}/simghdl",
                           @{$param{ghdl_run_flags}},
                           @{$param{all_run_flags}},
                           ],
@@ -1249,7 +1268,7 @@ sub execute {
                     );
     }
     elsif ($param{iv}) {
-        my @cmd = ($run_env."$self->{obj_dir}/simiv",
+        my @cmd = ($run_env . "$self->{obj_dir}/simiv",
                    @{$param{iv_run_flags}},
                    @{$param{all_run_flags}},
                           );
@@ -1266,13 +1285,13 @@ sub execute {
                     );
     }
     elsif ($param{ms}) {
-        my @pli_opt=();
+        my @pli_opt = ();
         if ($param{use_libvpi}) {
             unshift @pli_opt, "-pli $self->{obj_dir}/libvpi.so";
         }
         $self->_run(logfile=>"$self->{obj_dir}/ms_sim.log",
                     fails=>$param{fails},
-                    cmd=>["echo q | ".$run_env.($ENV{VERILATOR_MODELSIM}||"vsim"),
+                    cmd=>["echo q | " . $run_env . ($ENV{VERILATOR_MODELSIM} || "vsim"),
                           @{$param{ms_run_flags}},
                           @{$param{all_run_flags}},
                           @{pli_opt},
@@ -1286,7 +1305,7 @@ sub execute {
     elsif ($param{nc}) {
         $self->_run(logfile=>"$self->{obj_dir}/nc_sim.log",
                     fails=>$param{fails},
-                    cmd=>["echo q | ".$run_env.($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
+                    cmd=>["echo q | " . $run_env . ($ENV{VERILATOR_NCVERILOG} || "ncverilog"),
                           @{$param{nc_run_flags}},
                           @{$param{all_run_flags}},
                           ],
@@ -1299,7 +1318,7 @@ sub execute {
         #my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
         #$fh->print("quit\n"); $fh->close;
         $self->_run(logfile=>"$self->{obj_dir}/vcs_sim.log",
-                    cmd=>["echo q | ".$run_env."./simv",
+                    cmd=>["echo q | " . $run_env . "./simv",
                           @{$param{vcs_run_flags}},
                           @{$param{all_run_flags}},
                           ],
@@ -1311,7 +1330,7 @@ sub execute {
     elsif ($param{xsim}) {
         $self->_run(logfile=>"$self->{obj_dir}/xsim_sim.log",
                     fails=>$param{fails},
-                    cmd=>[$run_env.($ENV{VERILATOR_XELAB}||"xelab"),
+                    cmd=>[$run_env.($ENV{VERILATOR_XELAB} || "xelab"),
                           @{$param{xsim_run_flags}},
                           @{$param{xsim_run_flags2}},
                           @{$param{all_run_flags}},
@@ -1328,7 +1347,7 @@ sub execute {
         $param{executable} ||= "$self->{obj_dir}/$param{VM_PREFIX}";
         my $debugger = "";
         if ($opt_gdbsim) {
-            $debugger = ($ENV{VERILATOR_GDB}||"gdb")." ";
+            $debugger = ($ENV{VERILATOR_GDB} || "gdb") . " ";
         } elsif ($opt_rrsim) {
             $debugger = "rr record ";
         }
@@ -1343,7 +1362,6 @@ sub execute {
                     %param,
                     expect=>$param{expect},  # backward compatible name
                     expect_filename=>$param{expect_filename},  # backward compatible name
-                    verilator_run => 1,
                     );
     }
     else {
@@ -1352,7 +1370,7 @@ sub execute {
 }
 
 sub setenv {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $var = shift;
     my $val = shift;
     print "\texport $var='$val'\n";
@@ -1360,7 +1378,7 @@ sub setenv {
 }
 
 sub inline_checks {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
     return 1 if !$self->{vlt_all};
 
@@ -1374,21 +1392,21 @@ sub inline_checks {
     while (defined(my $line = $fh->getline)) {
         if ($line =~ /CHECK/) {
             if ($line =~ /CHECK_COVER *\( *([---0-9]+) *, *"([^"]+)" *, *("([^"]+)" *,|) *(\d+) *\)/) {
-                my $lineno = ($. + $1); my $hier=$2; my $comment=$4; my $count=$5;
-                my $regexp = "\001l\002".$lineno;
-                $regexp .= ".*\001o\002".quotemeta($comment) if $comment;
-                $regexp .= ".*\001h\002".quotemeta($hier) if $hier;
-                $regexp .= ".*' ".$count;
+                my $lineno = ($. + $1); my $hier = $2; my $comment = $4; my $count = $5;
+                my $regexp = "\001l\002" . $lineno;
+                $regexp .= ".*\001o\002" . quotemeta($comment) if $comment;
+                $regexp .= ".*\001h\002" . quotemeta($hier) if $hier;
+                $regexp .= ".*' " . $count;
                 if ($contents !~ /$regexp/) {
-                    $self->error("CHECK_COVER: $covfn: Regexp not found: $regexp\n".
+                    $self->error("CHECK_COVER: $covfn: Regexp not found: $regexp\n" .
                                  "From $self->{top_filename}:$.: $line");
                 }
             }
             elsif ($line =~ /CHECK_COVER_MISSING *\( *([---0-9]+) *\)/) {
                 my $lineno = ($. + $1);
-                my $regexp = "\001l\002".$lineno;
+                my $regexp = "\001l\002" . $lineno;
                 if ($contents =~ /$regexp/) {
-                    $self->error("CHECK_COVER_MISSING: $covfn: Regexp found: $regexp\n".
+                    $self->error("CHECK_COVER_MISSING: $covfn: Regexp found: $regexp\n" .
                                  "From $self->{top_filename}:$.: $line");
                 }
             }
@@ -1404,51 +1422,51 @@ sub inline_checks {
 # Accessors
 
 sub ok {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     $self->{ok} = $_[0] if defined $_[0];
     $self->{ok} = 0 if $self->{errors} || $self->{errors_keep_going} || $self->{skips} || $self->unsupporteds;
     return $self->{ok};
 }
 
 sub continuing {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return !($self->errors || $self->skips || $self->unsupporteds);
 }
 
 sub errors {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return $self->{errors};
 }
 
 sub golden_filename {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     $self->{golden_filename} = shift if defined $_[0];
     return $self->{golden_filename};
 }
 
 sub scenario_off {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return $self->{scenario_off};
 }
 
 sub skips {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return $self->{skips};
 }
 
 sub unsupporteds {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return $self->{unsupporteds};
 }
 
 sub top_filename {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     $self->{top_filename} = shift if defined $_[0];
     return $self->{top_filename};
 }
 
 sub vhdl {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     $self->{vhdl} = shift if defined $_[0];
     if ($self->{vhdl}) {
         $self->{top_filename} =~ s/\.v$/\.vhdl/;
@@ -1457,18 +1475,18 @@ sub vhdl {
 }
 
 sub v_suffix {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     # Suffix for file type, e.g. .vhdl or .v
     return $self->{vhdl} ? "vhdl" : "v";
 }
 
 sub sc {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return $self->{sc};
 }
 
 sub have_sc {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     return 1 if (defined $ENV{SYSTEMC} || defined $ENV{SYSTEMC_INCLUDE} || $ENV{CFG_HAVE_SYSTEMC});
     return 1 if $self->verilator_version =~ /systemc found *= *1/i;
     return 0;
@@ -1516,7 +1534,7 @@ sub get_default_vltmt_threads {
 }
 
 sub pli_filename {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     $self->{pli_filename} = shift if defined $_[0];
     return $self->{pli_filename};
 }
@@ -1527,7 +1545,7 @@ sub too_few_cores {
 }
 
 sub skip_if_too_few_cores {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     if (too_few_cores()) {
         $self->skip("Skipping due to too few cores\n");
     }
@@ -1542,7 +1560,7 @@ sub wno_unopthreads_for_few_cores {
 }
 
 sub VM_PREFIX {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     $self->{VM_PREFIX} = shift if defined $_[0];
     return $self->{VM_PREFIX};
 }
@@ -1550,17 +1568,18 @@ sub VM_PREFIX {
 #----------------------------------------------------------------------
 
 sub run {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     $self->_run(@_);
 }
+
 sub _run {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
                  #entering =>  # Print entering directory information
                  #verilator_run =>  # Move gcov data to parallel area
                  @_);
 
-    my $command = join(' ',@{$param{cmd}});
+    my $command = join(' ', @{$param{cmd}});
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
 
     if ($param{verilator_run}) {
@@ -1592,15 +1611,15 @@ sub _run {
         if ($param{logfile}) {
             $logfh = IO::File->new(">$param{logfile}") or die "%Error: Can't open $param{logfile}";
         }
-        my $pid=fork();
+        my $pid = fork();
         if ($pid) {  # Parent
             close CHILDWR;
             print "driver: Entering directory '",
                 File::Spec->rel2abs($param{entering}), "'\n" if $param{entering};
             while (1) {
                 my $buf = '';
-                my $got = sysread PARENTRD,$buf,10000;
-                last if defined $got && $got==0;
+                my $got = sysread PARENTRD, $buf, 10000;
+                last if defined $got && $got == 0;
                 print $buf if $param{tee};
                 print $logfh $buf if $logfh;
             }
@@ -1629,7 +1648,7 @@ sub _run {
             }
             exit($? ? 10 : 0);  # $?>>8 misses coredumps
         }
-        waitpid($pid,0);
+        waitpid($pid, 0);
         $status = $? || 0;
     }
     flush STDOUT;
@@ -1684,7 +1703,7 @@ sub _run {
                     #print "**BAD  $self->{name} $param{logfile} MT $moretry  $try\n";
                     next if $moretry;
                     $self->error("Miscompares in output from $param{cmd}[0]\n");
-                    $self->error("Might be error in regexp format\n") if $ok<1;
+                    $self->error("Might be error in regexp format\n") if $ok < 1;
                     print "GOT:\n";
                     print $wholefile;
                     print "ENDGOT\n";
@@ -1735,9 +1754,13 @@ sub _make_main {
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
 
     print $fh "// Test defines\n";
-    print $fh "#define MAIN_TIME_MULTIPLIER ".($self->{main_time_multiplier} || 1)."\n";
+    print $fh "#define MAIN_TIME_MULTIPLIER " . ($self->{main_time_multiplier} || 1) . "\n";
 
     print $fh "#include <memory>\n";
+    print $fh "#include <fstream>\n" if $self->{benchmarksim};
+    print $fh "#include <chrono>\n" if $self->{benchmarksim};
+    print $fh "#include <iomanip>\n" if $self->{benchmarksim};
+
     print $fh "// OS header\n";
     print $fh "#include \"verilatedos.h\"\n";
 
@@ -1780,19 +1803,20 @@ sub _make_main {
         print $fh "extern int sc_main(int argc, char** argv);\n";
         print $fh "int sc_main(int argc, char** argv) {\n";
         print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
-        print $fh "    sc_signal<bool> clk;\n"  if $self->{inputs}{clk};
+        print $fh "    sc_signal<bool> clk;\n" if $self->{inputs}{clk};
         print $fh "    sc_set_time_resolution(1, $Self->{sc_time_resolution});\n";
         print $fh "    sc_time sim_time($self->{sim_time}, $Self->{sc_time_resolution});\n";
     } else {
         print $fh "int main(int argc, char** argv, char** env) {\n";
-        print $fh "    vluint64_t sim_time = $self->{sim_time};\n";
+        print $fh "    uint64_t sim_time = $self->{sim_time};\n";
     }
 
     print $fh "    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n";
     print $fh "    contextp->commandArgs(argc, argv);\n";
-    print $fh "    contextp->debug(".($self->{verilated_debug}?1:0).");\n";
+    print $fh "    contextp->debug(" . ($self->{verilated_debug} ? 1 : 0) . ");\n";
     print $fh "    srand48(5);\n";  # Ensure determinism
-    print $fh "    contextp->randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
+    print $fh "    contextp->randReset(" . $self->{verilated_randReset} . ");\n"
+        if defined $self->{verilated_randReset};
     print $fh "    topp.reset(new $VM_PREFIX(\"top\"));\n";
     print $fh "    contextp->internalsDump()\n;" if $self->{verilated_debug};
 
@@ -1806,6 +1830,12 @@ sub _make_main {
         $set = "topp->";
     }
 
+    if ($self->{benchmarksim}) {
+        $fh->print("    std::chrono::time_point<std::chrono::steady_clock> starttime;\n");
+        $fh->print("    bool warm = false;\n");
+        $fh->print("    uint64_t n_evals = 0;\n");
+    }
+
     if ($self->{trace}) {
         $fh->print("\n");
         $fh->print("#if VM_TRACE\n");
@@ -1814,8 +1844,10 @@ sub _make_main {
         $fh->print("    std::unique_ptr<VerilatedFstSc> tfp{new VerilatedFstSc};\n") if $self->{trace_format} eq 'fst-sc';
         $fh->print("    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};\n") if $self->{trace_format} eq 'vcd-c';
         $fh->print("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n") if $self->{trace_format} eq 'vcd-sc';
+        $fh->print("    sc_core::sc_start(sc_core::SC_ZERO_TIME);  // Finish elaboration before trace and open\n") if $self->sc;
         $fh->print("    topp->trace(tfp.get(), 99);\n");
-        $fh->print("    tfp->open(\"".$self->trace_filename."\");\n");
+        $fh->print("    tfp->open(\"" . $self->trace_filename . "\");\n");
+
         if ($self->{trace} && !$self->sc) {
             $fh->print("    if (tfp) tfp->dump(contextp->time());\n");
         }
@@ -1846,13 +1878,13 @@ sub _make_main {
     print $fh "    while ((${time} < sim_time * MAIN_TIME_MULTIPLIER)\n";
     print $fh "           && !contextp->gotFinish()) {\n";
 
-    for (my $i=0; $i<5; $i++) {
+    for (my $i = 0; $i < 5; $i++) {
         my $action = 0;
         if ($self->{inputs}{fastclk}) {
             print $fh "        ${set}fastclk = !${set}fastclk;\n";
             $action = 1;
         }
-        if ($i==0 && $self->{inputs}{clk}) {
+        if ($i == 0 && $self->{inputs}{clk}) {
             print $fh "        ${set}clk = !${set}clk;\n";
             $action = 1;
         }
@@ -1865,15 +1897,33 @@ sub _make_main {
         }
         _print_advance_time($self, $fh, 1, $action);
     }
+    if ($self->{benchmarksim}) {
+        $fh->print("        if (VL_UNLIKELY(!warm)) {\n");
+        $fh->print("            starttime = std::chrono::steady_clock::now();\n");
+        $fh->print("            warm = true;\n");
+        $fh->print("        } else {\n");
+        $fh->print("            ++n_evals;\n");
+        $fh->print("        }\n");
+    }
     print $fh "    }\n";
+
+    if ($self->{benchmarksim}) {
+        $fh->print("    {\n");
+        $fh->print("        const std::chrono::duration<double> exec_s =  std::chrono::steady_clock::now() - starttime;\n");
+        $fh->print("        std::ofstream benchfile(\"" . $self->benchmarksim_filename() . "\", std::ofstream::out | std::ofstream::app);\n");
+        $fh->print("        benchfile << std::fixed << std::setprecision(9) << n_evals << \",\" << exec_s.count() << std::endl;\n");
+        $fh->print("        benchfile.close();\n");
+        $fh->print("    }\n");
+    }
+
     print $fh "    if (!contextp->gotFinish()) {\n";
-    print $fh '        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");',"\n";
+    print $fh '        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");', "\n";
     print $fh "    }\n";
     print $fh "    topp->final();\n";
 
     if ($self->{coverage}) {
         $fh->print("#if VM_COVERAGE\n");
-        $fh->print("    VerilatedCov::write(\"",$self->{coverage_filename},"\");\n");
+        $fh->print("    VerilatedCov::write(\"", $self->{coverage_filename}, "\");\n");
         $fh->print("#endif  // VM_COVERAGE\n");
     }
     if ($self->{trace}) {
@@ -1939,10 +1989,10 @@ sub _make_top_v {
     }
     # Inst
     print $fh "    t t (\n";
-    my $comma="";
+    my $comma = "";
     foreach my $inp (sort (keys %{$self->{inputs}})) {
         print $fh "      ${comma}.${inp} (${inp})\n";
-        $comma=",";
+        $comma = ",";
     }
     print $fh "    );\n";
 
@@ -1950,8 +2000,8 @@ sub _make_top_v {
     print $fh "\n";
     print $fh "`ifdef WAVES\n";
     print $fh "   initial begin\n";
-    print $fh "      \$display(\"-Tracing Waves to Dumpfile: ".$self->trace_filename."\");\n";
-    print $fh "      \$dumpfile(\"".$self->trace_filename."\");\n";
+    print $fh "      \$display(\"-Tracing Waves to Dumpfile: " . $self->trace_filename . "\");\n";
+    print $fh "      \$dumpfile(\"" . $self->trace_filename . "\");\n";
     print $fh "      \$dumpvars(0, top);\n";
     print $fh "   end\n";
     print $fh "`endif\n";
@@ -1965,10 +2015,10 @@ sub _make_top_v {
     print $fh "        fastclk = 1;\n" if $self->{inputs}{fastclk};
     print $fh "        clk = 1;\n" if $self->{inputs}{clk};
     print $fh "        while (\$time < $self->{sim_time}) begin\n";
-    for (my $i=0; $i<5; $i++) {
+    for (my $i = 0; $i < 5; $i++) {
         print $fh "          #1;\n";
         print $fh "          fastclk = !fastclk;\n" if $self->{inputs}{fastclk};
-        print $fh "          clk = !clk;\n" if $i==4 && $self->{inputs}{clk};
+        print $fh "          clk = !clk;\n" if $i == 4 && $self->{inputs}{clk};
     }
     print $fh "        end\n";
     print $fh "    end\n";
@@ -1993,7 +2043,7 @@ sub _make_top_vhdl {
         my $semi = "";
         foreach my $inp (@ports) {
             print $fh "        ${semi}${inp} : in std_logic\n";
-            $semi=";";
+            $semi = ";";
         }
         print $fh "    );\n";
     }
@@ -2014,10 +2064,10 @@ sub _make_top_vhdl {
     print $fh "    t : t_ent\n";
     if ($#ports >= 0) {
         print $fh "       port map(\n";
-        my $comma="";
+        my $comma = "";
         foreach my $inp (@ports) {
             print $fh "\t${comma}${inp} => ${inp}\n";
-            $comma=",";
+            $comma = ",";
         }
         print $fh "    )\n";
     }
@@ -2039,7 +2089,7 @@ sub _read_inputs_v {
     my $filename = $self->top_filename;
     $filename = "$self->{t_dir}/$filename" if !-r $filename;
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
-    my $get_sigs=1;
+    my $get_sigs = 1;
     my %inputs;
     while (defined(my $line = $fh->getline)) {
         if ($get_sigs) {
@@ -2088,9 +2138,9 @@ sub verilator_version {
     # Returns verbose version, line 1 contains actual version
     if (!defined $_Verilator_Version) {
         my @args = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator", "-V");
-        my $args = join(' ',@args);
+        my $args = join(' ', @args);
         $_Verilator_Version = `$args`;
-        $_Verilator_Version or die "can't fork: $! ".join(' ',@args);
+        $_Verilator_Version or die "can't fork: $! " . join(' ', @args);
         chomp $_Verilator_Version;
     }
     return $_Verilator_Version if defined $_Verilator_Version;
@@ -2100,7 +2150,7 @@ sub verilator_version {
 # File utilities
 
 sub files_identical {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
     my $fn1_is_logfile = shift;
@@ -2133,36 +2183,39 @@ sub files_identical {
                     && !/^dot [^\n]+\n/
                     && !/^In file: .*\/sc_.*:\d+/
                     && !/^libgcov.*/
+                    && !/--- \/tmp\//  # t_difftree.pl
+                    && !/\+\+\+ \/tmp\//  # t_difftree.pl
             } @l1;
             @l1 = map {
                 s/(Internal Error: [^\n]+\.cpp):[0-9]+:/$1:#:/;
                 s/^-V\{t[0-9]+,[0-9]+\}/-V{t#,#}/;  # --vlt vs --vltmt run differences
                 $_;
             } @l1;
-            for (my $l=0; $l<=$#l1; ++$l) {
+            for (my $l = 0; $l <= $#l1; ++$l) {
                 # Don't put control chars into our source repository
                 $l1[$l] =~ s/\r/<#013>/mig;
                 $l1[$l] =~ s/Command Failed[^\n]+/Command Failed/mig;
                 $l1[$l] =~ s/Version: Verilator[^\n]+/Version: Verilator ###/mig;
                 $l1[$l] =~ s/CPU Time: +[0-9.]+ seconds[^\n]+/CPU Time: ###/mig;
                 $l1[$l] =~ s/\?v=[0-9.]+/?v=latest/mig;  # warning URL
+                $l1[$l] =~ s/_h[0-9a-f]{8}_/_h########_/mg;
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest
                     last;
                 }
             }
         }
-        my $nl = $#l1;  $nl = $#l2 if ($#l2 > $nl);
+        my $nl = $#l1; $nl = $#l2 if ($#l2 > $nl);
         for (my $l=0; $l<=$nl; ++$l) {
-            if (($l1[$l]||"") ne ($l2[$l]||"")) {
+            if (($l1[$l] || "") ne ($l2[$l] || "")) {
                 next try if $moretry;
-                $self->error_keep_going("Line ".($l+1)." miscompares; $fn1 != $fn2");
-                warn("F1: ".($l1[$l]||"*EOF*\n")
-                     ."F2: ".($l2[$l]||"*EOF*\n"));
+                $self->error_keep_going("Line " . ($l+1) . " miscompares; $fn1 != $fn2");
+                warn("F1: " . ($l1[$l] || "*EOF*\n")
+                     . "F2: " . ($l2[$l] || "*EOF*\n"));
                 if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
                     warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
                     my $fhw = IO::File->new(">$fn2") or $self->error("Files_identical $! $fn2\n");
-                    $fhw->print(join('',@l1));
+                    $fhw->print(join('', @l1));
                 } else {
                     warn "To update reference: HARNESS_UPDATE_GOLDEN=1 {command} or --golden\n";
                 }
@@ -2174,7 +2227,7 @@ sub files_identical {
 }
 
 sub files_identical_sorted {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
     my $fn1_is_logfile = shift;
@@ -2188,7 +2241,7 @@ sub files_identical_sorted {
 }
 
 sub copy_if_golden {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
     if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
@@ -2199,7 +2252,7 @@ sub copy_if_golden {
 }
 
 sub vcd_identical {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
     return 0 if $self->errors || $self->skips || $self->unsupporteds;
@@ -2215,7 +2268,7 @@ sub vcd_identical {
         $cmd = qq{vcddiff "$fn1" "$fn2"};
         print "\t$cmd\n" if $::Debug;
         $out = `$cmd`;
-        if ($out ne '') {
+        if ($? != 0 || $out ne '') {
             print $out;
             $self->error("VCD miscompares $fn1 $fn2\n");
             $self->copy_if_golden($fn1, $fn2);
@@ -2241,7 +2294,7 @@ sub vcd_identical {
 }
 
 sub fst2vcd {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
     if (!-r $fn1) { $self->error("File does not exist $fn1\n"); return 0; }
@@ -2257,17 +2310,17 @@ sub fst2vcd {
 }
 
 sub fst_identical {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
     return 0 if $self->errors || $self->skips || $self->unsupporteds;
-    my $tmp = $fn1.".vcd";
+    my $tmp = $fn1 . ".vcd";
     fst2vcd($fn1, $tmp);
     return vcd_identical($tmp, $fn2);
 }
 
 sub _vcd_read {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $filename = shift;
     my $data = {};
     my $fh = IO::File->new("<$filename");
@@ -2280,7 +2333,7 @@ sub _vcd_read {
             push @hier, $hier[$#hier]->{$1};
             $lasthier = $hier[$#hier];
         } elsif ($line =~ /(\$var \S+\s+\d+\s+)\S+\s+(\S+)/) {
-            $hier[$#hier]->{$1.$2} ||= {};
+            $hier[$#hier]->{$1 . $2} ||= {};
             $lasthier = $hier[$#hier];
         } elsif ($line =~ /(\$attrbegin .* \$end)/) {
             if ($lasthier) { $lasthier->{$1} ||= 1; }
@@ -2296,6 +2349,7 @@ sub _vcd_read {
 }
 
 our $_Cxx_Version;
+
 sub cxx_version {
     $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
     return $_Cxx_Version;
@@ -2306,12 +2360,14 @@ sub cfg_with_threaded {
 }
 
 our $_Cfg_with_ccache;
+
 sub cfg_with_ccache {
     $_Cfg_with_ccache ||= `grep "OBJCACHE \?= ccache" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
     return $_Cfg_with_ccache;
 }
 
 our $_Cfg_with_m32;
+
 sub cfg_with_m32 {
     $_Cfg_with_m32 ||= `grep "CXX.*=.*-m32" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
     return $_Cfg_with_m32;
@@ -2325,8 +2381,35 @@ sub tries {
     return 2;
 }
 
+sub glob_all {
+    my $self = (ref $_[0] ? shift : $Self);
+    my $pattern = shift;
+
+    return glob($pattern);
+}
+
+sub glob_one {
+    my $self = (ref $_[0] ? shift : $Self);
+    my $pattern = shift;
+    return if $self->errors || $self->skips || $self->unsupporteds;
+
+    my @files = glob($pattern);
+    my $n = scalar @files;
+    if ($n == 0) {
+        $self->error("glob_one: pattern '$pattern' does not match any files\n");
+    } elsif ($n != 1) {
+        my $msg = "glob_one: pattern '$pattern' matches multiple files:\n";
+        foreach my $file (@files) {
+            $msg .= $file . "\n";
+        }
+        $self->error($msg);
+    } else {
+        return $files[0];
+    }
+}
+
 sub file_grep_not {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
     my $expvalue = shift;
@@ -2341,7 +2424,7 @@ sub file_grep_not {
 }
 
 sub file_grep {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
     my $expvalue = shift;
@@ -2351,22 +2434,46 @@ sub file_grep {
     return if ($contents eq "_Already_Errored_");
     if ($contents !~ /$regexp/) {
         $self->error("File_grep: $filename: Regexp not found: $regexp\n");
-    } elsif ($expvalue && $expvalue ne $1) {
+    } elsif (defined($expvalue) && $expvalue ne $1) {
         $self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
     }
+}
+
+sub file_grep_any {
+    my $self = $Self;
+    my @filenames = @{$_[0]}; shift;
+    my $regexp = shift;
+    my $expvalue = shift;
+    return if $self->errors || $self->skips || $self->unsupporteds;
+
+    foreach my $filename (@filenames) {
+        my $contents = $self->file_contents($filename);
+        return if ($contents eq "_Already_Errored_");
+        if ($contents =~ /$regexp/) {
+            if ($expvalue && $expvalue ne $1) {
+                $self->error("file_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
+            }
+            return;
+        }
+    }
+    my $msg = "file_grep_any: Regexp '$regexp' not found in any of the following files:\n";
+    foreach my $filename (@filenames) {
+        $msg .= $filename . "\n";
+    }
+    $self->error($msg);
 }
 
 my %_File_Contents_Cache;
 
 sub file_contents {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $filename = shift;
 
     if (!$_File_Contents_Cache{$filename}) {
         my $fh = IO::File->new("<$filename");
         if (!$fh) {
             $_File_Contents_Cache{$filename} = "_Already_Errored_";
-            $self->error("File_grep file not found: ".$filename."\n");
+            $self->error("File_grep file not found: " . $filename . "\n");
             return $_File_Contents_Cache{$filename};
         }
         local $/; undef $/;
@@ -2379,7 +2486,7 @@ sub file_contents {
 }
 
 sub write_wholefile {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $filename = shift;
     my $contents = shift;
     my $fh = IO::File->new(">$filename") or die "%Error: $! writing $filename,";
@@ -2389,7 +2496,7 @@ sub write_wholefile {
 }
 
 sub file_sed {
-    my $self = (ref $_[0]? shift : $Self);
+    my $self = (ref $_[0] ? shift : $Self);
     my $infilename = shift;
     my $outfilename = shift;
     my $editcb = shift;
@@ -2403,8 +2510,8 @@ sub file_sed {
 }
 
 sub extract {
-    my $self = (ref $_[0]? shift : $Self);
-    my %param = (#in =>,
+    my $self = (ref $_[0] ? shift : $Self);
+    my %param = (  #in =>,
         #out =>
         regexp => qr/.*/,
         lineno_adjust => -9999,
@@ -2450,6 +2557,7 @@ sub extract {
         $fhw->print("   :linenos:\n") if $lang && $#out > 0;
         $fhw->print("   :emphasize-lines: ${emph}\n") if $emph;
         $fhw->print("\n");
+
         foreach my $line (@out) {
             $fhw->print($line);
         }
@@ -2490,6 +2598,7 @@ sub new {
     bless $self, $class;
     return $self;
 }
+
 sub schedule {
     my $self = shift;
     my %params = (@_);
@@ -2504,16 +2613,17 @@ sub schedule {
     $params{run_on_finish}->($self);
     return $self;
 }
-sub max_proc {}
-sub sig_child {}
-sub kill_tree_all {}
-sub wait_all {}
-sub ready {}
-sub running {}
+sub max_proc { }
+sub sig_child { }
+sub kill_tree_all { }
+sub wait_all { }
+sub ready { }
+sub running { }
 sub is_any_left { return 0; }
 
 #######################################################################
 1;
+
 package main;
 __END__
 
@@ -2658,6 +2768,12 @@ for use with the Synopsys VCS simulator.
 The equivalent of C<v_flags> and C<v_flags2>, but only for use with
 Verilator.  If a flag is a standard flag (+incdir for example) v_flags2
 should be used instead.
+
+=item benchmarksim
+
+Output the number of model evaluations and execution time of a test to
+I<test_output_dir>/I<test_name>_benchmarksim.csv. Multiple invocations
+of the same test file will append to to the same .csv file.
 
 =item xsim_flags
 
@@ -2947,7 +3063,7 @@ Command to use to invoke XSim xvlog
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

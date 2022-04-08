@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,7 +34,7 @@ class GraphPathChecker final : GraphAlg<const V3Graph> {
     // the graph. Each node is marked with the last generation that scanned
     // it, to enable asserting there are no cycles, and to avoid recursing
     // through the same node twice while searching for a path.
-    vluint64_t m_generation = 0;
+    uint64_t m_generation = 0;
 
 public:
     // CONSTRUCTORS

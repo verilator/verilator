@@ -69,7 +69,7 @@ int main(int argc, char** argv, char** env) {
         // Historical note, before Verilator 4.200 Verilated::gotFinish()
         // was used above in place of contextp->gotFinish().
         // Most of the contextp-> calls can use Verilated:: calls instead;
-        // the Verilated:: versions simply assume there's a single context
+        // the Verilated:: versions just assume there's a single context
         // being used (per thread).  It's faster and clearer to use the
         // newer contextp-> versions.
 
@@ -103,8 +103,8 @@ int main(int argc, char** argv, char** env) {
         top->eval();
 
         // Read outputs
-        VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
-                  " -> oquad=%" VL_PRI64 "x owide=%x_%08x_%08x\n",
+        VL_PRINTF("[%" PRId64 "] clk=%x rstl=%x iquad=%" PRIx64 " -> oquad=%" PRIx64
+                  " owide=%x_%08x_%08x\n",
                   contextp->time(), top->clk, top->reset_l, top->in_quad, top->out_quad,
                   top->out_wide[2], top->out_wide[1], top->out_wide[0]);
     }

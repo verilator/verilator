@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ******************************
@@ -35,15 +35,17 @@ simulators.
 Does Verilator run under Windows?
 """""""""""""""""""""""""""""""""
 
-Yes, using Cygwin.  Verilated output also compiles under Microsoft Visual
-C++, but this is not tested every release.
+Yes, ideally run Ubuntu under Windows Subsystem for Linux (WSL2).
+Alternatively use Cygwin, though this tends to be slower and is not
+regularly tested.  Verilated output also compiles under Microsoft Visual
+C++, but this is also not regularly tested.
 
 
 Can you provide binaries?
 """""""""""""""""""""""""
 
 You can install Verilator via the system package manager (apt, yum, etc.)
-on many Linux distributions, including Debian, Ubuntu, SuSE, RedHat, and
+on many Linux distributions, including Debian, Ubuntu, SuSE, Red Hat, and
 others.  These packages are provided by the Linux distributions and
 generally will lag the version of the mainline Verilator repository.  If no
 binary package is available for your distribution, how about you set one
@@ -132,7 +134,8 @@ B. Or, for finer-grained control, or C++ files with multiple Verilated
           ...
           Verilated::traceEverOn(true);
           VerilatedVcdC* tfp = new VerilatedVcdC;
-          topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
+          topp->trace(tfp, 99);  // Trace 99 levels of hierarchy (or see below)
+          // tfp->dumpvars(1, "t");  // trace 1 level under "t"
           tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
           ...
           while (contextp->time() < sim_time && !contextp->gotFinish()) {
@@ -351,8 +354,8 @@ also use the "import DPI" SystemVerilog feature to call C code (see the
 chapter above).  There is also limited VPI access to public signals.
 
 If you want something more complex, since Verilator emits standard C++
-code, you can simply write your own C++ routines that can access and modify
-signal values without needing any PLI interface code, and call it with
+code, you can write your own C++ routines that can access and modify signal
+values without needing any PLI interface code, and call it with
 $c("{any_c++_statement}").
 
 See the :ref:`Connecting` section.
@@ -442,7 +445,7 @@ the signal, as you would any other member variable.
 Signals are the smallest of 8-bit unsigned chars (equivalent to uint8_t),
 16-bit unsigned shorts (uint16_t), 32-bit unsigned longs (uint32_t), or
 64-bit unsigned long longs (uint64_t) that fits the width of the signal.
-Generally, you can use just uint32_t's for 1 to 32 bits, or vluint64_t for
+Generally, you can use just uint32_t's for 1 to 32 bits, or uint64_t for
 1 to 64 bits, and the compiler will properly up-convert smaller entities.
 Note even signed ports are declared as unsigned; you must sign extend
 yourself to the appropriate signal width.
@@ -479,7 +482,7 @@ by your code or you'll get strange results.
 Should a module be in Verilog or SystemC?
 """""""""""""""""""""""""""""""""""""""""
 
-Sometimes there is a block that just interconnects instances, and have a
+Sometimes there is a block that only interconnects instances, and have a
 choice as to if you write it in Verilog or SystemC.  Everything else being
 equal, best performance is when Verilator sees all of the design.  So, look
 at the hierarchy of your design, labeling instances as to if they are

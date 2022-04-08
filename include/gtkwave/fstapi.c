@@ -140,6 +140,10 @@ void **JenkinsIns(void *base_i, const unsigned char *mem, uint32_t length, uint3
 #include <sys/sysctl.h>
 #endif
 
+#if defined(FST_MACOSX) || defined(__MINGW32__) || defined(__OpenBSD__) || defined(__FreeBSD__)
+#define FST_UNBUFFERED_IO
+#endif
+
 #ifdef __GNUC__
 /* Boolean expression more often true than false */
 #define FST_LIKELY(x) __builtin_expect(!!(x), 1)
@@ -4577,12 +4581,11 @@ if(sectype == FST_BL_ZWRAPPER)
                 if(!fcomp) { tmpfile_close(&fcomp, &xc->f_nam); return(0); }
                 }
 
-#if defined(FST_MACOSX)
+#if defined(FST_UNBUFFERED_IO)
         setvbuf(fcomp, (char *)NULL, _IONBF, 0);   /* keeps gzip from acting weird in tandem with fopen */
 #endif
 
 #ifdef __MINGW32__
-        setvbuf(fcomp, (char *)NULL, _IONBF, 0);   /* keeps gzip from acting weird in tandem with fopen */
         xc->filename_unpacked = hf;
 #else
         if(hf)
@@ -4880,7 +4883,7 @@ if((!nam)||(!(xc->f=fopen(nam, "rb"))))
         char *hf = (char *)calloc(1, flen + 6);
         int rc;
 
-#if defined(__MINGW32__) || defined(FST_MACOSX)
+#if defined(FST_UNBUFFERED_IO)
         setvbuf(xc->f, (char *)NULL, _IONBF, 0);   /* keeps gzip from acting weird in tandem with fopen */
 #endif
 
@@ -4989,9 +4992,7 @@ unsigned int secnum = 0;
 int blocks_skipped = 0;
 fst_off_t blkpos = 0;
 uint64_t seclen, beg_tim;
-#ifdef FST_DEBUG
 uint64_t end_tim;
-#endif
 uint64_t frame_uclen, frame_clen, frame_maxhandle, vc_maxhandle;
 fst_off_t vc_start;
 fst_off_t indx_pntr, indx_pos;
@@ -5058,14 +5059,11 @@ for(;;)
         if(!seclen) break;
 
         beg_tim = fstReaderUint64(xc->f);
-#ifdef FST_DEBUG
-        end_tim =
-#endif
-        fstReaderUint64(xc->f);
+        end_tim = fstReaderUint64(xc->f);
 
         if(xc->limit_range_valid)
                 {
-                if(beg_tim < xc->limit_range_start)
+                if(end_tim < xc->limit_range_start)
                         {
                         blocks_skipped++;
                         blkpos += seclen;

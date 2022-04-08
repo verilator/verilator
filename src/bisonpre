@@ -101,7 +101,7 @@ def bison_version_check():
 def clean_output(filename, outname, is_output, is_c):
     print("  edit " + filename + " " + outname)
 
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
 
     basename = re.sub(r'.*/', '', tmp_prefix() + ".")
@@ -165,7 +165,7 @@ def clean_output(filename, outname, is_output, is_c):
 
 
 def warning_check(filename):
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         linenum = 0
         for line in fh:
             linenum += 1
@@ -185,7 +185,7 @@ def clean_input(filename, outname):
     global Filename  # pylint: disable=global-variable-undefined
     Filename = filename
 
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
 
     # Find "%tokens<type>:"
@@ -501,7 +501,7 @@ BISON GRAMMAR EXTENSIONS
     If the bison version is >= the specified version, include the given
     command.
 
-Copyright 2002-2021 by Wilson Snyder. This program is free software; you
+Copyright 2002-2022 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

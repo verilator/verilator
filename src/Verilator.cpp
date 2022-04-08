@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,6 +34,7 @@
 #include "V3Clean.h"
 #include "V3Clock.h"
 #include "V3Combine.h"
+#include "V3Common.h"
 #include "V3Const.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
@@ -50,6 +51,7 @@
 #include "V3EmitXml.h"
 #include "V3Expand.h"
 #include "V3File.h"
+#include "V3Force.h"
 #include "V3Gate.h"
 #include "V3GenClk.h"
 #include "V3Graph.h"
@@ -96,6 +98,7 @@
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
+#include "V3VariableOrder.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
 
@@ -108,7 +111,6 @@ static void reportStatsIfEnabled() {
         V3Stats::statsFinalAll(v3Global.rootp());
         V3Stats::statsReport();
     }
-    if (v3Global.opt.debugEmitV()) V3EmitV::debugEmitV("final");
 }
 
 static void process() {
@@ -243,7 +245,7 @@ static void process() {
         }
     }
 
-    //--PRE-FLAT OPTIMIZATIONS------------------
+    // --PRE-FLAT OPTIMIZATIONS------------------
 
     // Initial const/dead to reduce work for ordering code
     V3Const::constifyAll(v3Global.rootp());
@@ -254,7 +256,7 @@ static void process() {
 
     V3Error::abortIfErrors();
 
-    //--FLATTENING---------------
+    // --FLATTENING---------------
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // We're going to flatten the hierarchy, so as many optimizations that
@@ -274,7 +276,7 @@ static void process() {
         V3Class::classAll(v3Global.rootp());
     }
 
-    //--SCOPE BASED OPTIMIZATIONS--------------
+    // --SCOPE BASED OPTIMIZATIONS--------------
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Cleanup
@@ -332,6 +334,10 @@ static void process() {
         // Create tracing sample points, before we start eliminating signals
         if (v3Global.opt.trace()) V3TraceDecl::traceDeclAll(v3Global.rootp());
 
+        // Convert forceable signals, process force/release statements.
+        // After V3TraceDecl so we don't trace additional signals inserted to implement forcing.
+        V3Force::forceAll(v3Global.rootp());
+
         // Gate-based logic elimination; eliminate signals and push constant across cell boundaries
         // Instant propagation makes lots-o-constant reduction possibilities.
         if (v3Global.opt.oGate()) {
@@ -369,7 +375,6 @@ static void process() {
         V3ActiveTop::activeTopAll(v3Global.rootp());
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
-        if (v3Global.opt.debugEmitV()) V3EmitV::debugEmitV("preorder");
 
         // Order the code; form SBLOCKs and BLOCKCALLs
         V3Order::orderAll(v3Global.rootp());
@@ -403,12 +408,9 @@ static void process() {
         if (v3Global.opt.trace()) V3Trace::traceAll(v3Global.rootp());
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Scoped");
-
-        // Remove scopes; make varrefs/funccalls relative to current module
-        V3Descope::descopeAll(v3Global.rootp());
     }
 
-    //--MODULE OPTIMIZATIONS--------------
+    // --MODULE OPTIMIZATIONS--------------
 
     if (!v3Global.opt.xmlOnly()) {
         // Split deep blocks to appease MSVC++.  Must be before Localize.
@@ -416,8 +418,14 @@ static void process() {
             V3DepthBlock::depthBlockAll(v3Global.rootp());
         }
 
-        // Move BLOCKTEMPS from class to local variables
+        // Up until this point, all references must be scoped
+        v3Global.assertScoped(false);
+
+        // Move variables from modules to function local variables where possible
         if (v3Global.opt.oLocalize()) V3Localize::localizeAll(v3Global.rootp());
+
+        // Remove remaining scopes; make varrefs/funccalls relative to current module
+        V3Descope::descopeAll(v3Global.rootp());
 
         // Icache packing; combine common code in each module's functions into subroutines
         if (v3Global.opt.oCombine()) V3Combine::combineAll(v3Global.rootp());
@@ -425,7 +433,7 @@ static void process() {
 
     V3Error::abortIfErrors();
 
-    //--GENERATION------------------
+    // --GENERATION------------------
 
     if (!v3Global.opt.xmlOnly()) {
         // Remove unused vars
@@ -498,23 +506,31 @@ static void process() {
         V3Partition::finalize();
     }
 
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
+        // Add common methods/etc to modules
+        V3Common::commonAll();
+
+        // Order variables
+        V3VariableOrder::orderAll();
+
+        // Create AstCUse to determine what class forward declarations/#includes needed in C
+        V3CUse::cUseAll();
+    }
+
     // Output the text
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
-        // Create AstCUse to determine what class forward declarations/#includes needed in C
-        // Must be before V3EmitC
-        V3CUse::cUseAll();
-
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();
         V3EmitC::emitcSyms();
         V3EmitC::emitcConstPool();
-        V3EmitC::emitcTrace();
+        V3EmitC::emitcModel();
+        V3EmitC::emitcHeaders();
     } else if (v3Global.opt.dpiHdrOnly()) {
         V3EmitC::emitcSyms(true);
     }
     if (!v3Global.opt.xmlOnly()
-        && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitc.
-        V3EmitC::emitc();
+        && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
+        V3EmitC::emitcImp();
     }
     if (v3Global.opt.xmlOnly()
         // Check XML when debugging to make sure no missing node types
@@ -523,11 +539,13 @@ static void process() {
     }
 
     // Output DPI protected library files
-    if (!v3Global.opt.protectLib().empty()) {
+    if (!v3Global.opt.libCreate().empty()) {
         V3ProtectLib::protect();
         V3EmitV::emitvFiles();
         V3EmitC::emitcFiles();
     }
+
+    if (v3Global.opt.stats()) V3Stats::statsStage("emit");
 
     // Statistics
     reportStatsIfEnabled();
@@ -560,7 +578,7 @@ static void verilate(const string& argString) {
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
     }  // LCOV_EXCL_STOP
 
-    //--FRONTEND------------------
+    // --FRONTEND------------------
 
     // Cleanup
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
@@ -569,7 +587,7 @@ static void verilate(const string& argString) {
 
     // Internal tests (after option parsing as need debug() setting,
     // and after removing files as may make debug output)
-    AstBasicDTypeKwd::selfTest();
+    VBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
@@ -577,6 +595,7 @@ static void verilate(const string& argString) {
         V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Partition::selfTest();
+        V3Partition::selfTestNormalizeCosts();
         V3Broken::selfTest();
     }
 
@@ -701,7 +720,7 @@ int main(int argc, char** argv, char** env) {
 
     // Command option parsing
     v3Global.opt.bin(argv[0]);
-    string argString = V3Options::argString(argc - 1, argv + 1);
+    const string argString = V3Options::argString(argc - 1, argv + 1);
     v3Global.opt.parseOpts(new FileLine(FileLine::commandLineFilename()), argc - 1, argv + 1);
 
     // Validate settings (aka Boost.Program_options)

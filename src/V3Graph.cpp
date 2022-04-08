@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -114,7 +114,7 @@ V3GraphEdge* V3GraphVertex::findConnectingEdgep(GraphWay way, const V3GraphVerte
     // O(edges) linear search. Searches search both nodes' edge lists in
     // parallel.  The lists probably aren't _both_ huge, so this is
     // unlikely to blow up even on fairly nasty graphs.
-    GraphWay inv = way.invert();
+    const GraphWay inv = way.invert();
     V3GraphEdge* aedgep = this->beginp(way);
     V3GraphEdge* bedgep = waywardp->beginp(inv);
     while (aedgep && bedgep) {
@@ -133,10 +133,10 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
         nsstr << endl;
         nsstr << "-vertex: " << this << endl;
     }
-    if (!fileline()) {
-        V3Error::v3errorEnd(nsstr);
+    if (FileLine* const flp = fileline()) {
+        flp->v3errorEnd(nsstr);
     } else {
-        fileline()->v3errorEnd(nsstr);
+        V3Error::v3errorEnd(nsstr);
     }
 }
 void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const {
@@ -314,7 +314,7 @@ void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsS
 void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
-    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
 
     // Header
@@ -327,7 +327,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // List of all possible subgraphs
     std::multimap<std::string, V3GraphVertex*> subgraphs;
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
-        string vertexSubgraph
+        const string vertexSubgraph
             = (colorAsSubgraph && vertexp->color()) ? cvtToStr(vertexp->color()) : "";
         subgraphs.emplace(vertexSubgraph, vertexp);
     }
@@ -340,8 +340,8 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     int n = 0;
     string subgr;
     for (auto it = subgraphs.cbegin(); it != subgraphs.cend(); ++it) {
-        string vertexSubgraph = it->first;
-        V3GraphVertex* vertexp = it->second;
+        const string vertexSubgraph = it->first;
+        const V3GraphVertex* vertexp = it->second;
         numMap[vertexp] = n;
         if (subgr != vertexSubgraph) {
             if (subgr != "") *logp << "\t};\n";
@@ -366,12 +366,12 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             if (edgep->weight()) {
-                int fromVnum = numMap[edgep->fromp()];
-                int toVnum = numMap[edgep->top()];
+                const int fromVnum = numMap[edgep->fromp()];
+                const int toVnum = numMap[edgep->top()];
                 *logp << "\tn" << edgep->fromp()->dotName() << fromVnum << " -> n"
                       << edgep->top()->dotName() << toVnum
                       << " ["
-                      //<<"fontsize=8 label=\""<<(edgep->name()!="" ? edgep->name() : "\\E")<<"\""
+                      // <<"fontsize=8 label=\""<<(edgep->name()!="" ? edgep->name() : "\\E")<<"\""
                       << "fontsize=8 label=\""
                       << (edgep->dotLabel() != "" ? edgep->dotLabel() : "") << "\""
                       << " weight=" << edgep->weight() << " color=" << edgep->dotColor();

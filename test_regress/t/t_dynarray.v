@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
 
    integer i;
    string  v;
@@ -132,6 +132,10 @@ module t (/*AUTOARG*/
          `checkh(a[1], 2);
          `checkh(a[2], 3);
          `checkh(a[3], 4);
+
+         i = 0;
+         foreach (a[j]) i += int'(a[j]);
+         `checkh(i, 1 + 2 + 3 + 4);
 
          // test wide dynamic array
          p256 = new [11];

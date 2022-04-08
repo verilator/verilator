@@ -20,7 +20,7 @@ compile(
 if ($Self->cxx_version =~ /clang/) {
     skip("Known clang bug");
     #Here:   if (VL_UNLIKELY(VL_NEQ_W(12, __Vtemp1, vlSymsp->TOP__t.__PVT__str)))
-} else{
+} else {
     execute(
         check_finished => 1,
         );

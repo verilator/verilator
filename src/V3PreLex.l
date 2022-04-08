@@ -5,7 +5,7 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+ * Copyright 2003-2022 by Wilson Snyder. This program is free software; you
  * can redistribute it and/or modify it under the terms of either the
  * GNU Lesser General Public License Version 3 or the Perl Artistic License
  * Version 2.0.
@@ -159,7 +159,7 @@ bom             [\357\273\277]
                           LEXP->curFilelinep()->v3warn(PROTECTED, "A '`pragma protected data_block' encrypted section was detected and will be skipped.");
                           BEGIN(ENCBASE64);
                           return VP_TEXT; }
-<PRAGMAPRT>("begin_protected"|"end_protected")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+<PRAGMAPRT>("begin_protected"|"end_protected"|"end")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
 <PRAGMAPRT>"version="[^\n\r]*[\n\r] {
                           FL_FWDC;
                           linenoInc();
@@ -175,6 +175,10 @@ bom             [\357\273\277]
                           linenoInc();
                           BEGIN(INITIAL);
                           return VP_TEXT; }
+    /* end of `pragma protect */
+<PRAGMAPRT>{wsn}+        { FL_FWDC; return VP_TEXT; }
+<PRAGMAPRT>[\n\r]        { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+
     /* catch-all for unknown '`pragma protect' rules */
 <PRAGMAPRT>.            { yyless(0);
                           BEGIN(PRAGMAPRTERR);
@@ -202,7 +206,7 @@ bom             [\357\273\277]
 
     /* Catch only empty `pragma lines */
 <INITIAL>"`pragma"{wsn}*[\n\r]  {
-                          yyless(yyleng-1); FL_FWDC;
+                          yyless(yyleng - 1); FL_FWDC;
                           if (v3Global.opt.pedantic()) {
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "`pragma is missing a pragma_expression.");
                           }
@@ -210,12 +214,11 @@ bom             [\357\273\277]
 
     /* catch all other nonempty `pragma */
 <INITIAL>"`pragma"{wsn}*[^\n\r]  {
-                          yyless(yyleng-1); FL_FWDC;
+                          yyless(yyleng - 1); FL_FWDC;
                           if (!v3Global.opt.preprocOnly())
                               BEGIN(PRAGMA);
                           return VP_TEXT; }
 <PRAGMA>"protect"{wsn}* { FL_FWDC; BEGIN(PRAGMAPRT); return VP_TEXT;}
-
     /* catch-all for unknown `pragma rules */
 <PRAGMA>.               { yyless(0);
                           BEGIN(PRAGMAERR);
@@ -524,7 +527,7 @@ again:
         }
     }
     if (debug() >= 10) {
-        cout << "-  pp::inputToLex  got=" << got << " '" << string(buf, got) << "'" << endl;
+        cout << "-  pp::inputToLex  got=" << got << " '" << std::string{buf, got} << "'" << endl;
     }
     return got;
 }
@@ -567,7 +570,7 @@ string V3PreLex::endOfStream(bool& againr) {
         // Final shutdown phase for a stream, we can finally change the
         // current fileline to the new stream
         curStreamp()->m_termState = 0;
-        FileLine* filelinep = curFilelinep();
+        FileLine* const filelinep = curFilelinep();
         delete curStreamp();
         m_streampStack.pop();  // Must work as size>1; EOF is entry 0
         if (curStreamp()->m_eof) {
@@ -590,7 +593,7 @@ string V3PreLex::endOfStream(bool& againr) {
 void V3PreLex::initFirstBuffer(FileLine* filelinep) {
     // Called from constructor to make first buffer
     // yy_create_buffer also sets yy_fill_buffer=1 so reads from YY_INPUT
-    VPreStream* streamp = new VPreStream(filelinep, this);
+    VPreStream* const streamp = new VPreStream{filelinep, this};
     streamp->m_eof = true;
     m_streampStack.push(streamp);
     //
@@ -606,7 +609,7 @@ void V3PreLex::scanNewFile(FileLine* filelinep) {
         yyerrorf("Recursive `define or other nested inclusion");
         curStreamp()->m_eof = true;  // Fake it to stop recursion
     } else {
-        VPreStream* streamp = new VPreStream(filelinep, this);
+        VPreStream* const streamp = new VPreStream{filelinep, this};
         m_tokFilelinep = curFilelinep();
         streamp->m_file = true;
         scanSwitchStream(streamp);
@@ -615,7 +618,7 @@ void V3PreLex::scanNewFile(FileLine* filelinep) {
 
 void V3PreLex::scanBytes(const string& str) {
     // Note buffers also appended in ::scanBytesBack
-    // Not "m_buffers.push_front(string(strp,len))" as we need a `define
+    // Not "m_buffers.push_front(string{strp,len})" as we need a `define
     // to take effect immediately, in the middle of the current buffer
     // Also we don't use scan_bytes that would set yy_fill_buffer
     // which would force Flex to bypass our YY_INPUT routine.
@@ -625,7 +628,7 @@ void V3PreLex::scanBytes(const string& str) {
         yyerrorf("Recursive `define or other nested inclusion");
         curStreamp()->m_eof = true;  // Fake it to stop recursion
     } else {
-        VPreStream* streamp = new VPreStream(curFilelinep(), this);
+        VPreStream* const streamp = new VPreStream{curFilelinep(), this};
         streamp->m_buffers.push_front(str);
         scanSwitchStream(streamp);
     }
@@ -649,7 +652,7 @@ string V3PreLex::currentUnreadChars() {
     ssize_t left = (yy_n_chars - (yy_c_buf_p - currentBuffer()->yy_ch_buf));
     if (left > 0) {  // left may be -1 at EOS
         *(yy_c_buf_p) = (yy_hold_char);
-        return string(yy_c_buf_p, left);
+        return std::string(yy_c_buf_p, left);  // () narrowing conversion
     } else {
         return "";
     }
@@ -689,7 +692,7 @@ void V3PreLex::dumpStack() {
     dumpSummary();
     std::stack<VPreStream*> tmpstack = LEXP->m_streampStack;
     while (!tmpstack.empty()) {
-        VPreStream* streamp = tmpstack.top();
+        const VPreStream* const streamp = tmpstack.top();
         cout << "-    bufferStack[" << cvtToHex(streamp) << "]: "
              << " at=" << streamp->m_curFilelinep << " nBuf=" << streamp->m_buffers.size()
              << " size0=" << (streamp->m_buffers.empty() ? 0 : streamp->m_buffers.front().length())

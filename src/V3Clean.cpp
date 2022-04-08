@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -35,22 +35,22 @@
 //######################################################################
 // Clean state, as a visitor of each AstNode
 
-class CleanVisitor final : public AstNVisitor {
+class CleanVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     //  AstNode::user()         -> CleanState.  For this node, 0==UNKNOWN
     //  AstNode::user2()        -> bool.  True indicates widthMin has been propagated
     //  AstNodeDType::user3()   -> AstNodeDType*.  Alternative node with C size
-    AstUser1InUse m_inuser1;
-    AstUser2InUse m_inuser2;
-    AstUser3InUse m_inuser3;
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // TYPES
     enum CleanState : uint8_t { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
 
     // STATE
-    AstNodeModule* m_modp = nullptr;
+    const AstNodeModule* m_modp = nullptr;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -67,16 +67,16 @@ private:
     }
     void setCppWidth(AstNode* nodep) {
         nodep->user2(true);  // Don't resize it again
-        AstNodeDType* old_dtypep = nodep->dtypep();
-        int width = cppWidth(nodep);  // widthMin is unchanged
+        AstNodeDType* const old_dtypep = nodep->dtypep();
+        const int width = cppWidth(nodep);  // widthMin is unchanged
         if (old_dtypep->width() != width) {
             // Since any given dtype's cppWidth() is the same, we can just
             // remember one conversion for each, and reuse it
-            if (AstNodeDType* new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
+            if (AstNodeDType* const new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
                 nodep->dtypep(new_dtypep);
             } else {
                 nodep->dtypeChgWidth(width, nodep->widthMin());
-                AstNodeDType* new_dtypep2 = nodep->dtypep();
+                AstNodeDType* const new_dtypep2 = nodep->dtypep();
                 UASSERT_OBJ(new_dtypep2 != old_dtypep, nodep,
                             "Dtype didn't change when width changed");
                 old_dtypep->user3p(new_dtypep2);  // Remember for next time
@@ -103,7 +103,7 @@ private:
     void setCleanState(AstNode* nodep, CleanState clean) { nodep->user1(clean); }
     CleanState getCleanState(AstNode* nodep) { return static_cast<CleanState>(nodep->user1()); }
     bool isClean(AstNode* nodep) {
-        CleanState clstate = getCleanState(nodep);
+        const CleanState clstate = getCleanState(nodep);
         if (clstate == CS_CLEAN) return true;
         if (clstate == CS_DIRTY) return false;
         nodep->v3fatalSrc("Unknown clean state on node: " + nodep->prettyTypeName());
@@ -111,21 +111,22 @@ private:
     }
     void setClean(AstNode* nodep, bool isClean) {
         computeCppWidth(nodep);  // Just to be sure it's in widthMin
-        bool wholeUint = (nodep->widthMin() == VL_IDATASIZE || nodep->widthMin() == VL_QUADSIZE
-                          || (nodep->widthMin() % VL_EDATASIZE) == 0);
+        const bool wholeUint
+            = (nodep->widthMin() == VL_IDATASIZE || nodep->widthMin() == VL_QUADSIZE
+               || (nodep->widthMin() % VL_EDATASIZE) == 0);
         setCleanState(nodep, ((isClean || wholeUint) ? CS_CLEAN : CS_DIRTY));
     }
 
     // Operate on nodes
     void insertClean(AstNode* nodep) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedClean " << nodep << endl);
-        AstNRelinker relinkHandle;
+        VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
         computeCppWidth(nodep);
         V3Number mask(nodep, cppWidth(nodep));
         mask.setMask(nodep->widthMin());
-        AstNode* cleanp
+        AstNode* const cleanp
             = new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), mask), nodep);
         cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
         relinkHandle.relink(cleanp);
@@ -137,7 +138,7 @@ private:
     void ensureCleanAndNext(AstNode* nodep) {
         // Editing list, careful looping!
         for (AstNode* exprp = nodep; exprp;) {
-            AstNode* nextp = exprp->nextp();
+            AstNode* const nextp = exprp->nextp();
             ensureClean(exprp);
             exprp = nextp;
         }
@@ -313,6 +314,6 @@ public:
 
 void V3Clean::cleanAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CleanVisitor visitor(nodep); }  // Destruct before checking
+    { CleanVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("clean", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

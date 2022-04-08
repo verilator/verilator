@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -52,16 +52,16 @@
 // These macros taken from gdbsupport/gdb_wait.h in binutils-gdb
 # ifndef WIFEXITED
 #  ifdef __MINGW32__
-#   define WIFEXITED(w)	(((w) & 0xC0000000) == 0)
-#   define WEXITSTATUS(w)	((w) & ~0xC0000000)
+#   define WIFEXITED(w) (((w) & 0xC0000000) == 0)
+#   define WEXITSTATUS(w) ((w) & ~0xC0000000)
 #  else
-#   define WIFEXITED(w)	(((w) & 0377) == 0)
-#   define WEXITSTATUS(w)	(((w) >> 8) & 0377)
+#   define WIFEXITED(w) (((w) & 0377) == 0)
+#   define WEXITSTATUS(w) (((w) >> 8) & 0377)
 #  endif
 # endif
 #else
 # include <sys/time.h>
-# include <sys/wait.h> // Needed on FreeBSD for WIFEXITED
+# include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
 # include <unistd.h>  // usleep
 #endif
 // clang-format on
@@ -72,7 +72,7 @@
 string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
 #if defined(_MSC_VER)
     // Note: MinGW does not offer _dupenv_s
-    char* envvalue = nullptr;
+    const char* const envvalue = nullptr;
     _dupenv_s(&envvalue, nullptr, envvar.c_str());
     if (envvalue != nullptr) {
         const std::string result{envvalue};
@@ -82,7 +82,7 @@ string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
         return defaultValue;
     }
 #else
-    if (const char* envvalue = getenv(envvar.c_str())) {
+    if (const char* const envvalue = getenv(envvar.c_str())) {
         return envvalue;
     } else {
         return defaultValue;
@@ -103,7 +103,7 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 #else
     // setenv() replaced by putenv() in Solaris environment. Prototype is different
     // putenv() requires NAME=VALUE format
-    string vareq = envvar + "=" + value;
+    const string vareq = envvar + "=" + value;
     putenv(const_cast<char*>(vareq.c_str()));
 #endif
 }
@@ -168,7 +168,7 @@ string V3Os::filenameSubstitute(const string& filename) {
                 || ((brackets == PAREN) && (filename[endpos + 1] != ')'))) {
                 v3fatal("Unmatched brackets in variable substitution in file: " + filename);
             }
-            string envvar = filename.substr(pos + 1, endpos - pos);
+            const string envvar = filename.substr(pos + 1, endpos - pos);
             string envvalue;
             if (!envvar.empty()) envvalue = getenvStr(envvar, "");
             if (!envvalue.empty()) {
@@ -236,10 +236,10 @@ void V3Os::createDir(const string& dirname) {
 }
 
 void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
-    if (DIR* dirp = opendir(dir.c_str())) {
-        while (struct dirent* direntp = readdir(dirp)) {
+    if (DIR* const dirp = opendir(dir.c_str())) {
+        while (struct dirent* const direntp = readdir(dirp)) {
             if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
-                string fullname = dir + "/" + string(direntp->d_name);
+                const string fullname = dir + "/" + string(direntp->d_name);
 #if defined(_WIN32) || defined(__MINGW32__)
                 _unlink(fullname.c_str());
 #else
@@ -254,9 +254,9 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
 //######################################################################
 // METHODS (random)
 
-vluint64_t V3Os::rand64(std::array<vluint64_t, 2>& stater) {
+uint64_t V3Os::rand64(std::array<uint64_t, 2>& stater) {
     // Xoroshiro128+ algorithm
-    vluint64_t result = stater[0] + stater[1];
+    const uint64_t result = stater[0] + stater[1];
     stater[1] ^= stater[0];
     stater[0] = (((stater[0] << 55) | (stater[0] >> 9)) ^ stater[1] ^ (stater[1] << 14));
     stater[1] = (stater[1] << 36) | (stater[1] >> 28);
@@ -269,11 +269,11 @@ string V3Os::trueRandom(size_t size) {
     // Note: std::string.data() returns a non-const Char* from C++17 onwards.
     // For pre-C++17, this cast is OK in practice, even though it's UB.
 #if defined(_WIN32) || defined(__MINGW32__)
-    NTSTATUS hr = BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(data), size,
-                                  BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    const NTSTATUS hr = BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(data), size,
+                                        BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     if (!BCRYPT_SUCCESS(hr)) v3fatal("Could not acquire random data.");
 #else
-    std::ifstream is("/dev/urandom", std::ios::in | std::ios::binary);
+    std::ifstream is{"/dev/urandom", std::ios::in | std::ios::binary};
     // This read uses the size of the buffer.
     // Flawfinder: ignore
     if (VL_UNCOVERABLE(!is.read(data, size))) {
@@ -307,7 +307,7 @@ uint64_t V3Os::timeUsecs() {
 
 uint64_t V3Os::memUsageBytes() {
 #if defined(_WIN32) || defined(__MINGW32__)
-    HANDLE process = GetCurrentProcess();
+    const HANDLE process = GetCurrentProcess();
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(process, &pmc, sizeof(pmc))) {
         // The best we can do using simple Windows APIs is to get the size of the working set.
@@ -319,11 +319,10 @@ uint64_t V3Os::memUsageBytes() {
     const char* const statmFilename = "/proc/self/statm";
     FILE* fp = fopen(statmFilename, "r");
     if (!fp) return 0;
-    vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    int items = fscanf(fp,
-                       "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
-                       "u %" VL_PRI64 "u %" VL_PRI64 "u",
-                       &size, &resident, &share, &text, &lib, &data, &dt);
+    uint64_t size, resident, share, text, lib, data, dt;  // All in pages
+    const int items = fscanf(
+        fp, "%" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
+        &size, &resident, &share, &text, &lib, &data, &dt);
     fclose(fp);
     if (VL_UNCOVERABLE(7 != items)) return 0;
     return (text + data) * getpagesize();

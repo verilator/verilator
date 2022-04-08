@@ -22,7 +22,7 @@ module t(/*AUTOARG*/
       if (MISS_INSIDE != 0) $stop;
    end
 
-   integer cyc=0;
+   integer cyc = 0;
 
    int     array [10];
    logic   l;

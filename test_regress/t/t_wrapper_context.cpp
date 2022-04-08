@@ -11,10 +11,18 @@
 
 #include <verilated.h>
 #include <verilated_cov.h>
+#include "TestCheck.h"
 
 #include VM_PREFIX_INCLUDE
 
+// Check we properly define the version integer
+#if VERILATOR_VERSION_INTEGER < 4219000  // Added in 4.219
+#error "VERILATOR_VERSION_INTEGER not set"
+#endif
+
 double sc_time_stamp() { return 0; }
+
+int errors = 0;
 
 VerilatedMutex outputMutex;
 
@@ -89,6 +97,14 @@ int main(int argc, char** argv, char** env) {
     context0p->traceEverOn(true);
     context1p->traceEverOn(true);
 
+    // error number checks
+    TEST_CHECK_EQ(context0p->errorCount(), 0);
+    TEST_CHECK_EQ(context1p->errorCount(), 0);
+    context0p->errorCount(1);
+    TEST_CHECK_EQ(context0p->errorCount(), 1);
+    context0p->errorCount(0);
+    TEST_CHECK_EQ(context0p->errorCount(), 0);
+
     // instantiate verilated design
     std::unique_ptr<VM_PREFIX> top0p{new VM_PREFIX{context0p.get(), "top0"}};
     std::unique_ptr<VM_PREFIX> top1p{new VM_PREFIX{context1p.get(), "top1"}};
@@ -108,7 +124,10 @@ int main(int argc, char** argv, char** env) {
 
     // check if both finished
     bool pass = true;
-    if (top0p->done_o && top1p->done_o) {
+    if (errors) {
+        std::cout << "Error: comparison errors" << std::endl;
+        pass = false;
+    } else if (top0p->done_o && top1p->done_o) {
         std::cout << "*-* All Finished *-*" << std::endl;
     } else {
         std::cout << "Error: Early termination!" << std::endl;

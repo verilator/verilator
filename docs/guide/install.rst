@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Installation:
@@ -23,6 +23,8 @@ package:
 
    apt-get install verilator   # On Ubuntu
 
+For other distributions refer to `Repology Verilator Distro Packages
+<https://repology.org/project/verilator>`__.
 
 .. _Git Install:
 
@@ -44,21 +46,20 @@ In brief, to install from git:
    #sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
 
    git clone https://github.com/verilator/verilator   # Only first time
-   ## Note the URL above is not a page you can see with a browser, it's for git only
 
    # Every time you need to build:
    unsetenv VERILATOR_ROOT  # For csh; ignore error if on bash
    unset VERILATOR_ROOT  # For bash
    cd verilator
-   git pull        # Make sure git repository is up-to-date
-   git tag         # See what versions exist
+   git pull         # Make sure git repository is up-to-date
+   git tag          # See what versions exist
    #git checkout master      # Use development branch (e.g. recent bug fixes)
    #git checkout stable      # Use most recent stable release
    #git checkout v{version}  # Switch to specified release version
 
-   autoconf        # Create ./configure script
-   ./configure     # Configure and create Makefile
-   make -j         # Build Verilator itself
+   autoconf         # Create ./configure script
+   ./configure      # Configure and create Makefile
+   make -j `nproc`  # Build Verilator itself (if error, try just 'make')
    sudo make install
 
 
@@ -76,11 +77,11 @@ OS Requirements
 ---------------
 
 Verilator is developed and has primary testing on Ubuntu, with additional
-testing on FreeBSD and Apple OS-X. Versions have also built on Redhat
-Linux, HPUX and Solaris. It should run with minor porting on any
-GNU/Linux-ish platform. Verilator also works on Windows under Cygwin, and
-Windows under MinGW (gcc -mno-cygwin). Verilated output (not Verilator
-itself) compiles under all the options above, plus using MSVC++.
+testing on FreeBSD and Apple OS-X. Versions have also built on Red Hat
+Linux, and other flavors of GNU/Linux-ish platforms. Verilator also works
+on Windows Subsystem for Linux (WSL2), Windows under Cygwin, and Windows
+under MinGW (gcc -mno-cygwin). Verilated output (not Verilator itself)
+compiles under all the options above, plus using MSVC++.
 
 
 Install Prerequisites
@@ -286,7 +287,7 @@ Compile Verilator:
 
 ::
 
-   make -j
+   make -j `nproc`  # Or if error on `nproc`, the number of CPUs in system
 
 
 Test

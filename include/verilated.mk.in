@@ -2,28 +2,27 @@
 ######################################################################
 # DESCRIPTION: Makefile commands for all verilated target files
 #
-# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 ######################################################################
 
-PERL = @PERL@
-PYTHON3 = @PYTHON3@
+AR = @AR@
 CXX = @CXX@
 LINK = @CXX@
-AR = ar
-RANLIB = ranlib
 OBJCACHE ?= @OBJCACHE@
+PERL = @PERL@
+PYTHON3 = @PYTHON3@
 
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
+# Compiler flags to enable profiling
+CFG_CXXFLAGS_PROFILE = @CFG_CXXFLAGS_PROFILE@
 # Select newest language
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
-# Select oldest language (for Verilator internal testing only)
-CFG_CXXFLAGS_STD_OLDEST = @CFG_CXXFLAGS_STD_OLDEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Compiler flags that turn on extra warnings
@@ -103,6 +102,14 @@ OPT_FAST = -Os
 # files in the run-time library. Normally there should be no need for the user
 # to change this as the library is small, but can have significant speed impact.
 OPT_GLOBAL = -Os
+
+#######################################################################
+##### Profile builds
+
+ifeq ($(VM_PROFC),1)
+  CPPFLAGS += $(CFG_CXXFLAGS_PROFILE)
+  LDFLAGS  += $(CFG_CXXFLAGS_PROFILE)
+endif
 
 #######################################################################
 ##### SystemC builds
@@ -186,6 +193,10 @@ VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
 # but keeping the distinction for compatibility for now.
 VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 
+# Need to re-build if the generated makefile changes, as compiler options might
+# have changed.
+$(VK_GLOBAL_OBJS): $(VM_PREFIX).mk
+
 ifneq ($(VM_PARALLEL_BUILDS),1)
   # Fast build for small designs: All .cpp files in one fell swoop. This
   # saves total compute, but can be slower if only a little changes. It is
@@ -216,7 +227,9 @@ endif
 	$(info Archive $(AR) -rcs $@ $^)
 	$(foreach L, $(filter-out %.a,$^), $(shell echo $L >>$@.verilator_deplist.tmp))
 	@if test $(words $(filter %.a,$^)) -eq 0; then \
-		$(AR) -rcs $@ @$@.verilator_deplist.tmp; \
+		$(RM) -f $@; \
+		cat $@.verilator_deplist.tmp | xargs $(AR) -rc $@; \
+		$(AR) -s $@; \
 	else \
 		$(RM) -rf $@.tmpdir; \
 		for archive in $(filter %.a,$^); do \
@@ -225,7 +238,9 @@ endif
 			$(AR) -x ../../$${archive}; \
 			cd ../..; \
 		done; \
-		$(AR) -rcs $@ @$@.verilator_deplist.tmp $@.tmpdir/*/*.o; \
+		$(RM) -f $@; \
+		cat $@.verilator_deplist.tmp | xargs $(AR) -rc $@; \
+		$(AR) -rcs $@ $@.tmpdir/*/*.o; \
 	fi \
 	; $(RM) -rf $@.verilator_deplist.tmp $@.tmpdir
 

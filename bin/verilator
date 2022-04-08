@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -34,11 +34,11 @@ my $opt_quiet_exit;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
-    pod2usage(-exitstatus=>2, -verbose=>0);
+    pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
 # Insert debugging options up front
-push @ARGV, (split ' ',$ENV{VERILATOR_TEST_FLAGS}||"");
+push @ARGV, (split ' ', $ENV{VERILATOR_TEST_FLAGS} || "");
 
 # We sneak a look at the flags so we can do some pre-environment checks
 # All flags will hit verilator...
@@ -46,7 +46,7 @@ foreach my $sw (@ARGV) {
     push @Opt_Verilator_Sw, $sw;
 }
 
-Getopt::Long::config("no_auto_abbrev","pass_through");
+Getopt::Long::config("no_auto_abbrev", "pass_through");
 if (! GetOptions(
           # Major operating modes
           "help"        => \&usage,
@@ -60,7 +60,7 @@ if (! GetOptions(
           # Additional parameters
           "<>"          => sub {},      # Ignored
     )) {
-    pod2usage(-exitstatus=>2, -verbose=>0);
+    pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
 if ($opt_gdbbt && !gdb_works()) {
@@ -73,12 +73,12 @@ if ($opt_gdbbt && !gdb_works()) {
 # Starting with that, escape all special chars for the shell;
 # The shell will undo the escapes and the verilator binary should
 # then see exactly the contents of @Opt_Verilator_Sw.
-my @quoted_sw = map {sh_escape($_)} @Opt_Verilator_Sw;
+my @quoted_sw = map { sh_escape($_) } @Opt_Verilator_Sw;
 if ($opt_gdb) {
     # Generic GDB interactive
     run (aslr_off()
-         .($ENV{VERILATOR_GDB}||"gdb")
-         ." ".verilator_bin()
+         . ($ENV{VERILATOR_GDB} || "gdb")
+         . " " . verilator_bin()
          # Note, uncomment to set breakpoints before running:
          #  ." -ex 'break main'"
 
@@ -87,42 +87,41 @@ if ($opt_gdb) {
          # escapes as you would expect in a double-quoted string.
          # That's not true for a single-quoted string, where \'
          # actually terminates the string -- not what we want!
-         ." -ex \"run ".join(' ', @quoted_sw)."\""
-         ." -ex 'set width 0'"
-         ." -ex 'bt'");
+         . " -ex \"run " . join(' ', @quoted_sw) . "\""
+         . " -ex 'set width 0'"
+         . " -ex 'bt'");
 } elsif ($opt_rr) {
     # Record with rr
     run (aslr_off()
-         ."rr record ".verilator_bin()
-         ." ".join(' ', @quoted_sw));
+         . "rr record " . verilator_bin()
+         . " " . join(' ', @quoted_sw));
 } elsif ($opt_gdbbt && $Debug) {
     # Run under GDB to get gdbbt
     run (aslr_off()
-         ."gdb"
-         ." ".verilator_bin()
-         ." --batch --quiet --return-child-result"
-         ." -ex \"run ".join(' ', @quoted_sw)."\""
-         ." -ex 'set width 0'"
-         ." -ex 'bt' -ex 'quit'");
+         . "gdb"
+         . " " . verilator_bin()
+         . " --batch --quiet --return-child-result"
+         . " -ex \"run " . join(' ', @quoted_sw)."\""
+         . " -ex 'set width 0'"
+         . " -ex 'bt' -ex 'quit'");
 } elsif ($Debug) {
     # Debug
-    run(aslr_off()
-        .verilator_bin()." ".join(' ',@quoted_sw));
+    run(aslr_off() . verilator_bin() . " " . join(' ', @quoted_sw));
 } else {
     # Normal, non gdb
-    run(verilator_bin()." ".join(' ',@quoted_sw));
+    run(verilator_bin() . " " . join(' ', @quoted_sw));
 }
 
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
+    pod2usage(-verbose => 2, -exitval => 0, -output => \*STDOUT);
 }
 
 sub debug {
     shift;
     my $level = shift;
-    $Debug = $level||3;
+    $Debug = $level || 3;
 }
 
 #######################################################################
@@ -163,13 +162,13 @@ sub verilator_bin {
 sub gdb_works {
     $! = undef;  # Cleanup -x
     system("gdb /bin/echo"
-           ." --batch-silent --quiet --return-child-result"
-           ." -ex 'run -n'"  # `echo -n`
-           ." -ex 'set width 0'"
-           ." -ex 'bt'"
-           ." -ex 'quit'");
+           . " --batch-silent --quiet --return-child-result"
+           . " -ex 'run -n'"  # `echo -n`
+           . " -ex 'set width 0'"
+           . " -ex 'bt'"
+           . " -ex 'quit'");
     my $status = $?;
-    return $status==0;
+    return $status == 0;
 }
 
 sub aslr_off {
@@ -185,7 +184,7 @@ sub run {
     # Run command, check errors
     my $command = shift;
     $! = undef;  # Cleanup -x
-    print "\t$command\n" if $Debug>=3;
+    print "\t$command\n" if $Debug >= 3;
     system($command);
     my $status = $?;
     if ($status) {
@@ -193,7 +192,7 @@ sub run {
             warn "%Error: verilator: Misinstalled, or VERILATOR_ROOT might need to be in environment\n";
         }
         if ($Debug) {  # For easy rerunning
-            warn "%Error: export VERILATOR_ROOT=".($ENV{VERILATOR_ROOT}||"")."\n";
+            warn "%Error: export VERILATOR_ROOT=" . ($ENV{VERILATOR_ROOT} || "") . "\n";
             warn "%Error: $command\n";
         }
         if ($status & 127) {
@@ -201,13 +200,13 @@ sub run {
                 || ($status & 127) == 8  # SIGFPA
                 || ($status & 127) == 11) {  # SIGSEGV
                 warn "%Error: Verilator internal fault, sorry. "
-                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
+                    . "Suggest trying --debug --gdbbt\n" if !$Debug;
             } elsif (($status & 127) == 6) {  # SIGABRT
                 warn "%Error: Verilator aborted. "
-                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
+                    . "Suggest trying --debug --gdbbt\n" if !$Debug;
             } else {
                 warn "%Error: Verilator threw signal $status. "
-                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
+                    . "Suggest trying --debug --gdbbt\n" if !$Debug;
             }
         }
         if (!$opt_quiet_exit && ($status != 256 || $Debug)) {  # i.e. not normal exit(1)
@@ -332,11 +331,12 @@ detailed descriptions of these arguments.
     --gate-stmts <value>        Tune gate optimizer depth
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
-    --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
+    --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
+    --lib-create <name>         Create a DPI library
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
      -MAKEFLAGS <flags>         Arguments to pass to make during --build
@@ -348,7 +348,7 @@ detailed descriptions of these arguments.
     --mod-prefix <topname>      Name to prepend to lower classes
     --no-clk <signal-name>      Prevent marking specified signal as clock
     --no-decoration             Disable comments and symbol decorations
-    --no-pins64                 Don't use vluint64_t's for 33-64 bit sigs
+    --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --no-skip-identical         Disable skipping identical output
      +notimingchecks            Ignored
      -O0                        Disable optimizations
@@ -368,8 +368,10 @@ detailed descriptions of these arguments.
     --pipe-filter <command>     Filter all input through a script
     --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top level class
+    --prof-c                    Compile C++ code with profiling
     --prof-cfuncs               Name functions for profiling
-    --prof-threads              Enable generating gantt chart data for threads
+    --prof-exec                 Enable generating execution profile for gantt chart
+    --prof-pgo                  Enable generating profiling data for PGO
     --protect-key <key>         Key for symbol protection
     --protect-ids               Hash identifier names for obscurity
     --protect-lib <name>        Create a DPI protected library
@@ -444,9 +446,10 @@ description of these arguments.
      +verilator+error+limit+<value>    Set error limit
      +verilator+help                   Display help
      +verilator+noassert               Disable assert checking
-     +verilator+prof+threads+file+<filename>  Set profile filename
-     +verilator+prof+threads+start+<value>    Set profile starting point
-     +verilator+prof+threads+window+<value>   Set profile duration
+     +verilator+prof+exec+file+<filename>  Set execution profile filename
+     +verilator+prof+exec+start+<value>    Set execution profile starting point
+     +verilator+prof+exec+window+<value>   Set execution profile duration
+     +verilator+prof+vlt+file+<filename>   Set PGO profile filename
      +verilator+rand+reset+<value>     Set random reset technique
      +verilator+seed+<value>           Set random seed
      +verilator+V                      Verbose version and config
@@ -457,7 +460,7 @@ description of these arguments.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.

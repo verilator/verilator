@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -61,7 +61,7 @@ private:
         // "this" must be a element inside of *basep
         // Use that to determine a structure offset, then apply to the new base
         // to get our new pointer information
-        return (V3ListEnt*)(((vluint8_t*)newbasep) + offset);
+        return (V3ListEnt*)(((uint8_t*)newbasep) + offset);
     }
 
 public:
@@ -78,7 +78,7 @@ public:
     void pushBack(V3List<T>& listr, T newp) {
         // "this" must be a element inside of *newp
         // cppcheck-suppress thisSubtraction
-        size_t offset = (size_t)(vluint8_t*)(this) - (size_t)(vluint8_t*)(newp);
+        const size_t offset = (size_t)(uint8_t*)(this) - (size_t)(uint8_t*)(newp);
         m_nextp = nullptr;
         if (!listr.m_headp) listr.m_headp = newp;
         m_prevp = listr.m_tailp;
@@ -88,7 +88,7 @@ public:
     void pushFront(V3List<T>& listr, T newp) {
         // "this" must be a element inside of *newp
         // cppcheck-suppress thisSubtraction
-        size_t offset = (size_t)(vluint8_t*)(this) - (size_t)(vluint8_t*)(newp);
+        const size_t offset = (size_t)(uint8_t*)(this) - (size_t)(uint8_t*)(newp);
         m_nextp = listr.m_headp;
         if (m_nextp) baseToListEnt(m_nextp, offset)->m_prevp = newp;
         listr.m_headp = newp;
@@ -99,7 +99,7 @@ public:
     void unlink(V3List<T>& listr, T oldp) {
         // "this" must be a element inside of *oldp
         // cppcheck-suppress thisSubtraction
-        size_t offset = (size_t)(vluint8_t*)(this) - (size_t)(vluint8_t*)(oldp);
+        const size_t offset = (size_t)(uint8_t*)(this) - (size_t)(uint8_t*)(oldp);
         if (m_nextp) {
             baseToListEnt(m_nextp, offset)->m_prevp = m_prevp;
         } else {

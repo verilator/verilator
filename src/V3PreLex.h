@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -129,7 +129,7 @@ void yy_delete_buffer(YY_BUFFER_STATE b);
 class VPreStream final {
 public:
     FileLine* m_curFilelinep;  // Current processing point (see also m_tokFilelinep)
-    V3PreLex* m_lexp;  // Lexer, for resource tracking
+    V3PreLex* const m_lexp;  // Lexer, for resource tracking
     std::deque<string> m_buffers;  // Buffer of characters to process
     int m_ignNewlines = 0;  // Ignore multiline newlines
     bool m_eof = false;  // "EOF" buffer
@@ -155,7 +155,7 @@ enum class Enctype : uint8_t { UUENCODE, BASE64, QUOTE_PRINTABLE, RAW, ERR };
 
 class V3PreLex final {
 public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
-    V3PreProcImp* m_preimpp;  // Preprocessor lexor belongs to
+    V3PreProcImp* const m_preimpp;  // Preprocessor lexor belongs to
     std::stack<VPreStream*> m_streampStack;  // Stack of processing files
     int m_streamDepth = 0;  // Depth of stream processing
     YY_BUFFER_STATE m_bufferState;  // Flex state

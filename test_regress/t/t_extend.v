@@ -13,14 +13,14 @@ module t (/*AUTOARG*/
 
    input clk;
    // No verilator_public needed, because it's outside the "" in the $c statement
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
    reg 	  c_worked;
    reg [8:0] c_wider;
 
    wire      one = 1'b1;
 
    always @ (posedge clk) begin
-      cyc <= cyc+8'd1;
+      cyc <= cyc + 8'd1;
 
       // coverage testing
       if (one) begin end
@@ -33,7 +33,7 @@ module t (/*AUTOARG*/
       if (cyc == 8'd2) begin
 `ifdef VERILATOR
 	 $c("VL_PRINTF(\"Calling $c, calling $c...\\n\");");
-	 $c("VL_PRINTF(\"Cyc=%d\\n\",",cyc,");");
+	 $c("VL_PRINTF(\"Cyc=%d\\n\",", cyc, ");");
 	 c_worked <= $c("this->my_function()");
 	 c_wider <= $c9("0x10");
 `else
@@ -56,7 +56,7 @@ module t (/*AUTOARG*/
 #error "`systemc_header didn't work"
 #endif
    bool m_did_ctor;
-   vluint32_t my_function() {
+   uint32_t my_function() {
        if (!m_did_ctor) vl_fatal(__FILE__, __LINE__, __FILE__, "`systemc_ctor didn't work");
        return 1;
    }

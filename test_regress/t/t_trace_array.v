@@ -6,7 +6,7 @@
 
 module t (clk);
    input clk;
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    // Trace would overflow at 256KB which is 256 kb dump, 16 kb in a chunk
 

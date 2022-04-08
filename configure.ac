@@ -1,13 +1,13 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2021 by Wilson Snyder. Verilator is free software; you
+# Copyright 2003-2022 by Wilson Snyder. Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.205 devel],
+AC_INIT([Verilator],[4.221 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -22,6 +22,8 @@ AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 PACKAGE_VERSION_NUMBER=`AS_ECHO("$PACKAGE_VERSION") | sed 's/ .*//g'`
 AC_SUBST(PACKAGE_VERSION_NUMBER)
 AC_DEFINE_UNQUOTED([PACKAGE_VERSION_NUMBER_STRING],["$PACKAGE_VERSION_NUMBER"],[Package version as a number])
+VERILATOR_VERSION_INTEGER=`AS_ECHO("$PACKAGE_VERSION") | [sed 's/\([0-9]\)\.\([0-9][0-9][0-9]\) .*/\1\2000/g']`
+AC_SUBST(VERILATOR_VERSION_INTEGER)
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
@@ -35,7 +37,7 @@ AC_ARG_ENABLE([silent-rules],
 AC_MSG_CHECKING(whether to perform partial static linking of Verilator binary)
 AC_ARG_ENABLE([partial-static],
               [AS_HELP_STRING([--disable-partial-static],
-                              [By default, for Verilation peformance, Verilator
+                              [By default, for Verilation performance, Verilator
                                is linked against some of its dependencies
                                statically. Use this to link the Verilator binary
                                fully dynamically.])],
@@ -143,10 +145,10 @@ AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
 # Compiler flags (ensure they are not empty to avoid configure defaults)
-CFLAGS+=" "
-CPPFLAGS+=" "
-CXXFLAGS+=" "
-LDFLAGS+=" "
+CFLAGS="$CFLAGS "
+CPPFLAGS="$CPPFLAGS "
+CXXFLAGS="$CXXFLAGS "
+LDFLAGS="$LDFLAGS "
 
 # Checks for programs.
 AC_PROG_CC
@@ -162,6 +164,11 @@ AC_RUN_IFELSE(
     AC_MSG_RESULT(yes),
     AC_MSG_RESULT(no);AC_MSG_ERROR([a working C++ compiler is required]),
     AC_MSG_RESULT(yes))
+
+AC_CHECK_PROG(AR,ar,ar)
+if test "x$AR" = "x" ; then
+   AC_MSG_ERROR([Cannot find "ar" in your PATH, please install it])
+fi
 
 AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
@@ -335,35 +342,25 @@ if test "$CFG_ENABLE_COVERAGE" = "yes"; then
   _MY_CXX_CHECK_OPT(CXX,-DVL_GCOV)
 fi
 
+# Compiler flags to enable profiling
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PROFILE,-pg)
+AC_SUBST(CFG_CXXFLAGS_PROFILE)
+
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
-# Currently enabled gnu++14/c++14 due to packaged SystemC dependency
-# gnu++17 is the newest that Verilator supports
-# std++03 is the oldest that Verilator supports
+# Currently enabled c++14 due to packaged SystemC dependency
+# c++14 is the newest that Verilator is regressed to support
+# c++11 is the oldest that Verilator supports
+# gnu is requried for Cygwin to compile verilated.h successfully
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++11)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++03)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
+#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++14)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++11)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++11)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++03)
 AC_SUBST(CFG_CXXFLAGS_STD_NEWEST)
-# And likewise oldest standard (same list above, backwards)
-# This is used for internal testing
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++03)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++11)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++14)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++17)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=c++20)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++03)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++11)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++14)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++17)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++20)
-AC_SUBST(CFG_CXXFLAGS_STD_OLDEST)
 
 # Flags for compiling Verilator internals including parser, and Verilated files
 # These turn on extra warnings and are only used with 'configure --enable-ccwarn'

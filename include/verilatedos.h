@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -92,7 +92,7 @@
 # define VL_ATTR_NORETURN  ///< Attribute that function does not ever return
 #endif
 #ifndef VL_ATTR_NO_SANITIZE_ALIGN
-# define VL_ATTR_NO_SANITIZE_ALIGN ///< Attribute that the function contains intended unaligned access
+# define VL_ATTR_NO_SANITIZE_ALIGN  ///< Attribute that function contains intended unaligned access
 #endif
 #ifndef VL_ATTR_PRINTF
 # define VL_ATTR_PRINTF(fmtArgNum)  ///< Attribute for function with printf format checking
@@ -278,88 +278,57 @@ void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
 // to be declared in order to get the PRIxx macros used by fstapi.c
 #define __STDC_FORMAT_MACROS
 
+// Now that C++ requires these standard types the vl types are deprecated
+#include <cstdint>
+#include <cinttypes>
+
+#ifndef VL_NO_LEGACY
+using vluint8_t = uint8_t;  ///< 8-bit unsigned type (backward compatibility)
+using vluint16_t = uint16_t;  ///< 16-bit unsigned type (backward compatibility)
+using vluint32_t = uint32_t;  ///< 32-bit unsigned type (backward compatibility)
+using vluint64_t = uint64_t;  ///< 64-bit unsigned type (backward compatibility)
+using vlsint8_t = int8_t;  ///< 8-bit signed type (backward compatibility)
+using vlsint16_t = int16_t;  ///< 16-bit signed type (backward compatibility)
+using vlsint32_t = int32_t;  ///< 32-bit signed type (backward compatibility)
+using vlsint64_t = int64_t;  ///< 64-bit signed type (backward compatibility)
+#endif
+
 #if defined(__CYGWIN__)
 
-# include <stdint.h>
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
-typedef unsigned char uint8_t;  ///< 8-bit unsigned type (backward compatibility)
-typedef unsigned short int uint16_t;  ///< 16-bit unsigned type (backward compatibility)
-typedef char vlsint8_t;  ///< 8-bit signed type
-typedef unsigned char vluint8_t;  ///< 8-bit unsigned type
-typedef short int vlsint16_t;  ///< 16-bit signed type
-typedef unsigned short int vluint16_t;  ///< 16-bit unsigned type
-# if defined(__uint32_t_defined) || defined(___int32_t_defined)  // Newer Cygwin uint32_t in stdint.h as an unsigned int
-typedef int32_t vlsint32_t;  ///< 32-bit signed type
-typedef uint32_t vluint32_t;  ///< 32-bit unsigned type
-# else  // Older Cygwin has long==uint32_t
-typedef unsigned long uint32_t;  ///< 32-bit unsigned type (backward compatibility)
-typedef long vlsint32_t;  ///< 32-bit signed type
-typedef unsigned long vluint32_t;  ///< 32-bit unsigned type
-# endif
-# if defined(__WORDSIZE) && (__WORDSIZE == 64)
-typedef long vlsint64_t;  ///< 64-bit signed type
-typedef unsigned long vluint64_t;  ///< 64-bit unsigned type
-# else
-typedef long long vlsint64_t;  ///< 64-bit signed type
-typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
-# endif
 
 #elif defined(_WIN32) && defined(_MSC_VER)
 
-typedef unsigned __int8 uint8_t;  ///< 8-bit unsigned type (backward compatibility)
-typedef unsigned __int16 uint16_t;  ///< 16-bit unsigned type (backward compatibility)
-typedef unsigned __int32 uint32_t;  ///< 32-bit unsigned type (backward compatibility)
-typedef signed __int8 vlsint8_t;  ///< 8-bit signed type
-typedef unsigned __int8 vluint8_t;  ///< 8-bit unsigned type
-typedef signed __int16 vlsint16_t;  ///< 16-bit signed type
-typedef unsigned __int16 vluint16_t;  ///< 16-bit unsigned type
-typedef signed __int32 vlsint32_t;  ///< 32-bit signed type
-typedef unsigned __int32 vluint32_t;  ///< 32-bit unsigned type
-typedef signed __int64 vlsint64_t;  ///< 64-bit signed type
-typedef unsigned __int64 vluint64_t;  ///< 64-bit unsigned type
-
 # ifndef _SSIZE_T_DEFINED
 #  ifdef _WIN64
-typedef signed __int64 ssize_t;  ///< signed size_t; returned from read()
+using ssize_t = uint64_t;  ///< signed size_t; returned from read()
 #  else
-typedef signed __int32 ssize_t;  ///< signed size_t; returned from read()
+using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #  endif
 # endif
 
 #else  // Linux or compliant Unix flavors, -m64
 
 # include <inttypes.h>  // Solaris
-# include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
-typedef char vlsint8_t;  ///< 8-bit signed type
-typedef uint8_t vluint8_t;  ///< 8-bit unsigned type
-typedef short vlsint16_t;  ///< 16-bit signed type
-typedef uint16_t vluint16_t;  ///< 16-bit unsigned type
-typedef int vlsint32_t;  ///< 32-bit signed type
-typedef uint32_t vluint32_t;  ///< 32-bit unsigned type
-# if defined(__WORDSIZE) && (__WORDSIZE == 64)
-typedef long vlsint64_t;  ///< 64-bit signed type
-typedef unsigned long vluint64_t;  ///< 64-bit unsigned type
-# else
-typedef long long vlsint64_t;  ///< 64-bit signed type
-typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
-# endif
 #endif
 
 //=========================================================================
 // Printing printf/scanf formats
-// Alas cinttypes isn't that standard yet
 
 // Use Microsoft-specific format specifiers for Microsoft Visual C++ only
-#ifdef _MSC_VER
-# define VL_PRI64 "I64"
-#else  // use standard C99 format specifiers
-# if defined(__WORDSIZE) && (__WORDSIZE == 64)
-#  define VL_PRI64 "l"
-# else
-#  define VL_PRI64 "ll"
+// Deprecated, favor C++11's PRIx64, etc, instead
+#ifndef VL_NO_LEGACY
+# ifdef _MSC_VER
+#  define VL_PRI64 "I64"  ///< print a uint64_t (backward compatibility)
+# else  // use standard C99 format specifiers
+#  if defined(__WORDSIZE) && (__WORDSIZE == 64)
+#   define VL_PRI64 "l"  ///< print a uint64_t (backward compatibility)
+#  else
+#   define VL_PRI64 "ll"  ///< print a uint64_t (backward compatibility)
+#  endif
 # endif
 #endif
 
@@ -421,7 +390,8 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 // Verilated function size macros
 
 #define VL_MULS_MAX_WORDS 16  ///< Max size in words of MULS operation
-#define VL_TO_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
+#define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
+#define VL_VALUE_STRING_MAX_CHARS (VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE / VL_BYTESIZE)
 
 //=========================================================================
 // Base macros
@@ -446,6 +416,12 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
 #define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in a EData
 
+// Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
+#define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
+#define VL_BITISSET_Q(data, bit) ((data) & (1ULL << VL_BITBIT_Q(bit)))
+#define VL_BITISSET_E(data, bit) ((data) & (VL_EUL(1) << VL_BITBIT_E(bit)))
+#define VL_BITISSET_W(data, bit) ((data)[VL_BITWORD_E(bit)] & (VL_EUL(1) << VL_BITBIT_E(bit)))
+
 //=========================================================================
 // Floating point
 // #defines, to avoid requiring math.h on all compile runs
@@ -462,19 +438,24 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 // Performance counters
 
 #if defined(__i386__) || defined(__x86_64__)
-// The vluint64_t argument is loaded with a high-performance counter for profiling
+// The uint64_t argument is loaded with a high-performance counter for profiling
 // or 0x0 if not implemented on this platform
-#define VL_RDTSC(val) \
+#define VL_GET_CPU_TICK(val) \
     { \
-        vluint32_t hi, lo; \
+        uint32_t hi, lo; \
         asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); \
-        (val) = ((vluint64_t)lo) | (((vluint64_t)hi) << 32); \
+        (val) = ((uint64_t)lo) | (((uint64_t)hi) << 32); \
     }
 #elif defined(__aarch64__)
-# define VL_RDTSC(val) asm volatile("mrs %[rt],PMCCNTR_EL0" : [rt] "=r"(val));
+// 1 GHz virtual system timer on SBSA level 5 compliant systems, else often 100 MHz
+# define VL_GET_CPU_TICK(val) \
+    { \
+        asm volatile("isb" : : : "memory"); \
+        asm volatile("mrs %[rt],CNTVCT_EL0" : [rt] "=r"(val)); \
+    }
 #else
 // We just silently ignore unknown OSes, as only leads to missing statistics
-# define VL_RDTSC(val) (val) = 0;
+# define VL_GET_CPU_TICK(val) (val) = 0;
 #endif
 
 //=========================================================================
@@ -496,6 +477,9 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #  define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
 # elif defined(__powerpc64__)
 #  define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
+# elif defined(__loongarch__)
+// LoongArch does not currently have a yield/pause instruction
+#  define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
 # else
 #  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
 # endif
@@ -510,10 +494,8 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 # define VL_STRCASECMP strcasecmp
 #endif
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(_MSC_VER)
 # define VL_LOCALTIME_R(timep, tmp) localtime_s((tmp), (timep))
-#elif defined(_MSC_VER)
-# define VL_LOCALTIME_R(timep, tmp) localtime_c((tmp), (timep))
 #else
 # define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
 #endif
@@ -526,7 +508,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 # ifdef __x86_64__
 #  define VL_X86_64 1
 # endif
-#endif // VL_PORTABLE_ONLY
+#endif  // VL_PORTABLE_ONLY
 // clang-format on
 
 //=========================================================================

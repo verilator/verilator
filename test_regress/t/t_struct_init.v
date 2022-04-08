@@ -21,6 +21,7 @@ module t;
       b4_t      x0;
    } b4x2_t;
 
+   typedef union  q4_t;  // Forward
    typedef union packed { // [3:0]
       bit [3:0] quad0;
       b4_t      quad1;

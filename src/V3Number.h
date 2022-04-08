@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3Hash.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <vector>
@@ -38,8 +39,52 @@ inline bool v3EpsilonEqual(double a, double b) {
 //============================================================================
 
 class AstNode;
+class FileLine;
+
+// Holds a few entries of ValueAndX to avoid dynamic allocation in std::vector for less width of
+// constants
+class V3NumberData final {
+public:
+    // TYPES
+    struct ValueAndX final {
+        // Value, with bit 0 in bit 0 of this vector (unless X/Z)
+        uint32_t m_value;
+        // Each bit is true if it's X or Z, 10=z, 11=x
+        uint32_t m_valueX;
+        bool operator==(const ValueAndX& other) const {
+            return m_value == other.m_value && m_valueX == other.m_valueX;
+        }
+    };
+
+private:
+    // MEMBERS
+    static constexpr size_t m_inlinedSize = 2;  // Can hold 64 bit without dynamic allocation
+    ValueAndX m_inlined[m_inlinedSize];  // Holds the beginning m_inlinedSize words
+    std::vector<ValueAndX> m_data;  // Holds m_inlinedSize-th word and later
+
+public:
+    // CONSTRUCTORS
+    V3NumberData() {
+        for (size_t i = 0; i < m_inlinedSize; ++i) m_inlined[i] = {0, 0};
+    }
+
+    // METHODS
+    void ensureSizeAtLeast(size_t s) {
+        if (VL_UNLIKELY(s > m_data.size() + m_inlinedSize)) m_data.resize(s - m_inlinedSize);
+    }
+    ValueAndX& operator[](size_t idx) {
+        UDEBUGONLY(UASSERT(idx < m_data.size() + m_inlinedSize,
+                           "idx:" << idx << " size:" << m_data.size()
+                                  << " inlinedSize:" << m_inlinedSize););
+        return idx >= m_inlinedSize ? m_data[idx - m_inlinedSize] : m_inlined[idx];
+    }
+    const ValueAndX& operator[](size_t idx) const { return const_cast<V3NumberData&>(*this)[idx]; }
+};
 
 class V3Number final {
+    // TYPES
+    using ValueAndX = V3NumberData::ValueAndX;
+
     // Large 4-state number handling
     int m_width;  // Width as specified/calculated.
     bool m_sized : 1;  // True if the user specified the width, else we track it.
@@ -51,8 +96,7 @@ class V3Number final {
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
     FileLine* m_fileline;
     AstNode* m_nodep;  // Parent node
-    std::vector<uint32_t> m_value;  // Value, with bit 0 in bit 0 of this vector (unless X/Z)
-    std::vector<uint32_t> m_valueX;  // Each bit is true if it's X or Z, 10=z, 11=x
+    V3NumberData m_value;  // Value and X/Z information
     string m_stringVal;  // If isString, the value of the string
     // METHODS
     V3Number& setSingleBits(char value);
@@ -67,25 +111,26 @@ public:
     void nodep(AstNode* nodep) { setNames(nodep); }
     FileLine* fileline() const { return m_fileline; }
     V3Number& setZero();
-    V3Number& setQuad(vluint64_t value);
+    V3Number& setQuad(uint64_t value);
     V3Number& setLong(uint32_t value);
-    V3Number& setLongS(vlsint32_t value);
+    V3Number& setLongS(int32_t value);
     V3Number& setDouble(double value);
     void setBit(int bit, char value) {  // Note must be pre-zeroed!
         if (bit >= m_width) return;
-        uint32_t mask = (1UL << (bit & 31));
+        const uint32_t mask = (1UL << (bit & 31));
+        ValueAndX& v = m_value[bit / 32];
         if (value == '0' || value == 0) {
-            m_value[bit / 32] &= ~mask;
-            m_valueX[bit / 32] &= ~mask;
+            v.m_value &= ~mask;
+            v.m_valueX &= ~mask;
         } else if (value == '1' || value == 1) {
-            m_value[bit / 32] |= mask;
-            m_valueX[bit / 32] &= ~mask;
+            v.m_value |= mask;
+            v.m_valueX &= ~mask;
         } else if (value == 'z' || value == 2) {
-            m_value[bit / 32] &= ~mask;
-            m_valueX[bit / 32] |= mask;
+            v.m_value &= ~mask;
+            v.m_valueX |= mask;
         } else {  // X
-            m_value[bit / 32] |= mask;
-            m_valueX[bit / 32] |= mask;
+            v.m_value |= mask;
+            v.m_valueX |= mask;
         }
     }
 
@@ -95,8 +140,9 @@ private:
             // We never sign extend
             return '0';
         }
-        return ("01zx"[(((m_value[bit / 32] & (1UL << (bit & 31))) ? 1 : 0)
-                        | ((m_valueX[bit / 32] & (1UL << (bit & 31))) ? 2 : 0))]);
+        const ValueAndX v = m_value[bit / 32];
+        return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
+                        | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
     }
     char bitIsExtend(int bit, int lbits) const {
         // lbits usually = width, but for C optimizations width=32_bits, lbits = 32_or_less
@@ -104,49 +150,52 @@ private:
         UASSERT(lbits <= m_width, "Extend of wrong size");
         if (bit >= lbits) {
             bit = lbits ? lbits - 1 : 0;
+            const ValueAndX v = m_value[bit / 32];
             // We do sign extend
-            return ("01zx"[(((m_value[bit / 32] & (1UL << (bit & 31))) ? 1 : 0)
-                            | ((m_valueX[bit / 32] & (1UL << (bit & 31))) ? 2 : 0))]);
+            return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
+                            | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
         }
-        return ("01zx"[(((m_value[bit / 32] & (1UL << (bit & 31))) ? 1 : 0)
-                        | ((m_valueX[bit / 32] & (1UL << (bit & 31))) ? 2 : 0))]);
+        const ValueAndX v = m_value[bit / 32];
+        return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
+                        | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
     }
 
 public:
     bool bitIs0(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return !bitIsXZ(m_width - 1);
-        return ((m_value[bit / 32] & (1UL << (bit & 31))) == 0
-                && !(m_valueX[bit / 32] & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_value & (1UL << (bit & 31))) == 0 && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIs1(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return false;
-        return ((m_value[bit / 32] & (1UL << (bit & 31)))
-                && !(m_valueX[bit / 32] & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_value & (1UL << (bit & 31))) && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIs1Extend(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIs1Extend(m_width - 1);
-        return ((m_value[bit / 32] & (1UL << (bit & 31)))
-                && !(m_valueX[bit / 32] & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_value & (1UL << (bit & 31))) && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsX(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsZ(m_width - 1);
-        return ((m_value[bit / 32] & (1UL << (bit & 31)))
-                && (m_valueX[bit / 32] & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_value & (1UL << (bit & 31))) && (v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsXZ(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsXZ(m_width - 1);
-        return ((m_valueX[bit / 32] & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsZ(int bit) const {
         if (bit < 0) return false;
         if (bit >= m_width) return bitIsZ(m_width - 1);
-        return ((~m_value[bit / 32] & (1UL << (bit & 31)))
-                && (m_valueX[bit / 32] & (1UL << (bit & 31))));
+        const ValueAndX v = m_value[bit / 32];
+        return ((~v.m_value & (1UL << (bit & 31))) && (v.m_valueX & (1UL << (bit & 31))));
     }
 
 private:
@@ -155,6 +204,9 @@ private:
         for (int bitn = 0; bitn < nbits; bitn++) { v |= (bitIs1(lsb + bitn) << bitn); }
         return v;
     }
+
+    int countX(int lsb, int nbits) const;
+    int countZ(int lsb, int nbits) const;
 
     int words() const { return ((width() + 31) / 32); }
     uint32_t hiWordMask() const { return VL_MASK_I(width()); }
@@ -167,7 +219,7 @@ public:
     V3Number(AstNode* nodep, int width) { init(nodep, width); }  // 0=unsized
     V3Number(AstNode* nodep, int width, uint32_t value, bool sized = true) {
         init(nodep, width, sized);
-        m_value[0] = value;
+        m_value[0].m_value = value;
         opCleanThis();
     }
     // Create from a verilog 32'hxxxx number.
@@ -182,6 +234,7 @@ public:
     V3Number(String, AstNode* nodep, const string& value) {
         init(nodep, 0);
         setString(value);
+        m_fromString = true;
     }
     class Null {};
     V3Number(Null, AstNode* nodep) {
@@ -195,7 +248,7 @@ public:
     }
     V3Number(const V3Number* nump, int width, uint32_t value) {
         init(nullptr, width);
-        m_value[0] = value;
+        m_value[0].m_value = value;
         opCleanThis();
         m_fileline = nump->fileline();
     }
@@ -212,7 +265,7 @@ private:
         m_autoExtend = false;
         m_fromString = false;
         width(swidth, sized);
-        for (int i = 0; i < words(); ++i) m_value[i] = m_valueX[i] = 0;
+        for (int i = 0; i < words(); ++i) m_value[i] = {0, 0};
     }
     void setNames(AstNode* nodep);
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
@@ -231,10 +284,7 @@ public:
             m_sized = false;
             m_width = 1;
         }
-        if (VL_UNLIKELY(m_value.size() < (unsigned)(words() + 1))) {
-            m_value.resize(words() + 1);
-            m_valueX.resize(words() + 1);
-        }
+        m_value.ensureSizeAtLeast(words());
     }
 
     // SETTERS
@@ -269,16 +319,13 @@ public:
     bool isFourState() const;
     bool hasZ() const {
         for (int i = 0; i < words(); i++) {
-            if ((~m_value[i]) & m_valueX[i]) return true;
+            const ValueAndX v = m_value[i];
+            if ((~v.m_value) & v.m_valueX) return true;
         }
         return false;
     }
-    bool isAllZ() const {
-        for (int i = 0; i < width(); i++) {
-            if (!bitIsZ(i)) return false;
-        }
-        return true;
-    }
+    bool isAllZ() const;
+    bool isAllX() const;
     bool isEqZero() const;
     bool isNeqZero() const;
     bool isBitsZero(int msb, int lsb) const;
@@ -292,9 +339,9 @@ public:
     bool isAnyZ() const;
     bool isMsbXZ() const { return bitIsXZ(m_width); }
     uint32_t toUInt() const;
-    vlsint32_t toSInt() const;
-    vluint64_t toUQuad() const;
-    vlsint64_t toSQuad() const;
+    int32_t toSInt() const;
+    uint64_t toUQuad() const;
+    int64_t toSQuad() const;
     string toString() const;
     string toDecimalS() const;  // return ASCII signed decimal number
     string toDecimalU() const;  // return ASCII unsigned decimal number
@@ -314,12 +361,8 @@ public:
     // STATICS
     static int log2b(uint32_t num);
 
-    using UniopFuncp = V3Number& (*)(V3Number&);
-    using BiopFuncp = V3Number& (*)(V3Number&, V3Number&);
-
     // MATH
     // "this" is the output, as we need the output width before some computations
-    V3Number& isTrue(const V3Number& lhs);
     V3Number& opBitsNonX(const V3Number& lhs);  // 0/1->1, X/Z->0
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1
@@ -379,7 +422,6 @@ public:
     V3Number& opPowSS(const V3Number& lhs, const V3Number& rhs);  // Signed lhs, signed rhs
     V3Number& opPowUS(const V3Number& lhs, const V3Number& rhs);  // Unsigned lhs, signed rhs
     V3Number& opAnd(const V3Number& lhs, const V3Number& rhs);
-    V3Number& opChangeXor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opXor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opOr(const V3Number& lhs, const V3Number& rhs);
     V3Number& opShiftR(const V3Number& lhs, const V3Number& rhs);

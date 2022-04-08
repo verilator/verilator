@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -31,7 +31,7 @@
 // Algorithms - weakly connected components
 
 class GraphRemoveRedundant final : GraphAlg<> {
-    bool m_sumWeights;  ///< Sum, rather then maximize weights
+    const bool m_sumWeights;  ///< Sum, rather then maximize weights
 private:
     void main() {
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
@@ -213,7 +213,7 @@ private:
     }
 
     void vertexIterate(V3GraphVertex* vertexp) {
-        uint32_t thisDfsNum = m_currentDfs++;
+        const uint32_t thisDfsNum = m_currentDfs++;
         vertexp->user(thisDfsNum);
         vertexp->color(0);
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
@@ -369,7 +369,7 @@ void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
 
 class GraphAlgSubtrees final : GraphAlg<> {
 private:
-    V3Graph* m_loopGraphp;
+    V3Graph* const m_loopGraphp;
 
     //! Iterate through all connected nodes of a graph with a loop or loops.
     V3GraphVertex* vertexIterateAll(V3GraphVertex* vertexp) {

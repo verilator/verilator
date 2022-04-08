@@ -23,17 +23,18 @@ sub checkRelativeRefs {
     my ($mod, $expect_relative) = @_;
     my $found_relative = 0;
 
-    my $file = "$Self->{obj_dir}/V$Self->{name}_${mod}.cpp";
-    my $text = file_contents($file);
+    foreach my $file (glob_all("$Self->{obj_dir}/V$Self->{name}_${mod}*.cpp")) {
+        my $text = file_contents($file);
 
-    if ($text =~ m/this->/ || $text =~ m/vlSelf->/) {
-        $found_relative = 1;
-    }
+        if ($text =~ m/this->/ || $text =~ m/vlSelf->/) {
+            $found_relative = 1;
+        }
 
-    if ($found_relative != $expect_relative) {
-        error("$file " .
-              ($found_relative ? "has" : "does not have") .
-              " relative variable references.");
+        if ($found_relative != $expect_relative) {
+            error("$file "
+                  . ($found_relative ? "has" : "does not have")
+                  . " relative variable references.");
+        }
     }
 }
 

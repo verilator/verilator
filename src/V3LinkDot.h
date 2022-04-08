@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,7 +41,8 @@ public:
     static void linkDotParamed(AstNetlist* nodep) {
         UINFO(2, __FUNCTION__ << ": " << endl);
         linkDotGuts(nodep, LDS_PARAMED);
-        V3Global::dumpCheckGlobalTree("paramlink", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+        V3Global::dumpCheckGlobalTree("linkdotparam", 0,
+                                      v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
     }
     static void linkDotArrayed(AstNetlist* nodep) {
         UINFO(2, __FUNCTION__ << ": " << endl);

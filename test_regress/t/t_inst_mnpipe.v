@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
 
    reg [7:0] crc;
    reg [2:0] sum;
@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
    MxN_pipeline pipe (in, out, clk);
 
    always @ (posedge clk) begin
-      //$write("[%0t] cyc==%0d crc=%b sum=%x\n",$time, cyc, crc, sum);
+      //$write("[%0t] cyc==%0d crc=%b sum=%x\n", $time, cyc, crc, sum);
       cyc <= cyc + 1;
       crc <= {crc[6:0], ~^ {crc[7],crc[5],crc[4],crc[3]}};
       if (cyc==0) begin

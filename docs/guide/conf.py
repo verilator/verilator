@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0114,C0116,E0402,W0622
+# pylint: disable=C0103,C0114,C0116,C0301,E0402,W0622
 #
 # Configuration file for Verilator's Sphinx documentation builder.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -36,7 +36,7 @@ def setup(app):
 # -- Project information
 
 project = 'Verilator'
-copyright = '2021 by Wilson Snyder, under LGPL-3.0 or Artistic-2.0'
+copyright = '2022 by Wilson Snyder, under LGPL-3.0 or Artistic-2.0'
 author = 'Wilson Snyder'
 
 # The master toctree document.

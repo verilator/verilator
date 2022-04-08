@@ -20,7 +20,7 @@ module t (clk, Rand);
       input [7:0]    idx;
       begin
 `ifdef verilator
-	 QxRand32 = $c("this->QxRandTbl(",tbl,",",idx,")");
+	 QxRand32 = $c("this->QxRandTbl(", tbl, ",", idx, ")");
 `else
 	 QxRand32 = 32'hfeed0fad;
 `endif

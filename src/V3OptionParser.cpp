@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -65,7 +65,7 @@ struct V3OptionParser::Impl {
 
 #define V3OPTION_PARSER_DEF_ACT_CLASS(className, type, body, enType) \
     template <> class V3OptionParser::Impl::className<type> final : public ActionBase<enType> { \
-        type* m_valp; /* Pointer to a option variable*/ \
+        type* const m_valp; /* Pointer to a option variable*/ \
 \
     public: \
         explicit className(type* valp) \
@@ -116,18 +116,16 @@ V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbPartialMatchVal, void(const char*, cons
 // Member functions of V3OptionParser
 
 V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
-    auto it = m_pimpl->m_options.find(optp);
+    const auto it = m_pimpl->m_options.find(optp);
     if (it != m_pimpl->m_options.end()) return it->second.get();
     for (auto&& act : m_pimpl->m_options) {
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
-            const char* const nop = std::strncmp(optp, "-no", 3) ? nullptr : (optp + 3);
+            const char* const nop = VString::startsWith(optp, "-no") ? (optp + 3) : nullptr;
             if (nop && (act.first == nop || act.first == (string{"-"} + nop))) {
                 return act.second.get();
             }
         } else if (act.second->isPartialMatchAllowed()) {
-            if (!std::strncmp(optp, act.first.c_str(), act.first.length())) {
-                return act.second.get();
-            }
+            if (VString::startsWith(optp, act.first)) return act.second.get();
         }
     }
     return nullptr;
@@ -148,14 +146,14 @@ V3OptionParser::ActionIfs& V3OptionParser::add(const std::string& opt, ARG arg) 
 bool V3OptionParser::hasPrefixNo(const char* strp) {
     UASSERT(strp[0] == '-', strp << " does not start with '-'");
     if (strp[1] == '-') ++strp;
-    return std::strncmp(strp, "-no", 3) == 0;
+    return VString::startsWith(strp, "-no");
 }
 
 int V3OptionParser::parse(int idx, int argc, char* argv[]) {
     UASSERT(m_pimpl->m_isFinalized, "finalize() must be called before parse()");
     const char* optp = argv[idx];
     if (optp[0] == '-' && optp[1] == '-') ++optp;
-    ActionIfs* actp = find(optp);
+    ActionIfs* const actp = find(optp);
     if (!actp) return 0;
     if (!actp->isValueNeeded()) {
         actp->exec(optp, nullptr);
@@ -218,7 +216,7 @@ V3OptionParser::ActionIfs&
 V3OptionParser::AppendHelper::operator()(const char* optp, CbPartialMatch,
                                          Impl::ActionCbPartialMatch::CbType cb) const {
     const size_t prefixLen = std::strlen(optp);
-    auto wrap = [prefixLen, cb](const char* optp) { cb(optp + prefixLen); };
+    const auto wrap = [prefixLen, cb](const char* optp) { cb(optp + prefixLen); };
     return m_parser.add<Impl::ActionCbPartialMatch>(optp, std::move(wrap));
 }
 
@@ -226,7 +224,7 @@ V3OptionParser::ActionIfs&
 V3OptionParser::AppendHelper::operator()(const char* optp, CbPartialMatchVal,
                                          Impl::ActionCbPartialMatchVal::CbType cb) const {
     const size_t prefixLen = std::strlen(optp);
-    auto wrap
+    const auto wrap
         = [prefixLen, cb](const char* optp, const char* argp) { cb(optp + prefixLen, argp); };
     return m_parser.add<Impl::ActionCbPartialMatchVal>(optp, std::move(wrap));
 }

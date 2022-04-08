@@ -32,6 +32,13 @@ module t (clk);
       $write("Hello in publicTop\n");
    endtask
 
+   task test_task(input [19:0] in [2], output [19:0] out [2]);
+      // Issue 3316
+      // verilator public
+      out[0] = in[1];
+      out[1] = in[0];
+   endtask
+
 endmodule
 
 module tpub (
@@ -101,7 +108,7 @@ module tpub (
 	    if (1'b1 != got_bool) $stop;
 	    $c("this->publicGetLong(this->got_long);");
 	    if (24'h11bca != got_long) $stop;
-	    $c("{ vluint64_t qq; this->publicGetQuad(qq); this->got_quad=qq; }");
+	    $c("{ uint64_t qq; this->publicGetQuad(qq); this->got_quad=qq; }");
 	    if (60'haaaa_bbbb_cccc != got_quad) $stop;
 	    $c("{ WData gw[3]; this->publicGetWide(gw); VL_ASSIGN_W(72,this->got_wide,gw); }");
 	    if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;

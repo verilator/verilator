@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["t/$Self->{name}.cpp"],
-    verilator_flags2=>["-Wno-UNOPTTHREADS", "--stats"],
+    verilator_flags2 => ["-Wno-UNOPTTHREADS", "--stats"],
     );
 
 execute(

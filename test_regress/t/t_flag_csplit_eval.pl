@@ -15,26 +15,21 @@ sub check_evals {
         local $/; undef $/;
         my $wholefile = <$fh>;
 
-        if ($wholefile =~ /___eval[0-9]+/) {
+        if ($wholefile =~ /___eval__[0-9]+\(.*\)\s*{/) {
             ++$got;
         }
     }
-    $got >= 3 or error("Too few _eval functions found: $got");
+    $got >= 2 or error("Too few _eval functions found: $got");
 }
-
 
 scenarios(vlt_all => 1);
 
 compile(
-    v_flags2 => ["--output-split 1 --output-split-cfuncs 1 --exe ../$Self->{main_filename}"],
-#    verilator_make_gmake => 0,
-    );
-
-# Very slow to compile, so generally skip it
-execute(
-    check_finished => 1,
+    v_flags2 => ["--output-split 1 --output-split-cfuncs 20"],
+    verilator_make_gmake => 0, # Slow to compile, so skip it
     );
 
 check_evals();
+
 ok(1);
 1;

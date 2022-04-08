@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -22,11 +22,12 @@
 
 #include "V3Global.h"
 #include "V3AssertPre.h"
+#include "V3Ast.h"
 
 //######################################################################
 // Assert class functions
 
-class AssertPreVisitor final : public AstNVisitor {
+class AssertPreVisitor final : public VNVisitor {
     // Removes clocks and other pre-optimizations
     // Eventually inlines calls to sequences, properties, etc.
     // We're not parsing the tree, or anything more complicated.
@@ -97,10 +98,10 @@ private:
     virtual void visit(AstFell* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
         if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNode* past = new AstPast(fl, exprp, nullptr);
+        AstNode* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, past, new AstNot(fl, exprp->cloneTree(false)));
         exprp->dtypeSetBit();
@@ -116,10 +117,10 @@ private:
     virtual void visit(AstRose* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
         if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNode* past = new AstPast(fl, exprp, nullptr);
+        AstNode* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, new AstNot(fl, past), exprp->cloneTree(false));
         exprp->dtypeSetBit();
@@ -130,9 +131,9 @@ private:
     virtual void visit(AstStable* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
-        AstNode* past = new AstPast(fl, exprp, nullptr);
+        AstNode* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstEq(fl, past, exprp->cloneTree(false));
         exprp->dtypeSetBit();
@@ -144,15 +145,15 @@ private:
     virtual void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
-        FileLine* fl = nodep->fileline();
-        AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+        FileLine* const fl = nodep->fileline();
+        AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 
         if (m_disablep) lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp);
 
-        AstNode* past = new AstPast(fl, lhsp, nullptr);
+        AstNode* const past = new AstPast(fl, lhsp, nullptr);
         past->dtypeFrom(lhsp);
-        AstNode* exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
+        AstNode* const exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
@@ -166,16 +167,14 @@ private:
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
         // Block is the new expression to evaluate
         AstNode* blockp = nodep->propp()->unlinkFrBack();
-        if (nodep->disablep()) {
-            m_disablep = nodep->disablep()->cloneTree(false);
+        if (AstNode* const disablep = nodep->disablep()) {
+            m_disablep = disablep->cloneTree(false);
             if (VN_IS(nodep->backp(), Cover)) {
-                blockp = new AstAnd(
-                    nodep->disablep()->fileline(),
-                    new AstNot(nodep->disablep()->fileline(), nodep->disablep()->unlinkFrBack()),
-                    blockp);
+                blockp = new AstAnd(disablep->fileline(),
+                                    new AstNot(disablep->fileline(), disablep->unlinkFrBack()),
+                                    blockp);
             } else {
-                blockp = new AstOr(nodep->disablep()->fileline(),
-                                   nodep->disablep()->unlinkFrBack(), blockp);
+                blockp = new AstOr(disablep->fileline(), disablep->unlinkFrBack(), blockp);
             }
         }
         // Unlink and just keep a pointer to it, convert to sentree as needed
@@ -205,6 +204,6 @@ public:
 
 void V3AssertPre::assertPreAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { AssertPreVisitor visitor(nodep); }  // Destruct before checking
+    { AssertPreVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assertpre", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

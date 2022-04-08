@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -32,9 +32,7 @@
 #include "V3Global.h"
 #include "V3Active.h"
 #include "V3Ast.h"
-#include "V3EmitCBase.h"
 #include "V3Const.h"
-#include "V3SenTree.h"  // for SenTreeSet
 #include "V3Graph.h"
 
 #include <unordered_map>
@@ -50,8 +48,8 @@ public:
     enum VertexType : uint8_t { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
 
 private:
-    string m_name;  // Only used for .dot file generation
-    VertexType m_type;  // Vertex type (BLOCK/BRANCH/OUTPUT)
+    const string m_name;  // Only used for .dot file generation
+    const VertexType m_type;  // Vertex type (BLOCK/BRANCH/OUTPUT)
 
     string typestr() const {  //   "
         switch (m_type) {
@@ -64,11 +62,11 @@ private:
 
 public:
     LatchDetectGraphVertex(V3Graph* graphp, const string& name, VertexType type = VT_BLOCK)
-        : V3GraphVertex(graphp)
-        , m_name(name)
-        , m_type(type) {}
-    virtual string name() const { return m_name + " " + typestr(); }
-    virtual string dotColor() const { return user() ? "green" : "black"; }
+        : V3GraphVertex{graphp}
+        , m_name{name}
+        , m_type{type} {}
+    virtual string name() const override { return m_name + " " + typestr(); }
+    virtual string dotColor() const override { return user() ? "green" : "black"; }
     virtual int type() const { return m_type; }
 };
 
@@ -108,9 +106,10 @@ protected:
             }
             break;
         case LatchDetectGraphVertex::VT_BRANCH:  // (AND of both sibling)
-            // A BRANCH vertex always has exactly 2 siblings
-            LatchDetectGraphVertex* ifp = castVertexp(vertexp->outBeginp()->top());
-            LatchDetectGraphVertex* elsp = castVertexp(vertexp->outBeginp()->outNextp()->top());
+                                                 // A BRANCH vertex always has exactly 2 siblings
+            LatchDetectGraphVertex* const ifp = castVertexp(vertexp->outBeginp()->top());
+            LatchDetectGraphVertex* const elsp
+                = castVertexp(vertexp->outBeginp()->outNextp()->top());
             result = latchCheckInternal(ifp) && latchCheckInternal(elsp);
             break;
         }
@@ -120,7 +119,7 @@ protected:
 
 public:
     LatchDetectGraph() { clear(); }
-    ~LatchDetectGraph() { clear(); }
+    virtual ~LatchDetectGraph() override { clear(); }
     // ACCESSORS
     LatchDetectGraphVertex* currentp() { return m_curVertexp; }
     void currentp(LatchDetectGraphVertex* vertex) { m_curVertexp = vertex; }
@@ -142,17 +141,17 @@ public:
     // Add a new control path and connect it to its parent
     LatchDetectGraphVertex* addPathVertex(LatchDetectGraphVertex* parent, const string& name,
                                           bool branch = false) {
-        m_curVertexp = new LatchDetectGraphVertex(this, name,
+        m_curVertexp = new LatchDetectGraphVertex{this, name,
                                                   branch ? LatchDetectGraphVertex::VT_BRANCH
-                                                         : LatchDetectGraphVertex::VT_BLOCK);
-        new V3GraphEdge(this, parent, m_curVertexp, 1);
+                                                         : LatchDetectGraphVertex::VT_BLOCK};
+        new V3GraphEdge{this, parent, m_curVertexp, 1};
         return m_curVertexp;
     }
     // Add a new output variable vertex and store a pointer to it in the user1 field of the
     // variables AstNode
     LatchDetectGraphVertex* addOutputVertex(AstVarRef* nodep) {
-        LatchDetectGraphVertex* outVertexp
-            = new LatchDetectGraphVertex(this, nodep->name(), LatchDetectGraphVertex::VT_OUTPUT);
+        LatchDetectGraphVertex* const outVertexp
+            = new LatchDetectGraphVertex{this, nodep->name(), LatchDetectGraphVertex::VT_OUTPUT};
         nodep->varp()->user1p(outVertexp);
         m_outputs.push_back(nodep);
         return outVertexp;
@@ -162,9 +161,9 @@ public:
         LatchDetectGraphVertex* outVertexp;
         if (!nodep->varp()->user1p()) {  // Not seen this output before
             outVertexp = addOutputVertex(nodep);
-        } else
+        } else {
             outVertexp = castVertexp(nodep->varp()->user1p());
-
+        }
         new V3GraphEdge(this, m_curVertexp, outVertexp, 1);
     }
     // Run latchCheckInternal on each variable assigned by the always block to see if all control
@@ -172,7 +171,7 @@ public:
     void latchCheck(AstNode* nodep, bool latch_expected) {
         bool latch_detected = false;
         for (const auto& vrp : m_outputs) {
-            LatchDetectGraphVertex* vertp = castVertexp(vrp->varp()->user1p());
+            LatchDetectGraphVertex* const vertp = castVertexp(vrp->varp()->user1p());
             vertp->user(true);  // Identify the output vertex we are checking paths _to_
             if (!latchCheckInternal(castVertexp(verticesBeginp()))) latch_detected = true;
             if (latch_detected && !latch_expected) {
@@ -198,7 +197,7 @@ public:
 //######################################################################
 // Collect existing active names
 
-class ActiveBaseVisitor VL_NOT_FINAL : public AstNVisitor {
+class ActiveBaseVisitor VL_NOT_FINAL : public VNVisitor {
 protected:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -210,9 +209,8 @@ private:
     AstActive* m_iActivep = nullptr;  // For current scope, the IActive we're building
     AstActive* m_cActivep = nullptr;  // For current scope, the SActive(combo) we're building
 
-    SenTreeSet m_activeSens;  // Sen lists for each active we've made
-    using ActiveMap = std::unordered_map<AstSenTree*, AstActive*>;
-    ActiveMap m_activeMap;  // Map sentree to active, for folding.
+    // Map from AstSenTree (equivalence) to the corresponding AstActive created.
+    std::unordered_map<VNRef<AstSenTree>, AstActive*> m_activeMap;
 
     // METHODS
     void addActive(AstActive* nodep) {
@@ -224,7 +222,6 @@ private:
         m_scopep = nodep;
         m_iActivep = nullptr;
         m_cActivep = nullptr;
-        m_activeSens.clear();
         m_activeMap.clear();
         iterateChildren(nodep);
         // Don't clear scopep, the namer persists beyond this visit
@@ -258,29 +255,20 @@ public:
         }
         return m_iActivep;
     }
+
+    // Return an AstActive that is sensitive to a SenTree equivalent to the given sentreep.
     AstActive* getActive(FileLine* fl, AstSenTree* sensesp) {
-        // Return a sentree in this scope that matches given sense list.
 
-        AstActive* activep = nullptr;
-        AstSenTree* activeSenp = m_activeSens.find(sensesp);
-        if (activeSenp) {
-            const auto it = m_activeMap.find(activeSenp);
-            UASSERT(it != m_activeMap.end(), "Corrupt active map");
-            activep = it->second;
-        }
+        auto it = m_activeMap.find(*sensesp);
+        // If found matching AstActive, return it
+        if (it != m_activeMap.end()) return it->second;
 
-        // Not found, form a new one
-        if (!activep) {
-            AstSenTree* newsenp = sensesp->cloneTree(false);
-            activep = new AstActive(fl, "sequent", newsenp);
-            activep->sensesStorep(activep->sensesp());
-            UINFO(8, "    New ACTIVE " << activep << endl);
-            // Form the sensitivity list
-            addActive(activep);
-            m_activeMap[newsenp] = activep;
-            m_activeSens.add(newsenp);
-            // Note actives may have also been added above in the Active visitor
-        }
+        // No such AstActive yet, creat it, and add to map.
+        AstSenTree* const newsenp = sensesp->cloneTree(false);
+        AstActive* const activep = new AstActive(fl, "sequent", newsenp);
+        activep->sensesStorep(activep->sensesp());
+        addActive(activep);
+        m_activeMap.emplace(*newsenp, activep);
         return activep;
     }
 
@@ -298,20 +286,20 @@ private:
     // NODE STATE
     // Input:
     //  AstVar::user1p // V2LatchGraphVertex* The vertex handling this node
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
     // STATE
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
-        AstVar* varp = nodep->varp();
+        const AstVar* const varp = nodep->varp();
         if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()) {
             m_graph.addAssignment(nodep);
         }
     }
     virtual void visit(AstNodeIf* nodep) {
         if (!nodep->isBoundsCheck()) {
-            LatchDetectGraphVertex* parentp = m_graph.currentp();
-            LatchDetectGraphVertex* branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
+            LatchDetectGraphVertex* const parentp = m_graph.currentp();
+            LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
             m_graph.addPathVertex(branchp, "IF");
             iterateAndNextNull(nodep->ifsp());
             m_graph.addPathVertex(branchp, "ELSE");
@@ -340,9 +328,9 @@ public:
     enum CheckType : uint8_t { CT_SEQ, CT_COMBO, CT_INITIAL, CT_LATCH };
 
 private:
-    CheckType m_check;  // Combo logic or other
-    AstNode* m_alwaysp;  // Always we're under
-    AstNode* m_assignp = nullptr;  // In assign
+    const CheckType m_check;  // Combo logic or other
+    const AstNode* const m_alwaysp;  // Always we're under
+    const AstNode* m_assignp = nullptr;  // In assign
     // VISITORS
     virtual void visit(AstAssignDly* nodep) override {
         if (m_check != CT_SEQ) {
@@ -355,7 +343,7 @@ private:
             } else if (m_check == CT_LATCH) {
                 // Suppress. Shouldn't matter that the interior of the latch races
             } else if (!(VN_IS(nodep->lhsp(), VarRef)
-                         && VN_CAST(nodep->lhsp(), VarRef)->varp()->isLatched())) {
+                         && VN_AS(nodep->lhsp(), VarRef)->varp()->isLatched())) {
                 nodep->v3warn(COMBDLY, "Delayed assignments (<=) in non-clocked"
                                        " (non flop or latch) block\n"
                                            << nodep->warnMore()
@@ -363,8 +351,8 @@ private:
                 // Conversely, we could also suggest latches use delayed assignments, as
                 // recommended by Cliff Cummings?
             }
-            AstNode* newp = new AstAssign(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                          nodep->rhsp()->unlinkFrBack());
+            AstNode* const newp = new AstAssign(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                                nodep->rhsp()->unlinkFrBack());
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
@@ -377,7 +365,7 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) override {
-        AstVar* varp = nodep->varp();
+        const AstVar* const varp = nodep->varp();
         if (m_check == CT_SEQ && m_assignp && !varp->isUsedLoopIdx()  // Ignore loop indices
             && !varp->isTemp()) {
             // Allow turning off warnings on the always, or the variable also
@@ -437,29 +425,29 @@ private:
     virtual void visit(AstInitial* nodep) override {
         // Relink to IACTIVE, unless already under it
         UINFO(4, "    INITIAL " << nodep << endl);
-        ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_INITIAL);
-        AstActive* wantactivep = m_namer.getIActive(nodep->fileline());
+        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
+        AstActive* const wantactivep = m_namer.getIActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
     virtual void visit(AstAssignAlias* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    ASSIGNW " << nodep << endl);
-        AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
+        AstActive* const wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
     virtual void visit(AstAssignW* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    ASSIGNW " << nodep << endl);
-        AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
+        AstActive* const wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
     virtual void visit(AstCoverToggle* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    COVERTOGGLE " << nodep << endl);
-        AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
+        AstActive* const wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
@@ -470,12 +458,12 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_INITIAL);
+        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         if (!m_scopeFinalp) {
             m_scopeFinalp = new AstCFunc(
                 nodep->fileline(), "_final_" + m_namer.scopep()->nameDotless(), m_namer.scopep());
             m_scopeFinalp->dontCombine(true);
-            m_scopeFinalp->formCallTree(true);
+            m_scopeFinalp->isFinal(true);
             m_scopeFinalp->isStatic(false);
             m_scopeFinalp->isLoose(true);
             m_scopeFinalp->slow(true);
@@ -489,8 +477,7 @@ private:
     // METHODS
     void visitAlways(AstNode* nodep, AstSenTree* oldsensesp, VAlwaysKwd kwd) {
         // Move always to appropriate ACTIVE based on its sense list
-        if (oldsensesp && oldsensesp->sensesp() && VN_IS(oldsensesp->sensesp(), SenItem)
-            && VN_CAST(oldsensesp->sensesp(), SenItem)->isNever()) {
+        if (oldsensesp && oldsensesp->sensesp() && oldsensesp->sensesp()->isNever()) {
             // Never executing.  Kill it.
             UASSERT_OBJ(!oldsensesp->sensesp()->nextp(), nodep,
                         "Never senitem should be alone, else the never should be eliminated.");
@@ -540,14 +527,14 @@ private:
 
         // Warn and/or convert any delayed assignments
         if (combo && !sequent) {
-            ActiveLatchCheckVisitor latchvisitor(nodep, kwd);
+            const ActiveLatchCheckVisitor latchvisitor{nodep, kwd};
             if (kwd == VAlwaysKwd::ALWAYS_LATCH) {
-                ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_LATCH);
+                ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_LATCH};
             } else {
-                ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_COMBO);
+                ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMBO};
             }
         } else if (!combo && sequent) {
-            ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_SEQ);
+            ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_SEQ};
         }
     }
     virtual void visit(AstAlways* nodep) override {
@@ -578,7 +565,7 @@ private:
     }
     virtual void visit(AstSenItem* nodep) override {
         if (nodep->varrefp()) {
-            if (AstBasicDType* basicp = nodep->varrefp()->dtypep()->basicp()) {
+            if (const AstBasicDType* const basicp = nodep->varrefp()->dtypep()->basicp()) {
                 if (basicp->isEventValue()) {
                     // Events need to be treated as active high so we only activate on event being
                     // 1
@@ -620,6 +607,6 @@ public:
 
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ActiveVisitor visitor(nodep); }  // Destruct before checking
+    { ActiveVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("active", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

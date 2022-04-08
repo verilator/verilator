@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -72,7 +72,7 @@ class VerilatedCovImp;
 ///
 /// Example:
 ///
-///     vluint32_t m_cases[10];  // Storage for coverage data
+///     uint32_t m_cases[10];  // Storage for coverage data
 ///     constructor() {
 ///         // Initialize
 ///         for (int i = 0; i < 10; ++i) m_cases[i] = 0;
@@ -126,8 +126,8 @@ public:  // But Internal use only
     // Call _insert1, followed by _insert2 and _insert3
     // Do not call directly; use VL_COVER_INSERT or higher level macros instead
     // _insert1: Remember item pointer with count.  (Not const, as may add zeroing function)
-    void _inserti(vluint32_t* itemp) VL_MT_SAFE;
-    void _inserti(vluint64_t* itemp) VL_MT_SAFE;
+    void _inserti(uint32_t* itemp) VL_MT_SAFE;
+    void _inserti(uint64_t* itemp) VL_MT_SAFE;
     // _insert2: Set default filename and line number
     void _insertf(const char* filename, int lineno) VL_MT_SAFE;
     // _insert3: Set parameters

@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2001-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -26,6 +26,8 @@
 #include "verilated_sc.h"
 #include "verilated_vcd_c.h"
 
+#include <string>
+
 //=============================================================================
 // VerilatedVcdSc
 ///
@@ -44,9 +46,9 @@ public:
         // We want to avoid a depreciated warning, but still be back compatible.
         // Turning off the message just for this still results in an
         // annoying "to turn off" message.
-        sc_time t1sec(1, SC_SEC);
+        const sc_time t1sec{1, SC_SEC};
         if (t1sec.to_default_time_units() != 0) {
-            sc_time tunits(1.0 / t1sec.to_default_time_units(), SC_SEC);
+            const sc_time tunits{1.0 / t1sec.to_default_time_units(), SC_SEC};
             spTrace()->set_time_unit(tunits.to_string());
         }
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
@@ -59,6 +61,9 @@ public:
     virtual void cycle(bool delta_cycle) {
         if (!delta_cycle) this->dump(sc_time_stamp().to_double());
     }
+
+    // Override VerilatedVcdC. Must be called after starting simulation.
+    virtual void open(const char* filename) /*override*/ VL_MT_SAFE;
 
 private:
     // METHODS - Fake outs for linker

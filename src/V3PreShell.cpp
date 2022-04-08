@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -53,11 +53,11 @@ protected:
         // Create the implementation pointer
         if (env) {}
         if (!s_preprocp) {
-            FileLine* cmdfl = new FileLine(FileLine::commandLineFilename());
+            FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
             s_preprocp = V3PreProc::createPreProc(cmdfl);
             s_preprocp->debug(debug());
             // Default defines
-            FileLine* prefl = new FileLine(FileLine::builtInFilename());
+            FileLine* const prefl = new FileLine(FileLine::builtInFilename());
             s_preprocp->defineCmdLine(prefl, "VERILATOR", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator3", "1");  // LEAK_OK
@@ -95,7 +95,7 @@ protected:
 
         // Preprocess
         s_filterp = filterp;
-        string modfilename = preprocOpen(fl, s_filterp, modname, "", errmsg);
+        const string modfilename = preprocOpen(fl, s_filterp, modname, "", errmsg);
         if (modfilename.empty()) return false;
 
         // Set language standard up front
@@ -104,7 +104,7 @@ protected:
             // from the V3LangCode to the various Lex BEGIN states. The language
             // of this source file is updated here, in case there have been any
             // intervening +<lang>ext+ options since it was first encountered.
-            FileLine* modfileline = new FileLine(modfilename);
+            FileLine* const modfileline = new FileLine(modfilename);
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
             V3Parse::ppPushText(
                 parsep, (string("`begin_keywords \"") + modfileline->language().ascii() + "\"\n"));
@@ -112,7 +112,7 @@ protected:
         }
 
         while (!s_preprocp->isEof()) {
-            string line = s_preprocp->getline();
+            const string line = s_preprocp->getline();
             V3Parse::ppPushText(parsep, line);
         }
         return true;
@@ -138,7 +138,7 @@ private:
         if (filename == "") {
             // Allow user to put `defined names on the command line instead of filenames,
             // then convert them properly.
-            string ppmodname = s_preprocp->removeDefines(modname);
+            const string ppmodname = s_preprocp->removeDefines(modname);
 
             filename = v3Global.opt.filePath(fl, ppmodname, lastpath, errmsg);
         }
@@ -171,7 +171,7 @@ void V3PreShell::preprocInclude(FileLine* fl, const string& modname) {
     V3PreShellImp::s_preImp.preprocInclude(fl, modname);
 }
 void V3PreShell::defineCmdLine(const string& name, const string& value) {
-    FileLine* prefl = new FileLine(FileLine::commandLineFilename());
+    FileLine* const prefl = new FileLine(FileLine::commandLineFilename());
     V3PreShellImp::s_preprocp->defineCmdLine(prefl, name, value);
 }
 void V3PreShell::undef(const string& name) { V3PreShellImp::s_preprocp->undef(name); }

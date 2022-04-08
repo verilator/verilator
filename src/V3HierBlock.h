@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2022 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,11 +29,12 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-class AstNodeModule;
 class AstNetlist;
+class AstNodeModule;
 class AstVar;
 
 //######################################################################
@@ -49,13 +50,13 @@ private:
     using StrGParams = std::vector<std::pair<std::string, std::string>>;
 
     // MEMBERS
-    const AstNodeModule* m_modp;  // Hierarchical block module
+    const AstNodeModule* const m_modp;  // Hierarchical block module
     // Hierarchical blocks that directly or indirectly instantiate this block
     HierBlockSet m_parents;
     // Hierarchical blocks that this block directly or indirectly instantiates
     HierBlockSet m_children;
     // Parameters that are overridden by #(.param(value)) syntax.
-    GParams m_gparams;
+    const GParams m_gparams;
 
     // METHODS
     VL_UNCOPYABLE(V3HierBlock);

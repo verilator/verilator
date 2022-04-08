@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,11 +20,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "verilated_cov_key.h"
-
 #include <vector>
 #include <iomanip>
+#include <map>
 #include <unordered_map>
+
+#define V3ERROR_NO_GLOBAL_
+#include "V3Error.h"
+#include "verilated_cov_key.h"
 
 //********************************************************************
 // VlcPoint - A coverage point (across all tests)
@@ -33,22 +36,22 @@ class VlcPoint final {
 private:
     // MEMBERS
     string m_name;  //< Name of the point
-    vluint64_t m_pointNum;  //< Point number
-    vluint64_t m_testsCovering = 0;  //< Number tests with non-zero coverage of this point
-    vluint64_t m_count = 0;  //< Count of hits across all tests
+    uint64_t m_pointNum;  //< Point number
+    uint64_t m_testsCovering = 0;  //< Number tests with non-zero coverage of this point
+    uint64_t m_count = 0;  //< Count of hits across all tests
 
 public:
     // CONSTRUCTORS
-    VlcPoint(const string& name, vluint64_t pointNum)
+    VlcPoint(const string& name, uint64_t pointNum)
         : m_name{name}
         , m_pointNum{pointNum} {}
     ~VlcPoint() = default;
     // ACCESSORS
     const string& name() const { return m_name; }
-    vluint64_t pointNum() const { return m_pointNum; }
-    vluint64_t testsCovering() const { return m_testsCovering; }
-    void countInc(vluint64_t inc) { m_count += inc; }
-    vluint64_t count() const { return m_count; }
+    uint64_t pointNum() const { return m_pointNum; }
+    uint64_t testsCovering() const { return m_testsCovering; }
+    void countInc(uint64_t inc) { m_count += inc; }
+    uint64_t count() const { return m_count; }
     void testsCoveringInc() { m_testsCovering++; }
     // KEY ACCESSORS
     string filename() const { return keyExtract(VL_CIK_FILENAME); }
@@ -61,7 +64,7 @@ public:
     // METHODS
     string keyExtract(const char* shortKey) const {
         // Hot function
-        size_t shortLen = std::strlen(shortKey);
+        const size_t shortLen = std::strlen(shortKey);
         const string namestr = name();
         for (const char* cp = namestr.c_str(); *cp; ++cp) {
             if (*cp == '\001') {
@@ -93,10 +96,10 @@ public:
 class VlcPoints final {
 private:
     // MEMBERS
-    using NameMap = std::map<const std::string, vluint64_t>;  // Sorted by name (ordered)
+    using NameMap = std::map<const std::string, uint64_t>;  // Sorted by name (ordered)
     NameMap m_nameMap;  //< Name to point-number
     std::vector<VlcPoint> m_points;  //< List of all points
-    vluint64_t m_numPoints = 0;  //< Total unique points
+    uint64_t m_numPoints = 0;  //< Total unique points
 
 public:
     // ITERATORS
@@ -118,16 +121,16 @@ public:
             point.dump();
         }
     }
-    VlcPoint& pointNumber(vluint64_t num) { return m_points[num]; }
-    vluint64_t findAddPoint(const string& name, vluint64_t count) {
-        vluint64_t pointnum;
+    VlcPoint& pointNumber(uint64_t num) { return m_points[num]; }
+    uint64_t findAddPoint(const string& name, uint64_t count) {
+        uint64_t pointnum;
         const auto iter = m_nameMap.find(name);
         if (iter != m_nameMap.end()) {
             pointnum = iter->second;
             m_points[pointnum].countInc(count);
         } else {
             pointnum = m_numPoints++;
-            VlcPoint point(name, pointnum);
+            VlcPoint point{name, pointnum};
             point.countInc(count);
             m_points.push_back(point);
             m_nameMap.emplace(point.name(), point.pointNum());

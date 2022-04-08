@@ -217,9 +217,9 @@ class Cpt:
             argtext = func + "\000"  # EOF character
             for tok in argtext:
                 if tok == "\000":
-                    None  # pylint: disable=pointless-statement
+                    pass
                 elif re.match(r'\s+', tok):
-                    None  # pylint: disable=pointless-statement
+                    pass
                 elif tok == "{":
                     newref = [forming]
                     if not aref:
@@ -262,7 +262,7 @@ class Cpt:
         elif func == "NEVER":
             out += "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");"
         elif func == "DONE":
-            None  # pylint: disable=pointless-statement
+            pass
         else:
             self.error("Unknown execution function format: " + func + "\n")
         return out
@@ -283,8 +283,8 @@ class Cpt:
                 self.print("\t// " + typefunc['comment'] + "\n")
                 self.print("\tif (" + typefunc['match_if'] + ") {\n")
                 self.print("\t    UINFO(" + str(typefunc['uinfo_level']) +
-                           ",cvtToHex(nodep)" + "<<\" " + typefunc['uinfo'] +
-                           "\\n\");\n")
+                           ", cvtToHex(nodep)" + " << \" " +
+                           typefunc['uinfo'] + "\\n\");\n")
                 self.print("\t    " + typefunc['exec_func'] + "\n")
                 self.print("\t    return true;\n")
                 self.print("\t}\n")
@@ -333,12 +333,11 @@ class Cpt:
                     "      iterateAndNextNull(nodep->lhsp());\n" +
                     "".join(out_for_type_sc))
                 if out_for_type[0]:
-                    self.print(
-                        "      iterateAndNextNull(nodep->rhsp());\n" +
-                        "      AstNodeTriop *tnp = VN_CAST(nodep, NodeTriop);\n"
-                        +
-                        "      if (tnp && tnp->thsp()) iterateAndNextNull(tnp->thsp());\n"
-                        + "".join(out_for_type) + "    }\n")
+                    self.print("      iterateAndNextNull(nodep->rhsp());\n")
+                    if is_subclass_of(typen, "NodeTriop"):
+                        self.print(
+                            "      iterateAndNextNull(nodep->thsp());\n")
+                    self.print("".join(out_for_type) + "    }\n")
             elif len(out_for_type) > 0:  # Other types with something to print
                 skip = typen in self.tree_skip_visit
                 gen = "Gen" if skip else ""
@@ -363,21 +362,17 @@ def read_types(filename):
             match = re.search(r'^\s*(class|struct)\s*(\S+)', line)
             if match:
                 classn = match.group(2)
-                inh = ""
                 match = re.search(r':\s*public\s+(\S+)', line)
-                if match:
-                    inh = match.group(1)
-                # print("class "+classn+" : "+inh)
-                if classn == "AstNode":
-                    inh = ""
-                if re.search(r'Ast', inh) or classn == "AstNode":
+                supern = match.group(1) if match else ""
+                assert classn != "AstNode" or supern == "", "AstNode can't have a superclass"
+                if re.search(r'Ast', supern) or classn == "AstNode":
                     classn = re.sub(r'^Ast', '', classn)
-                    inh = re.sub(r'^Ast', '', inh)
-                    Classes[classn] = inh
-                    if inh != '':
-                        if inh not in Children:
-                            Children[inh] = {}
-                        Children[inh][classn] = 1
+                    supern = re.sub(r'^Ast', '', supern)
+                    Classes[classn] = supern
+                    if supern != '':
+                        if supern not in Children:
+                            Children[supern] = {}
+                        Children[supern][classn] = 1
 
 
 def read_stages(filename):
@@ -387,7 +382,7 @@ def read_stages(filename):
             line = re.sub(r'//.*$', '', line)
             if re.match(r'^\s*$', line):
                 continue
-            match = re.match(r'^\s*([A-Za-z0-9]+)::', line)
+            match = re.search(r'\s([A-Za-z0-9]+)::', line)
             if match:
                 stage = match.group(1) + ".cpp"
                 if stage not in Stages:
@@ -407,6 +402,12 @@ def read_refs(filename):
                 ClassRefs[ref]['newed'][basename] = 1
             for match in re.finditer(r'\b(Ast[A-Za-z0-9_]+)', line):
                 ref = match.group(1)
+                if ref not in ClassRefs:
+                    ClassRefs[ref] = {'newed': {}, 'used': {}}
+                ClassRefs[ref]['used'][basename] = 1
+            for match in re.finditer(
+                    r'(VN_IS|VN_AS|VN_CAST)\([^.]+, ([A-Za-z0-9_]+)', line):
+                ref = "Ast" + match.group(2)
                 if ref not in ClassRefs:
                     ClassRefs[ref] = {'newed': {}, 'used': {}}
                 ClassRefs[ref]['used'][basename] = 1
@@ -448,6 +449,10 @@ def children_of(typen):
                 cllist.append(child)
 
     return cllist
+
+
+def is_subclass_of(typen, what):
+    return typen == what or (typen in children_of(what))
 
 
 # ---------------------------------------------------------------------
@@ -516,52 +521,23 @@ def write_visitor(filename):
 def write_impl(filename):
     with open_file(filename) as fh:
         fh.write("\n")
-        fh.write("    // These for use by VN_IS only\n")
+        fh.write("// For internal use. They assume argument is not nullptr.\n")
         for typen in sorted(Classes.keys()):
-            fh.write("template<> inline bool AstNode::privateIs<Ast" + typen +
-                     ">(const AstNode* nodep) { ")
+            fh.write("template<> inline bool AstNode::privateTypeTest<Ast" +
+                     typen + ">(const AstNode* nodep) { ")
             if typen == "Node":
-                fh.write("return nodep != NULL; ")
+                fh.write("return true; ")
             else:
-                fh.write("return nodep && ")
+                fh.write("return ")
                 if re.search(r'^Node', typen):
                     fh.write(
-                        "(static_cast<int>(nodep->type()) >= static_cast<int>(AstType::first"
-                        + typen + ")) && ")
+                        "static_cast<int>(nodep->type()) >= static_cast<int>(VNType::first"
+                        + typen + ") && ")
                     fh.write(
-                        "(static_cast<int>(nodep->type()) <= static_cast<int>(AstType::last"
-                        + typen + ")); ")
+                        "static_cast<int>(nodep->type()) <= static_cast<int>(VNType::last"
+                        + typen + "); ")
                 else:
-                    fh.write(
-                        "(static_cast<int>(nodep->type()) == static_cast<int>(AstType::at"
-                        + typen + ")); ")
-            fh.write("}\n")
-
-        fh.write("    // These for use by VN_CAST macro only\n")
-        for typen in sorted(Classes.keys()):
-            fh.write("template<> inline Ast" + typen +
-                     "* AstNode::privateCast<Ast" + typen +
-                     ">(AstNode* nodep) { ")
-            if typen == "Node":
-                fh.write("return nodep; ")
-            else:
-                fh.write("return AstNode::privateIs<Ast" + typen +
-                         ">(nodep) ? ")
-                fh.write("reinterpret_cast<Ast" + typen + "*>(nodep) : NULL; ")
-            fh.write("}\n")
-
-        fh.write("    // These for use by VN_CAST_CONST macro only\n")
-        for typen in sorted(Classes.keys()):
-            fh.write("template<> inline const Ast" + typen +
-                     "* AstNode::privateConstCast<Ast" + typen +
-                     ">(const AstNode* nodep) { ")
-            if typen == "Node":
-                fh.write("return nodep; ")
-            else:
-                fh.write("return AstNode::privateIs<Ast" + typen +
-                         ">(nodep) ? ")
-                fh.write("reinterpret_cast<const Ast" + typen +
-                         "*>(nodep) : NULL; ")
+                    fh.write("nodep->type() == VNType::at" + typen + "; ")
             fh.write("}\n")
 
 
@@ -621,6 +597,13 @@ def write_types(filename):
         fh.write("    }\n")
 
 
+def write_yystype(filename):
+    with open_file(filename) as fh:
+        for typen in sorted(Classes.keys()):
+            fh.write("Ast{t}* {m}p;\n".format(t=typen,
+                                              m=typen[0].lower() + typen[1:]))
+
+
 def write_macros(filename):
     with open_file(filename) as fh:
         typen = "None"
@@ -642,7 +625,7 @@ def write_macros(filename):
                     typen = match.group(1)
                     base = match.group(4)
                     if not typen.startswith("Node"):
-                        macro = "#define ASTGEN_SUPER_{t}(...) {b}(AstType::at{t}, __VA_ARGS__)\n" \
+                        macro = "#define ASTGEN_SUPER_{t}(...) {b}(VNType::at{t}, __VA_ARGS__)\n" \
                                 .format(b=base, t=typen)
                         fh.write(macro)
 
@@ -665,7 +648,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""Generate V3Ast headers to reduce C++ code duplication.""",
     epilog=
-    """Copyright 2002-2021 by Wilson Snyder. This program is free software; you
+    """Copyright 2002-2022 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
@@ -712,6 +695,7 @@ if Args.classes:
     write_visitor("V3Ast__gen_visitor.h")
     write_impl("V3Ast__gen_impl.h")
     write_types("V3Ast__gen_types.h")
+    write_yystype("V3Ast__gen_yystype.h")
     write_macros("V3AstNodes__gen_macros.h")
 
 for cpt in Args.infiles:

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -113,6 +113,8 @@ public:
     // to be a consecutive sequence of the characters [a-zA-Z0-9_]. Sub-words are not replaced.
     // e.g.: replaceWords("one apple bad_apple", "apple", "banana") -> "one banana bad_apple"
     static string replaceWord(const string& str, const string& from, const string& to);
+    // Predicate to check if 'str' starts with 'prefix'
+    static bool startsWith(const string& str, const string& prefix);
 };
 
 //######################################################################
@@ -226,7 +228,7 @@ public:
     }
     // Return friendly message
     string bestCandidateMsg(const string& goal) const {
-        string candidate = bestCandidate(goal);
+        const string candidate = bestCandidate(goal);
         if (candidate.empty()) {
             return "";
         } else {

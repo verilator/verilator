@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
 		 ELARGE = 'hf00d
 		 } my_t;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
    my_t e;
 
    string all;
@@ -42,9 +42,9 @@ module t (/*AUTOARG*/
 	 e <= E01;
       end
       else if (cyc==20) begin
-	 e <= 'h11; // Unknown
+	 e <= my_t'('h11); // Unknown
       end
-      else if (cyc==20) begin
+      else if (cyc==21) begin
 	 `checks(e.name, ""); // Unknown
       end
       else if (cyc==99) begin

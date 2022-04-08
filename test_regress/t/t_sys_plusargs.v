@@ -23,11 +23,16 @@ module t;
       if ($test$plusargs("NOTTHERE")!==0) $stop;
 
       p_i = 10;
-      if ($value$plusargs("NOTTHERE%d", p_i)!==0) $stop;
+      if ($value$plusargs("NOTTHERE%d", p_i) !== 0) $stop;
+      if ($value$plusargs("NOTTHERE%0d", p_i) !== 0) $stop;
       if (p_i !== 10) $stop;
 
       p_i = 0;
-      if ($value$plusargs("INT=%d", p_i)!==1) $stop;
+      if ($value$plusargs("INT=%d", p_i) !== 1) $stop;
+      if (p_i !== 32'd1234) $stop;
+
+      p_i = 0;
+      if ($value$plusargs("INT=%0d", p_i) !== 1) $stop;
       if (p_i !== 32'd1234) $stop;
 
       p_i = 0;
@@ -101,6 +106,11 @@ module t;
       p_i = 0;
       if ($value$plusargs(sv_in, p_i)!==1) $stop;
       $display("i='%d'",p_i);
+      if (p_i !== 32'd1234) $stop;
+
+      // bug3131 - really "if" side effect test
+      p_i = 0;
+      if ($value$plusargs("INT=%d", p_i)) ;
       if (p_i !== 32'd1234) $stop;
 
       $write("*-* All Finished *-*\n");

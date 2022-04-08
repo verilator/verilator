@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,7 +41,7 @@
 class LifeState final {
     // NODE STATE
     //   See below
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
 public:
@@ -97,7 +97,7 @@ public:
         m_assignp = assp;
         m_constp = nullptr;
         m_everSet = true;
-        if (VN_IS(assp->rhsp(), Const)) m_constp = VN_CAST(assp->rhsp(), Const);
+        if (VN_IS(assp->rhsp(), Const)) m_constp = VN_AS(assp->rhsp(), Const);
     }
     inline void complexAssign() {  // A[x]=... or some complicated assignment
         m_assignp = nullptr;
@@ -125,26 +125,25 @@ class LifeBlock final {
     //  For each basic block, we'll make a new map of what variables that if/else is changing
     using LifeMap = std::unordered_map<AstVarScope*, LifeVarEntry>;
     LifeMap m_map;  // Current active lifetime map for current scope
-    LifeBlock* m_aboveLifep;  // Upper life, or nullptr
-    LifeState* m_statep;  // Current global state
+    LifeBlock* const m_aboveLifep;  // Upper life, or nullptr
+    LifeState* const m_statep;  // Current global state
 
     VL_DEBUG_FUNC;  // Declare debug()
 
 public:
-    LifeBlock(LifeBlock* aboveLifep, LifeState* statep) {
-        m_aboveLifep = aboveLifep;  // Null if top
-        m_statep = statep;
-    }
+    LifeBlock(LifeBlock* aboveLifep, LifeState* statep)
+        : m_aboveLifep{aboveLifep}  // Null if top
+        , m_statep{statep} {}
     ~LifeBlock() = default;
     // METHODS
     void checkRemoveAssign(const LifeMap::iterator& it) {
-        AstVar* varp = it->first->varp();
-        LifeVarEntry* entp = &(it->second);
+        const AstVar* const varp = it->first->varp();
+        LifeVarEntry* const entp = &(it->second);
         if (!varp->isSigPublic()) {
             // Rather than track what sigs AstUCFunc/AstUCStmt may change,
             // we just don't optimize any public sigs
             // Check the var entry, and remove if appropriate
-            if (AstNode* oldassp = entp->assignp()) {
+            if (AstNode* const oldassp = entp->assignp()) {
                 UINFO(7, "       PREV: " << oldassp << endl);
                 // Redundant assignment, in same level block
                 // Don't delete it now as it will confuse iteration since it maybe WAY
@@ -179,10 +178,10 @@ public:
         }
     }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
-        // Variable rvalue.  If it references a constant, we can simply replace it
+        // Variable rvalue.  If it references a constant, we can replace it
         const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
-            if (AstConst* constp = it->second.constNodep()) {
+            if (AstConst* const constp = it->second.constNodep()) {
                 if (!varrefp->varp()->isSigPublic()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate
@@ -220,7 +219,7 @@ public:
         // Any varrefs under a if/else branch affect statements outside and after the if/else
         if (!m_aboveLifep) v3fatalSrc("Pushing life when already at the top level");
         for (LifeMap::iterator it = m_map.begin(); it != m_map.end(); ++it) {
-            AstVarScope* nodep = it->first;
+            AstVarScope* const nodep = it->first;
             m_aboveLifep->complexAssignFind(nodep);
             if (it->second.everSet()) {
                 // Record there may be an assignment, so we don't constant propagate across the if.
@@ -242,7 +241,7 @@ public:
         }
         for (LifeMap::iterator it = life2p->m_map.begin(); it != life2p->m_map.end(); ++it) {
             // When the else branch sets a var before it's used
-            AstVarScope* nodep = it->first;
+            AstVarScope* const nodep = it->first;
             if (it->second.setBeforeUse() && nodep->user1()) {
                 // Both branches set the var, we can remove the assignment before the IF.
                 UINFO(4, "DUALBRANCH " << nodep << endl);
@@ -268,10 +267,10 @@ public:
 //######################################################################
 // Life state, as a visitor of each AstNode
 
-class LifeVisitor final : public AstNVisitor {
+class LifeVisitor final : public VNVisitor {
 private:
     // STATE
-    LifeState* m_statep;  // Current state
+    LifeState* const m_statep;  // Current state
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
     bool m_noopt = false;  // Disable optimization of variables in this block
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
@@ -291,7 +290,7 @@ private:
         // it's used so can't elim assignment before this use.
         UASSERT_OBJ(nodep->varScopep(), nodep, "nullptr");
         //
-        AstVarScope* vscp = nodep->varScopep();
+        AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (nodep->access().isWriteOrRW()) {
             m_sideEffect = true;  // $sscanf etc may have RHS vars that are lvalues
@@ -303,7 +302,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
-        vluint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
+        const uint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
         m_sideEffect = false;
         iterateAndNextNull(nodep->rhsp());
         if (lastEdit != AstNode::editCountGbl()) {
@@ -313,7 +312,7 @@ private:
         }
         // Has to be direct assignment without any EXTRACTing.
         if (VN_IS(nodep->lhsp(), VarRef) && !m_sideEffect && !m_noopt) {
-            AstVarScope* vscp = VN_CAST(nodep->lhsp(), VarRef)->varScopep();
+            AstVarScope* const vscp = VN_AS(nodep->lhsp(), VarRef)->varScopep();
             UASSERT_OBJ(vscp, nodep, "Scope lost on variable");
             m_lifep->simpleAssign(vscp, nodep);
         } else {
@@ -330,9 +329,9 @@ private:
         UINFO(4, "   IF " << nodep << endl);
         // Condition is part of PREVIOUS block
         iterateAndNextNull(nodep->condp());
-        LifeBlock* prevLifep = m_lifep;
-        LifeBlock* ifLifep = new LifeBlock(prevLifep, m_statep);
-        LifeBlock* elseLifep = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* const prevLifep = m_lifep;
+        LifeBlock* const ifLifep = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* const elseLifep = new LifeBlock(prevLifep, m_statep);
         {
             m_lifep = ifLifep;
             iterateAndNextNull(nodep->ifsp());
@@ -360,9 +359,9 @@ private:
         // would because it only appears used after-the-fact.  So, we model
         // it as a IF statement, and just don't allow elimination of
         // variables across the body.
-        LifeBlock* prevLifep = m_lifep;
-        LifeBlock* condLifep = new LifeBlock(prevLifep, m_statep);
-        LifeBlock* bodyLifep = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* const prevLifep = m_lifep;
+        LifeBlock* const condLifep = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* const bodyLifep = new LifeBlock(prevLifep, m_statep);
         {
             m_lifep = condLifep;
             iterateAndNextNull(nodep->precondsp());
@@ -385,9 +384,9 @@ private:
         // As with While's we can't predict if a JumpGo will kill us or not
         // It's worse though as an IF(..., JUMPGO) may change the control flow.
         // Just don't optimize blocks with labels; they're rare - so far.
-        LifeBlock* prevLifep = m_lifep;
-        LifeBlock* bodyLifep = new LifeBlock(prevLifep, m_statep);
-        bool prev_noopt = m_noopt;
+        LifeBlock* const prevLifep = m_lifep;
+        LifeBlock* const bodyLifep = new LifeBlock(prevLifep, m_statep);
+        const bool prev_noopt = m_noopt;
         {
             m_lifep = bodyLifep;
             m_noopt = true;
@@ -433,9 +432,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    LifeVisitor(AstNode* nodep, LifeState* statep) {
+    LifeVisitor(AstNode* nodep, LifeState* statep)
+        : m_statep{statep} {
         UINFO(4, "  LifeVisitor on " << nodep << endl);
-        m_statep = statep;
         {
             m_lifep = new LifeBlock(nullptr, m_statep);
             iterate(nodep);
@@ -450,23 +449,23 @@ public:
 
 //######################################################################
 
-class LifeTopVisitor final : public AstNVisitor {
+class LifeTopVisitor final : public VNVisitor {
     // Visit all top nodes searching for functions that are entry points we want to start
     // finding code within.
 private:
     // STATE
-    LifeState* m_statep;  // Current state
+    LifeState* const m_statep;  // Current state
 
     // VISITORS
     virtual void visit(AstCFunc* nodep) override {
         if (nodep->entryPoint()) {
             // Usage model 1: Simulate all C code, doing lifetime analysis
-            LifeVisitor visitor(nodep, m_statep);
+            LifeVisitor{nodep, m_statep};
         }
     }
     virtual void visit(AstNodeProcedure* nodep) override {
         // Usage model 2: Cleanup basic blocks
-        LifeVisitor visitor(nodep, m_statep);
+        LifeVisitor{nodep, m_statep};
     }
     virtual void visit(AstVar*) override {}  // Accelerate
     virtual void visit(AstNodeStmt*) override {}  // Accelerate
@@ -489,7 +488,7 @@ void V3Life::lifeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         LifeState state;
-        LifeTopVisitor visitor(nodep, &state);
+        LifeTopVisitor{nodep, &state};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("life", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

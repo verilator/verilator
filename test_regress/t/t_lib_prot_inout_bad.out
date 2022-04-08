@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_lib_prot_inout_bad.v:9:28: Unsupported: --lib-create port direction: INOUT
+    9 |                     inout  z,
+      |                            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

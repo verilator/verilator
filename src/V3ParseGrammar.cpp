@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -71,10 +71,10 @@ AstNode* V3ParseGrammar::argWrapList(AstNode* nodep) {
     // Convert list of expressions to list of arguments
     if (!nodep) return nullptr;
     AstNode* outp = nullptr;
-    AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
+    AstBegin* const tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
     while (nodep) {
-        AstNode* nextp = nodep->nextp();
-        AstNode* exprp = nodep->unlinkFrBack();
+        AstNode* const nextp = nodep->nextp();
+        AstNode* const exprp = nodep->unlinkFrBack();
         nodep = nextp;
         // addNext can handle nulls:
         outp = AstNode::addNext(outp, new AstArg(exprp->fileline(), "", exprp));
@@ -92,7 +92,7 @@ AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
     // Remove any UnsizedRange's from list
     for (AstNodeRange *nodep = nrangep, *nextp; nodep; nodep = nextp) {
-        nextp = VN_CAST(nodep->nextp(), NodeRange);
+        nextp = VN_AS(nodep->nextp(), NodeRange);
         if (!VN_IS(nodep, Range)) {
             nodep->v3error(
                 "Unsupported or syntax error: Unsized range in instance or other declaration");
@@ -115,11 +115,11 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
     // into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3), RANGE), RANGE)
     AstNodeDType* arrayp = basep;
     if (nrangep) {  // Maybe no range - return unmodified base type
-        while (nrangep->nextp()) nrangep = VN_CAST(nrangep->nextp(), NodeRange);
+        while (nrangep->nextp()) nrangep = VN_AS(nrangep->nextp(), NodeRange);
         while (nrangep) {
-            AstNodeRange* prevp = VN_CAST(nrangep->backp(), NodeRange);
+            AstNodeRange* const prevp = VN_AS(nrangep->backp(), NodeRange);
             if (prevp) nrangep->unlinkFrBack();
-            AstRange* rangep = VN_CAST(nrangep, Range);
+            AstRange* const rangep = VN_CAST(nrangep, Range);
             if (rangep && isPacked) {
                 arrayp
                     = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
@@ -134,8 +134,8 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
             } else if (VN_IS(nrangep, UnsizedRange)) {
                 arrayp = new AstUnsizedArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp);
             } else if (VN_IS(nrangep, BracketRange)) {
-                AstBracketRange* arangep = VN_CAST(nrangep, BracketRange);
-                AstNode* keyp = arangep->elementsp()->unlinkFrBack();
+                const AstBracketRange* const arangep = VN_AS(nrangep, BracketRange);
+                AstNode* const keyp = arangep->elementsp()->unlinkFrBack();
                 arrayp = new AstBracketArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp,
                                                   keyp);
             } else {
@@ -152,14 +152,14 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
     UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
                          << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : "") << endl);
-    if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == AstVarType::PORT) {
+    if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == VVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
         if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
         return nullptr;
     }
-    if (GRAMMARP->m_varDecl == AstVarType::WREAL) {
+    if (GRAMMARP->m_varDecl == VVarType::WREAL) {
         // dtypep might not be null, might be implicit LOGIC before we knew better
-        dtypep = new AstBasicDType(fileline, AstBasicDTypeKwd::DOUBLE);
+        dtypep = new AstBasicDType(fileline, VBasicDTypeKwd::DOUBLE);
     }
     if (!dtypep) {  // Created implicitly
         dtypep = new AstBasicDType(fileline, LOGIC_IMPLICIT);
@@ -168,42 +168,42 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
     // UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<"
     // io="<<GRAMMARP->m_varIO.ascii()<<endl);
-    AstVarType type = GRAMMARP->m_varDecl;
-    if (type == AstVarType::UNKNOWN) {
+    VVarType type = GRAMMARP->m_varDecl;
+    if (type == VVarType::UNKNOWN) {
         if (GRAMMARP->m_varIO.isAny()) {
-            type = AstVarType::PORT;
+            type = VVarType::PORT;
         } else {
             fileline->v3fatalSrc("Unknown signal type declared: " << type.ascii());
         }
     }
-    if (type == AstVarType::GENVAR) {
+    if (type == VVarType::GENVAR) {
         if (arrayp) fileline->v3error("Genvars may not be arrayed: " << name);
     }
 
     // Split RANGE0-RANGE1-RANGE2 into
     // ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3), RANGE), RANGE)
-    AstNodeDType* arrayDTypep = createArray(dtypep, arrayp, false);
+    AstNodeDType* const arrayDTypep = createArray(dtypep, arrayp, false);
 
-    AstVar* nodep = new AstVar(fileline, type, name, VFlagChildDType(), arrayDTypep);
+    AstVar* const nodep = new AstVar(fileline, type, name, VFlagChildDType(), arrayDTypep);
     nodep->addAttrsp(attrsp);
     nodep->ansi(m_pinAnsi);
     nodep->declTyped(m_varDeclTyped);
     nodep->lifetime(m_varLifetime);
-    if (GRAMMARP->m_varDecl != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
+    if (GRAMMARP->m_varDecl != VVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != VDirection::NONE) {
         nodep->declDirection(GRAMMARP->m_varIO);
         nodep->direction(GRAMMARP->m_varIO);
     }
 
-    if (GRAMMARP->m_varDecl == AstVarType::SUPPLY0) {
+    if (GRAMMARP->m_varDecl == VVarType::SUPPLY0) {
         nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0));
     }
-    if (GRAMMARP->m_varDecl == AstVarType::SUPPLY1) {
+    if (GRAMMARP->m_varDecl == VVarType::SUPPLY1) {
         nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
         // Parser needs to know what is a type
-        AstNode* newp = new AstTypedefFwd(fileline, name);
+        AstNode* const newp = new AstTypedefFwd(fileline, name);
         nodep->addNext(newp);
         SYMP->reinsert(newp);
     }
@@ -271,8 +271,9 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
                 } else if (isalnum(*cp)) {
                     fileline->v3error("Unknown escape sequence: \\" << *cp);
                     break;
-                } else
+                } else {
                     newtext += *cp;
+                }
             }
         } else if (*cp == '\\') {
             quoted = true;

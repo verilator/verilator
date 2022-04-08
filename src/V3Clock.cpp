@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -33,23 +33,50 @@
 #include "V3Global.h"
 #include "V3Clock.h"
 #include "V3Ast.h"
-#include "V3EmitCBase.h"
 
 #include <algorithm>
 
 //######################################################################
+// Convert every WRITE AstVarRef to a READ ref
+
+class ConvertWriteRefsToRead final : public VNVisitor {
+private:
+    // MEMBERS
+    AstNode* m_result = nullptr;
+
+    // CONSTRUCTORS
+    explicit ConvertWriteRefsToRead(AstNode* nodep) {
+        m_result = iterateSubtreeReturnEdits(nodep);
+    }
+
+    // VISITORS
+    void visit(AstVarRef* nodep) override {
+        UASSERT_OBJ(!nodep->access().isRW(), nodep, "Cannot handle a READWRITE reference");
+        if (nodep->access().isWriteOnly()) {
+            nodep->replaceWith(
+                new AstVarRef(nodep->fileline(), nodep->varScopep(), VAccess::READ));
+        }
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    static AstNode* main(AstNode* nodep) { return ConvertWriteRefsToRead(nodep).m_result; }
+};
+
+//######################################################################
 // Clock state, as a visitor of each AstNode
 
-class ClockVisitor final : public AstNVisitor {
+class ClockVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared each Module:
     //  AstVarScope::user1p()   -> AstVarScope*.  Temporary signal that was created.
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstTopScope* m_topScopep = nullptr;  // Current top scope
+    const AstTopScope* m_topScopep = nullptr;  // Current top scope
     AstScope* m_scopep = nullptr;  // Current scope
     AstCFunc* m_evalFuncp = nullptr;  // Top eval function we are creating
     AstCFunc* m_initFuncp = nullptr;  // Top initial function we are creating
@@ -64,30 +91,30 @@ private:
 
     AstVarScope* getCreateLastClk(AstVarScope* vscp) {
         if (vscp->user1p()) return static_cast<AstVarScope*>(vscp->user1p());
-        AstVar* varp = vscp->varp();
+        const AstVar* const varp = vscp->varp();
         if (!varp->width1()) {
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Clock edge on non-single bit signal: "
                                             << varp->prettyNameQ());
         }
-        string newvarname
+        const string newvarname
             = (string("__Vclklast__") + vscp->scopep()->nameDotless() + "__" + varp->name());
-        AstVar* newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname,
-                                     VFlagLogicPacked(), 1);
+        AstVar* const newvarp = new AstVar(vscp->fileline(), VVarType::MODULETEMP, newvarname,
+                                           VFlagLogicPacked(), 1);
         newvarp->noReset(true);  // Reset by below assign
         m_modp->addStmtp(newvarp);
-        AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
+        AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
         vscp->user1p(newvscp);
         m_scopep->addVarp(newvscp);
         // Add init
         AstNode* fromp = new AstVarRef(newvarp->fileline(), vscp, VAccess::READ);
         if (v3Global.opt.xInitialEdge()) fromp = new AstNot(fromp->fileline(), fromp);
-        AstNode* newinitp = new AstAssign(
+        AstNode* const newinitp = new AstAssign(
             vscp->fileline(), new AstVarRef(newvarp->fileline(), newvscp, VAccess::WRITE), fromp);
         addToInitial(newinitp);
         // At bottom, assign them
-        AstAssign* finalp = new AstAssign(vscp->fileline(),
-                                          new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
-                                          new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
+        AstAssign* const finalp = new AstAssign(
+            vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
+            new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
         m_evalFuncp->addFinalsp(finalp);
         //
         UINFO(4, "New Last: " << newvscp << endl);
@@ -108,16 +135,17 @@ private:
                           "Unsupported: Complicated event expression in sensitive activity list");
             return nullptr;
         }
-        AstVarScope* clkvscp = nodep->varrefp()->varScopep();
+        UASSERT_OBJ(nodep->varrefp(), nodep, "No clock found on sense item");
+        AstVarScope* const clkvscp = nodep->varrefp()->varScopep();
         if (nodep->edgeType() == VEdgeType::ET_POSEDGE) {
-            AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+            AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(
                 nodep->fileline(),
                 new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), VAccess::READ),
                 new AstNot(nodep->fileline(),
                            new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ)));
         } else if (nodep->edgeType() == VEdgeType::ET_NEGEDGE) {
-            AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+            AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(
                 nodep->fileline(),
                 new AstNot(nodep->fileline(),
@@ -125,7 +153,7 @@ private:
                                          VAccess::READ)),
                 new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ));
         } else if (nodep->edgeType() == VEdgeType::ET_BOTHEDGE) {
-            AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+            AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
             newp = new AstXor(
                 nodep->fileline(),
                 new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), VAccess::READ),
@@ -143,7 +171,7 @@ private:
     AstNode* createSenseEquation(AstSenItem* nodesp) {
         // Nodep may be a list of elements; we need to walk it
         AstNode* senEqnp = nullptr;
-        for (AstSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+        for (AstSenItem* senp = nodesp; senp; senp = VN_AS(senp->nextp(), SenItem)) {
             AstNode* const senOnep = createSenItemEquation(senp);
             if (senEqnp) {
                 // Add new OR to the sensitivity list equation
@@ -155,9 +183,9 @@ private:
         return senEqnp;
     }
     AstIf* makeActiveIf(AstSenTree* sensesp) {
-        AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
+        AstNode* const senEqnp = createSenseEquation(sensesp->sensesp());
         UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, nullptr, nullptr);
+        AstIf* const newifp = new AstIf(sensesp->fileline(), senEqnp, nullptr, nullptr);
         return newifp;
     }
     void clearLastSen() {
@@ -178,31 +206,31 @@ private:
     }
     void splitCheck(AstCFunc* ofuncp) {
         if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
-        if (EmitCBaseCounterVisitor(ofuncp->stmtsp()).count() < v3Global.opt.outputSplitCFuncs())
-            return;
+        if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;
 
         int funcnum = 0;
         int func_stmts = 0;
         AstCFunc* funcp = nullptr;
 
         // Unlink all statements, then add item by item to new sub-functions
-        AstBegin* tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
-                                       ofuncp->stmtsp()->unlinkFrBackWithNext()};
+        AstBegin* const tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
+                                             ofuncp->stmtsp()->unlinkFrBackWithNext()};
         if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
         while (tempp->stmtsp()) {
-            AstNode* itemp = tempp->stmtsp()->unlinkFrBack();
-            int stmts = EmitCBaseCounterVisitor(itemp).count();
+            AstNode* const itemp = tempp->stmtsp()->unlinkFrBack();
+            const int stmts = itemp->nodeCount();
             if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
                 // Make a new function
-                funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + cvtToStr(++funcnum),
-                                     m_topScopep->scopep()};
+                funcp
+                    = new AstCFunc{ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcnum++),
+                                   m_topScopep->scopep()};
                 funcp->dontCombine(true);
                 funcp->isStatic(false);
                 funcp->isLoose(true);
                 funcp->slow(ofuncp->slow());
                 m_topScopep->scopep()->addActivep(funcp);
                 //
-                AstCCall* callp = new AstCCall{funcp->fileline(), funcp};
+                AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
                 ofuncp->addStmtsp(callp);
                 func_stmts = 0;
             }
@@ -229,6 +257,14 @@ private:
         // Process the activates
         iterateChildren(nodep);
         UINFO(4, " TOPSCOPE iter done " << nodep << endl);
+        // Clear the DPI export trigger flag at the end of eval
+        if (AstVarScope* const dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp()) {
+            FileLine* const fl = dpiExportTriggerp->fileline();
+            AstAssign* const assignp
+                = new AstAssign{fl, new AstVarRef{fl, dpiExportTriggerp, VAccess::WRITE},
+                                new AstConst{fl, AstConst::BitFalse{}}};
+            m_evalFuncp->addFinalsp(assignp);
+        }
         // Split large functions
         splitCheck(m_evalFuncp);
         splitCheck(m_initFuncp);
@@ -252,7 +288,7 @@ private:
         // UINFO(4, " SCOPE   " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
-        if (AstNode* movep = nodep->finalClksp()) {
+        if (AstNode* const movep = nodep->finalClksp()) {
             UASSERT_OBJ(m_topScopep, nodep, "Final clocks under non-top scope");
             movep->unlinkFrBackWithNext();
             m_evalFuncp->addFinalsp(movep);
@@ -260,7 +296,7 @@ private:
         m_scopep = nullptr;
     }
     virtual void visit(AstNodeProcedure* nodep) override {
-        if (AstNode* stmtsp = nodep->bodysp()) {
+        if (AstNode* const stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
             nodep->addNextHere(stmtsp);
         }
@@ -270,25 +306,25 @@ private:
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
-        AstNode* incp = nodep->incp()->unlinkFrBack();
-        AstNode* origp = nodep->origp()->unlinkFrBack();
-        AstNode* changep = nodep->changep()->unlinkFrBack();
-        AstIf* newp = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changep),
-                                incp, nullptr);
+        AstNode* const incp = nodep->incp()->unlinkFrBack();
+        AstNode* const origp = nodep->origp()->unlinkFrBack();
+        AstNode* const changeWrp = nodep->changep()->unlinkFrBack();
+        AstNode* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
+        AstIf* const newp = new AstIf(
+            nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp), incp, nullptr);
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addIfsp(
-            new AstAssign(nodep->fileline(), changep->cloneTree(false), origp->cloneTree(false)));
+        newp->addIfsp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Link to global function
-        if (nodep->formCallTree()) {
-            UINFO(4, "    formCallTree " << nodep << endl);
-            AstCCall* callp = new AstCCall(nodep->fileline(), nodep);
+        if (nodep->isFinal()) {
+            UINFO(4, "    isFinal " << nodep << endl);
+            AstCCall* const callp = new AstCCall(nodep->fileline(), nodep);
             m_finalFuncp->addStmtsp(callp);
         }
     }
@@ -316,7 +352,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (m_mtaskBodyp) {
             UINFO(4, "  TR ACTIVE  " << nodep << endl);
-            AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
+            AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (nodep->hasClocked()) {
                 UASSERT_OBJ(!nodep->hasInitial(), nodep,
                             "Initial block should not have clock sensitivity");
@@ -341,7 +377,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else {
             UINFO(4, "  ACTIVE  " << nodep << endl);
-            AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
+            AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (nodep->hasClocked()) {
                 // Remember the latest sensitivity so we can compare it next time
                 UASSERT_OBJ(!nodep->hasInitial(), nodep,
@@ -375,8 +411,8 @@ private:
         }
     }
     virtual void visit(AstExecGraph* nodep) override {
-        for (m_mtaskBodyp = VN_CAST(nodep->op1p(), MTaskBody); m_mtaskBodyp;
-             m_mtaskBodyp = VN_CAST(m_mtaskBodyp->nextp(), MTaskBody)) {
+        for (m_mtaskBodyp = VN_AS(nodep->op1p(), MTaskBody); m_mtaskBodyp;
+             m_mtaskBodyp = VN_AS(m_mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
             iterate(m_mtaskBodyp);
         }
@@ -407,6 +443,6 @@ public:
 
 void V3Clock::clockAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ClockVisitor visitor(nodep); }  // Destruct before checking
+    { ClockVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("clock", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

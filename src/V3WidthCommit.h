@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,7 +34,7 @@
 /// Remove all $signed, $unsigned, we're done with them.
 /// This step is only called on real V3Width, not intermediate e.g. widthParams
 
-class WidthRemoveVisitor final : public AstNVisitor {
+class WidthRemoveVisitor final : public VNVisitor {
 private:
     // METHODS
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
@@ -64,10 +64,10 @@ public:
 // Now that all widthing is complete,
 // Copy all width() to widthMin().  V3Const expects this
 
-class WidthCommitVisitor final : public AstNVisitor {
+class WidthCommitVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user1p           -> bool, processed
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
     AstNodeModule* m_modp = nullptr;
@@ -80,7 +80,7 @@ public:
             V3Number num(nodep, nodep->dtypep()->width());
             num.opAssign(nodep->num());
             num.isSigned(nodep->isSigned());
-            AstConst* newp = new AstConst(nodep->fileline(), num);
+            AstConst* const newp = new AstConst(nodep->fileline(), num);
             newp->dtypeFrom(nodep);
             return newp;
         } else {
@@ -102,8 +102,8 @@ private:
         // Recurse to handle the data type, as may change the size etc of this type
         if (!nodep->user1()) iterate(nodep);
         // Look for duplicate
-        if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) {
-            AstBasicDType* newp = nodep->findInsertSameDType(bdtypep);
+        if (AstBasicDType* const bdtypep = VN_CAST(nodep, BasicDType)) {
+            AstBasicDType* const newp = nodep->findInsertSameDType(bdtypep);
             if (newp != bdtypep && debug() >= 9) {
                 UINFO(9, "dtype replacement ");
                 nodep->dumpSmall(cout);
@@ -129,7 +129,7 @@ private:
             nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
         }
         if (local || prot) {
-            auto refClassp = VN_CAST(m_modp, Class);
+            const auto refClassp = VN_CAST(m_modp, Class);
             const char* how = nullptr;
             if (local && defClassp && refClassp != defClassp) {
                 how = "'local'";
@@ -162,9 +162,9 @@ private:
     virtual void visit(AstConst* nodep) override {
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");
         iterate(nodep->dtypep());  // Do datatype first
-        if (AstConst* newp = newIfConstCommitSize(nodep)) {
+        if (AstConst* const newp = newIfConstCommitSize(nodep)) {
             nodep->replaceWith(newp);
-            AstNode* oldp = nodep;
+            AstNode* const oldp = nodep;
             nodep = newp;
             // if (debug() > 4) oldp->dumpTree(cout, "  fixConstSize_old: ");
             // if (debug() > 4) newp->dumpTree(cout, "              _new: ");
@@ -188,7 +188,7 @@ private:
         v3Global.rootp()->typeTablep()->addTypesp(nodep);
     }
     void visitIterateNodeDType(AstNodeDType* nodep) {
-        // Rather than use dtypeChg which may make new nodes, we simply edit in place,
+        // Rather than use dtypeChg which may make new nodes, we edit in place,
         // as we don't need to preserve any widthMin's, and every dtype with the same width
         // gets an identical edit.
         if (nodep->user1SetOnce()) return;  // Process once
@@ -203,7 +203,7 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         if (nodep->classMethod() && nodep->pureVirtual() && VN_IS(m_modp, Class)
-            && !VN_CAST(m_modp, Class)->isVirtual()) {
+            && !VN_AS(m_modp, Class)->isVirtual()) {
             nodep->v3error(
                 "Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2017 8.21)");
         }
@@ -221,7 +221,7 @@ private:
     virtual void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
         editDType(nodep);
-        if (auto* classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
+        if (auto* const classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
             classEncapCheck(nodep, nodep->varp(), classrefp->classp());
         }  // else might be struct, etc
     }

@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_force_tri.v:27:10: Unsupported tristate construct: ASSIGNFORCE
+                                         : ... In instance t
+   27 |          force bus = 4'bzz10;
+      |          ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

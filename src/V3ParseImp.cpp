@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -67,7 +67,7 @@ V3ParseImp::~V3ParseImp() {
 
 void V3ParseImp::lexPpline(const char* textp) {
     // Handle lexer `line directive
-    FileLine* prevFl = copyOrSameFileLine();
+    FileLine* const prevFl = copyOrSameFileLine();
     int enterExit;
     lexFileline()->lineDirective(textp, enterExit /*ref*/);
     if (enterExit == 1) {  // Enter
@@ -108,10 +108,12 @@ void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, d
         }
     }
     if (!unit.isNone()) {
+        unit = v3Global.opt.timeComputeUnit(unit);
         if (modp) {
-            modp->timeunit(v3Global.opt.timeComputeUnit(unit));
+            modp->timeunit(unit);
         } else {
-            fl->v3error("timeunit/timeprecision not under a module");
+            v3Global.rootp()->timeunit(unit);
+            unitPackage(fl)->timeunit(unit);
         }
     }
     v3Global.rootp()->timeprecisionMerge(fl, prec);
@@ -165,11 +167,11 @@ void V3ParseImp::lexErrorPreprocDirective(FileLine* fl, const char* textp) {
     VSpellCheck speller;
     for (V3LanguageWords::const_iterator it = V3LanguageWords::begin();
          it != V3LanguageWords::end(); ++it) {
-        string ppDirective = it->first;
+        const string ppDirective = it->first;
         if (ppDirective[0] == '`') speller.pushCandidate(ppDirective);
     }
     V3PreShell::candidateDefines(&speller);
-    string suggest = speller.bestCandidateMsg(textp);
+    const string suggest = speller.bestCandidateMsg(textp);
     fl->v3error("Define or directive not defined: '"
                 << textp << "'\n"
                 << (suggest.empty() ? "" : fl->warnMore() + suggest));
@@ -183,16 +185,16 @@ string V3ParseImp::lexParseTag(const char* textp) {
 }
 
 double V3ParseImp::lexParseTimenum(const char* textp) {
-    size_t length = strlen(textp);
-    char* strgp = new char[length + 1];
+    const size_t length = strlen(textp);
+    char* const strgp = new char[length + 1];
     char* dp = strgp;
     const char* sp = textp;
     for (; isdigit(*sp) || *sp == '_' || *sp == '.'; ++sp) {
         if (*sp != '_') *dp++ = *sp;
     }
     *dp++ = '\0';
-    double d = strtod(strgp, nullptr);
-    string suffix(sp);
+    const double d = strtod(strgp, nullptr);
+    const string suffix(sp);
 
     double divisor = 1;
     if (suffix == "s") {
@@ -227,7 +229,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
         m_ppBuffers.pop_front();
         size_t len = front.length();
         if (len > (max_size - got)) {  // Front string too big
-            string remainder = front.substr(max_size - got);
+            const string remainder = front.substr(max_size - got);
             front = front.substr(0, max_size - got);
             m_ppBuffers.push_front(remainder);  // Put back remainder for next time
             len = (max_size - got);
@@ -236,7 +238,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
         got += len;
     }
     if (debug() >= 9) {
-        string out = string(buf, got);
+        const string out = string(buf, got);
         cout << "   inputToLex  got=" << got << " '" << out << "'" << endl;
     }
     // Note returns 0 at EOF
@@ -247,7 +249,7 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
     if (v3Global.opt.dumpDefines()) {
         V3PreShell::dumpDefines(os);
     } else {
-        bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
+        const bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
         for (auto& buf : m_ppBuffers) {
             if (noblanks) {
                 bool blank = true;
@@ -266,7 +268,7 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
 
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
                            const string& errmsg) {  // "" for no error, make fake node
-    string modname = V3Os::filenameNonExt(modfilename);
+    const string modname = V3Os::filenameNonExt(modfilename);
 
     UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << endl);
     m_lexFileline = new FileLine(fileline);
@@ -275,18 +277,18 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     m_inLibrary = inLibrary;
 
     // Preprocess into m_ppBuffer
-    bool ok = V3PreShell::preproc(fileline, modfilename, m_filterp, this, errmsg);
+    const bool ok = V3PreShell::preproc(fileline, modfilename, m_filterp, this, errmsg);
     if (!ok) {
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
-        AstNodeModule* nodep = new AstNotFoundModule(fileline, modname);
+        AstNodeModule* const nodep = new AstNotFoundModule(fileline, modname);
         v3Global.rootp()->addModulep(nodep);
         return;
     }
 
     if (v3Global.opt.preprocOnly() || v3Global.opt.keepTempFiles()) {
         // Create output file with all the preprocessor output we buffered up
-        string vppfilename
+        const string vppfilename
             = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "_" + modname + ".vpp";
         std::ofstream* ofp = nullptr;
         std::ostream* osp;
@@ -351,7 +353,7 @@ size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
     depth += 2;  // Past the (
     int parens = 1;  // Count first (
     while (true) {
-        int tok = tokenPeekp(depth)->token;
+        const int tok = tokenPeekp(depth)->token;
         if (tok == 0) {
             UINFO(9, "tokenPipeScanParam hit EOF; probably syntax error to come");
             break;
@@ -390,9 +392,9 @@ void V3ParseImp::tokenPipeline() {
         if (debugFlex() >= 6) {
             cout << "   tokenPipeline: reading ahead to find possible strength" << endl;
         }
-        V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
+        const V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
         const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);
-        int nexttok = nexttokp->token;
+        const int nexttok = nexttokp->token;
         yylval = curValue;
         // Now potentially munge the current token
         if (token == '('
@@ -465,9 +467,10 @@ void V3ParseImp::tokenPipeline() {
             if (nexttok == yP_COLONCOLON) {
                 token = yaID__CC;
             } else if (nexttok == '#') {
-                V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
+                const V3ParseBisonYYSType curValue
+                    = yylval;  // Remember value, as about to read ahead
                 {
-                    size_t depth = tokenPipeScanParam(0);
+                    const size_t depth = tokenPipeScanParam(0);
                     if (tokenPeekp(depth)->token == yP_COLONCOLON) token = yaID__CC;
                 }
                 yylval = curValue;
@@ -485,8 +488,8 @@ void V3ParseImp::tokenPipelineSym() {
     tokenPipeline();  // sets yylval
     int token = yylval.token;
     if (token == yaID__LEX || token == yaID__CC) {
-        VSymEnt* foundp;
-        if (VSymEnt* look_underp = V3ParseImp::parsep()->symp()->nextId()) {
+        const VSymEnt* foundp;
+        if (const VSymEnt* const look_underp = V3ParseImp::parsep()->symp()->nextId()) {
             UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
             // if (debug() >= 7) V3ParseImp::parsep()->symp()->dump(cout, " -symtree: ");
             foundp = look_underp->findIdFallback(*(yylval.strp));
@@ -501,7 +504,7 @@ void V3ParseImp::tokenPipelineSym() {
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }
         if (foundp) {
-            AstNode* scp = foundp->nodep();
+            AstNode* const scp = foundp->nodep();
             yylval.scp = scp;
             UINFO(7, "   tokenPipelineSym: Found " << scp << endl);
             if (token == yaID__LEX) {  // i.e. not yaID__CC

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -32,7 +32,6 @@
 #include "V3Global.h"
 #include "V3Ast.h"
 #include "V3Changed.h"
-#include "V3EmitCBase.h"
 
 #include <algorithm>
 
@@ -47,11 +46,33 @@ public:
     AstCFunc* m_tlChgFuncp = nullptr;  // Top level change function we're building
     int m_numStmts = 0;  // Number of statements added to m_chgFuncp
     int m_funcNum = 0;  // Number of change functions emitted
+    bool m_madeTopChg = false;
 
     ChangedState() = default;
     ~ChangedState() = default;
 
     void maybeCreateChgFuncp() {
+        maybeCreateTopChg();
+        maybeCreateMidChg();
+    }
+    void maybeCreateTopChg() {
+        if (m_madeTopChg) return;
+        m_madeTopChg = true;
+        v3Global.rootp()->changeRequest(true);
+
+        // Create a wrapper change detection function that calls each change detection function
+        m_tlChgFuncp
+            = new AstCFunc{m_scopetopp->fileline(), "_change_request", m_scopetopp, "QData"};
+        m_tlChgFuncp->isStatic(false);
+        m_tlChgFuncp->isLoose(true);
+        m_tlChgFuncp->declPrivate(true);
+        m_scopetopp->addActivep(m_tlChgFuncp);
+        // Each change detection function needs at least one AstChangeDet
+        // to ensure that V3EmitC outputs the necessary code.
+        maybeCreateMidChg();
+        m_chgFuncp->addStmtsp(new AstChangeDet{m_scopetopp->fileline(), nullptr, nullptr});
+    }
+    void maybeCreateMidChg() {
         // Don't create an extra function call if splitting is disabled
         if (!v3Global.opt.outputSplitCFuncs()) {
             m_chgFuncp = m_tlChgFuncp;
@@ -59,29 +80,29 @@ public:
         }
         if (!m_chgFuncp || v3Global.opt.outputSplitCFuncs() < m_numStmts) {
             m_chgFuncp
-                = new AstCFunc(m_scopetopp->fileline(), "_change_request_" + cvtToStr(++m_funcNum),
-                               m_scopetopp, "QData");
+                = new AstCFunc{m_scopetopp->fileline(), "_change_request_" + cvtToStr(++m_funcNum),
+                               m_scopetopp, "QData"};
             m_chgFuncp->isStatic(false);
             m_chgFuncp->isLoose(true);
             m_chgFuncp->declPrivate(true);
             m_scopetopp->addActivep(m_chgFuncp);
 
             // Add a top call to it
-            AstCCall* callp = new AstCCall(m_scopetopp->fileline(), m_chgFuncp);
+            AstCCall* const callp = new AstCCall{m_scopetopp->fileline(), m_chgFuncp};
 
             if (!m_tlChgFuncp->stmtsp()) {
-                m_tlChgFuncp->addStmtsp(new AstCReturn(m_scopetopp->fileline(), callp));
+                m_tlChgFuncp->addStmtsp(new AstCReturn{m_scopetopp->fileline(), callp});
             } else {
-                AstCReturn* returnp = VN_CAST(m_tlChgFuncp->stmtsp(), CReturn);
+                AstCReturn* const returnp = VN_AS(m_tlChgFuncp->stmtsp(), CReturn);
                 UASSERT_OBJ(returnp, m_scopetopp, "Lost CReturn in top change function");
                 // This is currently using AstLogOr which will shortcut the
                 // evaluation if any function returns true. This is likely what
                 // we want and is similar to the logic already in use inside
                 // V3EmitC, however, it also means that verbose logging may
                 // miss to print change detect variables.
-                AstNode* newp = new AstCReturn(
+                AstNode* const newp = new AstCReturn{
                     m_scopetopp->fileline(),
-                    new AstLogOr(m_scopetopp->fileline(), callp, returnp->lhsp()->unlinkFrBack()));
+                    new AstLogOr{m_scopetopp->fileline(), callp, returnp->lhsp()->unlinkFrBack()}};
                 returnp->replaceWith(newp);
                 VL_DO_DANGLING(returnp->deleteTree(), returnp);
             }
@@ -93,44 +114,44 @@ public:
 //######################################################################
 // Utility visitor to find elements to be compared
 
-class ChangedInsertVisitor final : public AstNVisitor {
+class ChangedInsertVisitor final : public VNVisitor {
 private:
     // STATE
-    ChangedState* m_statep;  // Shared state across visitors
-    AstVarScope* m_vscp;  // Original (non-change) variable we're change-detecting
-    AstVarScope* m_newvscp;  // New (change detect) variable we're change-detecting
-    AstNode* m_varEqnp;  // Original var's equation to get var value
-    AstNode* m_newLvEqnp;  // New var's equation to read value
-    AstNode* m_newRvEqnp;  // New var's equation to set value
-    uint32_t m_detects;  // # detects created
+    ChangedState& m_state;  // Shared state across visitors
+    AstVarScope* const m_vscp;  // Original (non-change) variable we're change-detecting
+    AstVarScope* m_newvscp = nullptr;  // New (change detect) variable we're change-detecting
+    AstNode* m_varEqnp = nullptr;  // Original var's equation to get var value
+    AstNode* m_newLvEqnp = nullptr;  // New var's equation to read value
+    AstNode* m_newRvEqnp = nullptr;  // New var's equation to set value
+    uint32_t m_detects = 0;  // # detects created
 
     // CONSTANTS
-    enum MiscConsts {
-        DETECTARRAY_MAX_INDEXES = 256  // How many indexes before error
-        // Ok to increase this, but may result in much slower model
-    };
+    // How many indexes before error. Ok to increase this, but may result in much slower model
+    static constexpr uint32_t DETECTARRAY_MAX_INDEXES = 256;
 
     void newChangeDet() {
         if (++m_detects > DETECTARRAY_MAX_INDEXES) {
             m_vscp->v3warn(E_DETECTARRAY,
                            "Unsupported: Can't detect more than "
-                               << cvtToStr(DETECTARRAY_MAX_INDEXES)
+                               << DETECTARRAY_MAX_INDEXES
                                << " array indexes (probably with UNOPTFLAT warning suppressed): "
                                << m_vscp->prettyName() << '\n'
                                << m_vscp->warnMore()
                                << "... Could recompile with DETECTARRAY_MAX_INDEXES increased");
             return;
         }
-        m_statep->maybeCreateChgFuncp();
+        m_state.maybeCreateChgFuncp();
 
-        AstChangeDet* changep = new AstChangeDet(m_vscp->fileline(), m_varEqnp->cloneTree(true),
-                                                 m_newRvEqnp->cloneTree(true), false);
-        m_statep->m_chgFuncp->addStmtsp(changep);
-        AstAssign* initp = new AstAssign(m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
-                                         m_varEqnp->cloneTree(true));
-        m_statep->m_chgFuncp->addFinalsp(initp);
-        EmitCBaseCounterVisitor visitor(initp);
-        m_statep->m_numStmts += visitor.count();
+        AstChangeDet* const changep = new AstChangeDet{
+            m_vscp->fileline(), m_varEqnp->cloneTree(true), m_newRvEqnp->cloneTree(true)};
+        m_state.m_chgFuncp->addStmtsp(changep);
+        AstAssign* const initp = new AstAssign{m_vscp->fileline(), m_newLvEqnp->cloneTree(true),
+                                               m_varEqnp->cloneTree(true)};
+        m_state.m_chgFuncp->addFinalsp(initp);
+
+        // Later code will expand words which adds to GCC compile time,
+        // so add penalty based on word width also
+        m_state.m_numStmts += initp->nodeCount() + m_varEqnp->widthWords();
     }
 
     virtual void visit(AstBasicDType*) override {  //
@@ -145,11 +166,11 @@ private:
             VL_RESTORER(m_newLvEqnp);
             VL_RESTORER(m_newRvEqnp);
             {
-                m_varEqnp = new AstArraySel(nodep->fileline(), m_varEqnp->cloneTree(true), index);
+                m_varEqnp = new AstArraySel{nodep->fileline(), m_varEqnp->cloneTree(true), index};
                 m_newLvEqnp
-                    = new AstArraySel(nodep->fileline(), m_newLvEqnp->cloneTree(true), index);
+                    = new AstArraySel{nodep->fileline(), m_newLvEqnp->cloneTree(true), index};
                 m_newRvEqnp
-                    = new AstArraySel(nodep->fileline(), m_newRvEqnp->cloneTree(true), index);
+                    = new AstArraySel{nodep->fileline(), m_newRvEqnp->cloneTree(true), index};
 
                 iterate(nodep->subDTypep()->skipRefp());
 
@@ -179,27 +200,30 @@ private:
 
 public:
     // CONSTRUCTORS
-    ChangedInsertVisitor(AstVarScope* vscp, ChangedState* statep) {
-        m_statep = statep;
-        m_vscp = vscp;
-        m_detects = 0;
+    ChangedInsertVisitor(AstVarScope* vscp, ChangedState& state)
+        : m_state{state}
+        , m_vscp{vscp} {
+        // DPI export trigger should never need change detect. See similar assertions in V3Order
+        // (OrderVisitor::nodeMarkCircular), and V3GenClk (GenClkRenameVisitor::genInpClk).
+        UASSERT_OBJ(vscp != v3Global.rootp()->dpiExportTriggerp(), vscp,
+                    "DPI export trigger should not need change detect");
         {
-            AstVar* varp = m_vscp->varp();
-            string newvarname
-                = ("__Vchglast__" + m_vscp->scopep()->nameDotless() + "__" + varp->shortName());
+            AstVar* const varp = m_vscp->varp();
+            const string newvarname{"__Vchglast__" + m_vscp->scopep()->nameDotless() + "__"
+                                    + varp->shortName()};
             // Create:  VARREF(_last)
             //          ASSIGN(VARREF(_last), VARREF(var))
             //          ...
             //          CHANGEDET(VARREF(_last), VARREF(var))
-            AstVar* newvarp
-                = new AstVar(varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
-            m_statep->m_topModp->addStmtp(newvarp);
-            m_newvscp = new AstVarScope(m_vscp->fileline(), m_statep->m_scopetopp, newvarp);
-            m_statep->m_scopetopp->addVarp(m_newvscp);
+            AstVar* const newvarp
+                = new AstVar{varp->fileline(), VVarType::MODULETEMP, newvarname, varp};
+            m_state.m_topModp->addStmtp(newvarp);
+            m_newvscp = new AstVarScope{m_vscp->fileline(), m_state.m_scopetopp, newvarp};
+            m_state.m_scopetopp->addVarp(m_newvscp);
 
-            m_varEqnp = new AstVarRef(m_vscp->fileline(), m_vscp, VAccess::READ);
-            m_newLvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, VAccess::WRITE);
-            m_newRvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, VAccess::READ);
+            m_varEqnp = new AstVarRef{m_vscp->fileline(), m_vscp, VAccess::READ};
+            m_newLvEqnp = new AstVarRef{m_vscp->fileline(), m_newvscp, VAccess::WRITE};
+            m_newRvEqnp = new AstVarRef{m_vscp->fileline(), m_newvscp, VAccess::READ};
         }
         iterate(vscp->dtypep()->skipRefp());
         m_varEqnp->deleteTree();
@@ -211,84 +235,21 @@ public:
 };
 
 //######################################################################
-// Changed state, as a visitor of each AstNode
-
-class ChangedVisitor final : public AstNVisitor {
-private:
-    // NODE STATE
-    // Entire netlist:
-    //  AstVarScope::user1()            -> bool.  True indicates processed
-    AstUser1InUse m_inuser1;
-
-    // STATE
-    ChangedState* m_statep;  // Shared state across visitors
-
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
-    void genChangeDet(AstVarScope* vscp) {
-        vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: " << vscp->prettyNameQ());
-        ChangedInsertVisitor visitor(vscp, m_statep);
-    }
-
-    // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
-        UINFO(4, " MOD   " << nodep << endl);
-        if (nodep->isTop()) m_statep->m_topModp = nodep;
-        iterateChildren(nodep);
-    }
-
-    virtual void visit(AstTopScope* nodep) override {
-        UINFO(4, " TS " << nodep << endl);
-        // Clearing
-        AstNode::user1ClearTree();
-        // Create the change detection function
-        AstScope* scopep = nodep->scopep();
-        UASSERT_OBJ(scopep, nodep, "No scope found on top level, perhaps you have no statements?");
-        m_statep->m_scopetopp = scopep;
-
-        // Create a wrapper change detection function that calls each change detection function
-        m_statep->m_tlChgFuncp
-            = new AstCFunc(nodep->fileline(), "_change_request", scopep, "QData");
-        m_statep->m_tlChgFuncp->isStatic(false);
-        m_statep->m_tlChgFuncp->isLoose(true);
-        m_statep->m_tlChgFuncp->declPrivate(true);
-        m_statep->m_scopetopp->addActivep(m_statep->m_tlChgFuncp);
-        // Each change detection function needs at least one AstChangeDet
-        // to ensure that V3EmitC outputs the necessary code.
-        m_statep->maybeCreateChgFuncp();
-        m_statep->m_chgFuncp->addStmtsp(
-            new AstChangeDet(nodep->fileline(), nullptr, nullptr, false));
-
-        iterateChildren(nodep);
-    }
-    virtual void visit(AstVarScope* nodep) override {
-        if (nodep->isCircular()) {
-            UINFO(8, "  CIRC " << nodep << endl);
-            if (!nodep->user1SetOnce()) genChangeDet(nodep);
-        }
-    }
-    //--------------------
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    ChangedVisitor(AstNetlist* nodep, ChangedState* statep)
-        : m_statep{statep} {
-        iterate(nodep);
-    }
-    virtual ~ChangedVisitor() override = default;
-};
-
-//######################################################################
 // Changed class functions
 
 void V3Changed::changedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {
-        ChangedState state;
-        ChangedVisitor visitor(nodep, &state);
-    }  // Destruct before checking
+
+    ChangedState state;
+    state.m_scopetopp = nodep->topScopep()->scopep();
+    state.m_topModp = nodep->topModulep();
+    nodep->foreach<AstVarScope>([&state](AstVarScope* vscp) {
+        if (vscp->isCircular()) {
+            vscp->v3warn(IMPERFECTSCH,
+                         "Imperfect scheduling of variable: " << vscp->prettyNameQ());
+            ChangedInsertVisitor{vscp, state};
+        }
+    });
+
     V3Global::dumpCheckGlobalTree("changed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

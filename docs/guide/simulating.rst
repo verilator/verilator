@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Simulating:
@@ -26,7 +26,8 @@ risk of reset bugs in trade for performance; see the above documentation
 for these options.
 
 If using Verilated multithreaded, use ``numactl`` to ensure you are using
-non-conflicting hardware resources. See :ref:`Multithreading`.
+non-conflicting hardware resources. See :ref:`Multithreading`. Also
+consider using profile-guided optimization, see :ref:`Thread PGO`.
 
 Minor Verilog code changes can also give big wins.  You should not have any
 UNOPTFLAT warnings from Verilator.  Fixing these warnings can result in
@@ -93,9 +94,7 @@ cases, for example regressions, it is usually worth spending extra
 compilation time to reduce total CPU time.
 
 If you will be running many simulations on a single model, you can
-investigate profile guided optimization. With GCC, using GCC's
-"-fprofile-arcs", then GCC's "-fbranch-probabilities" will yield another
-15% or so.
+investigate profile guided optimization. See :ref:`Compiler PGO`.
 
 Modern compilers also support link-time optimization (LTO), which can help
 especially if you link in DPI code. To enable LTO on GCC, pass "-flto" in
@@ -230,7 +229,7 @@ coverage point insertions into the model and collect the coverage data.
 
 To get the coverage data from the model, in the user wrapper code,
 typically at the end once a test passes, call
-:code:`Verilated::coveragep()->write` with an argument of the filename for
+:code:`Verilated::threadContextp()->coveragep()->write` with an argument of the filename for
 the coverage data file to write coverage data to (typically
 "logs/coverage.dat").
 
@@ -272,8 +271,6 @@ profiled C++ code functions.
 To use profiling:
 
 #. Use Verilator's :vlopt:`--prof-cfuncs`.
-#. Use Verilator's :vlopt:`-CFLAGS "-g -pg" <-CFLAGS>` to pass the
-   profiling flags through to GCC/Clang.
 #. Build and run the simulation model.
 #. The model will create gmon.out.
 #. Run :command:`gprof` to see where in the C++ code the time is spent.
@@ -282,23 +279,25 @@ To use profiling:
    is being spent.
 
 
-.. _Thread Profiling:
+.. _Execution Profiling:
 
-Thread Profiling
-================
+Execution Profiling
+===================
 
-When using multithreaded mode (:vlopt:`--threads`), it is useful to see
-statistics and visualize how well the multiple CPUs are being utilized.
+For performance optimization, it is useful to see statistics and visualize how
+execution time is distributed in a verilated model.
 
-With the :vlopt:`--prof-threads` option, Verilator will:
+With the :vlopt:`--prof-exec` option, Verilator will:
 
-* Add code to the Verilated model to record the start and end time of each
-  macro-task across a number of calls to eval. (What is a macro-task?  See
-  the Verilator internals document (:file:`docs/internals.rst` in the
-  distribution.)
+* Add code to the Verilated model to record execution flow.
 
 * Add code to save profiling data in non-human-friendly form to the file
-  specified with :vlopt:`+verilator+prof+threads+file+\<filename\>`.
+  specified with :vlopt:`+verilator+prof+exec+file+\<filename\>`.
+
+* In multi-threaded models, add code to record the start and end time of each
+  macro-task across a number of calls to eval. (What is a macro-task?  See the
+  Verilator internals document (:file:`docs/internals.rst` in the
+  distribution.)
 
 The :command:`verilator_gantt` program may then be run to transform the
 saved profiling file into a nicer visual format and produce some related
@@ -308,13 +307,14 @@ statistics.
 
    Example verilator_gantt output, as viewed with GTKWave.
 
-   The parallelism shows the number of CPUs being used at a given moment.
+   The measured_parallelism shows the number of CPUs being used at a given moment.
 
    The cpu_thread section shows which thread is executing on each of the physical CPUs.
 
    The thread_mtask section shows which macro-task is running on a given thread.
 
 For more information see :command:`verilator_gantt`.
+
 
 .. _Profiling ccache efficiency:
 
@@ -379,3 +379,121 @@ For example:
          os >> main_time;
          os >> *topp;
      }
+
+
+Profile-Guided Optimization
+===========================
+
+Profile-guided optimization is the technique where profiling data is
+collected by running your simulation executable, then this information is
+used to guide the next Verilation or compilation.
+
+There are two forms of profile-guided optimizations.  Unfortunately for
+best results they must each be performed from the highest level code to the
+lowest, which means performing them separately and in this order:
+
+* :ref:`Thread PGO`
+* :ref:`Compiler PGO`
+
+Other forms of PGO may be supported in the future, such as clock and reset
+toggle rate PGO, branch prediction PGO, statement execution time PGO, or
+others as they prove beneficial.
+
+
+.. _Thread PGO:
+
+Thread Profile-Guided Optimization
+----------------------------------
+
+Verilator supports profile-guided optimization (verilation) of multi-threaded
+models (Thread PGO) to improve performance.
+
+When using multithreading, Verilator computes how long macro tasks take and
+tries to balance those across threads.  (What is a macro-task?  See the
+Verilator internals document (:file:`docs/internals.rst` in the
+distribution.)  If the estimations are incorrect, the threads will not be
+balanced, leading to decreased performance.  Thread PGO allows collecting
+profiling data to replace the estimates and better optimize these
+decisions.
+
+To use Thread PGO, Verilate the model with the :vlopt:`--prof-pgo` option. This
+will code to the verilated model to save profiling data for profile-guided
+optimization.
+
+Run the model executable. When the executable exits, it will create a
+profile.vlt file.
+
+Rerun Verilator, optionally omitting the :vlopt:`--prof-pgo` option,
+and adding the profile.vlt generated earlier to the command line.
+
+Note there is no Verilator equivalent to GCC's --fprofile-use. Verilator's
+profile data file (profile.vlt) can be placed on the verilator command line
+directly without any prefix.
+
+If results from multiple simulations are to be used in generating the
+optimization, multiple simulation's profile.vlt may be concatenated
+externally, or each of the files may be fed as separate command line
+options into Verilator.  Verilator will sum the profile results, so a
+longer running test will have proportionally more weight for optimization
+than a shorter running test.
+
+If you provide any profile feedback data to Verilator, and it cannot use
+it, it will issue the :option:`PROFOUTOFDATE` warning that threads were
+scheduled using estimated costs.  This usually indicates that the profile
+data was generated from different Verilog source code than Verilator is
+currently running against. Therefore, repeat the data collection phase to
+create new profiling data, then rerun Verilator with the same input source
+files and that new profiling data.
+
+
+.. _Compiler PGO:
+
+Compiler Profile-Guided Optimization
+------------------------------------
+
+GCC and Clang support compiler profile-guided optimization (PGO). This
+optimizes any C/C++ program including Verilated code.  Using compiler PGO
+typically yields improvements of 5-15% on both single-threaded and
+multi-threaded models.
+
+To use compiler PGO with GCC or Clang, please see the appropriate compiler
+documentation.  The process in GCC 10 was as follows:
+
+1. Compile the Verilated model with the compiler's "-fprofile-generate"
+   flag:
+
+   .. code-block:: bash
+
+      verilator [whatever_flags] --make \
+          -CFLAGS -fprofile-generate -LDFLAGS -fprofile-generate
+
+   or, if calling make yourself, add -fprofile-generate appropriately to your
+   Makefile.
+
+2. Run your simulation. This will create \*.gcda file(s) in the same
+   directory as the source files.
+
+3. Recompile the model with -fprofile-use. The compiler will read the
+   \*.gcda file(s).
+
+   For GCC:
+
+   .. code-block:: bash
+
+      verilator [whatever_flags] --build \
+          -CFLAGS "-fprofile-use -fprofile-correction"
+
+   For Clang:
+
+   .. code-block:: bash
+
+      llvm-profdata merge -output default.profdata *.profraw
+      verilator [whatever_flags] --build \
+          -CFLAGS "-fprofile-use -fprofile-correction"
+
+   or, if calling make yourself, add these CFLAGS switches appropriately to
+   your Makefile.
+
+Clang and GCC also support -fauto-profile which uses sample-based
+feedback-directed optimization.  See the appropriate compiler
+documentation.

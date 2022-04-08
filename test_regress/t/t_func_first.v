@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   reg [7:0] cyc; initial cyc=0;
+   reg [7:0] cyc; initial cyc = 0;
    reg 	     set_in_task;
 
    always @ (posedge clk) begin

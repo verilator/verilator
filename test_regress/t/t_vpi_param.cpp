@@ -203,7 +203,7 @@ int _mon_check_param() {
     return status;
 }
 
-int mon_check() {
+extern "C" int mon_check() {
     // Callback from initial block in monitor
     if (int status = _mon_check_param()) return status;
     return 0;  // Ok
@@ -242,7 +242,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
+    uint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
     // we're going to be checking for these errors do don't crash out

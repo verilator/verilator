@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -21,6 +21,7 @@
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Broken.h"
+#include "V3EmitV.h"
 #include "V3String.h"
 
 #include <iomanip>
@@ -29,64 +30,45 @@
 //======================================================================
 // Statics
 
-vluint64_t AstNode::s_editCntLast = 0;
-vluint64_t AstNode::s_editCntGbl = 0;  // Hot cache line
+uint64_t AstNode::s_editCntLast = 0;
+uint64_t AstNode::s_editCntGbl = 0;  // Hot cache line
 
 // To allow for fast clearing of all user pointers, we keep a "timestamp"
 // along with each userp, and thus by bumping this count we can make it look
 // as if we iterated across the entire tree to set all the userp's to null.
 int AstNode::s_cloneCntGbl = 0;
-uint32_t AstUser1InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t AstUser2InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t AstUser3InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t AstUser4InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t AstUser5InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser1InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser2InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser3InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser4InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser5InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 
-bool AstUser1InUse::s_userBusy = false;
-bool AstUser2InUse::s_userBusy = false;
-bool AstUser3InUse::s_userBusy = false;
-bool AstUser4InUse::s_userBusy = false;
-bool AstUser5InUse::s_userBusy = false;
+bool VNUser1InUse::s_userBusy = false;
+bool VNUser2InUse::s_userBusy = false;
+bool VNUser3InUse::s_userBusy = false;
+bool VNUser4InUse::s_userBusy = false;
+bool VNUser5InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
 //######################################################################
 // V3AstType
 
-std::ostream& operator<<(std::ostream& os, AstType rhs);
+std::ostream& operator<<(std::ostream& os, VNType rhs);
 
 //######################################################################
 // Creators
 
-AstNode::AstNode(AstType t, FileLine* fl)
+AstNode::AstNode(VNType t, FileLine* fl)
     : m_type{t}
     , m_fileline{fl} {
-    editCountInc();
-    m_nextp = nullptr;
-    m_backp = nullptr;
     m_headtailp = this;  // When made, we're a list of only a single element
-    m_op1p = nullptr;
-    m_op2p = nullptr;
-    m_op3p = nullptr;
-    m_op4p = nullptr;
-    m_iterpp = nullptr;
-    m_dtypep = nullptr;
-    m_clonep = nullptr;
-    m_cloneCnt = 0;
     // Attributes
-    m_didWidth = false;
-    m_doingWidth = false;
-    m_protect = true;
-    m_user1u = VNUser(0);
-    m_user1Cnt = 0;
-    m_user2u = VNUser(0);
-    m_user2Cnt = 0;
-    m_user3u = VNUser(0);
-    m_user3Cnt = 0;
-    m_user4u = VNUser(0);
-    m_user4Cnt = 0;
-    m_user5u = VNUser(0);
-    m_user5Cnt = 0;
+    m_flags.didWidth = false;
+    m_flags.doingWidth = false;
+    m_flags.protect = true;
+    m_flags.unused = 0;  // Initializing this avoids a read-modify-write on construction
+    editCountInc();
 }
 
 AstNode* AstNode::abovep() const {
@@ -94,7 +76,7 @@ AstNode* AstNode::abovep() const {
     // Avoid supporting at other locations as would require walking
     // list which is likely to cause performance issues.
     UASSERT_OBJ(!m_nextp || firstAbovep(), this, "abovep() not allowed when in midlist");
-    const AstNode* firstp = firstAbovep() ? this : m_headtailp;
+    const AstNode* const firstp = firstAbovep() ? this : m_headtailp;
     return firstp->backp();
 }
 
@@ -119,7 +101,7 @@ string AstNode::encodeName(const string& namein) {
             // a user identifier nor a temp we create in Verilator.
             // We also do *NOT* use __DOT__ etc, as we search for those
             // in some replacements, and don't want to mangle the user's names.
-            unsigned val = pos[0] & 0xff;  // Mask to avoid sign extension
+            const unsigned val = pos[0] & 0xff;  // Mask to avoid sign extension
             std::stringstream hex;
             hex << std::setfill('0') << std::setw(2) << std::hex << val;
             out += "__0" + hex.str();
@@ -132,7 +114,7 @@ string AstNode::encodeName(const string& namein) {
     return vname.hashedName();
 }
 
-string AstNode::encodeNumber(vlsint64_t num) {
+string AstNode::encodeNumber(int64_t num) {
     if (num < 0) {
         return "__02D" + cvtToStr(-num);  // 2D=-
     } else {
@@ -229,7 +211,8 @@ string AstNode::prettyTypeName() const {
 //######################################################################
 // Insertion
 
-inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next){
+inline void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno,
+                                     bool next){
 #ifdef VL_DEBUG
 // Called on all major tree changers.
 // Only for use for those really nasty bugs relating to internals
@@ -253,8 +236,8 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next){
 AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
     // Add to m_nextp, returns this
     UDEBUGONLY(UASSERT_OBJ(newp, nodep, "Null item passed to addNext"););
-    nodep->debugTreeChange("-addNextThs: ", __LINE__, false);
-    newp->debugTreeChange("-addNextNew: ", __LINE__, true);
+    debugTreeChange(nodep, "-addNextThs: ", __LINE__, false);
+    debugTreeChange(newp, "-addNextNew: ", __LINE__, true);
     if (!nodep) {  // verilog.y and lots of other places assume this
         return newp;
     } else {
@@ -275,8 +258,8 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
         oldtailp->m_nextp = newp;
         newp->m_backp = oldtailp;
         // New tail needs the head
-        AstNode* newtailp = newp->m_headtailp;
-        AstNode* headp = oldtailp->m_headtailp;
+        AstNode* const newtailp = newp->m_headtailp;
+        AstNode* const headp = oldtailp->m_headtailp;
         oldtailp->m_headtailp = nullptr;  // May be written again as new head
         newp->m_headtailp = nullptr;  // May be written again as new tail
         newtailp->m_headtailp = headp;
@@ -284,7 +267,7 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
         newp->editCountInc();
         if (oldtailp->m_iterpp) *(oldtailp->m_iterpp) = newp;  // Iterate on new item
     }
-    nodep->debugTreeChange("-addNextOut:", __LINE__, true);
+    debugTreeChange(nodep, "-addNextOut:", __LINE__, true);
     return nodep;
 }
 
@@ -299,15 +282,15 @@ void AstNode::addNextHere(AstNode* newp) {
     //  New  could be head of single node, or list
     UASSERT(newp, "Null item passed to addNext");
     UASSERT(!newp->backp(), "New node (back) already assigned?");
-    this->debugTreeChange("-addHereThs: ", __LINE__, false);
-    newp->debugTreeChange("-addHereNew: ", __LINE__, true);
+    debugTreeChange(this, "-addHereThs: ", __LINE__, false);
+    debugTreeChange(newp, "-addHereNew: ", __LINE__, true);
     newp->editCountInc();
 
-    AstNode* addlastp = newp->m_headtailp;  // Last node in list to be added
+    AstNode* const addlastp = newp->m_headtailp;  // Last node in list to be added
     UASSERT(!addlastp->m_nextp, "Headtailp tail isn't at the tail");
 
     // Forward links
-    AstNode* oldnextp = this->m_nextp;
+    AstNode* const oldnextp = this->m_nextp;
     this->m_nextp = newp;
     addlastp->m_nextp = oldnextp;  // Perhaps null if 'this' is not list
 
@@ -316,7 +299,7 @@ void AstNode::addNextHere(AstNode* newp) {
     newp->m_backp = this;
 
     // Head/tail
-    AstNode* oldheadtailp = this->m_headtailp;
+    AstNode* const oldheadtailp = this->m_headtailp;
     //    (!oldheadtailp)               // this was&is middle of list
     //    (oldheadtailp==this && !oldnext)// this was head AND tail (one node long list)
     //    (oldheadtailp && oldnextp)    // this was&is head of list of not just one node, not
@@ -338,7 +321,7 @@ void AstNode::addNextHere(AstNode* newp) {
     }
 
     if (this->m_iterpp) *(this->m_iterpp) = newp;  // Iterate on new item
-    this->debugTreeChange("-addHereOut: ", __LINE__, true);
+    debugTreeChange(this, "-addHereOut: ", __LINE__, true);
 }
 
 void AstNode::setOp1p(AstNode* newp) {
@@ -346,12 +329,12 @@ void AstNode::setOp1p(AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(!m_op1p, this, "Adding to non-empty, non-list op1"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op1"););
-    this->debugTreeChange("-setOp1pThs: ", __LINE__, false);
-    newp->debugTreeChange("-setOp1pNew: ", __LINE__, true);
+    debugTreeChange(this, "-setOp1pThs: ", __LINE__, false);
+    debugTreeChange(newp, "-setOp1pNew: ", __LINE__, true);
     m_op1p = newp;
     newp->editCountInc();
     newp->m_backp = this;
-    this->debugTreeChange("-setOp1pOut: ", __LINE__, false);
+    debugTreeChange(this, "-setOp1pOut: ", __LINE__, false);
 }
 
 void AstNode::setOp2p(AstNode* newp) {
@@ -359,12 +342,12 @@ void AstNode::setOp2p(AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(!m_op2p, this, "Adding to non-empty, non-list op2"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op2"););
-    this->debugTreeChange("-setOp2pThs: ", __LINE__, false);
-    newp->debugTreeChange("-setOp2pNew: ", __LINE__, true);
+    debugTreeChange(this, "-setOp2pThs: ", __LINE__, false);
+    debugTreeChange(newp, "-setOp2pNew: ", __LINE__, true);
     m_op2p = newp;
     newp->editCountInc();
     newp->m_backp = this;
-    this->debugTreeChange("-setOp2pOut: ", __LINE__, false);
+    debugTreeChange(this, "-setOp2pOut: ", __LINE__, false);
 }
 
 void AstNode::setOp3p(AstNode* newp) {
@@ -372,12 +355,12 @@ void AstNode::setOp3p(AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(!m_op3p, this, "Adding to non-empty, non-list op3"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op3"););
-    this->debugTreeChange("-setOp3pThs: ", __LINE__, false);
-    newp->debugTreeChange("-setOp3pNew: ", __LINE__, true);
+    debugTreeChange(this, "-setOp3pThs: ", __LINE__, false);
+    debugTreeChange(newp, "-setOp3pNew: ", __LINE__, true);
     m_op3p = newp;
     newp->editCountInc();
     newp->m_backp = this;
-    this->debugTreeChange("-setOp3pOut: ", __LINE__, false);
+    debugTreeChange(this, "-setOp3pOut: ", __LINE__, false);
 }
 
 void AstNode::setOp4p(AstNode* newp) {
@@ -385,12 +368,12 @@ void AstNode::setOp4p(AstNode* newp) {
     UDEBUGONLY(UASSERT_OBJ(!m_op4p, this, "Adding to non-empty, non-list op4"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op4"););
-    this->debugTreeChange("-setOp4pThs: ", __LINE__, false);
-    newp->debugTreeChange("-setOp4pNew: ", __LINE__, true);
+    debugTreeChange(this, "-setOp4pThs: ", __LINE__, false);
+    debugTreeChange(newp, "-setOp4pNew: ", __LINE__, true);
     m_op4p = newp;
     newp->editCountInc();
     newp->m_backp = this;
-    this->debugTreeChange("-setOp4pOut: ", __LINE__, false);
+    debugTreeChange(this, "-setOp4pOut: ", __LINE__, false);
 }
 
 void AstNode::addOp1p(AstNode* newp) {
@@ -436,12 +419,12 @@ void AstNode::addOp4p(AstNode* newp) {
 void AstNode::replaceWith(AstNode* newp) {
     // Replace oldp with this
     // Unlike a unlink/relink, children are changed to point to the new node.
-    AstNRelinker repHandle;
+    VNRelinker repHandle;
     this->unlinkFrBack(&repHandle);
     repHandle.relink(newp);
 }
 
-void AstNRelinker::dump(std::ostream& str) const {
+void VNRelinker::dump(std::ostream& str) const {
     str << " BK=" << reinterpret_cast<uint32_t*>(m_backp);
     str << " ITER=" << reinterpret_cast<uint32_t*>(m_iterpp);
     str << " CHG=" << (m_chg == RELINK_NEXT ? "[NEXT] " : "");
@@ -451,26 +434,26 @@ void AstNRelinker::dump(std::ostream& str) const {
     str << (m_chg == RELINK_OP4 ? "[OP4] " : "");
 }
 
-AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
-    this->debugTreeChange("-unlinkWNextThs: ", __LINE__, true);
-    AstNode* oldp = this;
+AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
+    debugTreeChange(this, "-unlinkWNextThs: ", __LINE__, true);
+    AstNode* const oldp = this;
     UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
     oldp->editCountInc();
-    AstNode* backp = oldp->m_backp;
+    AstNode* const backp = oldp->m_backp;
     if (linkerp) {
         linkerp->m_oldp = oldp;
         linkerp->m_backp = backp;
         linkerp->m_iterpp = oldp->m_iterpp;
         if (backp->m_nextp == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_NEXT;
+            linkerp->m_chg = VNRelinker::RELINK_NEXT;
         } else if (backp->m_op1p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP1;
+            linkerp->m_chg = VNRelinker::RELINK_OP1;
         } else if (backp->m_op2p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP2;
+            linkerp->m_chg = VNRelinker::RELINK_OP2;
         } else if (backp->m_op3p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP3;
+            linkerp->m_chg = VNRelinker::RELINK_OP3;
         } else if (backp->m_op4p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP4;
+            linkerp->m_chg = VNRelinker::RELINK_OP4;
         } else {
             oldp->v3fatalSrc("Unlink of node with back not pointing to it.");
         }
@@ -485,7 +468,7 @@ AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
         AstNode* oldtailp = oldp;
         while (oldtailp->m_nextp) oldtailp = oldtailp->m_nextp;
         // Create new head/tail of old list
-        AstNode* oldheadp = oldtailp->m_headtailp;
+        AstNode* const oldheadp = oldtailp->m_headtailp;
         oldheadp->m_headtailp = oldp->m_backp;
         oldheadp->m_headtailp->m_headtailp = oldheadp;
         // Create new head/tail of extracted list
@@ -507,30 +490,30 @@ AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
     // Iterator fixup
     if (oldp->m_iterpp) *(oldp->m_iterpp) = nullptr;
     oldp->m_iterpp = nullptr;
-    oldp->debugTreeChange("-unlinkWNextOut: ", __LINE__, true);
+    debugTreeChange(oldp, "-unlinkWNextOut: ", __LINE__, true);
     return oldp;
 }
 
-AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
-    this->debugTreeChange("-unlinkFrBkThs: ", __LINE__, true);
-    AstNode* oldp = this;
+AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
+    debugTreeChange(this, "-unlinkFrBkThs: ", __LINE__, true);
+    AstNode* const oldp = this;
     UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
     oldp->editCountInc();
-    AstNode* backp = oldp->m_backp;
+    AstNode* const backp = oldp->m_backp;
     if (linkerp) {
         linkerp->m_oldp = oldp;
         linkerp->m_backp = backp;
         linkerp->m_iterpp = oldp->m_iterpp;
         if (backp->m_nextp == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_NEXT;
+            linkerp->m_chg = VNRelinker::RELINK_NEXT;
         } else if (backp->m_op1p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP1;
+            linkerp->m_chg = VNRelinker::RELINK_OP1;
         } else if (backp->m_op2p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP2;
+            linkerp->m_chg = VNRelinker::RELINK_OP2;
         } else if (backp->m_op3p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP3;
+            linkerp->m_chg = VNRelinker::RELINK_OP3;
         } else if (backp->m_op4p == oldp) {
-            linkerp->m_chg = AstNRelinker::RELINK_OP4;
+            linkerp->m_chg = VNRelinker::RELINK_OP4;
         } else {
             this->v3fatalSrc("Unlink of node with back not pointing to it.");
         }
@@ -558,7 +541,7 @@ AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
             this->v3fatalSrc("Unlink of node with back not pointing to it.");
         }
         if (oldp->m_nextp) {
-            AstNode* newheadp = oldp->m_nextp;
+            AstNode* const newheadp = oldp->m_nextp;
             newheadp->m_backp = backp;
             newheadp->m_headtailp = oldp->m_headtailp;
             newheadp->m_headtailp->m_headtailp = newheadp;
@@ -571,16 +554,16 @@ AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
     oldp->m_backp = nullptr;
     oldp->m_headtailp = this;
     oldp->m_iterpp = nullptr;
-    oldp->debugTreeChange("-unlinkFrBkOut: ", __LINE__, true);
+    debugTreeChange(oldp, "-unlinkFrBkOut: ", __LINE__, true);
     return oldp;
 }
 
-void AstNode::relink(AstNRelinker* linkerp) {
+void AstNode::relink(VNRelinker* linkerp) {
     if (debug() > 8) {
         UINFO(0, " EDIT:      relink: ");
         dumpPtrs();
     }
-    AstNode* newp = this;
+    AstNode* const newp = this;
     UASSERT(linkerp && linkerp->m_backp, "Need non-empty linker");
     UASSERT(!newp->backp(), "New node already linked?");
     newp->editCountInc();
@@ -590,16 +573,16 @@ void AstNode::relink(AstNRelinker* linkerp) {
         cout << endl;
     }
 
-    AstNode* backp = linkerp->m_backp;
-    this->debugTreeChange("-relinkNew: ", __LINE__, true);
-    backp->debugTreeChange("-relinkTre: ", __LINE__, true);
+    AstNode* const backp = linkerp->m_backp;
+    debugTreeChange(this, "-relinkNew: ", __LINE__, true);
+    debugTreeChange(backp, "-relinkTre: ", __LINE__, true);
 
     switch (linkerp->m_chg) {
-    case AstNRelinker::RELINK_NEXT: backp->addNextHere(newp); break;
-    case AstNRelinker::RELINK_OP1: relinkOneLink(backp->m_op1p /*ref*/, newp); break;
-    case AstNRelinker::RELINK_OP2: relinkOneLink(backp->m_op2p /*ref*/, newp); break;
-    case AstNRelinker::RELINK_OP3: relinkOneLink(backp->m_op3p /*ref*/, newp); break;
-    case AstNRelinker::RELINK_OP4: relinkOneLink(backp->m_op4p /*ref*/, newp); break;
+    case VNRelinker::RELINK_NEXT: backp->addNextHere(newp); break;
+    case VNRelinker::RELINK_OP1: relinkOneLink(backp->m_op1p /*ref*/, newp); break;
+    case VNRelinker::RELINK_OP2: relinkOneLink(backp->m_op2p /*ref*/, newp); break;
+    case VNRelinker::RELINK_OP3: relinkOneLink(backp->m_op3p /*ref*/, newp); break;
+    case VNRelinker::RELINK_OP4: relinkOneLink(backp->m_op4p /*ref*/, newp); break;
     default: this->v3fatalSrc("Relink of node without any link to change."); break;
     }
     // Relink
@@ -617,7 +600,7 @@ void AstNode::relink(AstNRelinker* linkerp) {
     }
     // Empty the linker so not used twice accidentally
     linkerp->m_backp = nullptr;
-    this->debugTreeChange("-relinkOut: ", __LINE__, true);
+    debugTreeChange(this, "-relinkOut: ", __LINE__, true);
 }
 
 void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set to newp
@@ -629,10 +612,10 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
         // Likewise there may be a old list.
         // Insert the whole old list following the new node's list.
         // Thus a unlink without next, followed by relink, gives the same list.
-        AstNode* newlistlastp = newp->m_headtailp;
+        AstNode* const newlistlastp = newp->m_headtailp;
         UASSERT_OBJ(!(newlistlastp->m_nextp && newlistlastp != newp), newp,
                     "Headtailp tail isn't at the tail");
-        AstNode* oldlistlastp = pointpr->m_headtailp;
+        AstNode* const oldlistlastp = pointpr->m_headtailp;
         UASSERT_OBJ(!(oldlistlastp->m_nextp && oldlistlastp != pointpr), newp,
                     "Old headtailp tail isn't at the tail");
         // Next links
@@ -649,15 +632,15 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
 
 void AstNode::addHereThisAsNext(AstNode* newp) {
     // {old}->this->{next} becomes {old}->new->this->{next}
-    AstNRelinker handle;
+    VNRelinker handle;
     this->unlinkFrBackWithNext(&handle);
     newp->addNext(this);
     handle.relink(newp);
 }
 
 void AstNode::swapWith(AstNode* bp) {
-    AstNRelinker aHandle;
-    AstNRelinker bHandle;
+    VNRelinker aHandle;
+    VNRelinker bHandle;
     this->unlinkFrBack(&aHandle);
     bp->unlinkFrBack(&bHandle);
     aHandle.relink(bp);
@@ -669,7 +652,7 @@ void AstNode::swapWith(AstNode* bp) {
 
 AstNode* AstNode::cloneTreeIter() {
     // private: Clone single node and children
-    AstNode* newp = this->clone();
+    AstNode* const newp = this->clone();
     if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList());
     if (this->m_op2p) newp->op2p(this->m_op2p->cloneTreeIterList());
     if (this->m_op3p) newp->op3p(this->m_op3p->cloneTreeIterList());
@@ -686,7 +669,7 @@ AstNode* AstNode::cloneTreeIterList() {
     AstNode* newtailp = nullptr;
     // Audited to make sure this is never nullptr
     for (AstNode* oldp = this; oldp; oldp = oldp->m_nextp) {
-        AstNode* newp = oldp->cloneTreeIter();
+        AstNode* const newp = oldp->cloneTreeIter();
         newp->m_headtailp = nullptr;
         newp->m_backp = newtailp;
         if (newtailp) newtailp->m_nextp = newp;
@@ -699,7 +682,7 @@ AstNode* AstNode::cloneTreeIterList() {
 }
 
 AstNode* AstNode::cloneTree(bool cloneNextLink) {
-    this->debugTreeChange("-cloneThs: ", __LINE__, cloneNextLink);
+    debugTreeChange(this, "-cloneThs: ", __LINE__, cloneNextLink);
     cloneClearTree();
     AstNode* newp;
     if (cloneNextLink && this->m_nextp) {
@@ -711,7 +694,7 @@ AstNode* AstNode::cloneTree(bool cloneNextLink) {
     }
     newp->m_backp = nullptr;
     newp->cloneRelinkTree();
-    newp->debugTreeChange("-cloneOut: ", __LINE__, true);
+    debugTreeChange(newp, "-cloneOut: ", __LINE__, true);
     return newp;
 }
 
@@ -763,7 +746,7 @@ void AstNode::deleteTree() {
     // deleteTree always deletes the next link, because you must have called
     // unlinkFromBack or unlinkFromBackWithNext as appropriate before calling this.
     UASSERT(!m_backp, "Delete called on node with backlink still set");
-    this->debugTreeChange("-delTree:  ", __LINE__, true);
+    debugTreeChange(this, "-delTree:  ", __LINE__, true);
     this->editCountInc();
     // MUST be depth first!
     deleteTreeIter();
@@ -775,14 +758,14 @@ void AstNode::deleteTree() {
 #ifdef VL_LEAK_CHECKS
 void* AstNode::operator new(size_t size) {
     // Optimization note: Aligning to cache line is a loss, due to lost packing
-    AstNode* objp = static_cast<AstNode*>(::operator new(size));
+    const AstNode* const objp = static_cast<AstNode*>(::operator new(size));
     V3Broken::addNewed(objp);
     return objp;
 }
 
 void AstNode::operator delete(void* objp, size_t size) {
     if (!objp) return;
-    AstNode* nodep = static_cast<AstNode*>(objp);
+    const AstNode* const nodep = static_cast<AstNode*>(objp);
     V3Broken::deleted(nodep);
     ::operator delete(objp);
 }
@@ -791,7 +774,7 @@ void AstNode::operator delete(void* objp, size_t size) {
 //======================================================================
 // Iterators
 
-void AstNode::iterateChildren(AstNVisitor& v) {
+void AstNode::iterateChildren(VNVisitor& v) {
     // This is a very hot function
     // Optimization note: Grabbing m_op#p->m_nextp is a net loss
     ASTNODE_PREFETCH(m_op1p);
@@ -804,7 +787,7 @@ void AstNode::iterateChildren(AstNVisitor& v) {
     if (m_op4p) m_op4p->iterateAndNext(v);
 }
 
-void AstNode::iterateChildrenConst(AstNVisitor& v) {
+void AstNode::iterateChildrenConst(VNVisitor& v) {
     // This is a very hot function
     ASTNODE_PREFETCH(m_op1p);
     ASTNODE_PREFETCH(m_op2p);
@@ -816,7 +799,7 @@ void AstNode::iterateChildrenConst(AstNVisitor& v) {
     if (m_op4p) m_op4p->iterateAndNextConst(v);
 }
 
-void AstNode::iterateAndNext(AstNVisitor& v) {
+void AstNode::iterateAndNext(VNVisitor& v) {
     // This is a very hot function
     // IMPORTANT: If you replace a node that's the target of this iterator,
     // then the NEW node will be iterated on next, it isn't skipped!
@@ -850,7 +833,7 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
     }
 }
 
-void AstNode::iterateListBackwards(AstNVisitor& v) {
+void AstNode::iterateListBackwards(VNVisitor& v) {
     AstNode* nodep = this;
     while (nodep->m_nextp) nodep = nodep->m_nextp;
     while (nodep) {
@@ -864,25 +847,25 @@ void AstNode::iterateListBackwards(AstNVisitor& v) {
     }
 }
 
-void AstNode::iterateChildrenBackwards(AstNVisitor& v) {
+void AstNode::iterateChildrenBackwards(VNVisitor& v) {
     if (m_op1p) m_op1p->iterateListBackwards(v);
     if (m_op2p) m_op2p->iterateListBackwards(v);
     if (m_op3p) m_op3p->iterateListBackwards(v);
     if (m_op4p) m_op4p->iterateListBackwards(v);
 }
 
-void AstNode::iterateAndNextConst(AstNVisitor& v) {
+void AstNode::iterateAndNextConst(VNVisitor& v) {
     // Keep following the current list even if edits change it
     AstNode* nodep = this;
     do {
-        AstNode* nnextp = nodep->m_nextp;
+        AstNode* const nnextp = nodep->m_nextp;
         ASTNODE_PREFETCH(nnextp);
         nodep->accept(v);
         nodep = nnextp;
     } while (nodep);
 }
 
-AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
+AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     // Some visitors perform tree edits (such as V3Const), and may even
     // replace/delete the exact nodep that the visitor is called with.  If
     // this happens, the parent will lose the handle to the node that was
@@ -896,7 +879,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
+        AstBegin* const tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
         {
             VL_DO_DANGLING(tempp->stmtsp()->accept(v),
                            nodep);  // nodep to null as may be replaced
@@ -932,7 +915,9 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
 void AstNode::cloneRelinkTree() {
     // private: Cleanup clone() operation on whole tree. Publicly call cloneTree() instead.
     for (AstNode* nodep = this; nodep; nodep = nodep->m_nextp) {
-        if (m_dtypep && m_dtypep->clonep()) m_dtypep = m_dtypep->clonep();
+        if (nodep->m_dtypep && nodep->m_dtypep->clonep()) {
+            nodep->m_dtypep = nodep->m_dtypep->clonep();
+        }
         nodep->cloneRelink();
         if (nodep->m_op1p) nodep->m_op1p->cloneRelinkTree();
         if (nodep->m_op2p) nodep->m_op2p->cloneRelinkTree();
@@ -990,8 +975,8 @@ void AstNode::checkTreeIter(AstNode* backp) {
 void AstNode::checkTreeIterList(AstNode* backp) {
     // private: Check a (possible) list of nodes, this is always the head of the list
     // Audited to make sure this is never nullptr
-    AstNode* headp = this;
-    AstNode* tailp = this;
+    AstNode* const headp = this;
+    const AstNode* tailp = this;
     for (AstNode* nodep = headp; nodep; nodep = nodep->nextp()) {
         nodep->checkTreeIter(backp);
         UASSERT_OBJ(headp == this || !nextp(), this,
@@ -1045,7 +1030,7 @@ void AstNode::dumpTreeFileGdb(const AstNode* nodep,  // LCOV_EXCL_START
         cout << "<nullptr>" << endl;
         return;
     }
-    string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);
+    const string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);
     v3Global.rootp()->dumpTreeFile(filename);
 }  // LCOV_EXCL_STOP
 
@@ -1121,7 +1106,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
     if (doDump) {
         {  // Write log & close
             UINFO(2, "Dumping " << filename << endl);
-            const std::unique_ptr<std::ofstream> logsp(V3File::new_ofstream(filename, append));
+            const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename, append)};
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
             *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
@@ -1134,12 +1119,13 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
             }
         }
     }
+    if (doDump && v3Global.opt.debugEmitV()) V3EmitV::debugEmitV(filename + ".v");
     if (doCheck && (v3Global.opt.debugCheck() || v3Global.opt.dumpTree())) {
         // Error check
         checkTree();
         // Broken isn't part of check tree because it can munge iterp's
         // set by other steps if it is called in the middle of other operations
-        if (AstNetlist* netp = VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
+        if (AstNetlist* const netp = VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
     }
 }
 
@@ -1160,7 +1146,7 @@ string AstNode::locationStr() const {
             return "";  // LCOV_EXCL_LINE
         }
         const AstScope* scopep;
-        if ((scopep = VN_CAST_CONST(backp, Scope))) {
+        if ((scopep = VN_CAST(backp, Scope))) {
             // The design is flattened and there are no useful scopes
             // This is probably because of inlining
             if (scopep->isTop()) break;
@@ -1174,11 +1160,11 @@ string AstNode::locationStr() const {
     while (backp) {
         const AstModule* modp;
         const AstNodeVarRef* nvrp;
-        if ((modp = VN_CAST_CONST(backp, Module)) && !modp->hierName().empty()) {
+        if ((modp = VN_CAST(backp, Module)) && !modp->hierName().empty()) {
             str += modp->hierName();
             return str;
-        } else if ((nvrp = VN_CAST_CONST(backp, NodeVarRef))) {
-            string prettyName = nvrp->prettyName();
+        } else if ((nvrp = VN_CAST(backp, NodeVarRef))) {
+            const string prettyName = nvrp->prettyName();
             // VarRefs have not been flattened yet and do not contain location information
             if (prettyName != nvrp->name()) {
                 str += prettyName;
@@ -1235,43 +1221,46 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
     }
 }
 
-AstNodeDType* AstNode::findBasicDType(AstBasicDTypeKwd kwd) const {
+AstNodeDType* AstNode::findBasicDType(VBasicDTypeKwd kwd) const {
     // For 'simple' types we use the global directory.  These are all unsized.
     // More advanced types land under the module/task/etc
     return v3Global.rootp()->typeTablep()->findBasicDType(fileline(), kwd);
 }
 AstNodeDType* AstNode::findBitDType(int width, int widthMin, VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT,
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::BIT,
                                                              width, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC,
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::LOGIC,
                                                              width, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
                                            VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC,
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::LOGIC,
                                                              range, widthMin, numeric);
 }
 AstNodeDType* AstNode::findBitRangeDType(const VNumRange& range, int widthMin,
                                          VSigning numeric) const {
-    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT,
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::BIT,
                                                              range, widthMin, numeric);
 }
 AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
     return v3Global.rootp()->typeTablep()->findInsertSameDType(nodep);
 }
-AstNodeDType* AstNode::findVoidDType() const {
-    return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
+AstNodeDType* AstNode::findEmptyQueueDType() const {
+    return v3Global.rootp()->typeTablep()->findEmptyQueueDType(fileline());
 }
 AstNodeDType* AstNode::findQueueIndexDType() const {
     return v3Global.rootp()->typeTablep()->findQueueIndexDType(fileline());
 }
+AstNodeDType* AstNode::findVoidDType() const {
+    return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
+}
 
 //######################################################################
-// AstNVisitor
+// VNDeleter
 
-void AstNVisitor::doDeletes() {
-    for (AstNode* nodep : m_deleteps) nodep->deleteTree();
+void VNDeleter::doDeletes() {
+    for (AstNode* const nodep : m_deleteps) nodep->deleteTree();
     m_deleteps.clear();
 }

@@ -114,11 +114,11 @@ By convention, each function/method uses the variable ``nodep`` as a
 pointer to the ``AstNode`` currently being processed.
 
 
-``AstNVisitor``
+``VNVisitor``
 ^^^^^^^^^^^^^^^
 
 The passes are implemented by AST visitor classes. These are implemented by
-subclasses of the abstract class, ``AstNVisitor``. Each pass creates an
+subclasses of the abstract class, ``VNVisitor``. Each pass creates an
 instance of the visitor class, which in turn implements a method to perform
 the pass.
 
@@ -268,11 +268,11 @@ Estimating Logic Costs
 
 To compute the cost of any given path through the graph, Verilator
 estimates an execution cost for each task. Each macro-task has an execution
-cost which is simply the sum of its tasks' costs. We assume that
-communication overhead and synchronization overhead are zero, so the cost
-of any given path through the graph is simply the sum of macro-task
-execution costs. Sarkar does almost the same thing, except that he has
-nonzero estimates for synchronization costs.
+cost which is the sum of its tasks' costs. We assume that communication
+overhead and synchronization overhead are zero, so the cost of any given
+path through the graph is the sum of macro-task execution costs. Sarkar
+does almost the same thing, except that he has nonzero estimates for
+synchronization costs.
 
 Verilator's cost estimates are assigned by ``InstrCountCostVisitor``.  This
 class is perhaps the most fragile piece of the multithread
@@ -301,7 +301,7 @@ prerequisites on other threads have finished.
 
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
-source of overhead in this approach. The ``--prof-threads`` switch and the
+source of overhead in this approach. The ``--prof-exec`` switch and the
 ``verilator_gantt`` script can visualize the time lost to such
 fragmentation.
 
@@ -404,6 +404,9 @@ One way to do that might be to make various "tie breaker" comparison
 routines in the sources to rely more heavily on randomness, and
 generally try harder not to keep input nodes together when we have the
 option to scramble things.
+
+Profile-guided optimization make this a bit better, by adjusting mtask
+scheduling, but this does not yet guide the packing into mtasks.
 
 
 Performance Regression
@@ -520,10 +523,10 @@ optimization passes. This allows separation of the pass algorithm from the
 AST on which it operates. Wikipedia provides an introduction to the concept
 at https://en.wikipedia.org/wiki/Visitor_pattern.
 
-As noted above, all visitors are derived classes of ``AstNVisitor``. All
+As noted above, all visitors are derived classes of ``VNVisitor``. All
 derived classes of ``AstNode`` implement the ``accept`` method, which takes
-as argument a reference to an instance or a ``AstNVisitor`` derived class
-and applies the visit method of the ``AstNVisitor`` to the invoking AstNode
+as argument a reference to an instance or a ``VNVisitor`` derived class
+and applies the visit method of the ``VNVisitor`` to the invoking AstNode
 instance (i.e. ``this``).
 
 One possible difficulty is that a call to ``accept`` may perform an edit
@@ -601,8 +604,8 @@ There are three ways data is passed between visitor functions.
 Iterators
 ---------
 
-``AstNVisitor`` provides a set of iterators to facilitate walking over
-the tree. Each operates on the current ``AstNVisitor`` class (as this)
+``VNVisitor`` provides a set of iterators to facilitate walking over
+the tree. Each operates on the current ``VNVisitor`` class (as this)
 and takes an argument type ``AstNode*``.
 
 ``iterate``
@@ -814,7 +817,7 @@ which you can install using cpan.
 
 There are some traps to avoid when running regression tests
 
-- When checking the MANIFEST, the test will barf on unexpected code in the
+- When checking the MANIFEST, the test will fail on unexpected code in the
   Verilator tree. So make sure to keep any such code outside the tree.
 
 - Not all Linux systems install Perldoc by default. This is needed for the
@@ -1180,10 +1183,10 @@ Verilator ideally would support all of IEEE, and has the goal to get close
 to full support. However the following IEEE sections and features are not
 anticipated to be ever implemented for the reasons indicated.
 
-IEEE 1800-2017 3.3 recursive modules
+IEEE 1800-2017 3.3 modules within modules
     Little/no tool support, and arguably not a good practice.
 IEEE 1800-2017 6.12 "shortreal"
-    Little/no tool support, and easily simply promoted to real.
+    Little/no tool support, and easily promoted to real.
 IEEE 1800-2017 11.11 Min, typ, max
     No SDF support so will always use typical.
 IEEE 1800-2017 11.12 "let"
@@ -1205,7 +1208,7 @@ IEEE 1800-2017 33 Config
 Distribution
 ============
 
-Copyright 2008-2021 by Wilson Snyder. Verilator is free software; you can
+Copyright 2008-2022 by Wilson Snyder. Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

@@ -15,6 +15,11 @@ class Cls;
    bit b;
    int i;
    bit [15:0] carray4 [4];
+   bit [64:0] cwide[2];
+   string     name;
+   task debug();
+      $display("DEBUG: %s (@%0t) %s", this.name, $realtime, "message");
+   endtask
 endclass
 
 module t (/*AUTOARG*/);
@@ -23,6 +28,7 @@ module t (/*AUTOARG*/);
       c = new;
       c.b = '1;
       c.i = 42;
+      c.name = "object_name";
 
       c.carray4[0] = 16'h11;
       c.carray4[1] = 16'h22;
@@ -32,6 +38,8 @@ module t (/*AUTOARG*/);
 
       c.carray4 = '{16'h911, 16'h922, 16'h933, 16'h944};
       $display("'%p'", c);
+
+      c.debug();
 
       $write("*-* All Finished *-*\n");
       $finish;

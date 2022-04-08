@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,10 +30,10 @@
 //######################################################################
 // CoverageJoin state, as a visitor of each AstNode
 
-class CoverageJoinVisitor final : public AstNVisitor {
+class CoverageJoinVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // AstUser4InUse     In V3Hasher via V3DupFinder
+    // VNUser4InUse     In V3Hasher via V3DupFinder
 
     // STATE
     std::vector<AstCoverToggle*> m_toggleps;  // List of of all AstCoverToggle's
@@ -60,18 +60,18 @@ private:
                     const auto dupit = dupFinder.findDuplicate(nodep->origp());
                     if (dupit == dupFinder.end()) break;
                     //
-                    AstNode* duporigp = dupit->second;
+                    const AstNode* const duporigp = dupit->second;
                     // Note hashed will point to the original variable (what's
                     // duplicated), not the covertoggle, but we need to get back to the
                     // covertoggle which is immediately above, so:
-                    AstCoverToggle* removep = VN_CAST(duporigp->backp(), CoverToggle);
+                    AstCoverToggle* const removep = VN_AS(duporigp->backp(), CoverToggle);
                     UASSERT_OBJ(removep, nodep, "CoverageJoin duplicate of wrong type");
                     UINFO(8, "  Orig " << nodep << " -->> " << nodep->incp()->declp() << endl);
                     UINFO(8, "   dup " << removep << " -->> " << removep->incp()->declp() << endl);
                     // The CoverDecl the duplicate pointed to now needs to point to the
                     // original's data. I.e. the duplicate will get the coverage number
                     // from the non-duplicate
-                    AstCoverDecl* datadeclp = nodep->incp()->declp()->dataDeclThisp();
+                    AstCoverDecl* const datadeclp = nodep->incp()->declp()->dataDeclThisp();
                     removep->incp()->declp()->dataDeclp(datadeclp);
                     UINFO(8, "   new " << removep->incp()->declp() << endl);
                     // Mark the found node as a duplicate of the first node
@@ -114,6 +114,6 @@ public:
 
 void V3CoverageJoin::coverageJoin(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CoverageJoinVisitor visitor(rootp); }  // Destruct before checking
+    { CoverageJoinVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coveragejoin", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

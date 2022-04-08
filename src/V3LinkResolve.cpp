@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -38,12 +38,12 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkResolveVisitor final : public AstNVisitor {
+class LinkResolveVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()   // bool           Moved default caseitems
-    AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     // Below state needs to be preserved between each module call.
@@ -52,6 +52,7 @@ private:
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
+    bool m_underGenerate = false;  // Under GenFor/GenIf
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -79,7 +80,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstInitial* nodep) override {
+    virtual void visit(AstInitialAutomatic* nodep) override {
         iterateChildren(nodep);
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial
@@ -95,7 +96,7 @@ private:
     }
     virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
-        if (m_classp && !nodep->isParam()) nodep->varType(AstVarType::MEMBER);
+        if (m_classp && !nodep->isParam()) nodep->varType(VVarType::MEMBER);
         if (m_ftaskp) nodep->funcLocal(true);
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
@@ -111,6 +112,7 @@ private:
 
     virtual void visit(AstNodeFTask* nodep) override {
         // NodeTask: Remember its name for later resolution
+        if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
         if (m_classp) {
             if (nodep->name() == "pre_randomize" || nodep->name() == "post_randomize") {
@@ -134,12 +136,12 @@ private:
             iterateChildren(nodep);
         }
         m_ftaskp = nullptr;
-        if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+        if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->taskp() && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
-            nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+            nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
         }
     }
 
@@ -150,12 +152,12 @@ private:
             // If it's not a simple variable wrap in a temporary
             // This is a bit unfortunate as we haven't done width resolution
             // and any width errors will look a bit odd, but it works.
-            AstNode* sensp = nodep->sensp();
+            AstNode* const sensp = nodep->sensp();
             if (sensp && !VN_IS(sensp, NodeVarRef) && !VN_IS(sensp, Const)) {
                 // Make a new temp wire
-                string newvarname = "__Vsenitemexpr" + cvtToStr(++m_senitemCvtNum);
-                AstVar* newvarp = new AstVar(sensp->fileline(), AstVarType::MODULETEMP, newvarname,
-                                             VFlagLogicPacked(), 1);
+                const string newvarname = "__Vsenitemexpr" + cvtToStr(++m_senitemCvtNum);
+                AstVar* const newvarp = new AstVar(sensp->fileline(), VVarType::MODULETEMP,
+                                                   newvarname, VFlagLogicPacked(), 1);
                 // We can't just add under the module, because we may be
                 // inside a generate, begin, etc.
                 // We know a SenItem should be under a SenTree/Always etc,
@@ -173,7 +175,7 @@ private:
                 addwherep->addNext(newvarp);
 
                 sensp->replaceWith(new AstVarRef(sensp->fileline(), newvarp, VAccess::READ));
-                AstAssignW* assignp = new AstAssignW(
+                AstAssignW* const assignp = new AstAssignW(
                     sensp->fileline(), new AstVarRef(sensp->fileline(), newvarp, VAccess::WRITE),
                     sensp);
                 addwherep->addNext(assignp);
@@ -182,21 +184,21 @@ private:
             bool did = true;
             while (did) {
                 did = false;
-                if (AstNodeSel* selp = VN_CAST(nodep->sensp(), NodeSel)) {
-                    AstNode* fromp = selp->fromp()->unlinkFrBack();
+                if (AstNodeSel* const selp = VN_CAST(nodep->sensp(), NodeSel)) {
+                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = true;
                 }
                 // NodeSel doesn't include AstSel....
-                if (AstSel* selp = VN_CAST(nodep->sensp(), Sel)) {
-                    AstNode* fromp = selp->fromp()->unlinkFrBack();
+                if (AstSel* const selp = VN_CAST(nodep->sensp(), Sel)) {
+                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = true;
                 }
-                if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
-                    AstNode* fromp = selp->fromp()->unlinkFrBack();
+                if (AstNodePreSel* const selp = VN_CAST(nodep->sensp(), NodePreSel)) {
+                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = true;
@@ -218,23 +220,23 @@ private:
             // variable we're extracting from (to determine MSB/LSB/endianness/etc.)
             // So we replicate it in another node
             // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
-            AstNode* basefromp = AstArraySel::baseFromp(nodep, false);
-            if (AstNodeVarRef* varrefp
+            AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
+            if (AstNodeVarRef* const varrefp
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
                                            varrefp->cloneTree(false)));
-            } else if (AstUnlinkedRef* uvxrp
+            } else if (AstUnlinkedRef* const uvxrp
                        = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
                                            uvxrp->cloneTree(false)));
-            } else if (auto* fromp = VN_CAST(basefromp, LambdaArgRef)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+            } else if (auto* const fromp = VN_CAST(basefromp, LambdaArgRef)) {
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
                                            fromp->cloneTree(false)));
-            } else if (AstMemberSel* fromp = VN_CAST(basefromp, MemberSel)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
+            } else if (AstMemberSel* const fromp = VN_CAST(basefromp, MemberSel)) {
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::MEMBER_BASE,
                                            fromp->cloneTree(false)));
-            } else if (AstEnumItemRef* fromp = VN_CAST(basefromp, EnumItemRef)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::ENUM_BASE,
+            } else if (AstEnumItemRef* const fromp = VN_CAST(basefromp, EnumItemRef)) {
+                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::ENUM_BASE,
                                            fromp->cloneTree(false)));
             } else if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
@@ -252,35 +254,35 @@ private:
         iterateChildren(nodep);
         if (!nodep->user2() && nodep->isDefault() && nodep->nextp()) {
             nodep->user2(true);
-            AstNode* nextp = nodep->nextp();
+            AstNode* const nextp = nodep->nextp();
             nodep->unlinkFrBack();
             nextp->addNext(nodep);
         }
     }
 
     virtual void visit(AstPragma* nodep) override {
-        if (nodep->pragType() == AstPragmaType::HIER_BLOCK) {
+        if (nodep->pragType() == VPragmaType::HIER_BLOCK) {
             UASSERT_OBJ(m_modp, nodep, "HIER_BLOCK not under a module");
-            // If this is hierarchical mode which is to create protect-lib,
+            // If this is hierarchical mode which is to lib-create,
             // sub modules do not have hier_block meta comment in the source code.
-            // But .vlt files may still mark a module which is actually a protect-lib wrapper
+            // But .vlt files may still mark a module which is actually a lib-create wrapper
             // hier_block. AstNodeModule::hierBlock() can be true only when --hierarchical is
             // specified.
             m_modp->hierBlock(v3Global.opt.hierarchical());
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
+        } else if (nodep->pragType() == VPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == AstPragmaType::PUBLIC_TASK) {
+        } else if (nodep->pragType() == VPragmaType::PUBLIC_TASK) {
             UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
+        } else if (nodep->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
             if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize
                                                  // better without
                 nodep->unlinkFrBack();
@@ -353,16 +355,16 @@ private:
                     skipCount--;
                     continue;
                 }
-                AstConst* constp = VN_CAST(argp, Const);
-                bool isFromString = (constp) ? constp->num().isFromString() : false;
+                const AstConst* const constp = VN_CAST(argp, Const);
+                const bool isFromString = (constp) ? constp->num().isFromString() : false;
                 if (isFromString) {
-                    int numchars = argp->dtypep()->width() / 8;
+                    const int numchars = argp->dtypep()->width() / 8;
                     string str(numchars, ' ');
                     // now scan for % operators
                     bool inpercent = false;
                     for (int i = 0; i < numchars; i++) {
-                        int ii = numchars - i - 1;
-                        char c = constp->num().dataByte(ii);
+                        const int ii = numchars - i - 1;
+                        const char c = constp->num().dataByte(ii);
                         str[i] = c;
                         if (!inpercent && c == '%') {
                             inpercent = true;
@@ -387,7 +389,7 @@ private:
                         }
                     }
                     newFormat.append(str);
-                    AstNode* nextp = argp->nextp();
+                    AstNode* const nextp = argp->nextp();
                     argp->unlinkFrBack();
                     VL_DO_DANGLING(pushDeletep(argp), argp);
                     argp = nextp;
@@ -401,10 +403,8 @@ private:
     }
 
     static void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
-        if (!filep) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");
-        }
+        // This might fail on complex expressions like arrays
+        // We use attrFileDescr() only for lint suppression, so that's ok
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
 
@@ -447,19 +447,19 @@ private:
             UASSERT_OBJ(nodep->text() == "", nodep,
                         "Non-format $sformatf should have \"\" format");
             if (VN_IS(nodep->exprsp(), Const)
-                && VN_CAST(nodep->exprsp(), Const)->num().isFromString()) {
-                AstConst* fmtp = VN_CAST(nodep->exprsp()->unlinkFrBack(), Const);
+                && VN_AS(nodep->exprsp(), Const)->num().isFromString()) {
+                AstConst* const fmtp = VN_AS(nodep->exprsp()->unlinkFrBack(), Const);
                 nodep->text(fmtp->num().toString());
                 VL_DO_DANGLING(pushDeletep(fmtp), fmtp);
             }
             nodep->hasFormat(true);
         }
-        string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
+        const string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
         nodep->text(newFormat);
         if ((VN_IS(nodep->backp(), Display)
-             && VN_CAST(nodep->backp(), Display)->displayType().needScopeTracking())
+             && VN_AS(nodep->backp(), Display)->displayType().needScopeTracking())
             || nodep->formatScopeTracking()) {
-            nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+            nodep->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
     }
 
@@ -470,9 +470,9 @@ private:
             // never used won't result in any warnings.
         } else {
             // Massive hack, just tie off all outputs so our analysis can proceed
-            AstVar* varoutp = nullptr;
+            const AstVar* varoutp = nullptr;
             for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                     if (varp->isReadOnly()) {
                     } else if (varp->isWritable()) {
                         if (varoutp) {
@@ -520,6 +520,17 @@ private:
     // virtual void visit(AstModport* nodep) override { ... }
     // We keep Modport's themselves around for XML dump purposes
 
+    virtual void visit(AstGenFor* nodep) override {
+        VL_RESTORER(m_underGenerate);
+        m_underGenerate = true;
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstGenIf* nodep) override {
+        VL_RESTORER(m_underGenerate);
+        m_underGenerate = true;
+        iterateChildren(nodep);
+    }
+
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -533,7 +544,7 @@ public:
 //      Recurses cells backwards, so we can pick up those things that propagate
 //      from child cells up to the top module.
 
-class LinkBotupVisitor final : public AstNVisitor {
+class LinkBotupVisitor final : public VNVisitor {
 private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -573,8 +584,8 @@ public:
 void V3LinkResolve::linkResolve(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     {
-        LinkResolveVisitor visitor(rootp);
-        LinkBotupVisitor visitorb(rootp);
+        const LinkResolveVisitor visitor{rootp};
+        LinkBotupVisitor{rootp};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkresolve", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

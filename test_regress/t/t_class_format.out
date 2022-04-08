@@ -1,3 +1,4 @@
-''{b:'h1, i:'h2a, carray4:'{'h11, 'h22, 'h33, 'h44} }'
-''{b:'h1, i:'h2a, carray4:'{'h911, 'h922, 'h933, 'h944} }'
+''{b:'h1, i:'h2a, carray4:'{'h11, 'h22, 'h33, 'h44} , cwide:'{'h0, 'h0} , name:"object_name"}'
+''{b:'h1, i:'h2a, carray4:'{'h911, 'h922, 'h933, 'h944} , cwide:'{'h0, 'h0} , name:"object_name"}'
+DEBUG: object_name (@0) message
 *-* All Finished *-*

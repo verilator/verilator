@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -46,7 +46,7 @@ void V3Global::checkTree() const { rootp()->checkTree(); }
 void V3Global::readFiles() {
     // NODE STATE
     //   AstNode::user4p()      // VSymEnt*    Package and typedef symbol names
-    AstUser4InUse inuser4;
+    const VNUser4InUse inuser4;
 
     VInFilter filter(v3Global.opt.pipeFilter());
     V3ParseSym parseSyms(v3Global.rootp());  // Symbol table must be common across all parsing

@@ -19,7 +19,7 @@ if (!$ENV{VERILATOR_TEST_RANDOM_FAILURE}) {
     # Randomly fail to test driver.pl
     my ($ign, $t) = Time::HiRes::gettimeofday();
     if ($t % 2) {
-        error("random failure ".$t);
+        error("random failure " . $t);
     }
     else {
         ok(1);

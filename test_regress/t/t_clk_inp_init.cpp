@@ -9,7 +9,7 @@
 #include "verilated.h"
 
 void oneTest(int argc, char** argv, int seed) {
-    vluint64_t sim_time = 1000;
+    uint64_t sim_time = 1000;
 
 #ifdef TEST_VERBOSE
     VL_PRINTF("== Seed=%d\n", seed);

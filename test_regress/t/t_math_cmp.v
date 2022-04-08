@@ -50,7 +50,7 @@ module t (/*AUTOARG*/
 		       .index_a		(index_a),
 		       .index_b		(index_b));
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    initial index_a = 3'b0;
    initial index_b = 3'b0;
    always @* begin
@@ -117,7 +117,7 @@ module prover (
    reg [7:0] exp;
    reg [7:0] got;
 
-   integer   cyc=0;
+   integer   cyc = 0;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc>2) begin

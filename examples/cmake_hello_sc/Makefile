@@ -99,7 +99,7 @@ run:
 
 	@echo "-- DONE --------------------"
 	@echo "Note: Once this example is understood, see examples/cmake_tracing_sc."
-	@echo "Note: Also see the EXAMPLE section in the verilator manpage/document."
+	@echo "Note: See also https://verilator.org/guide/latest/examples.html"
 
 clean mostlyclean distclean maintainer-clean:
 	@rm -rf build logs

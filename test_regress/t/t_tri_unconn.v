@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    wire  one = '1;
    wire  z0 = 'z;

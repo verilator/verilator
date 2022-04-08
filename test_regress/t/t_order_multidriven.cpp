@@ -12,7 +12,7 @@ double sc_time_stamp() { return 0; }
 
 Vt_order_multidriven* vcore;
 VerilatedVcdC* vcd;
-vluint64_t vtime;
+uint64_t vtime;
 
 #define PHASE_90
 

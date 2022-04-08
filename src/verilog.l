@@ -6,7 +6,7 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2021 by Wilson Snyder.  Verilator is free software; you
+ * Copyright 2003-2022 by Wilson Snyder.  Verilator is free software; you
  * can redistribute it and/or modify it under the terms of either the
  * GNU Lesser General Public License Version 3 or the Perl Artistic License
  * Version 2.0.
@@ -60,9 +60,9 @@
 //======================================================================
 
 static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
-    string text = std::string(textp, length);
+    const string text = std::string{textp, length};
     bool success = false;
-    double d = VString::parseDouble(text, &success);
+    const double d = VString::parseDouble(text, &success);
     if (!success) fl->v3error("Syntax error parsing real: '" << textp << "'");
     return d;
 }
@@ -87,12 +87,9 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 ws      [ \t\f\r]+
 wsnr    [ \t\f]+
 crnl    [\r]*[\n]
-        /* identifier */
 id      [a-zA-Z_][a-zA-Z0-9_$]*
-        /* escaped identifier */
 escid   \\[^ \t\f\r\n]+
 word    [a-zA-Z0-9_]+
-        /* verilog numbers, constructed to not match the ' that begins a '(  or '{ */
 vnum1   [0-9]*?[''][sS]?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
 vnum2   [0-9]*?[''][sS]?[01xXzZ]
 vnum3   [0-9][_0-9]*[ \t\n]*[''][sS]?[bcodhBCODH]?[ \t\n]*[A-Fa-f0-9xXzZ_?]+
@@ -102,7 +99,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 %%
 
-<INITIAL>.|\n           {BEGIN STATE_VERILOG_RECENT; yyless(0); }
+<INITIAL>.|\n           { BEGIN STATE_VERILOG_RECENT; yyless(0); }
 
   /************************************************************************/
   /* Verilator control files */
@@ -115,6 +112,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "coverage_block_off"  { FL; return yVLT_COVERAGE_BLOCK_OFF; }
   "coverage_off"        { FL; return yVLT_COVERAGE_OFF; }
   "coverage_on"         { FL; return yVLT_COVERAGE_ON; }
+  "forceable"           { FL; return yVLT_FORCEABLE; }
   "full_case"           { FL; return yVLT_FULL_CASE; }
   "hier_block"          { FL; return yVLT_HIER_BLOCK; }
   "inline"              { FL; return yVLT_INLINE; }
@@ -124,6 +122,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "no_clocker"          { FL; return yVLT_NO_CLOCKER; }
   "no_inline"           { FL; return yVLT_NO_INLINE; }
   "parallel_case"       { FL; return yVLT_PARALLEL_CASE; }
+  "profile_data"        { FL; return yVLT_PROFILE_DATA; }
   "public"              { FL; return yVLT_PUBLIC; }
   "public_flat"         { FL; return yVLT_PUBLIC_FLAT; }
   "public_flat_rd"      { FL; return yVLT_PUBLIC_FLAT_RD; }
@@ -136,12 +135,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "tracing_on"          { FL; return yVLT_TRACING_ON; }
 
   -?"-block"            { FL; return yVLT_D_BLOCK; }
+  -?"-cost"             { FL; return yVLT_D_COST; }
   -?"-file"             { FL; return yVLT_D_FILE; }
   -?"-function"         { FL; return yVLT_D_FUNCTION; }
   -?"-lines"            { FL; return yVLT_D_LINES; }
   -?"-match"            { FL; return yVLT_D_MATCH; }
+  -?"-model"            { FL; return yVLT_D_MODEL; }
   -?"-module"           { FL; return yVLT_D_MODULE; }
-  -?"-msg"              { FL; return yVLT_D_MSG; }
+  -?"-mtask"            { FL; return yVLT_D_MTASK; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
   -?"-task"             { FL; return yVLT_D_TASK; }
   -?"-var"              { FL; return yVLT_D_VAR; }
@@ -611,7 +612,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Default PLI rule */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,SAX>{
-  "$"[a-zA-Z_$][a-zA-Z0-9_$]*   { string str (yytext, yyleng);
+  "$"[a-zA-Z_$][a-zA-Z0-9_$]*   { const string str (yytext, yyleng);
                                   yylval.strp = PARSEP->newString(AstNode::encodeName(str));
                                   FL; return yaD_PLI;
                                 }
@@ -721,6 +722,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator coverage_block_off*/"    { FL; return yVL_COVERAGE_BLOCK_OFF; }
   "/*verilator coverage_off*/"          { FL_FWD; PARSEP->lexFileline()->coverageOn(false); FL_BRK; }
   "/*verilator coverage_on*/"           { FL_FWD; PARSEP->lexFileline()->coverageOn(true); FL_BRK; }
+  "/*verilator forceable*/"             { FL; return yVL_FORCEABLE; }
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
   "/*verilator hier_block*/"            { FL; return yVL_HIER_BLOCK; }
   "/*verilator inline_module*/"         { FL; return yVL_INLINE_MODULE; }
@@ -744,6 +746,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
+  "/*verilator trace_init_task*/"       { FL; return yVL_TRACE_INIT_TASK; }
   "/*verilator tracing_off*/"           { FL_FWD; PARSEP->lexFileline()->tracingOn(false); FL_BRK; }
   "/*verilator tracing_on*/"            { FL_FWD; PARSEP->lexFileline()->tracingOn(true); FL_BRK; }
 
@@ -864,10 +867,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Identifiers and numbers */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
   {escid}               { FL; yylval.strp = PARSEP->newString
-                                (AstNode::encodeName(string(yytext+1)));  // +1 to skip the backslash
+                                  (AstNode::encodeName(std::string{yytext+1}));  // +1 to skip the backslash
                           return yaID__LEX;
                         }
-  {id}                  { FL; yylval.strp = PARSEP->newString(AstNode::encodeName(string(yytext)));
+  {id}                  { FL; yylval.strp = PARSEP->newString(AstNode::encodeName(std::string{yytext}));
                           return yaID__LEX;
                         }
   \"[^\"\\]*\"          { FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
@@ -878,10 +881,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
                               int shortlen = 0;
-                              while (isdigit(yytext[shortlen])) shortlen++;
+                              while (isdigit(yytext[shortlen])) ++shortlen;
                               if (shortlen) {
                                   // Push rest past numbers for later parse
-                                  PARSEP->lexUnputString(yytext+shortlen, yyleng-shortlen);
+                                  PARSEP->lexUnputString(yytext + shortlen, yyleng - shortlen);
                                   // Return is stuff before the tick
                                   yyleng = shortlen;
                                   yytext[yyleng] = '\0';

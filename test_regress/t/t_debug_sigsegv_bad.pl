@@ -9,16 +9,21 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(vlt => 1);
-$ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
-lint(
-    v_flags => ["--debug-sigsegv"],
-    fails => 1,
-    sanitize => 0,
-    expect =>
+if ($ENV{VERILATOR_TEST_NO_GDB}) {
+    skip("Skipping due to VERILATOR_TEST_NO_GDB");
+} elsif (system("gdb --version")) {
+    skip("No gdb installed");
+} else {
+    lint(
+        v_flags => ["--debug-sigsegv"],
+        fails => 1,
+        sanitize => 0,
+        expect =>
 '%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
 %Error: Command Failed.*',
-    );
+        );
 
-ok(1);
+    ok(1);
+}
 1;

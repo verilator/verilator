@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator Arguments
@@ -99,10 +99,10 @@ Summary:
 .. option:: --bbox-sys
 
    Black box any unknown $system task or function calls.  System tasks will
-   simply become no-operations, and system functions will be replaced with
-   unsized zero.  Arguments to such functions will be parsed, but not
-   otherwise checked.  This prevents errors when linting in the presence of
-   company specific PLI calls.
+   become no-operations, and system functions will be replaced with unsized
+   zero.  Arguments to such functions will be parsed, but not otherwise
+   checked.  This prevents errors when linting in the presence of company
+   specific PLI calls.
 
    Using this argument will likely cause incorrect simulation.
 
@@ -158,41 +158,26 @@ Summary:
 
 .. option:: --clk <signal-name>
 
-   Sometimes it is quite difficult for Verilator to distinguish clock
-   signals from other data signals. Occasionally the clock signals can end
-   up in the checking list of signals which determines if further
-   evaluation is needed. This will heavily degrade the performance of a
-   Verilated model.
-
    With :vlopt:`--clk`, the specified signal-name is taken as a root clock
-   into the model, then Verilator will mark the signal as clocker and
-   propagate the clocker attribute automatically to other signals derived
-   from that. In this way, Verilator will try to avoid taking the clocker
-   signal into checking list.
+   into the model; Verilator will mark the signal as clocker and
+   propagate the clocker attribute automatically to other signals downstream in
+   that clock tree.
 
-   Note signal-name is specified by the RTL hierarchy path. For example,
-   v.foo.bar.  If the signal is the input to top-module, the directly the
-   signal name. If you find it difficult to find the exact name, try to use
-   a :option:`/*verilator&32;clocker*/` metacomment in RTL file to mark the
+   The provided signal-name is specified using a RTL hierarchy path. For
+   example, v.foo.bar.  If the signal is the input to top-module, then
+   directly provide the signal name. Alternatively, use a
+   :option:`/*verilator&32;clocker*/` metacomment in RTL file to mark the
    signal directly.
 
-   If clock signals are assigned to vectors and then later used
-   individually, Verilator will attempt to decompose the vector and connect
-   the single-bit clock signals directly.  This should be transparent to
-   the user.
+   If clock signals are assigned to vectors and then later used as
+   individual bits, Verilator will attempt to decompose the vector and
+   connect the single-bit clock signals.
 
-.. option:: --make <build-tool>
-
-   Generates a script for the specified build tool.
-
-   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
-   Both can be specified together.  If no build tool is specified, gmake is
-   assumed.  The executable of gmake can be configured via environment
-   variable "MAKE".
-
-   When using :vlopt:`--build` Verilator takes over the responsibility of
-   building the model library/executable.  For this reason :option:`--make`
-   cannot be specified when using :vlopt:`--build`.
+   The clocker attribute is useful in cases where Verilator does not
+   properly distinguish clock signals from other data signals. Using
+   clocker will cause the signal indicated to be considered a clock, and
+   remove it from the combinatorial logic reevaluation checking code. This
+   may greatly improve performance.
 
 .. option:: --compiler <compiler-name>
 
@@ -527,14 +512,6 @@ Summary:
 
    See :vlopt:`-y`.
 
-.. option:: --inhibit-sim
-
-   Rarely needed and deprecated.  Create a :code:`inhibitSim(bool)`
-   function to enable and disable evaluation.  This allows an upper level
-   testbench to disable modules that are not important in a given
-   simulation, without needing to recompile or change the SystemC modules
-   instantiated.
-
 .. option:: --inline-mult <value>
 
    Tune the inlining of modules.  The default value of 2000 specifies that up
@@ -543,6 +520,14 @@ Summary:
    values, or a value < 1 will inline everything, will lead to longer compile
    times, but potentially faster simulation speed.  This setting is ignored
    for very small modules; they will always be inlined, if allowed.
+
+.. option:: --instr-count-dpi <value>
+
+   Assumed dynamic instruction count of the average DPI import. This is used
+   by the partitioning algorithm when creating a multithread model. The
+   default value is 200. Adjusting this to an appropriate value can yield
+   performance improvements in multithreaded models. Ignored when creating a
+   single threaded model.
 
 .. option:: -j [<value>]
 
@@ -590,6 +575,23 @@ Summary:
    "+libext+" is fairly standard across Verilog tools.  Defaults to
    ".v+.sv".
 
+.. option:: --lib-create <name>
+
+   Produces C++, Verilog wrappers and a Makefile which can in turn produce
+   a DPI library which can be used by Verilator or other simulators along
+   with the corresponding Verilog wrapper.  The Makefile will build both a
+   static and dynamic version of the library named :file:`lib<name>.a` and
+   :file:`lib<name>.so` respectively.  This is done because some simulators
+   require a dynamic library, but the static library is arguably easier to
+   use if possible.  :vlopt:`--protect-lib` implies :vlopt:`--protect-ids`.
+
+   When using :vlopt:`--lib-create` it is advised to also use
+   :vlopt:`--timescale-override /1fs <--timescale-override>` to ensure the
+   model has a time resolution that is always compatible with the time
+   precision of the upper instantiating module.
+
+   See also :vlopt:`--protect-lib`.
+
 .. option:: --lint-only
 
    Check the files for lint violations only, do not create any other
@@ -600,6 +602,19 @@ Summary:
 
    If the design is not to be completely Verilated see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
+
+.. option:: --make <build-tool>
+
+   Generates a script for the specified build tool.
+
+   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
+   Both can be specified together.  If no build tool is specified, gmake is
+   assumed.  The executable of gmake can be configured via environment
+   variable "MAKE".
+
+   When using :vlopt:`--build` Verilator takes over the responsibility of
+   building the model library/executable.  For this reason :option:`--make`
+   cannot be specified when using :vlopt:`--build`.
 
 .. option:: -MAKEFLAGS <string>
 
@@ -753,7 +768,7 @@ Summary:
 .. option:: --pins-bv <width>
 
    Specifies SystemC inputs/outputs of greater than or equal to <width>
-   bits wide should use sc_bv's instead of uint32/vluint64_t's.  The
+   bits wide should use sc_bv's instead of uint32/uint64_t's.  The
    default is "--pins-bv 65", and the value must be less than or equal
    to 65.  Versions before Verilator 3.671 defaulted to "--pins-bv 33".
    The more sc_bv is used, the worse for performance.  Use the
@@ -811,6 +826,13 @@ Summary:
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
 
+.. option:: --prof-c
+
+   When compiling the C++ code, enable the compiler's profiling flag
+   (e.g. :code:`g++ -pg`). See :ref:`Profiling`.
+
+   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
+
 .. option:: --prof-cfuncs
 
    Modify the created C++ functions to support profiling.  The functions
@@ -821,10 +843,21 @@ Summary:
    came from.  This allows gprof or oprofile reports to be correlated with
    the original Verilog source statements. See :ref:`Profiling`.
 
+   Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
+
+.. option:: --prof-exec
+
+   Enable collection of execution trace, that can be convered into a gantt
+   chart with verilator_gantt See :ref:`Execution Profiling`.
+
+.. option:: --prof-pgo
+
+   Enable collection of profiling data for profile guided verilation. Currently
+   this is only useful with :vlopt:`--threads`. See :ref:`Thread PGO`.
+
 .. option:: --prof-threads
 
-   Enable gantt chart data collection for threaded builds. See :ref:`Thread
-   Profiling`.
+   Deprecated. Same as --prof-exec and --prof-pgo together.
 
 .. option:: --protect-key <key>
 
@@ -860,28 +893,19 @@ Summary:
 
    Using DPI imports/exports is allowed and generally relatively safe in
    terms of information disclosed, which is limited to the DPI function
-   prototyptes.  Use of the VPI is not recommended as many design details
+   prototypes.  Use of the VPI is not recommended as many design details
    may be exposed, and an INSECURE warning will be issued.
 
 .. option:: --protect-lib <name>
 
-   Produces C++, Verilog wrappers and a Makefile which can in turn produce
-   a DPI library which can be used by Verilator or other simulators along
-   with the corresponding Verilog wrapper.  The Makefile will build both a
-   static and dynamic version of the library named :file:`lib<name>.a` and
-   :file:`lib<name>.so` respectively.  This is done because some simulators
-   require a dynamic library, but the static library is arguably easier to
-   use if possible.  :vlopt:`--protect-lib` implies :vlopt:`--protect-ids`.
+   Produces a DPI library similar to :vlopt:`--lib-create`, but hides
+   internal design details.  :vlopt:`--protect-lib` implies
+   :vlopt:`--protect-ids`, and :vlopt:`--lib-create`.
 
    This allows for the secure delivery of sensitive IP without the need for
    encrypted RTL (i.e. IEEE P1735).  See :file:`examples/make_protect_lib`
    in the distribution for a demonstration of how to build and use the DPI
    library.
-
-   When using :vlopt:`--protect-lib` it is advised to also use
-   :vlopt:`--timescale-override /1fs <--timescale-override>` to ensure the
-   model has a time resolution that is always compatible with the time
-   precision of the upper instantiating module.
 
 .. option:: --private
 
@@ -1043,6 +1067,8 @@ Summary:
      Verilator assumes DPI pure imports are threadsafe, but non-pure DPI
      imports are not.
 
+   See also :vlopt:`--instr-count-dpi` option.
+
 .. option:: --threads-max-mtasks <value>
 
    Rarely needed.  When using :vlopt:`--threads`, specify the number of
@@ -1156,9 +1182,9 @@ Summary:
 
 .. option:: --trace-underscore
 
-   Enable tracing of signals that start with an underscore. Normally, these
-   signals are not output during tracing.  See also
-   :vlopt:`--coverage-underscore` option.
+   Enable tracing of signals or modules that start with an
+   underscore. Normally, these signals are not output during tracing.  See
+   also :vlopt:`--coverage-underscore` option.
 
 .. option:: -U<var>
 
@@ -1347,9 +1373,10 @@ Summary:
    .. note::
 
       This option applies only to values which are explicitly written as X
-      in the Verilog source code. Initial values of clocks are set to 0
-      unless `--x-initial-edge` is specified. Initial values of all other
-      state holding variables are controlled with `--x-initial`.
+      in modules (not classes) in the Verilog source code. Initial values
+      of clocks are set to 0 unless `--x-initial-edge` is
+      specified. Initial values of all other state holding variables are
+      controlled with `--x-initial`.
 
 .. option:: --x-initial 0
 
@@ -1495,9 +1522,9 @@ The grammar of configuration commands is as follows:
 
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
-   Indicate the signal is used as clock or not. This information is used by
-   Verilator to mark the signal as clocker and propagate the clocker
-   attribute automatically to derived signals. See :vlopt:`--clk`.
+   Indicates that the signal is used as clock or not. This information is
+   used by Verilator to mark the signal and any derived signals as
+   clocker.  See :vlopt:`--clk`.
 
    Same as :option:`/*verilator&32;clocker*/` metacomment.
 
@@ -1510,6 +1537,14 @@ The grammar of configuration commands is as follows:
    filename and line number.
 
    Same as :option:`/*verilator&32;coverage_block_off*/` metacomment.
+
+.. option:: forceable -module "<modulename>" -var "<signame>"
+
+   Generate public `<signame>__VforceEn` and `<signame>__VforceVal` signals
+   that can be used to force/release a signal from C++ code. The force control
+   signals are created as :option:`public_flat` signals.
+
+   Same as :option:`/*verilator&32;forceable*/` metacomment.
 
 .. option:: full_case -file "<filename>" -lines <lineno>
 
@@ -1601,12 +1636,18 @@ The grammar of configuration commands is as follows:
    :option:`/*verilator&32;public_flat*/`, etc, metacomments. See
    e.g. :ref:`VPI Example`.
 
+.. option:: profile_data -mtask "<mtask_hash>" -cost <cost_value>
+
+   Feeds profile-guided optimization data into the Verilator algorithms in
+   order to improve model runtime performance.  This option is not expected
+   to be used by users directly.  See :ref:`Thread PGO`.
+
 .. option:: sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
 .. option:: sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
    Sets the port to be of :code:`sc_bv<{width}>` type, instead of bool,
-   vluint32_t or vluint64_t.  Same as :option:`/*verilator&32;sc_bv*/`
+   uint32_t or uint64_t.  Same as :option:`/*verilator&32;sc_bv*/`
    metacomment.
 
 .. option:: sformat [-module "<modulename>"] [-task "<taskname>"] -var "<signame>"

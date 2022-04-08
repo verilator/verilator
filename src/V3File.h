@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -38,7 +38,7 @@ public:
         return new_ifstream_nodepend(filename);
     }
     static std::ifstream* new_ifstream_nodepend(const string& filename) {
-        return new std::ifstream(filename.c_str());
+        return new std::ifstream{filename.c_str()};
     }
     static std::ofstream* new_ofstream(const string& filename, bool append = false) {
         addTgtDepend(filename);
@@ -47,9 +47,9 @@ public:
     static std::ofstream* new_ofstream_nodepend(const string& filename, bool append = false) {
         createMakeDirFor(filename);
         if (append) {
-            return new std::ofstream(filename.c_str(), std::ios::app);
+            return new std::ofstream{filename.c_str(), std::ios::app};
         } else {
-            return new std::ofstream(filename.c_str());
+            return new std::ofstream{filename.c_str()};
         }
     }
     static FILE* new_fopen_w(const string& filename) {
@@ -113,8 +113,8 @@ public:
 
 private:
     // MEMBERS
-    string m_filename;
-    Language m_lang;  // Indenting Verilog code
+    const string m_filename;
+    const Language m_lang;  // Indenting Verilog code
     int m_blockIndent;  // Characters per block indent
     int m_commaWidth;  // Width after which to break at ,'s
     int m_lineno = 1;
@@ -154,7 +154,8 @@ public:
         puts(strg);
     }
     bool exceededWidth() const { return m_column > m_commaWidth; }
-    bool tokenStart(const char* cp, const char* cmp);
+    bool tokenMatch(const char* cp, const char* cmp);
+    bool tokenStart(const char* cp);
     bool tokenEnd(const char* cp);
     void indentInc() { m_indentLevel += m_blockIndent; }
     void indentDec() {
@@ -182,7 +183,7 @@ public:
 
 class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     // MEMBERS
-    FILE* m_fp;
+    FILE* m_fp = nullptr;
 
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);

@@ -50,6 +50,12 @@ module t (/*AUTOARG*/
       end
    end
 
+   reg [15:0] l_split_1, l_split_2;
+   always @ (posedge clk) begin
+      l_split_2 <= l_split_1;
+      l_split_1 <= l_split_2 | m_din;
+   end
+
    // (The checker block is an exception, it won't split.)
    always @ (posedge clk) begin
       if (cyc!=0) begin

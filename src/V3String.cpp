@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -140,7 +140,7 @@ bool VString::isWhitespace(const string& str) {
 }
 
 double VString::parseDouble(const string& str, bool* successp) {
-    char* strgp = new char[str.size() + 1];
+    char* const strgp = new char[str.size() + 1];
     char* dp = strgp;
     if (successp) *successp = true;
     for (const char* sp = str.c_str(); *sp; ++sp) {
@@ -148,8 +148,8 @@ double VString::parseDouble(const string& str, bool* successp) {
     }
     *dp++ = '\0';
     char* endp = strgp;
-    double d = strtod(strgp, &endp);
-    size_t parsed_len = endp - strgp;
+    const double d = strtod(strgp, &endp);
+    const size_t parsed_len = endp - strgp;
     if (parsed_len != strlen(strgp)) {
         if (successp) *successp = false;
     }
@@ -172,6 +172,10 @@ string VString::replaceWord(const string& str, const string& from, const string&
         result.replace(pos, len, to);
     }
     return result;
+}
+
+bool VString::startsWith(const string& str, const string& prefix) {
+    return str.rfind(prefix, 0) == 0;  // Faster than .find(_) == 0
 }
 
 //######################################################################
@@ -317,7 +321,7 @@ uint64_t VHashSha256::digestUInt64() {
     const string& binhash = digestBinary();
     uint64_t out = 0;
     for (size_t byte = 0; byte < sizeof(uint64_t); ++byte) {
-        unsigned char c = binhash[byte];
+        const unsigned char c = binhash[byte];
         out = (out << 8) | c;
     }
     return out;
@@ -406,15 +410,15 @@ string VName::dehash(const string& in) {
     for (string::size_type last_dot_pos = 0; last_dot_pos < in.size();) {
         const string::size_type next_dot_pos = in.find("__DOT__", last_dot_pos);
         // Two iterators defining the range between the last and next dots.
-        auto search_begin = std::begin(in) + last_dot_pos;
-        auto search_end
+        const auto search_begin = std::begin(in) + last_dot_pos;
+        const auto search_end
             = next_dot_pos == string::npos ? std::end(in) : std::begin(in) + next_dot_pos;
 
         // Search for __Vhsh between the two dots.
-        auto begin_vhsh
+        const auto begin_vhsh
             = std::search(search_begin, search_end, std::begin(VHSH), std::end(VHSH) - 1);
         if (begin_vhsh != search_end) {
-            std::string vhsh(begin_vhsh, search_end);
+            const std::string vhsh(begin_vhsh, search_end);
             const auto& it = s_dehashMap.find(vhsh);
             UASSERT(it != s_dehashMap.end(), "String not in reverse hash map '" << vhsh << "'");
             // Is this not the first component, but the first to require dehashing?
@@ -451,7 +455,7 @@ string VName::hashedName() {
         return m_hashed;
     } else {
         VHashSha256 hash(m_name);
-        string suffix = "__Vhsh" + hash.digestSymbol();
+        const string suffix = "__Vhsh" + hash.digestSymbol();
         if (s_minLength < s_maxLength) {
             s_dehashMap[suffix] = m_name.substr(s_minLength);
             m_hashed = m_name.substr(0, s_minLength) + suffix;
@@ -468,8 +472,8 @@ string VName::hashedName() {
 
 VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const string& t) {
     // Wagner-Fischer algorithm for the Damerau-Levenshtein distance
-    size_t sLen = s.length();
-    size_t tLen = t.length();
+    const size_t sLen = s.length();
+    const size_t tLen = t.length();
     if (sLen == 0) return tLen;
     if (tLen == 0) return sLen;
     if (sLen >= LENGTH_LIMIT) return sLen;
@@ -484,14 +488,14 @@ VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const strin
     for (size_t i = 0; i < tLen; i++) {
         s_v_next[0] = i + 1;
         for (size_t j = 0; j < sLen; j++) {
-            EditDistance cost = (s[j] == t[i] ? 0 : 1);
-            EditDistance deletion = s_v_next[j] + 1;
-            EditDistance insertion = s_v_one_ago[j + 1] + 1;
-            EditDistance substitution = s_v_one_ago[j] + cost;
+            const EditDistance cost = (s[j] == t[i] ? 0 : 1);
+            const EditDistance deletion = s_v_next[j] + 1;
+            const EditDistance insertion = s_v_one_ago[j + 1] + 1;
+            const EditDistance substitution = s_v_one_ago[j] + cost;
             EditDistance cheapest = std::min(deletion, insertion);
             cheapest = std::min(cheapest, substitution);
             if (i > 0 && j > 0 && s[j] == t[i - 1] && s[j - 1] == t[i]) {
-                EditDistance transposition = s_v_two_ago[j - 1] + 1;
+                const EditDistance transposition = s_v_two_ago[j - 1] + 1;
                 cheapest = std::min(cheapest, transposition);
             }
             s_v_next[j + 1] = cheapest;
@@ -502,14 +506,14 @@ VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const strin
         }
     }
 
-    EditDistance result = s_v_next[sLen];
+    const EditDistance result = s_v_next[sLen];
     return result;
 }
 
 VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t candidate_len) {
     // Return max acceptable edit distance
-    size_t max_length = std::max(goal_len, candidate_len);
-    size_t min_length = std::min(goal_len, candidate_len);
+    const size_t max_length = std::max(goal_len, candidate_len);
+    const size_t min_length = std::min(goal_len, candidate_len);
     if (max_length <= 1) return 0;
     if (max_length - min_length <= 1) return std::max(max_length / 3, static_cast<size_t>(1));
     return (max_length + 2) / 3;
@@ -517,19 +521,19 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
 
 string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distancer) const {
     string bestCandidate;
-    size_t gLen = goal.length();
+    const size_t gLen = goal.length();
     distancer = LENGTH_LIMIT * 10;
     for (const string& candidate : m_candidates) {
-        size_t cLen = candidate.length();
+        const size_t cLen = candidate.length();
 
         // Min distance must be inserting/deleting to make lengths match
-        EditDistance min_distance = (cLen > gLen ? (cLen - gLen) : (gLen - cLen));
+        const EditDistance min_distance = (cLen > gLen ? (cLen - gLen) : (gLen - cLen));
         if (min_distance >= distancer) continue;  // Short-circuit if already better
 
-        EditDistance cutoff = cutoffDistance(gLen, cLen);
+        const EditDistance cutoff = cutoffDistance(gLen, cLen);
         if (min_distance > cutoff) continue;  // Short-circuit if already too bad
 
-        EditDistance dist = editDistance(goal, candidate);
+        const EditDistance dist = editDistance(goal, candidate);
         UINFO(9, "EditDistance dist=" << dist << " cutoff=" << cutoff << " goal=" << goal
                                       << " candidate=" << candidate << endl);
         if (dist < distancer && dist <= cutoff) {
@@ -553,7 +557,7 @@ void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string
     EditDistance gdist;
     VSpellCheck speller;
     speller.pushCandidate(c);
-    string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
+    const string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
     if (matches) {
         UASSERT_SELFTEST(const string&, got, c);
         UASSERT_SELFTEST(EditDistance, gdist, dist);
@@ -578,7 +582,7 @@ void VSpellCheck::selfTest() {
         selfTestSuggestOne(false, "sqrt", "assert", 3);
     }
     {
-        VSpellCheck speller;
+        const VSpellCheck speller;
         UASSERT_SELFTEST(string, "", speller.bestCandidate(""));
     }
     {

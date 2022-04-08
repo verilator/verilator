@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   integer 	cyc=0;
+   integer 	cyc = 0;
 
    wire 	out;
    reg 		in;
@@ -19,7 +19,7 @@ module t (/*AUTOARG*/
    Genit g (.clk(clk), .value(in), .result(out));
 
    always @ (posedge clk) begin
-      //$write("[%0t] cyc==%0d %x %x\n",$time, cyc, in, out);
+      //$write("[%0t] cyc==%0d %x %x\n", $time, cyc, in, out);
       cyc <= cyc + 1;
       if (cyc==0) begin
 	 // Setup

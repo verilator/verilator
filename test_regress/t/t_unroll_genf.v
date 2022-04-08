@@ -19,7 +19,7 @@ module t (/*AUTOARG*/);
    genvar j;
    generate
       for (j = 0; j < cdiv(10); j=j+1)
-        sub sub();
+        sub #() sub ();  // #() for code coverage in verilog.y
    endgenerate
 
    initial begin

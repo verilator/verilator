@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -49,12 +49,12 @@
 //######################################################################
 // Cast state, as a visitor of each AstNode
 
-class CastVisitor final : public AstNVisitor {
+class CastVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     //   AstNode::user()                // bool.  Indicates node is of known size
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
 
@@ -63,10 +63,11 @@ private:
 
     void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedCast " << nodep << endl);
-        AstNRelinker relinkHandle;
+        VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
-        AstCCast* castp = new AstCCast(nodep->fileline(), nodep, needsize, nodep->widthMin());
+        AstCCast* const castp
+            = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
         relinkHandle.relink(castp);
         // if (debug() > 8) castp->dumpTree(cout, "-castins: ");
         //
@@ -101,9 +102,9 @@ private:
     void ensureNullChecked(AstNode* nodep) {
         // TODO optimize to track null checked values and avoid where possible
         if (!VN_IS(nodep->backp(), NullCheck)) {
-            AstNRelinker relinkHandle;
+            VNRelinker relinkHandle;
             nodep->unlinkFrBack(&relinkHandle);
-            AstNode* newp = new AstNullCheck(nodep->fileline(), nodep);
+            AstNode* const newp = new AstNullCheck{nodep->fileline(), nodep};
             relinkHandle.relink(newp);
         }
     }
@@ -154,9 +155,10 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) override {
-        if (nodep->access().isReadOnly() && !VN_IS(nodep->backp(), CCast)
-            && VN_IS(nodep->backp(), NodeMath) && !VN_IS(nodep->backp(), ArraySel)
-            && nodep->backp()->width() && castSize(nodep) != castSize(nodep->varp())) {
+        const AstNode* const backp = nodep->backp();
+        if (nodep->access().isReadOnly() && !VN_IS(backp, CCast) && VN_IS(backp, NodeMath)
+            && !VN_IS(backp, ArraySel) && !VN_IS(backp, RedXor) && backp->width()
+            && castSize(nodep) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set
             //  CData x=3; out = (QData)(x<<30);
             insertCast(nodep, castSize(nodep));
@@ -201,6 +203,6 @@ public:
 
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { CastVisitor visitor(nodep); }  // Destruct before checking
+    { CastVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

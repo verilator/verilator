@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -35,29 +35,22 @@
 //######################################################################
 // Active class functions
 
-class ActiveTopVisitor final : public AstNVisitor {
+class ActiveTopVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Entire netlist
     //   AstNode::user()                bool. True if processed
     //  Each call to V3Const::constify
     //   AstNode::user4()               Used by V3Const::constify, called below
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
-    AstTopScope* m_topscopep = nullptr;  // Top scope for adding sentrees under
-    SenTreeFinder m_finder;  // Find global sentree's and add them
+    SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) override {
-        m_topscopep = nodep;
-        m_finder.init(m_topscopep);
-        iterateChildren(nodep);
-        m_topscopep = nullptr;
-    }
     virtual void visit(AstNodeModule* nodep) override {
         // Create required actives and add to module
         // We can start ordering at a module, or a scope
@@ -68,10 +61,9 @@ private:
         UINFO(4, "   ACTIVE " << nodep << endl);
         // Remove duplicate clocks and such; sensesp() may change!
         V3Const::constifyExpensiveEdit(nodep);
-        AstSenTree* sensesp = nodep->sensesp();
+        AstSenTree* const sensesp = nodep->sensesp();
         UASSERT_OBJ(sensesp, nodep, "nullptr");
-        if (sensesp->sensesp() && VN_IS(sensesp->sensesp(), SenItem)
-            && VN_CAST(sensesp->sensesp(), SenItem)->isNever()) {
+        if (sensesp->sensesp() && sensesp->sensesp()->isNever()) {
             // Never executing.  Kill it.
             UASSERT_OBJ(!sensesp->sensesp()->nextp(), nodep,
                         "Never senitem should be alone, else the never should be eliminated.");
@@ -80,16 +72,16 @@ private:
         }
         // Copy combo tree to settlement tree with duplicated statements
         if (sensesp->hasCombo()) {
-            AstSenTree* newsentreep = new AstSenTree(
+            AstSenTree* const newsentreep = new AstSenTree(
                 nodep->fileline(), new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
-            AstActive* newp = new AstActive(nodep->fileline(), "settle", newsentreep);
+            AstActive* const newp = new AstActive(nodep->fileline(), "settle", newsentreep);
             newp->sensesStorep(newsentreep);
             if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->cloneTree(true));
             nodep->addNextHere(newp);
         }
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
-        AstSenTree* wantp = m_finder.getSenTree(sensesp);
+        AstSenTree* const wantp = m_finder.getSenTree(sensesp);
         UINFO(4, "   lookdone\n");
         if (wantp != sensesp) {
             // Move the active's contents to the other active
@@ -136,6 +128,6 @@ public:
 
 void V3ActiveTop::activeTopAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ActiveTopVisitor visitor(nodep); }  // Destruct before checking
+    { ActiveTopVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("activetop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

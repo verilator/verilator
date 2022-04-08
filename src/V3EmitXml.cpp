@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -28,13 +28,13 @@
 //######################################################################
 // Emit statements and math operators
 
-class EmitXmlFileVisitor final : public AstNVisitor {
+class EmitXmlFileVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
     // AstNode::user1           -> uint64_t, number to connect crossrefs
 
     // MEMBERS
-    V3OutFile* m_ofp;
+    V3OutFile* const m_ofp;
     uint64_t m_id = 0;
 
     // METHODS
@@ -61,7 +61,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
     void outputTag(AstNode* nodep, const string& tagin) {
         string tag = tagin;
         if (tag == "") tag = VString::downcase(nodep->typeName());
-        puts("<" + tag + " " + nodep->fileline()->xml());
+        puts("<" + tag);
         puts(" " + nodep->fileline()->xmlDetailedLocation());
         if (VN_IS(nodep, NodeDType)) {
             puts(" id=");
@@ -75,7 +75,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
             puts(" tag=");
             putsQuoted(nodep->tag());
         }
-        if (AstNodeDType* dtp = VN_CAST(nodep, NodeDType)) {
+        if (const AstNodeDType* const dtp = VN_CAST(nodep, NodeDType)) {
             if (dtp->subDTypep()) {
                 puts(" sub_dtype_id=");
                 outputId(dtp->subDTypep()->skipRefp());
@@ -112,12 +112,67 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         putsQuoted(nodep->origName());
         outputChildrenEnd(nodep, "instance");
     }
+    virtual void visit(AstNodeIf* nodep) override {
+        outputTag(nodep, "if");
+        puts(">\n");
+        iterateAndNextNull(nodep->op1p());
+        puts("<begin>\n");
+        iterateAndNextNull(nodep->op2p());
+        puts("</begin>\n");
+        if (nodep->op3p()) {
+            puts("<begin>\n");
+            iterateAndNextNull(nodep->op3p());
+            puts("</begin>\n");
+        }
+        puts("</if>\n");
+    }
+    virtual void visit(AstWhile* nodep) override {
+        outputTag(nodep, "while");
+        puts(">\n");
+        puts("<begin>\n");
+        iterateAndNextNull(nodep->op1p());
+        puts("</begin>\n");
+        if (nodep->op2p()) {
+            puts("<begin>\n");
+            iterateAndNextNull(nodep->op2p());
+            puts("</begin>\n");
+        }
+        if (nodep->op3p()) {
+            puts("<begin>\n");
+            iterateAndNextNull(nodep->op3p());
+            puts("</begin>\n");
+        }
+        if (nodep->op4p()) {
+            puts("<begin>\n");
+            iterateAndNextNull(nodep->op4p());
+            puts("</begin>\n");
+        }
+        puts("</while>\n");
+    }
     virtual void visit(AstNetlist* nodep) override {
         puts("<netlist>\n");
         iterateChildren(nodep);
         puts("</netlist>\n");
     }
-    virtual void visit(AstConstPool*) override {}
+    virtual void visit(AstConstPool* nodep) override {
+        if (!v3Global.opt.xmlOnly()) {
+            puts("<constpool>\n");
+            iterateChildren(nodep);
+            puts("</constpool>\n");
+        }
+    }
+    virtual void visit(AstInitArray* nodep) override {
+        puts("<initarray>\n");
+        const auto& mapr = nodep->map();
+        for (const auto& itr : mapr) {
+            puts("<inititem index=\"");
+            puts(cvtToStr(itr.first));
+            puts("\">\n");
+            iterateChildren(itr.second);
+            puts("</inititem>\n");
+        }
+        puts("</initarray>\n");
+    }
     virtual void visit(AstNodeModule* nodep) override {
         outputTag(nodep, "");
         puts(" origName=");
@@ -129,15 +184,16 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         outputChildrenEnd(nodep, "");
     }
     virtual void visit(AstVar* nodep) override {
-        AstVarType typ = nodep->varType();
-        string kw = nodep->verilogKwd();
-        string vt = nodep->dtypep()->name();
+        const VVarType typ = nodep->varType();
+        const string kw = nodep->verilogKwd();
+        const string vt = nodep->dtypep()->name();
         outputTag(nodep, "");
         if (nodep->isIO()) {
             puts(" dir=");
             putsQuoted(kw);
+            if (nodep->pinNum() != 0) puts(" pinIndex=\"" + cvtToStr(nodep->pinNum()) + "\"");
             puts(" vartype=");
-            putsQuoted(!vt.empty() ? vt : typ == AstVarType::PORT ? "port" : "unknown");
+            putsQuoted(!vt.empty() ? vt : typ == VVarType::PORT ? "port" : "unknown");
         } else {
             puts(" vartype=");
             putsQuoted(!vt.empty() ? vt : kw);
@@ -182,7 +238,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
     }
     virtual void visit(AstModportVarRef* nodep) override {
         // Dump direction for Modport references
-        string kw = nodep->direction().xmlKwd();
+        const string kw = nodep->direction().xmlKwd();
         outputTag(nodep, "");
         puts(" direction=");
         putsQuoted(kw);
@@ -194,6 +250,12 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         putsQuoted(nodep->dotted());
         outputChildrenEnd(nodep, "");
     }
+    virtual void visit(AstNodeCCall* nodep) override {
+        outputTag(nodep, "");
+        puts(" func=");
+        putsQuoted(nodep->funcp()->name());
+        outputChildrenEnd(nodep, "");
+    }
 
     // Data types
     virtual void visit(AstBasicDType* nodep) override {
@@ -202,6 +264,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
             puts(" left=\"" + cvtToStr(nodep->left()) + "\"");
             puts(" right=\"" + cvtToStr(nodep->right()) + "\"");
         }
+        if (nodep->isSigned()) { puts(" signed=\"true\""); }
         puts("/>\n");
     }
     virtual void visit(AstIfaceRefDType* nodep) override {
@@ -258,7 +321,7 @@ public:
 //######################################################################
 // List of module files xml visitor
 
-class ModuleFilesXmlVisitor final : public AstNVisitor {
+class ModuleFilesXmlVisitor final : public VNVisitor {
 private:
     // MEMBERS
     std::ostream& m_os;
@@ -306,7 +369,7 @@ public:
 //######################################################################
 // Hierarchy of Cells visitor
 
-class HierCellsXmlVisitor final : public AstNVisitor {
+class HierCellsXmlVisitor final : public VNVisitor {
 private:
     // MEMBERS
     std::ostream& m_os;
@@ -318,15 +381,16 @@ private:
 
     // VISITORS
     virtual void visit(AstConstPool*) override {}
+
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->level() >= 0
             && nodep->level() <= 2) {  // ==2 because we don't add wrapper when in XML mode
             m_os << "<cells>\n";
-            m_os << "<cell " << nodep->fileline()->xml() << " "
-                 << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name() << "\""
-                 << " submodname=\"" << nodep->name() << "\""
-                 << " hier=\"" << nodep->name() << "\"";
-            m_hier = nodep->name() + ".";
+            m_os << "<cell " << nodep->fileline()->xmlDetailedLocation()  //
+                 << " name=\"" << nodep->prettyName() << "\""
+                 << " submodname=\"" << nodep->prettyName() << "\""
+                 << " hier=\"" << nodep->prettyName() << "\"";
+            m_hier = nodep->prettyName() + ".";
             m_hasChildren = false;
             iterateChildren(nodep);
             if (m_hasChildren) {
@@ -340,11 +404,11 @@ private:
     virtual void visit(AstCell* nodep) override {
         if (nodep->modp()->dead()) return;
         if (!m_hasChildren) m_os << ">\n";
-        m_os << "<cell " << nodep->fileline()->xml() << " "
-             << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name() << "\""
+        m_os << "<cell " << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name()
+             << "\""
              << " submodname=\"" << nodep->modName() << "\""
              << " hier=\"" << m_hier + nodep->name() << "\"";
-        std::string hier = m_hier;
+        const std::string hier = m_hier;
         m_hier += nodep->name() + ".";
         m_hasChildren = false;
         iterateChildren(nodep->modp());
@@ -375,9 +439,9 @@ public:
 void V3EmitXml::emitxml() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // All-in-one file
-    string filename = (v3Global.opt.xmlOutput().empty()
-                           ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"
-                           : v3Global.opt.xmlOutput());
+    const string filename = (v3Global.opt.xmlOutput().empty()
+                                 ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"
+                                 : v3Global.opt.xmlOutput());
     V3OutXmlFile of(filename);
     of.putsHeader();
     of.puts("<!-- DESCR"
@@ -390,10 +454,10 @@ void V3EmitXml::emitxml() {
     }
     {
         std::stringstream sstr;
-        ModuleFilesXmlVisitor moduleFilesVisitor(v3Global.rootp(), sstr);
-        HierCellsXmlVisitor cellsVisitor(v3Global.rootp(), sstr);
+        const ModuleFilesXmlVisitor moduleFilesVisitor{v3Global.rootp(), sstr};
+        const HierCellsXmlVisitor cellsVisitor{v3Global.rootp(), sstr};
         of.puts(sstr.str());
     }
-    EmitXmlFileVisitor visitor(v3Global.rootp(), &of);
+    const EmitXmlFileVisitor visitor{v3Global.rootp(), &of};
     of.puts("</verilator_xml>\n");
 }

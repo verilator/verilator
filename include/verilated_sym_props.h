@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -69,9 +69,9 @@ public:
 
 class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
-    static constexpr vluint32_t MAGIC = 0xddc4f829UL;
+    static constexpr uint32_t MAGIC = 0xddc4f829UL;
     // MEMBERS
-    const vluint32_t m_magic;  // Magic number
+    const uint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
     const int m_pdims;  // Packed dimensions, 0 = none
@@ -142,7 +142,7 @@ public:
     VerilatedVarFlags vldir() const {
         return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR);
     }
-    vluint32_t entSize() const;
+    uint32_t entSize() const;
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
@@ -192,8 +192,8 @@ public:
 
 class VerilatedDpiOpenVar final {
     // MEMBERS
-    const VerilatedVarProps* m_propsp;  // Variable properties
-    void* m_datap;  // Location of data (local to thread always, so safe)
+    const VerilatedVarProps* const m_propsp;  // Variable properties
+    void* const m_datap;  // Location of data (local to thread always, so safe)
 public:
     // CONSTRUCTORS
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, void* datap)
@@ -230,10 +230,10 @@ public:
 
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
-    void* m_datap;  // Location of data
-    const char* m_namep;  // Name - slowpath
+    void* const m_datap;  // Location of data
+    const char* const m_namep;  // Name - slowpath
 protected:
-    bool m_isParam;
+    const bool m_isParam;
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,

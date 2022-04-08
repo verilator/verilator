@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
 
    // associative array of an associative array
    logic [31:0] a [logic [31:0]][logic [63:0]];

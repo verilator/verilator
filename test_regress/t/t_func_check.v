@@ -10,7 +10,7 @@ module t (
    clk
    );
    input clk;
-   integer 	cyc=0;
+   integer 	cyc = 0;
    reg [63:0] 	crc; initial crc = 64'h1;
 
    chk chk (.clk	(clk),
@@ -20,7 +20,7 @@ module t (
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       if (cyc==0) begin
 	 crc <= 64'h5aef0c8d_d70a4497;
       end

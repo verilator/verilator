@@ -5,12 +5,15 @@
     :target: https://www.gnu.org/licenses/lgpl-3.0]
 .. image:: https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg
     :target: https://opensource.org/licenses/Artistic-2.0
+.. image:: https://repology.org/badge/tiny-repos/verilator.svg?header=distro%20packages
+    :target: https://repology.org/project/verilator/versions
 .. image:: https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f
     :target: https://www.codacy.com/gh/verilator/verilator
 .. image:: https://codecov.io/gh/verilator/verilator/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/verilator/verilator
 .. image:: https://github.com/verilator/verilator/workflows/build/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
+
 
 Welcome to Verilator
 ====================
@@ -70,7 +73,7 @@ for you.
 Performance
 ===========
 
-Verilator does not simply convert Verilog HDL to C++ or SystemC. Rather,
+Verilator does not directly translate Verilog HDL to C++ or SystemC. Rather,
 Verilator compiles your code into a much faster optimized and optionally
 thread-partitioned model, which is in turn wrapped inside a C++/SystemC
 module. The results are a compiled Verilog model that executes even on a
@@ -134,7 +137,7 @@ Related Projects
 Open License
 ============
 
-Verilator is Copyright 2003-2021 by Wilson Snyder. (Report bugs to
+Verilator is Copyright 2003-2022 by Wilson Snyder. (Report bugs to
 `Verilator Issues <https://verilator.org/issues>`_.)
 
 Verilator is free software; you can redistribute it and/or modify it under

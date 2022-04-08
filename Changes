@@ -8,19 +8,193 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 4.205 devel
+Verilator 4.221 devel
+==========================
+
+**Minor:**
+
+* Split --prof-threads into --prof-exec and --prof-pgo (#3365). [Geza Lore, Shunyao CAD]
+* Deprecate 'vluint64_t' and similar types (#3255).
+* Fix MSVC localtime_s (#3124).
+* Fix Bison 3.8.2 error (#3366). [elike-ypq]
+
+
+Verilator 4.220 2022-03-12
+==========================
+
+**Minor:**
+
+* Removed the deprecated lint_off flag -msg; use -rule instead.
+* Removed the deprecated "fl" attribute in XML output; use "loc" attribute instead.
+* Suppress WIDTH warning on negate using carry bit (#3295). [Peter Monsson]
+* Add trace dumpvars() call for selective runtime tracing (#3322). [Shunyao CAD]
+* Add VERILATOR_VERSION_INTEGER for determining API (#3343). [Larry Doolittle]
+* Improve various V3Combine algorithm details (#3328). [Yutetsu TAKATSUKASA]
+* Improve various V3Order algorithm details. [Geza Lore]
+* Fix macOS arm64 build (#3285) (#3291). [Guokai Chen]
+* Fix signed number operation (#3294) (#3308). [Raynard Qiao]
+* Fix FST traces to include vector range (#3296) (#3297). [Jamie Iles]
+* Fix skipping public enum values with four-state values (#3303).
+* Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
+* Fix class stringification on wide arrays (#3312). [Iru Cai]
+* Fix $fscanf etc to return -1 on EOF (#3313). [Jose Tejada]
+* Fix public function arguments that are arrayed (#3316). [pawel256]
+* Fix unnamedblk error on foreach (#3321). [Aliaksei Chapyzhenka]
+* Fix crash in recursive module inlining (#3324). [Larry Doolittle]
+* Fix VL_RESTORER behavior on passing a lvalue reference (#3326). [HungMingWu]
+* Fix compile error with --trace-fst --sc (#3332). [leavinel]
+* Fix cast to array types (#3333). [Todd Strader]
+* Fix Vdeeptemp error with --threads and --compiler clang (#3338). [Per Karlsson]
+
+
+Verilator 4.218 2022-01-17
+==========================
+
+**Major:**
+
+* Primary inputs and outputs (VL_INW/VL_OUTW) now use VlWide type.
+  In general this should be backward compatible, but may lead to some
+  wrapper code needing changes.
+* Option --cdc is deprecated and is planned for removal,
+  file a bug if this is still being used.
+
+**Minor:**
+
+* Support class static members (#2233).
+* Support force/release (#2431) (#2593). [Shunyao CAD]
+* Add 'forceable' attribute to allow forcing from C++. (#3272). [Geza Lore, Shunyao CAD]
+* Support lower dimension looping in foreach loops (#3172). [Ehab Ibrahim]
+* Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
+* Reduce .rodata footprint of trace initialization (#3250). [Geza Lore, Shunyao CAD]
+* Support FST tracing in hierarchical Verilation (#3251). [Yutetsu TAKATSUKASA]
+* Use C++11 standard types for MacOS portability (#3254) (#3257). [Adrien Le Masle]
+* Fix make support for BSD ar (#2999) (#3256). [Julie Schwartz]
+* Fix bad ending address on $readmem (#3205). [Julie Schwartz]
+* Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
+* Fix break under foreach loop (#3230).
+* Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235). [Adrien Le Masle]
+* Fix $sformat of inputs/outputs (#3236). [Adrien Le Masle]
+* Fix associative array first method as statement (#3228). [Adrien Le Masle]
+* Fix associative array foreach loop (#3229).
+* Fix $fclose not accepting expressions (#3237). [Julie Schwartz]
+* Fix $random not updating seed (#3238). [Julie Schwartz]
+* Fix top level param overwrite when package has same param (#3241) (#3247). [Adrien Le Masle]
+* Fix spurious UNUSED by ignoring inout pin connections (#3242). [Julie Schwartz]
+* Fix splitting of _eval and other top level functions. [Geza Lore, Shunyao CAD]
+* Fix internal error by inout port (#3258). [Yutetsu TAKATSUKASA]
+* Fix GCC 11 compile error (#3273). [HungMingWu]
+
+
+Verilator 4.216 2021-12-05
+==========================
+
+**Major:**
+
+* Add --lib-create, similar to --protect-lib but without protections.
+* Support tracing through --hierarchical/--lib-create libraries (#3200).
+
+**Minor:**
+
+* Internal code cleanups and improvements. [Geza Lore]
+* Improve --thread verilation-time performance.
+* Support task name in $display %m (#3211). [Julie Schwartz]
+* Make 'bit', 'logic' and 'time' types unsigned by default. [Geza Lore]
+* Optimize $random concatenates/selects (#3114).
+* Fix array method names with parenthesis (#3181) (#3183). [Teng Huang]
+* Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
+* Fix wrong bit op tree optimization (#3185). [Yutetsu TAKATSUKASA]
+* Fix some SliceSels not being constants (#3186) (#3218). [Michaël Lefebvre]
+* Fix nested generate if genblk naming (#3189). [yanx21]
+* Fix hang on recursive definition error (#3199). [Jonathan Kimmitt]
+* Fix display of signed without format (#3204). [Julie Schwartz]
+* Fix display of empty string constant (#3207) (#3215). [Julie Schwartz]
+* Fix incorrect width after and-or optimization (#3208). [Julie Schwartz]
+* Fix $fopen etc on integer arrays (#3214). [adrienlemasle]
+* Fix $size on dynamic strings (#3216).
+* Fix %0 format on $value$plusargs (#3217).
+* Fix timescale portability on Arm64 (#3222).
+
+
+Verilator 4.214 2021-10-17
+==========================
+
+**Major:**
+
+* Add profile-guided optmization of mtasks (#3150).
+
+**Minor:**
+
+* Verilator_gantt has removed the ASCII graphics, use the VCD output instead.
+* Verilator_gantt now shows the predicted mtask times, eval times, and additional statistics.
+* Verilator_gantt data files now include processor information, to allow later processing.
+* Support displaying x and z in $display task (#3107) (#3109). [Iru Cai]
+* Fix verilator_profcfunc profile accounting (#3115).
+* Fix display has no time units on class function (#3116). [Damien Pretet]
+* Fix removing if statement with side effect in condition (#3131). [Alexander Grobman]
+* Fix --waiver-output for multiline warnings (#2429) (#3141). [Keith Colbert]
+* Fix internal error on bad widths (#3140) (#3145). [Zhanglei Wang]
+* Fix crash on clang 12/13 (#3148). [Kouping Hsu]
+* Fix cygwin compile error due to missing -std=gnu++14 (#3149). [Sun Kim]
+* Fix $urandom_range when the range is 0 ... UINT_MAX (#3161). [Iru Cai]
+* Fix constructor-parameter argument comma-separation in C++ (#3162). [Matthew Ballance]
+* Fix missing install of vl_file_copy/vl_hier_graph (#3165). [Popolon]
+* Fix calling new with arguments in same class (#3166). [Matthew Ballance]
+* Fix false EOFNEWLINE warning when DOS carriage returns present (#3171).
+
+
+Verilator 4.212 2021-09-01
+==========================
+
+**Minor:**
+
+* Fix re-evaluation of logic dependent on state set in DPI exports (#3091). [Geza Lore]
+* Support unpacked array localparams in tasks/functions (#3078). [Geza Lore]
+* Support timeunit/timeprecision in $unit.
+* Support assignment patterns as children of pins (#3041). [Krzysztof Bieganski]
+* Add --instr-count-dpi to tune assumed DPI import cost for multithreaded
+  model scheduling. Default value changed to 200 (#3068). [Yinan Xu]
+* Output files are split based on the set of headers required
+  in order to aid incremental compilation via ccache (#3071). [Geza Lore]
+* Parameter values are now emitted as 'static constexpr' instead of enum.
+  C++ direct references to parameters might require updating (#3077). [Geza Lore]
+* Refactored Verilated include files; include verilated.h not verilated_heavy.h.
+* Add header guards on Dpi.h generated files (#2979). [Tood Strader]
+* Add XML ccall, constpool, initarray, and if/while begins (#3080). [Steven Hugg]
+* Add error when constant function under a generate (#3103). [Don Owen]
+* Fix -G to treat simple integer literals as signed (#3060). [Anikin1610]
+* Fix emitted string array initializers (#2895). [Iztok Jeras]
+* Fix bitop tree optimization dropping necessary & operator (#3096). [Flavien Solt]
+* Fix internal error on wide -x-initial unique (#3106). [Alexandre Joannou]
+* Fix traces to show array instances with brackets (#3092) (#3095). [Pieter Kapsenberg]
+
+
+Verilator 4.210 2021-07-07
 ==========================
 
 **Major:**
 
 * Generated code is now emitted as global functions rather than methods. '$c'
   contents might need to be updated, see the docs (#3006). [Geza Lore]
+* The generated model class instantiated by the user is now an interface
+  object and no longer the TOP module instance.  User code with direct
+  C++ member access to model internals, including verilator public_flat
+  items will likely need to be updated. See the manual for instructions:
+  https://verilator.org/guide/latest/connecting.html#porting-from-pre-4-210
+  (#3036). [Geza Lore]
 
 **Minor:**
 
+* Add --prof-c to pass profiling to compiler (#3059). [Alexander Grobman]
+* Optimize a lot more model variables into function locals (#3027). [Geza Lore]
+* Support middle-of-design nested topmodules (#3026). [Dan Petrisko]
 * Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]
+* Remove deprecated --inhibit-sim option (#3035). [Geza Lore]
 * Merge const static data globally into a new constant pool (#3013). [Geza Lore]
+* Allow configure override of AR program (#2999). [ahouska]
+* In XML, show pinIndex information (#2877). [errae233]
 * Fix error on unsupported recursive functions (#2957). [Trefor Southwell]
+* Fix type parameter specialization when struct names are same (#3055). [7FM]
+* Improve speed of table optimization (-OA) pass. [Geza Lore]
 
 
 Verilator 4.204 2021-06-12
@@ -3665,7 +3839,7 @@ Verilator 0.0 1994-07-08
 Copyright
 =========
 
-Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+Copyright 2001-2022 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

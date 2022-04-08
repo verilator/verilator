@@ -1,5 +1,5 @@
 $date
-	Wed Jun 10 20:47:01 2020
+	Wed Feb 23 00:00:18 2022
 
 $end
 $version
@@ -12,7 +12,7 @@ $scope module top $end
 $var wire 1 ! clk $end
 $scope module t $end
 $var wire 1 ! clk $end
-$var logic 3 " cyc $end
+$var logic 3 " cyc [2:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end

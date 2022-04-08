@@ -13,7 +13,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,9 +29,10 @@
 
 #include "V3Error.h"
 
+#include <functional>
 #include <map>
+#include <set>
 #include <unordered_map>
-#include <unordered_set>
 
 //######################################################################
 // SortByValueMap
@@ -70,7 +71,7 @@ public:
         // MEMBERS
         typename KeySet::iterator m_keyIt;
         typename Val2Keys::iterator m_valIt;
-        SortByValueMap* m_sbvmp;
+        SortByValueMap* const m_sbvmp;
         bool m_end = true;  // At the end()
 
         // CONSTRUCTORS
@@ -232,7 +233,7 @@ private:
         // removed from the map.
         // Clear the m_vals mapping for k.
         KeySet& keysAtOldVal = m_vals[oldVal];
-        size_t erased = keysAtOldVal.erase(k);
+        const size_t erased = keysAtOldVal.erase(k);
         UASSERT(erased == 1, "removeKeyFromOldVal() removal key not found");
         if (keysAtOldVal.empty()) {
             // Don't keep empty sets in the value map.
@@ -252,7 +253,7 @@ public:
         return iterator(valIt, keyIt, this);
     }
     const_iterator begin() const {
-        SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
+        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
         const auto valIt = mutp->m_vals.begin();
         if (valIt == mutp->m_vals.end()) return end();
         const auto keyIt = valIt->second.begin();
@@ -278,7 +279,7 @@ public:
         return iterator(valIt, keyIt, this);
     }
     const_iterator find(const T_Key& k) const {
-        SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
+        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
         const auto kvit = mutp->m_keys.find(k);
         if (kvit == mutp->m_keys.end()) return end();
 
@@ -355,7 +356,7 @@ private:
     class CmpElems final {
     public:
         bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {
-            T_ElemCompare cmp;
+            const T_ElemCompare cmp;
             return cmp.operator()(*ap, *bp);
         }
     };
@@ -363,10 +364,14 @@ private:
     using UserScoreFnp = T_Score (*)(const T_Elem*);
 
     // MEMBERS
-    std::unordered_set<const T_Elem*> m_unknown;  // Elements with unknown scores
+    // Below uses set<> not an unordered_set<>. unordered_set::clear() and
+    // construction results in a 491KB clear operation to zero all the
+    // buckets. Since the set size is generally small, and we iterate the
+    // set members, set is better performant.
+    std::set<const T_Elem*> m_unknown;  // Elements with unknown scores
     SortedMap m_sorted;  // Set of elements with known scores
-    UserScoreFnp m_scoreFnp;  // Scoring function
-    bool m_slowAsserts;  // Do some asserts that require extra lookups
+    const UserScoreFnp m_scoreFnp;  // Scoring function
+    const bool m_slowAsserts;  // Do some asserts that require extra lookups
 
 public:
     // CONSTRUCTORS
@@ -451,7 +456,7 @@ public:
     // and sort all elements by their current score.
     void rescore() {
         for (const T_Elem* elp : m_unknown) {
-            T_Score sortScore = m_scoreFnp(elp);
+            const T_Score sortScore = m_scoreFnp(elp);
             m_sorted.set(elp, sortScore);
         }
         m_unknown.clear();

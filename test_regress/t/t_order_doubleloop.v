@@ -26,7 +26,7 @@ module t (/*AUTOARG*/
    reg [31:0] dlyrun;  initial dlyrun = 0;
    reg [31:0] dlyrunm1;
    always @ (posedge clk) begin
-      $write("[%0t] cyc %d\n",$time,cyc);
+      $write("[%0t] cyc %d\n", $time,cyc);
       cyc <= cyc + 1;
       if (cyc==2) begin
 	 // Test # of iters
@@ -74,7 +74,7 @@ module t (/*AUTOARG*/
       if (comrun!=0) begin
 	 comrunm1 = comrun - 32'd1;
 	 comcnt = comcnt + 32'd1;
-	 $write("[%0t]                comcnt=%0d\n",$time,comcnt);
+	 $write("[%0t]                comcnt=%0d\n", $time,comcnt);
       end
    end
 

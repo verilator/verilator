@@ -14,12 +14,14 @@ my $root = "..";
 my $Debug;
 
 ### Must trim output before and after our file list
-my %files = %{get_manifest_files($root)};
+my %files = %{get_source_files($root)};
 
+my $any = 0;
 foreach my $file (sort keys %files) {
     my $filename = "$root/$file";
+    next if !-f $filename;  # git file might be deleted but not yet staged
     my $contents = file_contents($filename);
-    if ($file =~ /\.out$/) {
+    if ($file =~ /(\.out|\.dat)$/) {
         # Ignore golden files
         next;
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
@@ -60,15 +62,17 @@ foreach my $file (sort keys %files) {
             $warns{$file} = "Trailing newlines at EOF in $file";
         }
     }
+    ++$any;
 }
+$any > 50 or error("Too few source files found");
 
 if (keys %warns) {
     # First warning lists everything as that's shown in the driver summary
     if ($ENV{HARNESS_UPDATE_GOLDEN}) {
-        error("Updated files with whitespace errors: ",join(' ',sort keys %warns));
+        error("Updated files with whitespace errors: ", join(' ', sort keys %warns));
         error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
     } else {
-        error("Files have whitespace errors: ",join(' ',sort keys %warns));
+        error("Files have whitespace errors: ", join(' ', sort keys %warns));
         error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
     }
     foreach my $file (sort keys %warns) {
@@ -79,15 +83,12 @@ if (keys %warns) {
 ok(1);
 1;
 
-sub get_manifest_files {
+sub get_source_files {
     my $root = shift;
-    `cd $root && $ENV{MAKE} dist-file-list`;
-    my $manifest_files = `cd $root && $ENV{MAKE} dist-file-list`;
-    $manifest_files =~ s!.*begin-dist-file-list:!!sg;
-    $manifest_files =~ s!end-dist-file-list:.*$!!sg;
-    print "MF $manifest_files\n" if $Self->{verbose};
+    my $git_files = `cd $root && git ls-files`;
+    print "MF $git_files\n" if $Self->{verbose};
     my %files;
-    foreach my $file (split /\s+/,$manifest_files) {
+    foreach my $file (split /\s+/, $git_files) {
         next if $file eq '';
         $files{$file} |= 1;
     }

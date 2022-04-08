@@ -80,7 +80,7 @@ module t (/*AUTOARG*/
       end
    end
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
 
    always @ (posedge fastclk) begin
       cyc <= cyc+1;

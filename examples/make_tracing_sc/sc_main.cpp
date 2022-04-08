@@ -58,11 +58,11 @@ int sc_main(int argc, char* argv[]) {
 
     // Define interconnect
     sc_signal<bool> reset_l;
-    sc_signal<vluint32_t> in_small;
-    sc_signal<vluint64_t> in_quad;
+    sc_signal<uint32_t> in_small;
+    sc_signal<uint64_t> in_quad;
     sc_signal<sc_bv<70>> in_wide;
-    sc_signal<vluint32_t> out_small;
-    sc_signal<vluint64_t> out_quad;
+    sc_signal<uint32_t> out_small;
+    sc_signal<uint64_t> out_quad;
     sc_signal<sc_bv<70>> out_wide;
 
     // Construct the Verilated model, from inside Vtop.h

@@ -17,7 +17,7 @@ module t (/*AUTOARG*/
 	logic [130:0] data;
     } foo[1];
 
-    integer cyc=0;
+    integer cyc = 0;
 
     // Test loop
     always @ (posedge clk) begin

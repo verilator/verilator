@@ -1,0 +1,36 @@
+Verilator Gantt report
+
+Argument settings:
+  +verilator+prof+exec+start+1
+  +verilator+prof+exec+window+2
+
+Analysis:
+  Total threads             = 2
+  Total mtasks              = 5
+  Total cpus used           = 2
+  Total yields              = 51
+  Total evals               = 1
+  Total eval loops          = 1
+  Total eval time           = 294309 rdtsc ticks
+  Longest mtask time        = 137754 rdtsc ticks
+  All-thread mtask time     = 205237 rdtsc ticks
+  Longest-thread efficiency = 46.8%
+  All-thread efficiency     = 34.9%
+  All-thread speedup        = 0.7
+
+Prediction (what Verilator used for scheduling):
+  All-thread efficiency     = 82.4%
+  All-thread speedup        = 1.6
+
+MTask statistics:
+  min log(p2e) = -1.054  from mtask 79 (predict 48001, elapsed 137754)
+  max log(p2e) = 3.641  from mtask 87 (predict 33809, elapsed 887)
+  mean = 1.656
+  stddev = 2.104
+  e ^ stddev = 8.200
+
+CPUs:
+  cpu 2: cpu_time=202323  Phytium,FT-2500/128
+  cpu 3: cpu_time=2914  Phytium,FT-2500/128
+
+Writing profile_exec.vcd

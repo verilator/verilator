@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,7 +20,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
+#include "V3Error.h"
 #include "V3LangCode.h"
 
 #include <map>
@@ -242,7 +242,6 @@ private:
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_hierChild = false;       // main switch: --hierarchical-child
     bool m_ignc = false;            // main switch: --ignc
-    bool m_inhibitSim = false;      // main switch: --inhibit-sim
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
     bool m_main = false;            // main swithc: --main
@@ -254,8 +253,10 @@ private:
     bool m_pinsScBigUint = false;   // main switch: --pins-sc-biguint
     bool m_pinsUint8 = false;       // main switch: --pins-uint8
     bool m_ppComments = false;      // main switch: --pp-comments
+    bool m_profC = false;           // main switch: --prof-c
     bool m_profCFuncs = false;      // main switch: --prof-cfuncs
-    bool m_profThreads = false;     // main switch: --prof-threads
+    bool m_profExec = false;        // main switch: --prof-exec
+    bool m_profPgo = false;         // main switch: --prof-pgo
     bool m_protectIds = false;      // main switch: --protect-ids
     bool m_public = false;          // main switch: --public
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
@@ -289,6 +290,7 @@ private:
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_ifDepth = 0;      // main switch: --if-depth
     int         m_inlineMult = 2000;   // main switch: --inline-mult
+    int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
@@ -320,12 +322,12 @@ private:
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
+    string      m_libCreate;    // main switch: --lib-create {lib_name}
     string      m_makeDir;      // main switch: -Mdir
     string      m_modPrefix;    // main switch: --mod-prefix
     string      m_pipeFilter;   // main switch: --pipe-filter
     string      m_prefix;       // main switch: --prefix
     string      m_protectKey;   // main switch: --protect-key
-    string      m_protectLib;   // main switch: --protect-lib {lib_name}
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
     string      m_waiverOutput;  // main switch: --waiver-output {filename}
@@ -361,6 +363,8 @@ private:
     bool        m_oTable;       // main switch: -Oa: lookup table creation
     // clang-format on
 
+    bool m_available = false;  // Set to true at the end of option parsing
+
 private:
     // METHODS
     void addArg(const string& arg);
@@ -376,7 +380,6 @@ private:
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
-    bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
     static int stripOptionsForChildRun(const string& opt, bool forTop);
 
@@ -403,6 +406,7 @@ public:
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
     void notify();
+    bool available() const { return m_available; }
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }
@@ -463,14 +467,16 @@ public:
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool ppComments() const { return m_ppComments; }
+    bool profC() const { return m_profC; }
     bool profCFuncs() const { return m_profCFuncs; }
-    bool profThreads() const { return m_profThreads; }
+    bool profExec() const { return m_profExec; }
+    bool profPgo() const { return m_profPgo; }
+    bool usesProfiler() const { return profExec() || profPgo(); }
     bool protectIds() const { return m_protectIds; }
     bool allPublic() const { return m_public; }
     bool publicFlatRW() const { return m_publicFlatRW; }
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
-    bool inhibitSim() const { return m_inhibitSim; }
     bool quietExit() const { return m_quietExit; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
@@ -487,6 +493,7 @@ public:
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }
+    int instrCountDpi() const { return m_instrCountDpi; }
     VOptionBool makeDepend() const { return m_makeDepend; }
     int maxNumWidth() const { return m_maxNumWidth; }
     int moduleRecursionDepth() const { return m_moduleRecursion; }
@@ -522,14 +529,9 @@ public:
 
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
     string l2Name() const { return m_l2Name; }
-    string makeDir() const { return m_makeDir; }
-    string modPrefix() const { return m_modPrefix; }
-    string pipeFilter() const { return m_pipeFilter; }
-    string prefix() const { return m_prefix; }
-    string protectKeyDefaulted();  // Set default key if not set by user
-    string protectLib() const { return m_protectLib; }
-    string protectLibName(bool shared) {
-        string libName = "lib" + protectLib();
+    string libCreate() const { return m_libCreate; }
+    string libCreateName(bool shared) {
+        string libName = "lib" + libCreate();
         if (shared) {
             libName += ".so";
         } else {
@@ -537,6 +539,13 @@ public:
         }
         return libName;
     }
+    string makeDir() const { return m_makeDir; }
+    string modPrefix() const { return m_modPrefix; }
+    string pipeFilter() const { return m_pipeFilter; }
+    string prefix() const { return m_prefix; }
+    // Not just called protectKey() to avoid bugs of not using protectKeyDefaulted()
+    bool protectKeyProvided() const { return !m_protectKey.empty(); }
+    string protectKeyDefaulted();  // Set default key if not set by user
     string topModule() const { return m_topModule; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }

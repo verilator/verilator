@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -110,6 +110,7 @@ public:
         PINNOTFOUND,    // instance port name not found in it's module
         PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
+        PROFOUTOFDATE,  // Profile data out of date
         PROTECTED,      // detected `pragma protected
         RANDC,          // Unsupported: 'randc' converted to 'rand'
         REALCVT,        // Real conversion
@@ -173,7 +174,7 @@ public:
             "LATCH", "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
-            "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
+            "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
@@ -417,7 +418,11 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 #define VL_DEBUG_FUNC \
     static int debug() { \
         static int level = -1; \
-        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__); \
+        if (VL_UNLIKELY(level < 0)) { \
+            const int debugSrcLevel = v3Global.opt.debugSrcLevel(__FILE__); \
+            if (!v3Global.opt.available()) return debugSrcLevel; \
+            level = debugSrcLevel; \
+        } \
         return level; \
     }
 

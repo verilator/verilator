@@ -29,11 +29,11 @@ long long get_memory_usage() {
     if (!fp) return 0;
 
     int ps_ign;
-    vluint64_t ps_vsize, ps_rss;
+    uint64_t ps_vsize, ps_rss;
     int items = fscanf(fp,
                        ("%d (%*[^) ]) %*1s %d %*d %*d %*d %*d %u"
                         " %u %u %u %u %d %d %d %d"
-                        " %*d %*d %*u %*u %d %" VL_PRI64 "u %" VL_PRI64 "u "),
+                        " %*d %*d %*u %*u %d %" PRIu64 " %" PRIu64 " "),
                        &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_ign,
                        &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_vsize, &ps_rss);
     fclose(fp);
@@ -78,14 +78,14 @@ void make_and_destroy() {
 }
 
 int main(int argc, char* argv[]) {
-    vluint64_t firstUsage = get_memory_usage();
+    uint64_t firstUsage = get_memory_usage();
 
     // Warmup phase
     for (int i = 0; i < 10; i++) {  //
         make_and_destroy();
     }
     firstUsage = get_memory_usage();
-    printf("Memory size %" VL_PRI64 "d bytes\n", firstUsage);
+    printf("Memory size %" PRId64 " bytes\n", firstUsage);
 
     int loops = 10;
     for (int left = loops; left > 0;) {
@@ -94,9 +94,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    vluint64_t leaked = get_memory_usage() - firstUsage;
+    uint64_t leaked = get_memory_usage() - firstUsage;
     if (leaked > 64 * 1024) {  // Have to allow some slop for this code.
-        printf("Leaked %" VL_PRI64 "d bytes, or ~ %" VL_PRI64 "d bytes/construt\n",  //
+        printf("Leaked %" PRId64 " bytes, or ~ %" PRId64 " bytes/construt\n",  //
                leaked, leaked / loops);
         vl_fatal(__FILE__, __LINE__, "top", "Leaked memory\n");
     }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -55,7 +55,7 @@
 // clang-format on
 
 // If change this code, run a test with the below size set very small
-//#define INFILTER_IPC_BUFSIZ 16
+// #define INFILTER_IPC_BUFSIZ 16
 constexpr int INFILTER_IPC_BUFSIZ = (64 * 1024);  // For debug, try this as a small number
 constexpr int INFILTER_CACHE_MAX = (64 * 1024);  // Maximum bytes to cache if same file read twice
 
@@ -66,9 +66,9 @@ class V3FileDependImp final {
     // TYPES
     class DependFile final {
         // A single file
-        bool m_target;  // True if write, else read
+        const bool m_target;  // True if write, else read
         bool m_exists = true;
-        string m_filename;  // Filename
+        const string m_filename;  // Filename
         struct stat m_stat;  // Stat information
     public:
         DependFile(const string& filename, bool target)
@@ -89,8 +89,8 @@ class V3FileDependImp final {
         time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); }  // Nanoseconds
         void loadStats() {
             if (!m_stat.st_mtime) {
-                string fn = filename();
-                int err = stat(fn.c_str(), &m_stat);
+                const string fn = filename();
+                const int err = stat(fn.c_str(), &m_stat);
                 if (err != 0) {
                     memset(&m_stat, 0, sizeof(m_stat));
                     m_stat.st_mtime = 1;
@@ -145,7 +145,7 @@ V3FileDependImp dependImp;  // Depend implementation class
 // V3FileDependImp
 
 inline void V3FileDependImp::writeDepend(const string& filename) {
-    const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
     for (const DependFile& i : m_filenameList) {
@@ -178,10 +178,10 @@ inline std::vector<string> V3FileDependImp::getAllDeps() const {
 }
 
 inline void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
-    const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
-    string cmdline = stripQuotes(cmdlineIn);
+    const string cmdline = stripQuotes(cmdlineIn);
     *ofp << "# DESCR"
          << "IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will.\n";
     *ofp << "C \"" << cmdline << "\"\n";
@@ -190,7 +190,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
          iter != m_filenameList.end(); ++iter) {
         // Read stats of files we create after we're done making them
         // (except for this file, of course)
-        DependFile* dfp = const_cast<DependFile*>(&(*iter));
+        DependFile* const dfp = const_cast<DependFile*>(&(*iter));
         V3Options::fileNfsFlush(dfp->filename());
         dfp->loadStats();
         off_t showSize = iter->size();
@@ -213,13 +213,13 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 }
 
 inline bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
-    const std::unique_ptr<std::ifstream> ifp(V3File::new_ifstream_nodepend(filename));
+    const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(filename)};
     if (ifp->fail()) {
         UINFO(2, "   --check-times failed: no input " << filename << endl);
         return false;
     }
     {
-        string ignore = V3Os::getline(*ifp);
+        const string ignore = V3Os::getline(*ifp);
         if (ignore.empty()) { /*used*/
         }
     }
@@ -228,8 +228,8 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
         *ifp >> chkDir;
         char quote;
         *ifp >> quote;
-        string chkCmdline = V3Os::getline(*ifp, '"');
-        string cmdline = stripQuotes(cmdlineIn);
+        const string chkCmdline = V3Os::getline(*ifp, '"');
+        const string cmdline = stripQuotes(cmdlineIn);
         if (cmdline != chkCmdline) {
             UINFO(2, "   --check-times failed: different command line\n");
             return false;
@@ -254,12 +254,12 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
         *ifp >> chkMnstime;
         char quote;
         *ifp >> quote;
-        string chkFilename = V3Os::getline(*ifp, '"');
+        const string chkFilename = V3Os::getline(*ifp, '"');
 
         V3Options::fileNfsFlush(chkFilename);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
         struct stat chkStat;
-        int err = stat(chkFilename.c_str(), &chkStat);
+        const int err = stat(chkFilename.c_str(), &chkStat);
         if (err != 0) {
             UINFO(2, "   --check-times failed: missing " << chkFilename << endl);
             return false;
@@ -354,7 +354,7 @@ private:
         }
     }
     bool readContentsFile(const string& filename, StrList& outl) {
-        int fd = open(filename.c_str(), O_RDONLY);
+        const int fd = open(filename.c_str(), O_RDONLY);
         if (fd < 0) return false;
         m_readEof = false;
         readBlocks(fd, -1, outl);
@@ -365,7 +365,7 @@ private:
         if (filename != "" || outl.empty()) {}  // Prevent unused
 #ifdef INFILTER_PIPE
         writeFilter("read \"" + filename + "\"\n");
-        string line = readFilterLine();
+        const string line = readFilterLine();
         if (line.find("Content-Length") != string::npos) {
             int len = 0;
             sscanf(line.c_str(), "Content-Length: %d\n", &len);
@@ -394,15 +394,14 @@ private:
 #endif
     }
 
-    string readBlocks(int fd, int size, StrList& outl) {
-        string out;
+    void readBlocks(int fd, int size, StrList& outl) {
         char buf[INFILTER_IPC_BUFSIZ];
         ssize_t sizegot = 0;
         while (!m_readEof && (size < 0 || size > sizegot)) {
             ssize_t todo = INFILTER_IPC_BUFSIZ;
             if (size > 0 && size < todo) todo = size;
             errno = 0;
-            ssize_t got = read(fd, buf, todo);
+            const ssize_t got = read(fd, buf, todo);
             // UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);
             // usleep(50*1000);
             if (got > 0) {
@@ -421,7 +420,6 @@ private:
                 break;
             }
         }
-        return out;
     }
     // cppcheck-suppress unusedFunction unusedPrivateFunction
     string readFilterLine() {
@@ -431,7 +429,7 @@ private:
         while (!m_readEof) {
             StrList outl;
             readBlocks(m_readFd, 1, outl);
-            string onechar = listString(outl);
+            const string onechar = listString(outl);
             line += onechar;
             if (onechar == "\n") {
                 if (line == "\n") {
@@ -459,7 +457,7 @@ private:
         unsigned offset = 0;
         while (!m_readEof && out.length() > offset) {
             errno = 0;
-            int got = write(m_writeFd, (out.c_str()) + offset, out.length() - offset);
+            const int got = write(m_writeFd, (out.c_str()) + offset, out.length() - offset);
             // UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);
             // usleep(50*1000);
             if (got > 0) {
@@ -506,7 +504,7 @@ private:
 
         UINFO(1, "--pipe-filter: /bin/sh -c " << command << endl);
 
-        pid_t pid = fork();
+        const pid_t pid = fork();
         if (pid < 0) v3fatal("--pipe-filter: fork failed: " << strerror(errno));
         if (pid == 0) {  // Child
             UINFO(6, "In child\n");
@@ -634,12 +632,12 @@ string V3OutFormatter::indentSpaces(int num) {
         --num;
     }
     *cp++ = '\0';
-    string st(str);
+    string st{str};  // No const, move optimization
     return st;
 }
 
-bool V3OutFormatter::tokenStart(const char* cp, const char* cmp) {
-    while (*cmp == *cp) {
+bool V3OutFormatter::tokenMatch(const char* cp, const char* cmp) {
+    while (*cmp && *cmp == *cp) {
         ++cp;
         ++cmp;
     }
@@ -648,8 +646,18 @@ bool V3OutFormatter::tokenStart(const char* cp, const char* cmp) {
     return true;
 }
 
+bool V3OutFormatter::tokenStart(const char* cp) {
+    return (tokenMatch(cp, "begin") || tokenMatch(cp, "case") || tokenMatch(cp, "casex")
+            || tokenMatch(cp, "casez") || tokenMatch(cp, "class") || tokenMatch(cp, "function")
+            || tokenMatch(cp, "interface") || tokenMatch(cp, "module") || tokenMatch(cp, "package")
+            || tokenMatch(cp, "task"));
+}
+
 bool V3OutFormatter::tokenEnd(const char* cp) {
-    return (tokenStart(cp, "end") || tokenStart(cp, "endcase") || tokenStart(cp, "endmodule"));
+    return (tokenMatch(cp, "end") || tokenMatch(cp, "endcase") || tokenMatch(cp, "endclass")
+            || tokenMatch(cp, "endfunction") || tokenMatch(cp, "endinterface")
+            || tokenMatch(cp, "endmodule") || tokenMatch(cp, "endpackage")
+            || tokenMatch(cp, "endtask"));
 }
 
 int V3OutFormatter::endLevels(const char* strg) {
@@ -700,6 +708,10 @@ void V3OutFormatter::puts(const char* strg) {
     bool equalsForBracket = false;  // Looking for "= {"
     for (const char* cp = strg; *cp; cp++) {
         putcNoTracking(*cp);
+        if (isalpha(*cp)) {
+            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp)) indentInc();
+            if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
+        }
         switch (*cp) {
         case '\n':
             m_lineno++;
@@ -777,26 +789,6 @@ void V3OutFormatter::puts(const char* strg) {
                 if (cp > strg && cp[-1] == '/') indentDec();  // < ..... /> stays same level
             }
             break;
-        case 'b':
-            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp, "begin")) indentInc();
-            wordstart = false;
-            break;
-        case 'c':
-            if (wordstart && m_lang == LA_VERILOG
-                && (tokenStart(cp, "case") || tokenStart(cp, "casex")
-                    || tokenStart(cp, "casez"))) {
-                indentInc();
-            }
-            wordstart = false;
-            break;
-        case 'e':
-            if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
-            wordstart = false;
-            break;
-        case 'm':
-            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp, "module")) indentInc();
-            wordstart = false;
-            break;
         default: wordstart = false; break;
         }
 
@@ -827,7 +819,7 @@ void V3OutFormatter::putsQuoted(const string& strg) {
     // Quote \ and " for use inside C programs
     // Don't use to quote a filename for #include - #include doesn't \ escape.
     putcNoTracking('"');
-    string quoted = quoteNameControls(strg);
+    const string quoted = quoteNameControls(strg);
     for (const char c : quoted) putcNoTracking(c);
     putcNoTracking('"');
 }
@@ -894,8 +886,8 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += c;
             } else {
                 // This will also cover \a etc
-                string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
-                               + cvtToStr(c & 7);
+                const string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
+                                     + cvtToStr(c & 7);
                 out += octal;
             }
         }
@@ -965,7 +957,7 @@ protected:
 public:
     VIdProtectImp() {
         passthru("this");
-        passthru("TOPp");
+        passthru("TOP");
         passthru("vlSelf");
         passthru("vlSymsp");
     }
@@ -1003,7 +995,7 @@ public:
                 out = "PS" + digest.digestSymbol();
                 // See if we can shrink the digest symbol to something smaller
                 for (size_t len = 6; len < out.size() - 3; len += 3) {
-                    string tryout = out.substr(0, len);
+                    const string tryout = out.substr(0, len);
                     if (m_newIdSet.find(tryout) == m_newIdSet.end()) {
                         out = tryout;
                         break;
@@ -1055,7 +1047,7 @@ public:
 private:
     void trySep(const string& old, string::size_type start, const string& trySep,
                 string::size_type& posr, string& separatorr) {
-        string::size_type trypos = old.find(trySep, start);
+        const string::size_type trypos = old.find(trySep, start);
         if (trypos != string::npos) {
             if (posr == string::npos || (posr > trypos)) {
                 posr = trypos;

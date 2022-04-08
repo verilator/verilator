@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -68,7 +68,7 @@ svLogic svGetBitselLogic(const svLogicVecVal* sp, int bit) {
             | (((sp[VL_BITWORD_I(bit)].bval >> VL_BITBIT_I(bit)) & 1) << 1));
 }
 
-void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) { VL_ASSIGNBIT_WI(32, bit, dp, s); }
+void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) { VL_ASSIGNBIT_WI(bit, dp, s); }
 void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
     // Verilator doesn't support X/Z so only aval
     dp[VL_BITWORD_I(bit)].aval = ((dp[VL_BITWORD_I(bit)].aval & ~(VL_UL(1) << VL_BITBIT_I(bit)))
@@ -79,19 +79,19 @@ void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
 
 void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width) {
     // See also VL_SEL_WWI
-    int msb = lsb + width - 1;
-    int word_shift = VL_BITWORD_I(lsb);
+    const int msb = lsb + width - 1;
+    const int word_shift = VL_BITWORD_I(lsb);
     if (VL_BITBIT_I(lsb) == 0) {
         // Just a word extract
         for (int i = 0; i < VL_WORDS_I(width); ++i) dp[i] = sp[i + word_shift];
     } else {
-        int loffset = lsb & VL_SIZEBITS_I;
-        int nbitsfromlow = 32 - loffset;  // bits that end up in lword (know loffset!=0)
+        const int loffset = lsb & VL_SIZEBITS_I;
+        const int nbitsfromlow = 32 - loffset;  // bits that end up in lword (know loffset!=0)
         // Middle words
-        int words = VL_WORDS_I(msb - lsb + 1);
+        const int words = VL_WORDS_I(msb - lsb + 1);
         for (int i = 0; i < words; ++i) {
             dp[i] = sp[i + word_shift] >> loffset;
-            int upperword = i + word_shift + 1;
+            const int upperword = i + word_shift + 1;
             if (upperword <= static_cast<int>(VL_BITWORD_I(msb))) {
                 dp[i] |= sp[upperword] << nbitsfromlow;
             }
@@ -101,20 +101,20 @@ void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width)
     dp[VL_WORDS_I(width) - 1] &= VL_MASK_I(width);
 }
 void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lsb, int width) {
-    int msb = lsb + width - 1;
-    int word_shift = VL_BITWORD_I(lsb);
+    const int msb = lsb + width - 1;
+    const int word_shift = VL_BITWORD_I(lsb);
     if (VL_BITBIT_I(lsb) == 0) {
         // Just a word extract
         for (int i = 0; i < VL_WORDS_I(width); ++i) dp[i] = sp[i + word_shift];
     } else {
-        int loffset = lsb & VL_SIZEBITS_I;
-        int nbitsfromlow = 32 - loffset;  // bits that end up in lword (know loffset!=0)
+        const int loffset = lsb & VL_SIZEBITS_I;
+        const int nbitsfromlow = 32 - loffset;  // bits that end up in lword (know loffset!=0)
         // Middle words
-        int words = VL_WORDS_I(msb - lsb + 1);
+        const int words = VL_WORDS_I(msb - lsb + 1);
         for (int i = 0; i < words; ++i) {
             dp[i].aval = sp[i + word_shift].aval >> loffset;
             dp[i].bval = sp[i + word_shift].bval >> loffset;
-            int upperword = i + word_shift + 1;
+            const int upperword = i + word_shift + 1;
             if (upperword <= static_cast<int>(VL_BITWORD_I(msb))) {
                 dp[i].aval |= sp[upperword].aval << nbitsfromlow;
                 dp[i].bval |= sp[upperword].bval << nbitsfromlow;
@@ -127,22 +127,22 @@ void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lsb, int 
 }
 void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int lbit, int width) {
     // See also _vl_insert_WI
-    int hbit = lbit + width - 1;
-    int hoffset = VL_BITBIT_I(hbit);
-    int loffset = VL_BITBIT_I(lbit);
+    const int hbit = lbit + width - 1;
+    const int hoffset = VL_BITBIT_I(hbit);
+    const int loffset = VL_BITBIT_I(lbit);
     if (hoffset == VL_SIZEBITS_I && loffset == 0) {
         // Fast and common case, word based insertion
         dp[VL_BITWORD_I(lbit)] = s;
     } else {
-        int hword = VL_BITWORD_I(hbit);
-        int lword = VL_BITWORD_I(lbit);
+        const int hword = VL_BITWORD_I(hbit);
+        const int lword = VL_BITWORD_I(lbit);
         if (hword == lword) {  // know < 32 bits because above checks it
-            IData insmask = (VL_MASK_I(hoffset - loffset + 1)) << loffset;
+            const IData insmask = (VL_MASK_I(hoffset - loffset + 1)) << loffset;
             dp[lword] = (dp[lword] & ~insmask) | ((s << loffset) & insmask);
         } else {
-            IData hinsmask = (VL_MASK_I(hoffset - 0 + 1)) << 0;
-            IData linsmask = (VL_MASK_I(31 - loffset + 1)) << loffset;
-            int nbitsonright = 32 - loffset;  // bits that end up in lword
+            const IData hinsmask = (VL_MASK_I(hoffset - 0 + 1)) << 0;
+            const IData linsmask = (VL_MASK_I(31 - loffset + 1)) << loffset;
+            const int nbitsonright = 32 - loffset;  // bits that end up in lword
             dp[lword] = (dp[lword] & ~linsmask) | ((s << loffset) & linsmask);
             dp[hword] = (dp[hword] & ~hinsmask) | ((s >> nbitsonright) & hinsmask);
         }
@@ -150,24 +150,24 @@ void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int lbit, int width) 
 }
 // cppcheck-suppress passedByValue
 void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int width) {
-    int hbit = lbit + width - 1;
-    int hoffset = VL_BITBIT_I(hbit);
-    int loffset = VL_BITBIT_I(lbit);
+    const int hbit = lbit + width - 1;
+    const int hoffset = VL_BITBIT_I(hbit);
+    const int loffset = VL_BITBIT_I(lbit);
     if (hoffset == VL_SIZEBITS_I && loffset == 0) {
         // Fast and common case, word based insertion
         dp[VL_BITWORD_I(lbit)].aval = s.aval;
         dp[VL_BITWORD_I(lbit)].bval = s.bval;
     } else {
-        int hword = VL_BITWORD_I(hbit);
-        int lword = VL_BITWORD_I(lbit);
+        const int hword = VL_BITWORD_I(hbit);
+        const int lword = VL_BITWORD_I(lbit);
         if (hword == lword) {  // know < 32 bits because above checks it
-            IData insmask = (VL_MASK_I(hoffset - loffset + 1)) << loffset;
+            const IData insmask = (VL_MASK_I(hoffset - loffset + 1)) << loffset;
             dp[lword].aval = (dp[lword].aval & ~insmask) | ((s.aval << loffset) & insmask);
             dp[lword].bval = (dp[lword].bval & ~insmask) | ((s.bval << loffset) & insmask);
         } else {
-            IData hinsmask = (VL_MASK_I(hoffset - 0 + 1)) << 0;
-            IData linsmask = (VL_MASK_I(31 - loffset + 1)) << loffset;
-            int nbitsonright = 32 - loffset;  // bits that end up in lword
+            const IData hinsmask = (VL_MASK_I(hoffset - 0 + 1)) << 0;
+            const IData linsmask = (VL_MASK_I(31 - loffset + 1)) << loffset;
+            const int nbitsonright = 32 - loffset;  // bits that end up in lword
             dp[lword].aval = (dp[lword].aval & ~linsmask) | ((s.aval << loffset) & linsmask);
             dp[lword].bval = (dp[lword].bval & ~linsmask) | ((s.bval << loffset) & linsmask);
             dp[hword].aval = (dp[hword].aval & ~hinsmask) | ((s.aval >> nbitsonright) & hinsmask);
@@ -184,7 +184,7 @@ static inline const VerilatedDpiOpenVar* _vl_openhandle_varp(const svOpenArrayHa
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "%%Error: DPI svOpenArrayHandle function called with nullptr handle");
     }
-    const VerilatedDpiOpenVar* varp = reinterpret_cast<const VerilatedDpiOpenVar*>(h);
+    const VerilatedDpiOpenVar* const varp = reinterpret_cast<const VerilatedDpiOpenVar*>(h);
     if (VL_UNLIKELY(!varp->magicOk())) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "%%Error: DPI svOpenArrayHandle function called with non-Verilator handle");
@@ -205,13 +205,13 @@ int svDimensions(const svOpenArrayHandle h) { return _vl_openhandle_varp(h)->udi
 
 // Return pointer to open array data, or nullptr if not in IEEE standard C layout
 void* svGetArrayPtr(const svOpenArrayHandle h) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(h);
     if (VL_UNLIKELY(!varp->isDpiStdLayout())) return nullptr;
     return varp->datap();
 }
 // Return size of open array, or 0 if not in IEEE standard C layout
 int svSizeOfArray(const svOpenArrayHandle h) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(h);
     if (VL_UNLIKELY(!varp->isDpiStdLayout())) return 0;
     // Truncate 64 bits to int; DPI is limited to 4GB
     return static_cast<int>(varp->totalSize());
@@ -264,15 +264,15 @@ static void* _vl_svGetArrElemPtr(const svOpenArrayHandle h, int nargs, int indx1
                                  int indx3) VL_MT_SAFE {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
     if (VL_UNLIKELY(!varp->isDpiStdLayout())) return nullptr;
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     return datap;
 }
 
 // Copy to user bit array from simulator open array
 static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s, int nargs,
                                       int indx1, int indx2, int indx3) VL_MT_SAFE {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: d[0] = *(reinterpret_cast<CData*>(datap)); return;
@@ -299,8 +299,8 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
 // Copy to user logic array from simulator open array
 static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s, int nargs,
                                         int indx1, int indx2, int indx3) VL_MT_SAFE {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8:
@@ -342,8 +342,8 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
 // Copy to simulator open array from from user bit array
 static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s, int nargs,
                                       int indx1, int indx2, int indx3) VL_MT_SAFE {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = s[0]; return;
@@ -364,8 +364,8 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
 // Copy to simulator open array from from user logic array
 static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s,
                                         int nargs, int indx1, int indx2, int indx3) VL_MT_SAFE {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = s[0].aval; return;
@@ -386,10 +386,10 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
 
 // Return bit from simulator open array
 static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1, int indx2,
-                                 int indx3, int indx4) VL_MT_SAFE {
+                                 int indx3, int) VL_MT_SAFE {
     // One extra index supported, as need bit number
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return 0;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: return (*(reinterpret_cast<CData*>(datap))) & 1;
@@ -401,11 +401,11 @@ static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1
 }
 // Update simulator open array from bit
 static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int nargs, int indx1,
-                                int indx2, int indx3, int indx4) VL_MT_SAFE {
+                                int indx2, int indx3, int) VL_MT_SAFE {
     // One extra index supported, as need bit number
     value &= 1;  // Make sure clean
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
-    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
+    void* const datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = value; return;
@@ -417,10 +417,10 @@ static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int narg
 }
 
 //======================================================================
-// DPI accessors that simply call above functions
+// DPI accessors that call above functions
 
 void* svGetArrElemPtr(const svOpenArrayHandle h, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(h);
     void* datap;
     va_list ap;
     va_start(ap, indx1);
@@ -428,13 +428,13 @@ void* svGetArrElemPtr(const svOpenArrayHandle h, int indx1, ...) {
     switch (varp->udims()) {
     case 1: datap = _vl_svGetArrElemPtr(h, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         datap = _vl_svGetArrElemPtr(h, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         datap = _vl_svGetArrElemPtr(h, 3, indx1, indx2, indx3);
         break;
     }
@@ -454,19 +454,19 @@ void* svGetArrElemPtr3(const svOpenArrayHandle h, int indx1, int indx2, int indx
 }
 
 void svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
     case 1: _vl_svPutBitArrElemVecVal(d, s, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svPutBitArrElemVecVal(d, s, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svPutBitArrElemVecVal(d, s, 3, indx1, indx2, indx3);
         break;
     }
@@ -486,19 +486,19 @@ void svPutBitArrElem3VecVal(const svOpenArrayHandle d, const svBitVecVal* s, int
     _vl_svPutBitArrElemVecVal(d, s, 3, indx1, indx2, indx3);
 }
 void svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
     case 1: _vl_svPutLogicArrElemVecVal(d, s, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svPutLogicArrElemVecVal(d, s, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svPutLogicArrElemVecVal(d, s, 3, indx1, indx2, indx3);
         break;
     }
@@ -522,19 +522,19 @@ void svPutLogicArrElem3VecVal(const svOpenArrayHandle d, const svLogicVecVal* s,
 // From simulator storage into user space
 
 void svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
     case 1: _vl_svGetBitArrElemVecVal(d, s, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svGetBitArrElemVecVal(d, s, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svGetBitArrElemVecVal(d, s, 3, indx1, indx2, indx3);
         break;
     }
@@ -553,19 +553,19 @@ void svGetBitArrElem3VecVal(svBitVecVal* d, const svOpenArrayHandle s, int indx1
     _vl_svGetBitArrElemVecVal(d, s, 3, indx1, indx2, indx3);
 }
 void svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
     case 1: _vl_svGetLogicArrElemVecVal(d, s, 1, indx1, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svGetLogicArrElemVecVal(d, s, 2, indx1, indx2, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svGetLogicArrElemVecVal(d, s, 3, indx1, indx2, indx3);
         break;
     }
@@ -585,20 +585,20 @@ void svGetLogicArrElem3VecVal(svLogicVecVal* d, const svOpenArrayHandle s, int i
 }
 
 svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     svBit out;
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
     case 1: out = _vl_svGetBitArrElem(s, 1, indx1, 0, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 2, indx1, indx2, 0, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 3, indx1, indx2, indx3, 0);
         break;
     }
@@ -618,20 +618,20 @@ svBit svGetBitArrElem3(const svOpenArrayHandle s, int indx1, int indx2, int indx
 }
 svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...) {
     // Verilator doesn't support X/Z so can just call Bit version
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(s);
     svBit out;
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
     case 1: out = _vl_svGetBitArrElem(s, 1, indx1, 0, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 2, indx1, indx2, 0, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 3, indx1, indx2, indx3, 0);
         break;
     }
@@ -654,19 +654,19 @@ svLogic svGetLogicArrElem3(const svOpenArrayHandle s, int indx1, int indx2, int 
 }
 
 void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...) {
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
     case 1: _vl_svPutBitArrElem(d, value, 1, indx1, 0, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 2, indx1, indx2, 0, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 3, indx1, indx2, indx3, 0);
         break;
     }
@@ -685,19 +685,19 @@ void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1, int ind
 }
 void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1, ...) {
     // Verilator doesn't support X/Z so can just call Bit version
-    const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
+    const VerilatedDpiOpenVar* const varp = _vl_openhandle_varp(d);
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {
     case 1: _vl_svPutBitArrElem(d, value, 1, indx1, 0, 0, 0); break;
     case 2: {
-        int indx2 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 2, indx1, indx2, 0, 0);
         break;
     }
     case 3: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
+        const int indx2 = va_arg(ap, int);
+        const int indx3 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 3, indx1, indx2, indx3, 0);
         break;
     }
@@ -732,15 +732,15 @@ svScope svGetScope() {
 }
 
 svScope svSetScope(const svScope scope) {
-    const VerilatedScope* prevScopep = Verilated::dpiScope();
-    const VerilatedScope* vscopep = reinterpret_cast<const VerilatedScope*>(scope);
+    const VerilatedScope* const prevScopep = Verilated::dpiScope();
+    const VerilatedScope* const vscopep = reinterpret_cast<const VerilatedScope*>(scope);
     Verilated::dpiScope(vscopep);
     // NOLINTNEXTLINE(google-readability-casting)
     return (svScope)(prevScopep);
 }
 
 const char* svGetNameFromScope(const svScope scope) {
-    const VerilatedScope* vscopep = reinterpret_cast<const VerilatedScope*>(scope);
+    const VerilatedScope* const vscopep = reinterpret_cast<const VerilatedScope*>(scope);
     return vscopep->name();
 }
 

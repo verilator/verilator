@@ -43,10 +43,10 @@ if (!-r "$root/.git") {
                 $btab = 0;
                 print " File $file\n" if $Self->{verbose};
             }
-            elsif ($line  =~ m!^@@ -?[0-9]+,?[0-9]* \+?([0-9]+)!) {
+            elsif ($line =~ m!^@@ -?[0-9]+,?[0-9]* \+?([0-9]+)!) {
                 $lineno = $1 - 1;
             }
-            elsif ($line  =~ m!^ !) {
+            elsif ($line =~ m!^ !) {
                 ++$lineno;
                 if ($line =~ m!^[- ].*\t!) {
                     print "  Had tabs\n" if $Self->{verbose} && !$atab;
@@ -72,7 +72,7 @@ if (!-r "$root/.git") {
                 if ($len >= 100
                     && $file !~ $Tabs_Exempt_Re
                     && $file !~ $Wide_Exempt_Re) {
-                    print"  Wide $line\n" if $Self->{verbose};
+                    print "  Wide $line\n" if $Self->{verbose};
                     $summary = "File modification adds a new >100 column line:" if !$summary;
                     $warns{$file} = "File modification adds a new >100 column line: $file:$lineno";
                 }
@@ -81,7 +81,7 @@ if (!-r "$root/.git") {
     }
     if (keys %warns) {
         # First warning lists everything as that's shown in the driver summary
-        error($summary." ",join(' ',sort keys %warns));
+        error($summary . " ", join(' ', sort keys %warns));
         foreach my $file (sort keys %warns) {
             error($warns{$file});
         }

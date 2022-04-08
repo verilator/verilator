@@ -1,0 +1,940 @@
+VLPROFVERSION 2.0
+VLPROF arg +verilator+prof+exec+start+2
+VLPROF arg +verilator+prof+exec+window+2
+VLPROF stat yields 0
+VLPROF stat threads 2
+VLPROFPROC processor    : 0
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2134.599
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 0
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 0
+VLPROFPROC initial apicid       : 0
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 1
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 1932.526
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 1
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 2
+VLPROFPROC initial apicid       : 2
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 2
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 1862.405
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 2
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 4
+VLPROFPROC initial apicid       : 4
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 3
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 1862.009
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 3
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 6
+VLPROFPROC initial apicid       : 6
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 4
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2195.832
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 4
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 8
+VLPROFPROC initial apicid       : 8
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 5
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2190.061
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 5
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 10
+VLPROFPROC initial apicid       : 10
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 6
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2203.924
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 6
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 12
+VLPROFPROC initial apicid       : 12
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 7
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2193.174
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 7
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 14
+VLPROFPROC initial apicid       : 14
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 8
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2203.449
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 8
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 16
+VLPROFPROC initial apicid       : 16
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 9
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2197.717
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 9
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 18
+VLPROFPROC initial apicid       : 18
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 10
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2195.928
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 10
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 20
+VLPROFPROC initial apicid       : 20
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 11
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 1964.149
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 11
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 22
+VLPROFPROC initial apicid       : 22
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 12
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2194.738
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 12
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 24
+VLPROFPROC initial apicid       : 24
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 13
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2194.821
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 13
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 26
+VLPROFPROC initial apicid       : 26
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 14
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2196.191
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 14
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 28
+VLPROFPROC initial apicid       : 28
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 15
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2198.063
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 15
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 30
+VLPROFPROC initial apicid       : 30
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 16
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2152.652
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 0
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 1
+VLPROFPROC initial apicid       : 1
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 17
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2257.474
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 1
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 3
+VLPROFPROC initial apicid       : 3
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 18
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 1862.896
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 2
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 5
+VLPROFPROC initial apicid       : 5
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 19
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 1863.193
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 3
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 7
+VLPROFPROC initial apicid       : 7
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 20
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2189.303
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 4
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 9
+VLPROFPROC initial apicid       : 9
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 21
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2194.584
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 5
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 11
+VLPROFPROC initial apicid       : 11
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 22
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2195.060
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 6
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 13
+VLPROFPROC initial apicid       : 13
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 23
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2189.319
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 7
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 15
+VLPROFPROC initial apicid       : 15
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 24
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2195.031
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 8
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 17
+VLPROFPROC initial apicid       : 17
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 25
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2555.092
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 9
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 19
+VLPROFPROC initial apicid       : 19
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 26
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2191.830
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 10
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 21
+VLPROFPROC initial apicid       : 21
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 27
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2194.661
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 11
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 23
+VLPROFPROC initial apicid       : 23
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 28
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2194.445
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 12
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 25
+VLPROFPROC initial apicid       : 25
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 29
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2194.786
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 13
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 27
+VLPROFPROC initial apicid       : 27
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 30
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2189.282
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 14
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 29
+VLPROFPROC initial apicid       : 29
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFPROC processor    : 31
+VLPROFPROC vendor_id    : AuthenticTest
+VLPROFPROC cpu family   : 23
+VLPROFPROC model                : 113
+VLPROFPROC model name   : Test Ryzen 9 3950X 16-Core Processor
+VLPROFPROC stepping     : 0
+VLPROFPROC microcode    : 0x8701013
+VLPROFPROC cpu MHz              : 2195.563
+VLPROFPROC cache size   : 512 KB
+VLPROFPROC physical id  : 0
+VLPROFPROC siblings     : 32
+VLPROFPROC core id              : 15
+VLPROFPROC cpu cores    : 16
+VLPROFPROC apicid               : 31
+VLPROFPROC initial apicid       : 31
+VLPROFPROC fpu          : yes
+VLPROFPROC fpu_exception        : yes
+VLPROFPROC cpuid level  : 16
+VLPROFPROC wp           : yes
+VLPROFPROC flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate sme ssbd mba sev ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif umip rdpid overflow_recov succor smca
+VLPROFPROC bugs         : sysret_ss_attrs spectre_v1 spectre_v2 spec_store_bypass
+VLPROFPROC bogomips     : 6987.10
+VLPROFPROC TLB size     : 3072 4K pages
+VLPROFPROC clflush size : 64
+VLPROFPROC cache_alignment      : 64
+VLPROFPROC address sizes        : 43 bits physical, 48 bits virtual
+VLPROFPROC power management: ts ttp tm hwpstate cpb eff_freq_ro [13] [14]
+VLPROFPROC 
+VLPROFTHREAD 0
+VLPROFEXEC EVAL_BEGIN 595
+VLPROFEXEC EVAL_LOOP_BEGIN 945
+VLPROFEXEC MTASK_BEGIN 2695 id 6 predictStart 0 cpu 19
+VLPROFEXEC MTASK_END 2905 id 6 predictCost 30
+VLPROFEXEC MTASK_BEGIN 9695 id 10 predictStart 196 cpu 19
+VLPROFEXEC MTASK_END 9870 id 10 predictCost 30
+VLPROFEXEC EVAL_LOOP_END 12180
+VLPROFEXEC EVAL_END 12250
+VLPROFEXEC EVAL_BEGIN 13720
+VLPROFEXEC EVAL_LOOP_BEGIN 14000
+VLPROFEXEC MTASK_BEGIN 15610 id 6 predictStart 0 cpu 19
+VLPROFEXEC MTASK_END 15820 id 6 predictCost 30
+VLPROFEXEC MTASK_BEGIN 21700 id 10 predictStart 196 cpu 19
+VLPROFEXEC MTASK_END 21875 id 10 predictCost 30
+VLPROFEXEC EVAL_LOOP_END 22085
+VLPROFEXEC EVAL_END 22330
+VLPROFTHREAD 1
+VLPROFEXEC MTASK_BEGIN 5495 id 5 predictStart 0 cpu 10
+VLPROFEXEC MTASK_END 6090 id 5 predictCost 30
+VLPROFEXEC MTASK_BEGIN 6300 id 7 predictStart 30 cpu 10
+VLPROFEXEC MTASK_END 6895 id 7 predictCost 30
+VLPROFEXEC MTASK_BEGIN 7490 id 8 predictStart 60 cpu 10
+VLPROFEXEC MTASK_END 8540 id 8 predictCost 107
+VLPROFEXEC MTASK_BEGIN 9135 id 9 predictStart 167 cpu 10
+VLPROFEXEC MTASK_END 9730 id 9 predictCost 30
+VLPROFEXEC MTASK_BEGIN 10255 id 11 predictStart 197 cpu 10
+VLPROFEXEC MTASK_END 11060 id 11 predictCost 30
+VLPROFEXEC MTASK_BEGIN 18375 id 5 predictStart 0 cpu 10
+VLPROFEXEC MTASK_END 18970 id 5 predictCost 30
+VLPROFEXEC MTASK_BEGIN 19145 id 7 predictStart 30 cpu 10
+VLPROFEXEC MTASK_END 19320 id 7 predictCost 30
+VLPROFEXEC MTASK_BEGIN 19670 id 8 predictStart 60 cpu 10
+VLPROFEXEC MTASK_END 19810 id 8 predictCost 107
+VLPROFEXEC MTASK_BEGIN 20650 id 9 predictStart 167 cpu 10
+VLPROFEXEC MTASK_END 20720 id 9 predictCost 30
+VLPROFEXEC MTASK_BEGIN 21140 id 11 predictStart 197 cpu 10
+VLPROFEXEC MTASK_END 21245 id 11 predictCost 30
+VLPROF stat ticks 23415

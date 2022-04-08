@@ -11,11 +11,18 @@ module top (input A, input B, input SEL, output Y1, output Y2, output Z);
 endmodule
 
 module pass (input A, input OE, inout Z, output Y);
-   io io(.A(A), .OE(OE), .Z(Z), .Y(Y));
+   io_noinline io(.A(A), .OE(OE), .Z(Z), .Y(Y));
    assign Z = 1'bz;
 endmodule
 
 module io (input A, input OE, inout Z, output Y);
+   assign Z = (OE) ? A : 1'bz;
+   assign Y = Z;
+   assign Z = 1'bz;
+endmodule
+
+module io_noinline (input A, input OE, inout Z, output Y);
+   /*verilator no_inline_module*/
    assign Z = (OE) ? A : 1'bz;
    assign Y = Z;
    assign Z = 1'bz;

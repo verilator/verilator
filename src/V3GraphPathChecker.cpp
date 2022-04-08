@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -32,13 +32,13 @@ struct GraphPCNode {
     //
     // Unlike the LogicMTasks's, we have no cost info for the generic graph
     // accepted by GraphPathChecker, so assume each node has unit cost.
-    std::array<vluint32_t, GraphWay::NUM_WAYS> m_cp;
+    std::array<uint32_t, GraphWay::NUM_WAYS> m_cp;
 
     // Detect if we've seen this node before in a given recursive
     // operation. We'll use this in pathExistsInternal() to avoid checking
     // the same node twice, and again in updateHalfCriticalPath() to assert
     // there are no cycles.
-    vluint64_t m_seenAtGeneration = 0;
+    uint64_t m_seenAtGeneration = 0;
 
     // CONSTRUCTORS
     GraphPCNode() {
@@ -65,7 +65,7 @@ GraphPathChecker::GraphPathChecker(const V3Graph* graphp, V3EdgeFuncP edgeFuncp)
 GraphPathChecker::~GraphPathChecker() {
     // Free every GraphPCNode
     for (V3GraphVertex* vxp = m_graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        GraphPCNode* nodep = static_cast<GraphPCNode*>(vxp->userp());
+        const GraphPCNode* const nodep = static_cast<GraphPCNode*>(vxp->userp());
         VL_DO_DANGLING(delete nodep, nodep);
         vxp->userp(nullptr);
     }
@@ -73,18 +73,18 @@ GraphPathChecker::~GraphPathChecker() {
 
 void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
     GraphStreamUnordered order(m_graphp, way);
-    GraphWay rev = way.invert();
-    while (const V3GraphVertex* vertexp = order.nextp()) {
+    const GraphWay rev = way.invert();
+    while (const V3GraphVertex* const vertexp = order.nextp()) {
         unsigned critPathCost = 0;
         for (V3GraphEdge* edgep = vertexp->beginp(rev); edgep; edgep = edgep->nextp(rev)) {
             if (!m_edgeFuncp(edgep)) continue;
 
-            V3GraphVertex* wrelativep = edgep->furtherp(rev);
-            GraphPCNode* wrelUserp = static_cast<GraphPCNode*>(wrelativep->userp());
+            const V3GraphVertex* wrelativep = edgep->furtherp(rev);
+            const GraphPCNode* const wrelUserp = static_cast<GraphPCNode*>(wrelativep->userp());
             critPathCost = std::max(critPathCost, wrelUserp->m_cp[way] + 1);
         }
 
-        GraphPCNode* ourUserp = static_cast<GraphPCNode*>(vertexp->userp());
+        GraphPCNode* const ourUserp = static_cast<GraphPCNode*>(vertexp->userp());
         if (checkOnly) {
             UASSERT_OBJ(ourUserp->m_cp[way] == critPathCost, vertexp,
                         "Validation of critical paths failed");
@@ -96,8 +96,8 @@ void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
 
 bool GraphPathChecker::pathExistsInternal(const V3GraphVertex* ap, const V3GraphVertex* bp,
                                           unsigned* costp) {
-    GraphPCNode* auserp = static_cast<GraphPCNode*>(ap->userp());
-    GraphPCNode* buserp = static_cast<GraphPCNode*>(bp->userp());
+    GraphPCNode* const auserp = static_cast<GraphPCNode*>(ap->userp());
+    const GraphPCNode* const buserp = static_cast<GraphPCNode*>(bp->userp());
 
     // If have already searched this node on the current search, don't
     // recurse through it again. Since we're still searching, we must not

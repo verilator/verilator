@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -39,7 +39,7 @@
 
 class UndrivenVarEntry final {
     // MEMBERS
-    AstVar* m_varp;  // Variable this tracks
+    AstVar* const m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
 
@@ -49,9 +49,9 @@ class UndrivenVarEntry final {
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVarEntry(AstVar* varp) {  // Construction for when a var is used
+    explicit UndrivenVarEntry(AstVar* varp)
+        : m_varp(varp) {  // Construction for when a var is used
         UINFO(9, "create " << varp << endl);
-        m_varp = varp;
         m_wholeFlags.resize(FLAGS_PER_BIT);
         for (int i = 0; i < FLAGS_PER_BIT; i++) m_wholeFlags[i] = false;
         m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
@@ -86,8 +86,8 @@ private:
                     msb = bit;
                 }
             } else if (prev) {
-                AstBasicDType* bdtypep = m_varp->basicp();
-                int lsb = bit + 1;
+                const AstBasicDType* const bdtypep = m_varp->basicp();
+                const int lsb = bit + 1;
                 if (bits != "") bits += ",";
                 if (lsb == msb) {
                     bits += cvtToStr(lsb + bdtypep->lo());
@@ -141,14 +141,14 @@ public:
         return isUsedNotDrivenBit(0, m_bitFlags.size() / FLAGS_PER_BIT);
     }
     bool unusedMatch(AstVar* nodep) {
-        string regexp = v3Global.opt.unusedRegexp();
+        const string regexp = v3Global.opt.unusedRegexp();
         if (regexp == "") return false;
-        string prettyName = nodep->prettyName();
+        const string prettyName = nodep->prettyName();
         return VString::wildmatch(prettyName.c_str(), regexp.c_str());
     }
     void reportViolations() {
         // Combine bits into overall state
-        AstVar* nodep = m_varp;
+        AstVar* const nodep = m_varp;
         {
             bool allU = true;
             bool allD = true;
@@ -158,8 +158,8 @@ public:
             bool anyDnotU = false;
             bool anynotDU = false;
             for (unsigned bit = 0; bit < m_bitFlags.size() / FLAGS_PER_BIT; bit++) {
-                bool used = usedFlag(bit);
-                bool driv = drivenFlag(bit);
+                const bool used = usedFlag(bit);
+                const bool driv = drivenFlag(bit);
                 allU &= used;
                 anyU |= used;
                 allD &= driv;
@@ -235,30 +235,31 @@ public:
 //######################################################################
 // Undriven state, as a visitor of each AstNode
 
-class UndrivenVisitor final : public AstNVisitor {
+class UndrivenVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Netlist:
     //  AstVar::user1p          -> UndrivenVar* for usage var, 0=not set yet
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
     // Each always:
     //  AstNode::user2p         -> UndrivenVar* for usage var, 0=not set yet
-    AstUser2InUse m_inuser2;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment
-    AstNodeFTask* m_taskp = nullptr;  // Current task
-    AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
+    bool m_inInoutPin = false;  // Connected to pin that is inout
+    const AstNodeFTask* m_taskp = nullptr;  // Current task
+    const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
         if (!(which_user == 1 ? nodep->user1p() : nodep->user2p())) {
-            UndrivenVarEntry* entryp = new UndrivenVarEntry(nodep);
+            UndrivenVarEntry* const entryp = new UndrivenVarEntry(nodep);
             // UINFO(9," Associate u="<<which_user<<" "<<cvtToHex(this)<<" "<<nodep->name()<<endl);
             m_entryps[which_user].push_back(entryp);
             if (which_user == 1) {
@@ -270,14 +271,14 @@ private:
             }
             return entryp;
         } else {
-            UndrivenVarEntry* entryp = reinterpret_cast<UndrivenVarEntry*>(
+            UndrivenVarEntry* const entryp = reinterpret_cast<UndrivenVarEntry*>(
                 which_user == 1 ? nodep->user1p() : nodep->user2p());
             return entryp;
         }
     }
 
     void warnAlwCombOrder(AstNodeVarRef* nodep) {
-        AstVar* varp = nodep->varp();
+        AstVar* const varp = nodep->varp();
         if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
             && !m_inBBox  // We may have falsely considered a SysIgnore as a driver
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
@@ -297,7 +298,7 @@ private:
             // for module-wide undriven etc.
             // For non-combo always, run both usr==1 for above, and also
             // usr==2 for always-only checks.
-            UndrivenVarEntry* entryp = getEntryp(nodep, usr);
+            UndrivenVarEntry* const entryp = getEntryp(nodep, usr);
             if (nodep->isNonOutput() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->drivenWhole();
@@ -321,12 +322,12 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstSel* nodep) override {
-        AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
-        AstConst* constp = VN_CAST(nodep->lsbp(), Const);
+        AstNodeVarRef* const varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
+        AstConst* const constp = VN_CAST(nodep->lsbp(), Const);
         if (varrefp && constp && !constp->num().isFourState()) {
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
-                UndrivenVarEntry* entryp = getEntryp(varrefp->varp(), usr);
-                int lsb = constp->toUInt();
+                UndrivenVarEntry* const entryp = getEntryp(varrefp->varp(), usr);
+                const int lsb = constp->toUInt();
                 if (m_inBBox || varrefp->access().isWriteOrRW()) {
                     // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
                     if (usr == 2 && m_alwaysCombp
@@ -364,9 +365,9 @@ private:
             }
         }
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
-            UndrivenVarEntry* entryp = getEntryp(nodep->varp(), usr);
-            bool fdrv = nodep->access().isWriteOrRW()
-                        && nodep->varp()->attrFileDescr();  // FD's are also being read from
+            UndrivenVarEntry* const entryp = getEntryp(nodep->varp(), usr);
+            const bool fdrv = nodep->access().isWriteOrRW()
+                              && nodep->varp()->attrFileDescr();  // FD's are also being read from
             if (m_inBBox || nodep->access().isWriteOrRW()) {
                 if (usr == 2 && m_alwaysCombp && entryp->isUsedNotDrivenAny()) {
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
@@ -374,7 +375,13 @@ private:
                 }
                 entryp->drivenWhole();
             }
-            if (m_inBBox || nodep->access().isReadOrRW() || fdrv) entryp->usedWhole();
+            if (m_inBBox || nodep->access().isReadOrRW()
+                || fdrv
+                // Inouts have only isWrite set, as we don't have more
+                // information and operating on module boundry, treat as
+                // both read and writing
+                || m_inInoutPin)
+                entryp->usedWhole();
         }
     }
 
@@ -430,6 +437,11 @@ private:
             iterateChildren(nodep);
         }
     }
+    virtual void visit(AstPin* nodep) override {
+        VL_RESTORER(m_inInoutPin);
+        m_inInoutPin = nodep->modVarp()->isInoutish();
+        iterateChildren(nodep);
+    }
 
     // Until we support tables, primitives will have undriven and unused I/Os
     virtual void visit(AstPrimitive*) override {}
@@ -461,5 +473,5 @@ public:
 
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    UndrivenVisitor visitor(nodep);
+    { UndrivenVisitor{nodep}; }
 }

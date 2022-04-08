@@ -1,0 +1,11 @@
+Verilator Tree Dump (format 0x3900) from <e0> to <e663>
+     NETLIST 0x555556bb6000 <e1#> {a0aa}  $root [1ps/1ps]
+    1: MODULE 0x555556bc0120 <e661#> {d19ai}  t  L2 [1ps]
+    1:2: PORT 0x555556bc60d0 <e8#> {d21ae}  clk
+    1:2: VAR 0x555556bbe180 <e572#> {d23ak} @dt=0@  clk INPUT PORT
+    1:2:1: BASICDTYPE 0x555556bc61a0 <e12#> {d23ak} @dt=this@(nw0)  LOGIC_IMPLICIT kwd=LOGIC_IMPLICIT
+    3: TYPETABLE 0x555556bbc000 <e2#> {a0aa}
+                   logic  -> BASICDTYPE 0x555556c71a00 <e426#> {d55ap} @dt=this@(G/nw1)  logic [GENERIC] kwd=logic
+    3: CONSTPOOL 0x555556bbe000 <e6#> {a0aa}
+    3:1: MODULE 0x555556bc0000 <e4#> {a0aa}  @CONST-POOL@  L0 [NONE]
+    3:1:2: SCOPE 0x555556bb60f0 <e5#> {a0aa}  @CONST-POOL@ [abovep=0] [cellp=0] [modp=0x555556bc0000]

@@ -1,0 +1,13 @@
+%Error: t/t_foreach_type_bad.v:19:18: Illegal to foreach loop on 'CLASSREFDTYPE 'Cls''
+   19 |       foreach (c[i]);   
+      |                  ^
+%Error: t/t_foreach_type_bad.v:21:18: Illegal to foreach loop on basic 'BASICDTYPE 'real''
+   21 |       foreach (r[i]);   
+      |                  ^
+%Error: t/t_foreach_type_bad.v:23:21: Illegal to foreach loop on basic 'BASICDTYPE 'bit''
+   23 |       foreach (b[i, j, k]);   
+      |                     ^
+%Error: t/t_foreach_type_bad.v:25:18: Illegal to foreach loop on basic 'BASICDTYPE 'real''
+   25 |       foreach (r[, i]);   
+      |                  ^
+%Error: Exiting due to

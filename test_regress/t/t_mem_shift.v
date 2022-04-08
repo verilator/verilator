@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    reg [63:0] crc;
 
    integer 		i;
@@ -34,9 +34,9 @@ module t (/*AUTOARG*/
    wire [63:0] outData = mem[7];
 
    always @ (posedge clk) begin
-      //$write("[%0t] cyc==%0d crc=%b q=%x\n",$time, cyc, crc, outData);
+      //$write("[%0t] cyc==%0d crc=%b q=%x\n", $time, cyc, crc, outData);
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       if (cyc==0) begin
 	 // Setup
 	 crc <= 64'h5aef0c8d_d70a4497;

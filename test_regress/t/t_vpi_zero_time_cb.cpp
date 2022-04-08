@@ -108,7 +108,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
+    uint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
@@ -136,7 +136,7 @@ int main(int argc, char** argv, char** env) {
         void* lib = dlopen(filenamep, RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
         if (!bootstrap) {
-            std::string msg = std::string("%Error: Could not dlopen ") + filenamep;
+            const std::string msg = std::string("%Error: Could not dlopen ") + filenamep;
             vl_fatal(__FILE__, __LINE__, "main", msg.c_str());
         }
         ((void (*)(void))bootstrap)();

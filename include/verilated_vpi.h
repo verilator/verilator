@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2022 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,7 +47,7 @@ public:
     static bool callValueCbs() VL_MT_UNSAFE_ONE;
     /// Call callbacks of arbitrary types.
     /// User wrapper code should call this from their main loops.
-    static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE;
+    static bool callCbs(const uint32_t reason) VL_MT_UNSAFE_ONE;
     /// Returns time of the next registered VPI callback, or
     /// ~(0ULL) if none are registered
     static QData cbNextDeadline() VL_MT_UNSAFE_ONE;

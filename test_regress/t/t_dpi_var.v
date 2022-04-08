@@ -12,7 +12,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
 
    wire    monclk = ~clk;
 
@@ -25,7 +25,7 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d in=%x fr_a=%x b=%x fr_chk=%x\n",$time, cyc, in, fr_a, fr_b, fr_chk);
+      $write("[%0t] cyc==%0d in=%x fr_a=%x b=%x fr_chk=%x\n", $time, cyc, in, fr_a, fr_b, fr_chk);
 `endif
       cyc <= cyc + 1;
       in <= {in[30:0], in[31]^in[2]^in[0]};
@@ -91,8 +91,8 @@ module sub (/*AUTOARG*/
       $c("mon_class_name(this->name());");
       mon_scope_name("%m");
       // Scheme A - pass pointer directly
-      $c("mon_register_a(\"in\",&",in,",false);");
-      $c("mon_register_a(\"fr_a\",&",fr_a,",true);");
+      $c("mon_register_a(\"in\", &", in, ", false);");
+      $c("mon_register_a(\"fr_a\", &", fr_a, ", true);");
       // Scheme B - use VPIish callbacks to see what signals exist
       mon_register_b("in", 0);
       mon_register_b("fr_b", 1);

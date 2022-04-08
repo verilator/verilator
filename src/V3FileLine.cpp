@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -37,7 +37,8 @@
 // FileLineSingleton class functions
 
 string FileLineSingleton::filenameLetters(int fileno) {
-    const int size = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
+    constexpr int size
+        = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];
     char* op = out + size - 1;
     *--op = '\0';  // We build backwards
@@ -60,7 +61,7 @@ string FileLineSingleton::filenameLetters(int fileno) {
 int FileLineSingleton::nameToNumber(const string& filename) {
     const auto it = vlstd::as_const(m_namemap).find(filename);
     if (VL_LIKELY(it != m_namemap.end())) return it->second;
-    int num = m_names.size();
+    const int num = m_names.size();
     m_names.push_back(filename);
     m_languages.push_back(V3LangCode::mostRecent());
     m_namemap.emplace(filename, num);
@@ -95,15 +96,15 @@ void VFileContent::pushText(const string& text) {
     }
 
     // Any leftover text is stored on largest line (might be "")
-    string leftover = m_lines.back() + text;
+    const string leftover = m_lines.back() + text;
     m_lines.pop_back();
 
     // Insert line-by-line
     string::size_type line_start = 0;
     while (true) {
-        string::size_type line_end = leftover.find('\n', line_start);
+        const string::size_type line_end = leftover.find('\n', line_start);
         if (line_end != string::npos) {
-            string oneline(leftover, line_start, line_end - line_start + 1);
+            const string oneline(leftover, line_start, line_end - line_start + 1);
             m_lines.push_back(oneline);  // Keeps newline
             UINFO(9, "PushStream[ct" << m_id << "+" << (m_lines.size() - 1) << "]: " << oneline);
             line_start = line_end + 1;
@@ -125,7 +126,7 @@ string VFileContent::getLine(int lineno) const {
             return "";
         }
     }
-    string text = m_lines[lineno];
+    const string text = m_lines[lineno];
     UINFO(9, "Get Stream[ct" << m_id << "+" << lineno << "]: " << text);
     return text;
 }
@@ -148,7 +149,7 @@ FileLine::FileLine(FileLine::EmptySecret) {
 
     m_warnOn = 0;
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code = V3ErrorCode(codei);
         warnOff(code, code.defaultsOff());
     }
 }
@@ -181,7 +182,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
 
     // Grab linenumber
     bool fail = false;
-    const char* ln = textp;
+    const char* const ln = textp;
     while (*textp && !isspace(*textp)) textp++;
     if (isdigit(*ln)) {
         lineno(atoi(ln));
@@ -193,7 +194,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     while (*textp && (isspace(*textp) || *textp == '"')) textp++;
 
     // Grab filename
-    const char* fn = textp;
+    const char* const fn = textp;
     while (*textp && !(isspace(*textp) || *textp == '"')) textp++;
     if (textp != fn) {
         string strfn = fn;
@@ -244,7 +245,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
         return lastNewp;
     }
-    FileLine* newp = new FileLine(this);
+    FileLine* const newp = new FileLine(this);
     lastNewp = newp;
     return newp;
 }
@@ -264,8 +265,8 @@ string FileLine::filebasenameNoExt() const {
 }
 
 string FileLine::firstColumnLetters() const {
-    char a = ((firstColumn() / 26) % 26) + 'a';
-    char b = (firstColumn() % 26) + 'a';
+    const char a = ((firstColumn() / 26) % 26) + 'a';
+    const char b = (firstColumn() % 26) + 'a';
     return string(1, a) + string(1, b);
 }
 
@@ -297,7 +298,7 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
 }
 
 bool FileLine::warnOff(const string& msg, bool flag) {
-    V3ErrorCode code(msg.c_str());
+    const V3ErrorCode code(msg.c_str());
     if (code < V3ErrorCode::EC_FIRST_WARN) {
         return false;
     } else {
@@ -308,14 +309,14 @@ bool FileLine::warnOff(const string& msg, bool flag) {
 
 void FileLine::warnLintOff(bool flag) {
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code = V3ErrorCode(codei);
         if (code.lintError()) warnOff(code, flag);
     }
 }
 
 void FileLine::warnStyleOff(bool flag) {
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code = V3ErrorCode(codei);
         if (code.styleError()) warnOff(code, flag);
     }
 }
@@ -334,7 +335,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code = V3ErrorCode(codei);
         if (fromp->warnIsOff(code)) warnOff(code, true);
     }
 }
@@ -388,7 +389,7 @@ string FileLine::source() const {
 string FileLine::prettySource() const {
     string out = source();
     // Drop ignore trailing newline
-    string::size_type pos = out.find('\n');
+    const string::size_type pos = out.find('\n');
     if (pos != string::npos) out = string(out, 0, pos);
     // Column tracking counts tabs = 1, so match that when print source
     return VString::spaceUnprintable(out);
@@ -399,7 +400,7 @@ string FileLine::warnContext(bool secondary) const {
     if (!v3Global.opt.context()) return "";
     string out;
     if (firstLineno() == lastLineno() && firstColumn()) {
-        string sourceLine = prettySource();
+        const string sourceLine = prettySource();
         // Don't show super-long lines as can fill screen and unlikely to help user
         if (!sourceLine.empty() && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
             && sourceLine.length() >= static_cast<size_t>(lastColumn() - 1)) {
@@ -430,14 +431,14 @@ string FileLine::warnContext(bool secondary) const {
 std::unordered_set<FileLine*> fileLineLeakChecks;
 
 void* FileLine::operator new(size_t size) {
-    FileLine* objp = static_cast<FileLine*>(::operator new(size));
+    FileLine* const objp = static_cast<FileLine*>(::operator new(size));
     fileLineLeakChecks.insert(objp);
     return objp;
 }
 
 void FileLine::operator delete(void* objp, size_t size) {
     if (!objp) return;
-    FileLine* flp = static_cast<FileLine*>(objp);
+    FileLine* const flp = static_cast<FileLine*>(objp);
     const auto it = fileLineLeakChecks.find(flp);
     if (it != fileLineLeakChecks.end()) {
         fileLineLeakChecks.erase(it);

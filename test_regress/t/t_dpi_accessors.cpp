@@ -201,7 +201,7 @@ int main() {
         logReg(dut->clk, "read c", c, " (after clk)");
         // "c" is continuously assigned as the inverse of "a", but in
         // Verilator, that means that it will only change value when "a"
-        // changes on the posedge of a clock. Put simply, "c" always holds the
+        // changes on the posedge of a clock. That is "c" always holds the
         // inverse of the "after clock" value of "a".
         checkResult(c == (1 - a), "Test of scalar wire reading failed.");
     }
@@ -231,7 +231,7 @@ int main() {
 
         // "d" is continuously assigned as the (8-bit) bitwise inverse of "b",
         // but in Verilator, that means that it will only change value when
-        // "b" changes on the posedge of a clock. Put simply, "d" always holds
+        // "b" changes on the posedge of a clock. That is "d" always holds
         // the inverse of the "after clock" value of "b".
         checkResult(d == ((~b) & 0xff), "Test of vector wire reading failed.");
     }

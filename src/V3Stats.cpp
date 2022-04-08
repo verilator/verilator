@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,25 +30,25 @@
 //######################################################################
 // Stats class functions
 
-class StatsVisitor final : public AstNVisitor {
+class StatsVisitor final : public VNVisitor {
 private:
     // NODE STATE/TYPES
 
     using NameMap = std::map<const std::string, int>;  // Number of times a name appears
 
     // STATE
-    string m_stage;  // Name of the stage we are scanning
+    const string m_stage;  // Name of the stage we are scanning
     /// m_fast = true:  Counting only critical branch of fastpath
     /// m_fast = false:  Counting every node, ignoring structure of program
-    bool m_fast;
+    const bool m_fast;
 
-    AstCFunc* m_cfuncp;  // Current CFUNC
+    const AstCFunc* m_cfuncp;  // Current CFUNC
     bool m_counting;  // Currently counting
     double m_instrs;  // Current instr count (for determining branch direction)
     bool m_tracingCall;  // Iterating into a CCall to a CFunc
 
     std::vector<VDouble0> m_statTypeCount;  // Nodes of given type
-    VDouble0 m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];  // Nodes of given type
+    VDouble0 m_statAbove[VNType::_ENUM_END][VNType::_ENUM_END];  // Nodes of given type
     std::array<VDouble0, VBranchPred::_ENUM_END> m_statPred;  // Nodes of given type
     VDouble0 m_statInstr;  // Instruction count
     VDouble0 m_statInstrFast;  // Instruction count, non-slow() eval functions only
@@ -99,7 +99,7 @@ private:
                 if (v3Global.opt.statsVars()) m_statVarWidthNames.resize(nodep->width() + 5);
             }
             ++m_statVarWidths.at(nodep->width());
-            string pn = nodep->prettyName();
+            const string pn = nodep->prettyName();
             if (v3Global.opt.statsVars()) {
                 NameMap& nameMapr = m_statVarWidthNames.at(nodep->width());
                 if (nameMapr.find(pn) != nameMapr.end()) {
@@ -214,7 +214,7 @@ public:
         m_instrs = 0;
         m_tracingCall = false;
         // Initialize arrays
-        m_statTypeCount.resize(AstType::_ENUM_END);
+        m_statTypeCount.resize(VNType::_ENUM_END);
         // Process
         iterate(nodep);
     }
@@ -230,10 +230,10 @@ public:
             V3Stats::addStat(m_stage, "Var space, scoped, bytes", m_statVarScpBytes);
         }
         for (unsigned i = 0; i < m_statVarWidths.size(); i++) {
-            double count = double(m_statVarWidths.at(i));
+            const double count = double(m_statVarWidths.at(i));
             if (count != 0.0) {
                 if (v3Global.opt.statsVars()) {
-                    NameMap& nameMapr = m_statVarWidthNames.at(i);
+                    const NameMap& nameMapr = m_statVarWidthNames.at(i);
                     for (const auto& itr : nameMapr) {
                         std::ostringstream os;
                         os << "Vars, width " << std::setw(5) << std::dec << i << " " << itr.first;
@@ -247,26 +247,26 @@ public:
             }
         }
         // Node types
-        for (int type = 0; type < AstType::_ENUM_END; type++) {
-            double count = double(m_statTypeCount.at(type));
+        for (int type = 0; type < VNType::_ENUM_END; type++) {
+            const double count = double(m_statTypeCount.at(type));
             if (count != 0.0) {
-                V3Stats::addStat(m_stage, string("Node count, ") + AstType(type).ascii(), count);
+                V3Stats::addStat(m_stage, string("Node count, ") + VNType(type).ascii(), count);
             }
         }
-        for (int type = 0; type < AstType::_ENUM_END; type++) {
-            for (int type2 = 0; type2 < AstType::_ENUM_END; type2++) {
-                double count = double(m_statAbove[type][type2]);
+        for (int type = 0; type < VNType::_ENUM_END; type++) {
+            for (int type2 = 0; type2 < VNType::_ENUM_END; type2++) {
+                const double count = double(m_statAbove[type][type2]);
                 if (count != 0.0) {
                     V3Stats::addStat(m_stage,
-                                     (string("Node pairs, ") + AstType(type).ascii() + "_"
-                                      + AstType(type2).ascii()),
+                                     (string("Node pairs, ") + VNType(type).ascii() + "_"
+                                      + VNType(type2).ascii()),
                                      count);
                 }
             }
         }
         // Branch pred
         for (int type = 0; type < VBranchPred::_ENUM_END; type++) {
-            double count = double(m_statPred[type]);
+            const double count = double(m_statPred[type]);
             if (count != 0.0) {
                 V3Stats::addStat(
                     m_stage, (string("Branch prediction, ") + VBranchPred(type).ascii()), count);
@@ -279,7 +279,7 @@ public:
 // Top Stats class
 
 void V3Stats::statsStageAll(AstNetlist* nodep, const string& stage, bool fast) {
-    StatsVisitor visitor(nodep, stage, fast);
+    { StatsVisitor{nodep, stage, fast}; }
 }
 
 void V3Stats::statsFinalAll(AstNetlist* nodep) {

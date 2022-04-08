@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,17 +30,17 @@
 //######################################################################
 // Name state, as a visitor of each AstNode
 
-class NameVisitor final : public AstNVisitor {
+class NameVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
     //  AstCell::user1()        -> bool.  Set true if already processed
     //  AstScope::user1()       -> bool.  Set true if already processed
     //  AstVar::user1()         -> bool.  Set true if already processed
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule* m_modp = nullptr;
+    const AstNodeModule* m_modp = nullptr;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -48,16 +48,16 @@ private:
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
             if (addPvt) {
-                string newname = string("__PVT__") + nodep->name();
+                const string newname = string("__PVT__") + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
-            } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
+            } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
             } else {
-                string rsvd = V3LanguageWords::isKeyword(nodep->name());
+                const string rsvd = V3LanguageWords::isKeyword(nodep->name());
                 if (rsvd != "") {
                     nodep->v3warn(SYMRSVDWORD,
                                   "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
-                    string newname = string("__SYM__") + nodep->name();
+                    const string newname = string("__SYM__") + nodep->name();
                     nodep->name(newname);
                     nodep->editCountInc();
                 }
@@ -142,6 +142,6 @@ public:
 
 void V3Name::nameAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { NameVisitor visitor(nodep); }  // Destruct before checking
+    { NameVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("name", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

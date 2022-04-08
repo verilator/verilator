@@ -12,13 +12,13 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
    reg [63:0] crc= 64'h5aef0c8d_d70a4497;
    reg [63:0] prev_crc;
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
 
       prev_crc <= crc;
       if (cyc==99) begin

@@ -248,7 +248,7 @@ static int register_test_callback() {
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 100;
+    uint64_t sim_time = 100;
     bool cbs_called;
     Verilated::commandArgs(argc, argv);
 

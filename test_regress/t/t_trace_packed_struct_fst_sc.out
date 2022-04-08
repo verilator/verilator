@@ -1,5 +1,5 @@
 $date
-	Thu Apr  1 15:33:45 2021
+	Wed Feb 23 00:02:49 2022
 
 $end
 $version
@@ -11,10 +11,10 @@ $end
 $scope module top $end
 $scope module t $end
 $var wire 1 ! clk $end
-$var int 32 " cnt $end
-$var parameter 96 # v(0) $end
-$var parameter 96 $ v(1) $end
-$var parameter 96 % v(2) $end
+$var int 32 " cnt [31:0] $end
+$var parameter 96 # v[0] [95:0] $end
+$var parameter 96 $ v[1] [95:0] $end
+$var parameter 96 % v[2] [95:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end

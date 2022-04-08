@@ -15,13 +15,22 @@
 
 //======================================================================
 
+#ifdef VERILATOR
 #include "Vt_dpi_qw__Dpi.h"
+#else
+extern "C" {
+extern void set_value(const svBitVecVal* v);
+extern void poke_value(int i);
+}
+#endif
 
 //======================================================================
 
 // Called from our Verilog code to run the tests
 void poke_value(int i) {
     printf("poke_value(%d)\n", i);
+    const char* const scopeNamep = svGetNameFromScope(svGetScope());
+    printf("svGetNameFromScope=\"%s\"\n", scopeNamep);
 
 // clang-format off
 #ifdef VERILATOR
@@ -34,7 +43,7 @@ void poke_value(int i) {
 #endif
     // clang-format on
 
-    svScope scope = svGetScopeFromName("top.t.a");
+    const svScope scope = svGetScopeFromName("top.t.a");
     if (scope == NULL) {
         printf("%%Error: null scope for top.t.a\n");
         return;

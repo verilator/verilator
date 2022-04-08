@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -57,7 +57,7 @@ public:
     static void unlinkRegexp(const string& dir, const string& regexp);
 
     // METHODS (random)
-    static vluint64_t rand64(std::array<vluint64_t, 2>& stater);
+    static uint64_t rand64(std::array<uint64_t, 2>& stater);
     static string trueRandom(size_t size);
 
     // METHODS (time & performance)

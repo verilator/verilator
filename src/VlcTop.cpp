@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -21,34 +21,36 @@
 
 #include <algorithm>
 #include <fstream>
+#include <string>
+#include <vector>
 
 //######################################################################
 
 void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     UINFO(2, "readCoverage " << filename << endl);
 
-    std::ifstream is(filename.c_str());
+    std::ifstream is{filename.c_str()};
     if (!is) {
         if (!nonfatal) v3fatal("Can't read " << filename);
         return;
     }
 
     // Testrun and computrons argument unsupported as yet
-    VlcTest* testp = tests().newTest(filename, 0, 0);
+    VlcTest* const testp = tests().newTest(filename, 0, 0);
 
     while (!is.eof()) {
-        string line = V3Os::getline(is);
+        const string line = V3Os::getline(is);
         // UINFO(9," got "<<line<<endl);
         if (line[0] == 'C') {
             string::size_type secspace = 3;
             for (; secspace < line.length(); secspace++) {
                 if (line[secspace] == '\'' && line[secspace + 1] == ' ') break;
             }
-            string point = line.substr(3, secspace - 3);
-            vluint64_t hits = std::atoll(line.c_str() + secspace + 1);
+            const string point = line.substr(3, secspace - 3);
+            uint64_t hits = std::atoll(line.c_str() + secspace + 1);
             // UINFO(9,"   point '"<<point<<"'"<<" "<<hits<<endl);
 
-            vluint64_t pointnum = points().findAddPoint(point, hits);
+            uint64_t pointnum = points().findAddPoint(point, hits);
             if (pointnum) {}  // Prevent unused
             if (opt.rank()) {  // Only if ranking - uses a lot of memory
                 if (hits >= VlcBuckets::sufficient()) {
@@ -63,7 +65,7 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
 void VlcTop::writeCoverage(const string& filename) {
     UINFO(2, "writeCoverage " << filename << endl);
 
-    std::ofstream os(filename.c_str());
+    std::ofstream os{filename.c_str()};
     if (!os) {
         v3fatal("Can't write " << filename);
         return;
@@ -79,7 +81,7 @@ void VlcTop::writeCoverage(const string& filename) {
 void VlcTop::writeInfo(const string& filename) {
     UINFO(2, "writeInfo " << filename << endl);
 
-    std::ofstream os(filename.c_str());
+    std::ofstream os{filename.c_str()};
     if (!os) {
         v3fatal("Can't write " << filename);
         return;
@@ -112,10 +114,10 @@ void VlcTop::writeInfo(const string& filename) {
         os << "SF:" << source.name() << '\n';
         VlcSource::LinenoMap& lines = source.lines();
         for (auto& li : lines) {
-            int lineno = li.first;
+            const int lineno = li.first;
             VlcSource::ColumnMap& cmap = li.second;
             bool first = true;
-            vluint64_t min_count = 0;  // Minimum across all columns on line
+            uint64_t min_count = 0;  // Minimum across all columns on line
             for (auto& ci : cmap) {
                 VlcSourceCount& col = ci.second;
                 if (first) {
@@ -144,7 +146,7 @@ struct CmpComputrons {
 
 void VlcTop::rank() {
     UINFO(2, "rank...\n");
-    vluint64_t nextrank = 1;
+    uint64_t nextrank = 1;
 
     // Sort by computrons, so fast tests get selected first
     std::vector<VlcTest*> bytime;
@@ -157,7 +159,7 @@ void VlcTop::rank() {
 
     VlcBuckets remaining;
     for (const auto& i : m_points) {
-        VlcPoint* pointp = &points().pointNumber(i.second);
+        const VlcPoint* const pointp = &points().pointNumber(i.second);
         // If any tests hit this point, then we'll need to cover it.
         if (pointp->testsCovering()) remaining.addData(pointp->pointNum(), 1);
     }
@@ -172,17 +174,17 @@ void VlcTop::rank() {
             remaining.dump();  // LCOV_EXCL_LINE
         }
         VlcTest* bestTestp = nullptr;
-        vluint64_t bestRemain = 0;
+        uint64_t bestRemain = 0;
         for (const auto& testp : bytime) {
             if (!testp->rank()) {
-                vluint64_t remain = testp->buckets().dataPopCount(remaining);
+                uint64_t remain = testp->buckets().dataPopCount(remaining);
                 if (remain > bestRemain) {
                     bestTestp = testp;
                     bestRemain = remain;
                 }
             }
         }
-        if (VlcTest* testp = bestTestp) {
+        if (VlcTest* const testp = bestTestp) {
             testp->rank(nextrank++);
             testp->rankPoints(bestRemain);
             remaining.orData(bestTestp->buckets());
@@ -198,14 +200,14 @@ void VlcTop::annotateCalc() {
     // Calculate per-line information into filedata structure
     for (const auto& i : m_points) {
         const VlcPoint& point = m_points.pointNumber(i.second);
-        string filename = point.filename();
-        int lineno = point.lineno();
+        const string filename = point.filename();
+        const int lineno = point.lineno();
         if (!filename.empty() && lineno != 0) {
             VlcSource& source = sources().findNewSource(filename);
-            string threshStr = point.thresh();
+            const string threshStr = point.thresh();
             unsigned thresh
                 = (!threshStr.empty()) ? std::atoi(threshStr.c_str()) : opt.annotateMin();
-            bool ok = (point.count() >= thresh);
+            const bool ok = (point.count() >= thresh);
             UINFO(9, "AnnoCalc count " << filename << ":" << lineno << ":" << point.column() << " "
                                        << point.count() << " " << point.linescov() << '\n');
             // Base coverage
@@ -214,7 +216,7 @@ void VlcTop::annotateCalc() {
             bool range = false;
             int start = 0;
             int end = 0;
-            string linescov = point.linescov();
+            const string linescov = point.linescov();
             for (const char* covp = linescov.c_str(); true; ++covp) {
                 if (!*covp || *covp == ',') {  // Ending
                     for (int lni = start; start && lni <= end; ++lni) {
@@ -227,7 +229,7 @@ void VlcTop::annotateCalc() {
                 } else if (*covp == '-') {
                     range = true;
                 } else if (std::isdigit(*covp)) {
-                    const char* digitsp = covp;
+                    const char* const digitsp = covp;
                     while (std::isdigit(*covp)) ++covp;
                     --covp;  // Will inc in for loop
                     if (!range) start = std::atoi(digitsp);
@@ -262,7 +264,7 @@ void VlcTop::annotateCalcNeeded() {
             }
         }
     }
-    float pct = totCases ? (100 * totOk / totCases) : 0;
+    const float pct = totCases ? (100 * totOk / totCases) : 0;
     cout << "Total coverage (" << totOk << "/" << totCases << ") ";
     cout << std::fixed << std::setw(3) << std::setprecision(2) << pct << "%\n";
     if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
@@ -274,18 +276,18 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
     for (auto& si : m_sources) {
         VlcSource& source = si.second;
         if (!source.needed()) continue;
-        string filename = source.name();
-        string outfilename = dirname + "/" + V3Os::filenameNonDir(filename);
+        const string filename = source.name();
+        const string outfilename = dirname + "/" + V3Os::filenameNonDir(filename);
 
         UINFO(1, "annotateOutputFile " << filename << " -> " << outfilename << endl);
 
-        std::ifstream is(filename.c_str());
+        std::ifstream is{filename.c_str()};
         if (!is) {
             v3error("Can't read " << filename);
             return;
         }
 
-        std::ofstream os(outfilename.c_str());
+        std::ofstream os{outfilename.c_str()};
         if (!os) {
             v3fatal("Can't write " << outfilename);
             return;

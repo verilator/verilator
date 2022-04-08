@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 *******************
@@ -47,6 +47,14 @@ or "`ifdef`"'s may break other tools.
    ::code:`$c("func(",a,")")`.  This will allow the call to work inside
    Verilog functions where the variable is flattened out, and also enable
    other optimizations.
+
+   Verilator does not use any text inside the quotes for
+   ordering/scheduling.  If you need the $c to be called at a specific
+   time, e.g. when a variable changes, then the $c must be under an
+   appropriate sensitivity statement, e.g. :code:`always @(posedge clk)
+   $c("func()")` to call it on every edge, or e.g. :code:`always @*
+   c("func(",a,")")` to call it when :code:`a` changes (the latter working
+   because :code:`a` is outside the quotes).
 
    If you will be reading or writing any Verilog variables inside the C++
    functions, the Verilog signals must be declared with
@@ -176,10 +184,9 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;no_clocker*/
 
-   Used after a signal declaration to indicate the signal is used as clock
-   or not. This information is used by Verilator to mark the signal as
-   clocker and propagate the clocker attribute automatically to derived
-   signals. See :vlopt:`--clk`.
+   Specifies that the signal is used as clock or not. This information is
+   used by Verilator to mark the signal and any derived signals as
+   clocker.  See :vlopt:`--clk`.
 
    Same as :option:`clocker` and :option:`no_clocker` in configuration
    files.
@@ -202,6 +209,20 @@ or "`ifdef`"'s may break other tools.
    (if appropriate :vlopt:`--coverage` flags are passed) after being
    disabled earlier with :option:`/*verilator&32;coverage_off*/`.
 
+.. option:: /*verilator&32;forceable*/
+
+   Specifies that the signal (net or variable) should be made forceable from
+   C++ code by generating public `<signame>__VforceEn` and
+   `<signame>__VforceVal` signals The force control signals are created as
+   :option:`public_flat` signals.
+
+   To force a marked signal from C++, set the corresponding `__VforceVal`
+   variable to the desired value, and the `__VforceEn` signal to the bitmask
+   indicating which bits of the signal to force. To force all bits of the
+   target signal, set `__VforceEn` to all ones. To release the signal (or part
+   thereof), set appropriate bits of the `__VforceEn` signal to zero.
+
+   Same as :option:`forceable` in configuration  files.
 
 .. _verilator_hier_block:
 
@@ -424,7 +445,7 @@ or "`ifdef`"'s may break other tools.
 .. option:: /*verilator&32;sc_bv*/
 
    Used after a port declaration.  It sets the port to be of
-   :code:`sc_bv<{width}>` type, instead of bool, vluint32_t or vluint64_t.
+   :code:`sc_bv<{width}>` type, instead of bool, uint32_t or uint64_t.
    This may be useful if the port width is parameterized and the
    instantiating C++ code wants to always have a sc_bv so it can accept any
    width.  In general you should avoid using this attribute when not
@@ -481,6 +502,13 @@ or "`ifdef`"'s may break other tools.
    Attached after a variable or structure member to indicate opaque (to
    Verilator) text that should be passed through to the XML output as a tag,
    for use by downstream applications.
+
+.. option:: /*verilator&32;trace_init_task*/
+
+   Attached to a DPI import to indicate that function should be called when
+   initializing tracing. This attribute is indented only to be used
+   internally in code that Verilator generates when :vlopt:`--lib-create`
+   or :vlopt:`--hierarchical` is used along with :vlopt:`--trace`.
 
 .. option:: /*verilator&32;tracing_off*/
 

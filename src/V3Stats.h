@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -24,12 +24,6 @@
 
 class AstNetlist;
 
-#define STAT_ADD_UINFO(level, text, value) \
-    do { \
-        UINFO((level), "addStat " << text << " " << value << endl); \
-        V3Stats::addStat(text, value); \
-    } while (0)
-
 //============================================================================
 
 class VDouble0 final {
@@ -41,7 +35,7 @@ public:
     ~VDouble0() = default;
 
     // Implicit conversion operators:
-    explicit VDouble0(const vluint64_t v)
+    explicit VDouble0(const uint64_t v)
         : m_d{static_cast<double>(v)} {}
     operator double() const { return m_d; }
 
@@ -73,11 +67,11 @@ public:
 
 class V3Statistic final {
     // A statistical entry we want published into the database
-    string m_name;  ///< Nameiption of this statistic
+    const string m_name;  ///< Name of this statistic
     double m_count;  ///< Count of occurrences/ value
-    string m_stage;  ///< Runtime stage
-    bool m_sumit;  ///< Do summation of similar stats
-    bool m_perf;  ///< Performance section
+    const string m_stage;  ///< Runtime stage
+    const bool m_sumit;  ///< Do summation of similar stats
+    const bool m_perf;  ///< Performance section
     bool m_printit = true;  ///< Print the results
 public:
     // METHODS

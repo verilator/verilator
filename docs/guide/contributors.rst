@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ************************
@@ -13,7 +13,8 @@ When possible, please instead report bugs at `Verilator Issues
 
 Primary author is Wilson Snyder <wsnyder@wsnyder.org>.
 
-Major concepts by Paul Wasson, Duane Galbi, John Coiner and Jie Xu.
+Major concepts by Paul Wasson, Duane Galbi, John Coiner, Geza Lore, Yutetsu
+Takatsukasa, and Jie Xu.
 
 
 Contributors

@@ -36,7 +36,7 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       i = $cast(en, cyc);
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d i=%0d en=%0d\n",$time, cyc, i, en);
+      $write("[%0t] cyc==%0d i=%0d en=%0d\n", $time, cyc, i, en);
 `endif
       cyc <= cyc + 1;
       if (cyc == 10) begin

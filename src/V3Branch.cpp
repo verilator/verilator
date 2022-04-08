@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -35,16 +35,16 @@
 //######################################################################
 // Branch state, as a visitor of each AstNode
 
-class BranchVisitor final : public AstNVisitor {
+class BranchVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     //  AstFTask::user1()       -> int.  Number of references
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
     // STATE
-    int m_likely;  // Excuses for branch likely taken
-    int m_unlikely;  // Excuses for branch likely not taken
+    int m_likely = false;  // Excuses for branch likely taken
+    int m_unlikely = false;  // Excuses for branch likely not taken
     std::vector<AstCFunc*> m_cfuncsp;  // List of all tasks
 
     // METHODS
@@ -70,15 +70,15 @@ private:
             // Do if
             reset();
             iterateAndNextNull(nodep->ifsp());
-            int ifLikely = m_likely;
-            int ifUnlikely = m_unlikely;
+            const int ifLikely = m_likely;
+            const int ifUnlikely = m_unlikely;
             // Do else
             reset();
             iterateAndNextNull(nodep->elsesp());
-            int elseLikely = m_likely;
-            int elseUnlikely = m_unlikely;
+            const int elseLikely = m_likely;
+            const int elseUnlikely = m_unlikely;
             // Compute
-            int likeness = ifLikely - ifUnlikely - (elseLikely - elseUnlikely);
+            const int likeness = ifLikely - ifUnlikely - (elseLikely - elseUnlikely);
             if (likeness > 0) {
                 nodep->branchPred(VBranchPred::BP_LIKELY);
             } else if (likeness < 0) {
@@ -123,5 +123,5 @@ public:
 
 void V3Branch::branchAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    BranchVisitor visitor(nodep);
+    { BranchVisitor{nodep}; }
 }

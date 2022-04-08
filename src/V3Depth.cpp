@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,21 +29,23 @@
 #include "V3Global.h"
 #include "V3Depth.h"
 #include "V3Ast.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 
 //######################################################################
 
-class DepthVisitor final : public AstNVisitor {
+class DepthVisitor final : public VNVisitor {
 private:
     // NODE STATE
 
     // STATE
-    AstNodeModule* m_modp = nullptr;  // Current module
     AstCFunc* m_cfuncp = nullptr;  // Current block
+    AstMTaskBody* m_mtaskbodyp = nullptr;  // Current mtaskbody
     AstNode* m_stmtp = nullptr;  // Current statement
     int m_depth = 0;  // How deep in an expression
     int m_maxdepth = 0;  // Maximum depth in an expression
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -51,40 +53,49 @@ private:
     void createDeepTemp(AstNode* nodep) {
         UINFO(6, "  Deep  " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
-
-        string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
-        AstVar* varp
-            = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep());
-        UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
-        m_cfuncp->addInitsp(varp);
+        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
+                                        m_tempNames.get(nodep), nodep->dtypep()};
+        if (m_cfuncp) {
+            m_cfuncp->addInitsp(varp);
+        } else if (m_mtaskbodyp) {
+            m_mtaskbodyp->addStmtsFirstp(varp);
+        } else {
+            nodep->v3fatalSrc("Deep expression not under a function");
+        }
         // Replace node tree with reference to var
-        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
+        AstVarRef* const newp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
         nodep->replaceWith(newp);
         // Put assignment before the referencing statement
-        AstAssign* assp = new AstAssign(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), nodep);
-        AstNRelinker linker2;
+        AstAssign* const assp = new AstAssign{
+            nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, nodep};
+        VNRelinker linker2;
         m_stmtp->unlinkFrBack(&linker2);
         assp->addNext(m_stmtp);
         linker2.relink(assp);
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
-        UINFO(4, " MOD   " << nodep << endl);
-        VL_RESTORER(m_modp);
+    virtual void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_mtaskbodyp);
         {
-            m_modp = nodep;
-            m_cfuncp = nullptr;
+            m_cfuncp = nodep;
+            m_mtaskbodyp = nullptr;
+            m_depth = 0;
+            m_maxdepth = 0;
+            m_tempNames.reset();
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstCFunc* nodep) override {
+    virtual void visit(AstMTaskBody* nodep) override {
         VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_mtaskbodyp);
         {
-            m_cfuncp = nodep;
+            m_cfuncp = nullptr;
+            m_mtaskbodyp = nodep;
             m_depth = 0;
             m_maxdepth = 0;
+            // We don't reset the names, as must share across tasks
             iterateChildren(nodep);
         }
     }
@@ -149,7 +160,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit DepthVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit DepthVisitor(AstNetlist* nodep)
+        : m_tempNames{"__Vdeeptemp"} {
+        iterate(nodep);
+    }
     virtual ~DepthVisitor() override = default;
 };
 
@@ -158,6 +172,6 @@ public:
 
 void V3Depth::depthAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DepthVisitor visitor(nodep); }  // Destruct before checking
+    { DepthVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("depth", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
