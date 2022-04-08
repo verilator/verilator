@@ -275,8 +275,6 @@ public:
     }
 };
 
-
-
 class StorageCountVisitor final : public AstNVisitor {
 private:
     // NODE STATE/TYPES
@@ -301,7 +299,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        AstNode::user1ClearTree(); // Start a fresh count for each module instance
+        AstNode::user1ClearTree();  // Start a fresh count for each module instance
         m_potentialRams.clear();
         iterateChildrenConst(nodep);
         for (const auto& nodep : m_potentialRams) {
@@ -309,9 +307,10 @@ private:
             AstVarScope* varScopep = nodep->varScopep();
             int depth = varp->dtypep()->arrayUnpackedElements();
             int bits = depth * varp->width();
-            if (varScopep->user1() <= 2) { // Single or double assignment
+            if (varScopep->user1() <= 2) {  // Single or double assignment
                 std::ostringstream os;
-                os << "RAMs, " << varScopep->prettyName() << " (" << depth << "x" << varp->width() << ")";
+                os << "RAMs, " << varScopep->prettyName() << " (" << depth << "x" << varp->width()
+                   << ")";
                 V3Stats::addStat(os.str(), bits);
                 ++m_memoryCount;
                 m_memoryBitCount += bits;
@@ -328,8 +327,9 @@ private:
     virtual void visit(AstVarRef* nodep) {
         AstVar* varp = nodep->varp();
         AstVarScope* varScopep = nodep->varScopep();
-        if (m_countRegs && nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()) {
-            if (varScopep->user1()) { // Already seen at least one assignment to this var
+        if (m_countRegs && nodep->access().isWriteOrRW() && varp->isSignal()
+            && !varp->isUsedLoopIdx()) {
+            if (varScopep->user1()) {  // Already seen at least one assignment to this var
                 // Only count assignments on different lines as different since loop unrolling can
                 // cause multiple AstVarRef nodes to the same Var on the same source line
                 if (nodep->fileline() != (FileLine*)varScopep->user2p()) {
@@ -338,8 +338,9 @@ private:
                 }
             } else {
                 int depth = varp->dtypep()->arrayUnpackedElements();
-                int bits  = varp->width() * depth;
-                if ( VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType) && (depth > varp->width() && (bits >= 8192)) ) {
+                int bits = varp->width() * depth;
+                if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)
+                    && (depth > varp->width() && (bits >= 8192))) {
                     m_potentialRams.push_back(nodep);
                     varScopep->user2p((AstNode*)nodep->fileline());
                 } else {
@@ -350,19 +351,15 @@ private:
             }
         }
     }
-    virtual void visit(AstNode* nodep) override {
-        iterateChildrenConst(nodep);
-    }
+    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    StorageCountVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-    }
+    StorageCountVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~StorageCountVisitor() override {
         if (m_memoryCount) {
             V3Stats::addStat("RAMs, (depth>width arrays) count", m_memoryCount);
-            V3Stats::addStat("RAMs, (depth>width arrays) bits",  m_memoryBitCount);
+            V3Stats::addStat("RAMs, (depth>width arrays) bits", m_memoryBitCount);
         }
         if (m_registerCount) {
             V3Stats::addStat("Registers, count", m_registerCount);
@@ -370,7 +367,6 @@ public:
         }
     }
 };
-
 
 //######################################################################
 // Top Stats class
