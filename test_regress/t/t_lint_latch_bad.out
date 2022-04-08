@@ -5,7 +5,7 @@
                   ... Use "/* verilator lint_off NOLATCH */" and lint_on around source to disable this message.
 %Warning-COMBDLY: t/t_lint_latch_bad.v:25:10: Delayed assignments (<=) in non-clocked (non flop or latch) block
                                             : ... Suggest blocking assignments (=)
-   25 |       bc <= a;
+   25 |       bc <= a;   
       |          ^~
                   *** See https://verilator.org/warn/COMBDLY before disabling this,
                   else you may end up with different sim results.
