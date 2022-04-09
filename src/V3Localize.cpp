@@ -40,15 +40,15 @@ class LocalizeVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstVarScope::user1()    ->  Bool indicating VarScope is not optimizable.
+    //  AstCFunc::user1()       ->  Bool indicating CFunc is not a leaf function.
     //  AstVarScope::user2()    ->  Bool indicating VarScope was fully assigned in the current
     //                              function.
     //  AstVarScope::user3p()   ->  Set of CFuncs referencing this VarScope. (via m_accessors)
     //  AstCFunc::user4p()      ->  Multimap of 'VarScope -> VarRefs that reference that VarScope'
     //                              in this function. (via m_references)
-    const VNUser1InUse m_inuser1;
-    const VNUser2InUse m_inuser2;
-    const VNUser3InUse m_inuser3;
-    const VNUser4InUse m_inuser4;
+    const VNUser1InUse m_user1InUse;
+    const VNUser3InUse m_user3InUse;
+    const VNUser4InUse m_user4InUse;
 
     AstUser3Allocator<AstVarScope, std::unordered_set<AstCFunc*>> m_accessors;
     AstUser4Allocator<AstCFunc, std::unordered_multimap<const AstVarScope*, AstVarRef*>>
@@ -69,12 +69,25 @@ private:
                 && m_accessors(nodep).size() == 1);  // .. a block temp used in a single CFunc
     }
 
+    bool existsNonLeaf(const std::unordered_set<AstCFunc*>& funcps) {
+        for (const AstCFunc* const funcp : funcps) {
+            if (funcp->user1()) return true;
+        }
+        return false;
+    }
+
     void moveVarScopes() {
         for (AstVarScope* const nodep : m_varScopeps) {
             if (!isOptimizable(nodep)) continue;  // Not optimizable
 
             const std::unordered_set<AstCFunc*>& funcps = m_accessors(nodep);
             if (funcps.empty()) continue;  // No referencing functions at all
+
+            // If more than one referencing function, but not all are leaf
+            // functions, then don't localize, as one of the referencing
+            // functions might be calling another, which the current analysis
+            // cannot cope with. This should be rare (introduced by V3Depth).
+            if (funcps.size() > 1 && existsNonLeaf(funcps)) continue;
 
             UINFO(4, "Localizing " << nodep << endl);
             ++m_statLocVars;
@@ -121,9 +134,14 @@ private:
         {
             m_cfuncp = nodep;
             m_nodeDepth = 0;
-            AstNode::user2ClearTree();  // Check each function independently
+            const VNUser2InUse user2InUse;
             iterateChildrenConst(nodep);
         }
+    }
+
+    virtual void visit(AstCCall* nodep) override {
+        m_cfuncp->user1(true);  // Mark caller as not a leaf function
+        iterateChildrenConst(nodep);
     }
 
     virtual void visit(AstNodeAssign* nodep) override {

@@ -17,6 +17,7 @@ Verilator 4.221 devel
 * Deprecate 'vluint64_t' and similar types (#3255).
 * Fix MSVC localtime_s (#3124).
 * Fix Bison 3.8.2 error (#3366). [elike-ypq]
+* Fix rare bug in -Oz (V3Localize) (#3286). [Geza Lore, Shunyao CAD]
 
 
 Verilator 4.220 2022-03-12
