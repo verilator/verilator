@@ -2112,8 +2112,8 @@ private:
     ThreadSchedule& operator=(ThreadSchedule&&) = default;
 
     // Debugging
-    void dumpDotFile(const string& filename) const;
-    void dumpDotFilePrefixedAlways(const string& nameComment) const;
+    void dumpDotFile(const V3Graph& graph, const string& filename) const;
+    void dumpDotFilePrefixedAlways(const V3Graph& graph, const string& nameComment) const;
 
 public:
     // Returns the number of cross-thread dependencies of the given MTask. If > 0, the MTask must
@@ -2137,15 +2137,15 @@ public:
 };
 
 //! Variant of dumpDotFilePrefixed without --dump option check
-void ThreadSchedule::dumpDotFilePrefixedAlways(const string& nameComment) const {
-    dumpDotFile(v3Global.debugFilename(nameComment) + ".dot");
+void ThreadSchedule::dumpDotFilePrefixedAlways(const V3Graph& graph,
+                                               const string& nameComment) const {
+    dumpDotFile(graph, v3Global.debugFilename(nameComment) + ".dot");
 }
 
-void ThreadSchedule::dumpDotFile(const string& filename) const {
+void ThreadSchedule::dumpDotFile(const V3Graph& graph, const string& filename) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
-    auto* const depGraph = v3Global.rootp()->execGraphp()->depGraphp();
 
     // Header
     *logp << "digraph v3graph {\n";
@@ -2166,7 +2166,7 @@ void ThreadSchedule::dumpDotFile(const string& filename) const {
 
     // Find minimum cost MTask for scaling MTask node widths
     uint32_t minCost = UINT32_MAX;
-    for (const V3GraphVertex* vxp = depGraph->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+    for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         if (const ExecMTask* const mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
             minCost = minCost > mtaskp->cost() ? mtaskp->cost() : minCost;
         }
@@ -2189,13 +2189,13 @@ void ThreadSchedule::dumpDotFile(const string& filename) const {
     };
 
     // Emit MTasks
-    for (const V3GraphVertex* vxp = depGraph->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+    for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         if (const ExecMTask* const mtaskp = dynamic_cast<const ExecMTask*>(vxp)) emitMTask(mtaskp);
     }
 
     // Emit MTask dependency edges
     *logp << "\n  // MTask dependencies\n";
-    for (const V3GraphVertex* vxp = depGraph->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+    for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         if (const ExecMTask* const mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
             for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 const V3GraphVertex* const top = edgep->top();
@@ -2382,7 +2382,7 @@ public:
             }
         }
 
-        if (debug() >= 4) schedule.dumpDotFilePrefixedAlways("schedule");
+        if (debug() >= 4) schedule.dumpDotFilePrefixedAlways(mtaskGraph, "schedule");
 
         return schedule;
     }
@@ -2659,15 +2659,14 @@ void V3Partition::go(V3Graph* mtasksp) {
             LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(itp);
             sorted.insert(mtaskp);
         }
-        uint32_t nextId = 1;
         for (auto it = sorted.begin(); it != sorted.end(); ++it) {
             // We shouldn't perturb the sort order of the set, despite
             // changing the IDs, they should all just remain in the same
             // relative order. Confirm that:
+            const uint32_t nextId = v3Global.rootp()->allocNextMTaskID();
             UASSERT(nextId <= (*it)->id(), "Should only shrink MTaskIDs here");
             UINFO(4, "Reassigning MTask id " << (*it)->id() << " to id " << nextId << "\n");
             (*it)->id(nextId);
-            ++nextId;
         }
     }
 
@@ -2868,11 +2867,8 @@ static void finalizeCosts(V3Graph* execMTaskGraphp) {
     }
 
     // Assign profiler IDs
-    uint64_t profilerId = 0;
-    for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
-         vxp = vxp->verticesNextp()) {
-        ExecMTask* const mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
-        mtp->profilerId(profilerId++);
+    for (V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+        static_cast<ExecMTask*>(vxp)->profilerId(v3Global.rootp()->allocNextMTaskProfilingID());
     }
 
     // Removing tasks may cause edges that were formerly non-transitive to
@@ -2961,7 +2957,8 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
     }
 }
 
-static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedule) {
+static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedule,
+                                                          const string& tag) {
     AstNodeModule* const modp = v3Global.rootp()->topModulep();
     FileLine* const fl = modp->fileline();
 
@@ -2971,8 +2968,7 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
     for (const std::vector<const ExecMTask*>& thread : schedule.threads) {
         if (thread.empty()) continue;
         const uint32_t threadId = schedule.threadId(thread.front());
-        string name = "__Vthread_";
-        name += cvtToStr(threadId);
+        const string name{"__Vthread__" + tag + "__" + cvtToStr(threadId)};
         AstCFunc* const funcp = new AstCFunc(fl, name, nullptr, "void");
         modp->addStmtp(funcp);
         funcps.push_back(funcp);
@@ -3048,32 +3044,31 @@ static void implementExecGraph(AstExecGraph* const execGraphp) {
 
     // Schedule the mtasks: statically associate each mtask with a thread,
     // and determine the order in which each thread will runs its mtasks.
-    const ThreadSchedule& schedule = PartPackMTasks().pack(*execGraphp->mutableDepGraphp());
+    const ThreadSchedule& schedule = PartPackMTasks().pack(*execGraphp->depGraphp());
 
     // Create a function to be run by each thread. Note this moves all AstMTaskBody nodes form the
     // AstExecGrap into the AstCFunc created
-    const std::vector<AstCFunc*>& funcps = createThreadFunctions(schedule);
+    const std::vector<AstCFunc*>& funcps = createThreadFunctions(schedule, execGraphp->name());
     UASSERT(!funcps.empty(), "Non-empty ExecGraph yields no threads?");
 
     // Start the thread functions at the point this AstExecGraph is located in the tree.
     addThreadStartToExecGraph(execGraphp, funcps);
 }
 
-void V3Partition::finalize() {
+void V3Partition::finalize(AstNetlist* netlistp) {
     // Called by Verilator top stage
-    AstExecGraph* const execGraphp = v3Global.rootp()->execGraphp();
-    UASSERT(execGraphp, "Couldn't find AstExecGraph singleton.");
+    netlistp->topModulep()->foreach<AstExecGraph>([&](AstExecGraph* execGraphp) {
+        // Back in V3Order, we partitioned mtasks using provisional cost
+        // estimates. However, V3Order precedes some optimizations (notably
+        // V3LifePost) that can change the cost of logic within each mtask.
+        // Now that logic is final, recompute the cost and priority of each
+        // ExecMTask.
+        fillinCosts(execGraphp->depGraphp());
+        finalizeCosts(execGraphp->depGraphp());
 
-    // Back in V3Order, we partitioned mtasks using provisional cost
-    // estimates. However, V3Order precedes some optimizations (notably
-    // V3LifePost) that can change the cost of logic within each mtask.
-    // Now that logic is final, recompute the cost and priority of each
-    // ExecMTask.
-    fillinCosts(execGraphp->mutableDepGraphp());
-    finalizeCosts(execGraphp->mutableDepGraphp());
-
-    // Replace the graph body with its multi-threaded implementation.
-    implementExecGraph(execGraphp);
+        // Replace the graph body with its multi-threaded implementation.
+        implementExecGraph(execGraphp);
+    });
 }
 
 void V3Partition::selfTest() {

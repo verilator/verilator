@@ -62,7 +62,7 @@ public:
 
     // Operate on the final ExecMTask graph, immediately prior to code
     // generation time.
-    static void finalize();
+    static void finalize(AstNetlist* netlistp);
 
 private:
     static void setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp);

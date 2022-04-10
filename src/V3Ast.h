@@ -2034,6 +2034,11 @@ template <> inline bool AstNode::privateMayBeUnder<AstNodeAssign>(const AstNode*
 template <> inline bool AstNode::privateMayBeUnder<AstVarScope>(const AstNode* nodep) {
     return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
 }
+template <> inline bool AstNode::privateMayBeUnder<AstExecGraph>(const AstNode* nodep) {
+    if (VN_IS(nodep, ExecGraph)) return false;  // Should not nest
+    if (VN_IS(nodep, NodeStmt)) return false;  // Should be directly under CFunc
+    return true;
+}
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
     if (!rhs) {

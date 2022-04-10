@@ -9199,27 +9199,30 @@ public:
 
 class AstExecGraph final : public AstNode {
     // For parallel execution, this node contains a dependency graph.  Each
-    // node in the graph is an ExecMTask, which contains a body for the
-    // mtask, which contains a set of AstActive's, each of which calls a
-    // leaf AstCFunc. whew!
+    // vertex in the graph is an ExecMTask, which contains a body for the
+    // mtask (an AstMTaskBody), which contains sequentially executed statements.
     //
-    // The mtask bodies are also children of this node, so we can visit
-    // them without traversing the graph (it's not always needed to
-    // traverse the graph.)
+    // The AstMTaskBody nodes are also children of this node, so we can visit
+    // them without traversing the graph.
 private:
-    V3Graph* const m_depGraphp;  // contains ExecMTask's
+    V3Graph* const m_depGraphp;  // contains ExecMTask vertices
+    const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
 
 public:
-    explicit AstExecGraph(FileLine* fl);
+    explicit AstExecGraph(FileLine* fl, const string& name);
     ASTNODE_NODE_FUNCS_NO_DTOR(ExecGraph)
     virtual ~AstExecGraph() override;
     virtual const char* broken() const override {
         BROKEN_RTN(!m_depGraphp);
         return nullptr;
     }
+    virtual string name() const override { return m_name; }
+    V3Graph* depGraphp() { return m_depGraphp; }
     const V3Graph* depGraphp() const { return m_depGraphp; }
-    V3Graph* mutableDepGraphp() { return m_depGraphp; }
-    void addMTaskBody(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+    // op1: The mtask bodies
+    AstMTaskBody* mTaskBodiesp() const { return VN_AS(op1p(), MTaskBody); }
+    void addMTaskBodyp(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+    // op2: In later phases, the statements that start the parallel execution
     void addStmtsp(AstNode* stmtp) { addOp2p(stmtp); }
 };
 
@@ -9319,13 +9322,15 @@ private:
     AstConstPool* const m_constPoolp;  // Reference to constant pool, for faster lookup
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
-    AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
     AstTopScope* m_topScopep = nullptr;  // The singleton AstTopScope under the top module
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     bool m_changeRequest = false;  // Have _change_request method
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
+    uint32_t m_nextFreeMTaskID = 1;  // Next unique MTask ID within netlist
+                                     // starts at 1 so 0 means no MTask ID
+    uint32_t m_nextFreeMTaskProfilingID = 0;  // Next unique ID to use for PGO
 public:
     AstNetlist();
     ASTNODE_NODE_FUNCS(Netlist)
@@ -9369,8 +9374,6 @@ public:
     }
     AstCFunc* evalp() const { return m_evalp; }
     void evalp(AstCFunc* evalp) { m_evalp = evalp; }
-    AstExecGraph* execGraphp() const { return m_execGraphp; }
-    void execGraphp(AstExecGraph* graphp) { m_execGraphp = graphp; }
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstTopScope* topScopep() const { return m_topScopep; }
@@ -9390,6 +9393,9 @@ public:
     void timeprecisionMerge(FileLine*, const VTimescale& value);
     void timescaleSpecified(bool specified) { m_timescaleSpecified = specified; }
     bool timescaleSpecified() const { return m_timescaleSpecified; }
+    uint32_t allocNextMTaskID() { return m_nextFreeMTaskID++; }
+    uint32_t allocNextMTaskProfilingID() { return m_nextFreeMTaskProfilingID++; }
+    uint32_t usedMTaskProfilingIDs() const { return m_nextFreeMTaskProfilingID; }
 };
 
 //######################################################################

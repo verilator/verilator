@@ -225,9 +225,10 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     }
 }
 
-AstExecGraph::AstExecGraph(FileLine* fileline)
+AstExecGraph::AstExecGraph(FileLine* fileline, const string& name)
     : ASTGEN_SUPER_ExecGraph(fileline)
-    , m_depGraphp{new V3Graph} {}
+    , m_depGraphp{new V3Graph}
+    , m_name{name} {}
 
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 

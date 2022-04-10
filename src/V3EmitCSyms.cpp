@@ -476,18 +476,8 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.opt.profPgo()) {
         puts("\n// PGO PROFILING\n");
-        uint64_t maxProfilerId = 0;
-        if (v3Global.opt.mtasks()) {
-            for (const V3GraphVertex* vxp
-                 = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
-                 vxp; vxp = vxp->verticesNextp()) {
-                const ExecMTask* const mtp
-                    = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
-                if (maxProfilerId < mtp->profilerId()) maxProfilerId = mtp->profilerId();
-            }
-        }
-        ++maxProfilerId;  // As size must include 0
-        puts("VlPgoProfiler<" + cvtToStr(maxProfilerId) + "> _vm_pgoProfiler;\n");
+        const uint32_t usedMTaskProfilingIDs = v3Global.rootp()->usedMTaskProfilingIDs();
+        puts("VlPgoProfiler<" + cvtToStr(usedMTaskProfilingIDs) + "> _vm_pgoProfiler;\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names
@@ -743,13 +733,15 @@ void EmitCSyms::emitSymImp() {
     if (v3Global.opt.profPgo()) {
         puts("// Configure profiling for PGO\n");
         if (v3Global.opt.mtasks()) {
-            for (const V3GraphVertex* vxp
-                 = v3Global.rootp()->execGraphp()->depGraphp()->verticesBeginp();
-                 vxp; vxp = vxp->verticesNextp()) {
-                ExecMTask* const mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
-                puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
-                     + mtp->hashName() + "\");\n");
-            }
+            v3Global.rootp()->topModulep()->foreach<AstExecGraph>(
+                [&](const AstExecGraph* execGraphp) {
+                    for (const V3GraphVertex* vxp = execGraphp->depGraphp()->verticesBeginp(); vxp;
+                         vxp = vxp->verticesNextp()) {
+                        const ExecMTask* const mtp = static_cast<const ExecMTask*>(vxp);
+                        puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
+                             + mtp->hashName() + "\");\n");
+                    }
+                });
         }
     }
 

@@ -411,7 +411,8 @@ private:
         }
     }
     virtual void visit(AstExecGraph* nodep) override {
-        for (m_mtaskBodyp = VN_AS(nodep->op1p(), MTaskBody); m_mtaskBodyp;
+        VL_RESTORER(m_mtaskBodyp);
+        for (m_mtaskBodyp = nodep->mTaskBodiesp(); m_mtaskBodyp;
              m_mtaskBodyp = VN_AS(m_mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
             iterate(m_mtaskBodyp);

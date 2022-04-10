@@ -1954,9 +1954,8 @@ void OrderProcess::processMTasks() {
     // Create the AstExecGraph node which represents the execution
     // of the MTask graph.
     FileLine* const rootFlp = v3Global.rootp()->fileline();
-    AstExecGraph* const execGraphp = new AstExecGraph(rootFlp);
+    AstExecGraph* const execGraphp = new AstExecGraph{rootFlp, "eval"};
     m_scopetop.addActivep(execGraphp);
-    v3Global.rootp()->execGraphp(execGraphp);
 
     // Create CFuncs and bodies for each MTask.
     GraphStream<MTaskVxIdLessThan> emit_mtasks(&mtasks);
@@ -1994,7 +1993,8 @@ void OrderProcess::processMTasks() {
         //   and OrderLogicVertex's which are ephemeral to V3Order.
         // - The ExecMTask graph and the AstMTaskBody's produced here
         //   persist until code generation time.
-        state.m_execMTaskp = new ExecMTask(execGraphp->mutableDepGraphp(), bodyp, mtaskp->id());
+        V3Graph* const depGraphp = execGraphp->depGraphp();
+        state.m_execMTaskp = new ExecMTask(depGraphp, bodyp, mtaskp->id());
         // Cross-link each ExecMTask and MTaskBody
         //  Q: Why even have two objects?
         //  A: One is an AstNode, the other is a GraphVertex,
@@ -2005,10 +2005,9 @@ void OrderProcess::processMTasks() {
             const AbstractLogicMTask* const fromp
                 = dynamic_cast<const AbstractLogicMTask*>(fromVxp);
             const MTaskState& fromState = mtaskStates[fromp->id()];
-            new V3GraphEdge(execGraphp->mutableDepGraphp(), fromState.m_execMTaskp,
-                            state.m_execMTaskp, 1);
+            new V3GraphEdge(depGraphp, fromState.m_execMTaskp, state.m_execMTaskp, 1);
         }
-        execGraphp->addMTaskBody(bodyp);
+        execGraphp->addMTaskBodyp(bodyp);
     }
 }
 
