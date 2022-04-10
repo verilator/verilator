@@ -1854,6 +1854,10 @@ void AstFork::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (!joinType().join()) str << " [" << joinType() << "]";
 }
+void AstTraceDecl::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (code()) str << " [code=" << code() << "]";
+}
 void AstTraceInc::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " -> ";

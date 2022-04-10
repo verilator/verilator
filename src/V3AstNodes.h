@@ -5330,6 +5330,7 @@ public:
         dtypeFrom(valuep);
         addNOp1p(valuep);
     }
+    virtual void dump(std::ostream& str) const override;
     virtual int instrCount() const override { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl)
     virtual string name() const override { return m_showname; }
