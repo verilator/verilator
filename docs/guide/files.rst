@@ -120,7 +120,7 @@ In certain debug and other modes, it also creates:
      - Debugging graph files (from --debug)
    * - *{prefix}{misc}*\ .tree
      - Debugging files (from --debug)
-   * - {mod_prefix}_{each_verilog_module}*{__n}*\ .vpp
+   * - {mod_prefix}_{each_verilog_base_filename}*\ .vpp
      - Pre-processed verilog (from --debug)
 
 After running Make, the C++ compiler may produce the following:

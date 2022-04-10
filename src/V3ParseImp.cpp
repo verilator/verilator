@@ -268,6 +268,7 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
 
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
                            const string& errmsg) {  // "" for no error, make fake node
+    const string nondirname = V3Os::filenameNonDir(modfilename);
     const string modname = V3Os::filenameNonExt(modfilename);
 
     UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << endl);
@@ -288,8 +289,8 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 
     if (v3Global.opt.preprocOnly() || v3Global.opt.keepTempFiles()) {
         // Create output file with all the preprocessor output we buffered up
-        const string vppfilename
-            = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "_" + modname + ".vpp";
+        const string vppfilename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                                   + "_" + nondirname + ".vpp";
         std::ofstream* ofp = nullptr;
         std::ostream* osp;
         if (v3Global.opt.preprocOnly()) {
