@@ -248,7 +248,7 @@ public:
         }
 
         if (!v3Global.opt.libCreate().empty()) {
-            const string libCreateDeps = "$(VK_OBJS) $(VK_GLOBAL_OBJS) " + v3Global.opt.libCreate()
+            const string libCreateDeps = "$(VK_OBJS) $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) " + v3Global.opt.libCreate()
                                          + ".o $(VM_HIER_LIBS)";
             of.puts("\n### Library rules from --lib-create\n");
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
