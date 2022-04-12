@@ -44,8 +44,6 @@ private:
 
     typedef std::vector<AstVarRef*> VarVec;
 
-    const int minRAMBits = 8192;  // Arbitary threshold to prevent lots of tiny RAMs being reported
-
     // STATE
     const string m_stage;  // Name of the stage we are scanning
     /// m_fast = true:  Counting only critical branch of fastpath
@@ -97,9 +95,9 @@ private:
             AstVarScope* varScopep = nodep->varScopep();
             int depth = varp->dtypep()->arrayUnpackedElements();
             int bits = depth * varp->width();
-            if (varScopep->user1() <= 2) {  // Single or double assignment
+            if (varScopep->user1() == 1) {  // Single assignment
                 std::ostringstream os;
-                os << "Potential RAM bits, " << varScopep->prettyName() << " (" << depth << "x"
+                os << "RAM bits, " << varScopep->prettyName() << " (" << depth << "x"
                    << varp->width() << ")";
                 V3Stats::addStat(os.str(), bits);
                 ++m_memoryCount;
@@ -253,7 +251,7 @@ private:
         if (m_countRegs && nodep->access().isWriteOrRW() && varp->isSignal()
             && !varp->isUsedLoopIdx()) {
             AstVarScope* varScopep = nodep->varScopep();
-            if (varScopep->user1()) {  // Already seen at least one assignment to this var
+            if (varScopep->user1()) { // Already seen at least one assignment to this var
                 // Only count assignments on _different_ source lines as different since array
                 // indexed assignments may have been expanded into multiple AstVarRef by now
                 if (nodep->fileline() != (FileLine*)varScopep->user2p()) {
@@ -261,15 +259,9 @@ private:
                     varScopep->user2p((AstNode*)nodep->fileline());
                 }
             } else {
-                // A "Potential RAM" is rather arbitarily defined as any array signal:
-                // 1.) whose depth in elements is greater than its width in bits
-                // 2.) whose total number of bits exceeds the const threshold minRAMBits
-                // 3.) which is assigned in no more the 2 locations in the source
-                // This produces reasonable rersults in trials but could be improved
                 const int depth = varp->dtypep()->arrayUnpackedElements();
                 const int bits = varp->width() * depth;
-                if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)
-                    && (depth > varp->width() && (bits >= minRAMBits))) {
+                if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
                     m_potentialRams.push_back(nodep);
                     varScopep->user2p((AstNode*)nodep->fileline());
                 } else {
@@ -359,8 +351,8 @@ public:
         {
             V3Stats::addStat("Registers, count", m_registerCount);
             V3Stats::addStat("Registers, total bits", m_registerBitCount);
-            V3Stats::addStat("Potential RAMs, count", m_memoryCount);
-            V3Stats::addStat("Potential RAMs, total bits", m_memoryBitCount);
+            V3Stats::addStat("RAMs, count", m_memoryCount);
+            V3Stats::addStat("RAMs, total bits", m_memoryBitCount);
         }
     }
 };
