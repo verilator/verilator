@@ -781,7 +781,8 @@ public:
         bool any_overrides = false;
         // Must always clone __Vrcm (recursive modules)
         if (nodep->recursive()) any_overrides = true;
-        if (debug() > 8 && nodep->paramsp()) nodep->paramsp()->dumpTreeAndNext(cout, "-cellparams: ");
+        if (debug() > 8 && nodep->paramsp())
+            nodep->paramsp()->dumpTreeAndNext(cout, "-cellparams: ");
 
         if (srcModp->hierBlock()) {
             longname = parameterizedHierBlockName(srcModp, nodep->paramsp());
