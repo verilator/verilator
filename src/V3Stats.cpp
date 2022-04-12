@@ -245,7 +245,8 @@ private:
     }
     virtual void visit(AstActive* nodep) override {
         m_countRegs = m_isPreOrder && nodep->hasClocked();
-        if (m_countRegs) iterateChildrenConst(nodep);
+        allNodes(nodep);
+        iterateChildrenConst(nodep);
     }
     virtual void visit(AstVarRef* nodep) override {
         const AstVar* varp = nodep->varp();
@@ -278,6 +279,8 @@ private:
                 varScopep->user1(1);
             }
         }
+        allNodes(nodep);
+        iterateChildrenConst(nodep);
     }
 
 public:
@@ -352,10 +355,13 @@ public:
             }
         }
         // Storage elements
-        V3Stats::addStat("Registers, count", m_registerCount);
-        V3Stats::addStat("Registers, total bits", m_registerBitCount);
-        V3Stats::addStat("Potential RAMs, count", m_memoryCount);
-        V3Stats::addStat("Potential RAMs, total bits", m_memoryBitCount);
+        if (m_isPreOrder)
+        {
+            V3Stats::addStat("Registers, count", m_registerCount);
+            V3Stats::addStat("Registers, total bits", m_registerBitCount);
+            V3Stats::addStat("Potential RAMs, count", m_memoryCount);
+            V3Stats::addStat("Potential RAMs, total bits", m_memoryBitCount);
+        }
     }
 };
 
