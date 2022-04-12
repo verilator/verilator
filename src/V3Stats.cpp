@@ -355,8 +355,7 @@ public:
             }
         }
         // Storage elements
-        if (m_isPreOrder)
-        {
+        if (m_isPreOrder) {
             V3Stats::addStat("Registers, count", m_registerCount);
             V3Stats::addStat("Registers, total bits", m_registerBitCount);
             V3Stats::addStat("Potential RAMs, count", m_memoryCount);
