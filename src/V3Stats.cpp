@@ -251,7 +251,7 @@ private:
         if (m_countRegs && nodep->access().isWriteOrRW() && varp->isSignal()
             && !varp->isUsedLoopIdx()) {
             AstVarScope* varScopep = nodep->varScopep();
-            if (varScopep->user1()) { // Already seen at least one assignment to this var
+            if (varScopep->user1()) {  // Already seen at least one assignment to this var
                 // Only count assignments on _different_ source lines as different since array
                 // indexed assignments may have been expanded into multiple AstVarRef by now
                 if (nodep->fileline() != (FileLine*)varScopep->user2p()) {
