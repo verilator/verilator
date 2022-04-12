@@ -34,7 +34,17 @@ class StatsVisitor final : public VNVisitor {
 private:
     // NODE STATE/TYPES
 
+    // Input:
+    //  AstVar::user1 // Counts assignments to a signal, per instance
+    //  AstVar::user2 // Source line of potential 'RAM' assignment
+    VNUser1InUse m_inuser1;
+    VNUser2InUse m_inuser2;
+
     using NameMap = std::map<const std::string, int>;  // Number of times a name appears
+
+    typedef std::vector<AstVarRef*> VarVec;
+
+    const int minRAMBits = 8192;  // Arbitary threshold to prevent lots of tiny RAMs being reported
 
     // STATE
     const string m_stage;  // Name of the stage we are scanning
@@ -46,6 +56,9 @@ private:
     bool m_counting;  // Currently counting
     double m_instrs;  // Current instr count (for determining branch direction)
     bool m_tracingCall;  // Iterating into a CCall to a CFunc
+    bool m_countRegs;  // Set for sequential always blocks in PreOrder stage only
+    bool m_isPreOrder;  // Set in PreOrder stage only
+    VarVec m_potentialRams;
 
     std::vector<VDouble0> m_statTypeCount;  // Nodes of given type
     VDouble0 m_statAbove[VNType::_ENUM_END][VNType::_ENUM_END];  // Nodes of given type
@@ -58,6 +71,10 @@ private:
     VDouble0 m_statVarBytes;  // Statistic tracking
     VDouble0 m_statVarClock;  // Statistic tracking
     VDouble0 m_statVarScpBytes;  // Statistic tracking
+    VDouble0 m_registerCount;  // Statistic tracking
+    VDouble0 m_registerBitCount;  // Statistic tracking
+    VDouble0 m_memoryCount;  // Statistic tracking
+    VDouble0 m_memoryBitCount;  // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -74,12 +91,36 @@ private:
         }
     }
 
+    void addRAMStats(AstNodeModule* nodep) {
+        for (const auto& nodep : m_potentialRams) {
+            AstVar* varp = nodep->varp();
+            AstVarScope* varScopep = nodep->varScopep();
+            int depth = varp->dtypep()->arrayUnpackedElements();
+            int bits = depth * varp->width();
+            if (varScopep->user1() <= 2) {  // Single or double assignment
+                std::ostringstream os;
+                os << "Potential RAM bits, " << varScopep->prettyName() << " (" << depth << "x"
+                   << varp->width() << ")";
+                V3Stats::addStat(os.str(), bits);
+                ++m_memoryCount;
+                m_memoryBitCount += bits;
+            } else {
+                ++m_registerCount;
+                m_registerBitCount += bits;
+            }
+        }
+    }
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         allNodes(nodep);
         if (!m_fast) {
+            if (m_isPreOrder) {
+                AstNode::user1ClearTree();  // Start a fresh count for each module instance
+                m_potentialRams.clear();
+            }
             // Count all CFuncs below this module
             iterateChildrenConst(nodep);
+            if (m_isPreOrder) addRAMStats(nodep);
         }
         // Else we recursively trace fast CFuncs from the top _eval
         // func, see visit(AstNetlist*)
@@ -202,6 +243,42 @@ private:
         allNodes(nodep);
         iterateChildrenConst(nodep);
     }
+    virtual void visit(AstActive* nodep) override {
+        m_countRegs = m_isPreOrder && nodep->hasClocked();
+        if (m_countRegs) iterateChildrenConst(nodep);
+    }
+    virtual void visit(AstVarRef* nodep) override {
+        const AstVar* varp = nodep->varp();
+        if (m_countRegs && nodep->access().isWriteOrRW() && varp->isSignal()
+            && !varp->isUsedLoopIdx()) {
+            AstVarScope* varScopep = nodep->varScopep();
+            if (varScopep->user1()) {  // Already seen at least one assignment to this var
+                // Only count assignments on _different_ source lines as different since array
+                // indexed assignments may have been expanded into multiple AstVarRef by now
+                if (nodep->fileline() != (FileLine*)varScopep->user2p()) {
+                    varScopep->user1(varScopep->user1() + 1);
+                    varScopep->user2p((AstNode*)nodep->fileline());
+                }
+            } else {
+                // A "Potential RAM" is rather arbitarily defined as any array signal:
+                // 1.) whose depth in elements is greater than its width in bits
+                // 2.) whose total number of bits exceeds the const threshold minRAMBits
+                // 3.) which is assigned in no more the 2 locations in the source
+                // This produces reasonable rersults in trials but could be improved
+                const int depth = varp->dtypep()->arrayUnpackedElements();
+                const int bits = varp->width() * depth;
+                if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)
+                    && (depth > varp->width() && (bits >= minRAMBits))) {
+                    m_potentialRams.push_back(nodep);
+                    varScopep->user2p((AstNode*)nodep->fileline());
+                } else {
+                    ++m_registerCount;
+                    m_registerBitCount += bits;
+                }
+                varScopep->user1(1);
+            }
+        }
+    }
 
 public:
     // CONSTRUCTORS
@@ -213,6 +290,8 @@ public:
         m_counting = !m_fast;
         m_instrs = 0;
         m_tracingCall = false;
+        m_countRegs = false;
+        m_isPreOrder = (stage == "PreOrder");
         // Initialize arrays
         m_statTypeCount.resize(VNType::_ENUM_END);
         // Process
@@ -272,6 +351,11 @@ public:
                     m_stage, (string("Branch prediction, ") + VBranchPred(type).ascii()), count);
             }
         }
+        // Storage elements
+        V3Stats::addStat("Registers, count", m_registerCount);
+        V3Stats::addStat("Registers, total bits", m_registerBitCount);
+        V3Stats::addStat("Potential RAMs, count", m_memoryCount);
+        V3Stats::addStat("Potential RAMs, total bits", m_memoryBitCount);
     }
 };
 
