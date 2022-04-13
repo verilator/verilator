@@ -88,14 +88,14 @@ private:
     }
 
     void storageStats(AstNodeModule* nodep) {
-        const int minRAMbits = 128; // Report all but trivially small RAMs
+        const int minRAMbits = 128;  // Report all but trivially small RAMs
         for (const auto& varScopep : m_storage) {
-            AstVar *varp = varScopep->varp();
+            AstVar* varp = varScopep->varp();
             const int depth = varp->dtypep()->arrayUnpackedElements();
             const int bits = depth * varp->width();
             const int clockedAssigns = varScopep->user1();
-            if ( VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType) &&
-                (clockedAssigns == 1) && bits >= minRAMbits) { // Single assignment
+            if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType) && (clockedAssigns == 1)
+                && bits >= minRAMbits) {  // Single assignment
                 std::ostringstream os;
                 os << "RAM bits, " << varScopep->prettyName() << " (" << depth << "x"
                    << varp->width() << ")";
@@ -115,7 +115,7 @@ private:
         allNodes(nodep);
         if (!m_fast) {
             if (m_isPreOrder) {
-                AstNode::user1ClearTree(); // Start a fresh count for each module instance
+                AstNode::user1ClearTree();  // Start a fresh count for each module instance
                 m_storage.clear();
             }
             // Count all CFuncs below this module
