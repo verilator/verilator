@@ -36,13 +36,11 @@ private:
 
     // Input:
     //  AstVar::user1 // Counts assignments to a signal, per instance
-    //  AstVar::user2 // Source line of potential 'RAM' assignment
     VNUser1InUse m_inuser1;
-    VNUser2InUse m_inuser2;
 
     using NameMap = std::map<const std::string, int>;  // Number of times a name appears
 
-    typedef std::vector<AstVarRef*> VarVec;
+    typedef std::vector<AstVarScope*> VarVec;
 
     // STATE
     const string m_stage;  // Name of the stage we are scanning
@@ -54,9 +52,9 @@ private:
     bool m_counting;  // Currently counting
     double m_instrs;  // Current instr count (for determining branch direction)
     bool m_tracingCall;  // Iterating into a CCall to a CFunc
-    bool m_countRegs;  // Set for sequential always blocks in PreOrder stage only
+    bool m_isClocked;  // Set for sequential always blocks in PreOrder stage only
     bool m_isPreOrder;  // Set in PreOrder stage only
-    VarVec m_potentialRams;
+    VarVec m_storage;
 
     std::vector<VDouble0> m_statTypeCount;  // Nodes of given type
     VDouble0 m_statAbove[VNType::_ENUM_END][VNType::_ENUM_END];  // Nodes of given type
@@ -89,20 +87,24 @@ private:
         }
     }
 
-    void addRAMStats(AstNodeModule* nodep) {
-        for (const auto& nodep : m_potentialRams) {
-            AstVar* varp = nodep->varp();
-            AstVarScope* varScopep = nodep->varScopep();
-            int depth = varp->dtypep()->arrayUnpackedElements();
-            int bits = depth * varp->width();
-            if (varScopep->user1() == 1) {  // Single assignment
+    void storageStats(AstNodeModule* nodep) {
+        const int minRAMbits = 128; // Report all but trivially small RAMs
+        for (const auto& varScopep : m_storage) {
+            AstVar *varp = varScopep->varp();
+            const int depth = varp->dtypep()->arrayUnpackedElements();
+            const int bits = depth * varp->width();
+            const int clockedAssigns = varScopep->user1();
+            if ( VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType) &&
+                (clockedAssigns == 1) && bits >= minRAMbits) { // Single assignment
                 std::ostringstream os;
                 os << "RAM bits, " << varScopep->prettyName() << " (" << depth << "x"
                    << varp->width() << ")";
                 V3Stats::addStat(os.str(), bits);
+                UINFO(5, "RAM: " << os.str() << endl);
                 ++m_memoryCount;
                 m_memoryBitCount += bits;
-            } else {
+            } else if (clockedAssigns) {
+                UINFO(5, "REG: " << varScopep->prettyName() << " (" << bits << " bits)" << endl);
                 ++m_registerCount;
                 m_registerBitCount += bits;
             }
@@ -113,12 +115,12 @@ private:
         allNodes(nodep);
         if (!m_fast) {
             if (m_isPreOrder) {
-                AstNode::user1ClearTree();  // Start a fresh count for each module instance
-                m_potentialRams.clear();
+                AstNode::user1ClearTree(); // Start a fresh count for each module instance
+                m_storage.clear();
             }
             // Count all CFuncs below this module
             iterateChildrenConst(nodep);
-            if (m_isPreOrder) addRAMStats(nodep);
+            if (m_isPreOrder) storageStats(nodep);
         }
         // Else we recursively trace fast CFuncs from the top _eval
         // func, see visit(AstNetlist*)
@@ -152,6 +154,9 @@ private:
     virtual void visit(AstVarScope* nodep) override {
         allNodes(nodep);
         iterateChildrenConst(nodep);
+        if ((nodep->varp()->varType() == VVarType::VAR) && !nodep->varp()->isUsedLoopIdx()) {
+            m_storage.push_back(nodep);
+        }
         if (m_counting) {
             if (VN_IS(nodep->varp()->dtypeSkipRefp(), BasicDType)) {
                 m_statVarScpBytes += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
@@ -242,35 +247,12 @@ private:
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstActive* nodep) override {
-        m_countRegs = m_isPreOrder && nodep->hasClocked();
+        m_isClocked = m_isPreOrder && nodep->hasClocked();
         allNodes(nodep);
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstVarRef* nodep) override {
-        const AstVar* varp = nodep->varp();
-        if (m_countRegs && nodep->access().isWriteOrRW() && varp->isSignal()
-            && !varp->isUsedLoopIdx()) {
-            AstVarScope* varScopep = nodep->varScopep();
-            if (varScopep->user1()) { // Already seen at least one assignment to this var
-                // Only count assignments on _different_ source lines as different since array
-                // indexed assignments may have been expanded into multiple AstVarRef by now
-                if (nodep->fileline() != (FileLine*)varScopep->user2p()) {
-                    varScopep->user1(varScopep->user1() + 1);
-                    varScopep->user2p((AstNode*)nodep->fileline());
-                }
-            } else {
-                const int depth = varp->dtypep()->arrayUnpackedElements();
-                const int bits = varp->width() * depth;
-                if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-                    m_potentialRams.push_back(nodep);
-                    varScopep->user2p((AstNode*)nodep->fileline());
-                } else {
-                    ++m_registerCount;
-                    m_registerBitCount += bits;
-                }
-                varScopep->user1(1);
-            }
-        }
+        if (m_isClocked && nodep->access().isWriteOrRW()) nodep->varScopep()->user1Inc(1);
         allNodes(nodep);
         iterateChildrenConst(nodep);
     }
@@ -285,7 +267,7 @@ public:
         m_counting = !m_fast;
         m_instrs = 0;
         m_tracingCall = false;
-        m_countRegs = false;
+        m_isClocked = false;
         m_isPreOrder = (stage == "PreOrder");
         // Initialize arrays
         m_statTypeCount.resize(VNType::_ENUM_END);

@@ -18,8 +18,8 @@ compile(
 
 file_grep("$out_filename", qr/RAMs, count \s+ 2/);
 file_grep("$out_filename", qr/RAMs, total bits \s+ 72192/);
-file_grep("$out_filename", qr/Registers, count \s+ 4/);
-file_grep("$out_filename", qr/Registers, total bits \s+ 56/);
+file_grep("$out_filename", qr/Registers, count \s+ 8/);
+file_grep("$out_filename", qr/Registers, total bits \s+ 144440/);
 
 ok(1);
 1;
