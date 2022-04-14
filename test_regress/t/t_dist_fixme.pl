@@ -38,7 +38,8 @@ if (!-r "$root/.git") {
             print "$grep\n";
             foreach my $line (split /\n/, $grep) {
                 print "L $line\n";
-                $names{$1} = 1 if $line =~ /^([^:]+)/;
+                # FIXMEV5 for use in develop-v5 branch until merged to master
+                $names{$1} = 1 if $line =~ /^([^:]+)/ && $line !~ /FIXMEV5/;
             }
         }
     }
