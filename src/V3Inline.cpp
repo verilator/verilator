@@ -190,8 +190,7 @@ private:
 
         // Iterate through all modules in bottom-up order.
         // Make a final inlining decision for each.
-        for (auto it = m_allMods.rbegin(); it != m_allMods.rend(); ++it) {
-            AstNodeModule* const modp = *it;
+        for (AstNodeModule* const modp : vlstd::reverse_view(m_allMods)) {
 
             // If we're going to inline some modules into this one,
             // update user4 (statement count) to reflect that:

@@ -526,9 +526,9 @@ public:
     }
     void checkRelativesCp(GraphWay way) const {
         const EdgeSet& edges = m_edges[way];
-        for (EdgeSet::const_reverse_iterator it = edges.rbegin(); it != edges.rend(); ++it) {
-            const LogicMTask* const relativep = (*it).key();
-            const uint32_t cachedCp = (*it).value();
+        for (const auto& edge : vlstd::reverse_view(edges)) {
+            const LogicMTask* const relativep = edge.key();
+            const uint32_t cachedCp = edge.value();
             partCheckCachedScoreVsActual(cachedCp, relativep->critPathCost(way.invert())
                                                        + relativep->stepCost());
         }
@@ -555,12 +555,12 @@ public:
         // wayEdgeEndp(way, withoutp). This should take 2 iterations max.
         const EdgeSet& edges = m_edges[way.invert()];
         uint32_t result = 0;
-        for (EdgeSet::const_reverse_iterator it = edges.rbegin(); it != edges.rend(); ++it) {
-            if ((*it).key() != withoutp->furtherp(way.invert())) {
+        for (const auto& edge : vlstd::reverse_view(edges)) {
+            if (edge.key() != withoutp->furtherp(way.invert())) {
                 // Use the cached cost. It could be a small overestimate
                 // due to stepping. This is consistent with critPathCost()
                 // which also returns the cached cost.
-                result = (*it).value();
+                result = edge.value();
                 break;
             }
         }
