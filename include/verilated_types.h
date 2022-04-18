@@ -410,16 +410,16 @@ public:
     }
     template <typename Func> VlQueue find_last(Func with_func) const {
         IData index = m_deque.size() - 1;
-        for (auto it = m_deque.rbegin(); it != m_deque.rend(); ++it) {
-            if (with_func(index, *it)) return VlQueue::cons(*it);
+        for (auto& item : vlstd::reverse_view(m_deque)) {
+            if (with_func(index, item)) return VlQueue::cons(item);
             --index;
         }
         return VlQueue{};
     }
     template <typename Func> VlQueue<IData> find_last_index(Func with_func) const {
         IData index = m_deque.size() - 1;
-        for (auto it = m_deque.rbegin(); it != m_deque.rend(); ++it) {
-            if (with_func(index, *it)) return VlQueue<IData>::cons(index);
+        for (auto& item : vlstd::reverse_view(m_deque)) {
+            if (with_func(index, item)) return VlQueue<IData>::cons(index);
             --index;
         }
         return VlQueue<IData>{};
