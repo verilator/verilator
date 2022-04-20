@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <type_traits>
+#include <memory>
 
 //######################################################################
 // Utilities
