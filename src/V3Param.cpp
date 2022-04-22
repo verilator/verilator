@@ -847,78 +847,74 @@ class ParamVisitor final : public VNVisitor {
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
     UnrollStateful m_unroller;  // Loop unroller
 
-    AstNodeModule* m_modp = nullptr;  // Current module being processed
+    bool m_iterateModule = false;  // Iterating module body
     string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
-    std::deque<AstCell*> m_cellps;  // Cells left to process (in this module)
-
-    std::multimap<int, AstNodeModule*> m_todoModps;  // Modules left to process
+    std::deque<AstCell*> m_cellps;  // Cells left to process (in current module)
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    void visitCellDeparam(AstCell* nodep, const string& someInstanceName) {
-        // Cell: Check for parameters in the instantiation.
-        iterateChildren(nodep);
-        UASSERT_OBJ(nodep->modp(), nodep, "Not linked?");
-        m_processor.cellDeparam(nodep, m_modp, someInstanceName);
-        // Remember to process the child module at the end of the module
-        m_todoModps.emplace(nodep->modp()->level(), nodep->modp());
-    }
-    void visitModules() {
-        // Loop on all modules left to process
-        // Hitting a cell adds to the appropriate level of this level-sorted list,
-        // so since cells originally exist top->bottom we process in top->bottom order too.
-        while (!m_todoModps.empty()) {
-            const auto itm = m_todoModps.cbegin();
-            AstNodeModule* const nodep = itm->second;
-            m_todoModps.erase(itm);
-            if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it
-                                           // again
-                m_modp = nodep;
-                UINFO(4, " MOD   " << nodep << endl);
-                if (m_modp->someInstanceName().empty()) {
-                    m_modp->someInstanceName(m_modp->origName());
-                }
-                iterateChildren(nodep);
+    void visitCells(AstNodeModule* nodep) {
+        UASSERT_OBJ(!m_iterateModule, nodep, "Should not nest");
+        std::multimap<int, AstNodeModule*> workQueue;
+        workQueue.emplace(nodep->level(), nodep);
+        m_generateHierName = "";
+        m_iterateModule = true;
 
-                // Note above iterate may add to m_todoModps
-                //
-                // Process interface cells, then non-interface which may ref an interface cell
-                for (int nonIf = 0; nonIf < 2; ++nonIf) {
-                    for (AstCell* const cellp : m_cellps) {
-                        if ((nonIf == 0 && VN_IS(cellp->modp(), Iface))
-                            || (nonIf == 1 && !VN_IS(cellp->modp(), Iface))) {
-                            string someInstanceName(m_modp->someInstanceName());
-                            if (const string* const genHierNamep = (string*)cellp->user5p()) {
-                                someInstanceName += *genHierNamep;
-                                cellp->user5p(nullptr);
-                                VL_DO_DANGLING(delete genHierNamep, genHierNamep);
-                            }
-                            VL_DO_DANGLING(visitCellDeparam(cellp, someInstanceName), cellp);
-                        }
+        // Visit all cells under module, recursively
+        do {
+            const auto itm = workQueue.cbegin();
+            AstNodeModule* const modp = itm->second;
+            workQueue.erase(itm);
+
+            // Process once; note user5 will be cleared on specialization, so we will do the
+            // specialized module if needed
+            if (modp->user5SetOnce()) continue;
+
+            // TODO: this really should be an assert, but classes and hier_blocks are special...
+            if (modp->someInstanceName().empty()) modp->someInstanceName(modp->origName());
+
+            // Iterate the body
+            iterateChildren(modp);
+
+            // Process interface cells, then non-interface cells, which may reference an interface
+            // cell.
+            for (bool doInterface : {true, false}) {
+                for (AstCell* const cellp : m_cellps) {
+                    if (doInterface != VN_IS(cellp->modp(), Iface)) continue;
+
+                    // Visit parameters in the instantiation.
+                    iterateChildren(cellp);
+
+                    // Update path
+                    string someInstanceName(modp->someInstanceName());
+                    if (const string* const genHierNamep = cellp->user5u().to<string*>()) {
+                        someInstanceName += *genHierNamep;
+                        cellp->user5p(nullptr);
+                        VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                     }
+
+                    // Apply parameter specialization
+                    m_processor.cellDeparam(cellp, modp, someInstanceName);
+
+                    // Add the (now potentially specialized) child module to the work queue
+                    workQueue.emplace(cellp->modp()->level(), cellp->modp());
                 }
-                m_cellps.clear();
-                m_modp = nullptr;
-                UINFO(4, " MOD-done\n");
             }
-        }
+            m_cellps.clear();
+        } while (!workQueue.empty());
+
+        m_iterateModule = false;
     }
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        if (nodep->dead()) {
-            UINFO(4, " MOD-dead.  " << nodep << endl);  // Marked by LinkDot
-            return;
-        } else if (nodep->recursiveClone()) {
-            // Fake, made for recursive elimination
-            UINFO(4, " MOD-recursive-dead.  " << nodep << endl);
-            nodep->dead(true);  // So Dead checks won't count references to it
-            return;
-        }
-        //
-        if (!nodep->dead() && VN_IS(nodep, Class)) {
+        if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
+        if (nodep->dead()) return;  // Marked by LinkDot (and above)
+
+        // Warn on unsupported parametrised class
+        if (VN_IS(nodep, Class)) {
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                     if (varp->isParam()) {
@@ -927,24 +923,21 @@ class ParamVisitor final : public VNVisitor {
                 }
             }
         }
-        //
-        if (m_modp) {
+
+        if (m_iterateModule) {  // Iterating body
             UINFO(4, " MOD-under-MOD.  " << nodep << endl);
             iterateChildren(nodep);
-        } else if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
-                   || VN_IS(nodep, Class)  // Nor moved classes
-                   || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
-            // Add request to END of modules left to process
-            m_todoModps.emplace(nodep->level(), nodep);
-            m_generateHierName = "";
-            visitModules();
-        } else if (nodep->user5()) {
-            UINFO(4, " MOD-done   " << nodep << endl);  // Already did it
-        } else {
-            // Should have been done by now, if not dead
-            UINFO(4, " MOD-dead?  " << nodep << endl);
+            return;
+        }
+
+        // Start traversal at root-like things
+        if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
+            || VN_IS(nodep, Class)  // Nor moved classes
+            || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
+            visitCells(nodep);
         }
     }
+
     virtual void visit(AstCell* nodep) override {
         // Must do ifaces first, so push to list and do in proper order
         string* const genHierNamep = new string(m_generateHierName);
