@@ -299,9 +299,8 @@ private:
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
     virtual void visit(AstNodeModule* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, false, [=]() {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, false, [=]() {  //
             m_hash += nodep->origName();
-            m_hash += nodep->hierName();
         });
     }
     virtual void visit(AstNodePreSel* nodep) override {

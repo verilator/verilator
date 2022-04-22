@@ -313,7 +313,7 @@ public:
     static void vlAbortOrExit();
     static void vlAbort();
     // static, but often overridden in classes.
-    static void v3errorEnd(std::ostringstream& sstr, const string& locationStr = "");
+    static void v3errorEnd(std::ostringstream& sstr, const string& extra = "");
 };
 
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.

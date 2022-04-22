@@ -761,7 +761,7 @@ class ParamProcessor final {
     }
 
 public:
-    void cellDeparam(AstCell* nodep, AstNodeModule* modp, const string& hierName) {
+    void cellDeparam(AstCell* nodep, AstNodeModule* modp, const string& someInstanceName) {
         m_modp = modp;
         // Cell: Check for parameters in the instantiation.
         // We always run this, even if no parameters, as need to look for interfaces,
@@ -772,7 +772,7 @@ public:
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         AstNodeModule* const srcModp = nodep->modp();
-        srcModp->hierName(hierName + "." + nodep->name());
+        srcModp->someInstanceName(someInstanceName + "." + nodep->name());
 
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
@@ -857,11 +857,11 @@ class ParamVisitor final : public VNVisitor {
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    void visitCellDeparam(AstCell* nodep, const string& hierName) {
+    void visitCellDeparam(AstCell* nodep, const string& someInstanceName) {
         // Cell: Check for parameters in the instantiation.
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->modp(), nodep, "Not linked?");
-        m_processor.cellDeparam(nodep, m_modp, hierName);
+        m_processor.cellDeparam(nodep, m_modp, someInstanceName);
         // Remember to process the child module at the end of the module
         m_todoModps.emplace(nodep->modp()->level(), nodep->modp());
     }
@@ -877,8 +877,11 @@ class ParamVisitor final : public VNVisitor {
                                            // again
                 m_modp = nodep;
                 UINFO(4, " MOD   " << nodep << endl);
-                if (m_modp->hierName().empty()) m_modp->hierName(m_modp->origName());
+                if (m_modp->someInstanceName().empty()) {
+                    m_modp->someInstanceName(m_modp->origName());
+                }
                 iterateChildren(nodep);
+
                 // Note above iterate may add to m_todoModps
                 //
                 // Process interface cells, then non-interface which may ref an interface cell
@@ -886,13 +889,13 @@ class ParamVisitor final : public VNVisitor {
                     for (AstCell* const cellp : m_cellps) {
                         if ((nonIf == 0 && VN_IS(cellp->modp(), Iface))
                             || (nonIf == 1 && !VN_IS(cellp->modp(), Iface))) {
-                            string fullName(m_modp->hierName());
+                            string someInstanceName(m_modp->someInstanceName());
                             if (const string* const genHierNamep = (string*)cellp->user5p()) {
-                                fullName += *genHierNamep;
+                                someInstanceName += *genHierNamep;
                                 cellp->user5p(nullptr);
                                 VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                             }
-                            VL_DO_DANGLING(visitCellDeparam(cellp, fullName), cellp);
+                            VL_DO_DANGLING(visitCellDeparam(cellp, someInstanceName), cellp);
                         }
                     }
                 }

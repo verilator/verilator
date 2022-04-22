@@ -1447,7 +1447,7 @@ private:
                              bool gateOnly);
     void deleteTreeIter();
     void deleteNode();
-    string locationStr() const;
+    string instanceStr() const;
 
 public:
     static void relinkOneLink(AstNode*& pointpr, AstNode* newp);
@@ -3077,7 +3077,8 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
 private:
     string m_name;  // Name of the module
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
-    string m_hierName;  // Hierarchical name for errors, etc.
+    string m_someInstanceName;  // Hierarchical name of some arbitrary instance of this module.
+                                // Used for user messages only.
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
@@ -3119,8 +3120,8 @@ public:
     // ACCESSORS
     virtual void name(const string& name) override { m_name = name; }
     virtual string origName() const override { return m_origName; }
-    string hierName() const { return m_hierName; }
-    void hierName(const string& hierName) { m_hierName = hierName; }
+    string someInstanceName() const { return m_someInstanceName; }
+    void someInstanceName(const string& name) { m_someInstanceName = name; }
     bool inLibrary() const { return m_inLibrary; }
     void inLibrary(bool flag) { m_inLibrary = flag; }
     void level(int level) { m_level = level; }
