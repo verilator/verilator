@@ -263,10 +263,10 @@ private:
         UINFO(8, "   DISABLE " << nodep << endl);
         iterateChildren(nodep);
         AstNodeBlock* blockp = nullptr;
-        for (auto it = m_blockStack.rbegin(); it != m_blockStack.rend(); ++it) {
-            UINFO(9, "    UNDERBLK  " << *it << endl);
-            if ((*it)->name() == nodep->name()) {
-                blockp = *it;
+        for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
+            UINFO(9, "    UNDERBLK  " << stackp << endl);
+            if (stackp->name() == nodep->name()) {
+                blockp = stackp;
                 break;
             }
         }

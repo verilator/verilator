@@ -190,6 +190,27 @@ private:
 
     std::string getScopeChar(VltTraceScope sct) { return std::string(1, (char)(0x80 + sct)); }
 
+    std::string addAboveInterface(const std::string& scopeName) {
+        std::string out;
+        // Hierarchical interfaces didn't know if interface vs module
+        // above them. so convert a scope string to have the interface character.
+        // Uses list of scopes to see what's an interface above.
+        size_t begin = 0;
+        while (true) {
+            const size_t end = scopeName.find(' ', begin);
+            if (end == string::npos) break;
+            const string& extra = scopeName.substr(begin, end - begin);
+            out += extra;
+            if (m_scopeSubFuncps.count(out + getScopeChar(VLT_TRACE_SCOPE_INTERFACE) + " ")) {
+                out += getScopeChar(VLT_TRACE_SCOPE_INTERFACE) + " ";
+            } else {
+                out += " ";
+            }
+            begin = end + 1;
+        }
+        return out;
+    }
+
     void addTraceDecl(const VNumRange& arrayRange,
                       int widthOverride) {  // If !=0, is packed struct/array where basicp size
                                             // misreflects one element
@@ -199,8 +220,10 @@ private:
         } else if (const AstBasicDType* const bdtypep = m_traValuep->dtypep()->basicp()) {
             bitRange = bdtypep->nrange();
         }
-        addToSubFunc(new AstTraceDecl{m_traVscp->fileline(), m_traName, m_traVscp->varp(),
-                                      m_traValuep->cloneTree(false), bitRange, arrayRange});
+        auto* const newp
+            = new AstTraceDecl{m_traVscp->fileline(),         m_traName, m_traVscp->varp(),
+                               m_traValuep->cloneTree(false), bitRange,  arrayRange};
+        addToSubFunc(newp);
     }
 
     void addIgnore(const char* why) {
@@ -217,17 +240,14 @@ private:
         UASSERT_OBJ(!m_traVscp, nodep, "Should not nest");
         UASSERT_OBJ(m_traName.empty(), nodep, "Should not nest");
 
-        FileLine* const flp = nodep->fileline();
+        VL_RESTORER(m_currScopep);
         m_currScopep = nodep;
 
         // Gather all signals under this AstScope
         iterateChildrenConst(nodep);
 
         // If nothing to trace in this scope, then job done
-        if (m_signals.empty()) {
-            m_currScopep = nullptr;
-            return;
-        }
+        if (m_signals.empty()) return;
 
         // Sort signals, first by enclosing instance, then by source location, then by name
         std::stable_sort(m_signals.begin(), m_signals.end(), [](const Signal& a, const Signal& b) {
@@ -239,6 +259,7 @@ private:
         });
 
         // Build trace initialization functions for this AstScope
+        FileLine* const flp = nodep->fileline();
         PathAdjustor pathAdjustor{flp, [&](AstNodeStmt* stmtp) { addToSubFunc(stmtp); }};
         for (const Signal& signal : m_signals) {
             // Adjust name prefix based on path in hierarchy
@@ -278,6 +299,7 @@ private:
             scopeName = scopeName.substr(0, lastDot + 1);
             const size_t scopeLen = scopeName.length();
 
+            UASSERT_OBJ(cellp->intfRefp(), cellp, "Interface without tracing reference");
             for (AstIntfRef *irp = cellp->intfRefp(), *nextIrp; irp; irp = nextIrp) {
                 nextIrp = VN_AS(irp->nextp(), IntfRef);
 
@@ -288,6 +310,9 @@ private:
 
                 string scopeName = AstNode::vcdName(irp->name());
                 if (scopeName.substr(0, 4) == "TOP ") scopeName.erase(0, 4);
+                // Note this insert doesn't know what above is interfaces.
+                // Perhaps all scopes should be changed to include the VLT_TRACE_SCOPE characters.
+                // Instead we fix up when printing m_scopeSubFuncps
                 scopeName += getScopeChar(VLT_TRACE_SCOPE_INTERFACE) + ' ';
                 m_scopeSubFuncps.emplace(scopeName, m_subFuncps);
 
@@ -300,8 +325,6 @@ private:
             if (VString::startsWith(scopeName, "TOP ")) scopeName.erase(0, 4);
             m_scopeSubFuncps.emplace(scopeName, std::move(m_subFuncps));
         }
-
-        m_currScopep = nullptr;
     }
     virtual void visit(AstVarScope* nodep) override {
         UASSERT_OBJ(m_currScopep, nodep, "AstVarScope not under AstScope");
@@ -454,9 +477,10 @@ public:
         // Build top level trace initialization functions
         PathAdjustor pathAdjustor{flp, [&](AstNodeStmt* stmtp) { addToTopFunc(stmtp); }};
         for (const auto& item : m_scopeSubFuncps) {
+            const std::string scopeName = item.first;
+            const std::string scopeNameInterfaced = addAboveInterface(scopeName);
             // Adjust name prefix based on path in hierarchy
-            pathAdjustor.adjust(item.first);
-
+            pathAdjustor.adjust(scopeNameInterfaced);
             // Call all sub functions for this path
             for (AstCFunc* const subFuncp : item.second) {
                 AstCCall* const callp = new AstCCall{flp, subFuncp};

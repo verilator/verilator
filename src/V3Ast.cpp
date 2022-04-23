@@ -1135,49 +1135,33 @@ void AstNode::v3errorEndFatal(std::ostringstream& str) const {
     VL_UNREACHABLE
 }
 
-string AstNode::locationStr() const {
-    string str = "... In instance ";
-    const AstNode* backp = this;
-    int itmax = 10000;  // Max iterations before giving up on location search
-    while (backp) {
-        if (VL_UNCOVERABLE(--itmax < 0)) {
-            // Likely some circular back link, and V3Ast is trying to report a low-level error
-            UINFO(1, "Ran out of iterations finding locationStr on " << backp << endl);
-            return "";  // LCOV_EXCL_LINE
-        }
-        const AstScope* scopep;
-        if ((scopep = VN_CAST(backp, Scope))) {
-            // The design is flattened and there are no useful scopes
-            // This is probably because of inlining
-            if (scopep->isTop()) break;
+string AstNode::instanceStr() const {
+    // Max iterations before giving up on location search,
+    // in case we have some circular reference bug.
+    constexpr unsigned maxIterations = 10000;
+    unsigned iterCount = 0;
 
-            str += scopep->prettyName();
-            return str;
+    for (const AstNode* backp = this; backp; backp = backp->backp(), ++iterCount) {
+        if (VL_UNCOVERABLE(iterCount >= maxIterations)) return "";  // LCOV_EXCL_LINE
+
+        // Prefer the enclosing scope, if there is one. This is always under the enclosing module,
+        // so just pick it up when encountered
+        if (const AstScope* const scopep = VN_CAST(backp, Scope)) {
+            return scopep->isTop() ? "" : "... In instance " + scopep->prettyName();
         }
-        backp = backp->backp();
-    }
-    backp = this;
-    while (backp) {
-        const AstModule* modp;
-        const AstNodeVarRef* nvrp;
-        if ((modp = VN_CAST(backp, Module)) && !modp->hierName().empty()) {
-            str += modp->hierName();
-            return str;
-        } else if ((nvrp = VN_CAST(backp, NodeVarRef))) {
-            const string prettyName = nvrp->prettyName();
-            // VarRefs have not been flattened yet and do not contain location information
-            if (prettyName != nvrp->name()) {
-                str += prettyName;
-                return str;
-            }
+
+        // If scopes don't exist, report an example instance of the enclosing module
+        if (const AstModule* const modp = VN_CAST(backp, Module)) {
+            const string instanceName = modp->someInstanceName();
+            return instanceName.empty() ? "" : "... In instance " + instanceName;
         }
-        backp = backp->backp();
     }
+
     return "";
 }
 void AstNode::v3errorEnd(std::ostringstream& str) const {
     if (!m_fileline) {
-        V3Error::v3errorEnd(str, locationStr());
+        V3Error::v3errorEnd(str, instanceStr());
     } else {
         std::ostringstream nsstr;
         nsstr << str.str();
@@ -1187,7 +1171,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
             const_cast<AstNode*>(this)->dump(nsstr);
             nsstr << endl;
         }
-        m_fileline->v3errorEnd(nsstr, locationStr());
+        m_fileline->v3errorEnd(nsstr, instanceStr());
     }
 }
 

@@ -190,8 +190,7 @@ private:
 
         // Iterate through all modules in bottom-up order.
         // Make a final inlining decision for each.
-        for (auto it = m_allMods.rbegin(); it != m_allMods.rend(); ++it) {
-            AstNodeModule* const modp = *it;
+        for (AstNodeModule* const modp : vlstd::reverse_view(m_allMods)) {
 
             // If we're going to inline some modules into this one,
             // update user4 (statement count) to reflect that:
@@ -647,7 +646,11 @@ private:
             m_scope += "__DOT__" + nodep->name();
         }
 
-        if (AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
+        if (VN_IS(nodep->modp(), Iface)) {
+            nodep->addIntfRefp(new AstIntfRef{nodep->fileline(), m_scope});
+        }
+        {
+            AstNodeModule* const modp = nodep->modp();
             // Pass Cell pointers down to the next module
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 AstVar* const varp = pinp->modVarp();
@@ -666,9 +669,6 @@ private:
             }
 
             iterateChildren(modp);
-        } else if (VN_IS(nodep->modp(), Iface)) {
-            nodep->addIntfRefp(new AstIntfRef(nodep->fileline(), m_scope));
-            // No need to iterate on interface cells
         }
     }
     virtual void visit(AstAssignVarScope* nodep) override {

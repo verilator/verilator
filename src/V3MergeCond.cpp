@@ -266,7 +266,7 @@ private:
             // and we also need to keep track of it for comparisons later.
             m_mgCondp = m_mgCondp->cloneTree(false);
             // Create equivalent 'if' statement and insert it before the first node
-            AstIf* const resultp = new AstIf(m_mgCondp->fileline(), m_mgCondp, nullptr, nullptr);
+            AstIf* const resultp = new AstIf(m_mgCondp->fileline(), m_mgCondp);
             m_mgFirstp->addHereThisAsNext(resultp);
             // Unzip the list and insert under branches
             AstNode* nextp = m_mgFirstp;

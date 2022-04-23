@@ -98,7 +98,7 @@ private:
                       ? static_cast<AstNode*>(
                           new AstCMath(fl, "vlSymsp->_vm_contextp__->assertOn()", 1))
                       : static_cast<AstNode*>(new AstConst(fl, AstConst::BitFalse())))),
-            nodep, nullptr);
+            nodep);
         newp->user1(true);  // Don't assert/cover this if
         return newp;
     }
@@ -154,7 +154,7 @@ private:
             }
 
             if (bodysp && passsp) bodysp = bodysp->addNext(passsp);
-            ifp = new AstIf(nodep->fileline(), propp, bodysp, nullptr);
+            ifp = new AstIf(nodep->fileline(), propp, bodysp);
             bodysp = ifp;
         } else if (VN_IS(nodep, Assert) || VN_IS(nodep, AssertIntrinsic)) {
             if (nodep->immediate()) {
@@ -313,8 +313,7 @@ private:
                     AstIf* const ifp = new AstIf(
                         nodep->fileline(), new AstLogNot(nodep->fileline(), ohot),
                         newFireAssert(nodep,
-                                      "synthesis parallel_case, but multiple matches found"),
-                        nullptr);
+                                      "synthesis parallel_case, but multiple matches found"));
                     ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     nodep->addNotParallelp(ifp);
                 }
@@ -384,7 +383,7 @@ private:
                 new AstLogAnd{fl, new AstLogNot{fl, newMonitorOffVarRefp(nodep, VAccess::READ)},
                               new AstEq{fl, new AstConst{fl, monNum},
                                         newMonitorNumVarRefp(nodep, VAccess::READ)}},
-                stmtsp, nullptr};
+                stmtsp};
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
             AstNode* const newp = new AstAlwaysPostponed{fl, ifp};
             m_modp->addStmtp(newp);
@@ -402,8 +401,7 @@ private:
             nodep->replaceWith(newsetp);
             // Add "always_comb if (__Vstrobe) begin $display(...); __Vstrobe = '0; end"
             AstNode* const stmtsp = nodep;
-            AstIf* const ifp
-                = new AstIf{fl, new AstVarRef{fl, varp, VAccess::READ}, stmtsp, nullptr};
+            AstIf* const ifp = new AstIf{fl, new AstVarRef{fl, varp, VAccess::READ}, stmtsp};
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
             AstNode* const newp = new AstAlwaysPostponed{fl, ifp};
             stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},

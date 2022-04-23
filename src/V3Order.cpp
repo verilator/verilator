@@ -662,6 +662,9 @@ class OrderBuildVisitor final : public VNVisitor {
     virtual void visit(AstInitialAutomatic* nodep) override {  //
         iterateLogic(nodep);
     }
+    virtual void visit(AstInitialStatic* nodep) override {  //
+        iterateLogic(nodep);
+    }
     virtual void visit(AstAlways* nodep) override {  //
         iterateLogic(nodep);
     }

@@ -521,6 +521,19 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Conversions
 
 namespace vlstd {
+
+template <typename T> struct reverse_wrapper {
+    const T& m_v;
+
+    explicit reverse_wrapper(const T& a_v)
+        : m_v(a_v) {}
+    inline auto begin() -> decltype(m_v.rbegin()) { return m_v.rbegin(); }
+    inline auto end() -> decltype(m_v.rend()) { return m_v.rend(); }
+};
+
+// C++20's std::ranges::reverse_view
+template <typename T> reverse_wrapper<T> reverse_view(const T& v) { return reverse_wrapper<T>(v); }
+
 // C++17's std::as_const
 template <class T> T const& as_const(T& v) { return v; }
 };  // namespace vlstd

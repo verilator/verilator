@@ -1914,14 +1914,14 @@ private:
     bool m_pure = false;  // Pure optimizable
 public:
     AstCMethodHard(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
-                   AstNode* pinsp)
+                   AstNode* pinsp = nullptr)
         : ASTGEN_SUPER_CMethodHard(fl, false)
         , m_name{name} {
         setOp1p(fromp);
         dtypep(nullptr);  // V3Width will resolve
         addNOp2p(pinsp);
     }
-    AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
+    AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp = nullptr)
         : ASTGEN_SUPER_CMethodHard(fl, false)
         , m_name{name} {
         setOp1p(fromp);
@@ -3407,12 +3407,21 @@ public:
 };
 
 class AstInitialAutomatic final : public AstNodeProcedure {
-    // initial for automatic variables
+    // Automatic variable initialization
     // That is, it runs every function start, or class construction
 public:
     AstInitialAutomatic(FileLine* fl, AstNode* bodysp)
         : ASTGEN_SUPER_InitialAutomatic(fl, bodysp) {}
     ASTNODE_NODE_FUNCS(InitialAutomatic)
+};
+
+class AstInitialStatic final : public AstNodeProcedure {
+    // Static variable initialization
+    // That is, it runs at the beginning of simulation, before 'initial' blocks
+public:
+    AstInitialStatic(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER_InitialStatic(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(InitialStatic)
 };
 
 class AstAlways final : public AstNodeProcedure {
@@ -4610,7 +4619,7 @@ public:
 
 class AstWhile final : public AstNodeStmt {
 public:
-    AstWhile(FileLine* fl, AstNode* condp, AstNode* bodysp, AstNode* incsp = nullptr)
+    AstWhile(FileLine* fl, AstNode* condp, AstNode* bodysp = nullptr, AstNode* incsp = nullptr)
         : ASTGEN_SUPER_While(fl) {
         setOp2p(condp);
         addNOp3p(bodysp);
@@ -4714,7 +4723,7 @@ private:
     bool m_unique0Pragma;  // unique0 case
     bool m_priorityPragma;  // priority case
 public:
-    AstIf(FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp = nullptr)
+    AstIf(FileLine* fl, AstNode* condp, AstNode* ifsp = nullptr, AstNode* elsesp = nullptr)
         : ASTGEN_SUPER_If(fl, condp, ifsp, elsesp) {
         m_uniquePragma = false;
         m_unique0Pragma = false;

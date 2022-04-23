@@ -153,6 +153,11 @@ private:
         iterateChildren(nodep);
         if (m_packageScopep) { m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep)); }
     }
+    virtual void visit(AstInitialStatic* nodep) override {
+        // But not AstInitialAutomatic, which remains under the class
+        iterateChildren(nodep);
+        if (m_packageScopep) { m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep)); }
+    }
 
     virtual void visit(AstNodeMath* nodep) override {}  // Short circuit
     virtual void visit(AstNodeStmt* nodep) override {}  // Short circuit
@@ -173,7 +178,7 @@ public:
                 vscp->scopep(scopep);
                 vscp->unlinkFrBack();
                 scopep->addVarp(vscp);
-            } else if (VN_IS(nodep, Initial)) {
+            } else if (VN_IS(nodep, Initial) || VN_IS(nodep, InitialStatic)) {
                 nodep->unlinkFrBack();
                 scopep->addActivep(nodep);
             } else {

@@ -11,10 +11,16 @@ typedef struct packed {
    integer     val200;
 } struct_t;
 
+// This interface is not connected to any cells
+interface ifc_inner(input integer cyc);
+   integer     value;
+endinterface
+
 interface ifc (input logic clk,
                input integer cyc);
    integer 		     value;
    struct_t the_struct;
+   ifc_inner inner (.*);
 endinterface
 
 module t (/*AUTOARG*/
