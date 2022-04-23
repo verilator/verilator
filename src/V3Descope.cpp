@@ -161,7 +161,7 @@ private:
                                 new AstCMath(funcp->fileline(),
                                              string("&(") + funcp->scopep()->nameVlSym() + ")",
                                              64)),
-                            returnp, nullptr);
+                            returnp);
                         newfuncp->addStmtsp(ifp);
                     } else {
                         newfuncp->addStmtsp(returnp);

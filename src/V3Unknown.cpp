@@ -127,8 +127,7 @@ private:
                 (needDly ? static_cast<AstNode*>(
                      new AstAssignDly(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))
                          : static_cast<AstNode*>(
-                             new AstAssign(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))),
-                nullptr);
+                             new AstAssign(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))));
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
             if (debug() >= 9) newp->dumpTree(cout, "     _new: ");

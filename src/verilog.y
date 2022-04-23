@@ -3111,7 +3111,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//			// IEEE: conditional_statement
 	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
-			{ AstIf* const newp = new AstIf{$2, $4, $6, nullptr};
+			{ AstIf* const newp = new AstIf{$2, $4, $6};
 			  $$ = newp;
 			  if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
 			  if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
@@ -3180,7 +3180,7 @@ statement_item<nodep>:		// IEEE: statement_item
 							     $$ = $2->cloneTree(true);
 							     $$->addNext(new AstWhile($1,$5,$2));
 							  }
-							  else $$ = new AstWhile($1,$5,nullptr); }
+							  else $$ = new AstWhile($1,$5); }
 	//			// IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
 	|	yFOREACH '(' idClassSelForeach ')' stmtBlock	{ $$ = new AstForeach($1, $3, $5); }
 	//

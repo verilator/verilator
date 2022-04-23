@@ -656,7 +656,7 @@ private:
                             condp = condp ? new AstOr(flp, condp, selp) : selp;
                         }
                     }
-                    ifp = new AstIf(flp, condp, nullptr, nullptr);
+                    ifp = new AstIf(flp, condp);
                     if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subFuncp->addStmtsp(ifp);
                     subStmts += ifp->nodeCount();

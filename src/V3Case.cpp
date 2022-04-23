@@ -427,8 +427,7 @@ private:
                 if (++depth > CASE_ENCODER_GROUP_DEPTH) depth = 1;
                 if (depth == 1) {  // First group or starting new group
                     itemnextp = nullptr;
-                    AstIf* const newp
-                        = new AstIf(itemp->fileline(), ifexprp->cloneTree(true), nullptr, nullptr);
+                    AstIf* const newp = new AstIf(itemp->fileline(), ifexprp->cloneTree(true));
                     if (groupnextp) {
                         groupnextp->addElsesp(newp);
                     } else {
@@ -448,7 +447,7 @@ private:
                     VL_DO_DANGLING(itemexprp->deleteTree(), itemexprp);
                     itemexprp = new AstConst(itemp->fileline(), AstConst::BitTrue());
                 }
-                AstIf* const newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, nullptr);
+                AstIf* const newp = new AstIf(itemp->fileline(), itemexprp, istmtsp);
                 if (itemnextp) {
                     itemnextp->addElsesp(newp);
                 } else {
