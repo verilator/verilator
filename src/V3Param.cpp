@@ -555,14 +555,12 @@ class ParamProcessor final {
             cellp->v3error("Exceeded maximum --module-recursion-depth of "
                            << v3Global.opt.moduleRecursionDepth());
         }
-        // Keep tree sorted by level. Append to end of sub-list at the same level. This is
-        // important because due to the way recursive modules are handled, different
-        // parametrizations of the same recursive module end up with the same level (which in
-        // itself is a bit unfortunate). Nevertheless, as a later parametrization must not be above
-        // an earlier parametrization of a recursive module, it is sufficient to add to the end of
-        // the sub-list to keep the modules topologically sorted.
+        // Keep tree sorted by level. Note: Different parametrizations of the same recursive module
+        // end up with the same level, which we will need to fix up at the end, as we do not know
+        // up front how recursive modules are expanded, and a later expansion might re-use an
+        // earlier expansion (see t_recursive_module_bug_2).
         AstNodeModule* insertp = srcModp;
-        while (VN_IS(insertp->nextp(), NodeModule)
+        while (insertp->nextp()
                && VN_AS(insertp->nextp(), NodeModule)->level() <= newmodp->level()) {
             insertp = VN_AS(insertp->nextp(), NodeModule);
         }
@@ -843,6 +841,9 @@ public:
 // Process parameter visitor
 
 class ParamVisitor final : public VNVisitor {
+    // NODE STATE
+    // AstNodeModule::user1 -> bool: already fixed level
+
     // STATE
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
     UnrollStateful m_unroller;  // Loop unroller
@@ -851,6 +852,9 @@ class ParamVisitor final : public VNVisitor {
     string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::deque<AstCell*> m_cellps;  // Cells left to process (in current module)
+
+    // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
+    std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -900,12 +904,27 @@ class ParamVisitor final : public VNVisitor {
 
                     // Add the (now potentially specialized) child module to the work queue
                     workQueue.emplace(cellp->modp()->level(), cellp->modp());
+
+                    // Add to the hierarchy registry
+                    m_parentps[cellp->modp()].insert(modp);
                 }
             }
             m_cellps.clear();
         } while (!workQueue.empty());
 
         m_iterateModule = false;
+    }
+
+    // Fix up level of module, based on who instantiates it
+    void fixLevel(AstNodeModule* modp) {
+        if (modp->user1SetOnce()) return;  // Already fixed
+        if (m_parentps[modp].empty()) return;  // Leave top levels alone
+        int maxParentLevel = 0;
+        for (AstNodeModule* parentp : m_parentps[modp]) {
+            fixLevel(parentp);  // Ensure parent level is correct
+            maxParentLevel = std::max(maxParentLevel, parentp->level());
+        }
+        if (modp->level() <= maxParentLevel) modp->level(maxParentLevel + 1);
     }
 
     // VISITORS
@@ -1191,10 +1210,38 @@ class ParamVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ParamVisitor(AstNetlist* nodep)
-        : m_processor{nodep} {
+    explicit ParamVisitor(AstNetlist* netlistp)
+        : m_processor{netlistp} {
         // Relies on modules already being in top-down-order
-        iterate(nodep);
+        iterate(netlistp);
+
+        // Re-sort module list to be in topological order and fix-up incorrect levels. We need to
+        // do this globally at the end due to the presence of recursive modules, which might be
+        // expanded in orders that reuse earlier specializations later at a lower level.
+        {
+            // Gather modules
+            std::vector<AstNodeModule*> modps;
+            for (AstNodeModule *modp = netlistp->modulesp(), *nextp; modp; modp = nextp) {
+                nextp = VN_AS(modp->nextp(), NodeModule);
+                modp->unlinkFrBack();
+                modps.push_back(modp);
+            }
+
+            // Fix-up levels
+            {
+                const VNUser1InUse user1InUse;
+                for (AstNodeModule* const modp : modps) fixLevel(modp);
+            }
+
+            // Sort by level
+            std::stable_sort(modps.begin(), modps.end(),
+                             [](const AstNodeModule* ap, const AstNodeModule* bp) {
+                                 return ap->level() < bp->level();
+                             });
+
+            // Re-insert modules
+            for (AstNodeModule* const modp : modps) netlistp->addModulep(modp);
+        }
     }
     virtual ~ParamVisitor() override = default;
     VL_UNCOPYABLE(ParamVisitor);
