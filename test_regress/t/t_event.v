@@ -22,9 +22,9 @@ module t(/*AUTOARG*/
    event ev [3:0];
 `endif
 
-   int   cyc;
+   int   cyc = 0;
 
-   int last_event;
+   int last_event = 0;
    always @(e1) begin
       `WRITE_VERBOSE(("[%0t] e1\n", $time));
       if (!e1.triggered) $stop;
