@@ -422,6 +422,14 @@ private:
     virtual void visit(AstActive* nodep) override {
         // Actives are being formed, so we can ignore any already made
     }
+    virtual void visit(AstInitialStatic* nodep) override {
+        // Relink to IACTIVE, unless already under it
+        UINFO(4, "    INITIAL " << nodep << endl);
+        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
+        AstActive* const wantactivep = m_namer.getIActive(nodep->fileline());
+        nodep->unlinkFrBack();
+        wantactivep->addStmtsp(nodep);
+    }
     virtual void visit(AstInitial* nodep) override {
         // Relink to IACTIVE, unless already under it
         UINFO(4, "    INITIAL " << nodep << endl);

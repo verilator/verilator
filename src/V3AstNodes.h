@@ -3407,12 +3407,21 @@ public:
 };
 
 class AstInitialAutomatic final : public AstNodeProcedure {
-    // initial for automatic variables
+    // Automatic variable initialization
     // That is, it runs every function start, or class construction
 public:
     AstInitialAutomatic(FileLine* fl, AstNode* bodysp)
         : ASTGEN_SUPER_InitialAutomatic(fl, bodysp) {}
     ASTNODE_NODE_FUNCS(InitialAutomatic)
+};
+
+class AstInitialStatic final : public AstNodeProcedure {
+    // Static variable initialization
+    // That is, it runs at the beginning of simulation, before 'initial' blocks
+public:
+    AstInitialStatic(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER_InitialStatic(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(InitialStatic)
 };
 
 class AstAlways final : public AstNodeProcedure {
