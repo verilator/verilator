@@ -33,8 +33,8 @@
 #include "V3UniqueNames.h"
 
 #include <algorithm>
-#include <type_traits>
 #include <memory>
+#include <type_traits>
 
 //######################################################################
 // Utilities
