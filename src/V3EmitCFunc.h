@@ -406,7 +406,7 @@ public:
     virtual void visit(AstCMethodHard* nodep) override {
         iterate(nodep->fromp());
         puts(".");
-        puts(nodep->nameProtect());
+        puts(nodep->name());
         puts("(");
         bool comma = false;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {

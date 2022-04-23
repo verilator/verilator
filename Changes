@@ -22,6 +22,7 @@ Verilator 4.221 devel
 * Fix filenames with dots overwriting debug .vpp files (#3373).
 * Fix including VK_USER_OBJS in make library (#3370). [Julien Margetts]
 * Fix crash in recursive module inlining (#3393). [david-sawatzke]
+* Fix --protect-ids mangling names of library methods. [Geza Lore, Shunyao CAD]
 
 Verilator 4.220 2022-03-12
 ==========================
