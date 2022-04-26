@@ -675,13 +675,14 @@ public:
                      << ((lookupSymp->symPrefix() == "") ? "" : " as ")
                      << ((lookupSymp->symPrefix() == "") ? "" : lookupSymp->symPrefix() + dotname)
                      << "  at se" << lookupSymp << endl);
-        const string prefix = lookupSymp->symPrefix();
+        string prefix = lookupSymp->symPrefix();
         VSymEnt* foundp = nullptr;
         while (!foundp) {
             foundp = lookupSymp->findIdFallback(prefix + dotname);  // Might be nullptr
             if (prefix.empty()) break;
             const string nextPrefix = removeLastInlineScope(prefix);
             if (prefix == nextPrefix) break;
+            prefix = nextPrefix;
         }
         if (!foundp) baddot = dotname;
         return foundp;
