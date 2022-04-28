@@ -3794,8 +3794,9 @@ private:
         const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
         UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
         // if (debug()) nodep->dumpTree(cout, "-foreach-old: ");
+        userIterateAndNext(loopsp->fromp(), WidthVP(SELF, BOTH).p());
         AstNode* const fromp = loopsp->fromp();
-        userIterateAndNext(fromp, WidthVP(SELF, BOTH).p());
+        UASSERT_OBJ(fromp->dtypep(), fromp, "Missing data type");
         AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
         // Split into for loop
         AstNode* bodyp = nodep->bodysp();  // Might be null
