@@ -1,11 +1,15 @@
-%Warning-BLKSEQ: t/t_lint_blksync_bad.v:24:16: Blocking assignments (=) in sequential (flop or latch) block
-                                             : ... Suggest delayed assignments (<=)
+%Warning-BLKSEQ: t/t_lint_blksync_bad.v:24:16: Blocking assignment '=' in sequential logic process
+                                             : ... Suggest using delayed assignment '<='
    24 |       sync_blk = 1'b1;
       |                ^
                  ... For warning description see https://verilator.org/warn/BLKSEQ?v=latest
                  ... Use "/* verilator lint_off BLKSEQ */" and lint_on around source to disable this message.
-%Warning-COMBDLY: t/t_lint_blksync_bad.v:31:18: Delayed assignments (<=) in non-clocked (non flop or latch) block
-                                              : ... Suggest blocking assignments (=)
+%Warning-BLKSEQ: t/t_lint_blksync_bad.v:25:17: Blocking assignment '=' in sequential logic process
+                                             : ... Suggest using delayed assignment '<='
+   25 |       sync_blk2 = 1'b1;    
+      |                 ^
+%Warning-COMBDLY: t/t_lint_blksync_bad.v:31:18: Non-blocking assignment '<=' in combinational logic process
+                                              : ... This will be executed as a blocking assignment '='!
    31 |       combo_nblk <= 1'b1;
       |                  ^~
                   *** See https://verilator.org/warn/COMBDLY before disabling this,
