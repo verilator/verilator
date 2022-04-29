@@ -1972,45 +1972,119 @@ private:
         } while (nodep);
     }
 
-public:
-    // Traverse subtree and call given function 'f' in pre-order on each node that has type 'T'.
-    // Prefer 'foreach' over simple VNVisitor that only needs to handle a single (or a few) node
-    // types, as it's easier to write, but more importantly, the dispatch to the operation function
-    // in 'foreach' should be completely predictable by branch target caches in modern CPUs,
-    // while it is basically unpredictable for VNVisitor.
-    template <typename T_Node> void foreach (std::function<void(T_Node*)> f) {
+    template <typename T_Arg, bool Default, bool VisitNext>
+    static bool predicateImpl(
+        // Using std::conditional for const correctness in the public 'foreach' functions
+        typename std::conditional<std::is_const<T_Arg>::value, const AstNode*, AstNode*>::type
+            nodep,
+        std::function<bool(T_Arg*)> p) {
+
+        // Note: Using a loop to iterate the nextp() chain, instead of tail recursion, because
+        // debug builds don't eliminate tail calls, causing stack overflow on long lists of nodes.
+        do {
+            // Prefetch children and next
+            ASTNODE_PREFETCH(nodep->op1p());
+            ASTNODE_PREFETCH(nodep->op2p());
+            ASTNODE_PREFETCH(nodep->op3p());
+            ASTNODE_PREFETCH(nodep->op4p());
+            if /* TODO: 'constexpr' in C++17 */ (VisitNext) ASTNODE_PREFETCH(nodep->nextp());
+
+            // Apply function in pre-order
+            if (privateTypeTest<typename std::remove_const<T_Arg>::type>(nodep)) {
+                if (p(static_cast<T_Arg*>(nodep)) != Default) return !Default;
+            }
+
+            // Traverse children (including their 'nextp()' chains), unless futile
+            if (mayBeUnder<typename std::remove_const<T_Arg>::type>(nodep)) {
+                if (AstNode* const op1p = nodep->op1p()) {
+                    if (predicateImpl<T_Arg, Default, true>(op1p, p) != Default) return !Default;
+                }
+                if (AstNode* const op2p = nodep->op2p()) {
+                    if (predicateImpl<T_Arg, Default, true>(op2p, p) != Default) return !Default;
+                }
+                if (AstNode* const op3p = nodep->op3p()) {
+                    if (predicateImpl<T_Arg, Default, true>(op3p, p) != Default) return !Default;
+                }
+                if (AstNode* const op4p = nodep->op4p()) {
+                    if (predicateImpl<T_Arg, Default, true>(op4p, p) != Default) return !Default;
+                }
+            }
+
+            // Traverse 'nextp()' chain if requested
+            if /* TODO: 'constexpr' in C++17 */ (VisitNext) {
+                nodep = nodep->nextp();
+            } else {
+                break;
+            }
+        } while (nodep);
+
+        return Default;
+    }
+
+    template <typename T_Node> constexpr static void checkTypeParameter() {
         static_assert(!std::is_const<T_Node>::value,
                       "Type parameter 'T_Node' should not be const qualified");
         static_assert(std::is_base_of<AstNode, T_Node>::value,
                       "Type parameter 'T_Node' must be a subtype of AstNode");
+    }
+
+public:
+    // Traverse subtree and call given function 'f' in pre-order on each node that has type
+    // 'T_Node'. Prefer 'foreach' over simple VNVisitor that only needs to handle a single (or a
+    // few) node types, as it's easier to write, but more importantly, the dispatch to the
+    // operation function in 'foreach' should be completely predictable by branch target caches in
+    // modern CPUs, while it is basically unpredictable for VNVisitor.
+    template <typename T_Node> void foreach (std::function<void(T_Node*)> f) {
+        checkTypeParameter<T_Node>();
         foreachImpl<T_Node, /* VisitNext: */ false>(this, f);
     }
 
     // Same as above, but for 'const' nodes
     template <typename T_Node> void foreach (std::function<void(const T_Node*)> f) const {
-        static_assert(!std::is_const<T_Node>::value,
-                      "Type parameter 'T_Node' should not be const qualified");
-        static_assert(std::is_base_of<AstNode, T_Node>::value,
-                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        checkTypeParameter<T_Node>();
         foreachImpl<const T_Node, /* VisitNext: */ false>(this, f);
     }
 
     // Same as 'foreach' but also follows 'this->nextp()'
     template <typename T_Node> void foreachAndNext(std::function<void(T_Node*)> f) {
-        static_assert(!std::is_const<T_Node>::value,
-                      "Type parameter 'T_Node' should not be const qualified");
-        static_assert(std::is_base_of<AstNode, T_Node>::value,
-                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        checkTypeParameter<T_Node>();
         foreachImpl<T_Node, /* VisitNext: */ true>(this, f);
     }
 
     // Same as 'foreach' but also follows 'this->nextp()'
     template <typename T_Node> void foreachAndNext(std::function<void(const T_Node*)> f) const {
-        static_assert(!std::is_const<T_Node>::value,
-                      "Type parameter 'T_Node' should not be const qualified");
-        static_assert(std::is_base_of<AstNode, T_Node>::value,
-                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        checkTypeParameter<T_Node>();
         foreachImpl<const T_Node, /* VisitNext: */ true>(this, f);
+    }
+
+    // Given a predicate function 'p' return true if and only if there exists a node of type
+    // 'T_Node' that satisfies the predicate 'p'. Returns false if no node of type 'T_Node' is
+    // present. Traversal is performed in some arbitrary order and is terminated as soon as the
+    // result can be determined.
+    template <typename T_Node> bool exists(std::function<bool(T_Node*)> p) {
+        checkTypeParameter<T_Node>();
+        return predicateImpl<T_Node, /* Default: */ false, /* VisitNext: */ false>(this, p);
+    }
+
+    // Same as above, but for 'const' nodes
+    template <typename T_Node> void exists(std::function<bool(const T_Node*)> p) const {
+        checkTypeParameter<T_Node>();
+        return predicateImpl<const T_Node, /* Default: */ false, /* VisitNext: */ false>(this, p);
+    }
+
+    // Given a predicate function 'p' return true if and only if all nodes of type
+    // 'T_Node' satisfy the predicate 'p'. Returns true if no node of type 'T_Node' is
+    // present. Traversal is performed in some arbitrary order and is terminated as soon as the
+    // result can be determined.
+    template <typename T_Node> bool forall(std::function<bool(T_Node*)> p) {
+        checkTypeParameter<T_Node>();
+        return predicateImpl<T_Node, /* Default: */ true, /* VisitNext: */ false>(this, p);
+    }
+
+    // Same as above, but for 'const' nodes
+    template <typename T_Node> void forall(std::function<bool(const T_Node*)> p) const {
+        checkTypeParameter<T_Node>();
+        return predicateImpl<const T_Node, /* Default: */ true, /* VisitNext: */ false>(this, p);
     }
 
     int nodeCount() const {
