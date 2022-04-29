@@ -1,11 +1,11 @@
-%Warning-INITIALDLY: t/t_initial_dlyass.v:18:9: Delayed assignments (<=) in initial or final block
-                                              : ... Suggest blocking assignments (=)
+%Warning-INITIALDLY: t/t_initial_dlyass.v:18:9: Non-blocking assignment '<=' in initial/final block
+                                              : ... This will be executed as a blocking assignment '='!
    18 |       a <= 22;
       |         ^~
                      ... For warning description see https://verilator.org/warn/INITIALDLY?v=latest
                      ... Use "/* verilator lint_off INITIALDLY */" and lint_on around source to disable this message.
-%Warning-INITIALDLY: t/t_initial_dlyass.v:19:9: Delayed assignments (<=) in initial or final block
-                                              : ... Suggest blocking assignments (=)
+%Warning-INITIALDLY: t/t_initial_dlyass.v:19:9: Non-blocking assignment '<=' in initial/final block
+                                              : ... This will be executed as a blocking assignment '='!
    19 |       b <= 33;
       |         ^~
 %Error: Exiting due to

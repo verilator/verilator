@@ -20,8 +20,8 @@
                                   : ... In instance t
    20 |    dly_s_t dly_s;
       |            ^~~~~
-%Warning-BLKSEQ: t/t_delay.v:37:20: Blocking assignments (=) in sequential (flop or latch) block
-                                  : ... Suggest delayed assignments (<=)
+%Warning-BLKSEQ: t/t_delay.v:37:20: Blocking assignment '=' in sequential logic process
+                                  : ... Suggest using delayed assignment '<='
    37 |          dly_s.dly = 55;
       |                    ^
 %Error: Exiting due to
