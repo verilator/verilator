@@ -19,41 +19,41 @@ module t (/*AUTOARG*/
    reg ionewire;
 
    wire oonewire;
-   wire [7:0]		osizedreg;		// From sub of t_inst_v2k_sub.v
+   wire [7:0]           osizedreg;              // From sub of t_inst_v2k_sub.v
 
    t_inst sub
      (
       .osizedreg,
       .oonewire,
       // Inputs
-      .isizedwire			(isizedwire[7:0]),
+      .isizedwire                       (isizedwire[7:0]),
       .*
-      //.ionewire			(ionewire)
+      //.ionewire                       (ionewire)
       );
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
-	    ionewire <= 1'b1;
-	    isizedwire <= 8'd8;
-	 end
-	 if (cyc==2) begin
-	    if (low != 2'b00) $stop;
-	    if (high != 2'b11) $stop;
-	    if (oonewire !== 1'b1) $stop;
-	    if (isizedwire !== 8'd8) $stop;
-	 end
-	 if (cyc==3) begin
-	    ionewire <= 1'b0;
-	    isizedwire <= 8'd7;
-	 end
-	 if (cyc==4) begin
-	    if (oonewire !== 1'b0) $stop;
-	    if (isizedwire !== 8'd7) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==1) begin
+            ionewire <= 1'b1;
+            isizedwire <= 8'd8;
+         end
+         if (cyc==2) begin
+            if (low != 2'b00) $stop;
+            if (high != 2'b11) $stop;
+            if (oonewire !== 1'b1) $stop;
+            if (isizedwire !== 8'd8) $stop;
+         end
+         if (cyc==3) begin
+            ionewire <= 1'b0;
+            isizedwire <= 8'd7;
+         end
+         if (cyc==4) begin
+            if (oonewire !== 1'b0) $stop;
+            if (isizedwire !== 8'd7) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule

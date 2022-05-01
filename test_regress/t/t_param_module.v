@@ -23,11 +23,11 @@ module t (/*AUTOARG*/
    input clk;
 
   localparam logic[4:0] WID = 16;
-  //localparam WID = 16;	// No problem if defined like this
+  //localparam WID = 16;        // No problem if defined like this
   wire [15:0] b33;
 
   test #(WID) i_test_33(.clk (clk),
-			.b   (b33));
+                        .b   (b33));
 
 endmodule
 

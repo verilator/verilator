@@ -21,9 +21,9 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==20) begin
-	 if (c_data.value != 12345) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (c_data.value != 12345) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

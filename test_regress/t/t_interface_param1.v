@@ -12,7 +12,7 @@ module t (/*AUTOARG*/
    );
    input  wire       clk;
 
-   wire [31:0] 	     result;
+   wire [31:0]       result;
    test_if  #(.id(3)) s();
    sub_test U_SUB_TEST(s.a.b, result);  // the line causing error
 endmodule : t
@@ -34,14 +34,14 @@ interface test_if
    ();
 
    typedef struct     packed {
-      logic 	      a;
+      logic           a;
       logic [31:0]    b;
    } aType;
 
    aType a;
 
    typedef struct     packed {
-      logic 	      c;
+      logic           c;
       logic [31:0]    d;
    } bType;
 

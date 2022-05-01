@@ -35,42 +35,42 @@ module t (/*AUTOARG*/
       $display("%b",{qa,qb,qc,qd,qe});
 `endif
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
-	    b <= 1'b1;
-	 end
-	 if (cyc==2) begin
-	    if (qa!=1'b1) $stop;
-	    if (qb!=1'b0) $stop;
-	    if (qd!=1'b0) $stop;
-	    b <= 1'b0;
-	 end
-	 if (cyc==3) begin
-	    if (qa!=1'b0) $stop;
-	    if (qb!=1'b0) $stop;
-	    if (qd!=1'b0) $stop;
-	    if (qe!=1'b0) $stop;
-	    b <= 1'b1;
-	 end
-	 if (cyc==4) begin
-	    if (qa!=1'b1) $stop;
-	    if (qb!=1'b0) $stop;
-	    if (qd!=1'b0) $stop;
-	    if (qe!=1'b1) $stop;
-	    b <= 1'b0;
-	 end
-	 if (cyc==5) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==1) begin
+            b <= 1'b1;
+         end
+         if (cyc==2) begin
+            if (qa!=1'b1) $stop;
+            if (qb!=1'b0) $stop;
+            if (qd!=1'b0) $stop;
+            b <= 1'b0;
+         end
+         if (cyc==3) begin
+            if (qa!=1'b0) $stop;
+            if (qb!=1'b0) $stop;
+            if (qd!=1'b0) $stop;
+            if (qe!=1'b0) $stop;
+            b <= 1'b1;
+         end
+         if (cyc==4) begin
+            if (qa!=1'b1) $stop;
+            if (qb!=1'b0) $stop;
+            if (qd!=1'b0) $stop;
+            if (qe!=1'b1) $stop;
+            b <= 1'b0;
+         end
+         if (cyc==5) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule
 
 module ta (
-	   input vconst,
-	   input b,
-	   output reg q);
+           input vconst,
+           input b,
+           output reg q);
 
    always @ (/*AS*/b or vconst) begin
       q = vconst | b;
@@ -78,9 +78,9 @@ module ta (
 endmodule
 
 module tb (
-	   input vconst,
-	   input clk,
-	   output reg q);
+           input vconst,
+           input clk,
+           output reg q);
 
    always @ (posedge clk) begin
       q <= vconst;
@@ -88,9 +88,9 @@ module tb (
 endmodule
 
 module tc (
-	   input vconst,
-	   input b,
-	   output reg q);
+           input vconst,
+           input b,
+           output reg q);
    always @ (posedge vconst) begin
       q <= b;
       $stop;
@@ -98,9 +98,9 @@ module tc (
 endmodule
 
 module td (
-	   input vconst,
-	   input b,
-	   output reg q);
+           input vconst,
+           input b,
+           output reg q);
 
    always @ (/*AS*/vconst) begin
      q = vconst;
@@ -108,11 +108,11 @@ module td (
 endmodule
 
 module te (
-	   input clk,
-	   input vconst,
-	   input b,
-	   output reg q);
-   reg 		  qmid;
+           input clk,
+           input vconst,
+           input b,
+           output reg q);
+   reg            qmid;
    always @ (posedge vconst or posedge clk) begin
       qmid <= b;
    end

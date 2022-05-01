@@ -27,19 +27,19 @@ module t (/*AUTOARG*/);
 
    integer i;
    integer j;
-   bit 	   b;
+   bit     b;
    integer errors;
 
    task check1(integer line, bit got, bit ex);
       if (got != ex) begin
-	 $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
-	 errors++;
+         $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
+         errors++;
       end
    endtask
    task check(integer line, int got, int ex);
       if (got != ex) begin
-	 $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
-	 errors++;
+         $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
+         errors++;
       end
    endtask
 
@@ -192,12 +192,12 @@ module t (/*AUTOARG*/);
       // Something a lot more complicated
       dpii_clear();
       for (i=0; i<64; i++) begin
-	 b = ( ((dpii_incx(0,i[0])
-		 && (dpii_incx(1,i[1])
-		     || dpii_incx(2,i[2])
-		     | dpii_incx(3,i[3])))  // | not ||
-		|| dpii_incx(4,i[4]))
-	       -> dpii_incx(5,i[5]));
+         b = ( ((dpii_incx(0,i[0])
+                 && (dpii_incx(1,i[1])
+                     || dpii_incx(2,i[2])
+                     | dpii_incx(3,i[3])))  // | not ||
+                || dpii_incx(4,i[4]))
+               -> dpii_incx(5,i[5]));
       end
       check (`__LINE__, dpii_count(0), 64);
       check (`__LINE__, dpii_count(1), 32);

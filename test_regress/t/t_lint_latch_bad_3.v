@@ -31,25 +31,25 @@ begin
     begin
         o2 = 1'b0;
 
-	    if (a)
-	    begin
+            if (a)
+            begin
             o3 = a;
             o5 <= 1'b1; // Do NOT expect Warning-COMBDLY
-	    end
-	    else
-	    begin
+            end
+            else
+            begin
             o3 = ~a;
             o5 <=  a; // Do NOT expect Warning-COMBDLY
-	    end
+            end
 
         // o3 is not assigned in either path of this if/else
         // but no latch because always assigned above
-	    if (c)
-	    begin
+            if (c)
+            begin
             o2 = a ^ b;
             o4 = 1'b1;
         end
-	    else
+            else
             o4 = ~a ^ b;
 
         o2 = 1'b1;
@@ -57,16 +57,16 @@ begin
     else
     begin
         o2 = 1'b1;
-	    if (b)
+            if (b)
         begin
             o3 = ~a | b;
             o5 <= ~b; // Do NOT expect Warning-COMBDLY
-	    end
-	    else
-	    begin
+            end
+            else
+            begin
             o3 = a & ~b;
             // No assignment to o5, expect Warning-LATCH
-	    end
+            end
         o4 <= 1'b0; // expect Warning-COMBDLY
     end
 end

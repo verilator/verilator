@@ -62,10 +62,10 @@
       <basicdtype loc="d,23,7,23,12" id="10" name="logic"/>
       <basicdtype loc="d,24,7,24,12" id="11" name="logic"/>
       <structdtype loc="d,20,12,20,18" id="2" name="m.my_struct">
-        <memberdtype loc="d,21,16,21,19" id="12" name="clk" tag="this is clk" sub_dtype_id="8"/>
-        <memberdtype loc="d,22,16,22,17" id="13" name="k" sub_dtype_id="9"/>
-        <memberdtype loc="d,23,16,23,22" id="14" name="enable" tag="enable" sub_dtype_id="10"/>
-        <memberdtype loc="d,24,16,24,20" id="15" name="data" tag="data" sub_dtype_id="11"/>
+        <memberdtype loc="d,21,19,21,22" id="12" name="clk" tag="this is clk" sub_dtype_id="8"/>
+        <memberdtype loc="d,22,19,22,20" id="13" name="k" sub_dtype_id="9"/>
+        <memberdtype loc="d,23,19,23,25" id="14" name="enable" tag="enable" sub_dtype_id="10"/>
+        <memberdtype loc="d,24,19,24,23" id="15" name="data" tag="data" sub_dtype_id="11"/>
       </structdtype>
       <ifacerefdtype loc="d,29,8,29,12" id="3" modportname=""/>
       <basicdtype loc="d,31,27,31,28" id="5" name="logic" left="31" right="0"/>

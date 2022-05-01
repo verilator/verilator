@@ -54,7 +54,7 @@ extern "C" int mon_check();
 
 `ifdef IVERILOG
    // stop icarus optimizing signals away
-   wire 	redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3] | twobytwo;
+   wire         redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3] | twobytwo;
 `endif
 
    wire         subin  `PUBLIC_FLAT_RD;
@@ -74,8 +74,8 @@ extern "C" int mon_check();
      status = mon_check();
 `endif
       if (status!=0) begin
-	 $write("%%Error: t_vpi_get.cpp:%0d: C Test failed\n", status);
-	 $stop;
+         $write("%%Error: t_vpi_get.cpp:%0d: C Test failed\n", status);
+         $stop;
       end
       $write("*-* All Finished *-*\n");
       $finish;

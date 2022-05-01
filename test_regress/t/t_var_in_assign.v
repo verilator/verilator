@@ -9,14 +9,14 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc = 0;
-   integer	v;
+   integer      cyc = 0;
+   integer      v;
 
-   reg 	i;
+   reg  i;
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire			oa;			// From a of a.v
-   wire			oz;			// From z of z.v
+   wire                 oa;                     // From a of a.v
+   wire                 oz;                     // From z of z.v
    // End of automatics
 
    a a (.*);
@@ -29,21 +29,21 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       i <= cyc[0];
       if (cyc==0) begin
-	 v = 3;
-	 if (v !== 3) $stop;
-	 if (assignin(v) !== 2) $stop;
-	 if (v !== 3) $stop; // Make sure V didn't get changed
+         v = 3;
+         if (v !== 3) $stop;
+         if (assignin(v) !== 2) $stop;
+         if (v !== 3) $stop; // Make sure V didn't get changed
       end
       else if (cyc<10) begin
-	 if (cyc==11 && oz!==1'b0)  $stop;
-	 if (cyc==12 && oz!==1'b1)  $stop;
-	 if (cyc==12 && oa!==1'b1)  $stop;
+         if (cyc==11 && oz!==1'b0)  $stop;
+         if (cyc==12 && oz!==1'b1)  $stop;
+         if (cyc==12 && oa!==1'b1)  $stop;
       end
       else if (cyc<90) begin
       end
       else if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

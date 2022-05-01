@@ -14,8 +14,8 @@ module t (clk);
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==2) begin
-	 // Not $finish; as we don't want a message to scroll by
-	 $c("Verilated::threadContextp()->gotFinish(true);");
+         // Not $finish; as we don't want a message to scroll by
+         $c("Verilated::threadContextp()->gotFinish(true);");
       end
    end
 endmodule

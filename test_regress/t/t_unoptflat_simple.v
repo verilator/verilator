@@ -25,8 +25,8 @@ module t (/*AUTOARG*/
 `endif
 
       if (x[1] != 0) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

@@ -7,22 +7,22 @@
 module t (clk);
    input clk;
 
-   reg [43:0] 	mi;
-   wire [31:0] 	mo;
+   reg [43:0]   mi;
+   wire [31:0]  mo;
    muxtop um ( mi, mo);
 
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
-	    mi <= 44'h1234567890;
-	 end
-	 if (cyc==3) begin
-	    if (mo !== 32'h12345678) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==1) begin
+            mi <= 44'h1234567890;
+         end
+         if (cyc==3) begin
+            if (mo !== 32'h12345678) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 

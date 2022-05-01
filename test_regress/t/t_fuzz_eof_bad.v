@@ -1,3 +1,3 @@
 module a;
-	initial $lay(*Hello!=n");
+        initial $lay(*Hello!=n");
 endmodule

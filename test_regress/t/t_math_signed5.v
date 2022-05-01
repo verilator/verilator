@@ -21,18 +21,18 @@
 
    reg signed [3:0] w4_s;
    reg signed [4:0] w5_s;
-   reg [2:0] 	    w3_u;
-   reg [3:0] 	    w4_u;
-   reg [4:0] 	    w5_u;
-   reg [5:0] 	    w6_u;
-   reg [15:0] 	    w16a_u;
-   reg [15:0] 	    w16_u;
-   reg [31:0] 	    w32_u;
-   real 	    r;
+   reg [2:0]        w3_u;
+   reg [3:0]        w4_u;
+   reg [4:0]        w5_u;
+   reg [5:0]        w6_u;
+   reg [15:0]       w16a_u;
+   reg [15:0]       w16_u;
+   reg [31:0]       w32_u;
+   real             r;
 
    reg signed [4:0] bug754_a;
 
-   integer 	    i;
+   integer          i;
 
    //verilator lint_off WIDTH
    wire a = (5'b0 == (5'sb11111 >>> 3'd7));
@@ -53,7 +53,7 @@
 
       //======================================================================
 
-      if ((-1 >>> 3) != -1) $stop;	// Decimals are signed
+      if ((-1 >>> 3) != -1) $stop;      // Decimals are signed
 
       i = 3'sb111 >>> 3;
       `checkh(i, -1);

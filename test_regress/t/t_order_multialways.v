@@ -38,25 +38,25 @@ module t (/*AUTOARG*/
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 //$write("%d %x %x\n", cyc, h, h2);
-	 if (h != h2) $stop;
-	 if (cyc==1) begin
-	    in_a <= 32'h89a14fab;
-	    in_b <= 32'h7ab512fa;
-	 end
-	 if (cyc==2) begin
-	    in_a <= 32'hf4c11a42;
-	    in_b <= 32'h359967c6;
-	    if (h != 32'h4fab89a1) $stop;
-	 end
-	 if (cyc==3) begin
-	    if (h != 32'h1a42f4c1) $stop;
-	 end
-	 if (cyc==9) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         //$write("%d %x %x\n", cyc, h, h2);
+         if (h != h2) $stop;
+         if (cyc==1) begin
+            in_a <= 32'h89a14fab;
+            in_b <= 32'h7ab512fa;
+         end
+         if (cyc==2) begin
+            in_a <= 32'hf4c11a42;
+            in_b <= 32'h359967c6;
+            if (h != 32'h4fab89a1) $stop;
+         end
+         if (cyc==3) begin
+            if (h != 32'h1a42f4c1) $stop;
+         end
+         if (cyc==9) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule

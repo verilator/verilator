@@ -43,7 +43,7 @@ module secret #(parameter GATED_CLK = 0)
 
    initial $display("created %m");
 
-   logic 		      the_clk;
+   logic                      the_clk;
    generate
       if (GATED_CLK != 0) begin: yes_gated_clock
          logic clk_en_latch /*verilator clock_enable*/;

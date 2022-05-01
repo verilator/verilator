@@ -22,11 +22,11 @@ module t (/*AUTOARG*/
 
    always @(posedge clk) begin
       if (b == 1'b0) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
       else begin
-	 $stop;
+         $stop;
       end
    end
 

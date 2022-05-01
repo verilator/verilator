@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
    input clk;
 
    typedef struct packed {
-      logic [1:0] 	id;
+      logic [1:0]       id;
    } context_t;
 
    context_t  tsb;
@@ -36,8 +36,8 @@ module t (/*AUTOARG*/
 `endif
 
       if (tsb.id[1] != 0) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

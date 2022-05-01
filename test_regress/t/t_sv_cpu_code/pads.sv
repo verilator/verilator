@@ -56,7 +56,7 @@ module pads
         PADTYPE_GPIO:
           pad_gpio #( .ID( i ) )
             i_pad_gpio(
-		       .pad             (pad                 [i]),
+                       .pad             (pad                 [i]),
                        // Outputs
                        .input_val       (padsif.input_val    [i]),
                        // Inouts
@@ -78,7 +78,7 @@ module pads
           begin
             pad_vdd #( .ID( i ) )
               i_pad_vdd(
-			.pad            (pad[i])
+                        .pad            (pad[i])
                         /*AUTOINST*/);
 // Not SV standard, yet...           assign padsif.input_val[i] = ();
           end

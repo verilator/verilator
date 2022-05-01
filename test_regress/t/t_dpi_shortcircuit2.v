@@ -28,19 +28,19 @@ module t (/*AUTOARG*/);
    integer i;
    integer j;
    integer k;
-   bit 	   b;
+   bit     b;
    integer errors;
 
    task check1(integer line, bit got, bit ex);
       if (got != ex) begin
-	 $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
-	 errors++;
+         $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
+         errors++;
       end
    endtask
    task check(integer line, int got, int ex);
       if (got != ex) begin
-	 $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
-	 errors++;
+         $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
+         errors++;
       end
    endtask
 
@@ -52,11 +52,11 @@ module t (/*AUTOARG*/);
       // verilator lint_on IGNOREDRETURN
       j = 0;
       for (i=0; i<64; i++) begin
-	 if (i[0])
-	   j = 0;
-	 else
-	   j = {31'b0, dpii_inc1(0)};
-	 k = k + j;
+         if (i[0])
+           j = 0;
+         else
+           j = {31'b0, dpii_inc1(0)};
+         k = k + j;
       end
       $write("%x\n",k);
       check (`__LINE__, dpii_count(0), 32);

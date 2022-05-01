@@ -14,9 +14,9 @@ module t (/*AUTOARG*/
    wire [31:0] oe;
 
    Test test (/*AUTOINST*/
-	      // Outputs
-	      .o			(o[31:0]),
-	      .oe			(oe[31:0]));
+              // Outputs
+              .o                        (o[31:0]),
+              .oe                       (oe[31:0]));
 
    // Test loop
    always @ (posedge clk) begin
@@ -38,12 +38,12 @@ endmodule
 module Test(o,oe);
    output [31:0] o;
    output [31:0] oe;
-   wire [31:0] 	 xe;
+   wire [31:0]   xe;
    assign xe[31:1] = 0;
    // verilator lint_off IMPLICIT
    // verilator lint_off WIDTH
-   subimp subimp(x,	 // x is implicit and one bit
-		 xe[0]); // xe explicit one bit
+   subimp subimp(x,      // x is implicit and one bit
+                 xe[0]); // xe explicit one bit
    assign o = x;
    assign oe = xe;
    // verilator lint_on WIDTH

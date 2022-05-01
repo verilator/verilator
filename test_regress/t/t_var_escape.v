@@ -55,14 +55,14 @@ module t (/*AUTOARG*/
       if (\a0.cyc != ~cyc) $stop;
       if (\other.cyc != ~cyc) $stop;
       if (cyc==10) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
 endmodule
 
 module sub (
-	    input [31:0] cyc
-	    );
+            input [31:0] cyc
+            );
 endmodule

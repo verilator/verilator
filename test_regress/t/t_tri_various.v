@@ -16,123 +16,123 @@ module t (clk);
    wire       Z11;
 
    Test1 test1(/*AUTOINST*/
-	       // Inouts
-	       .Z1			(Z1),
-	       // Inputs
-	       .OE			(OE),
-	       .A			(A));
+               // Inouts
+               .Z1                      (Z1),
+               // Inputs
+               .OE                      (OE),
+               .A                       (A));
 
    Test2 test2(/*AUTOINST*/
-	       // Inouts
-	       .Z2			(Z2),
-	       // Inputs
-	       .OE			(OE),
-	       .A			(A));
+               // Inouts
+               .Z2                      (Z2),
+               // Inputs
+               .OE                      (OE),
+               .A                       (A));
 
    Test3 test3(/*AUTOINST*/
-	       // Inouts
-	       .Z3			(Z3),
-	       // Inputs
-	       .OE			(OE),
-	       .A			(A));
+               // Inouts
+               .Z3                      (Z3),
+               // Inputs
+               .OE                      (OE),
+               .A                       (A));
 
    Test4 test4(/*AUTOINST*/
-	       // Outputs
-	       .Z4			(Z4),
-	       // Inouts
-	       .Z5			(Z5));
+               // Outputs
+               .Z4                      (Z4),
+               // Inouts
+               .Z5                      (Z5));
 
    Test5 test5(/*AUTOINST*/
-	       // Inouts
-	       .Z6			(Z6),
-	       .Z7			(Z7),
-	       .Z8			(Z8),
-	       .Z9			(Z9),
-	       // Inputs
-	       .OE			(OE));
+               // Inouts
+               .Z6                      (Z6),
+               .Z7                      (Z7),
+               .Z8                      (Z8),
+               .Z9                      (Z9),
+               // Inputs
+               .OE                      (OE));
 
    Test6 test6(/*AUTOINST*/
-	       // Inouts
-	       .Z10			(Z10[3:0]),
-	       // Inputs
-	       .OE			(OE));
+               // Inouts
+               .Z10                     (Z10[3:0]),
+               // Inputs
+               .OE                      (OE));
 
    Test7 test7(/*AUTOINST*/
-	       // Outputs
-	       .Z11			(Z11),
-	       // Inputs
-	       .state			(state[2:0]));
+               // Outputs
+               .Z11                     (Z11),
+               // Inputs
+               .state                   (state[2:0]));
 
    always @(posedge clk) begin
       state <= state + 1;
 `ifdef TEST_VERBOSE
       $write("[%0t] state=%d Z1=%b 2=%b 3=%b 4=%b 5=%b 6=%b 7=%b 8=%b 9=%b 10=%b 11=%b\n",
-	     $time, state, Z1,Z2,Z3,Z4,Z5,Z6,Z7,Z8,Z9,Z10,Z11);
+             $time, state, Z1,Z2,Z3,Z4,Z5,Z6,Z7,Z8,Z9,Z10,Z11);
 `endif
 
       if(state == 0) begin
-	 if(Z1 !== 1'b1) $stop;  // tests pullups
-	 if(Z2 !== 1'b1) $stop;
-	 if(Z3 !== 1'b1) $stop;
+         if(Z1 !== 1'b1) $stop;  // tests pullups
+         if(Z2 !== 1'b1) $stop;
+         if(Z3 !== 1'b1) $stop;
 `ifndef VERILATOR
-	 if(Z4 !== 1'b1) $stop;
+         if(Z4 !== 1'b1) $stop;
 `endif
-	 if(Z5 !== 1'b1) $stop;
-	 if(Z6 !== 1'b1) $stop;
-	 if(Z7 !== 1'b0) $stop;
-	 if(Z8 !== 1'b0) $stop;
-	 if(Z9 !== 1'b1) $stop;
-	 if(Z10 !== 4'b0001) $stop;
-	 if(Z11 !== 1'b0) $stop;
+         if(Z5 !== 1'b1) $stop;
+         if(Z6 !== 1'b1) $stop;
+         if(Z7 !== 1'b0) $stop;
+         if(Z8 !== 1'b0) $stop;
+         if(Z9 !== 1'b1) $stop;
+         if(Z10 !== 4'b0001) $stop;
+         if(Z11 !== 1'b0) $stop;
       end
       else if(state == 1) begin
-	 if(Z1 !== 1'b1) $stop;  // tests pullup
-	 if(Z2 !== 1'b1) $stop;
-	 if(Z3 !== 1'b1) $stop;
+         if(Z1 !== 1'b1) $stop;  // tests pullup
+         if(Z2 !== 1'b1) $stop;
+         if(Z3 !== 1'b1) $stop;
 `ifndef VERILATOR
-	 if(Z4 !== 1'b1) $stop;
+         if(Z4 !== 1'b1) $stop;
 `endif
-	 if(Z5 !== 1'b1) $stop;
-	 if(Z6 !== 1'b1) $stop;
-	 if(Z7 !== 1'b0) $stop;
-	 if(Z8 !== 1'b0) $stop;
-	 if(Z9 !== 1'b1) $stop;
-	 if(Z10 !== 4'b0001) $stop;
-	 if(Z11 !== 1'b1) $stop;
+         if(Z5 !== 1'b1) $stop;
+         if(Z6 !== 1'b1) $stop;
+         if(Z7 !== 1'b0) $stop;
+         if(Z8 !== 1'b0) $stop;
+         if(Z9 !== 1'b1) $stop;
+         if(Z10 !== 4'b0001) $stop;
+         if(Z11 !== 1'b1) $stop;
       end
       else if(state == 2) begin
-	 if(Z1 !== 1'b0) $stop; // tests output driver low
-	 if(Z2 !== 1'b0) $stop;
-	 if(Z3 !== 1'b1 && Z3 !== 1'bx) $stop;  // Conflicts
+         if(Z1 !== 1'b0) $stop; // tests output driver low
+         if(Z2 !== 1'b0) $stop;
+         if(Z3 !== 1'b1 && Z3 !== 1'bx) $stop;  // Conflicts
 `ifndef VERILATOR
-	 if(Z4 !== 1'b1) $stop;
+         if(Z4 !== 1'b1) $stop;
 `endif
-	 if(Z5 !== 1'b1) $stop;
-	 if(Z6 !== 1'b0) $stop;
-	 if(Z7 !== 1'b1) $stop;
-	 if(Z8 !== 1'b1) $stop;
-	 if(Z9 !== 1'b0) $stop;
-	 if(Z10 !== 4'b0010) $stop;
-	 //if(Z11 !== 1'bx) $stop;  // Doesn't matter
+         if(Z5 !== 1'b1) $stop;
+         if(Z6 !== 1'b0) $stop;
+         if(Z7 !== 1'b1) $stop;
+         if(Z8 !== 1'b1) $stop;
+         if(Z9 !== 1'b0) $stop;
+         if(Z10 !== 4'b0010) $stop;
+         //if(Z11 !== 1'bx) $stop;  // Doesn't matter
       end
       else if(state == 3) begin
-	 if(Z1 !== 1'b1) $stop; // tests output driver high
-	 if(Z2 !== 1'b1) $stop;
-	 if(Z3 !== 1'b1) $stop;
+         if(Z1 !== 1'b1) $stop; // tests output driver high
+         if(Z2 !== 1'b1) $stop;
+         if(Z3 !== 1'b1) $stop;
 `ifndef VERILATOR
-	 if(Z4 !== 1'b1) $stop;
+         if(Z4 !== 1'b1) $stop;
 `endif
-	 if(Z5 !== 1'b1) $stop;
-	 if(Z6 !== 1'b0) $stop;
-	 if(Z7 !== 1'b1) $stop;
-	 if(Z8 !== 1'b1) $stop;
-	 if(Z9 !== 1'b0) $stop;
-	 if(Z10 !== 4'b0010) $stop;
-	 if(Z11 !== 1'b1) $stop;
+         if(Z5 !== 1'b1) $stop;
+         if(Z6 !== 1'b0) $stop;
+         if(Z7 !== 1'b1) $stop;
+         if(Z8 !== 1'b1) $stop;
+         if(Z9 !== 1'b0) $stop;
+         if(Z10 !== 4'b0010) $stop;
+         if(Z11 !== 1'b1) $stop;
       end
       else if(state == 4) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
    pullup(Z1);
@@ -194,9 +194,9 @@ endmodule
 module Test7(input [2:0] state, output reg Z11);
    always @(*) begin
       casez (state)
-	3'b000:  Z11 = 1'b0;
-	3'b0?1:  Z11 = 1'b1;
-	default: Z11 = 1'bx;
+        3'b000:  Z11 = 1'b0;
+        3'b0?1:  Z11 = 1'b1;
+        default: Z11 = 1'bx;
       endcase
    end
 endmodule
@@ -205,9 +205,9 @@ endmodule
 //module Test3(input OE, input A, inout Z3);
 //   always @(*) begin
 //      if(OE) begin
-//	 Z3 = A;
+//       Z3 = A;
 //      end else begin
-//	 Z3 = 1'bz;
+//       Z3 = 1'bz;
 //      end
 //   end
 //endmodule

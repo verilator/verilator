@@ -10,35 +10,35 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   reg 	 toggle;
+   reg   toggle;
    integer cyc; initial cyc=1;
 
    Test suba (/*AUTOINST*/
-	      // Inputs
-	      .clk			(clk),
-	      .toggle			(toggle),
-	      .cyc			(cyc[31:0]));
+              // Inputs
+              .clk                      (clk),
+              .toggle                   (toggle),
+              .cyc                      (cyc[31:0]));
    Test subb (/*AUTOINST*/
-	      // Inputs
-	      .clk			(clk),
-	      .toggle			(toggle),
-	      .cyc			(cyc[31:0]));
+              // Inputs
+              .clk                      (clk),
+              .toggle                   (toggle),
+              .cyc                      (cyc[31:0]));
    Test subc (/*AUTOINST*/
-	      // Inputs
-	      .clk			(clk),
-	      .toggle			(toggle),
-	      .cyc			(cyc[31:0]));
+              // Inputs
+              .clk                      (clk),
+              .toggle                   (toggle),
+              .cyc                      (cyc[31:0]));
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 toggle <= !cyc[0];
-	 if (cyc==9) begin
-	 end
-	 if (cyc==10) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         toggle <= !cyc[0];
+         if (cyc==9) begin
+         end
+         if (cyc==10) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 

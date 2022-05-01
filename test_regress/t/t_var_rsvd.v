@@ -11,13 +11,13 @@ module t (/*AUTOARG*/
    bool
    );
 
-   input bool;	// BAD
+   input bool;  // BAD
 
-   reg  vector;	// OK, as not public
-   reg  switch /*verilator public*/;	// Bad
+   reg  vector; // OK, as not public
+   reg  switch /*verilator public*/;    // Bad
 
    typedef struct packed {
-      logic [31:0] vector;	// OK, as not public
+      logic [31:0] vector;      // OK, as not public
    } test;
    test t;
 

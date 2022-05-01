@@ -32,7 +32,7 @@ module t (/*AUTOARG*/
 `endif
       // delay line shift
       for (k=31;k>0;k=k-1) begin
-	 delay_minmax[k] = delay_minmax[k-1];
+         delay_minmax[k] = delay_minmax[k-1];
       end
       delay_minmax[0] = filtered_data;
 `ifdef TEST_VERBOSE
@@ -47,21 +47,21 @@ module t (/*AUTOARG*/
       $write("min init: %d\n", min);
 `endif
       for(k=0;k<32;k=k+1) begin
-	 if ((delay_minmax[k]) > $signed(max))
-	   max = delay_minmax[k];
-	 if ((delay_minmax[k]) < $signed(min))
-	   min = delay_minmax[k];
+         if ((delay_minmax[k]) > $signed(max))
+           max = delay_minmax[k];
+         if ((delay_minmax[k]) < $signed(min))
+           min = delay_minmax[k];
       end
 `ifdef TEST_VERBOSE
       $write("max: %d\n", max);
       $write("min: %d\n", min);
 `endif
       if (min == 127) begin
-	 $stop;
+         $stop;
       end
       else if (filtered_data >= -61) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

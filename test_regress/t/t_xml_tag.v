@@ -18,10 +18,10 @@ module m
    // This is a comment
 
    typedef struct packed  {
-      logic 	  clk;    /* verilator tag this is clk */
-      logic 	  k;      /* verilator lint_off UNUSED */
-      logic 	  enable; // verilator tag enable
-      logic 	  data;   // verilator tag data
+      logic       clk;    /* verilator tag this is clk */
+      logic       k;      /* verilator lint_off UNUSED */
+      logic       enable; // verilator tag enable
+      logic       data;   // verilator tag data
    } my_struct;  // verilator tag my_struct
 
    // This is a comment
