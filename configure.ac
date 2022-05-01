@@ -14,7 +14,7 @@ AC_INIT([Verilator],[4.221 devel],
 # and commit using "devel release" or "Version bump" message
 # Then 'make maintainer-dist'
 
-AC_CONFIG_HEADER(src/config_build.h)
+AC_CONFIG_HEADERS(src/config_build.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
 
 # Version
