@@ -59,16 +59,16 @@
 
 // Also check our line counting doesn't go bad
 `define MACROPAREN(a=(6),
-		   b=(eq=al),
-		   c) 'a b c'
+                   b=(eq=al),
+                   c) 'a b c'
 `MACROPAREN(
 
 
 
-	    ,,
+            ,,
 
 
-	    ZOT)
+            ZOT)
 HERE-`__LINE__ - Line71
 
 //======================================================================

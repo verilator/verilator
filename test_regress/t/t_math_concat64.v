@@ -12,11 +12,11 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
 
-   reg [127:0] 		i;
-   wire [127:0]		q1;
-   wire [127:0]		q32;
-   wire [127:0]		q64;
-   wire [63:0]		q64_low;
+   reg [127:0]          i;
+   wire [127:0]         q1;
+   wire [127:0]         q32;
+   wire [127:0]         q64;
+   wire [63:0]          q64_low;
 
    assign q1 = {
        i[24*4],  i[25*4],   i[26*4],   i[27*4],   i[28*4],  i[29*4],   i[30*4],   i[31*4],
@@ -94,38 +94,38 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
+         cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
-	 $write("%x %x\n", q1, i);
+         $write("%x %x\n", q1, i);
 `endif
-	 if (cyc==1) begin
-	    i <= 128'hed388e646c843d35de489bab2413d770;
-	 end
-	 if (cyc==2) begin
-	    i <= 128'h0e17c88f3d5fe51a982646c8e2bd68c3;
-	    if (q1 != 128'h06f0b17c6551e269e3ab07723b26fb10) $stop;
-	    if (q1 != q32) $stop;
-	    if (q1 != q64) $stop;
-	    if (q1[63:0] != q64_low) $stop;
-	 end
-	 if (cyc==3) begin
-	    i <= 128'he236ddfddddbdad20a48e039c9f395b8;
-	    if (q1 != 128'h8c6f018c8a992c979a3e7859f29ac36d) $stop;
-	    if (q1 != q32) $stop;
-	    if (q1 != q64) $stop;
-	    if (q1[63:0] != q64_low) $stop;
-	 end
-	 if (cyc==4) begin
-	    i <= 128'h45e0eb7642b148537491f3da147e7f26;
-	    if (q1 != 128'hf45fc07e4fa8524cf9571425f17f9ad7) $stop;
-	    if (q1 != q32) $stop;
-	    if (q1 != q64) $stop;
-	    if (q1[63:0] != q64_low) $stop;
-	 end
-	 if (cyc==9) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         if (cyc==1) begin
+            i <= 128'hed388e646c843d35de489bab2413d770;
+         end
+         if (cyc==2) begin
+            i <= 128'h0e17c88f3d5fe51a982646c8e2bd68c3;
+            if (q1 != 128'h06f0b17c6551e269e3ab07723b26fb10) $stop;
+            if (q1 != q32) $stop;
+            if (q1 != q64) $stop;
+            if (q1[63:0] != q64_low) $stop;
+         end
+         if (cyc==3) begin
+            i <= 128'he236ddfddddbdad20a48e039c9f395b8;
+            if (q1 != 128'h8c6f018c8a992c979a3e7859f29ac36d) $stop;
+            if (q1 != q32) $stop;
+            if (q1 != q64) $stop;
+            if (q1[63:0] != q64_low) $stop;
+         end
+         if (cyc==4) begin
+            i <= 128'h45e0eb7642b148537491f3da147e7f26;
+            if (q1 != 128'hf45fc07e4fa8524cf9571425f17f9ad7) $stop;
+            if (q1 != q32) $stop;
+            if (q1 != q64) $stop;
+            if (q1[63:0] != q64_low) $stop;
+         end
+         if (cyc==9) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule

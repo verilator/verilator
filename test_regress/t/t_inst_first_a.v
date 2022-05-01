@@ -13,13 +13,13 @@ module t_inst_first_a (/*AUTOARG*/
 
    input clk;
 
-   input [4:0] 		i_w5;
-   output [4:0] 	o_w5;
-   output [4:0] 	o_w5_d1r;
-   input [39:0] 	i_w40;
-   output [39:0] 	o_w40;
-   input [104:0] 	i_w104;
-   output [104:0] 	o_w104;
+   input [4:0]          i_w5;
+   output [4:0]         o_w5;
+   output [4:0]         o_w5_d1r;
+   input [39:0]         i_w40;
+   output [39:0]        o_w40;
+   input [104:0]        i_w104;
+   output [104:0]       o_w104;
 
    wire [4:0]  o_w5 = i_w5;
    wire [39:0] o_w40 = i_w40;
@@ -27,7 +27,7 @@ module t_inst_first_a (/*AUTOARG*/
 
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
-   reg [4:0]		o_w5_d1r;
+   reg [4:0]            o_w5_d1r;
    // End of automatics
 
    always @ (posedge clk) begin

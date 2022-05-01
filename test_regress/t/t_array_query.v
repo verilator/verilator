@@ -20,8 +20,8 @@ module t (/*AUTOARG*/
    reg   c;
 
    array_test array_test_i (/*AUTOINST*/
-			    // Inputs
-			    .clk		(clk));
+                            // Inputs
+                            .clk                (clk));
 
 endmodule
 

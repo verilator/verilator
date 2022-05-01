@@ -17,11 +17,11 @@ module t (/*AUTOARG*/
    output [7:0] out;
    //------------Input Ports--------------
    //input [7:0] data ;
-   input [7:0] 	data;
-   input 	up_down, clk, reset;
+   input [7:0]  data;
+   input        up_down, clk, reset;
    //------------Internal Variables--------
-   reg [7:0] 	out;
-   logic [7:0] 	q_out;
+   reg [7:0]    out;
+   logic [7:0]  q_out;
 
    //-------------Code Starts Here-------
    always @(posedge clk)
@@ -62,9 +62,9 @@ module sub_mod (/*AUTOARG*/
 
    //-----------Output Ports---------------
    output [7:0] q;
-   output 	test_out;  // Not assigned,  no problem.
+   output       test_out;  // Not assigned,  no problem.
 
-   logic [7:0] 	que;
+   logic [7:0]  que;
 
    // Uncomment this line, the error goes away.
    //assign test_inout = que;

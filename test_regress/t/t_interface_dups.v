@@ -23,30 +23,30 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   logic		din_ready;		// From test of Test.v
-   logic [0:0]		dout0_data;		// From test of Test.v
-   logic		dout0_valid;		// From test of Test.v
-   logic [1:0]		dout1_data;		// From test of Test.v
-   logic		dout1_valid;		// From test of Test.v
-   logic [2:0]		dout2_data;		// From test of Test.v
-   logic		dout2_valid;		// From test of Test.v
+   logic                din_ready;              // From test of Test.v
+   logic [0:0]          dout0_data;             // From test of Test.v
+   logic                dout0_valid;            // From test of Test.v
+   logic [1:0]          dout1_data;             // From test of Test.v
+   logic                dout1_valid;            // From test of Test.v
+   logic [2:0]          dout2_data;             // From test of Test.v
+   logic                dout2_valid;            // From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
-	      // Outputs
-	      .din_ready		(din_ready),
-	      .dout0_valid		(dout0_valid),
-	      .dout0_data		(dout0_data[0:0]),
-	      .dout1_valid		(dout1_valid),
-	      .dout1_data		(dout1_data[1:0]),
-	      .dout2_valid		(dout2_valid),
-	      .dout2_data		(dout2_data[2:0]),
-	      // Inputs
-	      .din_valid		(din_valid),
-	      .din_data			(din_data[4:0]),
-	      .dout0_ready		(dout0_ready),
-	      .dout1_ready		(dout1_ready),
-	      .dout2_ready		(dout2_ready));
+              // Outputs
+              .din_ready                (din_ready),
+              .dout0_valid              (dout0_valid),
+              .dout0_data               (dout0_data[0:0]),
+              .dout1_valid              (dout1_valid),
+              .dout1_data               (dout1_data[1:0]),
+              .dout2_valid              (dout2_valid),
+              .dout2_data               (dout2_data[2:0]),
+              // Inputs
+              .din_valid                (din_valid),
+              .din_data                 (din_data[4:0]),
+              .dout0_ready              (dout0_ready),
+              .dout1_ready              (dout1_ready),
+              .dout2_ready              (dout2_ready));
 
    // Aggregate outputs into a single result vector
    wire [63:0] result = {48'h0, din_ready,

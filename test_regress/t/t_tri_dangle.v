@@ -12,13 +12,13 @@ module t (/*AUTOARG*/
    inout  AVSS;
 
    sub sub (/*AUTOINST*/
-	    // Inouts
-	    .AVDD			(AVDD),
-	    .AVSS			(AVSS));
+            // Inouts
+            .AVDD                       (AVDD),
+            .AVSS                       (AVSS));
 
    initial begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
    end
 endmodule
 

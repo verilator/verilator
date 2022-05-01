@@ -9,27 +9,27 @@ module t;
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
    typedef enum logic [1:0]
-		{ ZERO  = 2'd0,
-		  ONE   = 2'd1,
-		  TWO   = 2'd2,
-		  THREE = 2'd3,
-		  XXX   = 2'dx
-		  } num_t;
+                { ZERO  = 2'd0,
+                  ONE   = 2'd1,
+                  TWO   = 2'd2,
+                  THREE = 2'd3,
+                  XXX   = 2'dx
+                  } num_t;
 
    function automatic logic is_odd;
-      input 	en;
-      input 	num_t number;
+      input     en;
+      input     num_t number;
       case (en)
-	1'b1: begin
-	   unique if (number inside {ONE, THREE})
-	     is_odd = 1'b1;
-	   else   if (number inside {ZERO, TWO})
-	     is_odd = 1'b0;
-	   else
-	     is_odd = 1'bx;
-	end
-	1'b0:    is_odd = 1'bx;
-	default: is_odd = 1'bx;
+        1'b1: begin
+           unique if (number inside {ONE, THREE})
+             is_odd = 1'b1;
+           else   if (number inside {ZERO, TWO})
+             is_odd = 1'b0;
+           else
+             is_odd = 1'bx;
+        end
+        1'b0:    is_odd = 1'bx;
+        default: is_odd = 1'bx;
       endcase
    endfunction
 

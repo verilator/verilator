@@ -19,26 +19,26 @@ module t (/*AUTOARG*/
 
    reg aaa_ltu, aaa_lts;
       always @(posedge clk) begin
-	 in_op1 = 4'sb1110;
-	 in_op2 =  4'b0010;
-	 aaa_ltu = in_op1 < in_op2;
-	 // bug999
-	 aaa_lts = $signed(in_op1) < $signed(in_op2);
-	 `checkh (aaa_ltu, 1'b0);
-	 `checkh (aaa_lts, 1'b1);
+         in_op1 = 4'sb1110;
+         in_op2 =  4'b0010;
+         aaa_ltu = in_op1 < in_op2;
+         // bug999
+         aaa_lts = $signed(in_op1) < $signed(in_op2);
+         `checkh (aaa_ltu, 1'b0);
+         `checkh (aaa_lts, 1'b1);
       end
 
    generate if (1) begin
       always @(posedge clk) begin
-	 in_op1 = 4'sb1110;
-	 in_op2 =  4'b0010;
-	 alu_ltu = in_op1 < in_op2;
-	 // bug999
-	 alu_lts = $signed(in_op1) < $signed(in_op2);
-	 `checkh (alu_ltu, 1'b0);
-	 `checkh (alu_lts, 1'b1);
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         in_op1 = 4'sb1110;
+         in_op2 =  4'b0010;
+         alu_ltu = in_op1 < in_op2;
+         // bug999
+         alu_lts = $signed(in_op1) < $signed(in_op2);
+         `checkh (alu_ltu, 1'b0);
+         `checkh (alu_lts, 1'b1);
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
    endgenerate

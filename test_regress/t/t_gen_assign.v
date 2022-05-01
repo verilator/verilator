@@ -16,14 +16,14 @@ module t (/*AUTOARG*/
    reg [63:0] crc;
    reg [31:0] sum;
 
-   wire [8:0]		Output;
-   wire [8:0] 		Input = crc[8:0];
+   wire [8:0]           Output;
+   wire [8:0]           Input = crc[8:0];
 
    assigns assigns (/*AUTOINST*/
-		    // Outputs
-		    .Output		(Output[8:0]),
-		    // Inputs
-		    .Input		(Input[8:0]));
+                    // Outputs
+                    .Output             (Output[8:0]),
+                    // Inputs
+                    .Input              (Input[8:0]));
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -32,17 +32,17 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       if (cyc==0) begin
-	 // Setup
-	 crc <= 64'h5aef0c8d_d70a4497;
-	 sum <= 32'h0;
+         // Setup
+         crc <= 64'h5aef0c8d_d70a4497;
+         sum <= 32'h0;
       end
       else if (cyc>10 && cyc<90) begin
-	 sum <= {sum[30:0],sum[31]} ^ {23'h0, crc[8:0]};
+         sum <= {sum[30:0],sum[31]} ^ {23'h0, crc[8:0]};
       end
       else if (cyc==99) begin
-	 if (sum !== 32'he8bbd130) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (sum !== 32'he8bbd130) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
@@ -52,10 +52,10 @@ module assigns(Input, Output);
    input  [8:0] Input;
    output [8:0] Output;
 
-   genvar 	i;
+   genvar       i;
    generate
       for (i = 0; i < 8; i = i + 1) begin : ap
-	 assign Output[(i>0) ? i-1 : 8] = Input[(i>0) ? i-1 : 8];
+         assign Output[(i>0) ? i-1 : 8] = Input[(i>0) ? i-1 : 8];
       end
    endgenerate
 endmodule

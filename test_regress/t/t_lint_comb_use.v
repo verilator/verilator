@@ -23,9 +23,9 @@ module t (/*AUTOARG*/
         3'h1: hval = 4'hc;
         3'h7: hval = 4'hf;
         default: begin
-	   $ignore ("ERROR : %s [%m]", $sformatf ("Illegal sel = %x", sel));
-	   hval = 4'bx;
-	end
+           $ignore ("ERROR : %s [%m]", $sformatf ("Illegal sel = %x", sel));
+           hval = 4'bx;
+        end
       endcase
    end
 endmodule

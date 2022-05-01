@@ -28,19 +28,19 @@ module t (/*AUTOARG*/
 
    always @(posedge clk) begin
       if ((rstn_r == 0)) begin // Will optimize away
-	 dinit[0] <= '0;
+         dinit[0] <= '0;
       end
       else begin
-	 dinit[0] <= {31'd0, zero};
+         dinit[0] <= {31'd0, zero};
       end
    end
 
    always @(posedge clk) begin
       if ((rstn_r == 0)) begin // Will optimize away
-	 dinit[1] <= 1234;
+         dinit[1] <= 1234;
       end
       else begin
-	 dinit[1] <= 1234;
+         dinit[1] <= 1234;
       end
    end
 

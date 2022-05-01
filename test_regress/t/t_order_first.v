@@ -11,10 +11,10 @@ module t (/*AUTOARG*/
    input fastclk;
 
    t_netlist tnetlist
-     (.also_fastclk	(fastclk),
+     (.also_fastclk     (fastclk),
       /*AUTOINST*/
       // Inputs
-      .fastclk				(fastclk));
+      .fastclk                          (fastclk));
 
 endmodule
 
@@ -52,10 +52,10 @@ module t_netlist (/*AUTOARG*/
 
    always @ (posedge also_fastclk) begin
       if (_mode==5) begin
-	 if (a2 != 5'd2) $stop;
-	 if (e != 5'd5) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (a2 != 5'd2) $stop;
+         if (e != 5'd5) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
       _mode <= _mode + 1;
    end

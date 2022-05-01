@@ -25,21 +25,21 @@ module t (/*AUTOARG*/
    ifc #(2) itopb();
 
    sub #(1) ca (.isub(itopa),
-		.i_value(4));
+                .i_value(4));
    sub #(2) cb (.isub(itopb),
-		.i_value(5));
+                .i_value(5));
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==1) begin
-	 if (itopa.MODE != 1) $stop;
-	 if (itopb.MODE != 2) $stop;
+         if (itopa.MODE != 1) $stop;
+         if (itopb.MODE != 2) $stop;
       end
       if (cyc==20) begin
-	 if (itopa.get_value() != 4) $stop;
-	 if (itopb.get_value() != 5) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (itopa.get_value() != 4) $stop;
+         if (itopb.get_value() != 5) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

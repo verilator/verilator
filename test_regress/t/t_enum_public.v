@@ -22,10 +22,10 @@ endpackage
 module t (/*AUTOARG*/);
 
    enum integer {
-		 EI_A,
-		 EI_B,
-		 EI_C
-		 } m_state;
+                 EI_A,
+                 EI_B,
+                 EI_C
+                 } m_state;
 
    initial begin
       m_state = EI_A;

@@ -10,10 +10,10 @@ module t (/*AUTOARG*/);
        input integer x;
        input integer y;
        begin
-	  begin : blk
-	     automatic int temp;
-	     temp = x;
-	  end
+          begin : blk
+             automatic int temp;
+             temp = x;
+          end
        end
        max2 = ( x > y ) ? x : y;
     endfunction

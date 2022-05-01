@@ -28,11 +28,11 @@ module t(/*AUTOARG*/
    // Check we have the right definition
    always @(posedge clk) begin
       if (NUM == 32) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
       else begin
-	 $stop;
+         $stop;
       end
    end
 

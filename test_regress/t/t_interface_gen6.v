@@ -26,27 +26,27 @@ module t();
 
    generate
       begin
-	 if (1) begin
+         if (1) begin
             intf #(.PARAM(2)) my_intf ();
             assign my_intf.val = '1;
-	 end else begin
+         end else begin
             intf #(.PARAM(3)) my_intf ();
             assign my_intf.val = '0;
-	 end
+         end
       end
    endgenerate
 
    generate
       begin
-	 begin
-	    if (1) begin
+         begin
+            if (1) begin
                intf #(.PARAM(2)) my_intf ();
                assign my_intf.val = '1;
-	    end else begin
+            end else begin
                intf #(.PARAM(3)) my_intf ();
                assign my_intf.val = '0;
-	    end
-	 end
+            end
+         end
       end
    endgenerate
 

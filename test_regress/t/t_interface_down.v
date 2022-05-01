@@ -24,23 +24,23 @@ module t (/*AUTOARG*/
    ifc itop2b();
 
    wrapper  c1 (.isuba(itop1a),
-		.isubb(itop1b),
-		.i_valuea(14),
-		.i_valueb(15));
+                .isubb(itop1b),
+                .i_valuea(14),
+                .i_valueb(15));
    wrapper  c2 (.isuba(itop2a),
-		.isubb(itop2b),
-		.i_valuea(24),
-		.i_valueb(25));
+                .isubb(itop2b),
+                .i_valuea(24),
+                .i_valueb(25));
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==20) begin
-	 if (itop1a.value != 14) $stop;
-	 if (itop1b.value != 15) $stop;
-	 if (itop2a.value != 24) $stop;
-	 if (itop2b.value != 25) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (itop1a.value != 14) $stop;
+         if (itop1b.value != 15) $stop;
+         if (itop2a.value != 24) $stop;
+         if (itop2b.value != 25) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

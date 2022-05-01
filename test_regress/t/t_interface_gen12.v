@@ -9,7 +9,7 @@
 module foo_module;
    generate
       for (genvar i = 0; i < 2; i = i + 1) begin : my_gen_block
-	 logic baz;
+         logic baz;
       end
    endgenerate
 endmodule
@@ -23,8 +23,8 @@ module t;
    initial begin
       bar.foo.my_gen_block[0].baz = 1;
       if (bar.foo.my_gen_block[0].baz) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

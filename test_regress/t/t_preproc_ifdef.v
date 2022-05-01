@@ -15,30 +15,30 @@ module t (/*AUTOARG*/);
 `endif
 
 `define A
-`ifdef A	$display("1A"); num = num + 1;
- `ifdef C	$stop;
- `elsif A	$display("2A"); num = num + 1;
-  `ifdef C	$stop;
-  `elsif B	$stop;
-  `else		$display("3A"); num = num + 1;
+`ifdef A        $display("1A"); num = num + 1;
+ `ifdef C       $stop;
+ `elsif A       $display("2A"); num = num + 1;
+  `ifdef C      $stop;
+  `elsif B      $stop;
+  `else         $display("3A"); num = num + 1;
   `endif
- `else		$stop;
+ `else          $stop;
  `endif
- `elsif B	$stop;
-  `ifdef A	$stop;
-  `elsif A	$stop;
+ `elsif B       $stop;
+  `ifdef A      $stop;
+  `elsif A      $stop;
   `else
   `endif
-`elsif C	$stop;
-`else		$stop;
+`elsif C        $stop;
+`else           $stop;
 `endif
       if (num == 3) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
       else begin
-	 $write("%%Error: Bad count: %d\n", num);
-	 $stop;
+         $write("%%Error: Bad count: %d\n", num);
+         $stop;
       end
    end
 endmodule

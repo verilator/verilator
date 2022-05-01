@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module some_module (
-		    input wrclk
-		    );
+                    input wrclk
+                    );
 
-   logic [ 1 : 0 ] 	  some_state;
-   logic [1:0] 		  some_other_state;
+   logic [ 1 : 0 ]        some_state;
+   logic [1:0]            some_other_state;
 
    always @(posedge wrclk) begin
       case (some_state)
@@ -29,31 +29,31 @@ endmodule
 `define BROKEN
 
 module t1(
-	  input [3:0] i_clks,
-	  input       i_clk0,
-	  input       i_clk1
-	  );
+          input [3:0] i_clks,
+          input       i_clk0,
+          input       i_clk1
+          );
 
    some_module
      some_module
        (
 `ifdef BROKEN
-	.wrclk (i_clks[3])
+        .wrclk (i_clks[3])
 `else
-	.wrclk (i_clk1)
+        .wrclk (i_clk1)
 `endif
-	);
+        );
 endmodule
 
 module t2(
-	  input [2:0] i_clks,
-	  input       i_clk0,
-	  input       i_clk1,
-	  input       i_clk2,
-	  input       i_data
-	  );
-   logic [3:0] 	      the_clks;
-   logic 	      data_q;
+          input [2:0] i_clks,
+          input       i_clk0,
+          input       i_clk1,
+          input       i_clk2,
+          input       i_data
+          );
+   logic [3:0]        the_clks;
+   logic              data_q;
 
    assign the_clks = {i_clk1, i_clk2, i_clk1, i_clk0};
 
@@ -71,16 +71,16 @@ endmodule
 
 module t(
 `ifdef ATTRIBUTES
-	 input clk0 /*verilator clocker*/,
-	 input clk1 /*verilator clocker*/,
-	 input clk2 /*verilator clocker*/,
+         input clk0 /*verilator clocker*/,
+         input clk1 /*verilator clocker*/,
+         input clk2 /*verilator clocker*/,
 `else
-	 input clk0,
-	 input clk1,
-	 input clk2,
+         input clk0,
+         input clk1,
+         input clk2,
 `endif
-	 input data_in
-	 );
+         input data_in
+         );
 
    logic [2:0] clks;
 
@@ -89,12 +89,12 @@ module t(
    t2
      t2
        (
-	.i_clks (clks),
-	.i_clk0 (clk0),
-	.i_clk1 (clk1),
-	.i_clk2 (clk2),
-	.i_data (data_in)
-	);
+        .i_clks (clks),
+        .i_clk0 (clk0),
+        .i_clk1 (clk1),
+        .i_clk2 (clk2),
+        .i_data (data_in)
+        );
 
    initial begin
       $write("*-* All Finished *-*\n");

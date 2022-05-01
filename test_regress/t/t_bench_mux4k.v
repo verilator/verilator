@@ -26,19 +26,19 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [`DATA_WIDTH-1:0] datao;		// From mux4096 of mux4096.v
+   wire [`DATA_WIDTH-1:0] datao;                // From mux4096 of mux4096.v
    // End of automatics
 
    reg [`DATA_WIDTH*`MUX1_SIZE*`MUX2_SIZE-1:0] datai;
-   reg [`ADDR_WIDTH-1:0] 		       addr;
+   reg [`ADDR_WIDTH-1:0]                       addr;
 
    // Mux: takes in addr and datai and outputs datao
    mux4096 mux4096 (/*AUTOINST*/
-		    // Outputs
-		    .datao		(datao[`DATA_WIDTH-1:0]),
-		    // Inputs
-		    .datai		(datai[`DATA_WIDTH*`MUX1_SIZE*`MUX2_SIZE-1:0]),
-		    .addr		(addr[`ADDR_WIDTH-1:0]));
+                    // Outputs
+                    .datao              (datao[`DATA_WIDTH-1:0]),
+                    // Inputs
+                    .datai              (datai[`DATA_WIDTH*`MUX1_SIZE*`MUX2_SIZE-1:0]),
+                    .addr               (addr[`ADDR_WIDTH-1:0]));
 
 
    // calculate what the answer should be from datai.  This is bit
@@ -48,9 +48,9 @@ module t (/*AUTOARG*/
    integer j;
    always @(datai or addr) begin
       for(j=0;j<`DATA_WIDTH;j=j+1) begin
-	 /* verilator lint_off WIDTH */
-	 datao_check[j] = datai >> ((`MUX1_SIZE*`MUX2_SIZE*j)+addr);
-	 /* verilator lint_on WIDTH */
+         /* verilator lint_off WIDTH */
+         datao_check[j] = datai >> ((`MUX1_SIZE*`MUX2_SIZE*j)+addr);
+         /* verilator lint_on WIDTH */
       end
    end
 
@@ -59,19 +59,19 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       // initial the input data with random values
       if (addr == 0) begin
-	 result = 1;
-	 datai = 0;
-	 for(i=0; i<`MUX1_SIZE*`MUX2_SIZE; i=i+1) begin
-	    /* verilator lint_off WIDTH */
-	    datai = (datai << `DATA_WIDTH) | ($random & {`DATA_WIDTH{1'b1}});
-	    /* verilator lint_on WIDTH */
-	 end
+         result = 1;
+         datai = 0;
+         for(i=0; i<`MUX1_SIZE*`MUX2_SIZE; i=i+1) begin
+            /* verilator lint_off WIDTH */
+            datai = (datai << `DATA_WIDTH) | ($random & {`DATA_WIDTH{1'b1}});
+            /* verilator lint_on WIDTH */
+         end
       end
 
       addr <= addr + 1;
       if (datao_check != datao) begin
-	 result = 0;
-	 $stop;
+         result = 0;
+         $stop;
       end
 
 `ifdef TEST_VERBOSE
@@ -79,8 +79,8 @@ module t (/*AUTOARG*/
 `endif
       // only run the first 10 addresses for now
       if (addr > 10) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

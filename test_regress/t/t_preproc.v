@@ -3,6 +3,8 @@
 // any use, without warranty, 2000-2011 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// This file intentionally includes some tabs
+
 //===========================================================================
 // Includes
 `include "t_preproc_inc2.vh"

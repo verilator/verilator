@@ -29,10 +29,10 @@ module updown #(parameter UP=0)
    (inout z);
    generate
       if (UP) begin
-	 t_up sub (.z);
+         t_up sub (.z);
       end
       else begin
-	 t_down sub (.z);
+         t_down sub (.z);
       end
    endgenerate
 endmodule

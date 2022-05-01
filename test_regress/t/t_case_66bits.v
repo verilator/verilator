@@ -15,12 +15,12 @@ module t (/*AUTOARG*/
 
    always @(posedge clk) begin
       case(idx)
-	1: idx = 100;
-	100: begin
-	   $write("*-* All Finished *-*\n");
-	   $finish;
-	end
-	default: $stop;
+        1: idx = 100;
+        100: begin
+           $write("*-* All Finished *-*\n");
+           $finish;
+        end
+        default: $stop;
       endcase
    end
 

@@ -11,13 +11,13 @@ module t (/*AUTOARG*/
    inibble, onibble
    );
 
-   input [3:0] 	    inibble;
+   input [3:0]      inibble;
    input [106:0]    onibble;
 
    output reg [3:0] nnext [0:7];
 
    // verilator lint_off WIDTH
-   wire [2:0] 	    selline = (onibble >>> 102) & 7;
+   wire [2:0]       selline = (onibble >>> 102) & 7;
    // verilator lint_on WIDTH
 
    always_comb begin

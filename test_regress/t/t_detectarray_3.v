@@ -32,8 +32,8 @@ module t (/*AUTOARG*/
    always @(posedge clk or negedge clk) begin
 
      if (res != 0) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

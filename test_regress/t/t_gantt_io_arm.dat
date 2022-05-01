@@ -3,45 +3,45 @@ VLPROF arg +verilator+prof+exec+start+1
 VLPROF arg +verilator+prof+exec+window+2
 VLPROF stat threads 2
 VLPROF stat yields 51
-VLPROFPROC processor	: 0
-VLPROFPROC model name	: Phytium,FT-2500/128
-VLPROFPROC BogoMIPS	: 100.00
-VLPROFPROC Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
-VLPROFPROC CPU implementer	: 0x70
+VLPROFPROC processor    : 0
+VLPROFPROC model name   : Phytium,FT-2500/128
+VLPROFPROC BogoMIPS     : 100.00
+VLPROFPROC Features     : fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+VLPROFPROC CPU implementer      : 0x70
 VLPROFPROC CPU architecture: 8
-VLPROFPROC CPU variant	: 0x1
-VLPROFPROC CPU part	: 0x663
-VLPROFPROC CPU revision	: 3
+VLPROFPROC CPU variant  : 0x1
+VLPROFPROC CPU part     : 0x663
+VLPROFPROC CPU revision : 3
 VLPROFPROC 
-VLPROFPROC processor	: 1
-VLPROFPROC model name	: Phytium,FT-2500/128
-VLPROFPROC BogoMIPS	: 100.00
-VLPROFPROC Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
-VLPROFPROC CPU implementer	: 0x70
+VLPROFPROC processor    : 1
+VLPROFPROC model name   : Phytium,FT-2500/128
+VLPROFPROC BogoMIPS     : 100.00
+VLPROFPROC Features     : fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+VLPROFPROC CPU implementer      : 0x70
 VLPROFPROC CPU architecture: 8
-VLPROFPROC CPU variant	: 0x1
-VLPROFPROC CPU part	: 0x663
-VLPROFPROC CPU revision	: 3
+VLPROFPROC CPU variant  : 0x1
+VLPROFPROC CPU part     : 0x663
+VLPROFPROC CPU revision : 3
 VLPROFPROC 
-VLPROFPROC processor	: 2
-VLPROFPROC model name	: Phytium,FT-2500/128
-VLPROFPROC BogoMIPS	: 100.00
-VLPROFPROC Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
-VLPROFPROC CPU implementer	: 0x70
+VLPROFPROC processor    : 2
+VLPROFPROC model name   : Phytium,FT-2500/128
+VLPROFPROC BogoMIPS     : 100.00
+VLPROFPROC Features     : fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+VLPROFPROC CPU implementer      : 0x70
 VLPROFPROC CPU architecture: 8
-VLPROFPROC CPU variant	: 0x1
-VLPROFPROC CPU part	: 0x663
-VLPROFPROC CPU revision	: 3
+VLPROFPROC CPU variant  : 0x1
+VLPROFPROC CPU part     : 0x663
+VLPROFPROC CPU revision : 3
 VLPROFPROC 
-VLPROFPROC processor	: 3
-VLPROFPROC model name	: Phytium,FT-2500/128
-VLPROFPROC BogoMIPS	: 100.00
-VLPROFPROC Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
-VLPROFPROC CPU implementer	: 0x70
+VLPROFPROC processor    : 3
+VLPROFPROC model name   : Phytium,FT-2500/128
+VLPROFPROC BogoMIPS     : 100.00
+VLPROFPROC Features     : fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+VLPROFPROC CPU implementer      : 0x70
 VLPROFPROC CPU architecture: 8
-VLPROFPROC CPU variant	: 0x1
-VLPROFPROC CPU part	: 0x663
-VLPROFPROC CPU revision	: 3
+VLPROFPROC CPU variant  : 0x1
+VLPROFPROC CPU part     : 0x663
+VLPROFPROC CPU revision : 3
 VLPROFPROC 
 VLPROFTHREAD 0
 VLPROFEXEC EVAL_BEGIN 57709

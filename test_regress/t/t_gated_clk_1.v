@@ -41,15 +41,15 @@ module t (/*AUTOARG*/
 
    always @(posedge clk) begin
       if (pc == 2'b11) begin
-	 // Correct behaviour is that res should be lagging pc in the count
-	 // by one cycle
-	 if (res == 2'b10) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
-	 else begin
-	   $stop;
-	 end
+         // Correct behaviour is that res should be lagging pc in the count
+         // by one cycle
+         if (res == 2'b10) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
+         else begin
+           $stop;
+         end
       end
    end
 

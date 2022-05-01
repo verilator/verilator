@@ -23,8 +23,8 @@ endmodule
 module l3 (input tmp);
    initial begin
       if (tmp) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

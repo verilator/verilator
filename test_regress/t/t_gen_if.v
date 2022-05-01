@@ -19,16 +19,16 @@ module t(data_i, data_o, single);
    generate
       if (op_bits == 32) begin : general_case
          assign data_o = data_i;
-	 // Test implicit signals
-	 /* verilator lint_off IMPLICIT */
-	 assign imp = single;
-	 /* verilator lint_on IMPLICIT */
+         // Test implicit signals
+         /* verilator lint_off IMPLICIT */
+         assign imp = single;
+         /* verilator lint_on IMPLICIT */
          end
       else begin : special_case
          assign data_o = {{(32 -op_bits){1'b0}},data_i};
-	 /* verilator lint_off IMPLICIT */
-	 assign imp = single;
-	 /* verilator lint_on IMPLICIT */
+         /* verilator lint_off IMPLICIT */
+         assign imp = single;
+         /* verilator lint_on IMPLICIT */
          end
    endgenerate
 endmodule
