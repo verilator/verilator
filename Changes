@@ -17,14 +17,19 @@ Verilator 4.221 devel
 * Deprecate 'vluint64_t' and similar types (#3255).
 * Raise error on assignment to const in initial blocks. [Geza Lore, Shunyao CAD]
 * Issue INITIALDLY/COMBDLY/BLKSEQ warnings consistent with Verilator execution. [Geza Lore, Shunyao CAD]
+* Support LoongArch ISA multithreading (#3353) (#3354). [Xi Zhang]
 * Fix MSVC localtime_s (#3124).
 * Fix Bison 3.8.2 error (#3366). [elike-ypq]
 * Fix rare bug in -Oz (V3Localize) (#3286). [Geza Lore, Shunyao CAD]
 * Fix tracing interfaces inside interfaces (#3309). [Kevin Millis]
 * Fix filenames with dots overwriting debug .vpp files (#3373).
-* Fix including VK_USER_OBJS in make library (#3370). [Julien Margetts]
+* Fix including VK_USER_OBJS in make library (#3370) (#3382). [Julien Margetts]
+* Fix hang in generate symbol references (#3391) (#3398). [Yoda Lee]
+* Fix missing #include <memory> (#3392). [Aliaksei Chapyzhenka]
 * Fix crash in recursive module inlining (#3393). [david-sawatzke]
 * Fix --protect-ids mangling names of library methods. [Geza Lore, Shunyao CAD]
+* Fix foreach segmentation fault (#3400). [Kamil Rakoczy]
+
 
 Verilator 4.220 2022-03-12
 ==========================
