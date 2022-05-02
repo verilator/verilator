@@ -19,7 +19,6 @@
 `define GATED_CLK_TESTCASE 1
 
 // A side effect of the problem is this warning, disabled by default
-//verilator lint_on IMPERFECTSCH
 
 // Test Bench
 module t (/*AUTOARG*/
@@ -153,7 +152,7 @@ module Test (/*AUTOARG*/
    output wire [7:0] entry_vld;
 
    wire [7:0] gclk_vld;
-   wire [7:0] ff_en_vld /*verilator clock_enable*/;
+   wire [7:0] ff_en_vld;
    reg [7:0] flop_en_vld;
 
    always @(posedge clk) flop_en_vld <= ff_en_e1;

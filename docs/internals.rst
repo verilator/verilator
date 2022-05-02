@@ -183,6 +183,327 @@ A number of predefined derived algorithm classes and access methods are
 provided and documented in ``V3GraphAlg.cpp``.
 
 
+
+Scheduling
+----------
+
+Verilator implements the Active and NBA regions of the SystemVerilog scheduling
+model as described in IEEE 1800-2017 chapter 4, and in particular sections
+4.5 and Figure 4.1. The static (verilation time) scheduling of SystemVerilog
+processes is performed by code in the ``V3Sched`` namespace. The single
+entry-point to the scheduling algorithm is ``V3Sched::schedule``. Some
+preparatory transformations important for scheduling are also performed in
+``V3Active`` and ``V3ActiveTop``. High level evaluation functions are
+constructed by ``V3Order``, which ``V3Sched`` invokes on subsets of the logic
+in the design.
+
+Scheduling deals with the problem of evaluating 'logic' in the correct order
+and the correct number of times in order to compute the correct state of the
+SystemVerilog program. Throughout this section, we use the term 'logic' to
+refer to all SystemVerilog constructs that describe the evolution of the state
+of the program. In particular, all SystemVerilog processes and continuous
+assignments are considered 'logic', but not for example variable definitions
+without initialization or other miscellaneous constructs.
+
+
+Classes of logic
+^^^^^^^^^^^^^^^^
+
+The first step in the scheduling algorithm is to gather all the logic present
+in the design, and classify it based on the conditions under which the logic
+needs to be evaluated.
+
+The classes of logic we distinguish between are:
+
+- SystemVerilog ``initial`` processes, that need to be executed once at
+  startup.
+
+- Static variable initializers. These are a separate class as they need to be
+  executed before ``initial`` processes.
+
+- SystemVerilog ``final`` processes.
+
+- Combinational logic. Any process or construct that has an implicit
+  sensitivity list with no explicit sensitivities is considered 'combinational'
+  logic. This includes among other things, ``always @*`` and ``always_comb``
+  processes, and continuous assignments. Verilator also converts some other
+  ``always`` processes to combinational logic in ``V3Active`` as described
+  below.
+
+- Clocked logic. Any process or construct that has an explicit sensitivity
+  list, with no implicit sensitivities is considered 'clocked' (or
+  'sequential') logic. This includes among other things ``always`` and
+  ``always_ff`` processes with an explicit sensitivity list.
+
+Note that the distinction between clocked logic and combinational logic is only
+important for the scheduling algorithm within Verilator as we handle the two
+classes differently. It is possible to convert clocked logic into combinational
+logic if the explicit sensitivity list of the clocked logic is the same as the
+implicit sensitivity list of the equivalent combinational logic would be. The
+canonical examples are: ``always @(a) x = a;``, which is considered to be
+clocked logic by Verilator, and the equivalent ``assign x = a;``, which is
+considered to be combinational logic. ``V3Active`` in fact converts all clocked
+logic to combinational logic whenever possible, as this provides advantages for
+scheduling as described below.
+
+There is also a 'hybrid' logic class, which has both explicit and implicit
+sensitivities. This kind of logic does not arise from a SystemVerilog
+construct, but is created during scheduling to break combinational cycles.
+Details of this process and the hybrid logic class are described below.
+
+
+Scheduling of simple classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+SystemVerilog ``initial`` and ``final`` blocks can be scheduled (executed) in an
+arbitrary order.
+
+Static variable initializers need to be executed in source code order in case
+there is a dependency between initializers, but the ordering of static variable
+initialization is otherwise not defined by the SystemVerilog standard
+(particularly, in the presence of hierarchical references in static variable
+initializers).
+
+The scheduling algorithm handles all three of these classes the same way and
+schedules the logic in these classes in source code order. This step yields the
+``_eval_static``, ``_eval_initial`` and ``_eval_final`` functions which execute
+the corresponding logic constructs.
+
+
+Scheduling of clocked and combinational logic
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For performance, clocked and combinational logic needs to be ordered.
+Conceptually this minimizes the iterations through the evaluation loop
+presented in the reference algorithm in the SystemVerilog standard (IEEE
+1800-2017 section 4.5), by evaluating logic constructs in data-flow order.
+Without going into a lot of detail here, accept that well thought out ordering
+is crucial to good simulation performance, and also enables further
+optimizations later on.
+
+At the highest level, ordering is performed by ``V3Order::order``, which is
+invoked by ``V3Sched::schedule`` on various subsets of the combinational and
+clocked logic as described below. The important thing to highlight now is that
+``V3Order::order`` operates by assuming that the state of all variables driven
+by combinational logic are consistent with that combinational logic. While this
+might seem subtle, it is very important, so here is an example:
+
+::
+  always_comb d = q + 2;
+  always @(posedge clock) q <= d;
+
+
+During ordering, ``V3Order`` will assume that ``d`` equals ``q + 2`` at the
+beginning of an evaluation step. As a result it will order the clocked logic
+first, and all downstream combinational logic (like the assignment to ``d``)
+will execute after the clocked logic that drives inputs to the combinational
+logic, in data-flow (or dependency) order. At the end of the evaluation step,
+this ordering restores the invariant that variables driven by combinational
+logic are consistent with that combinational logic (i.e.: the circuit is in a
+settled/steady state).
+
+One of the most important optimizations for performance is to only evaluate
+combinational logic, if its inputs might have changed. For example, there is no
+point in evaluating the above assignment to ``d`` on a negative edge of the
+clock signal. Verilator does this by pushing the combinational logic into the
+same (possibly multiple) event domains as the logic driving the inputs to that
+combinational logic, and only evaluating the combinational logic if at least
+one driving domains have been triggered. The impact of this activity gating is
+very high (observed 100x slowdown on large designs when turning it off), it is
+the reason we prefer to convert clocked logic to combinational logic in
+``V3Active`` whenever possible.
+
+The ordering procedure described above works straight forward unless there are
+combinational logic constructs that are circularly dependent (a.k.a.: the
+UNOPTFLAT warning). Combinational scheduling loops can arise in sound
+(realizable) circuits as Verilator considers each SystemVerilog process as a
+unit of scheduling (albeit we do try to split processes into smaller ones to
+avoid this circularity problem whenever possible, this is not always possible).
+
+
+Breaking combinational loops
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Combinational loops are broken by the introduction of instances of the 'hybrid'
+logic class. As described in the previous section, combinational loops require
+iteration until the logic is settled, in order to restore the invariant that
+combinationally driven signals are consistent with the combinational logic.
+
+To achieve this, ``V3Sched::schedule`` calls ``V3Sched::breakCycles``, which
+builds a dependency graph of all combinational logic in the design, and then
+breaks all combinational cycles by converting all combinational logic that
+consumes a variable driven via a 'back-edge' into hybrid logic. Here
+'back-edge' just means a graph edge that points from a higher rank vertex to a
+lower rank vertex in some consistent ranking of the directed graph. Variables
+driven via a back-edge in the dependency graph are marked, and all
+combinational logic that depends on such variables is converted into hybrid
+logic, with the back-edge driven variables listed as explicit 'changed'
+sensitivities.
+
+Hybrid logic is handled by ``V3Order`` mostly in the same way as combinational
+logic, with two exceptions:
+
+- Explicit sensitivities of hybrid logic are ignored for the purposes of
+  data-flow ordering with respect to other combinational or hybrid logic. I.e.:
+  an explicit sensitivity suppresses the implicit sensitivity on the same
+  variable. This cold also be interpreted as ordering the hybrid logic as if
+  all variables listed as explicit sensitivities were substituted as constants
+  with their current values.
+
+- The explicit sensitivities are included as an additional driving domain of
+  the logic, and also cause evaluation when triggered.
+
+This means that hybrid logic is evaluated when either any of its implicit
+sensitivities might have been updated (the same way as combinational logic, by
+pushing it into the domains that write those variables), or if any of its
+explicit sensitivities are triggered.
+
+The effect of this transformation is that ``V3Order`` can proceed as if there
+are no combinational cycles (or alternatively, under the assumption that the
+back-edge driven variables don't change during one evaluation pass). The
+evaluation loop invoking the ordered code, will then re-invoke it on a follow
+on iteration, if any of the explicit sensitivities of hybrid logic have
+actually changed due to the previous invocation, iterating until all the
+combinational (including hybrid) logic have settled.
+
+One might wonder if there can be a race condition between clocked logic
+triggered due to a combinational signal change from the previous evaluation
+pass, and a combinational loop settling due to hybrid logic, if the clocked
+logic reads the not yet settled combinationally driven signal. Such a race is
+indeed possible, but our evaluation is consistent with the SystemVerilog
+scheduling semantics (IEEE 1800-2017 chapter 4), and therefore any program that
+exhibits such a race has non-deterministic behaviour according to the
+SystemVerilog semantics, so we accept this.
+
+
+Settling combinational logic after initialization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+At the beginning of simulation, once static initializer and ``initial`` blocks
+have been executed, we need to evaluate all combinational logic, in order to
+restore the invariant utilized by ``V3Order`` that the state of all
+combinationally driven variables are consistent with the combinational logic.
+
+To achieve this, we invoke ``V3Order::order`` on all of the combinational and
+hybrid logic, and iterate the resulting evaluation function until no more
+hybrid logic is triggered. This yields the `_eval_settle` function which is
+invoked at the beginning of simulation, after the `_eval_initial`.
+
+
+Partitioning logic for correct NBA updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``V3Order`` can order logic corresponding to non-blocking assignments (NBAs) to
+yield correct simulation results, as long as all the sensitivity expressions of
+clocked logic triggered in the Active scheduling region of the current time
+step are known up front. I.e.: the ordering of NBA updates is only correct if
+derived clocks that are computed in an Active region update (that is, via a
+blocking or continuous assignment) are known up front.
+
+We can ensure this by partitioning the logic into two regions. Note these
+regions are a concept of the Verilator scheduling algorithm and they do not
+directly correspond to the similarly named SystemVerilog scheduling regions
+as defined in the standard:
+
+- All logic (clocked, combinational and hybrid) that transitively feeds into,
+  or drives, via a non-blocking or continuous assignments (or via any update
+  that SystemVerilog executes in the Active scheduling region), a variable that
+  is used in the explicit sensitivity list of some clocked or hybrid logic, is
+  assigned to the 'act' region.
+
+- All other logic is assigned to the 'nba' region.
+
+For completeness, note that a subset of the 'act' region logic, specifically,
+the logic related to the pre-assignments of NBA updates (i.e.: AstAssignPre
+nodes), is handled separately, but is executed as part of the 'act' region.
+
+Also note that all logic representing the committing of an NBA (i.e.: Ast*Post)
+nodes) will be in the 'nba' region. This means that the evaluation of the 'act'
+region logic will not commit any NBA updates. As a result, the 'act' region
+logic can be iterated to compute all derived clock signals up front.
+
+The correspondence between the SystemVerilog Active and NBA scheduling regions,
+and the internal 'act' and 'nba' regions, is that 'act' contains all Active
+region logic that can compute a clock signal, while 'nba' contains all other
+Active and NBA region logic. For example, if the only clocks in the design are
+top level inputs, then 'act' will be empty, and 'nba' will contain the whole of
+the design.
+
+The partitioning described above is performed by ``V3Sched::partition``.
+
+
+Replication of combinational logic
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We will separately invoke ``V3Order::order`` on the 'act' and 'nba' region
+logic.
+
+Combinational logic that reads variables driven from both 'act' and 'nba'
+region logic has the problem of needing to be re-evaluated even if only one of
+the regions updates an input variable. We could pass additional trigger
+expressions between the regions to make sure combinational logic is always
+re-evaluated, or we can replicate combinational logic that is driven from
+multiple regions, by copying it into each region that drives it. Experiments
+show this simple replication works well performance-wise (and notably
+``V3Combine`` is good at combining the replicated code), so this is what we do
+in ``V3Sched::replicateLogic``.
+
+In ``V3Sched::replicateLogic``, in addition to replicating logic into the 'act'
+and 'nba' regions, we also replicate combinational (and hybrid) logic that
+depends on top level inputs. These become a separate 'ico' region (Input
+Combinational logic), which we will always evaluate at the beginning of a
+time-step to ensure the combinational invariant holds even if input signals
+have changed. Note that this eliminates the need of changing data and clock
+signals on separate evaluations, as was necessary with earlier versions of
+Verilator).
+
+
+Constructing the top level `_eval` function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To construct the top level `_eval` function, which updates the state of the
+circuit to the end of the current time step, we invoke ``V3Order::order``
+separately on the 'ico', 'act' and 'nba' logic, which yields the `_eval_ico`,
+`_eval_act`, and `_eval_nba` functions. We then put these all together with the
+corresponding functions that compute the respective trigger expressions into
+the top level `_eval` function, which on the high level has the form:
+
+::
+  void _eval() {
+    // Update combinational logic dependent on top level inptus ('ico' region)
+    while (true) {
+      _eval__triggers__ico();
+      // If no 'ico' region trigger is active
+      if (!ico_triggers.any()) break;
+      _eval_ico();
+    }
+
+
+    // Iterate 'act' and 'nba' regions together
+    while (true) {
+
+      // Iterate 'act' region, this computes all derived clocks updaed in the
+      // Active scheduling region, but does not commit any NBAs that executed
+      // in 'act' region logic.
+      while (true) {
+        _eval__triggers__act();
+        // If no 'act' region trigger is active
+        if (!act_triggers.any()) break;
+        // Remember what 'act' triggers were active, 'nba' uses the same
+        latch_act_triggers_for_nba();
+        _eval_act();
+      }
+
+
+      // If no 'nba' region trigger is active
+      if (!nba_triggers.any()) break;
+
+      // Evaluate all other Active region logic, and commti NBAs
+      _eval_nba();
+    }
+  }
+
+
 Multithreaded Mode
 ------------------
 

@@ -160,6 +160,10 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;clock_enable*/
 
+   Deprecated and has no effect (ignored).
+
+   In versions prior to 5.002:
+
    Used after a signal declaration to indicate the signal is used to gate a
    clock, and the user takes responsibility for insuring there are no races
    related to it. (Typically by adding a latch, and running static timing
@@ -184,9 +188,7 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;no_clocker*/
 
-   Specifies that the signal is used as clock or not. This information is
-   used by Verilator to mark the signal and any derived signals as
-   clocker.  See :vlopt:`--clk`.
+   Specifies that the signal is used as clock or not. See :vlopt:`--clk`.
 
    Same as :option:`clocker` and :option:`no_clocker` in configuration
    files.

@@ -324,8 +324,6 @@ void FileLine::warnStyleOff(bool flag) {
 bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (!m_warnOn.test(code)) return true;
     if (!defaultFileLine().m_warnOn.test(code)) return true;  // Global overrides local
-    // UNOPTFLAT implies UNOPT
-    if (code == V3ErrorCode::UNOPT && !m_warnOn.test(V3ErrorCode::UNOPTFLAT)) return true;
     if ((code.lintError() || code.styleError()) && !m_warnOn.test(V3ErrorCode::I_LINT)) {
         return true;
     }

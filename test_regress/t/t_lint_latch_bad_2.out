@@ -1,13 +1,7 @@
-%Warning-COMBDLY: t/t_lint_latch_bad_2.v:13:10: Non-blocking assignment '<=' in combinational logic process
-                                              : ... This will be executed as a blocking assignment '='!
-   13 |        o <= b;
-      |          ^~
-                  ... For warning description see https://verilator.org/warn/COMBDLY?v=latest
-                  ... Use "/* verilator lint_off COMBDLY */" and lint_on around source to disable this message.
-                  *** See https://verilator.org/warn/COMBDLY before disabling this,
-                  else you may end up with different sim results.
 %Warning-LATCH: t/t_lint_latch_bad_2.v:11:4: Latch inferred for signal 'o' (not all control paths of combinational always assign a value)
                                            : ... Suggest use of always_latch for intentional latches
-   11 |    always @(a or b)
-      |    ^~~~~~
+   11 |    always_comb
+      |    ^~~~~~~~~~~
+                ... For warning description see https://verilator.org/warn/LATCH?v=latest
+                ... Use "/* verilator lint_off LATCH */" and lint_on around source to disable this message.
 %Error: Exiting due to

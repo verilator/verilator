@@ -646,8 +646,8 @@ private:
         UINFO(4, "  BLOCK  " << nodep << endl);
         AstNode::user2ClearTree();
         m_domainp = nodep->sensesp();
-        if (!m_domainp || m_domainp->hasCombo()
-            || m_domainp->hasClocked()) {  // IE not hasSettle/hasInitial
+        // Ignore static initializers, initial and final blocks
+        if (!m_domainp || m_domainp->hasCombo() || m_domainp->hasClocked()) {
             iterateNewStmt(nodep);
         }
         m_domainp = nullptr;

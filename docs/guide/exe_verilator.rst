@@ -158,10 +158,7 @@ Summary:
 
 .. option:: --clk <signal-name>
 
-   With :vlopt:`--clk`, the specified signal-name is taken as a root clock
-   into the model; Verilator will mark the signal as clocker and
-   propagate the clocker attribute automatically to other signals downstream in
-   that clock tree.
+   With :vlopt:`--clk`, the specified signal is marked as a clock signal.
 
    The provided signal-name is specified using a RTL hierarchy path. For
    example, v.foo.bar.  If the signal is the input to top-module, then
@@ -173,11 +170,11 @@ Summary:
    individual bits, Verilator will attempt to decompose the vector and
    connect the single-bit clock signals.
 
-   The clocker attribute is useful in cases where Verilator does not
-   properly distinguish clock signals from other data signals. Using
-   clocker will cause the signal indicated to be considered a clock, and
-   remove it from the combinatorial logic reevaluation checking code. This
-   may greatly improve performance.
+   In versions prior to 5.002, the clocker attribute is useful in cases where
+   Verilator does not properly distinguish clock signals from other data
+   signals. Using clocker will cause the signal indicated to be considered a
+   clock, and remove it from the combinatorial logic reevaluation checking
+   code. This may greatly improve performance.
 
 .. option:: --compiler <compiler-name>
 
@@ -713,6 +710,10 @@ Summary:
    Defaults to the :vlopt:`--prefix` if not specified.
 
 .. option:: --no-order-clock-delay
+
+   Deprecated and has no effect (ignored).
+
+   In versions prior to 5.002:
 
    Rarely needed.  Disables a bug fix for ordering of clock enables with
    delayed assignments.  This option should only be used when suggested by
@@ -1255,8 +1256,7 @@ Summary:
 
    Enable all code style warnings, including code style warnings that are
    normally disabled by default. Equivalent to :vlopt:`-Wwarn-lint`
-   :vlopt:`-Wwarn-style`.  Excludes some specialty warnings,
-   i.e. IMPERFECTSCH.
+   :vlopt:`-Wwarn-style`.  Excludes some specialty warnings.
 
 .. option:: -Werror-<message>
 
@@ -1508,6 +1508,10 @@ The grammar of configuration commands is as follows:
    analysis purposes.
 
 .. option:: clock_enable -module "<modulename>" -var "<signame>"
+
+   Deprecated and has no effect (ignored).
+
+   In versions prior to 5.002:
 
    Indicate the signal is used to gate a clock, and the user takes
    responsibility for insuring there are no races related to it.

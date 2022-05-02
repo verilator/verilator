@@ -355,7 +355,6 @@ detailed descriptions of these arguments.
      -O3                        High performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
-    --no-order-clock-delay      Disable ordering clock enable assignments
     --no-verilate               Skip verilation and just compile previously Verilated code.
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions

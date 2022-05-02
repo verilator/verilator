@@ -12,7 +12,6 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
 
-   // verilator lint_off GENCLK
    reg        gendlyclk_r;
    reg [31:0] gendlydata_r;
    reg [31:0] dlydata_gr;

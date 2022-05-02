@@ -18,7 +18,8 @@ execute(
     check_finished => 1,
     );
 
-file_grep(glob_one("$Self->{obj_dir}/Vt_flag_comp_limit_parens___024root__DepSet_*__0__Slow.cpp"), qr/Vdeeptemp/x);
+my @files = glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}___024root__DepSet*__Slow.cpp");
+file_grep_any(\@files, qr/Vdeeptemp/i);
 
 ok(1);
 1;

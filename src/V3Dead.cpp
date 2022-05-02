@@ -131,7 +131,7 @@ private:
         // Class packages might have no children, but need to remain as
         // long as the class they refer to is needed
         if (VN_IS(m_modp, Class) || VN_IS(m_modp, ClassPackage)) nodep->user1Inc();
-        if (!nodep->isTop() && !nodep->varsp() && !nodep->blocksp() && !nodep->finalClksp()) {
+        if (!nodep->isTop() && !nodep->varsp() && !nodep->blocksp()) {
             m_scopesp.push_back(nodep);
         }
     }

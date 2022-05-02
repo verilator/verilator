@@ -16,7 +16,7 @@ compile(
 
 if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
-    file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 8);
+    file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 0);
 }
 
 execute(

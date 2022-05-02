@@ -13,11 +13,11 @@ scenarios(simulator => 1);
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
 compile(
-    verilator_flags2 => ["--stats $Self->{t_dir}/t_dedupe_clk_gate.vlt"],
+    verilator_flags2 => ["--stats"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="e,44,.*?" name="t.f0.clock_gate.clken_latched" dtype_id="1" vartype="logic" origName="clken_latched" clock_enable="true" latched="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="\w+,44,.*?" name="t.f0.clock_gate.clken_latched" dtype_id="\d+" vartype="logic" origName="clken_latched" latched="true"\/\>/i);
     file_grep($Self->{stats}, qr/Optimizations, Gate sigs deduped\s+(\d+)/i, 4);
 }
 

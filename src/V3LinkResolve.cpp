@@ -148,39 +148,8 @@ private:
     virtual void visit(AstSenItem* nodep) override {
         // Remove bit selects, and bark if it's not a simple variable
         iterateChildren(nodep);
-        if (nodep->isClocked()) {
-            // If it's not a simple variable wrap in a temporary
-            // This is a bit unfortunate as we haven't done width resolution
-            // and any width errors will look a bit odd, but it works.
-            AstNode* const sensp = nodep->sensp();
-            if (sensp && !VN_IS(sensp, NodeVarRef) && !VN_IS(sensp, Const)) {
-                // Make a new temp wire
-                const string newvarname = "__Vsenitemexpr" + cvtToStr(++m_senitemCvtNum);
-                AstVar* const newvarp = new AstVar(sensp->fileline(), VVarType::MODULETEMP,
-                                                   newvarname, VFlagLogicPacked(), 1);
-                // We can't just add under the module, because we may be
-                // inside a generate, begin, etc.
-                // We know a SenItem should be under a SenTree/Always etc,
-                // we we'll just hunt upwards
-                AstNode* addwherep = nodep;  // Add to this element's next
-                while (VN_IS(addwherep, SenItem) || VN_IS(addwherep, SenTree)) {
-                    addwherep = addwherep->backp();
-                }
-                if (!VN_IS(addwherep, Always)) {  // Assertion perhaps?
-                    sensp->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Non-single-bit pos/negedge clock statement under "
-                                  "some complicated block");
-                    addwherep = m_modp;
-                }
-                addwherep->addNext(newvarp);
-
-                sensp->replaceWith(new AstVarRef(sensp->fileline(), newvarp, VAccess::READ));
-                AstAssignW* const assignp = new AstAssignW(
-                    sensp->fileline(), new AstVarRef(sensp->fileline(), newvarp, VAccess::WRITE),
-                    sensp);
-                addwherep->addNext(assignp);
-            }
-        } else {  // Old V1995 sensitivity list; we'll probably mostly ignore
+        if (!nodep->isClocked()) {
+            // Old V1995 sensitivity list; we'll probably mostly ignore
             bool did = true;
             while (did) {
                 did = false;
@@ -205,9 +174,7 @@ private:
                 }
             }
         }
-        if (!VN_IS(nodep->sensp(), NodeVarRef)
-            && !VN_IS(nodep->sensp(), EnumItemRef)  // V3Const will cleanup
-            && !nodep->isIllegal()) {
+        if (nodep->isIllegal()) {
             if (debug()) nodep->dumpTree(cout, "-tree: ");
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Complex statement in sensitivity list");
         }

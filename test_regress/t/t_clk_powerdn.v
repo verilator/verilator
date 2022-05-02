@@ -13,8 +13,6 @@ module t (/*AUTOARG*/
 
    reg   reset_l;
 
-   // verilator lint_off GENCLK
-
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    // End of automatics

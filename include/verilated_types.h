@@ -29,6 +29,7 @@
 #endif
 
 #include <algorithm>
+#include <array>
 #include <deque>
 #include <map>
 #include <set>
@@ -69,6 +70,67 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 #define VL_OUT64(name, msb, lsb) QData name  ///< Declare output signal, 33-64bits
 #define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
 #define VL_OUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare output signal, 65+ bits
+
+//===================================================================
+// Activity trigger vector
+
+template <std::size_t T_size>  //
+class VlTriggerVec final {
+private:
+    // MEMBERS
+    std::array<bool, T_size> m_flags;  // State of the assoc array
+
+public:
+    // CONSTRUCTOR
+    VlTriggerVec() { clear(); }
+    ~VlTriggerVec() = default;
+
+    // METHODS
+
+    // Set all elements to false
+    void clear() { m_flags.fill(false); }
+
+    // Reference to element at 'index'
+    bool& at(size_t index) { return m_flags.at(index); }
+
+    // Return true iff at least one element is set
+    bool any() const {
+        for (size_t i = 0; i < T_size; ++i)
+            if (m_flags[i]) return true;
+        return false;
+    }
+
+    // Set all elements true in 'this' that are set in 'other'
+    void set(const VlTriggerVec<T_size>& other) {
+        for (size_t i = 0; i < T_size; ++i) m_flags[i] |= other.m_flags[i];
+    }
+
+    // Set elements of 'this' to 'a & !b' element-wise
+    void andNot(const VlTriggerVec<T_size>& a, const VlTriggerVec<T_size>& b) {
+        for (size_t i = 0; i < T_size; ++i) m_flags[i] = a.m_flags[i] & !b.m_flags[i];
+    }
+};
+
+//===================================================================
+// SystemVerilog event type
+
+class VlEvent final {
+    // MEMBERS
+    bool m_fired = false;  // Fired on this scheduling iteration
+    bool m_triggered = false;  // Triggered state of event persisting until next time step
+
+public:
+    // CONSTRUCTOR
+    VlEvent() = default;
+    ~VlEvent() = default;
+
+    // METHODS
+    void fire() { m_fired = m_triggered = true; }
+    bool isFired() const { return m_fired; }
+    bool isTriggered() const { return m_triggered; }
+    void clearFired() { m_fired = false; }
+    void clearTriggered() { m_triggered = false; }
+};
 
 //===================================================================
 // Shuffle RNG
@@ -859,6 +921,13 @@ template <class T_Value, std::size_t T_Depth> struct VlUnpacked final {
 
     T_Value& operator[](size_t index) { return m_storage[index]; }
     const T_Value& operator[](size_t index) const { return m_storage[index]; }
+
+    bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) const {
+        for (int i = 0; i < T_Depth; ++i) {
+            if (m_storage[i] != that.m_storage[i]) return true;
+        }
+        return false;
+    }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {

@@ -1841,7 +1841,6 @@ private:
         for (V3GraphEdge* edgep = (*ovvIt)->inBeginp(); edgep; edgep = edgep->inNextp()) {
             const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
             if (!logicp) continue;
-            if (logicp->domainp()->hasInitial() || logicp->domainp()->hasSettle()) continue;
             LogicMTask* const writerMtaskp = m_olv2mtask.at(logicp);
             (*tasksByRankp)[writerMtaskp->rank()].insert(writerMtaskp);
         }
@@ -1849,7 +1848,6 @@ private:
         for (V3GraphEdge* edgep = (*ovvIt)->outBeginp(); edgep; edgep = edgep->outNextp()) {
             const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
             if (!logicp) continue;
-            if (logicp->domainp()->hasInitial() || logicp->domainp()->hasSettle()) continue;
             LogicMTask* const readerMtaskp = m_olv2mtask.at(logicp);
             (*tasksByRankp)[readerMtaskp->rank()].insert(readerMtaskp);
         }
@@ -2563,6 +2561,11 @@ void V3Partition::go(V3Graph* mtasksp) {
     // (and the logic nodes therein.)
     uint32_t totalGraphCost = 0;
     {
+        // Artificial single entry point vertex in the MTask graph to allow sibling merges.
+        // This is required as otherwise disjoint sub-graphs could not be merged, but the
+        // coarsening algorithm assumes that the graph is connected.
+        LogicMTask* const entryMTask = new LogicMTask{mtasksp, nullptr};
+
         // The V3InstrCount within LogicMTask will set user5 on each AST
         // node, to assert that we never count any node twice.
         const VNUser5InUse inUser5;
@@ -2578,8 +2581,21 @@ void V3Partition::go(V3Graph* mtasksp) {
             totalGraphCost += mtaskp->cost();
         }
 
+        // Artificial single exit point vertex in the MTask graph to allow sibling merges.
+        // this enables merging MTasks with no downstream dependents if that is the ideal merge.
+        LogicMTask* const exitMTask = new LogicMTask{mtasksp, nullptr};
+
         // Create the mtask->mtask dep edges based on vertex deps
         setupMTaskDeps(mtasksp, &vx2mtask);
+
+        // Add the entry/exit edges
+        for (V3GraphVertex* vtxp = mtasksp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
+            if (vtxp == entryMTask) continue;
+            if (vtxp == exitMTask) continue;
+            LogicMTask* const lmtp = static_cast<LogicMTask*>(vtxp);
+            if (vtxp->inEmpty()) new MTaskEdge{mtasksp, entryMTask, lmtp, 1};
+            if (vtxp->outEmpty()) new MTaskEdge{mtasksp, lmtp, exitMTask, 1};
+        }
     }
 
     V3Partition::debugMTaskGraphStats(mtasksp, "initial");

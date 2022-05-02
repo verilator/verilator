@@ -157,8 +157,9 @@ private:
     virtual void visit(AstVarRef* nodep) override {
         const AstNode* const backp = nodep->backp();
         if (nodep->access().isReadOnly() && !VN_IS(backp, CCast) && VN_IS(backp, NodeMath)
-            && !VN_IS(backp, ArraySel) && !VN_IS(backp, RedXor) && backp->width()
-            && castSize(nodep) != castSize(nodep->varp())) {
+            && !VN_IS(backp, ArraySel) && !VN_IS(backp, RedXor)
+            && (nodep->varp()->basicp() && !nodep->varp()->basicp()->isTriggerVec())
+            && backp->width() && castSize(nodep) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set
             //  CData x=3; out = (QData)(x<<30);
             insertCast(nodep, castSize(nodep));

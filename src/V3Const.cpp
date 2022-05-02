@@ -2595,7 +2595,14 @@ private:
             // Constants in sensitivity lists may be removed (we'll simplify later)
             if (nodep->isClocked()) {  // A constant can never get a pos/negedge
                 if (onlySenItemInSenTree(nodep)) {
-                    nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Never()));
+                    if (nodep->edgeType() == VEdgeType::ET_CHANGED) {
+                        // TODO: This really is dodgy, as strictgly compliant simulators will not
+                        //       execute this block, but but t_func_check relies on it
+                        nodep->replaceWith(
+                            new AstSenItem(nodep->fileline(), AstSenItem::Initial()));
+                    } else {
+                        nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Never()));
+                    }
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 } else {
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -2619,12 +2626,6 @@ private:
             UASSERT_OBJ(senvarp, sensp, "Non-varref sensitivity variable");
             sensp->replaceWith(senvarp);
             VL_DO_DANGLING(sensp->deleteTree(), sensp);
-        } else if (!m_doNConst  // Deal with later when doNConst missing
-                   && (VN_IS(nodep->sensp(), EnumItemRef) || VN_IS(nodep->sensp(), Const))) {
-        } else if (nodep->isIllegal()) {  // Deal with later
-        } else {
-            UASSERT_OBJ(!(nodep->hasVar() && !nodep->varrefp()), nodep,
-                        "Null sensitivity variable");
         }
     }
 
@@ -2633,8 +2634,10 @@ private:
             if (lhsp->type() < rhsp->type()) return true;
             if (lhsp->type() > rhsp->type()) return false;
             // Looks visually better if we keep sorted by name
-            if (!lhsp->varrefp() && rhsp->varrefp()) return true;
-            if (lhsp->varrefp() && !rhsp->varrefp()) return false;
+            if (!lhsp->sensp() && rhsp->sensp()) return true;
+            if (lhsp->sensp() && !rhsp->sensp()) return false;
+            if (lhsp->varrefp() && !rhsp->varrefp()) return true;
+            if (!lhsp->varrefp() && rhsp->varrefp()) return false;
             if (lhsp->varrefp() && rhsp->varrefp()) {
                 if (lhsp->varrefp()->name() < rhsp->varrefp()->name()) return true;
                 if (lhsp->varrefp()->name() > rhsp->varrefp()->name()) return false;
@@ -2644,6 +2647,27 @@ private:
                 // Or rarely, different data types
                 if (lhsp->varrefp()->dtypep() < rhsp->varrefp()->dtypep()) return true;
                 if (lhsp->varrefp()->dtypep() > rhsp->varrefp()->dtypep()) return false;
+            } else if (AstCMethodHard* const lp = VN_CAST(lhsp->sensp(), CMethodHard)) {
+                if (AstCMethodHard* const rp = VN_CAST(rhsp->sensp(), CMethodHard)) {
+                    if (AstVarRef* const lRefp = VN_CAST(lp->fromp(), VarRef)) {
+                        if (AstVarRef* const rRefp = VN_CAST(rp->fromp(), VarRef)) {
+                            if (lRefp->name() < rRefp->name()) return true;
+                            if (lRefp->name() > rRefp->name()) return false;
+                            // But might be same name with different scopes
+                            if (lRefp->varScopep() < rRefp->varScopep()) return true;
+                            if (lRefp->varScopep() > rRefp->varScopep()) return false;
+                            // Or rarely, different data types
+                            if (lRefp->dtypep() < rRefp->dtypep()) return true;
+                            if (lRefp->dtypep() > rRefp->dtypep()) return false;
+                        }
+                    }
+                    if (AstConst* lConstp = VN_CAST(lp->pinsp(), Const)) {
+                        if (AstConst* rConstp = VN_CAST(rp->pinsp(), Const)) {
+                            if (lConstp->toUInt() < rConstp->toUInt()) return true;
+                            if (lConstp->toUInt() > rConstp->toUInt()) return false;
+                        }
+                    }
+                }
             }
             // Sort by edge, AFTER variable, as we want multiple edges for same var adjacent.
             // note the SenTree optimizer requires this order (more
@@ -2706,17 +2730,13 @@ private:
                 AstSenItem* const litemp = senp;
                 AstSenItem* const ritemp = nextp;
                 if (ritemp) {
-                    if ((litemp->varrefp() && ritemp->varrefp()
-                         && litemp->varrefp()->sameGateTree(ritemp->varrefp()))
-                        || (!litemp->varrefp() && !ritemp->varrefp())) {
+                    if ((litemp->sensp() && ritemp->sensp()
+                         && litemp->sensp()->sameGateTree(ritemp->sensp()))
+                        || (!litemp->sensp() && !ritemp->sensp())) {
                         // We've sorted in the order ANY, BOTH, POS, NEG,
                         // so we don't need to try opposite orders
-                        if ((litemp->edgeType()
-                             == VEdgeType::ET_ANYEDGE)  // ANY  or {BOTH|POS|NEG} -> ANY
-                            || (litemp->edgeType()
-                                == VEdgeType::ET_BOTHEDGE)  // BOTH or {POS|NEG} -> BOTH
-                            || (litemp->edgeType() == VEdgeType::ET_POSEDGE  // POS  or NEG -> BOTH
-                                && ritemp->edgeType() == VEdgeType::ET_NEGEDGE)
+                        if ((litemp->edgeType() == VEdgeType::ET_POSEDGE  // POS or NEG -> BOTH
+                             && ritemp->edgeType() == VEdgeType::ET_NEGEDGE)
                             || (litemp->edgeType() == ritemp->edgeType())  // Identical edges
                         ) {
                             // Fix edge of old node

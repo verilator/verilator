@@ -19,7 +19,6 @@
 //        OrderMoveVertex
 //        MTaskMoveVertex
 //        OrderEitherVertex
-//          OrderInputsVertex
 //          OrderLogicVertex
 //          OrderVarVertex
 //            OrderVarStdVertex
@@ -29,7 +28,6 @@
 //
 //      V3GraphEdge
 //        OrderEdge
-//          OrderComboCutEdge
 //          OrderPostCutEdge
 //          OrderPreCutEdge
 //*************************************************************************
@@ -53,7 +51,6 @@ class OrderMoveDomScope;
 //######################################################################
 
 enum OrderWeights : uint8_t {
-    WEIGHT_INPUT = 1,  // Low weight just so dot graph looks nice
     WEIGHT_COMBO = 1,  // Breakable combo logic
     WEIGHT_POST = 2,  // Post-delayed used var
     WEIGHT_PRE = 3,  // Breakable pre-delayed used var
@@ -64,13 +61,11 @@ enum OrderWeights : uint8_t {
 struct OrderVEdgeType {
     enum en : uint8_t {
         VERTEX_UNKNOWN = 0,
-        VERTEX_INPUTS,
         VERTEX_LOGIC,
         VERTEX_VARSTD,
         VERTEX_VARPRE,
         VERTEX_VARPOST,
         VERTEX_VARPORD,
-        VERTEX_VARSETTLE,
         VERTEX_MOVE,
         EDGE_STD,
         EDGE_COMBOCUT,
@@ -80,10 +75,9 @@ struct OrderVEdgeType {
     };
     const char* ascii() const {
         static const char* const names[]
-            = {"%E-vedge",      "VERTEX_INPUTS",  "VERTEX_LOGIC",   "VERTEX_VARSTD",
-               "VERTEX_VARPRE", "VERTEX_VARPOST", "VERTEX_VARPORD", "VERTEX_VARSETTLE",
-               "VERTEX_MOVE",   "EDGE_STD",       "EDGE_COMBOCUT",  "EDGE_PRECUT",
-               "EDGE_POSTCUT",  "_ENUM_END"};
+            = {"%E-vedge",       "VERTEX_LOGIC",   "VERTEX_VARSTD", "VERTEX_VARPRE",
+               "VERTEX_VARPOST", "VERTEX_VARPORD", "VERTEX_MOVE",   "EDGE_STD",
+               "EDGE_COMBOCUT",  "EDGE_PRECUT",    "EDGE_POSTCUT",  "_ENUM_END"};
         return names[m_e];
     }
     enum en m_e;
@@ -123,13 +117,11 @@ public:
 class OrderEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     AstScope* const m_scopep;  // Scope the vertex is in
     AstSenTree* m_domainp;  // Clock domain (nullptr = to be computed as we iterate)
-    bool m_isFromInput = false;  // From input, or derived therefrom (conservatively false)
 protected:
     OrderEitherVertex(V3Graph* graphp, const OrderEitherVertex& old)
         : V3GraphVertex{graphp, old}
         , m_scopep{old.m_scopep}
-        , m_domainp{old.m_domainp}
-        , m_isFromInput{old.m_isFromInput} {}
+        , m_domainp{old.m_domainp} {}
 
 public:
     OrderEitherVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp)
@@ -146,43 +138,26 @@ public:
     void domainp(AstSenTree* domainp) { m_domainp = domainp; }
     AstScope* scopep() const { return m_scopep; }
     AstSenTree* domainp() const { return m_domainp; }
-    void isFromInput(bool flag) { m_isFromInput = flag; }
-    bool isFromInput() const { return m_isFromInput; }
-};
-
-class OrderInputsVertex final : public OrderEitherVertex {
-    OrderInputsVertex(V3Graph* graphp, const OrderInputsVertex& old)
-        : OrderEitherVertex{graphp, old} {}
-
-public:
-    OrderInputsVertex(V3Graph* graphp, AstSenTree* domainp)
-        : OrderEitherVertex{graphp, nullptr, domainp} {
-        isFromInput(true);  // By definition
-    }
-    virtual ~OrderInputsVertex() override = default;
-    virtual OrderInputsVertex* clone(V3Graph* graphp) const override {
-        return new OrderInputsVertex(graphp, *this);
-    }
-    virtual OrderVEdgeType type() const override { return OrderVEdgeType::VERTEX_INPUTS; }
-    virtual string name() const override { return "*INPUTS*"; }
-    virtual string dotColor() const override { return "green"; }
-    virtual string dotName() const override { return ""; }
-    virtual string dotShape() const override { return "invhouse"; }
-    virtual bool domainMatters() override { return false; }
 };
 
 class OrderLogicVertex final : public OrderEitherVertex {
     AstNode* const m_nodep;
+    AstSenTree* const m_hybridp;
 
 protected:
     OrderLogicVertex(V3Graph* graphp, const OrderLogicVertex& old)
         : OrderEitherVertex{graphp, old}
-        , m_nodep{old.m_nodep} {}
+        , m_nodep{old.m_nodep}
+        , m_hybridp{old.m_hybridp} {}
 
 public:
-    OrderLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp, AstNode* nodep)
+    OrderLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp, AstSenTree* hybridp,
+                     AstNode* nodep)
         : OrderEitherVertex{graphp, scopep, domainp}
-        , m_nodep{nodep} {}
+        , m_nodep{nodep}
+        , m_hybridp{hybridp} {
+        UASSERT_OBJ(!(domainp && hybridp), nodep, "Can't have bot domainp and hybridp set");
+    }
     virtual ~OrderLogicVertex() override = default;
     virtual OrderLogicVertex* clone(V3Graph* graphp) const override {
         return new OrderLogicVertex(graphp, *this);
@@ -194,6 +169,7 @@ public:
         return (cvtToHex(m_nodep) + "\\n " + cvtToStr(nodep()->typeName()));
     }
     AstNode* nodep() const { return m_nodep; }
+    AstSenTree* hybridp() const { return m_hybridp; }
     virtual string dotShape() const override {
         return VN_IS(m_nodep, Active) ? "doubleoctagon" : "rect";
     }
@@ -201,14 +177,11 @@ public:
 
 class OrderVarVertex VL_NOT_FINAL : public OrderEitherVertex {
     AstVarScope* const m_varScp;
-    bool m_isClock = false;  // Used as clock
-    bool m_isDelayed = false;  // Set in a delayed assignment
+
 protected:
     OrderVarVertex(V3Graph* graphp, const OrderVarVertex& old)
         : OrderEitherVertex{graphp, old}
-        , m_varScp{old.m_varScp}
-        , m_isClock{old.m_isClock}
-        , m_isDelayed{old.m_isDelayed} {}
+        , m_varScp{old.m_varScp} {}
 
 public:
     OrderVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
@@ -220,10 +193,6 @@ public:
     virtual FileLine* fileline() const override { return varScp()->fileline(); }
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
-    void isClock(bool flag) { m_isClock = flag; }
-    bool isClock() const { return m_isClock; }
-    void isDelayed(bool flag) { m_isDelayed = flag; }
-    bool isDelayed() const { return m_isDelayed; }
     virtual string dotShape() const override { return "ellipse"; }
 };
 
@@ -445,35 +414,6 @@ public:
                              V3GraphVertex* top) const override {
         return new OrderEdge(graphp, fromp, top, *this);
     }
-    // When ordering combo blocks with stronglyConnected, follow edges not
-    // involving pre/pos variables
-    virtual bool followComboConnected() const { return true; }
-    static bool followComboConnected(const V3GraphEdge* edgep) {
-        const OrderEdge* const oedgep = dynamic_cast<const OrderEdge*>(edgep);
-        if (!oedgep) v3fatalSrc("Following edge of non-OrderEdge type");
-        return (oedgep->followComboConnected());
-    }
-};
-
-class OrderComboCutEdge final : public OrderEdge {
-    // Edge created from output of combo logic
-    // Breakable if the output var is also a input,
-    // in which case we'll need a change detect loop around this var.
-    OrderComboCutEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top,
-                      const OrderComboCutEdge& old)
-        : OrderEdge{graphp, fromp, top, old} {}
-
-public:
-    OrderComboCutEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
-        : OrderEdge{graphp, fromp, top, WEIGHT_COMBO, CUTABLE} {}
-    virtual OrderVEdgeType type() const override { return OrderVEdgeType::EDGE_COMBOCUT; }
-    virtual ~OrderComboCutEdge() override = default;
-    virtual OrderComboCutEdge* clone(V3Graph* graphp, V3GraphVertex* fromp,
-                                     V3GraphVertex* top) const override {
-        return new OrderComboCutEdge(graphp, fromp, top, *this);
-    }
-    virtual string dotColor() const override { return "yellowGreen"; }
-    virtual bool followComboConnected() const override { return true; }
 };
 
 class OrderPostCutEdge final : public OrderEdge {
@@ -494,7 +434,6 @@ public:
         return new OrderPostCutEdge(graphp, fromp, top, *this);
     }
     virtual string dotColor() const override { return "PaleGreen"; }
-    virtual bool followComboConnected() const override { return false; }
 };
 
 class OrderPreCutEdge final : public OrderEdge {
@@ -515,7 +454,6 @@ public:
     }
     virtual ~OrderPreCutEdge() override = default;
     virtual string dotColor() const override { return "khaki"; }
-    virtual bool followComboConnected() const override { return false; }
 };
 
 #endif  // Guard

@@ -93,7 +93,7 @@ private:
     AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
-    bool m_inInitial = false;  // True in initial blocks
+    bool m_inInitial = false;  // True in static initializers and initial blocks
     using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
@@ -160,7 +160,7 @@ private:
         return varscp;
     }
 
-    AstActive* createActivePost(AstVarRef* varrefp) {
+    AstActive* createActive(AstNode* varrefp) {
         AstActive* const newactp
             = new AstActive(varrefp->fileline(), "sequentdly", m_activep->sensesp());
         // Was addNext(), but addNextHere() avoids a linear search.
@@ -336,7 +336,7 @@ private:
         } else {  // first time we've dealt with this memory
             finalp = new AstAlwaysPost(nodep->fileline(), nullptr /*sens*/, nullptr /*body*/);
             UINFO(9, "     Created " << finalp << endl);
-            AstActive* const newactp = createActivePost(varrefp);
+            AstActive* const newactp = createActive(varrefp);
             newactp->addStmtsp(finalp);
             varrefp->varScopep()->user4p(finalp);
             finalp->user2p(newactp);
@@ -383,11 +383,53 @@ private:
         m_activep = nodep;
         VL_RESTORER(m_inInitial);
         {
-            m_inInitial = nodep->hasInitial();
+            AstSenTree* const senTreep = nodep->sensesp();
+            m_inInitial = senTreep->hasStatic() || senTreep->hasInitial();
             // Two sets to same variable in different actives must use different vars.
             AstNode::user3ClearTree();
             iterateChildren(nodep);
         }
+    }
+    virtual void visit(AstFireEvent* nodep) override {
+        UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
+        FileLine* const flp = nodep->fileline();
+        if (nodep->isDeleyed()) {
+            AstVarRef* const vrefp = VN_AS(nodep->operandp(), VarRef);
+            vrefp->unlinkFrBack();
+            const string newvarname = (string("__Vdly__") + vrefp->varp()->shortName());
+            AstVarScope* const dlyvscp = createVarSc(vrefp->varScopep(), newvarname, 1, nullptr);
+
+            const auto dlyRef = [=](VAccess access) {
+                return new AstVarRef{flp, dlyvscp, access};
+            };
+
+            AstAssignPre* const prep = new AstAssignPre{flp, dlyRef(VAccess::WRITE),
+                                                        new AstConst{flp, AstConst::BitFalse{}}};
+            AstAlwaysPost* const postp = new AstAlwaysPost{flp, nullptr, nullptr};
+            {
+                AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
+                postp->addStmtp(ifp);
+                AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "fire"};
+                callp->statement(true);
+                callp->dtypeSetVoid();
+                ifp->addIfsp(callp);
+            }
+
+            AstActive* const activep = createActive(nodep);
+            activep->addStmtsp(prep);
+            activep->addStmtsp(postp);
+
+            AstAssign* const assignp = new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                                     new AstConst{flp, AstConst::BitTrue{}}};
+            nodep->replaceWith(assignp);
+        } else {
+            AstCMethodHard* const callp
+                = new AstCMethodHard{flp, nodep->operandp()->unlinkFrBack(), "fire"};
+            callp->dtypeSetVoid();
+            callp->statement(true);
+            nodep->replaceWith(callp);
+        }
+        nodep->deleteTree();
     }
     virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
@@ -407,7 +449,7 @@ private:
                                            "loops (non-delayed is ok - see docs)");
             }
             const AstBasicDType* const basicp = lhsp->dtypep()->basicp();
-            if (basicp && basicp->isEventValue()) {
+            if (basicp && basicp->isEvent()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: event arrays");
             }
             if (newlhsp) {
@@ -444,20 +486,10 @@ private:
                 if (!dlyvscp) {  // First use of this delayed variable
                     const string newvarname = (string("__Vdly__") + nodep->varp()->shortName());
                     dlyvscp = createVarSc(oldvscp, newvarname, 0, nullptr);
-                    AstNodeAssign* prep;
-                    const AstBasicDType* const basicp = oldvscp->dtypep()->basicp();
-                    if (basicp && basicp->isEventValue()) {
-                        // Events go to zero on next timestep unless reactivated
-                        prep = new AstAssignPre(
-                            nodep->fileline(),
-                            new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE),
-                            new AstConst(nodep->fileline(), AstConst::BitFalse()));
-                    } else {
-                        prep = new AstAssignPre(
-                            nodep->fileline(),
-                            new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE),
-                            new AstVarRef(nodep->fileline(), oldvscp, VAccess::READ));
-                    }
+                    AstNodeAssign* const prep = new AstAssignPre(
+                        nodep->fileline(),
+                        new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE),
+                        new AstVarRef(nodep->fileline(), oldvscp, VAccess::READ));
                     AstNodeAssign* const postp = new AstAssignPost(
                         nodep->fileline(),
                         new AstVarRef(nodep->fileline(), oldvscp, VAccess::WRITE),
@@ -465,7 +497,7 @@ private:
                     postp->lhsp()->user2(true);  // Don't detect this assignment
                     oldvscp->user1p(dlyvscp);  // So we can find it later
                     // Make new ACTIVE with identical sensitivity tree
-                    AstActive* const newactp = createActivePost(nodep);
+                    AstActive* const newactp = createActive(nodep);
                     dlyvscp->user2p(newactp);
                     newactp->addStmtsp(prep);  // Add to FRONT of statements
                     newactp->addStmtsp(postp);

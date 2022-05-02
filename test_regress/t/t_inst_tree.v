@@ -12,9 +12,9 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
 
-   // verilator lint_off GENCLK
+
    reg     printclk;
-   // verilator lint_on GENCLK
+
    ps ps (printclk);
 
    reg [7:0] a;

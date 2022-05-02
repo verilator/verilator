@@ -10,10 +10,10 @@ module test
 
    always_latch
      if (e)
-       z[0] <= a[0];
+       z[0] = a[0];
 
    always_latch
      if (e)
-       z[1] <= a[1];
+       z[1] = a[1];
 
 endmodule

@@ -119,7 +119,6 @@ private:
     int m_labelNum = 0;  // Next label number
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
-    std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
     bool m_emitConstInit = false;  // Emitting constant initializer
 
 protected:
@@ -177,7 +176,6 @@ public:
     void emitVarReset(AstVar* varp);
     string emitVarResetRecurse(const AstVar* varp, const string& varNameProtected,
                                AstNodeDType* dtypep, int depth, const string& suffix);
-    void doubleOrDetect(AstChangeDet* changep, bool& gotOne);
     void emitChangeDet();
     void emitConstInit(AstNode* initp) {
         // We should refactor emit to produce output into a provided buffer, not go through members
@@ -193,8 +191,6 @@ public:
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
         m_cfuncp = nodep;
-
-        m_blkChangeDetVec.clear();
 
         splitSizeInc(nodep);
 
@@ -244,14 +240,10 @@ public:
             iterateAndNextNull(nodep->stmtsp());
         }
 
-        if (!m_blkChangeDetVec.empty()) emitChangeDet();
-
         if (nodep->finalsp()) {
             putsDecoration("// Final\n");
             iterateAndNextNull(nodep->finalsp());
         }
-
-        if (!m_blkChangeDetVec.empty()) puts("return __req;\n");
 
         puts("}\n");
         if (nodep->ifdef() != "") puts("#endif  // " + nodep->ifdef() + "\n");
@@ -1206,9 +1198,6 @@ public:
         // invoke the graph and wait for it to complete. Emitting the children does just that.
         UASSERT_OBJ(!nodep->mTaskBodiesp(), nodep, "These should have been lowered");
         iterateChildrenConst(nodep);
-    }
-    virtual void visit(AstChangeDet* nodep) override {  //
-        m_blkChangeDetVec.push_back(nodep);
     }
 
     // Default

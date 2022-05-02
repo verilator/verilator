@@ -12,16 +12,14 @@ scenarios(simulator => 1);
 
 top_filename("t/t_clk_latch.v");
 
-my $fail = $Self->{vlt_all};
 
 compile(
     v_flags2 => ['+define+EDGE_DETECT_STYLE'],
-    fails => $fail,
     );
 
 execute(
-    check_finished => !$fail,
-    ) if !$fail;
+    check_finished => 1
+    );
 
 ok(1);
 1;

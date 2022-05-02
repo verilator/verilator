@@ -10,15 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-lint(
-    fails => 1,
-    # Can't use expect_filename here as unstable output
-    expect =>
-'%Error: Circular logic when ordering code .*
- *t/t_order_loop_bad.v:\d+:\d+: + Example path: ALWAYS
- *t/t_order_loop_bad.v:\d+:\d+: + Example path: t.ready
- *t/t_order_loop_bad.v:\d+:\d+: + Example path: ACTIVE
-.*',
+compile();
+
+execute(
+    check_finished => 1,
     );
 
 ok(1);
