@@ -23,6 +23,8 @@
 
 #include <map>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 int V3Graph::s_debug = 0;
@@ -325,11 +327,19 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     *logp << "\t\t rankdir=" << dotRankDir() << "];\n";
 
     // List of all possible subgraphs
+    // Collections of explicit ranks
+    std::unordered_set<std::string> ranks;
+    std::unordered_multimap<std::string, V3GraphVertex*> rankSets;
     std::multimap<std::string, V3GraphVertex*> subgraphs;
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         const string vertexSubgraph
             = (colorAsSubgraph && vertexp->color()) ? cvtToStr(vertexp->color()) : "";
         subgraphs.emplace(vertexSubgraph, vertexp);
+        const string& dotRank = vertexp->dotRank();
+        if (!dotRank.empty()) {
+            ranks.emplace(dotRank);
+            rankSets.emplace(dotRank, vertexp);
+        }
     }
 
     // We use a map here, as we don't want to corrupt anything (userp) in the graph,
@@ -346,7 +356,10 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
         if (subgr != vertexSubgraph) {
             if (subgr != "") *logp << "\t};\n";
             subgr = vertexSubgraph;
-            if (subgr != "") *logp << "\tsubgraph cluster_" << subgr << " {\n";
+            if (subgr != "") {
+                *logp << "\tsubgraph cluster_" << subgr << " {\n";
+                *logp << "\tlabel=\"" << subgr << "\"\n";
+            }
         }
         if (subgr != "") *logp << "\t";
         *logp << "\tn" << vertexp->dotName() << (n++) << "\t[fontsize=8 "
@@ -382,6 +395,24 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
             }
         }
     }
+
+    // Print ranks
+    for (auto dotRank : ranks) {
+        *logp << "\t{ rank=";
+        if (dotRank != "sink" && dotRank != "source" && dotRank != "min" && dotRank != "max") {
+            *logp << "same";
+        } else {
+            *logp << dotRank;
+        }
+        *logp << "; ";
+        auto bounds = rankSets.equal_range(dotRank);
+        for (auto it{bounds.first}; it != bounds.second; ++it) {
+            if (it != bounds.first) *logp << ", ";
+            *logp << 'n' << numMap[it->second] << "";
+        }
+        *logp << " }\n";
+    }
+
     // Vertex::m_user end, now unused
 
     // Trailer
