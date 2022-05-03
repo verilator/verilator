@@ -28,7 +28,7 @@ module t;
    initial begin
       for (int i = 0; i < `TRIES; ++i) begin
          // verilator lint_off WIDTH
-         // Optimize away extracts 
+         // Optimize away extracts
          b5a = {$random}[4:0];
          b5b = {$random}[14:10];
          // Optimize away concats
@@ -52,7 +52,7 @@ module t;
       `checkh(max_b7d, 7'h1f);
       `checkh(max_b60c, ~ 60'h0);
       `checkh(max_b90c, ~ 90'h0);
-      
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

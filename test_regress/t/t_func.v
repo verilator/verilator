@@ -68,12 +68,12 @@ module t;
    function [2:0] add;
       input [2:0] fromv;
       begin
-	 add = fromv + 3'd1;
-	 begin : named
-	    reg [31:0] flocal;
-	    flocal = 1;
-	    rglobal = rglobal + flocal;
-	 end : named	// SystemVerilog end labels
+         add = fromv + 3'd1;
+         begin : named
+            reg [31:0] flocal;
+            flocal = 1;
+            rglobal = rglobal + flocal;
+         end : named    // SystemVerilog end labels
       end
    endfunction
 
@@ -81,26 +81,26 @@ module t;
       input [3:0] fromv; // Different fromv than the 'fromv' signal above
       reg one;
       begin : named
-	 reg [1:0] flocal;
-	 // Function calling a function
-	 one = 1'b1;
-	 munge4 = {one, add(fromv[2:0])};
+         reg [1:0] flocal;
+         // Function calling a function
+         one = 1'b1;
+         munge4 = {one, add(fromv[2:0])};
       end
    endfunction
 
    task setit;
       reg [31:0] temp;
       begin
-	 temp = rglobal + 32'h1;
-	 rglobal = temp + 32'h1;
+         temp = rglobal + 32'h1;
+         rglobal = temp + 32'h1;
       end
    endtask
 
    task incr (
-	      // Check a V2K style input/output list
+              // Check a V2K style input/output list
     output [31:0] z,
     input [31:0]  a, inc
-	      );
+              );
       z = a + inc;
    endtask
 
@@ -118,8 +118,8 @@ module t;
       input [3:0] bitnum;
       reg [4:0]   bitnum2;
       begin
-	 bitnum2 = {1'b1, bitnum};	// A little math to test constant propagation
-	 vector[bitnum2] = vector[bitnum2] ^ 1'b1;
+         bitnum2 = {1'b1, bitnum};      // A little math to test constant propagation
+         vector[bitnum2] = vector[bitnum2] ^ 1'b1;
       end
    endtask
 

@@ -35,8 +35,10 @@
 #error "verilated_threads.h/cpp expected VL_THREADED (from verilator --threads)"
 #endif
 
+#include <atomic>
 #include <condition_variable>
 #include <set>
+#include <thread>
 #include <vector>
 
 // clang-format off
@@ -58,7 +60,7 @@ using VlExecFnp = void (*)(VlSelfP, bool);
 // Track dependencies for a single MTask.
 class VlMTaskVertex final {
     // MEMBERS
-    static std::atomic<vluint64_t> s_yields;  // Statistics
+    static std::atomic<uint64_t> s_yields;  // Statistics
 
     // On even cycles, _upstreamDepsDone increases as upstream
     // dependencies complete. When it reaches _upstreamDepCount,
@@ -76,8 +78,8 @@ class VlMTaskVertex final {
     // during done-notification. Nobody's quantified that cost though.
     // If we were really serious about shrinking this class, we could
     // use 16-bit types here...)
-    std::atomic<vluint32_t> m_upstreamDepsDone;
-    const vluint32_t m_upstreamDepCount;
+    std::atomic<uint32_t> m_upstreamDepsDone;
+    const uint32_t m_upstreamDepCount;
 
 public:
     // CONSTRUCTORS
@@ -85,10 +87,10 @@ public:
     // 'upstreamDepCount' is the number of upstream MTaskVertex's
     // that must notify this MTaskVertex before it will become ready
     // to run.
-    explicit VlMTaskVertex(vluint32_t upstreamDepCount);
+    explicit VlMTaskVertex(uint32_t upstreamDepCount);
     ~VlMTaskVertex() = default;
 
-    static vluint64_t yields() { return s_yields; }
+    static uint64_t yields() { return s_yields; }
     static void yieldThread() {
         ++s_yields;  // Statistics
         std::this_thread::yield();
@@ -99,19 +101,19 @@ public:
     // false while it's still waiting on more dependencies.
     inline bool signalUpstreamDone(bool evenCycle) {
         if (evenCycle) {
-            const vluint32_t upstreamDepsDone
+            const uint32_t upstreamDepsDone
                 = 1 + m_upstreamDepsDone.fetch_add(1, std::memory_order_release);
             assert(upstreamDepsDone <= m_upstreamDepCount);
             return (upstreamDepsDone == m_upstreamDepCount);
         } else {
-            const vluint32_t upstreamDepsDone_prev
+            const uint32_t upstreamDepsDone_prev
                 = m_upstreamDepsDone.fetch_sub(1, std::memory_order_release);
             assert(upstreamDepsDone_prev > 0);
             return (upstreamDepsDone_prev == 1);
         }
     }
     inline bool areUpstreamDepsDone(bool evenCycle) const {
-        const vluint32_t target = evenCycle ? m_upstreamDepCount : 0;
+        const uint32_t target = evenCycle ? m_upstreamDepCount : 0;
         return m_upstreamDepsDone.load(std::memory_order_acquire) == target;
     }
     inline void waitUntilUpstreamDone(bool evenCycle) const {
@@ -127,64 +129,7 @@ public:
     }
 };
 
-// Profiling support
-class VlProfileRec final {
-protected:
-    friend class VlThreadPool;
-    enum VlProfileE { TYPE_MTASK_RUN, TYPE_EVAL, TYPE_EVAL_LOOP, TYPE_BARRIER };
-    // Layout below allows efficient packing.
-    // Leave endTime first, so no math needed to calculate address in endRecord
-    vluint64_t m_endTime = 0;  // Tick at end of execution
-    vluint64_t m_startTime = 0;  // Tick at start of execution
-    vluint32_t m_mtaskId = 0;  // Mtask we're logging
-    vluint32_t m_predictStart = 0;  // Time scheduler predicted would start
-    vluint32_t m_predictCost = 0;  // How long scheduler predicted would take
-    VlProfileE m_type = TYPE_BARRIER;  // Record type
-    unsigned m_cpu;  // Execution CPU number (at start anyways)
-public:
-    class Barrier {};
-    VlProfileRec() = default;
-    explicit VlProfileRec(Barrier) { m_cpu = getcpu(); }
-    void startEval(vluint64_t time) {
-        m_type = VlProfileRec::TYPE_EVAL;
-        m_startTime = time;
-        m_cpu = getcpu();
-    }
-    void startEvalLoop(vluint64_t time) {
-        m_type = VlProfileRec::TYPE_EVAL_LOOP;
-        m_startTime = time;
-        m_cpu = getcpu();
-    }
-    void startRecord(vluint64_t time, vluint32_t mtask, vluint32_t predictStart,
-                     vluint32_t predictCost) {
-        m_type = VlProfileRec::TYPE_MTASK_RUN;
-        m_mtaskId = mtask;
-        m_predictStart = predictStart;
-        m_predictCost = predictCost;
-        m_startTime = time;
-        m_cpu = getcpu();
-    }
-    void endRecord(vluint64_t time) { m_endTime = time; }
-    static int getcpu() {  // Return current executing CPU
-#if defined(__linux)
-        return sched_getcpu();
-#elif defined(__APPLE__) && !defined(__arm64__)
-        vluint32_t info[4];
-        __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
-        // info[1] is EBX, bits 24-31 are APIC ID
-        if ((info[3] & (1 << 9)) == 0) {
-            return -1;  // no APIC on chip
-        } else {
-            return (unsigned)info[1] >> 24;
-        }
-#elif defined(_WIN32)
-        return GetCurrentProcessorNumber();
-#else
-        return 0;
-#endif
-    }
-};
-
+class VlExecutionProfiler;
 class VlThreadPool;
 
 class VlWorkerThread final {
@@ -217,9 +162,6 @@ private:
     // Store the size atomically, so we can spin wait
     std::atomic<size_t> m_ready_size;
 
-    VlThreadPool* const m_poolp;  // Our associated thread pool
-
-    const bool m_profiling;  // Is profiling enabled?
     std::atomic<bool> m_exiting;  // Worker thread should exit
     std::thread m_cthread;  // Underlying C++ thread record
     VerilatedContext* const m_contextp;  // Context for spawned thread
@@ -228,7 +170,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit VlWorkerThread(VlThreadPool* poolp, VerilatedContext* contextp, bool profiling);
+    explicit VlWorkerThread(uint32_t threadId, VerilatedContext* contextp,
+                            VlExecutionProfiler* profilerp);
     ~VlWorkerThread();
 
     // METHODS
@@ -265,34 +208,20 @@ public:
         if (notify) m_cv.notify_one();
     }
     void workerLoop();
-    static void startWorker(VlWorkerThread* workerp);
+    static void startWorker(VlWorkerThread* workerp, uint32_t threadId,
+                            VlExecutionProfiler* profilerp);
 };
 
 class VlThreadPool final {
-    // TYPES
-    using ProfileTrace = std::vector<VlProfileRec>;
-
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
-    const bool m_profiling;  // is profiling enabled?
-
-    // Support profiling -- we can append records of profiling events
-    // to this vector with very low overhead, and then dump them out
-    // later. This prevents the overhead of printf/malloc/IO from
-    // corrupting the profiling data. It's super cheap to append
-    // a VlProfileRec struct on the end of a pre-allocated vector;
-    // this is the only cost we pay in real-time during a profiling cycle.
-    // Internal note: Globals may multi-construct, see verilated.cpp top.
-    static VL_THREAD_LOCAL ProfileTrace* t_profilep;
-    std::set<ProfileTrace*> m_allProfiles VL_GUARDED_BY(m_mutex);
-    VerilatedMutex m_mutex;
 
 public:
     // CONSTRUCTORS
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
     // pool will create these threads and make them available to execute tasks
     // via this->workerp(index)->addTask(...)
-    VlThreadPool(VerilatedContext* contextp, int nThreads, bool profiling);
+    VlThreadPool(VerilatedContext* contextp, int nThreads, VlExecutionProfiler* profilerp);
     ~VlThreadPool();
 
     // METHODS
@@ -302,17 +231,6 @@ public:
         assert(index < m_workers.size());
         return m_workers[index];
     }
-    inline VlProfileRec* profileAppend() {
-        t_profilep->emplace_back();
-        return &(t_profilep->back());
-    }
-    void profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES(m_mutex);
-    void profileDump(const char* filenamep, vluint64_t tickStart, vluint64_t tickEnd)
-        VL_MT_SAFE_EXCLUDES(m_mutex);
-    // In profiling mode, each executing thread must call
-    // this once to setup profiling state:
-    void setupProfilingClientThread() VL_MT_SAFE_EXCLUDES(m_mutex);
-    void tearDownProfilingClientThread();
 
 private:
     VL_UNCOPYABLE(VlThreadPool);

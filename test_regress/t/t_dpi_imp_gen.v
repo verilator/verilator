@@ -17,12 +17,12 @@ module t (/*AUTOARG*/
    generate
       for (genvar blkIdx=0; blkIdx < BLKS; blkIdx=blkIdx+1 ) begin : slice
 
-	 import "DPI-C" context function void dpi_genvarTest ();
+         import "DPI-C" context function void dpi_genvarTest ();
 
          initial begin
-	    dpi_genvarTest();
-	    $display("slice = %0d   :  %m", blkIdx);
-	 end
+            dpi_genvarTest();
+            $display("slice = %0d   :  %m", blkIdx);
+         end
      end
    endgenerate
 

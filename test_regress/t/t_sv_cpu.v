@@ -22,15 +22,15 @@ module t (/*AUTOARG*/
    // Regs and Wires
    // **************************************************************************
 
-   reg 	   rst;
+   reg     rst;
    integer rst_count;
    integer clk_count;
 
 
    testbench testbench_i (/*AUTOINST*/
-			  // Inputs
-			  .clk			(clk),
-			  .rst			(rst));
+                          // Inputs
+                          .clk                  (clk),
+                          .rst                  (rst));
 
 
    // **************************************************************************
@@ -44,10 +44,10 @@ module t (/*AUTOARG*/
 
    always @( posedge clk ) begin
       if (rst_count < 2) begin
-	 rst_count++;
+         rst_count++;
       end
       else begin
-	 rst = 1'b0;
+         rst = 1'b0;
       end
    end
 
@@ -65,10 +65,10 @@ module t (/*AUTOARG*/
 
    always @( posedge clk ) begin
       if (90 == clk_count) begin
-	 $finish ();
+         $finish ();
       end
       else begin
-	 clk_count++;
+         clk_count++;
       end
    end
 
@@ -133,11 +133,11 @@ module testbench (/*AUTOARG*/
      i_chip
        (
         /*AUTOINST*/
-	// Inouts
-	.pad				(pad[NUMPADS:1]),
-	// Inputs
-	.clk				(clk),
-	.rst				(rst));
+        // Inouts
+        .pad                            (pad[NUMPADS:1]),
+        // Inputs
+        .clk                            (clk),
+        .rst                            (rst));
 
 
 endmodule // test

@@ -83,8 +83,8 @@ module t (/*AUTOARG*/
       $write("cnt[30:4]=%0d slc=%0d dim=%0d wdt=%0d\n", cnt[30:4], slc, dim, wdt);
 `endif
       if (cnt[30:4]==1) begin
-	 // big endian
-	 if (slc==0) begin
+         // big endian
+         if (slc==0) begin
             // full array
             `checkh($dimensions (array_bg), 3);
             `checkh($bits       (array_bg), WA*WB*WC);
@@ -96,7 +96,7 @@ module t (/*AUTOARG*/
                `checkh($increment  (array_bg, dim), 1    );
                `checkh($size       (array_bg, dim), wdt  );
             end
-	 end else if (slc==1) begin
+         end else if (slc==1) begin
             // single array element
             `checkh($dimensions (array_bg[2]), 2);
             `checkh($bits       (array_bg[2]), WB*WC);
@@ -109,7 +109,7 @@ module t (/*AUTOARG*/
                `checkh($size       (array_bg[2], dim-1), wdt  );
             end
 `ifndef VERILATOR // Unsupported slices don't maintain size correctly
-	 end else if (slc==2) begin
+         end else if (slc==2) begin
             // half array
             `checkh($dimensions (array_bg[WA/2+1:2]), 3);
             `checkh($bits       (array_bg[WA/2+1:2]), WA/2*WB*WC);
@@ -122,10 +122,10 @@ module t (/*AUTOARG*/
                `checkh($size       (array_bg[WA/2+1:2], dim), wdt);
             end
 `endif
-	 end
+         end
       end else if (cnt[30:4]==2) begin
-	 // little endian
-	 if (slc==0) begin
+         // little endian
+         if (slc==0) begin
             // full array
             `checkh($dimensions (array_lt), 3);
             `checkh($bits       (array_lt), WA*WB*WC);
@@ -137,7 +137,7 @@ module t (/*AUTOARG*/
                `checkh($increment  (array_lt, dim), -1   );
                `checkh($size       (array_lt, dim), wdt  );
             end
-	 end else if (slc==1) begin
+         end else if (slc==1) begin
             // single array element
             `checkh($dimensions (array_lt[2]), 2);
             `checkh($bits       (array_lt[2]), WB*WC);
@@ -150,7 +150,7 @@ module t (/*AUTOARG*/
                `checkh($size       (array_lt[2], dim-1), wdt  );
             end
 `ifndef VERILATOR // Unsupported slices don't maintain size correctly
-	 end else if (slc==2) begin
+         end else if (slc==2) begin
             // half array
             `checkh($dimensions (array_lt[2:WA/2+1]), 3);
             `checkh($bits       (array_lt[2:WA/2+1]), WA/2*WB*WC);
@@ -163,7 +163,7 @@ module t (/*AUTOARG*/
                `checkh($size       (array_lt[2:WA/2+1], dim), wdt  );
             end
 `endif
-	 end
+         end
       end
    end
 

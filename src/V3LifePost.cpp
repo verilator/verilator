@@ -315,6 +315,7 @@ private:
     }
     virtual void visit(AstExecGraph* nodep) override {
         // Treat the ExecGraph like a call to each mtask body
+        UASSERT_OBJ(!m_mtasksGraphp, nodep, "Cannot handle more than one AstExecGraph");
         m_mtasksGraphp = nodep->depGraphp();
         for (V3GraphVertex* mtaskVxp = m_mtasksGraphp->verticesBeginp(); mtaskVxp;
              mtaskVxp = mtaskVxp->verticesNextp()) {

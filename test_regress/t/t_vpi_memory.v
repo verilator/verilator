@@ -31,13 +31,13 @@ extern "C" int mon_check();
    reg [16:1] [30:0] memp31 /*verilator public_flat_rw @(posedge clk) */;
    reg [15:1] [32:0] memp33 /*verilator public_flat_rw @(posedge clk) */;
    word_t [16:1] memw /*verilator public_flat_rw @(posedge clk) */;
-   integer 	  i, status;
+   integer        i, status;
 
 `define CHECK_MEM(mem, words) \
       for (i = words; i > 0; i--) \
-	if (integer'(mem[i]) !== i) begin \
+        if (integer'(mem[i]) !== i) begin \
           $write("%%Error: %s[%d] : GOT = %d  EXP = %d\n", `"mem`", i, mem[i], i); \
-	  status = -1; \
+          status = -1; \
         end
 
    // Test loop
@@ -51,8 +51,8 @@ extern "C" int mon_check();
      status = mon_check();
 `endif
       if (status!=0) begin
-	 $write("%%Error: t_vpi_memory.cpp: C Test failed (rc=%0d)\n", status);
-	 $stop;
+         $write("%%Error: t_vpi_memory.cpp: C Test failed (rc=%0d)\n", status);
+         $stop;
       end
       `CHECK_MEM(mem0, 16)
       `CHECK_MEM(memp32, 16)
@@ -60,8 +60,8 @@ extern "C" int mon_check();
       `CHECK_MEM(memp33, 15)
       `CHECK_MEM(memw, 16)
       if (status!=0) begin
-	 $write("%%Error: Verilog memory checks failed\n");
-	 $stop;
+         $write("%%Error: Verilog memory checks failed\n");
+         $stop;
       end
       $write("*-* All Finished *-*\n");
       $finish;

@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
    integer cyc; initial cyc=1;
 
    // verilator lint_off GENCLK
-   reg 	   printclk;
+   reg     printclk;
    // verilator lint_on GENCLK
    ps ps (printclk);
 
@@ -25,24 +25,24 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       printclk <= 0;
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
-	    printclk <= 1'b1;
-	 end
-	 if (cyc==2) begin
-	    a <= 8'b1;
-	 end
-	 if (cyc==3) begin
-	    if (z !== 8'hf8) $stop;
-	    //if (u.u1.u1.u1.u0.PARAM !== 1) $stop;
-	    //if (u.u1.u1.u1.u1.PARAM !== 2) $stop;
-	    //if (u.u0.u0.u0.u0.z !== 8'hfe) $stop;
-	    //if (u.u0.u0.u0.u1.z !== 8'hff) $stop;
-	    //if (u.u1.u1.u1.u0.z !== 8'h00) $stop;
-	    //if (u.u1.u1.u1.u1.z !== 8'h01) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==1) begin
+            printclk <= 1'b1;
+         end
+         if (cyc==2) begin
+            a <= 8'b1;
+         end
+         if (cyc==3) begin
+            if (z !== 8'hf8) $stop;
+            //if (u.u1.u1.u1.u0.PARAM !== 1) $stop;
+            //if (u.u1.u1.u1.u1.PARAM !== 2) $stop;
+            //if (u.u0.u0.u0.u0.z !== 8'hfe) $stop;
+            //if (u.u0.u0.u0.u1.z !== 8'hff) $stop;
+            //if (u.u1.u1.u1.u0.z !== 8'h00) $stop;
+            //if (u.u1.u1.u1.u1.z !== 8'h01) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 

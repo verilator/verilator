@@ -186,7 +186,7 @@ extern "C" int mon_check() {
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
+    uint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
     // we're going to be checking for these errors do don't crash out

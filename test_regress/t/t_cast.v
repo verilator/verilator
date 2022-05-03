@@ -59,8 +59,8 @@ module t;
    logic signed [26:0] midb = 15'((27'(coeff2 * samp2) >>> 11));
    // verilator lint_on WIDTH
    logic signed [14:0] outa = 15'((27'(coeff0 * samp0) >>> 11) + // 27' size casting in order for intermediate result to not be truncated to the width of LHS vector
-				  (27'(coeff1 * samp1) >>> 11) +
-				  (27'(coeff2 * samp2) >>> 11)); // 15' size casting to avoid synthesis/simulator warnings
+                                  (27'(coeff1 * samp1) >>> 11) +
+                                  (27'(coeff2 * samp2) >>> 11)); // 15' size casting to avoid synthesis/simulator warnings
 
    logic one = 1'b1;
    logic [32:0] b33 = {32'(0), one};

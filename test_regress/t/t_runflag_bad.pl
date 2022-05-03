@@ -15,8 +15,32 @@ compile(
 
 execute(
     all_run_flags => ["+verilator+bad+flag+testing"],
-    #fails => 1,  # doesn't fail just prints
-    expect_filename => $Self->{golden_filename},
+    fails => 1,
+    expect_filename => $Self->{golden_filename} . "-a",
+    );
+
+execute(
+    all_run_flags => ["+verilator+rand+reset+-1"],
+    fails => 1,
+    expect_filename => $Self->{golden_filename} . "-b"
+    );
+
+execute(
+    all_run_flags => ["+verilator+rand+reset+3"],
+    fails => 1,
+    expect_filename => $Self->{golden_filename} . "-c"
+    );
+
+execute(
+    all_run_flags => ["+verilator+prof+threads+window+0"],
+    fails => 1,
+    expect_filename => $Self->{golden_filename} . "-d"
+    );
+
+execute(
+    all_run_flags => ["+verilator+prof+threads+window+1000000000000000000000000"],
+    fails => 1,
+    expect_filename => $Self->{golden_filename} . "-e"
     );
 
 ok(1);

@@ -63,7 +63,7 @@ class EmitCGatherDependencies final : VNVisitor {
             UASSERT_OBJ(selfPointer.find("vlSymsp") != string::npos, nodep,
                         "Unknown self pointer: '" << selfPointer << "'");
             // Dereferencing vlSymsp, so we need it's definition...
-            m_dependencies.insert(EmitCBaseVisitor::symClassName());
+            addSymsDependency();
         }
     }
 
@@ -117,9 +117,7 @@ class EmitCGatherDependencies final : VNVisitor {
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstNodeSimpleText* nodep) override {
-        if (nodep->text().find("vlSymsp") != string::npos) {
-            m_dependencies.insert(EmitCBaseVisitor::symClassName());
-        }
+        if (nodep->text().find("vlSymsp") != string::npos) addSymsDependency();
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -236,8 +234,8 @@ class EmitCImp final : EmitCFunc {
                          "(" + modName + "* vlSelf);");
         puts("\n");
 
-        puts(modName + "::" + modName + "(const char* _vcname__)\n");
-        puts("    : VerilatedModule(_vcname__)\n");
+        puts(modName + "::" + modName + "(" + symClassName() + "* symsp, const char* name)\n");
+        puts("    : VerilatedModule{name}\n");
 
         ofp()->indentInc();
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -260,6 +258,7 @@ class EmitCImp final : EmitCFunc {
                 }
             }
         }
+        puts(", vlSymsp{symsp}\n");
         ofp()->indentDec();
 
         puts(" {\n");
@@ -279,10 +278,8 @@ class EmitCImp final : EmitCFunc {
                              "(" + modName + "* vlSelf, bool first);");
         }
 
-        puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(" + symClassName()
-             + "* _vlSymsp, bool first) {\n");
+        puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(bool first) {\n");
         puts("if (false && first) {}  // Prevent unused\n");
-        puts("this->vlSymsp = _vlSymsp;\n");  // First, as later stuff needs it.
         if (v3Global.opt.coverage()) {
             puts(modName + "__" + protect("_configure_coverage") + "(this, first);\n");
         }
@@ -353,8 +350,8 @@ class EmitCImp final : EmitCFunc {
                         hash.insert(varp->dtypep()->width());
                     }
                 }
-                ofp()->printf("vluint64_t __Vcheckval = 0x%" PRIx64 "ULL;\n",
-                              static_cast<vluint64_t>(hash.digestUInt64()));
+                ofp()->printf("uint64_t __Vcheckval = 0x%" PRIx64 "ULL;\n",
+                              static_cast<uint64_t>(hash.digestUInt64()));
                 if (de) {
                     puts("os.readAssert(__Vcheckval);\n");
                 } else {
@@ -786,7 +783,7 @@ class EmitCTrace final : EmitCFunc {
             AstVar* const varp = varrefp->varp();
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {
-                puts("(vluint32_t*)");
+                puts("(uint32_t*)");
             } else if (emitTraceIsScBv(nodep)) {
                 puts("VL_SC_BV_DATAP(");
             }

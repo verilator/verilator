@@ -18,7 +18,7 @@
 //======================================================================
 
 struct MyMon {
-    vluint32_t* sigsp[2];
+    uint32_t* sigsp[2];
     MyMon() {
         sigsp[0] = NULL;
         sigsp[1] = NULL;
@@ -31,7 +31,7 @@ void mon_register_a(const char* namep, void* sigp, bool isOut) {
 #ifdef TEST_VERBOSE
     VL_PRINTF("-     mon_register_a(\"%s\", %p, %d);\n", namep, sigp, isOut);
 #endif
-    mons[0].sigsp[isOut] = (vluint32_t*)sigp;
+    mons[0].sigsp[isOut] = (uint32_t*)sigp;
 }
 
 void mon_do(MyMon* monp) {
@@ -80,9 +80,9 @@ void mon_register_b(const char* namep, int isOut) {
     } else if (varp->vltype() != VLVT_UINT32) {
         VL_PRINTF("%%Warning: wrong type for signal: \"%s\"\n", namep);
     } else {
-        vluint32_t* datap = (vluint32_t*)(varp->datap());
+        uint32_t* datap = (uint32_t*)(varp->datap());
         VL_PRINTF("-     mon_register_b('%s', \"%s\", %p, %d);\n", modp, namep, datap, isOut);
-        mons[1].sigsp[isOut] = (vluint32_t*)(varp->datap());
+        mons[1].sigsp[isOut] = (uint32_t*)(varp->datap());
     }
 }
 
@@ -114,7 +114,7 @@ unsigned int main_time = 0;
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
+    uint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 

@@ -17,15 +17,15 @@ module t (/*AUTOARG*/
 `endif
 
    m3 #(.P3(PAR),
-	.P2(2))
+        .P2(2))
      m3(.clk(clk));
 
    integer cyc=1;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==1) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

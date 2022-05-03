@@ -13,10 +13,10 @@ interface ifc;
    generate
       // Note block must be named per SystemVerilog 2005
       if (MODE==1) begin : g
-	 integer value;
+         integer value;
       end
       else if (MODE==2) begin : g
-	 real value;
+         real value;
       end
    endgenerate
 endinterface
@@ -35,23 +35,23 @@ module t (/*AUTOARG*/
    ifc #(2) itop2b();
 
    wrapper  c1 (.isuba(itop1a),
-		.isubb(itop1b),
-		.i_valuea(14.1),
-		.i_valueb(15.2));
+                .isubb(itop1b),
+                .i_valuea(14.1),
+                .i_valueb(15.2));
    wrapper  c2 (.isuba(itop2a),
-		.isubb(itop2b),
-		.i_valuea(24.3),
-		.i_valueb(25.4));
+                .isubb(itop2b),
+                .i_valuea(24.3),
+                .i_valueb(25.4));
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==20) begin
-	 if (itop1a.g.value != 14) $stop;
-	 if (itop1b.g.value != 15) $stop;
-	 if (itop2a.g.value != 24) $stop;
-	 if (itop2b.g.value != 25) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (itop1a.g.value != 14) $stop;
+         if (itop1b.g.value != 15) $stop;
+         if (itop2a.g.value != 24) $stop;
+         if (itop2b.g.value != 25) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

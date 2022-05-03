@@ -32,8 +32,8 @@ module a;
 endmodule
 
 module b #(
-	   parameter TWO /*verilator public*/ = 22
-	   );
+           parameter TWO /*verilator public*/ = 22
+           );
    initial if (TWO != 2) $stop;
 `ifdef VERILATOR
    initial if ($c32("this->TWO") != 2) $stop;

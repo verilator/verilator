@@ -1,9 +1,8 @@
 Verilator Gantt report
 
 Argument settings:
-  +verilator+prof+threads+start+2
-  +verilator+prof+threads+window+2
-  --threads 2
+  +verilator+prof+exec+start+2
+  +verilator+prof+exec+window+2
 
 Analysis:
   Total threads             = 2
@@ -23,7 +22,7 @@ Prediction (what Verilator used for scheduling):
   All-thread efficiency     = 63.2%
   All-thread speedup        = 1.3
 
-Statistics:
+MTask statistics:
   min log(p2e) = -3.681  from mtask 5 (predict 30, elapsed 1190)
   max log(p2e) = -2.409  from mtask 8 (predict 107, elapsed 1190)
   mean = -2.992

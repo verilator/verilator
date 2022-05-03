@@ -23,14 +23,14 @@ Contributors
 Many people have provided ideas and other assistance with Verilator.
 
 Verilator is receiving major development support from the `CHIPS Alliance
-<https://chipsalliance.org>`_.
+<https://chipsalliance.org>`_ and `Shunyao CAD <https://shunyaocad.com>`_.
 
 Previous major corporate sponsors of Verilator, by providing significant
 contributions of time or funds included include: Atmel Corporation, Cavium
 Inc., Compaq Corporation, Digital Equipment Corporation, Embecosm Ltd.,
 Hicamp Systems, Intel Corporation, Mindspeed Technologies Inc., MicroTune
 Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus Networks Inc.,
-and SiCortex Inc.
+SiCortex Inc, and Shunyao CAD.
 
 The people who have contributed major functionality are: Byron Bradley,
 Jeremy Bennett, Lane Brooks, John Coiner, Duane Galbi, Geza Lore, Todd

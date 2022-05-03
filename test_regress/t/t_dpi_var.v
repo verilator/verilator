@@ -16,10 +16,10 @@ module t (/*AUTOARG*/
 
    wire    monclk = ~clk;
 
-   int 	   in;
-   int 	   fr_a;
-   int 	   fr_b;
-   int 	   fr_chk;
+   int     in;
+   int     fr_a;
+   int     fr_b;
+   int     fr_chk;
    sub sub (.*);
 
    // Test loop
@@ -30,18 +30,18 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       in <= {in[30:0], in[31]^in[2]^in[0]};
       if (cyc==0) begin
-	 // Setup
-	 in <= 32'hd70a4497;
+         // Setup
+         in <= 32'hd70a4497;
       end
       else if (cyc<3) begin
       end
       else if (cyc<10) begin
-	 if (fr_chk != fr_a) $stop;
-	 if (fr_chk != fr_b) $stop;
+         if (fr_chk != fr_a) $stop;
+         if (fr_chk != fr_b) $stop;
       end
       else if (cyc==10) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

@@ -1,0 +1,9 @@
+%Warning-COMBDLY: t/t_lint_latch_1.v:14:10: Non-blocking assignment '<=' in combinational logic process
+                                          : ... This will be executed as a blocking assignment '='!
+   14 |        o <= b;
+      |          ^~
+                  ... For warning description see https://verilator.org/warn/COMBDLY?v=latest
+                  ... Use "/* verilator lint_off COMBDLY */" and lint_on around source to disable this message.
+                  *** See https://verilator.org/warn/COMBDLY before disabling this,
+                  else you may end up with different sim results.
+%Error: Exiting due to

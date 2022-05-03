@@ -69,9 +69,9 @@ public:
 
 class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
-    static constexpr vluint32_t MAGIC = 0xddc4f829UL;
+    static constexpr uint32_t MAGIC = 0xddc4f829UL;
     // MEMBERS
-    const vluint32_t m_magic;  // Magic number
+    const uint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
     const int m_pdims;  // Packed dimensions, 0 = none
@@ -142,7 +142,7 @@ public:
     VerilatedVarFlags vldir() const {
         return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR);
     }
-    vluint32_t entSize() const;
+    uint32_t entSize() const;
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }

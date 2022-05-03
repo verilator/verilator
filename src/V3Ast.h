@@ -83,7 +83,7 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 #define VN_AS(nodep, nodetypename) (AstNode::privateAs<Ast##nodetypename, decltype(nodep)>(nodep))
 
 // (V)erilator (N)ode deleted: Pointer to deleted AstNode (for assertions only)
-#define VN_DELETED(nodep) VL_UNLIKELY((vluint64_t)(nodep) == 0x1)
+#define VN_DELETED(nodep) VL_UNLIKELY((uint64_t)(nodep) == 0x1)
 
 //######################################################################
 
@@ -1398,10 +1398,10 @@ class AstNode VL_NOT_FINAL {
     AstNodeDType* m_dtypep = nullptr;  // Data type of output or assignment (etc)
     AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
     FileLine* m_fileline;  // Where it was declared
-    vluint64_t m_editCount;  // When it was last edited
-    static vluint64_t s_editCntGbl;  // Global edit counter
+    uint64_t m_editCount;  // When it was last edited
+    static uint64_t s_editCntGbl;  // Global edit counter
     // Global edit counter, last value for printing * near node #s
-    static vluint64_t s_editCntLast;
+    static uint64_t s_editCntLast;
 
     AstNode* m_clonep
         = nullptr;  // Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
@@ -1447,7 +1447,7 @@ private:
                              bool gateOnly);
     void deleteTreeIter();
     void deleteNode();
-    string locationStr() const;
+    string instanceStr() const;
 
 public:
     static void relinkOneLink(AstNode*& pointpr, AstNode* newp);
@@ -1559,7 +1559,7 @@ public:
     }
     static string
     encodeName(const string& namein);  // Encode user name into internal C representation
-    static string encodeNumber(vlsint64_t num);  // Encode number into internal C representation
+    static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
@@ -1666,12 +1666,12 @@ public:
     static void user5ClearTree() { VNUser5InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
 
-    vluint64_t editCount() const { return m_editCount; }
+    uint64_t editCount() const { return m_editCount; }
     void editCountInc() {
         m_editCount = ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
     }
-    static vluint64_t editCountLast() { return s_editCntLast; }
-    static vluint64_t editCountGbl() { return s_editCntGbl; }
+    static uint64_t editCountLast() { return s_editCntLast; }
+    static uint64_t editCountGbl() { return s_editCntGbl; }
     static void editCountSetLast() { s_editCntLast = editCountGbl(); }
 
     // ACCESSORS for specific types
@@ -1972,45 +1972,119 @@ private:
         } while (nodep);
     }
 
-public:
-    // Traverse subtree and call given function 'f' in pre-order on each node that has type 'T'.
-    // Prefer 'foreach' over simple VNVisitor that only needs to handle a single (or a few) node
-    // types, as it's easier to write, but more importantly, the dispatch to the operation function
-    // in 'foreach' should be completely predictable by branch target caches in modern CPUs,
-    // while it is basically unpredictable for VNVisitor.
-    template <typename T_Node> void foreach (std::function<void(T_Node*)> f) {
+    template <typename T_Arg, bool Default, bool VisitNext>
+    static bool predicateImpl(
+        // Using std::conditional for const correctness in the public 'foreach' functions
+        typename std::conditional<std::is_const<T_Arg>::value, const AstNode*, AstNode*>::type
+            nodep,
+        std::function<bool(T_Arg*)> p) {
+
+        // Note: Using a loop to iterate the nextp() chain, instead of tail recursion, because
+        // debug builds don't eliminate tail calls, causing stack overflow on long lists of nodes.
+        do {
+            // Prefetch children and next
+            ASTNODE_PREFETCH(nodep->op1p());
+            ASTNODE_PREFETCH(nodep->op2p());
+            ASTNODE_PREFETCH(nodep->op3p());
+            ASTNODE_PREFETCH(nodep->op4p());
+            if /* TODO: 'constexpr' in C++17 */ (VisitNext) ASTNODE_PREFETCH(nodep->nextp());
+
+            // Apply function in pre-order
+            if (privateTypeTest<typename std::remove_const<T_Arg>::type>(nodep)) {
+                if (p(static_cast<T_Arg*>(nodep)) != Default) return !Default;
+            }
+
+            // Traverse children (including their 'nextp()' chains), unless futile
+            if (mayBeUnder<typename std::remove_const<T_Arg>::type>(nodep)) {
+                if (AstNode* const op1p = nodep->op1p()) {
+                    if (predicateImpl<T_Arg, Default, true>(op1p, p) != Default) return !Default;
+                }
+                if (AstNode* const op2p = nodep->op2p()) {
+                    if (predicateImpl<T_Arg, Default, true>(op2p, p) != Default) return !Default;
+                }
+                if (AstNode* const op3p = nodep->op3p()) {
+                    if (predicateImpl<T_Arg, Default, true>(op3p, p) != Default) return !Default;
+                }
+                if (AstNode* const op4p = nodep->op4p()) {
+                    if (predicateImpl<T_Arg, Default, true>(op4p, p) != Default) return !Default;
+                }
+            }
+
+            // Traverse 'nextp()' chain if requested
+            if /* TODO: 'constexpr' in C++17 */ (VisitNext) {
+                nodep = nodep->nextp();
+            } else {
+                break;
+            }
+        } while (nodep);
+
+        return Default;
+    }
+
+    template <typename T_Node> constexpr static void checkTypeParameter() {
         static_assert(!std::is_const<T_Node>::value,
                       "Type parameter 'T_Node' should not be const qualified");
         static_assert(std::is_base_of<AstNode, T_Node>::value,
                       "Type parameter 'T_Node' must be a subtype of AstNode");
+    }
+
+public:
+    // Traverse subtree and call given function 'f' in pre-order on each node that has type
+    // 'T_Node'. Prefer 'foreach' over simple VNVisitor that only needs to handle a single (or a
+    // few) node types, as it's easier to write, but more importantly, the dispatch to the
+    // operation function in 'foreach' should be completely predictable by branch target caches in
+    // modern CPUs, while it is basically unpredictable for VNVisitor.
+    template <typename T_Node> void foreach (std::function<void(T_Node*)> f) {
+        checkTypeParameter<T_Node>();
         foreachImpl<T_Node, /* VisitNext: */ false>(this, f);
     }
 
     // Same as above, but for 'const' nodes
     template <typename T_Node> void foreach (std::function<void(const T_Node*)> f) const {
-        static_assert(!std::is_const<T_Node>::value,
-                      "Type parameter 'T_Node' should not be const qualified");
-        static_assert(std::is_base_of<AstNode, T_Node>::value,
-                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        checkTypeParameter<T_Node>();
         foreachImpl<const T_Node, /* VisitNext: */ false>(this, f);
     }
 
     // Same as 'foreach' but also follows 'this->nextp()'
     template <typename T_Node> void foreachAndNext(std::function<void(T_Node*)> f) {
-        static_assert(!std::is_const<T_Node>::value,
-                      "Type parameter 'T_Node' should not be const qualified");
-        static_assert(std::is_base_of<AstNode, T_Node>::value,
-                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        checkTypeParameter<T_Node>();
         foreachImpl<T_Node, /* VisitNext: */ true>(this, f);
     }
 
     // Same as 'foreach' but also follows 'this->nextp()'
     template <typename T_Node> void foreachAndNext(std::function<void(const T_Node*)> f) const {
-        static_assert(!std::is_const<T_Node>::value,
-                      "Type parameter 'T_Node' should not be const qualified");
-        static_assert(std::is_base_of<AstNode, T_Node>::value,
-                      "Type parameter 'T_Node' must be a subtype of AstNode");
+        checkTypeParameter<T_Node>();
         foreachImpl<const T_Node, /* VisitNext: */ true>(this, f);
+    }
+
+    // Given a predicate function 'p' return true if and only if there exists a node of type
+    // 'T_Node' that satisfies the predicate 'p'. Returns false if no node of type 'T_Node' is
+    // present. Traversal is performed in some arbitrary order and is terminated as soon as the
+    // result can be determined.
+    template <typename T_Node> bool exists(std::function<bool(T_Node*)> p) {
+        checkTypeParameter<T_Node>();
+        return predicateImpl<T_Node, /* Default: */ false, /* VisitNext: */ false>(this, p);
+    }
+
+    // Same as above, but for 'const' nodes
+    template <typename T_Node> void exists(std::function<bool(const T_Node*)> p) const {
+        checkTypeParameter<T_Node>();
+        return predicateImpl<const T_Node, /* Default: */ false, /* VisitNext: */ false>(this, p);
+    }
+
+    // Given a predicate function 'p' return true if and only if all nodes of type
+    // 'T_Node' satisfy the predicate 'p'. Returns true if no node of type 'T_Node' is
+    // present. Traversal is performed in some arbitrary order and is terminated as soon as the
+    // result can be determined.
+    template <typename T_Node> bool forall(std::function<bool(T_Node*)> p) {
+        checkTypeParameter<T_Node>();
+        return predicateImpl<T_Node, /* Default: */ true, /* VisitNext: */ false>(this, p);
+    }
+
+    // Same as above, but for 'const' nodes
+    template <typename T_Node> void forall(std::function<bool(const T_Node*)> p) const {
+        checkTypeParameter<T_Node>();
+        return predicateImpl<const T_Node, /* Default: */ true, /* VisitNext: */ false>(this, p);
     }
 
     int nodeCount() const {
@@ -2033,6 +2107,11 @@ template <> inline bool AstNode::privateMayBeUnder<AstNodeAssign>(const AstNode*
 }
 template <> inline bool AstNode::privateMayBeUnder<AstVarScope>(const AstNode* nodep) {
     return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
+}
+template <> inline bool AstNode::privateMayBeUnder<AstExecGraph>(const AstNode* nodep) {
+    if (VN_IS(nodep, ExecGraph)) return false;  // Should not nest
+    if (VN_IS(nodep, NodeStmt)) return false;  // Should be directly under CFunc
+    return true;
 }
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
@@ -2562,7 +2641,7 @@ private:
     string m_text;
 
 protected:
-    // Node that simply puts text into the output stream
+    // Node that puts text into the output stream
     AstNodeText(VNType t, FileLine* fl, const string& textp)
         : AstNode{t, fl} {
         m_text = textp;  // Copy it
@@ -3072,7 +3151,8 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
 private:
     string m_name;  // Name of the module
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
-    string m_hierName;  // Hierarchical name for errors, etc.
+    string m_someInstanceName;  // Hierarchical name of some arbitrary instance of this module.
+                                // Used for user messages only.
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
@@ -3114,8 +3194,8 @@ public:
     // ACCESSORS
     virtual void name(const string& name) override { m_name = name; }
     virtual string origName() const override { return m_origName; }
-    string hierName() const { return m_hierName; }
-    void hierName(const string& hierName) { m_hierName = hierName; }
+    string someInstanceName() const { return m_someInstanceName; }
+    void someInstanceName(const string& name) { m_someInstanceName = name; }
     bool inLibrary() const { return m_inLibrary; }
     void inLibrary(bool flag) { m_inLibrary = flag; }
     void level(int level) { m_level = level; }

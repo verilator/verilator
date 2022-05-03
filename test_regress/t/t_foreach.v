@@ -112,12 +112,10 @@ module t (/*AUTOARG*/);
       strarray[1].mid.subarray[1] = 5;
       strarray[2].mid.subarray[0] = 6;
       strarray[2].mid.subarray[1] = 7;
-`ifndef VERILATOR  // Unsupported
       foreach (strarray[s])
         foreach (strarray[s].mid.subarray[ss])
           add += strarray[s].mid.subarray[ss];
       `checkh(add, 'h19);
-`endif
 
       add = 0;
       foreach (oned[i]) begin

@@ -14,22 +14,22 @@ module t (/*AUTOARG*/
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
    // IEEE: integer_atom_type
-   wire byte	w_byte;
+   wire byte    w_byte;
    wire shortint w_shortint;
-   wire int	w_int;
-   wire longint	w_longint;
-   wire integer	w_integer;
+   wire int     w_int;
+   wire longint w_longint;
+   wire integer w_integer;
 
    // IEEE: integer_atom_type
-   wire bit	w_bit;
-   wire logic	w_logic;
+   wire bit     w_bit;
+   wire logic   w_logic;
 
-   wire bit [1:0] 	w_bit2;
-   wire logic  [1:0]	w_logic2;
+   wire bit [1:0]       w_bit2;
+   wire logic  [1:0]    w_logic2;
 
    // IEEE: non_integer_type
-   //UNSUP shortreal	w_shortreal;
-   wire real		w_real;
+   //UNSUP shortreal    w_shortreal;
+   wire real            w_real;
 
    assign w_byte = 8'h12;
    assign w_shortint = 16'h1234;

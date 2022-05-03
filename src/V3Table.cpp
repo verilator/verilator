@@ -367,7 +367,7 @@ private:
                 AstNode* const condp
                     = new AstAnd(fl, select(fl, outputAssignedTableVscp, indexVscp),
                                  new AstConst(fl, outputChgMask));
-                outsetp = new AstIf(fl, condp, outsetp, nullptr);
+                outsetp = new AstIf(fl, condp, outsetp);
             }
 
             stmtsp->addNext(outsetp);

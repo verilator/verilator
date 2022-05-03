@@ -1366,7 +1366,7 @@ private:
                 switch (nodep->attrType()) {
                 case VAttrType::DIM_SIZE: {
                     AstNode* const newp = new AstCMethodHard(
-                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size", nullptr);
+                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size");
                     newp->dtypeSetSigned32();
                     newp->didWidth(true);
                     newp->protect(false);
@@ -1384,7 +1384,7 @@ private:
                 case VAttrType::DIM_RIGHT:
                 case VAttrType::DIM_HIGH: {
                     AstNode* const sizep = new AstCMethodHard(
-                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size", nullptr);
+                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size");
                     sizep->dtypeSetSigned32();
                     sizep->didWidth(true);
                     sizep->protect(false);
@@ -2041,7 +2041,8 @@ private:
         if (nodep->access().isWriteOrRW() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
-                   && (!m_ftaskp || !m_ftaskp->isConstructor()) && !VN_IS(m_procedurep, Initial)) {
+                   && (!m_ftaskp || !m_ftaskp->isConstructor())
+                   && !VN_IS(m_procedurep, InitialStatic)) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
             nodep->v3error("Assigning to const variable: " << nodep->prettyNameQ());
@@ -2676,8 +2677,8 @@ private:
         if (nodep->name() == "num"  // function int num()
             || nodep->name() == "size") {
             methodOkArguments(nodep, 0, 0);
-            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size",
-                                      nullptr);  // So don't need num()
+            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      "size");  // So don't need num()
             newp->dtypeSetSigned32();
         } else if (nodep->name() == "first"  // function int first(ref index)
                    || nodep->name() == "last"  //
@@ -2703,7 +2704,7 @@ private:
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                          "clear", nullptr);
+                                          "clear");
                 newp->makeStatement();
             } else {
                 AstNode* const index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
@@ -2731,7 +2732,7 @@ private:
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      nodep->name(), nullptr);
+                                      nodep->name());
             if (nodep->name() == "unique_index") {
                 newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             } else {
@@ -2794,19 +2795,16 @@ private:
         if (nodep->name() == "at") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
-            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at",
-                                      nullptr);
+            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at");
             newp->dtypeFrom(adtypep->subDTypep());
         } else if (nodep->name() == "size") {
             methodOkArguments(nodep, 0, 0);
-            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size",
-                                      nullptr);
+            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size");
             newp->dtypeSetSigned32();
         } else if (nodep->name() == "delete") {  // function void delete()
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
-            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "clear",
-                                      nullptr);
+            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "clear");
             newp->makeStatement();
         } else if (nodep->name() == "and" || nodep->name() == "or" || nodep->name() == "xor"
                    || nodep->name() == "sum" || nodep->name() == "product") {
@@ -2837,7 +2835,7 @@ private:
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      nodep->name(), nullptr);
+                                      nodep->name());
             if (nodep->name() == "unique_index") {
                 newp->dtypep(newp->findQueueIndexDType());
             } else {
@@ -2883,27 +2881,25 @@ private:
         if (nodep->name() == "at") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
-            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at",
-                                      nullptr);
+            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at");
             newp->dtypeFrom(adtypep->subDTypep());
         } else if (nodep->name() == "num"  // function int num()
                    || nodep->name() == "size") {
             methodOkArguments(nodep, 0, 0);
-            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size",
-                                      nullptr);
+            newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "size");
             newp->dtypeSetSigned32();
         } else if (nodep->name() == "delete") {  // function void delete([input integer index])
             methodOkArguments(nodep, 0, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                          "clear", nullptr);
+                                          "clear");
                 newp->makeStatement();
             } else {
                 AstNode* const index_exprp = methodCallQueueIndexExpr(nodep);
                 if (index_exprp->isZero()) {  // delete(0) is a pop_front
                     newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                              "pop_front", nullptr);
+                                              "pop_front");
                     newp->dtypeFrom(adtypep->subDTypep());
                     newp->makeStatement();
                 } else {
@@ -2933,7 +2929,7 @@ private:
             // Returns element, so method both consumes (reads) and modifies the queue
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READWRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      nodep->name(), nullptr);
+                                      nodep->name());
             newp->dtypeFrom(adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "push_back" || nodep->name() == "push_front") {
@@ -2972,7 +2968,7 @@ private:
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      nodep->name(), nullptr);
+                                      nodep->name());
             if (nodep->name() == "unique_index") {
                 newp->dtypep(newp->findQueueIndexDType());
             } else {
@@ -3798,8 +3794,9 @@ private:
         const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
         UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
         // if (debug()) nodep->dumpTree(cout, "-foreach-old: ");
+        userIterateAndNext(loopsp->fromp(), WidthVP(SELF, BOTH).p());
         AstNode* const fromp = loopsp->fromp();
-        userIterateAndNext(fromp, WidthVP(SELF, BOTH).p());
+        UASSERT_OBJ(fromp->dtypep(), fromp, "Missing data type");
         AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
         // Split into for loop
         AstNode* bodyp = nodep->bodysp();  // Might be null
@@ -3850,8 +3847,7 @@ private:
             } else if (VN_IS(fromDtp, DynArrayDType) || VN_IS(fromDtp, QueueDType)) {
                 if (varp) {
                     auto* const leftp = new AstConst{fl, AstConst::Signed32{}, 0};
-                    auto* const sizep
-                        = new AstCMethodHard{fl, fromp->cloneTree(false), "size", nullptr};
+                    auto* const sizep = new AstCMethodHard{fl, fromp->cloneTree(false), "size"};
                     sizep->dtypeSetSigned32();
                     sizep->didWidth(true);
                     sizep->protect(false);
@@ -5766,12 +5762,12 @@ private:
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             if (const AstConst* const constp = VN_CAST(nodep, Const)) {
-                // We convert to/from vlsint32 rather than use floor() as want to make sure is
+                // We convert to/from int32_t rather than use floor() as want to make sure is
                 // representable in integer's number of bits
                 if (constp->isDouble()
                     && v3EpsilonEqual(
                         constp->num().toDouble(),
-                        static_cast<double>(static_cast<vlsint32_t>(constp->num().toDouble())))) {
+                        static_cast<double>(static_cast<int32_t>(constp->num().toDouble())))) {
                     warnOn = false;
                 }
             }
@@ -6168,7 +6164,7 @@ private:
 
         // Find valid values and populate
         UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
-        std::map<vluint64_t, AstNode*> values;
+        std::map<uint64_t, AstNode*> values;
         {
             AstEnumItem* const firstp = nodep->itemsp();
             const AstEnumItem* prevp = firstp;  // Prev must start with last item
@@ -6177,7 +6173,7 @@ private:
                 AstEnumItem* const nextp = VN_AS(itemp->nextp(), EnumItem);
                 const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
                 UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-                const vluint64_t i = vconstp->toUQuad();
+                const uint64_t i = vconstp->toUQuad();
                 if (attrType == VAttrType::ENUM_NAME) {
                     values[i] = new AstConst(nodep->fileline(), AstConst::String(), itemp->name());
                 } else if (attrType == VAttrType::ENUM_NEXT) {
@@ -6197,7 +6193,7 @@ private:
         if (assoc) {
             for (const auto& itr : values) initp->addIndexValuep(itr.first, itr.second);
         } else {
-            for (vluint64_t i = 0; i < (msbdim + 1); ++i) {
+            for (uint64_t i = 0; i < (msbdim + 1); ++i) {
                 if (values[i]) initp->addIndexValuep(i, values[i]);
             }
         }

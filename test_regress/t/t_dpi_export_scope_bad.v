@@ -18,4 +18,4 @@ module s;
    task dpix_task();
       $write("Hello in %m\n");
    endtask
-endmodule   
+endmodule

@@ -2,8 +2,8 @@ Flat profile:
 
  Note all numbers below were faked for this test, so might not be consistent.
 
-  %   cumulative   self              self     total           
- time   seconds   seconds    calls  Ts/call  Ts/call  name    
+  %   cumulative   self              self     total
+ time   seconds   seconds    calls  Ts/call  Ts/call  name
   1.99      1.99     0.99   200578     0.00     0.00  VL_EXTENDS_QQ(int, int, unsigned long)
   1.98      0.00     0.98   100000     0.00     0.00  VL_POWSS_QQQ(int, int, int, unsigned long, unsigned long, bool, bool)
   1.89      0.00     0.89     1407     0.00     0.00  Verilated::debug()
@@ -41,4 +41,3 @@ Flat profile:
   1.25      0.00     0.25        3     0.00     0.00  unsigned long const& std::max<unsigned long>(unsigned long const&, unsigned long const&)
   1.19      0.00     0.19        1     0.00     0.00  vl_finish(char const*, int, char const*)
   1.18      0.00     0.18        2     0.00     0.00  vl_time_pow10(int)
-

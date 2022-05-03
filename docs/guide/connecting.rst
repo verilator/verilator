@@ -96,7 +96,7 @@ model.  Here is a simple example:
 
          Vtop *top;                      // Instantiation of model
 
-         vluint64_t main_time = 0;       // Current simulation time
+         uint64_t main_time = 0;       // Current simulation time
          // This is a 64-bit integer to reduce wrap over issues and
          // allow modulus.  This is in units of the timeprecision
          // used in Verilog (or from --timescale-override)
@@ -150,7 +150,7 @@ netlist as an instantiation.
 The SC_MODULE gets the same pinout as the Verilog module, with the
 following type conversions: Pins of a single bit become bool.  Pins 2-32
 bits wide become uint32_t's.  Pins 33-64 bits wide become sc_bv's or
-vluint64_t's depending on the :vlopt:`--no-pins64` option.  Wider pins
+uint64_t's depending on the :vlopt:`--no-pins64` option.  Wider pins
 become sc_bv's.  (Uints simulate the fastest so are used where possible.)
 
 Model internals, including lower level sub-modules are not pure SystemC
@@ -200,7 +200,7 @@ DPI System Task/Functions
 -------------------------
 
 Verilator extends the DPI format to allow using the same scheme to
-efficiently add system functions.  Simply use a dollar-sign prefixed system
+efficiently add system functions.  Use a dollar-sign prefixed system
 function name for the import, but note it must be escaped.
 
 .. code-block:: sv
@@ -257,7 +257,9 @@ with respect to that top level module, then the scope could be set with
 
      #include "svdpi.h"
      ...
-     svSetScope(svGetScopeFromName("TOP.dut"));
+     const svScope scope = svGetScopeFromName("TOP.dut");
+     assert(scope);  // Check for nullptr if scope not found
+     svSetScope(scope);
 
 (Remember that Verilator adds a "TOP" to the top of the module hierarchy.)
 
@@ -427,7 +429,7 @@ accesses the above signal "readme" would be:
        #include "verilated.h"
        #include "verilated_vpi.h"  // Required to get definitions
 
-       vluint64_t main_time = 0;   // See comments in first example
+       uint64_t main_time = 0;   // See comments in first example
        double sc_time_stamp() { return main_time; }
 
        void read_and_check() {
@@ -506,7 +508,7 @@ structure.  If a ``VerilatedContext`` is not created prior to creating a
 model, a default global one is created automatically.
 
 The ``Verilated::`` methods, including the ``Verilated::commandArgs`` call
-shown above, simply call VerilatedContext methods using the default global
+shown above, call VerilatedContext methods using the default global
 VerilatedContext.  (Technically they operate on the last one used by a
 given thread.)  If you are using multiple simulation contexts you should
 not use the Verilated:: methods, and instead always use VerilatedContext

@@ -351,8 +351,7 @@ private:
                         "Delayed assignment misoptimized; prev var found w/o associated IF");
         } else {
             postLogicp = new AstIf(nodep->fileline(),
-                                   new AstVarRef(nodep->fileline(), setvscp, VAccess::READ),
-                                   nullptr, nullptr);
+                                   new AstVarRef(nodep->fileline(), setvscp, VAccess::READ));
             UINFO(9, "     Created " << postLogicp << endl);
             finalp->addStmtp(postLogicp);
             finalp->user3p(setvscp);  // Remember IF's vset variable

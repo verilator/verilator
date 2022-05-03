@@ -33,6 +33,7 @@
 #include "V3UniqueNames.h"
 
 #include <algorithm>
+#include <memory>
 #include <type_traits>
 
 //######################################################################
@@ -2658,7 +2659,7 @@ private:
             //   SENTREE(... SENITEM(x),   SENGATE(SENITEM(x),*) ...)  => SENITEM(x)
             // Do we need the SENITEM's to be identical?  No because we're
             // ORing between them; we just need to ensure that the result is at
-            // least as frequently activating.  So we simply
+            // least as frequently activating.  So we
             // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
             // other SENITEM(x).
             {

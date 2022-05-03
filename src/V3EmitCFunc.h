@@ -406,7 +406,7 @@ public:
     virtual void visit(AstCMethodHard* nodep) override {
         iterate(nodep->fromp());
         puts(".");
-        puts(nodep->nameProtect());
+        puts(nodep->name());
         puts("(");
         bool comma = false;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
@@ -1137,7 +1137,7 @@ public:
         } else if (nodep->isWide()) {
             UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
             emitConstant(nodep, m_wideTempRefp, "");
-            m_wideTempRefp = nullptr;  // We used it, barf if set it a second time
+            m_wideTempRefp = nullptr;  // We used it, fail if set it a second time
         } else {
             emitConstant(nodep, nullptr, "");
         }
@@ -1202,11 +1202,9 @@ public:
         emitVarReset(varp);
     }
     virtual void visit(AstExecGraph* nodep) override {
-        UASSERT_OBJ(nodep == v3Global.rootp()->execGraphp(), nodep,
-                    "ExecGraph should be a singleton!");
-        // The location of the AstExecGraph within the containing _eval()
-        // function is where we want to invoke the graph and wait for it to
-        // complete. Emitting the children does just that.
+        // The location of the AstExecGraph within the containing AstCFunc is where we want to
+        // invoke the graph and wait for it to complete. Emitting the children does just that.
+        UASSERT_OBJ(!nodep->mTaskBodiesp(), nodep, "These should have been lowered");
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstChangeDet* nodep) override {  //

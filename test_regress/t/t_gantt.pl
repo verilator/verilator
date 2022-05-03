@@ -9,9 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 # Test for bin/verilator_gantt,
-#
-# Only needed in multithreaded regression.
-scenarios(vltmt => 1);
+
+scenarios(vlt_all => 1);
 
 # It doesn't really matter what test
 # we use, so long as it runs several cycles,
@@ -20,13 +19,13 @@ top_filename("t/t_gen_alw.v");
 
 compile(
     # Checks below care about thread count, so use 2 (minimum reasonable)
-    v_flags2 => ["--prof-threads --threads 2"]
+    v_flags2 => ["--prof-exec",  ($Self->{vltmt} ? "--threads 2" : "")]
     );
 
 execute(
-    all_run_flags => ["+verilator+prof+threads+start+2",
-                      " +verilator+prof+threads+window+2",
-                      " +verilator+prof+threads+file+$Self->{obj_dir}/profile_threads.dat",
+    all_run_flags => ["+verilator+prof+exec+start+2",
+                      " +verilator+prof+exec+window+2",
+                      " +verilator+prof+exec+file+$Self->{obj_dir}/profile_exec.dat",
                       " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
     check_finished => 1,
@@ -37,17 +36,22 @@ execute(
 # The profiling data still goes direct to the runtime's STDOUT
 #  (maybe that should go to a separate file - gantt.dat?)
 run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
-            "$Self->{obj_dir}/profile_threads.dat",
-            "--vcd $Self->{obj_dir}/profile_threads.vcd",
+            "$Self->{obj_dir}/profile_exec.dat",
+            "--vcd $Self->{obj_dir}/profile_exec.vcd",
             "| tee $Self->{obj_dir}/gantt.log"],
     );
 
-file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 2/i);
-file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 7/i);
+if ($Self->{vltmt}) {
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 2/i);
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 7/i);
+} else {
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 1/i);
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 0/i);
+}
 file_grep("$Self->{obj_dir}/gantt.log", qr/Total evals += 2/i);
 
 # Diff to itself, just to check parsing
-vcd_identical("$Self->{obj_dir}/profile_threads.vcd", "$Self->{obj_dir}/profile_threads.vcd");
+vcd_identical("$Self->{obj_dir}/profile_exec.vcd", "$Self->{obj_dir}/profile_exec.vcd");
 
 ok(1);
 1;

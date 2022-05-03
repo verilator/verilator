@@ -115,14 +115,14 @@ public:
         dtypeSetLogicUnsized(32, m_num.widthMin(), VSigning::SIGNED);
     }
     class Unsized64 {};  // for creator type-overload selection
-    AstConst(FileLine* fl, Unsized64, vluint64_t num)
+    AstConst(FileLine* fl, Unsized64, uint64_t num)
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 64, 0) {
         m_num.setQuad(num);
         dtypeSetLogicSized(64, VSigning::UNSIGNED);
     }
     class SizedEData {};  // for creator type-overload selection
-    AstConst(FileLine* fl, SizedEData, vluint64_t num)
+    AstConst(FileLine* fl, SizedEData, uint64_t num)
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, VL_EDATASIZE, 0) {
         m_num.setQuad(num);
@@ -166,8 +166,8 @@ public:
     const V3Number& num() const { return m_num; }  // * = Value
     V3Number& num() { return m_num; }  // * = Value
     uint32_t toUInt() const { return num().toUInt(); }
-    vlsint32_t toSInt() const { return num().toSInt(); }
-    vluint64_t toUQuad() const { return num().toUQuad(); }
+    int32_t toSInt() const { return num().toSInt(); }
+    uint64_t toUQuad() const { return num().toUQuad(); }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -1914,14 +1914,14 @@ private:
     bool m_pure = false;  // Pure optimizable
 public:
     AstCMethodHard(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
-                   AstNode* pinsp)
+                   AstNode* pinsp = nullptr)
         : ASTGEN_SUPER_CMethodHard(fl, false)
         , m_name{name} {
         setOp1p(fromp);
         dtypep(nullptr);  // V3Width will resolve
         addNOp2p(pinsp);
     }
-    AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
+    AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp = nullptr)
         : ASTGEN_SUPER_CMethodHard(fl, false)
         , m_name{name} {
         setOp1p(fromp);
@@ -3407,12 +3407,21 @@ public:
 };
 
 class AstInitialAutomatic final : public AstNodeProcedure {
-    // initial for automatic variables
+    // Automatic variable initialization
     // That is, it runs every function start, or class construction
 public:
     AstInitialAutomatic(FileLine* fl, AstNode* bodysp)
         : ASTGEN_SUPER_InitialAutomatic(fl, bodysp) {}
     ASTNODE_NODE_FUNCS(InitialAutomatic)
+};
+
+class AstInitialStatic final : public AstNodeProcedure {
+    // Static variable initialization
+    // That is, it runs at the beginning of simulation, before 'initial' blocks
+public:
+    AstInitialStatic(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER_InitialStatic(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(InitialStatic)
 };
 
 class AstAlways final : public AstNodeProcedure {
@@ -4610,7 +4619,7 @@ public:
 
 class AstWhile final : public AstNodeStmt {
 public:
-    AstWhile(FileLine* fl, AstNode* condp, AstNode* bodysp, AstNode* incsp = nullptr)
+    AstWhile(FileLine* fl, AstNode* condp, AstNode* bodysp = nullptr, AstNode* incsp = nullptr)
         : ASTGEN_SUPER_While(fl) {
         setOp2p(condp);
         addNOp3p(bodysp);
@@ -4714,7 +4723,7 @@ private:
     bool m_unique0Pragma;  // unique0 case
     bool m_priorityPragma;  // priority case
 public:
-    AstIf(FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp = nullptr)
+    AstIf(FileLine* fl, AstNode* condp, AstNode* ifsp = nullptr, AstNode* elsesp = nullptr)
         : ASTGEN_SUPER_If(fl, condp, ifsp, elsesp) {
         m_uniquePragma = false;
         m_unique0Pragma = false;
@@ -4927,7 +4936,7 @@ private:
     bool m_generate;  // Underneath a generate
     const bool m_implied;  // Not inserted by user
 public:
-    // Node that simply puts name into the output stream
+    // Node that puts name into the output stream
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate = false,
              bool implied = false)
         : ASTGEN_SUPER_Begin(fl, name, stmtsp)
@@ -4951,7 +4960,7 @@ class AstFork final : public AstNodeBlock {
 private:
     VJoinType m_joinType;  // Join keyword type
 public:
-    // Node that simply puts name into the output stream
+    // Node that puts name into the output stream
     AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
         : ASTGEN_SUPER_Fork(fl, name, stmtsp) {}
     ASTNODE_NODE_FUNCS(Fork)
@@ -5019,7 +5028,7 @@ class AstInitArray final : public AstNode {
     // Parents: ASTVAR::init()
     // Children: AstInitItem
 public:
-    using KeyItemMap = std::map<vluint64_t, AstInitItem*>;
+    using KeyItemMap = std::map<uint64_t, AstInitItem*>;
 
 private:
     KeyItemMap m_map;  // Node value for each array index
@@ -5054,7 +5063,7 @@ public:
     AstNode* initsp() const { return op2p(); }  // op2 = Initial value expressions
     void addValuep(AstNode* newp) { addIndexValuep(m_map.size(), newp); }
     const KeyItemMap& map() const { return m_map; }
-    AstNode* addIndexValuep(vluint64_t index, AstNode* newp) {
+    AstNode* addIndexValuep(uint64_t index, AstNode* newp) {
         // Returns old value, caller must garbage collect
         AstNode* oldp = nullptr;
         const auto it = m_map.find(index);
@@ -5068,7 +5077,7 @@ public:
         }
         return oldp;
     }
-    AstNode* getIndexValuep(vluint64_t index) const {
+    AstNode* getIndexValuep(uint64_t index) const {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
             return nullptr;
@@ -5076,7 +5085,7 @@ public:
             return it->second->valuep();
         }
     }
-    AstNode* getIndexDefaultedValuep(vluint64_t index) const {
+    AstNode* getIndexDefaultedValuep(uint64_t index) const {
         AstNode* valuep = getIndexValuep(index);
         if (!valuep) valuep = defaultp();
         return valuep;
@@ -5330,6 +5339,7 @@ public:
         dtypeFrom(valuep);
         addNOp1p(valuep);
     }
+    virtual void dump(std::ostream& str) const override;
     virtual int instrCount() const override { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl)
     virtual string name() const override { return m_showname; }
@@ -9199,27 +9209,30 @@ public:
 
 class AstExecGraph final : public AstNode {
     // For parallel execution, this node contains a dependency graph.  Each
-    // node in the graph is an ExecMTask, which contains a body for the
-    // mtask, which contains a set of AstActive's, each of which calls a
-    // leaf AstCFunc. whew!
+    // vertex in the graph is an ExecMTask, which contains a body for the
+    // mtask (an AstMTaskBody), which contains sequentially executed statements.
     //
-    // The mtask bodies are also children of this node, so we can visit
-    // them without traversing the graph (it's not always needed to
-    // traverse the graph.)
+    // The AstMTaskBody nodes are also children of this node, so we can visit
+    // them without traversing the graph.
 private:
-    V3Graph* const m_depGraphp;  // contains ExecMTask's
+    V3Graph* const m_depGraphp;  // contains ExecMTask vertices
+    const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
 
 public:
-    explicit AstExecGraph(FileLine* fl);
+    explicit AstExecGraph(FileLine* fl, const string& name);
     ASTNODE_NODE_FUNCS_NO_DTOR(ExecGraph)
     virtual ~AstExecGraph() override;
     virtual const char* broken() const override {
         BROKEN_RTN(!m_depGraphp);
         return nullptr;
     }
+    virtual string name() const override { return m_name; }
+    V3Graph* depGraphp() { return m_depGraphp; }
     const V3Graph* depGraphp() const { return m_depGraphp; }
-    V3Graph* mutableDepGraphp() { return m_depGraphp; }
-    void addMTaskBody(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+    // op1: The mtask bodies
+    AstMTaskBody* mTaskBodiesp() const { return VN_AS(op1p(), MTaskBody); }
+    void addMTaskBodyp(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+    // op2: In later phases, the statements that start the parallel execution
     void addStmtsp(AstNode* stmtp) { addOp2p(stmtp); }
 };
 
@@ -9319,13 +9332,15 @@ private:
     AstConstPool* const m_constPoolp;  // Reference to constant pool, for faster lookup
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
-    AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
     AstTopScope* m_topScopep = nullptr;  // The singleton AstTopScope under the top module
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     bool m_changeRequest = false;  // Have _change_request method
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
+    uint32_t m_nextFreeMTaskID = 1;  // Next unique MTask ID within netlist
+                                     // starts at 1 so 0 means no MTask ID
+    uint32_t m_nextFreeMTaskProfilingID = 0;  // Next unique ID to use for PGO
 public:
     AstNetlist();
     ASTNODE_NODE_FUNCS(Netlist)
@@ -9369,8 +9384,6 @@ public:
     }
     AstCFunc* evalp() const { return m_evalp; }
     void evalp(AstCFunc* evalp) { m_evalp = evalp; }
-    AstExecGraph* execGraphp() const { return m_execGraphp; }
-    void execGraphp(AstExecGraph* graphp) { m_execGraphp = graphp; }
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstTopScope* topScopep() const { return m_topScopep; }
@@ -9390,6 +9403,9 @@ public:
     void timeprecisionMerge(FileLine*, const VTimescale& value);
     void timescaleSpecified(bool specified) { m_timescaleSpecified = specified; }
     bool timescaleSpecified() const { return m_timescaleSpecified; }
+    uint32_t allocNextMTaskID() { return m_nextFreeMTaskID++; }
+    uint32_t allocNextMTaskProfilingID() { return m_nextFreeMTaskProfilingID++; }
+    uint32_t usedMTaskProfilingIDs() const { return m_nextFreeMTaskProfilingID; }
 };
 
 //######################################################################

@@ -275,7 +275,7 @@ private:
                 if (nodep->lifetime().isAutomatic()) {
                     nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
                 } else {
-                    nodep->addNextHere(new AstInitial{newfl, assp});
+                    nodep->addNextHere(new AstInitialStatic{newfl, assp});
                 }
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {

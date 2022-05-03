@@ -16,7 +16,7 @@ module testbench;
    endfunction;
 
    // Downstream signal dependent on clk demonstrates scheduling issue.
-   // The '$c("1") &' simply ensures that dependent_clk does not get
+   // The '$c("1") &' ensures that dependent_clk does not get
    // replaced with clk early and hence hiding the issue
    wire  dependent_clk = $c1("1") & clk;
 
@@ -33,4 +33,3 @@ module testbench;
    end
 
 endmodule
-

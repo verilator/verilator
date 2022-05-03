@@ -32,7 +32,7 @@ private:
     // MEMBERS
     int m_lineno;  ///< Line number
     int m_column;  ///< Column number
-    vluint64_t m_count = 0;  ///< Count
+    uint64_t m_count = 0;  ///< Count
     bool m_ok = false;  ///< Coverage is above threshold
 
 public:
@@ -45,11 +45,11 @@ public:
     // ACCESSORS
     int lineno() const { return m_lineno; }
     int column() const { return m_column; }
-    vluint64_t count() const { return m_count; }
+    uint64_t count() const { return m_count; }
     bool ok() const { return m_ok; }
 
     // METHODS
-    void incCount(vluint64_t count, bool ok) {
+    void incCount(uint64_t count, bool ok) {
         m_count += count;
         if (ok) m_ok = true;
     }
@@ -83,7 +83,7 @@ public:
     LinenoMap& lines() { return m_lines; }
 
     // METHODS
-    void incCount(int lineno, int column, vluint64_t count, bool ok) {
+    void incCount(int lineno, int column, uint64_t count, bool ok) {
         LinenoMap::iterator lit = m_lines.find(lineno);
         if (lit == m_lines.end()) lit = m_lines.insert(std::make_pair(lineno, ColumnMap())).first;
         ColumnMap& cmap = lit->second;

@@ -13,5 +13,5 @@ public:
     ~t_extend_class_c() {}
     // METHODS
     // This function will be called from a instance created in Verilog
-    inline vluint32_t my_math(vluint32_t in) { return in + 1; }
+    inline uint32_t my_math(uint32_t in) { return in + 1; }
 };

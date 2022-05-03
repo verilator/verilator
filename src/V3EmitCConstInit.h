@@ -73,7 +73,7 @@ protected:
             ofp()->putsNoTracking("}");
         } else if (const AstUnpackArrayDType* const dtypep
                    = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
-            const vluint64_t size = dtypep->elementsConst();
+            const uint64_t size = dtypep->elementsConst();
             const uint32_t tabMod = tabModulus(dtypep->subDTypep());
             // Note the double {{ initializer. The first { starts the initializer of the
             // VlUnpacked, and the second starts the initializer of m_storage within the
@@ -81,7 +81,7 @@ protected:
             puts("{");
             ofp()->putsNoTracking("{");
             puts("\n");
-            for (vluint64_t n = 0; n < size; ++n) {
+            for (uint64_t n = 0; n < size; ++n) {
                 m_unpackedWord = n;
                 if (n) puts((n % tabMod) ? ", " : ",\n");
                 iterate(nodep->getIndexDefaultedValuep(n));

@@ -120,7 +120,7 @@ In certain debug and other modes, it also creates:
      - Debugging graph files (from --debug)
    * - *{prefix}{misc}*\ .tree
      - Debugging files (from --debug)
-   * - {mod_prefix}_{each_verilog_module}*{__n}*\ .vpp
+   * - {mod_prefix}_{each_verilog_base_filename}*\ .vpp
      - Pre-processed verilog (from --debug)
 
 After running Make, the C++ compiler may produce the following:
@@ -155,13 +155,13 @@ The Verilated executable may produce the following:
    * - gmon.out
      - GCC/clang code profiler output, often fed into :command:`verilator_profcfunc`
    * - profile.vlt
-     - -profile data file for :ref:`Thread PGO`
-   * - profile_threads.dat
-     - -profile-threads data file for :command:`verilator_gantt`
+     - --prof-pgo data file for :ref:`Thread PGO`
+   * - profile_exec.dat
+     - --prof-exec data file for :command:`verilator_gantt`
 
 Verilator_gantt may produce the following:
 
 .. list-table::
 
-   * - profile_threads.vcd
+   * - profile_exec.vcd
      - Gantt report waveform output

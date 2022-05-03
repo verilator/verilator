@@ -101,7 +101,7 @@ def bison_version_check():
 def clean_output(filename, outname, is_output, is_c):
     print("  edit " + filename + " " + outname)
 
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
 
     basename = re.sub(r'.*/', '', tmp_prefix() + ".")
@@ -165,7 +165,7 @@ def clean_output(filename, outname, is_output, is_c):
 
 
 def warning_check(filename):
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         linenum = 0
         for line in fh:
             linenum += 1
@@ -185,7 +185,7 @@ def clean_input(filename, outname):
     global Filename  # pylint: disable=global-variable-undefined
     Filename = filename
 
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
 
     # Find "%tokens<type>:"

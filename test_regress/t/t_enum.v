@@ -16,20 +16,20 @@ module t (/*AUTOARG*/);
    localparam FIVE = 5;
 
    enum { e0,
-	  e1,
-	  e3=3,
-	  e5=FIVE,
-	  e10_[2] = 10,
-	  e12,
-	  e20_[5:7] = 25,
-	  e20_z,
-	  e30_[7:5] = 30,
-	  e30_z
-	  } EN;
+          e1,
+          e3=3,
+          e5=FIVE,
+          e10_[2] = 10,
+          e12,
+          e20_[5:7] = 25,
+          e20_z,
+          e30_[7:5] = 30,
+          e30_z
+          } EN;
 
    enum {
-	 z5 = e5
-	 } ZN;
+         z5 = e5
+         } ZN;
 
    typedef enum three_t;  // Forward
    typedef enum [2:0] { ONES=~0 } three_t;
@@ -38,7 +38,7 @@ module t (/*AUTOARG*/);
    var logic [ONES:0] sized_based_on_enum;
 
    var enum logic [3:0]  { QINVALID='1, QSEND={2'b0,2'h0}, QOP={2'b0,2'h1}, QCL={2'b0,2'h2},
-			   QPR={2'b0,2'h3 }, QACK, QRSP } inv;
+                           QPR={2'b0,2'h3 }, QACK, QRSP } inv;
 
    initial begin
       if (e0 !== 0) $stop;

@@ -12,8 +12,8 @@ module t (clk);
    pullup p1(A);
 
    child child(/*AUTOINST*/
-	       // Inouts
-	       .A			(A));
+               // Inouts
+               .A                       (A));
 
 endmodule
 

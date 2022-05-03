@@ -66,7 +66,7 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
          logic [15:0]       s8x16up_3d_in[1:0][0:1][0:1];
          logic [15:0]       s8x16up_3d_out[1:0][0:1][0:1];
 
-         wire 		    clk_en = crc[0];
+         wire               clk_en = crc[0];
 
          secret
            secret (

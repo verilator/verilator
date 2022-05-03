@@ -161,7 +161,7 @@ private:
                                 new AstCMath(funcp->fileline(),
                                              string("&(") + funcp->scopep()->nameVlSym() + ")",
                                              64)),
-                            returnp, nullptr);
+                            returnp);
                         newfuncp->addStmtsp(ifp);
                     } else {
                         newfuncp->addStmtsp(returnp);
@@ -176,7 +176,7 @@ private:
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
                 if (debug() >= 9) newfuncp->dumpTree(cout, "   newfunc: ");
             } else {
-                // Only a single function under this name, we can simply rename it
+                // Only a single function under this name, we can rename it
                 UINFO(6, "  Wrapping " << name << " just one " << topFuncp << endl);
                 topFuncp->name(name);
             }

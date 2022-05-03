@@ -185,7 +185,7 @@ private:
     AstIf* makeActiveIf(AstSenTree* sensesp) {
         AstNode* const senEqnp = createSenseEquation(sensesp->sensesp());
         UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* const newifp = new AstIf(sensesp->fileline(), senEqnp, nullptr, nullptr);
+        AstIf* const newifp = new AstIf(sensesp->fileline(), senEqnp);
         return newifp;
     }
     void clearLastSen() {
@@ -310,8 +310,8 @@ private:
         AstNode* const origp = nodep->origp()->unlinkFrBack();
         AstNode* const changeWrp = nodep->changep()->unlinkFrBack();
         AstNode* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
-        AstIf* const newp = new AstIf(
-            nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp), incp, nullptr);
+        AstIf* const newp
+            = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp), incp);
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
@@ -411,7 +411,8 @@ private:
         }
     }
     virtual void visit(AstExecGraph* nodep) override {
-        for (m_mtaskBodyp = VN_AS(nodep->op1p(), MTaskBody); m_mtaskBodyp;
+        VL_RESTORER(m_mtaskBodyp);
+        for (m_mtaskBodyp = nodep->mTaskBodiesp(); m_mtaskBodyp;
              m_mtaskBodyp = VN_AS(m_mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
             iterate(m_mtaskBodyp);

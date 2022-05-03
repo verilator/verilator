@@ -14,12 +14,12 @@ module t_inst_first_b (/*AUTOARG*/
 
    input clk;
 
-   input  	i_seq;
-   output	o_seq_d1r;
-   input  	i_com;
-   output	o_com;
-   input [1:0] 	i2_com;
-   output [1:0]	o2_com;
+   input        i_seq;
+   output       o_seq_d1r;
+   input        i_com;
+   output       o_com;
+   input [1:0]  i2_com;
+   output [1:0] o2_com;
    input [127:0] wide_for_trace;
    input [127:0] wide_for_trace_2;
 
@@ -27,7 +27,7 @@ module t_inst_first_b (/*AUTOARG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
    // End of automatics
 
-   reg 			o_seq_d1r;
+   reg                  o_seq_d1r;
    always @ (posedge clk) begin
       o_seq_d1r <= ~i_seq;
    end

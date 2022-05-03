@@ -45,7 +45,7 @@ private:
     // FST specific internals
 
     void* m_fst;
-    std::map<vluint32_t, fstHandle> m_code2symbol;
+    std::map<uint32_t, fstHandle> m_code2symbol;
     std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
@@ -53,7 +53,7 @@ private:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
-    void declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declare(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum, bool bussed, int msb, int lsb);
 
 protected:
@@ -61,7 +61,7 @@ protected:
     // Implementation of VerilatedTrace interface
 
     // Implementations of protected virtual methods for VerilatedTrace
-    virtual void emitTimeChange(vluint64_t timeui) override;
+    virtual void emitTimeChange(uint64_t timeui) override;
 
     // Hooks called from VerilatedTrace
     virtual bool preFullDump() override { return isOpen(); }
@@ -69,13 +69,13 @@ protected:
 
     // Implementations of duck-typed methods for VerilatedTrace. These are
     // called from only one place (namely full*) so always inline them.
-    inline void emitBit(vluint32_t code, CData newval);
-    inline void emitCData(vluint32_t code, CData newval, int bits);
-    inline void emitSData(vluint32_t code, SData newval, int bits);
-    inline void emitIData(vluint32_t code, IData newval, int bits);
-    inline void emitQData(vluint32_t code, QData newval, int bits);
-    inline void emitWData(vluint32_t code, const WData* newvalp, int bits);
-    inline void emitDouble(vluint32_t code, double newval);
+    inline void emitBit(uint32_t code, CData newval);
+    inline void emitCData(uint32_t code, CData newval, int bits);
+    inline void emitSData(uint32_t code, SData newval, int bits);
+    inline void emitIData(uint32_t code, IData newval, int bits);
+    inline void emitQData(uint32_t code, QData newval, int bits);
+    inline void emitWData(uint32_t code, const WData* newvalp, int bits);
+    inline void emitDouble(uint32_t code, double newval);
 
 public:
     //=========================================================================
@@ -98,25 +98,25 @@ public:
     // Internal interface to Verilator generated code
 
     // Inside dumping routines, declare a data type
-    void declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
-                       unsigned int minValbits, const char** itemNamesp, const char** itemValuesp);
+    void declDTypeEnum(int dtypenum, const char* name, uint32_t elements, unsigned int minValbits,
+                       const char** itemNamesp, const char** itemValuesp);
 
     // Inside dumping routines, declare a signal
-    void declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum);
-    void declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declBus(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declQuad(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declQuad(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                   fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declArray(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                    fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declDouble(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                     fstVarType vartype, bool array, int arraynum);
 };
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
-template <> void VerilatedTrace<VerilatedFst>::dump(vluint64_t timeui);
+template <> void VerilatedTrace<VerilatedFst>::dump(uint64_t timeui);
 template <> void VerilatedTrace<VerilatedFst>::set_time_unit(const char* unitp);
 template <> void VerilatedTrace<VerilatedFst>::set_time_unit(const std::string& unit);
 template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const char* unitp);
@@ -155,12 +155,12 @@ public:
     /// Write one cycle of dump data
     /// Call with the current context's time just after eval'ed,
     /// e.g. ->dump(contextp->time())
-    void dump(vluint64_t timeui) { m_sptrace.dump(timeui); }
+    void dump(uint64_t timeui) { m_sptrace.dump(timeui); }
     /// Write one cycle of dump data - backward compatible and to reduce
-    /// conversion warnings.  It's better to use a vluint64_t time instead.
-    void dump(double timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
-    void dump(vluint32_t timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
-    void dump(int timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
+    /// conversion warnings.  It's better to use a uint64_t time instead.
+    void dump(double timestamp) { dump(static_cast<uint64_t>(timestamp)); }
+    void dump(uint32_t timestamp) { dump(static_cast<uint64_t>(timestamp)); }
+    void dump(int timestamp) { dump(static_cast<uint64_t>(timestamp)); }
 
     // METHODS - Internal/backward compatible
     // \protectedsection

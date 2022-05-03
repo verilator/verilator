@@ -54,7 +54,7 @@
 
 class TraceActivityVertex final : public V3GraphVertex {
     AstNode* const m_insertp;
-    vlsint32_t m_activityCode;
+    int32_t m_activityCode;
     bool m_slow;  // If always slow, we can use the same code
 public:
     enum { ACTIVITY_NEVER = ((1UL << 31) - 1) };
@@ -66,7 +66,7 @@ public:
         m_activityCode = 0;
         m_slow = slow;
     }
-    TraceActivityVertex(V3Graph* graphp, vlsint32_t code)
+    TraceActivityVertex(V3Graph* graphp, int32_t code)
         : V3GraphVertex{graphp}
         , m_insertp{nullptr} {
         m_activityCode = code;
@@ -86,10 +86,10 @@ public:
         }
     }
     virtual string dotColor() const override { return slow() ? "yellowGreen" : "green"; }
-    vlsint32_t activityCode() const { return m_activityCode; }
+    int32_t activityCode() const { return m_activityCode; }
     bool activityAlways() const { return activityCode() == ACTIVITY_ALWAYS; }
     bool activitySlow() const { return activityCode() == ACTIVITY_SLOW; }
-    void activityCode(vlsint32_t code) { m_activityCode = code; }
+    void activityCode(int32_t code) { m_activityCode = code; }
     bool slow() const { return m_slow; }
     void slow(bool flag) {
         if (!flag) m_slow = false;
@@ -516,17 +516,17 @@ private:
             // sub function, hence the VL_ATTR_UNUSED attributes.
             if (full) {
                 // Full dump sub function
-                addInitStr("vluint32_t* const oldp VL_ATTR_UNUSED = "
+                addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
                            "tracep->oldp(vlSymsp->__Vm_baseCode);\n");
             } else {
                 // Change dump sub function
                 if (v3Global.opt.trueTraceThreads()) {
-                    addInitStr("const vluint32_t base VL_ATTR_UNUSED = "
+                    addInitStr("const uint32_t base VL_ATTR_UNUSED = "
                                "vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ";\n");
                     addInitStr("if (false && tracep) {}  // Prevent unused\n");
                 } else {
-                    addInitStr("vluint32_t* const oldp VL_ATTR_UNUSED = "
+                    addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
                                "tracep->oldp(vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ");\n");
                 }
@@ -656,7 +656,7 @@ private:
                             condp = condp ? new AstOr(flp, condp, selp) : selp;
                         }
                     }
-                    ifp = new AstIf(flp, condp, nullptr, nullptr);
+                    ifp = new AstIf(flp, condp);
                     if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subFuncp->addStmtsp(ifp);
                     subStmts += ifp->nodeCount();

@@ -138,7 +138,7 @@ private:
         }
 
         // Copy blocks into this scope
-        // If this is the first usage of the block ever, we can simply move the reference
+        // If this is the first usage of the block ever, we can move the reference
         iterateChildren(nodep);
 
         // ***Note m_scopep is passed back to the caller of the routine (above)

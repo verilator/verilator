@@ -128,8 +128,7 @@ public:
     }
     void showUpward() {  // LCOV_EXCL_START
         UINFO(1, "ParseSym Stack:\n");
-        for (auto it = m_sympStack.rbegin(); it != m_sympStack.rend(); ++it) {
-            VSymEnt* const symp = *it;
+        for (VSymEnt* const symp : vlstd::reverse_view(m_sympStack)) {
             UINFO(1, "    " << symp->nodep() << endl);
         }
         UINFO(1, "ParseSym Current: " << symCurrentp()->nodep() << endl);

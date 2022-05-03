@@ -10,15 +10,15 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc = 0;
+   integer      cyc = 0;
 
    wire [31:0] y;
-   reg 	       a;
+   reg         a;
    test004 sub (/*AUTOINST*/
-		// Outputs
-		.y			(y[31:0]),
-		// Inputs
-		.a			(a));
+                // Outputs
+                .y                      (y[31:0]),
+                // Inputs
+                .a                      (a));
 
    // Test loop
    always @ (posedge clk) begin
@@ -27,18 +27,18 @@ module t (/*AUTOARG*/
 `endif
       cyc <= cyc + 1;
       if (cyc==0) begin
-	 a <= 0;
+         a <= 0;
       end
       else if (cyc==1) begin
-	 a <= 1;
-	 if (y != 32'h0) $stop;
+         a <= 1;
+         if (y != 32'h0) $stop;
       end
       else if (cyc==2) begin
-	 if (y != 32'h010000ff) $stop;
+         if (y != 32'h010000ff) $stop;
       end
       else if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

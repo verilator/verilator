@@ -188,7 +188,7 @@ private:
         v3Global.rootp()->typeTablep()->addTypesp(nodep);
     }
     void visitIterateNodeDType(AstNodeDType* nodep) {
-        // Rather than use dtypeChg which may make new nodes, we simply edit in place,
+        // Rather than use dtypeChg which may make new nodes, we edit in place,
         // as we don't need to preserve any widthMin's, and every dtype with the same width
         // gets an identical edit.
         if (nodep->user1SetOnce()) return;  // Process once

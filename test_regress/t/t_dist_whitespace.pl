@@ -16,11 +16,12 @@ my $Debug;
 ### Must trim output before and after our file list
 my %files = %{get_source_files($root)};
 
+my $any = 0;
 foreach my $file (sort keys %files) {
     my $filename = "$root/$file";
-    next if !-f $file;  # git file might be deleted but not yet staged
+    next if !-f $filename;  # git file might be deleted but not yet staged
     my $contents = file_contents($filename);
-    if ($file =~ /\.out$/) {
+    if ($file =~ /(\.out|\.dat)$/) {
         # Ignore golden files
         next;
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
@@ -61,7 +62,9 @@ foreach my $file (sort keys %files) {
             $warns{$file} = "Trailing newlines at EOF in $file";
         }
     }
+    ++$any;
 }
+$any > 50 or error("Too few source files found");
 
 if (keys %warns) {
     # First warning lists everything as that's shown in the driver summary

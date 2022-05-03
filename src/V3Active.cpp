@@ -321,75 +321,70 @@ public:
 };
 
 //######################################################################
-// Active AssignDly replacement functions
+// Replace unsupported non-blocking assignments with blocking assignments
 
 class ActiveDlyVisitor final : public ActiveBaseVisitor {
 public:
-    enum CheckType : uint8_t { CT_SEQ, CT_COMBO, CT_INITIAL, CT_LATCH };
+    enum CheckType : uint8_t { CT_SEQ, CT_COMB, CT_INITIAL };
 
 private:
-    const CheckType m_check;  // Combo logic or other
-    const AstNode* const m_alwaysp;  // Always we're under
-    const AstNode* m_assignp = nullptr;  // In assign
+    // MEMBERS
+    const CheckType m_check;  // Process type we are checking
+
     // VISITORS
     virtual void visit(AstAssignDly* nodep) override {
-        if (m_check != CT_SEQ) {
-            // Convert to a non-delayed assignment
-            UINFO(5, "    ASSIGNDLY " << nodep << endl);
-            if (m_check == CT_INITIAL) {
-                nodep->v3warn(INITIALDLY, "Delayed assignments (<=) in initial or final block\n"
-                                              << nodep->warnMore()
-                                              << "... Suggest blocking assignments (=)");
-            } else if (m_check == CT_LATCH) {
-                // Suppress. Shouldn't matter that the interior of the latch races
-            } else if (!(VN_IS(nodep->lhsp(), VarRef)
-                         && VN_AS(nodep->lhsp(), VarRef)->varp()->isLatched())) {
-                nodep->v3warn(COMBDLY, "Delayed assignments (<=) in non-clocked"
-                                       " (non flop or latch) block\n"
-                                           << nodep->warnMore()
-                                           << "... Suggest blocking assignments (=)");
-                // Conversely, we could also suggest latches use delayed assignments, as
-                // recommended by Cliff Cummings?
-            }
-            AstNode* const newp = new AstAssign(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                                nodep->rhsp()->unlinkFrBack());
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // Non-blocking assignments are OK in sequential processes
+        if (m_check == CT_SEQ) return;
+
+        // Issue appropriate warning
+        if (m_check == CT_INITIAL) {
+            nodep->v3warn(INITIALDLY,
+                          "Non-blocking assignment '<=' in initial/final block\n"
+                              << nodep->warnMore()
+                              << "... This will be executed as a blocking assignment '='!");
+        } else {
+            nodep->v3warn(COMBDLY,
+                          "Non-blocking assignment '<=' in combinational logic process\n"
+                              << nodep->warnMore()
+                              << "... This will be executed as a blocking assignment '='!");
         }
+
+        // Convert to blocking assignment
+        nodep->replaceWith(new AstAssign{nodep->fileline(),  //
+                                         nodep->lhsp()->unlinkFrBack(),  //
+                                         nodep->rhsp()->unlinkFrBack()});
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+
     virtual void visit(AstAssign* nodep) override {
-        if (m_check == CT_SEQ) {
-            VL_RESTORER(m_assignp);
-            m_assignp = nodep;
-            iterateAndNextNull(nodep->lhsp());
-        }
+        // Blocking assignments are always OK in combinational (and initial/final) processes
+        if (m_check != CT_SEQ) return;
+
+        const bool ignore = nodep->lhsp()->forall<AstVarRef>([&](const AstVarRef* refp) {
+            // Ignore reads (e.g.: index expressions)
+            if (refp->access().isReadOnly()) return true;
+            const AstVar* const varp = refp->varp();
+            // Ignore ...
+            return varp->isUsedLoopIdx()  // ... loop indices
+                   || varp->isTemp()  // ... temporaries
+                   || varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ);  // ... user said so
+        });
+
+        if (ignore) return;
+
+        nodep->v3warn(BLKSEQ,
+                      "Blocking assignment '=' in sequential logic process\n"
+                          << nodep->warnMore()  //
+                          << "... Suggest using delayed assignment '<='");
     }
-    virtual void visit(AstVarRef* nodep) override {
-        const AstVar* const varp = nodep->varp();
-        if (m_check == CT_SEQ && m_assignp && !varp->isUsedLoopIdx()  // Ignore loop indices
-            && !varp->isTemp()) {
-            // Allow turning off warnings on the always, or the variable also
-            if (!m_alwaysp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
-                && !m_assignp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
-                && !varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)) {
-                m_assignp->v3warn(BLKSEQ,
-                                  "Blocking assignments (=) in sequential (flop or latch) block\n"
-                                      << m_assignp->warnMore()
-                                      << "... Suggest delayed assignments (<=)");
-                m_alwaysp->fileline()->modifyWarnOff(
-                    V3ErrorCode::BLKSEQ, true);  // Complain just once for the entire always
-                varp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
-            }
-        }
-    }
+
     //--------------------
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     ActiveDlyVisitor(AstNode* nodep, CheckType check)
-        : m_check{check}
-        , m_alwaysp{nodep} {
+        : m_check{check} {
         iterate(nodep);
     }
     virtual ~ActiveDlyVisitor() override = default;
@@ -421,6 +416,14 @@ private:
     }
     virtual void visit(AstActive* nodep) override {
         // Actives are being formed, so we can ignore any already made
+    }
+    virtual void visit(AstInitialStatic* nodep) override {
+        // Relink to IACTIVE, unless already under it
+        UINFO(4, "    INITIAL " << nodep << endl);
+        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
+        AstActive* const wantactivep = m_namer.getIActive(nodep->fileline());
+        nodep->unlinkFrBack();
+        wantactivep->addStmtsp(nodep);
     }
     virtual void visit(AstInitial* nodep) override {
         // Relink to IACTIVE, unless already under it
@@ -527,12 +530,8 @@ private:
 
         // Warn and/or convert any delayed assignments
         if (combo && !sequent) {
+            ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB};
             const ActiveLatchCheckVisitor latchvisitor{nodep, kwd};
-            if (kwd == VAlwaysKwd::ALWAYS_LATCH) {
-                ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_LATCH};
-            } else {
-                ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMBO};
-            }
         } else if (!combo && sequent) {
             ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_SEQ};
         }

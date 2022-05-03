@@ -1236,7 +1236,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
     DECL_OPTION("-profile-cfuncs", CbCall,
                 [this]() { m_profC = m_profCFuncs = true; });  // Renamed
-    DECL_OPTION("-prof-threads", OnOff, &m_profThreads);
+    DECL_OPTION("-prof-exec", OnOff, &m_profExec);
+    DECL_OPTION("-prof-pgo", OnOff, &m_profPgo);
+    DECL_OPTION("-prof-threads", CbOnOff, [this, fl](bool flag) {
+        fl->v3warn(DEPRECATED, "Option --prof-threads is deprecated. "
+                               "Use --prof-exec and --prof-pgo instead.");
+        m_profExec = m_profPgo = flag;
+    });
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {

@@ -225,9 +225,10 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     }
 }
 
-AstExecGraph::AstExecGraph(FileLine* fileline)
+AstExecGraph::AstExecGraph(FileLine* fileline, const string& name)
     : ASTGEN_SUPER_ExecGraph(fileline)
-    , m_depGraphp{new V3Graph} {}
+    , m_depGraphp{new V3Graph}
+    , m_name{name} {}
 
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
@@ -463,7 +464,7 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
         } else if (widthMin() <= VL_IDATASIZE) {
             arg += "uint32_t";
         } else if (widthMin() <= VL_QUADSIZE) {
-            arg += "vluint64_t";
+            arg += "uint64_t";
         } else {
             arg += "uint32_t";  // []'s added later
         }
@@ -600,7 +601,7 @@ string AstVar::scType() const {
             return "uint32_t";
         }
     } else {
-        return "vluint64_t";
+        return "uint64_t";
     }
 }
 
@@ -1071,8 +1072,8 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
         if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) return false;
         // Compare initializer arrays by value. Note this is only called when they hash the same,
         // so they likely run at most once per call to 'AstConstPool::findTable'.
-        const vluint64_t size = aDTypep->elementsConst();
-        for (vluint64_t n = 0; n < size; ++n) {
+        const uint64_t size = aDTypep->elementsConst();
+        for (uint64_t n = 0; n < size; ++n) {
             const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
             const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
             if (!valAp->sameTree(valBp)) return false;
@@ -1852,6 +1853,10 @@ void AstCoverInc::dump(std::ostream& str) const {
 void AstFork::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (!joinType().join()) str << " [" << joinType() << "]";
+}
+void AstTraceDecl::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (code()) str << " [code=" << code() << "]";
 }
 void AstTraceInc::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);

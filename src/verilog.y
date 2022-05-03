@@ -1303,7 +1303,7 @@ port<nodep>:			// ==IEEE: port
 	//			// data_declarationVarFront
 	//
 	//			// Though not type for interfaces, we factor out the port direction and type
-	//			// so we can simply handle it in one place
+	//			// so we can handle it in one place
 	//
 	//			// IEEE: interface_port_header port_identifier { unpacked_dimension }
 	//			// Expanded interface_port_header
@@ -3111,7 +3111,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//			// IEEE: conditional_statement
 	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
-			{ AstIf* const newp = new AstIf{$2, $4, $6, nullptr};
+			{ AstIf* const newp = new AstIf{$2, $4, $6};
 			  $$ = newp;
 			  if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
 			  if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
@@ -3180,7 +3180,7 @@ statement_item<nodep>:		// IEEE: statement_item
 							     $$ = $2->cloneTree(true);
 							     $$->addNext(new AstWhile($1,$5,$2));
 							  }
-							  else $$ = new AstWhile($1,$5,nullptr); }
+							  else $$ = new AstWhile($1,$5); }
 	//			// IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
 	|	yFOREACH '(' idClassSelForeach ')' stmtBlock	{ $$ = new AstForeach($1, $3, $5); }
 	//
@@ -5525,7 +5525,7 @@ pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps j
 //UNSUP	//			// IEEE: '(' sexpr {',' sequence_match_item } ')' [ sequence_abbrev ]
 //UNSUP	//			// As sequence_expr includes expression_or_dist, and boolean_abbrev includes sequence_abbrev:
 //UNSUP	//			// '(' sequence_expr {',' sequence_match_item } ')' [ boolean_abbrev ]
-//UNSUP	//			// "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can simply drop it
+//UNSUP	//			// "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can drop it
 //UNSUP	|	'(' ~p~sexpr ')'			{ $<fl>$ = $<fl>1; $$ = ...; }
 //UNSUP	|	'(' ~p~sexpr ',' sequence_match_itemList ')'	{ }
 //UNSUP	//

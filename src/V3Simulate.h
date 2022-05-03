@@ -70,7 +70,7 @@ class SimulateVisitor VL_NOT_FINAL : public VNVisitor {
     //   Test the tree to see if it is conformant
     //   Given a set of input values, find the output values
     // Both are done in this same visitor to reduce risk; if a visitor
-    // is missing, we will simply not apply the optimization, rather then bomb.
+    // is missing, we will not apply the optimization, rather then bomb.
 
 private:
     // NODE STATE
@@ -182,11 +182,11 @@ public:
             }
             m_whyNotOptimizable = why;
             std::ostringstream stack;
-            for (auto it = m_callStack.rbegin(); it != m_callStack.rend(); ++it) {
-                AstFuncRef* const funcp = (*it)->m_funcp;
+            for (auto& callstack : vlstd::reverse_view(m_callStack)) {
+                AstFuncRef* const funcp = callstack->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from "
                       << funcp->prettyName() << "() with parameters:";
-                V3TaskConnects* tconnects = (*it)->m_tconnects;
+                V3TaskConnects* tconnects = callstack->m_tconnects;
                 for (V3TaskConnects::iterator conIt = tconnects->begin();
                      conIt != tconnects->end(); ++conIt) {
                     AstVar* const portp = conIt->first;

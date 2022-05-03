@@ -112,6 +112,9 @@ public:
                         }
                     }
                     if (v3Global.opt.mtasks()) putMakeClassEntry(of, "verilated_threads.cpp");
+                    if (v3Global.opt.usesProfiler()) {
+                        putMakeClassEntry(of, "verilated_profiler.cpp");
+                    }
                 } else if (support == 2 && slow) {
                 } else {
                     for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
@@ -189,6 +192,7 @@ public:
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
+        if (v3Global.opt.usesProfiler()) of.puts("\t-DVL_PROFILER \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("\t" + i + " \\\n");
         of.puts("\n");
@@ -244,8 +248,8 @@ public:
         }
 
         if (!v3Global.opt.libCreate().empty()) {
-            const string libCreateDeps = "$(VK_OBJS) $(VK_GLOBAL_OBJS) " + v3Global.opt.libCreate()
-                                         + ".o $(VM_HIER_LIBS)";
+            const string libCreateDeps = "$(VK_OBJS) $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) "
+                                         + v3Global.opt.libCreate() + ".o $(VM_HIER_LIBS)";
             of.puts("\n### Library rules from --lib-create\n");
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
             of.puts(v3Global.opt.libCreateName(false) + ": " + libCreateDeps + "\n");
@@ -329,8 +333,8 @@ class EmitMkHierVerilation final {
         const V3HierBlockPlan::HierVector blocks
             = m_planp->hierBlocksSorted();  // leaf comes first
         // List in order of leaf-last order so that linker can resolve dependency
-        for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
-            of.puts("\t" + (*it)->hierLib(true) + " \\\n");
+        for (auto& block : vlstd::reverse_view(blocks)) {
+            of.puts("\t" + block->hierLib(true) + " \\\n");
         }
         of.puts("\n");
 

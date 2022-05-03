@@ -29,7 +29,7 @@ module t;
       valuec = $random(seedc);
       if (valuea == valueb && valueb == valuec) $stop;  // May false fail 1 in 1^64
       if (seeda == seedb && seedb == seedc) $stop;  // May false fail 1 in 1^64
-       
+
       valuea = $urandom(10);
       valueb = $urandom(10);
       if (valuea !== valueb) $stop;

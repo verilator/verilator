@@ -99,10 +99,10 @@ Summary:
 .. option:: --bbox-sys
 
    Black box any unknown $system task or function calls.  System tasks will
-   simply become no-operations, and system functions will be replaced with
-   unsized zero.  Arguments to such functions will be parsed, but not
-   otherwise checked.  This prevents errors when linting in the presence of
-   company specific PLI calls.
+   become no-operations, and system functions will be replaced with unsized
+   zero.  Arguments to such functions will be parsed, but not otherwise
+   checked.  This prevents errors when linting in the presence of company
+   specific PLI calls.
 
    Using this argument will likely cause incorrect simulation.
 
@@ -768,7 +768,7 @@ Summary:
 .. option:: --pins-bv <width>
 
    Specifies SystemC inputs/outputs of greater than or equal to <width>
-   bits wide should use sc_bv's instead of uint32/vluint64_t's.  The
+   bits wide should use sc_bv's instead of uint32/uint64_t's.  The
    default is "--pins-bv 65", and the value must be less than or equal
    to 65.  Versions before Verilator 3.671 defaulted to "--pins-bv 33".
    The more sc_bv is used, the worse for performance.  Use the
@@ -845,10 +845,19 @@ Summary:
 
    Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
 
+.. option:: --prof-exec
+
+   Enable collection of execution trace, that can be convered into a gantt
+   chart with verilator_gantt See :ref:`Execution Profiling`.
+
+.. option:: --prof-pgo
+
+   Enable collection of profiling data for profile guided verilation. Currently
+   this is only useful with :vlopt:`--threads`. See :ref:`Thread PGO`.
+
 .. option:: --prof-threads
 
-   Enable gantt chart data collection for threaded builds. See :ref:`Thread
-   Profiling` and :ref:`Thread PGO`.
+   Deprecated. Same as --prof-exec and --prof-pgo together.
 
 .. option:: --protect-key <key>
 
@@ -1638,7 +1647,7 @@ The grammar of configuration commands is as follows:
 .. option:: sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
    Sets the port to be of :code:`sc_bv<{width}>` type, instead of bool,
-   vluint32_t or vluint64_t.  Same as :option:`/*verilator&32;sc_bv*/`
+   uint32_t or uint64_t.  Same as :option:`/*verilator&32;sc_bv*/`
    metacomment.
 
 .. option:: sformat [-module "<modulename>"] [-task "<taskname>"] -var "<signame>"

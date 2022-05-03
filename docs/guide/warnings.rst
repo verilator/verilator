@@ -12,7 +12,7 @@ Disabling Warnings
 Warnings may be disabled in multiple ways:
 
 #. Disable the warning in the source code.  When the warning is printed it
-   will include a warning code.  Simply surround the offending line with a
+   will include a warning code.  Surround the offending line with a
    :code:`/*verilator&32;lint_off*/` and :code:`/*verilator&32;lint_on*/`
    metacomment pair:
 
@@ -162,7 +162,7 @@ List Of Warnings
          always @(posedge clk)  foo[0] <= ...
          always_comb foo[1] = ...
 
-   Simply use a different register for the flop:
+   Instead use a different register for the flop:
 
    .. code-block:: sv
 
@@ -284,7 +284,7 @@ List Of Warnings
 
    .. TODO better example
 
-   Warns that it is simply better style to use casez, and "?" in place of
+   Warns that it is better style to use casez, and "?" in place of
    "x"'s.  See
    `http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf
    <http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>`_
@@ -1212,10 +1212,10 @@ List Of Warnings
    .. include:: ../../docs/gen/ex_STMTDLY_msg.rst
 
    This is a warning because Verilator does not support delayed statements.
-   It will simply ignore all such delays.  In many cases ignoring a delay
-   might be harmless, but if the delayed statement is, as in this example,
-   used to cause some important action at a later time, it might be an
-   important difference.
+   It will ignore all such delays.  In many cases ignoring a delay might be
+   harmless, but if the delayed statement is, as in this example, used to
+   cause some important action at a later time, it might be an important
+   difference.
 
    Some possible workarounds:
 

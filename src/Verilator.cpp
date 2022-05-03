@@ -503,7 +503,7 @@ static void process() {
         // threads. Must happen pre-EmitC which relies on the packing
         // order. Must happen post-V3LifePost which changes the relative
         // costs of mtasks.
-        V3Partition::finalize();
+        V3Partition::finalize(v3Global.rootp());
     }
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {

@@ -268,11 +268,11 @@ Estimating Logic Costs
 
 To compute the cost of any given path through the graph, Verilator
 estimates an execution cost for each task. Each macro-task has an execution
-cost which is simply the sum of its tasks' costs. We assume that
-communication overhead and synchronization overhead are zero, so the cost
-of any given path through the graph is simply the sum of macro-task
-execution costs. Sarkar does almost the same thing, except that he has
-nonzero estimates for synchronization costs.
+cost which is the sum of its tasks' costs. We assume that communication
+overhead and synchronization overhead are zero, so the cost of any given
+path through the graph is the sum of macro-task execution costs. Sarkar
+does almost the same thing, except that he has nonzero estimates for
+synchronization costs.
 
 Verilator's cost estimates are assigned by ``InstrCountCostVisitor``.  This
 class is perhaps the most fragile piece of the multithread
@@ -301,7 +301,7 @@ prerequisites on other threads have finished.
 
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
-source of overhead in this approach. The ``--prof-threads`` switch and the
+source of overhead in this approach. The ``--prof-exec`` switch and the
 ``verilator_gantt`` script can visualize the time lost to such
 fragmentation.
 
@@ -817,7 +817,7 @@ which you can install using cpan.
 
 There are some traps to avoid when running regression tests
 
-- When checking the MANIFEST, the test will barf on unexpected code in the
+- When checking the MANIFEST, the test will fail on unexpected code in the
   Verilator tree. So make sure to keep any such code outside the tree.
 
 - Not all Linux systems install Perldoc by default. This is needed for the
@@ -1186,7 +1186,7 @@ anticipated to be ever implemented for the reasons indicated.
 IEEE 1800-2017 3.3 modules within modules
     Little/no tool support, and arguably not a good practice.
 IEEE 1800-2017 6.12 "shortreal"
-    Little/no tool support, and easily simply promoted to real.
+    Little/no tool support, and easily promoted to real.
 IEEE 1800-2017 11.11 Min, typ, max
     No SDF support so will always use typical.
 IEEE 1800-2017 11.12 "let"

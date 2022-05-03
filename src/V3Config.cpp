@@ -350,7 +350,7 @@ using V3ConfigFileResolver = V3ConfigWildcardResolver<V3ConfigFile>;
 class V3ConfigResolver final {
     V3ConfigModuleResolver m_modules;  // Access to module names (with wildcards)
     V3ConfigFileResolver m_files;  // Access to file names (with wildcards)
-    std::unordered_map<string, std::unordered_map<string, vluint64_t>>
+    std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
     FileLine* m_profileFileLine = nullptr;
 
@@ -364,12 +364,12 @@ public:
     V3ConfigModuleResolver& modules() { return m_modules; }
     V3ConfigFileResolver& files() { return m_files; }
 
-    void addProfileData(FileLine* fl, const string& model, const string& key, vluint64_t cost) {
+    void addProfileData(FileLine* fl, const string& model, const string& key, uint64_t cost) {
         if (!m_profileFileLine) m_profileFileLine = fl;
         if (cost == 0) cost = 1;  // Cost 0 means delete (or no data)
         m_profileData[model][key] += cost;
     }
-    vluint64_t getProfileData(const string& model, const string& key) const {
+    uint64_t getProfileData(const string& model, const string& key) const {
         const auto mit = m_profileData.find(model);
         if (mit == m_profileData.cend()) return 0;
         const auto it = mit->second.find(key);
@@ -430,7 +430,7 @@ void V3Config::addModulePragma(const string& module, VPragmaType pragma) {
 }
 
 void V3Config::addProfileData(FileLine* fl, const string& model, const string& key,
-                              vluint64_t cost) {
+                              uint64_t cost) {
     V3ConfigResolver::s().addProfileData(fl, model, key, cost);
 }
 
@@ -534,7 +534,7 @@ void V3Config::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar
     if (vp) vp->apply(varp);
 }
 
-vluint64_t V3Config::getProfileData(const string& model, const string& key) {
+uint64_t V3Config::getProfileData(const string& model, const string& key) {
     return V3ConfigResolver::s().getProfileData(model, key);
 }
 FileLine* V3Config::getProfileDataFileLine() {

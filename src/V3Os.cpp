@@ -254,9 +254,9 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
 //######################################################################
 // METHODS (random)
 
-vluint64_t V3Os::rand64(std::array<vluint64_t, 2>& stater) {
+uint64_t V3Os::rand64(std::array<uint64_t, 2>& stater) {
     // Xoroshiro128+ algorithm
-    const vluint64_t result = stater[0] + stater[1];
+    const uint64_t result = stater[0] + stater[1];
     stater[1] ^= stater[0];
     stater[0] = (((stater[0] << 55) | (stater[0] >> 9)) ^ stater[1] ^ (stater[1] << 14));
     stater[1] = (stater[1] << 36) | (stater[1] >> 28);
@@ -319,7 +319,7 @@ uint64_t V3Os::memUsageBytes() {
     const char* const statmFilename = "/proc/self/statm";
     FILE* fp = fopen(statmFilename, "r");
     if (!fp) return 0;
-    vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
+    uint64_t size, resident, share, text, lib, data, dt;  // All in pages
     const int items = fscanf(
         fp, "%" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
         &size, &resident, &share, &text, &lib, &data, &dt);

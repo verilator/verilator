@@ -69,7 +69,7 @@ int main(int argc, char** argv, char** env) {
         // Historical note, before Verilator 4.200 Verilated::gotFinish()
         // was used above in place of contextp->gotFinish().
         // Most of the contextp-> calls can use Verilated:: calls instead;
-        // the Verilated:: versions simply assume there's a single context
+        // the Verilated:: versions just assume there's a single context
         // being used (per thread).  It's faster and clearer to use the
         // newer contextp-> versions.
 

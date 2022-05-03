@@ -118,7 +118,7 @@ class EmitCHeader final : public EmitCConstInit {
     void emitInternalVarDecls(const AstNodeModule* modp) {
         if (!VN_IS(modp, Class)) {
             putsDecoration("\n// INTERNAL VARIABLES\n");
-            puts(symClassName() + "* vlSymsp;  // Symbol table\n");
+            puts(symClassName() + "* const vlSymsp;\n");
         }
     }
     void emitParamDecls(const AstNodeModule* modp) {
@@ -146,7 +146,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (!VN_IS(modp, Class)) {  // Classes use CFuncs with isConstructor/isDestructor
             const string& name = prefixNameProtect(modp);
             putsDecoration("\n// CONSTRUCTORS\n");
-            puts(name + "(const char* name);\n");
+            puts(name + "(" + symClassName() + "* symsp, const char* name);\n");
             puts("~" + name + "();\n");
             puts("VL_UNCOPYABLE(" + name + ");\n");
         }
@@ -157,8 +157,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         if (!VN_IS(modp, Class)) {
             decorateFirst(first, section);
-            puts("void " + protect("__Vconfigure") + "(" + symClassName()
-                 + "* symsp, bool first);\n");
+            puts("void " + protect("__Vconfigure") + "(bool first);\n");
         }
 
         if (v3Global.opt.coverage()) {

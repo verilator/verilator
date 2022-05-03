@@ -14,12 +14,12 @@ scenarios(vltmt => 1);
 top_filename("t/t_gen_alw.v");
 
 compile(
-    v_flags2 => ["--prof-threads --threads 2"]
+    v_flags2 => ["--prof-pgo --threads 2"]
     );
 
 execute(
-    all_run_flags => ["+verilator+prof+threads+start+0",
-                      " +verilator+prof+threads+file+/dev/null",
+    all_run_flags => ["+verilator+prof+exec+start+0",
+                      " +verilator+prof+exec+file+/dev/null",
                       " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
     check_finished => 1,
@@ -28,8 +28,8 @@ execute(
 file_grep("$Self->{obj_dir}/profile.vlt", qr/profile_data/i);
 
 compile(
-    # Intentinally no --prof-threads here, so we make sure profile data
-    # can read in without it (that is no prof-thread effect on profile_data hash names)
+    # Intentinally no --prof-pgo here to make sure profile data can be read in
+    # without it (that is: --prof-pgo has no effect on profile_data hash names)
     v_flags2 => ["--threads 2",
                  " $Self->{obj_dir}/profile.vlt"],
     );

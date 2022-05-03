@@ -282,6 +282,7 @@ void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
 #include <cstdint>
 #include <cinttypes>
 
+#ifndef VL_NO_LEGACY
 using vluint8_t = uint8_t;  ///< 8-bit unsigned type (backward compatibility)
 using vluint16_t = uint16_t;  ///< 16-bit unsigned type (backward compatibility)
 using vluint32_t = uint32_t;  ///< 32-bit unsigned type (backward compatibility)
@@ -290,6 +291,7 @@ using vlsint8_t = int8_t;  ///< 8-bit signed type (backward compatibility)
 using vlsint16_t = int16_t;  ///< 16-bit signed type (backward compatibility)
 using vlsint32_t = int32_t;  ///< 32-bit signed type (backward compatibility)
 using vlsint64_t = int64_t;  ///< 64-bit signed type (backward compatibility)
+#endif
 
 #if defined(__CYGWIN__)
 
@@ -320,12 +322,12 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Deprecated, favor C++11's PRIx64, etc, instead
 #ifndef VL_NO_LEGACY
 # ifdef _MSC_VER
-#  define VL_PRI64 "I64"  ///< print a vluint64_t (backward compatibility)
+#  define VL_PRI64 "I64"  ///< print a uint64_t (backward compatibility)
 # else  // use standard C99 format specifiers
 #  if defined(__WORDSIZE) && (__WORDSIZE == 64)
-#   define VL_PRI64 "l"  ///< print a vluint64_t (backward compatibility)
+#   define VL_PRI64 "l"  ///< print a uint64_t (backward compatibility)
 #  else
-#   define VL_PRI64 "ll"  ///< print a vluint64_t (backward compatibility)
+#   define VL_PRI64 "ll"  ///< print a uint64_t (backward compatibility)
 #  endif
 # endif
 #endif
@@ -436,24 +438,24 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Performance counters
 
 #if defined(__i386__) || defined(__x86_64__)
-// The vluint64_t argument is loaded with a high-performance counter for profiling
+// The uint64_t argument is loaded with a high-performance counter for profiling
 // or 0x0 if not implemented on this platform
-#define VL_RDTSC(val) \
+#define VL_GET_CPU_TICK(val) \
     { \
-        vluint32_t hi, lo; \
+        uint32_t hi, lo; \
         asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); \
-        (val) = ((vluint64_t)lo) | (((vluint64_t)hi) << 32); \
+        (val) = ((uint64_t)lo) | (((uint64_t)hi) << 32); \
     }
 #elif defined(__aarch64__)
 // 1 GHz virtual system timer on SBSA level 5 compliant systems, else often 100 MHz
-# define VL_RDTSC(val) \
+# define VL_GET_CPU_TICK(val) \
     { \
         asm volatile("isb" : : : "memory"); \
         asm volatile("mrs %[rt],CNTVCT_EL0" : [rt] "=r"(val)); \
     }
 #else
 // We just silently ignore unknown OSes, as only leads to missing statistics
-# define VL_RDTSC(val) (val) = 0;
+# define VL_GET_CPU_TICK(val) (val) = 0;
 #endif
 
 //=========================================================================
@@ -475,6 +477,9 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #  define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
 # elif defined(__powerpc64__)
 #  define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
+# elif defined(__loongarch__)
+// LoongArch does not currently have a yield/pause instruction
+#  define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
 # else
 #  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
 # endif
@@ -489,10 +494,8 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_STRCASECMP strcasecmp
 #endif
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(_MSC_VER)
 # define VL_LOCALTIME_R(timep, tmp) localtime_s((tmp), (timep))
-#elif defined(_MSC_VER)
-# define VL_LOCALTIME_R(timep, tmp) localtime_c((tmp), (timep))
 #else
 # define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
 #endif
@@ -518,6 +521,19 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Conversions
 
 namespace vlstd {
+
+template <typename T> struct reverse_wrapper {
+    const T& m_v;
+
+    explicit reverse_wrapper(const T& a_v)
+        : m_v(a_v) {}
+    inline auto begin() -> decltype(m_v.rbegin()) { return m_v.rbegin(); }
+    inline auto end() -> decltype(m_v.rend()) { return m_v.rend(); }
+};
+
+// C++20's std::ranges::reverse_view
+template <typename T> reverse_wrapper<T> reverse_view(const T& v) { return reverse_wrapper<T>(v); }
+
 // C++17's std::as_const
 template <class T> T const& as_const(T& v) { return v; }
 };  // namespace vlstd

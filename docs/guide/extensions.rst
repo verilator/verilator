@@ -445,7 +445,7 @@ or "`ifdef`"'s may break other tools.
 .. option:: /*verilator&32;sc_bv*/
 
    Used after a port declaration.  It sets the port to be of
-   :code:`sc_bv<{width}>` type, instead of bool, vluint32_t or vluint64_t.
+   :code:`sc_bv<{width}>` type, instead of bool, uint32_t or uint64_t.
    This may be useful if the port width is parameterized and the
    instantiating C++ code wants to always have a sc_bv so it can accept any
    width.  In general you should avoid using this attribute when not

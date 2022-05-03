@@ -56,8 +56,8 @@ module t (/*AUTOARG*/
       // because CLOCK signal is used as DATA in sequential block
       res <= clk_final;
       if ( count == 8'hf) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

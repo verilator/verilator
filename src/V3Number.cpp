@@ -375,7 +375,7 @@ V3Number& V3Number::setZero() {
     for (int i = 0; i < words(); i++) m_value[i] = {0, 0};
     return *this;
 }
-V3Number& V3Number::setQuad(vluint64_t value) {
+V3Number& V3Number::setQuad(uint64_t value) {
     for (int i = 0; i < words(); i++) m_value[i] = {0, 0};
     m_value[0].m_value = value & 0xffffffffULL;
     if (width() > 32) m_value[1].m_value = (value >> 32ULL) & 0xffffffffULL;
@@ -388,11 +388,11 @@ V3Number& V3Number::setLong(uint32_t value) {
     opCleanThis();
     return *this;
 }
-V3Number& V3Number::setLongS(vlsint32_t value) {
+V3Number& V3Number::setLongS(int32_t value) {
     for (int i = 0; i < words(); i++) m_value[i] = {0, 0};
     union {
         uint32_t u;
-        vlsint32_t s;
+        int32_t s;
     } u;
     u.s = value;
     if (u.s) {}
@@ -698,7 +698,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
             // To get the number of digits required, we want to compute
             // log10(2**mantissabits) and round it up. To be able to handle
             // a very wide mantissa, we use log2(2**mantissabits)/log2(10),
-            // which is simply (+1.0 is for rounding bias):
+            // which is (+1.0 is for rounding bias):
             double dchars = mantissabits / 3.321928094887362 + 1.0;
             if (issigned) dchars++;  // space for sign
             fmtsize = cvtToStr(int(dchars));
@@ -878,40 +878,40 @@ double V3Number::toDouble() const {
     return u.d;
 }
 
-vlsint32_t V3Number::toSInt() const {
+int32_t V3Number::toSInt() const {
     if (isSigned()) {
         const uint32_t v = toUInt();
         const uint32_t signExtend = (-(v & (1UL << (width() - 1))));
         const uint32_t extended = v | signExtend;
-        return static_cast<vlsint32_t>(extended);
+        return static_cast<int32_t>(extended);
     } else {
         // Where we use this (widths, etc) and care about signedness,
         // we can reasonably assume the MSB isn't set on unsigned numbers.
-        return static_cast<vlsint32_t>(toUInt());
+        return static_cast<int32_t>(toUInt());
     }
 }
 
-vluint64_t V3Number::toUQuad() const {
+uint64_t V3Number::toUQuad() const {
     UASSERT(!isFourState(), "toUQuad with 4-state " << *this);
     // We allow wide numbers that represent values <= 64 bits
-    if (isDouble()) return static_cast<vluint64_t>(toDouble());
+    if (isDouble()) return static_cast<uint64_t>(toDouble());
     for (int i = 2; i < words(); ++i) {
         if (m_value[i].m_value) {
             v3error("Value too wide for 64-bits expected in this context " << *this);
             break;
         }
     }
-    if (width() <= 32) return (static_cast<vluint64_t>(toUInt()));
-    return ((static_cast<vluint64_t>(m_value[1].m_value) << 32ULL)
-            | (static_cast<vluint64_t>(m_value[0].m_value)));
+    if (width() <= 32) return (static_cast<uint64_t>(toUInt()));
+    return ((static_cast<uint64_t>(m_value[1].m_value) << 32ULL)
+            | (static_cast<uint64_t>(m_value[0].m_value)));
 }
 
-vlsint64_t V3Number::toSQuad() const {
-    if (isDouble()) return static_cast<vlsint64_t>(toDouble());
-    const vluint64_t v = toUQuad();
-    const vluint64_t signExtend = (-(v & (1ULL << (width() - 1))));
-    const vluint64_t extended = v | signExtend;
-    return static_cast<vlsint64_t>(extended);
+int64_t V3Number::toSQuad() const {
+    if (isDouble()) return static_cast<int64_t>(toDouble());
+    const uint64_t v = toUQuad();
+    const uint64_t signExtend = (-(v & (1ULL << (width() - 1))));
+    const uint64_t extended = v | signExtend;
+    return static_cast<int64_t>(extended);
 }
 
 string V3Number::toString() const {
@@ -1499,15 +1499,15 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
     errno = 0;
     auto v = std::strtol(str.c_str(), nullptr, base);
     if (errno != 0) v = 0;
-    return setLongS(static_cast<vlsint32_t>(v));
+    return setLongS(static_cast<int32_t>(v));
 }
 
 V3Number& V3Number::opPutcN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
     NUM_ASSERT_OP_ARGS3(lhs, rhs, ths);
     NUM_ASSERT_STRING_ARGS1(lhs);
     string lstring = lhs.toString();
-    const vlsint32_t i = rhs.toSInt();
-    const vlsint32_t c = ths.toSInt() & 0xFF;
+    const int32_t i = rhs.toSInt();
+    const int32_t c = ths.toSInt() & 0xFF;
     // 6.16.2:str.putc(i, c) does not change the value when i < 0 || i >= str.len() || c == 0
     // when evaluating the second condition, i must be positive.
     if (0 <= i && static_cast<uint32_t>(i) < lstring.length() && c != 0) lstring[i] = c;
@@ -1518,8 +1518,8 @@ V3Number& V3Number::opGetcN(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
     const string lstring = lhs.toString();
-    const vlsint32_t i = rhs.toSInt();
-    vlsint32_t v = 0;
+    const int32_t i = rhs.toSInt();
+    int32_t v = 0;
     // 6.16.3:str.getc(i) returns 0 if i < 0 || i >= str.len()
     // when evaluating the second condition, i must be positive.
     if (0 <= i && static_cast<uint32_t>(i) < lstring.length()) v = lstring[i];
@@ -1530,8 +1530,8 @@ V3Number& V3Number::opSubstrN(const V3Number& lhs, const V3Number& rhs, const V3
     NUM_ASSERT_OP_ARGS3(lhs, rhs, ths);
     NUM_ASSERT_STRING_ARGS1(lhs);
     const string lstring = lhs.toString();
-    const vlsint32_t i = rhs.toSInt();
-    const vlsint32_t j = ths.toSInt();
+    const int32_t i = rhs.toSInt();
+    const int32_t j = ths.toSInt();
     // 6.16.8:str.substr(i, j) returns an empty string when i < 0 || j < i || j >= str.len()
     // when evaluating the third condition, j must be positive because 0 <= i <= j is guaranteed by
     // the former two conditions.
@@ -1837,14 +1837,14 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
         opCleanThis();  // Mult produces extra bits in result
     } else {
         for (int lword = 0; lword < lhs.words(); lword++) {
-            const vluint64_t lwordval = static_cast<vluint64_t>(lhs.m_value[lword].m_value);
+            const uint64_t lwordval = static_cast<uint64_t>(lhs.m_value[lword].m_value);
             if (lwordval == 0) continue;
             for (int rword = 0; rword < rhs.words(); rword++) {
-                const vluint64_t rwordval = static_cast<vluint64_t>(rhs.m_value[rword].m_value);
+                const uint64_t rwordval = static_cast<uint64_t>(rhs.m_value[rword].m_value);
                 if (rwordval == 0) continue;
-                vluint64_t mul = lwordval * rwordval;
+                uint64_t mul = lwordval * rwordval;
                 for (int qword = lword + rword; qword < this->words(); qword++) {
-                    mul += static_cast<vluint64_t>(m_value[qword].m_value);
+                    mul += static_cast<uint64_t>(m_value[qword].m_value);
                     m_value[qword].m_value = (mul & 0xffffffffULL);
                     mul = (mul >> 32ULL) & 0xffffffffULL;
                     if (mul == 0) break;
@@ -1960,14 +1960,13 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     const int vw = (vmsbp1 + 31) / 32;  // aka "n" in the algorithm
 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
-        vluint64_t k = 0;
+        uint64_t k = 0;
         for (int j = uw - 1; j >= 0; j--) {
-            const vluint64_t unw64
-                = ((k << 32ULL) + static_cast<vluint64_t>(lhs.m_value[j].m_value));
-            m_value[j].m_value = unw64 / static_cast<vluint64_t>(rhs.m_value[0].m_value);
+            const uint64_t unw64 = ((k << 32ULL) + static_cast<uint64_t>(lhs.m_value[j].m_value));
+            m_value[j].m_value = unw64 / static_cast<uint64_t>(rhs.m_value[0].m_value);
             k = unw64
-                - (static_cast<vluint64_t>(m_value[j].m_value)
-                   * static_cast<vluint64_t>(rhs.m_value[0].m_value));
+                - (static_cast<uint64_t>(m_value[j].m_value)
+                   * static_cast<uint64_t>(rhs.m_value[0].m_value));
         }
         UINFO(9, "  opmoddiv-1w  " << lhs << " " << rhs << " q=" << *this << " rem=0x" << std::hex
                                    << k << std::dec << endl);
@@ -2016,10 +2015,10 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     // Main loop
     for (int j = uw - vw; j >= 0; j--) {
         // Estimate
-        const vluint64_t unw64 = (static_cast<vluint64_t>(un[j + vw]) << 32ULL
-                                  | static_cast<vluint64_t>(un[j + vw - 1]));
-        vluint64_t qhat = unw64 / static_cast<vluint64_t>(vn[vw - 1]);
-        vluint64_t rhat = unw64 - qhat * static_cast<vluint64_t>(vn[vw - 1]);
+        const uint64_t unw64
+            = (static_cast<uint64_t>(un[j + vw]) << 32ULL | static_cast<uint64_t>(un[j + vw - 1]));
+        uint64_t qhat = unw64 / static_cast<uint64_t>(vn[vw - 1]);
+        uint64_t rhat = unw64 - qhat * static_cast<uint64_t>(vn[vw - 1]);
 
     again:
         if (qhat >= 0x100000000ULL || ((qhat * vn[vw - 2]) > ((rhat << 32ULL) + un[j + vw - 2]))) {
@@ -2028,10 +2027,10 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
             if (rhat < 0x100000000ULL) goto again;
         }
 
-        vlsint64_t t = 0;  // Must be signed
-        vluint64_t k = 0;
+        int64_t t = 0;  // Must be signed
+        uint64_t k = 0;
         for (int i = 0; i < vw; i++) {
-            const vluint64_t p = qhat * vn[i];  // Multiply by estimate
+            const uint64_t p = qhat * vn[i];  // Multiply by estimate
             t = un[i + j] - k - (p & 0xFFFFFFFFULL);  // Subtract
             un[i + j] = t;
             k = (p >> 32ULL) - (t >> 32ULL);
@@ -2045,7 +2044,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
             this->m_value[j].m_value--;
             k = 0;
             for (int i = 0; i < vw; i++) {
-                t = static_cast<vluint64_t>(un[i + j]) + static_cast<vluint64_t>(vn[i]) + k;
+                t = static_cast<uint64_t>(un[i + j]) + static_cast<uint64_t>(vn[i]) + k;
                 un[i + j] = t;
                 k = t >> 32ULL;
             }
@@ -2265,7 +2264,7 @@ V3Number& V3Number::opRToIS(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
     const double v = VL_TRUNC(lhs.toDouble());
-    const vlsint32_t i = static_cast<vlsint32_t>(v);  // C converts from double to vlsint32
+    const int32_t i = static_cast<int32_t>(v);  // C converts from double to int32_t
     return setLongS(i);
 }
 V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
@@ -2275,14 +2274,14 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
     setZero();
     union {
         double d;
-        vluint64_t q;
+        uint64_t q;
     } u;
     u.d = v;
     if (u.d == 0.0) {}
 
     const int exp = static_cast<int>((u.q >> 52ULL) & VL_MASK_Q(11)) - 1023;
     const int lsb = exp - 52;
-    const vluint64_t mantissa = (u.q & VL_MASK_Q(52)) | (1ULL << 52);
+    const uint64_t mantissa = (u.q & VL_MASK_Q(52)) | (1ULL << 52);
     if (v != 0) {
         // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
         // This does not need to support subnormals as they are sub-integral

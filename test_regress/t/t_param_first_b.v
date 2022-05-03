@@ -13,10 +13,10 @@ module t_param_first_b (/*AUTOARG*/
    parameter FIVE = 0; // Overridden
    parameter TWO = 2;
 
-   output [4:0] 	par;
-   output [X:0] 	varwidth;
+   output [4:0]         par;
+   output [X:0]         varwidth;
 
-   wire [4:0]	par = X;
-   wire [X:0] 	varwidth = (FIVE==5)?TWO:0;
+   wire [4:0]   par = X;
+   wire [X:0]   varwidth = (FIVE==5)?TWO:0;
 
 endmodule

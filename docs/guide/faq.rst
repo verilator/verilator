@@ -354,8 +354,8 @@ also use the "import DPI" SystemVerilog feature to call C code (see the
 chapter above).  There is also limited VPI access to public signals.
 
 If you want something more complex, since Verilator emits standard C++
-code, you can simply write your own C++ routines that can access and modify
-signal values without needing any PLI interface code, and call it with
+code, you can write your own C++ routines that can access and modify signal
+values without needing any PLI interface code, and call it with
 $c("{any_c++_statement}").
 
 See the :ref:`Connecting` section.
@@ -445,7 +445,7 @@ the signal, as you would any other member variable.
 Signals are the smallest of 8-bit unsigned chars (equivalent to uint8_t),
 16-bit unsigned shorts (uint16_t), 32-bit unsigned longs (uint32_t), or
 64-bit unsigned long longs (uint64_t) that fits the width of the signal.
-Generally, you can use just uint32_t's for 1 to 32 bits, or vluint64_t for
+Generally, you can use just uint32_t's for 1 to 32 bits, or uint64_t for
 1 to 64 bits, and the compiler will properly up-convert smaller entities.
 Note even signed ports are declared as unsigned; you must sign extend
 yourself to the appropriate signal width.
@@ -482,7 +482,7 @@ by your code or you'll get strange results.
 Should a module be in Verilog or SystemC?
 """""""""""""""""""""""""""""""""""""""""
 
-Sometimes there is a block that just interconnects instances, and have a
+Sometimes there is a block that only interconnects instances, and have a
 choice as to if you write it in Verilog or SystemC.  Everything else being
 equal, best performance is when Verilator sees all of the design.  So, look
 at the hierarchy of your design, labeling instances as to if they are

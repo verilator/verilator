@@ -178,7 +178,7 @@ public:
         }
     }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
-        // Variable rvalue.  If it references a constant, we can simply replace it
+        // Variable rvalue.  If it references a constant, we can replace it
         const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             if (AstConst* const constp = it->second.constNodep()) {
@@ -302,7 +302,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
-        const vluint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
+        const uint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
         m_sideEffect = false;
         iterateAndNextNull(nodep->rhsp());
         if (lastEdit != AstNode::editCountGbl()) {

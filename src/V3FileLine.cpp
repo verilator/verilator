@@ -340,15 +340,15 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     }
 }
 
-void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
+void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra) {
     std::ostringstream nsstr;
     if (lastLineno()) nsstr << this;
     nsstr << sstr.str();
     nsstr << endl;
     std::ostringstream lstr;
-    if (!locationStr.empty()) {
+    if (!extra.empty()) {
         lstr << std::setw(ascii().length()) << " "
-             << ": " << locationStr;
+             << ": " << extra;
     }
     m_waive = V3Config::waive(this, V3Error::errorCode(), sstr.str());
     if (warnIsOff(V3Error::errorCode()) || m_waive) {

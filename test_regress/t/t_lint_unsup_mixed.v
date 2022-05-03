@@ -16,9 +16,9 @@ module t
    // bug1120
    always @ (a or posedge clk)
      begin
-	if (a)
+        if (a)
           q = 0;
-	else
+        else
           q = q + 1;
      end
 
@@ -26,9 +26,9 @@ module t
    integer qb;
    always @((a && b) or posedge clk) begin
       if (a)
-	qb = 0;
+        qb = 0;
       else
-	qb = qb + 1;
+        qb = qb + 1;
    end
 
 endmodule
