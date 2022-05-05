@@ -1133,6 +1133,10 @@ class OrderProcess final : VNDeleter {
         return name;
     }
 
+    bool nodeIsInitial(const OrderLogicVertex* LVtxp) {
+        return LVtxp && (VN_IS(LVtxp->nodep(), Initial) || VN_IS(LVtxp->nodep(), InitialStatic));
+    }
+
     void nodeMarkCircular(OrderVarVertex* vertexp, OrderEdge* edgep) {
         // To be marked circular requires being a clock assigned in a delayed assignment, or
         // having a cutable in or out edge, none of which is true for the DPI export trigger.
@@ -1146,8 +1150,7 @@ class OrderProcess final : VNDeleter {
             toLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->top());
         }
         //
-        if ((fromLVtxp && VN_IS(fromLVtxp->nodep(), Initial))
-            || (toLVtxp && VN_IS(toLVtxp->nodep(), Initial))) {
+        if (nodeIsInitial(fromLVtxp) || nodeIsInitial(toLVtxp)) {
             // IEEE does not specify ordering between initial blocks, so we
             // can do whatever we want. We especially do not want to
             // evaluate multiple times, so do not mark the edge circular
