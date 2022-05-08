@@ -769,6 +769,9 @@ public:
 
 class ConstVisitor final : public VNVisitor {
 private:
+    // CONSTANTS
+    static constexpr unsigned CONCAT_MERGABLE_MAX_DEPTH = 10;  // Limit alg recursion
+
     // NODE STATE
     // ** only when m_warn/m_doExpensive is set.  If state is needed other times,
     // ** must track down everywhere V3Const is called and make sure no overlaps.
@@ -1420,11 +1423,12 @@ private:
         if (rend == rfromp->width() && lstart->toSInt() == 0) return true;
         return false;
     }
-    bool concatMergeable(const AstNode* lhsp, const AstNode* rhsp) {
+    bool concatMergeable(const AstNode* lhsp, const AstNode* rhsp, unsigned depth) {
         // determine if {a OP b, c OP d} => {a, c} OP {b, d} is advantageous
         if (!v3Global.opt.oAssemble()) return false;  // opt disabled
         if (lhsp->type() != rhsp->type()) return false;
         if (!ifConcatMergeableBiop(lhsp)) return false;
+        if (depth > CONCAT_MERGABLE_MAX_DEPTH) return false;  // As worse case O(n^2) algorithm
 
         const AstNodeBiop* const lp = VN_CAST(lhsp, NodeBiop);
         const AstNodeBiop* const rp = VN_CAST(rhsp, NodeBiop);
@@ -1434,11 +1438,12 @@ private:
         const bool rad = ifMergeAdjacent(lp->rhsp(), rp->rhsp());
         if (lad && rad) return true;
         // {a[] & b[]&c[], a[] & b[]&c[]}
-        if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
+        if (lad && concatMergeable(lp->rhsp(), rp->rhsp(), depth + 1)) return true;
         // {a[]&b[] & c[], a[]&b[] & c[]}
-        if (rad && concatMergeable(lp->lhsp(), rp->lhsp())) return true;
+        if (rad && concatMergeable(lp->lhsp(), rp->lhsp(), depth + 1)) return true;
         // {(a[]&b[])&(c[]&d[]), (a[]&b[])&(c[]&d[])}
-        if (concatMergeable(lp->lhsp(), rp->lhsp()) && concatMergeable(lp->rhsp(), rp->rhsp())) {
+        if (concatMergeable(lp->lhsp(), rp->lhsp(), depth + 1)
+            && concatMergeable(lp->rhsp(), rp->rhsp(), depth + 1)) {
             return true;
         }
         return false;
@@ -1698,7 +1703,7 @@ private:
         AstNode* const lrp = lp->rhsp()->cloneTree(false);
         AstNode* const rlp = rp->lhsp()->cloneTree(false);
         AstNode* const rrp = rp->rhsp()->cloneTree(false);
-        if (concatMergeable(lp, rp)) {
+        if (concatMergeable(lp, rp, 0)) {
             AstConcat* const newlp = new AstConcat(rlp->fileline(), llp, rlp);
             AstConcat* const newrp = new AstConcat(rrp->fileline(), lrp, rrp);
             // use the lhs to replace the parent concat
@@ -3368,7 +3373,7 @@ private:
     TREEOPV("AstConcat{$lhsp.isZero, $rhsp}",           "replaceExtend(nodep, nodep->rhsp())");
     // CONCAT(a[1],a[0]) -> a[1:0]
     TREEOPV("AstConcat{$lhsp.castSel, $rhsp.castSel, ifAdjacentSel(VN_AS($lhsp,,Sel),,VN_AS($rhsp,,Sel))}",  "replaceConcatSel(nodep)");
-    TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp)}", "replaceConcatMerge(nodep)");
+    TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp,,0)}", "replaceConcatMerge(nodep)");
     // Common two-level operations that can be simplified
     TREEOP ("AstAnd {$lhsp.castConst,matchAndCond(nodep)}", "DONE");
     TREEOP ("AstAnd {$lhsp.castConst, $rhsp.castOr, matchMaskedOr(nodep)}", "DONE");
