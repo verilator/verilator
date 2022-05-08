@@ -155,7 +155,7 @@ FileLine::FileLine(FileLine::EmptySecret) {
 }
 
 void FileLine::newContent() {
-    m_contentp = new VFileContent;
+    m_contentp = std::make_shared<VFileContent>();
     m_contentLineno = 1;
 }
 
