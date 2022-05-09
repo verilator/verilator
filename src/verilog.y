@@ -1134,7 +1134,8 @@ package_import_itemObj<strp>:   // IEEE: part of package_import_item
         ;
 
 package_export_declaration<nodep>: // IEEE: package_export_declaration
-                yEXPORT '*' yP_COLONCOLON '*' ';'       { $$ = new AstPackageExportStarStar($<fl>2); SYMP->exportStarStar($<scp>1); }
+                yEXPORT '*' yP_COLONCOLON '*' ';'
+                        { $$ = new AstPackageExportStarStar{$<fl>2}; SYMP->exportStarStar($<scp>1); }
         |       yEXPORT package_export_itemList ';'     { $$ = $2; }
         ;
 
@@ -1322,23 +1323,31 @@ port<nodep>:                    // ==IEEE: port
                         { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: virtual or generic interfaces"); }
         //
         //                      // IEEE: ansi_port_declaration, with [port_direction] removed
-        //                      //   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension } [ '=' constant_expression ]
+        //                      //   IEEE: [ net_port_header | interface_port_header ]
+        //                      //         port_identifier { unpacked_dimension } [ '=' constant_expression ]
         //                      //   IEEE: [ net_port_header | variable_port_header ] '.' port_identifier '(' [ expression ] ')'
-        //                      //   IEEE: [ variable_port_header ] port_identifier { variable_dimension } [ '=' constant_expression ]
+        //                      //   IEEE: [ variable_port_header ] port_identifier
+        //                      //              { variable_dimension } [ '=' constant_expression ]
         //                      //   Substitute net_port_header = [ port_direction ] net_port_type
         //                      //   Substitute variable_port_header = [ port_direction ] variable_port_type
         //                      //   Substitute net_port_type = [ net_type ] data_type_or_implicit
         //                      //   Substitute variable_port_type = var_data_type
         //                      //   Substitute var_data_type = data_type | yVAR data_type_or_implicit
-        //                      //     [ [ port_direction ] net_port_type | interface_port_header            ] port_identifier { unpacked_dimension }
-        //                      //     [ [ port_direction ] var_data_type                                    ] port_identifier variable_dimensionListE [ '=' constant_expression ]
-        //                      //     [ [ port_direction ] net_port_type | [ port_direction ] var_data_type ] '.' port_identifier '(' [ expression ] ')'
+        //                      //     [ [ port_direction ] net_port_type | interface_port_header]
+        //                      //              port_identifier { unpacked_dimension }
+        //                      //     [ [ port_direction ] var_data_type ]
+        //                      //              port_identifier variable_dimensionListE [ '=' constant_expression ]
+        //                      //     [ [ port_direction ] net_port_type | [ port_direction ] var_data_type ]
+        //                      //              '.' port_identifier '(' [ expression ] ')'
         //
         //                      // Remove optional '[...] id' is in portAssignment
         //                      // Remove optional '[port_direction]' is in port
-        //                      //     net_port_type | interface_port_header            port_identifier { unpacked_dimension }
-        //                      //     net_port_type | interface_port_header            port_identifier { unpacked_dimension }
-        //                      //     var_data_type                                    port_identifier variable_dimensionListE [ '=' constExpr ]
+        //                      //     net_port_type | interface_port_header
+        //                      //            port_identifier { unpacked_dimension }
+        //                      //     net_port_type | interface_port_header
+        //                      //            port_identifier { unpacked_dimension }
+        //                      //     var_data_type
+        //                      //            port_identifier variable_dimensionListE [ '=' constExpr ]
         //                      //     net_port_type | [ port_direction ] var_data_type '.' port_identifier '(' [ expr ] ')'
         //                      // Expand implicit_type
         //
@@ -1364,9 +1373,12 @@ port<nodep>:                    // ==IEEE: port
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
                         { $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
         |       portDirNetE signing             portSig variable_dimensionListE sigAttrListE
-                        { $$=$3; VARDTYPE_NDECL(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2)); $$->addNextNull(VARDONEP($$,$4,$5)); }
+                        { $$=$3; VARDTYPE_NDECL(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2));
+                          $$->addNextNull(VARDONEP($$, $4, $5)); }
         |       portDirNetE signingE rangeList  portSig variable_dimensionListE sigAttrListE
-                        { $$=$4; VARDTYPE_NDECL(GRAMMARP->addRange(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2), $3,true)); $$->addNextNull(VARDONEP($$,$5,$6)); }
+                        { $$=$4; VARDTYPE_NDECL(GRAMMARP->addRange(
+                                    new AstBasicDType{$3->fileline(), LOGIC_IMPLICIT, $2}, $3, true));
+                          $$->addNextNull(VARDONEP($$, $5, $6)); }
         |       portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE
                         { $$=$2; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); }
         //
@@ -1692,9 +1704,13 @@ net_dataTypeE<nodeDTypep>:
         //                      // Otherwise #(...) can't be determined to be a delay or parameters
         //                      // Submit this as a footnote to the committee
                 var_data_type                           { $$ = $1; }
-        |       signingE rangeList delayE               { $$ = GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC, $1),$2,true); }  // not implicit
-        |       signing                                 { $$ = new AstBasicDType($<fl>1, LOGIC, $1); }  // not implicit
-        |       /*implicit*/ delayE                     { $$ = new AstBasicDType(CRELINE(), LOGIC); }  // not implicit
+        |       signingE rangeList delayE
+                        { $$ = GRAMMARP->addRange(new AstBasicDType{$2->fileline(), LOGIC, $1},
+                                                                    $2, true); }  // not implicit
+        |       signing
+                        { $$ = new AstBasicDType{$<fl>1, LOGIC, $1}; }  // not implicit
+        |       /*implicit*/ delayE
+                        { $$ = new AstBasicDType{CRELINE(), LOGIC}; }  // not implicit
         ;
 
 net_type:                       // ==IEEE: net_type
@@ -1855,10 +1871,15 @@ data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
 
 data_typeNoRef<nodeDTypep>:             // ==IEEE: data_type, excluding class_type etc references
                 data_typeBasic                          { $$ = $1; }
-        |       struct_unionDecl packed_dimensionListE  { $$ = GRAMMARP->createArray(new AstDefImplicitDType($1->fileline(),"__typeimpsu"+cvtToStr(GRAMMARP->s_modTypeImpNum++),
-                                                                                                             SYMP,VFlagChildDType(),$1),$2,true); }
-        |       enumDecl                                { $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->s_modTypeImpNum++),
-                                                                                       SYMP,VFlagChildDType(),$1); }
+        |       struct_unionDecl packed_dimensionListE
+                        { $$ = GRAMMARP->createArray(
+                                   new AstDefImplicitDType{$1->fileline(),
+                                                           "__typeimpsu" + cvtToStr(GRAMMARP->s_modTypeImpNum++),
+                                                           SYMP, VFlagChildDType{}, $1}, $2, true); }
+        |       enumDecl
+                        { $$ = new AstDefImplicitDType{$1->fileline(),
+                                                       "__typeimpenum" + cvtToStr(GRAMMARP->s_modTypeImpNum++),
+                                                       SYMP, VFlagChildDType{}, $1}; }
         |       ySTRING                                 { $$ = new AstBasicDType($1,VBasicDTypeKwd::STRING); }
         |       yCHANDLE                                { $$ = new AstBasicDType($1,VBasicDTypeKwd::CHANDLE); }
         |       yEVENT                                  { $$ = new AstBasicDType($1,VBasicDTypeKwd::EVENTVALUE); }
@@ -1926,9 +1947,11 @@ list_of_member_decl_assignments<nodep>: // Derived from IEEE: list_of_variable_d
         ;
 
 member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assignment
-        //                      // At present we allow only packed structures/unions.  So this is different from variable_decl_assignment
+        //                      // At present we allow only packed structures/unions.
+        //                      // So this is different from variable_decl_assignment
                 id variable_dimensionListE
-                        { if ($2) $2->v3warn(UNPACKED, "Unsupported: Unpacked array in packed struct/union (struct/union converted to unpacked)");
+                        { if ($2) $2->v3warn(UNPACKED, "Unsupported: Unpacked array in packed struct/union"
+                                                       " (struct/union converted to unpacked)");
                           $$ = new AstMemberDType($<fl>1, *$1, VFlagChildDType(),
                                                   AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true));
                           PARSEP->tagNodep($$);
@@ -2046,19 +2069,25 @@ packedSigningE<signstate>:
 
 // IEEE: part of data_type
 enumDecl<nodeDTypep>:
-                yENUM enum_base_typeE '{' enum_nameList '}' { $$ = new AstEnumDType($1,VFlagChildDType(),$2,$4); }
+                yENUM enum_base_typeE '{' enum_nameList '}'
+                        { $$ = new AstEnumDType{$1, VFlagChildDType{}, $2, $4}; }
         ;
 
 enum_base_typeE<nodeDTypep>:    // IEEE: enum_base_type
-                /* empty */                             { $$ = new AstBasicDType(CRELINE(), VBasicDTypeKwd::INT); }
+                /* empty */
+                        { $$ = new AstBasicDType(CRELINE(), VBasicDTypeKwd::INT); }
         //                      // Not in spec, but obviously "enum [1:0]" should work
         //                      // implicit_type expanded, without empty
         //                      // Note enum base types are always packed data types
-        |       signingE rangeList                      { $$ = GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $1),$2,true); }
-        |       signing                                 { $$ = new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $1); }
+        |       signingE rangeList
+                        { $$ = GRAMMARP->addRange(new AstBasicDType{$2->fileline(), LOGIC_IMPLICIT, $1}, $2, true); }
+        |       signing
+                        { $$ = new AstBasicDType{$<fl>1, LOGIC_IMPLICIT, $1}; }
         //
-        |       integer_atom_type signingE              { $1->setSignedState($2); $$ = $1; }
-        |       integer_vector_type signingE rangeListE { $1->setSignedState($2); $$ = GRAMMARP->addRange($1,$3,true); }
+        |       integer_atom_type signingE
+                        { $1->setSignedState($2); $$ = $1; }
+        |       integer_vector_type signingE rangeListE
+                        { $1->setSignedState($2); $$ = GRAMMARP->addRange($1, $3, true); }
         //                      // below can be idAny or yaID__aTYPE
         //                      // IEEE requires a type, though no shift conflict if idAny
         //                      // IEEE: type_identifier [ packed_dimension ]
@@ -2076,13 +2105,17 @@ enum_nameList<nodep>:
         ;
 
 enum_name_declaration<nodep>:   // ==IEEE: enum_name_declaration
-                idAny/*enum_identifier*/ enumNameRangeE enumNameStartE  { $$ = new AstEnumItem($<fl>1, *$1, $2, $3); }
+                idAny/*enum_identifier*/ enumNameRangeE enumNameStartE
+                        { $$ = new AstEnumItem($<fl>1, *$1, $2, $3); }
         ;
 
 enumNameRangeE<nodep>:          // IEEE: second part of enum_name_declaration
-                /* empty */                             { $$ = nullptr; }
-        |       '[' intnumAsConst ']'                   { $$ = new AstRange($1, new AstConst($1, 0), new AstConst($1, $2->toSInt()-1)); }
-        |       '[' intnumAsConst ':' intnumAsConst ']' { $$ = new AstRange($1,$2,$4); }
+                /* empty */
+                        { $$ = nullptr; }
+        |       '[' intnumAsConst ']'
+                        { $$ = new AstRange{$1, new AstConst($1, 0), new AstConst($1, $2->toSInt() - 1)}; }
+        |       '[' intnumAsConst ':' intnumAsConst ']'
+                        { $$ = new AstRange{$1, $2, $4}; }
         ;
 
 enumNameStartE<nodep>:          // IEEE: third part of enum_name_declaration
@@ -2091,7 +2124,7 @@ enumNameStartE<nodep>:          // IEEE: third part of enum_name_declaration
         ;
 
 intnumAsConst<constp>:
-                yaINTNUM                                { $$ = new AstConst($<fl>1,*$1); }
+                yaINTNUM                                { $$ = new AstConst{$<fl>1, *$1}; }
         ;
 
 //************************************************
@@ -2122,12 +2155,14 @@ class_property<nodep>:          // ==IEEE: class_property, which is {property_qu
         ;
 
 data_declarationVar<varp>:      // IEEE: part of data_declaration
-        //                      // The first declaration has complications between assuming what's the type vs ID declaring
+        //                      // The first declaration has complications between assuming what's
+        //                      // the type vs ID declaring
                 data_declarationVarFront list_of_variable_decl_assignments ';'  { $$ = $2; }
         ;
 
 data_declarationVarClass<varp>: // IEEE: part of data_declaration (for class_property)
-        //                      // The first declaration has complications between assuming what's the type vs ID declaring
+        //                      // The first declaration has complications between assuming what's
+        //                      // the type vs ID declaring
                 data_declarationVarFrontClass list_of_variable_decl_assignments ';'     { $$ = $2; }
         ;
 
@@ -2174,8 +2209,9 @@ data_declarationVarFrontClass:  // IEEE: part of data_declaration (for class_pro
                 yVAR lifetimeE data_type        { VARRESET_NONLIST(VAR); VARLIFE($2); VARDTYPE($3); }
         |       yVAR lifetimeE                  { VARRESET_NONLIST(VAR); VARLIFE($2); }
         |       yVAR lifetimeE signingE rangeList
-                        { /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,true));
-                        VARLIFE($2); }
+                        { /*VARRESET-in-ddVar*/
+                          VARDTYPE(GRAMMARP->addRange(new AstBasicDType{$<fl>1, LOGIC_IMPLICIT, $3}, $4, true));
+                          VARLIFE($2); }
         //
         //                      // Expanded: "constE lifetimeE data_type"
         |       data_type                       { VARRESET_NONLIST(VAR); VARDTYPE($1); }
@@ -2193,9 +2229,12 @@ data_declarationVarFrontClass:  // IEEE: part of data_declaration (for class_pro
 
 implicit_typeE<nodeDTypep>:             // IEEE: part of *data_type_or_implicit
         //                      // Also expanded in data_declaration
-                /* empty */                             { $$ = nullptr; }
-        |       signingE rangeList                      { $$ = GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $1),$2,true); }
-        |       signing                                 { $$ = new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $1); }
+                /* empty */
+                        { $$ = nullptr; }
+        |       signingE rangeList
+                        { $$ = GRAMMARP->addRange(new AstBasicDType{$2->fileline(), LOGIC_IMPLICIT, $1}, $2, true); }
+        |       signing
+                        { $$ = new AstBasicDType{$<fl>1, LOGIC_IMPLICIT, $1}; }
         ;
 
 //UNSUPassertion_variable_declaration:  // IEEE: assertion_variable_declaration
@@ -2236,7 +2275,8 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         //                      // Alternative is use of idAny below, but this will cause conflicts with ablve
         |       yTYPEDEF idType ';'                     { $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2); }
         //                      // Combines into above "data_type id" rule
-        //                      // Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
+        //                      // Verilator: Not important what it is in the AST, just need
+        //                      // to make sure the yaID__aTYPE gets returned
         |       yTYPEDEF id ';'                         { $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2); }
         |       yTYPEDEF yENUM idAny ';'                { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
         |       yTYPEDEF ySTRUCT idAny ';'              { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
@@ -2313,7 +2353,8 @@ module_or_generate_item<nodep>: // ==IEEE: module_or_generate_item
         //                      // not here, see etcInst in module_common_item
         //                      // We joined udp & module definitions, so this goes here
         |       combinational_body                      { $$ = $1; }
-        //                      // This module_common_item shared with interface_or_generate_item:module_common_item
+        //                      // This module_common_item shared with
+        //                      // interface_or_generate_item:module_common_item
         |       module_common_item                      { $$ = $1; }
         ;
 
@@ -2372,8 +2413,10 @@ aliasEqList:                    // IEEE: part of net_alias
         ;
 
 bind_directive<nodep>:          // ==IEEE: bind_directive + bind_target_scope
-        //                      // ';' - Note IEEE grammar is wrong, includes extra ';' - it's already in module_instantiation
-        //                      // We merged the rules - id may be a bind_target_instance or module_identifier or interface_identifier
+        //                      // ';' - Note IEEE grammar is wrong, includes extra ';'
+        //                      // - it's already in module_instantiation
+        //                      // We merged the rules - id may be a bind_target_instance or
+        //                      // module_identifier or interface_identifier
                 yBIND bind_target_instance bind_instantiation   { $$ = new AstBind($<fl>2, *$2, $3); }
         |       yBIND bind_target_instance ':' bind_target_instance_list bind_instantiation
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: Bind with instance list"); }
@@ -2535,10 +2578,18 @@ genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
         |       varRefBase yP_SSRIGHTEQ expr            { $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
         //                      // inc_or_dec_operator
         // When support ++ as a real AST type, maybe AstWhile::precondsp() becomes generic AstNodeMathStmt?
-        |       yP_PLUSPLUS   varRefBase                { $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true), new AstConst($1, AstConst::StringToParse(), "'b1"))); }
-        |       yP_MINUSMINUS varRefBase                { $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true), new AstConst($1, AstConst::StringToParse(), "'b1"))); }
-        |       varRefBase yP_PLUSPLUS                  { $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true), new AstConst($2, AstConst::StringToParse(), "'b1"))); }
-        |       varRefBase yP_MINUSMINUS                { $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true), new AstConst($2, AstConst::StringToParse(), "'b1"))); }
+        |       yP_PLUSPLUS   varRefBase
+                        { $$ = new AstAssign{$1, $2, new AstAdd{$1, $2->cloneTree(true),
+                                                                new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
+        |       yP_MINUSMINUS varRefBase
+                        { $$ = new AstAssign{$1, $2, new AstSub{$1, $2->cloneTree(true),
+                                                                new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
+        |       varRefBase yP_PLUSPLUS
+                        { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTree(true),
+                                                                new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
+        |       varRefBase yP_MINUSMINUS
+                        { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTree(true),
+                                                                new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
         ;
 
 case_generate_itemListE<nodep>: // IEEE: [{ case_generate_itemList }]
@@ -2625,10 +2676,13 @@ netSigList<varp>:               // IEEE: list_of_port_identifiers
         ;
 
 netSig<varp>:                   // IEEE: net_decl_assignment -  one element from list_of_port_identifiers
-                netId sigAttrListE                      { $$ = VARDONEA($<fl>1,*$1, nullptr, $2); }
-        |       netId sigAttrListE '=' expr             { $$ = VARDONEA($<fl>1,*$1, nullptr, $2);
-                                                          $$->addNext(new AstAssignW($3, new AstVarRef($<fl>1, *$1, VAccess::WRITE), $4)); }
-        |       netId variable_dimensionList sigAttrListE       { $$ = VARDONEA($<fl>1,*$1, $2, $3); }
+                netId sigAttrListE
+                        { $$ = VARDONEA($<fl>1,*$1, nullptr, $2); }
+        |       netId sigAttrListE '=' expr
+                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
+                          $$->addNext(new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4}); }
+        |       netId variable_dimensionList sigAttrListE
+                        { $$ = VARDONEA($<fl>1,*$1, $2, $3); }
         ;
 
 netId<strp>:
@@ -2650,7 +2704,7 @@ sigAttr<nodep>:
                 yVL_CLOCKER                             { $$ = new AstAttrOf($1,VAttrType::VAR_CLOCKER); }
         |       yVL_NO_CLOCKER                          { $$ = new AstAttrOf($1,VAttrType::VAR_NO_CLOCKER); }
         |       yVL_CLOCK_ENABLE                        { $$ = new AstAttrOf($1,VAttrType::VAR_CLOCK_ENABLE); }
-        |       yVL_FORCEABLE                   { $$ = new AstAttrOf($1,VAttrType::VAR_FORCEABLE); }
+        |       yVL_FORCEABLE                           { $$ = new AstAttrOf($1,VAttrType::VAR_FORCEABLE); }
         |       yVL_PUBLIC                              { $$ = new AstAttrOf($1,VAttrType::VAR_PUBLIC); v3Global.dpi(true); }
         |       yVL_PUBLIC_FLAT                         { $$ = new AstAttrOf($1,VAttrType::VAR_PUBLIC_FLAT); v3Global.dpi(true); }
         |       yVL_PUBLIC_FLAT_RD                      { $$ = new AstAttrOf($1,VAttrType::VAR_PUBLIC_FLAT_RD); v3Global.dpi(true); }
@@ -2823,8 +2877,10 @@ instRangeList<nodeRangep>:
         ;
 
 instRange<nodeRangep>:
-                '[' constExpr ']'                       { $$ = new AstRange($1, new AstConst($1, 0), new AstSub($1, $2, new AstConst($1, 1))); }
-        |       '[' constExpr ':' constExpr ']'         { $$ = new AstRange($1,$2,$4); }
+                '[' constExpr ']'
+                        { $$ = new AstRange{$1, new AstConst{$1, 0}, new AstSub{$1, $2, new AstConst{$1, 1}}}; }
+        |       '[' constExpr ':' constExpr ']'
+                        { $$ = new AstRange{$1, $2, $4}; }
         ;
 
 cellparamList<pinp>:
@@ -2908,7 +2964,8 @@ event_control<senTreep>:        // ==IEEE: event_control
         |       '@' senitemVar                          { $$ = new AstSenTree($1,$2); } /* For events only */
         //                      // IEEE: sequence_instance
         //                      // sequence_instance without parens matches idClassSel above.
-        //                      // Ambiguity: "'@' sequence (-for-sequence" versus expr:delay_or_event_controlE "'@' id (-for-expr
+        //                      // Ambiguity: "'@' sequence (-for-sequence" versus
+        //                      // expr:delay_or_event_controlE "'@' id (-for-expr
         //                      // For now we avoid this, as it's very unlikely someone would mix
         //                      // 1995 delay with a sequence with parameters.
         //                      // Alternatively split this out of event_control, and delay_or_event_controlE
@@ -3226,15 +3283,16 @@ statement_item<nodep>:          // IEEE: statement_item
 
 statementFor<beginp>:           // IEEE: part of statement
                 yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
-                                                        { $$ = new AstBegin($1, "", $3, false, true);
-                                                          $$->addStmtsp(new AstWhile($1, $4,$8,$6)); }
+                        { $$ = new AstBegin{$1, "", $3, false, true};
+                          $$->addStmtsp(new AstWhile{$1, $4, $8, $6}); }
         |       yFOR '(' for_initialization ';' for_stepE ')' stmtBlock
-                                                        { $$ = new AstBegin($1, "", $3, false, true);
-                                                          $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::BitTrue()), $7, $5)); }
+                        { $$ = new AstBegin{$1, "", $3, false, true};
+                          $$->addStmtsp(new AstWhile{$1, new AstConst{$1, AstConst::BitTrue()}, $7, $5}); }
         ;
 
 statementVerilatorPragmas<nodep>:
-                yVL_COVERAGE_BLOCK_OFF                  { $$ = new AstPragma($1,VPragmaType::COVERAGE_BLOCK_OFF); }
+                yVL_COVERAGE_BLOCK_OFF
+                        { $$ = new AstPragma{$1, VPragmaType::COVERAGE_BLOCK_OFF}; }
         ;
 
 //UNSUPoperator_assignment<nodep>:  // IEEE: operator_assignment
@@ -3443,9 +3501,11 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         //UNSUP simple_type                             { $1->v3error("Unsupported: '{} with data type as key"); $$ = $1; }
         //                      // simple_type reference looks like constExpr
         //                      // Verilator:
-        //                      //   The above expressions cause problems because "foo" may be a constant identifier
-        //                      //   (if array) or a reference to the "foo"member (if structure)
-        //                      //   So for now we only allow a true constant number, or a identifier which we treat as a structure member name
+        //                      //   The above expressions cause problems because "foo" may be
+        //                      //   a constant identifier (if array) or a reference to the
+        //                      //   "foo"member (if structure)
+        //                      //   So for now we only allow a true constant number, or an
+        //                      //   identifier which we treat as a structure member name
                 yaINTNUM                                { $$ = new AstConst($<fl>1,*$1); }
         |       yaFLOATNUM                              { $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
         |       id                                      { $$ = new AstText($<fl>1,*$1); }
@@ -5490,7 +5550,8 @@ pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps j
         //                      // IEEE: "property_instance"
         //                      // Looks just like a function/method call
         //
-        //                      // Note "clocking_event pexpr" overlaps property_statement_spec: clocking_event property_statement
+        //                      // Note "clocking_event pexpr" overlaps
+        //                      // property_statement_spec: clocking_event property_statement
         //
         //                      // Include property_specDisable to match property_spec rule
         //UNSUP clocking_event yDISABLE yIFF '(' expr ')' pexpr %prec prSEQ_CLOCKING    { }
@@ -5519,7 +5580,8 @@ pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps j
 //UNSUP //
 //UNSUP //                      // IEEE: "sequence_instance [ sequence_abbrev ]"
 //UNSUP //                      // version without sequence_abbrev looks just like normal function call
-//UNSUP //                      // version w/sequence_abbrev matches above; expression_or_dist:expr:func boolean_abbrev:sequence_abbrev
+//UNSUP //                      // version w/sequence_abbrev matches above;
+//UNSUP //                      // expression_or_dist:expr:func boolean_abbrev:sequence_abbrev
 //UNSUP //
 //UNSUP //                      // IEEE: '(' expression_or_dist {',' sequence_match_item } ')' [ boolean_abbrev ]
 //UNSUP //                      // IEEE: '(' sexpr {',' sequence_match_item } ')' [ sequence_abbrev ]
@@ -6313,7 +6375,8 @@ solve_before_list<nodep>:  // ==IEEE: solve_before_list
         ;
 
 constraint_primary<nodep>:  // ==IEEE: constraint_primary
-        //                      // exprScope more general than: [ implicit_class_handle '.' | class_scope ] hierarchical_identifier select
+        //                      // exprScope more general than:
+        //                      // [ implicit_class_handle '.' | class_scope ] hierarchical_identifier select
                 exprScope                                       { $$ = $1; }
         ;
 
