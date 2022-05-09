@@ -758,7 +758,7 @@ void AstNode::deleteTree() {
 #ifdef VL_LEAK_CHECKS
 void* AstNode::operator new(size_t size) {
     // Optimization note: Aligning to cache line is a loss, due to lost packing
-    const AstNode* const objp = static_cast<AstNode*>(::operator new(size));
+    AstNode* const objp = static_cast<AstNode*>(::operator new(size));
     V3Broken::addNewed(objp);
     return objp;
 }
