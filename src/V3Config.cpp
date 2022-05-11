@@ -44,13 +44,8 @@ public:
 
     /// Update into maps from other
     void update(const V3ConfigWildcardResolver& other) {
-        typename Map::const_iterator it;
-        for (it = other.m_mapResolved.begin(); it != other.m_mapResolved.end(); ++it) {
-            m_mapResolved[it->first].update(it->second);
-        }
-        for (it = other.m_mapWildcard.begin(); it != other.m_mapWildcard.end(); ++it) {
-            m_mapWildcard[it->first].update(it->second);
-        }
+        for (const auto& itr : other.m_mapResolved) m_mapResolved[itr.first].update(itr.second);
+        for (const auto& itr : other.m_mapWildcard) m_mapWildcard[itr.first].update(itr.second);
     }
 
     // Access and create a (wildcard) entity
@@ -68,12 +63,12 @@ public:
         // Cannot be resolved, create if matched
 
         // Update this entity with all matches in the wildcards
-        for (it = m_mapWildcard.begin(); it != m_mapWildcard.end(); ++it) {
-            if (VString::wildmatch(name, it->first)) {
+        for (const auto& wildent : m_mapWildcard) {
+            if (VString::wildmatch(name, wildent.first)) {
                 if (!newp) {
                     newp = &m_mapResolved[name];  // Emplace and get pointer
                 }
-                newp->update(it->second);
+                newp->update(wildent.second);
             }
         }
         return newp;
@@ -198,8 +193,8 @@ public:
             AstNode* const nodep = new AstPragma(modp->fileline(), type);
             modp->addStmtp(nodep);
         }
-        for (auto it = m_modPragmas.cbegin(); it != m_modPragmas.cend(); ++it) {
-            AstNode* const nodep = new AstPragma(modp->fileline(), *it);
+        for (const auto& itr : m_modPragmas) {
+            AstNode* const nodep = new AstPragma{modp->fileline(), itr};
             modp->addStmtp(nodep);
         }
     }
@@ -354,13 +349,14 @@ class V3ConfigResolver final {
         m_profileData;  // Access to profile_data records
     FileLine* m_profileFileLine = nullptr;
 
-    static V3ConfigResolver s_singleton;  // Singleton (not via local static, as that's slow)
     V3ConfigResolver() = default;
     ~V3ConfigResolver() = default;
 
 public:
-    static V3ConfigResolver& s() { return s_singleton; }
-
+    static V3ConfigResolver& s() {
+        static V3ConfigResolver s_singleton;
+        return s_singleton;
+    }
     V3ConfigModuleResolver& modules() { return m_modules; }
     V3ConfigFileResolver& files() { return m_files; }
 
@@ -378,8 +374,6 @@ public:
     }
     FileLine* getProfileDataFileLine() const { return m_profileFileLine; }  // Maybe null
 };
-
-V3ConfigResolver V3ConfigResolver::s_singleton;
 
 //######################################################################
 // V3Config

@@ -37,15 +37,15 @@ public:
     static void addModulePragma(const string& module, VPragmaType pragma);
     static void addProfileData(FileLine* fl, const string& model, const string& key,
                                uint64_t cost);
-    static void addWaiver(V3ErrorCode code, const string& filename, const string& message);
     static void addVarAttr(FileLine* fl, const string& module, const string& ftask,
                            const string& signal, VAttrType type, AstSenTree* nodep);
+    static void addWaiver(V3ErrorCode code, const string& filename, const string& message);
 
     static void applyCase(AstCase* nodep);
     static void applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep);
+    static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyIgnores(FileLine* filelinep);
     static void applyModule(AstNodeModule* modulep);
-    static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
 
     static uint64_t getProfileData(const string& model, const string& key);

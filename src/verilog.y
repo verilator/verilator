@@ -6450,7 +6450,8 @@ colon<fl>:                      // Generic colon that isn't making a label (e.g.
 
 vltItem:
 
-                vltOffFront                     { V3Config::addIgnore($1, false, "*", 0, 0); }
+                vltOffFront
+                        { V3Config::addIgnore($1, false, "*", 0, 0); }
         |       vltOffFront yVLT_D_FILE yaSTRING
                         { V3Config::addIgnore($1, false, *$3, 0, 0); }
         |       vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
@@ -6463,7 +6464,8 @@ vltItem:
                           } else {
                               V3Config::addWaiver($1,*$3,*$5);
                           }}
-        |       vltOnFront                      { V3Config::addIgnore($1, true, "*", 0, 0); }
+        |       vltOnFront
+                        { V3Config::addIgnore($1, true, "*", 0, 0); }
         |       vltOnFront yVLT_D_FILE yaSTRING
                         { V3Config::addIgnore($1, true, *$3, 0, 0); }
         |       vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
