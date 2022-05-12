@@ -334,8 +334,13 @@ function(verilate TARGET)
 
   target_link_libraries(${TARGET} PUBLIC
     ${${VERILATE_PREFIX}_USER_LDLIBS}
-    "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:${VERILATOR_MT_CFLAGS}>"
   )
+
+  if (${VERILATE_PREFIX}_THREADS OR ${VERILATE_PREFIX}_TRACE_THREADS)
+    target_link_libraries(${TARGET} PUBLIC
+      ${VERILATOR_MT_CFLAGS}
+    )
+  endif()
 
   target_compile_features(${TARGET} PRIVATE cxx_std_11)
 endfunction()
