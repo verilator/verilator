@@ -1676,9 +1676,28 @@ The grammar of configuration commands is as follows:
 
 .. option:: tracing_off [-file "<filename>" [-lines <line> [ - <line> ]]]
 
-   Enable/disable waveform tracing for all future signals declared in the
-   specified filename (or wildcard with '\*' or '?', or all files if
-   omitted) and range of line numbers (or all lines if omitted).
+.. option:: tracing_on  [-scope "<scopename>" [-levels <levels> ]]
 
-   For tracing_off, instances below any module in the files/ranges
-   specified will also not be traced.
+.. option:: tracing_off [-scope "<scopename>" [-levels <levels> ]]
+
+   Enable/disable waveform tracing for all future signals declared in
+   all files.
+
+   With -file, enable/disable waveform tracing in the specified
+   filename (or wildcard with '\*' or '?'), and -line range of line
+   numbers (or all lines if omitted).
+
+   For tracing_off with -file, instances below any module in the
+   files/ranges specified will also not be traced.  To overcome this
+   feature, use tracing_on on the upper module declaration and on any
+   cells, or use the -scope flavor of the command.
+
+   With -scope enable/disable waveform tracing for the specified scope (or
+   wildcard with '\*' or '?'), and optional --levels number of levels
+   below.  These controls only take place after other file/line/module
+   based controls have indicated the signal should be traced.
+
+   With -levels (used with -scope), the number of levels below that
+   scope which the rule is to match, where 0 means all levels below, 1
+   the exact level as the provided scope, and 2 meaning an additional
+   level of children below the provided scope, etc.

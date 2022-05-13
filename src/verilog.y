@@ -366,12 +366,14 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_COST     "--cost"
 %token<fl>              yVLT_D_FILE     "--file"
 %token<fl>              yVLT_D_FUNCTION "--function"
+%token<fl>              yVLT_D_LEVELS   "--levels"
 %token<fl>              yVLT_D_LINES    "--lines"
 %token<fl>              yVLT_D_MATCH    "--match"
 %token<fl>              yVLT_D_MODEL    "--model"
 %token<fl>              yVLT_D_MODULE   "--module"
 %token<fl>              yVLT_D_MTASK    "--mtask"
 %token<fl>              yVLT_D_RULE     "--rule"
+%token<fl>              yVLT_D_SCOPE    "--scope"
 %token<fl>              yVLT_D_TASK     "--task"
 %token<fl>              yVLT_D_VAR      "--var"
 
@@ -6458,6 +6460,18 @@ vltItem:
                         { V3Config::addIgnore($1, false, *$3, $5->toUInt(), $5->toUInt()+1); }
         |       vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
                         { V3Config::addIgnore($1, false, *$3, $5->toUInt(), $7->toUInt()+1); }
+        |       vltOffFront yVLT_D_SCOPE yaSTRING
+                        { if ($1 != V3ErrorCode::I_TRACING) {
+                              $<fl>1->v3error("Argument -scope only supported for tracing_on/off");
+                          } else {
+                              V3Config::addScopeTraceOn(false, *$3, 0);
+                          }}
+        |       vltOffFront yVLT_D_SCOPE yaSTRING yVLT_D_LEVELS yaINTNUM
+                        { if ($1 != V3ErrorCode::I_TRACING) {
+                              $<fl>1->v3error("Argument -scope only supported for tracing_on/off_off");
+                          } else {
+                              V3Config::addScopeTraceOn(false, *$3, $5->toUInt());
+                          }}
         |       vltOffFront yVLT_D_FILE yaSTRING yVLT_D_MATCH yaSTRING
                         { if (($1 == V3ErrorCode::I_COVERAGE) || ($1 == V3ErrorCode::I_TRACING)) {
                               $<fl>1->v3error("Argument -match only supported for lint_off");
@@ -6472,6 +6486,18 @@ vltItem:
                         { V3Config::addIgnore($1, true, *$3, $5->toUInt(), $5->toUInt()+1); }
         |       vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
                         { V3Config::addIgnore($1, true, *$3, $5->toUInt(), $7->toUInt()+1); }
+        |       vltOnFront yVLT_D_SCOPE yaSTRING
+                        { if ($1 != V3ErrorCode::I_TRACING) {
+                              $<fl>1->v3error("Argument -scope only supported for tracing_on/off");
+                          } else {
+                              V3Config::addScopeTraceOn(true, *$3, 0);
+                          }}
+        |       vltOnFront yVLT_D_SCOPE yaSTRING yVLT_D_LEVELS yaINTNUM
+                        { if ($1 != V3ErrorCode::I_TRACING) {
+                              $<fl>1->v3error("Argument -scope only supported for tracing_on/off_off");
+                          } else {
+                              V3Config::addScopeTraceOn(true, *$3, $5->toUInt());
+                          }}
         |       vltVarAttrFront vltDModuleE vltDFTaskE vltVarAttrVarE attr_event_controlE
                         { V3Config::addVarAttr($<fl>1, *$2, *$3, *$4, $1, $5); }
         |       vltInlineFront vltDModuleE vltDFTaskE

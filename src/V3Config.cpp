@@ -340,11 +340,108 @@ public:
 using V3ConfigFileResolver = V3ConfigWildcardResolver<V3ConfigFile>;
 
 //######################################################################
+// ScopeTrace tracking
+
+class V3ConfigScopeTraceEntry final {
+public:
+    const string m_scope;  // Scope or regexp to match
+    const bool m_on = false;  // True to enable message
+    int m_levels = 0;  // # levels, 0 = all, 1 = only this, ...
+    // CONSTRUCTORS
+    V3ConfigScopeTraceEntry(const string& scope, bool on, int levels)
+        : m_scope{scope}
+        , m_on{on}
+        , m_levels{levels} {}
+    ~V3ConfigScopeTraceEntry() = default;
+    bool operator<(const V3ConfigScopeTraceEntry& other) const {
+        if (m_on < other.m_on) return true;
+        if (m_on > other.m_on) return false;
+        if (m_levels < other.m_levels) return true;
+        if (m_levels > other.m_levels) return false;
+        return m_scope < other.m_scope;
+    }
+};
+
+// Tracks what matches are known to hit against V3ConfigScopeTraceEntries
+class V3ConfigScopeTraceEntryMatch final {
+public:
+    const V3ConfigScopeTraceEntry* m_entryp;
+    const string m_scopepart;
+    V3ConfigScopeTraceEntryMatch(const V3ConfigScopeTraceEntry* entryp, const string& scopepart)
+        : m_entryp{entryp}
+        , m_scopepart{scopepart} {}
+    bool operator<(const V3ConfigScopeTraceEntryMatch& other) const {
+        if (m_entryp < other.m_entryp) return true;
+        if (m_entryp > other.m_entryp) return false;
+        return m_scopepart < other.m_scopepart;
+    }
+};
+
+class V3ConfigScopeTraceResolver final {
+    std::vector<V3ConfigScopeTraceEntry> m_entries;  // User specified on/offs and levels
+    std::map<V3ConfigScopeTraceEntryMatch, bool> m_matchCache;  // Matching entries for speed
+
+public:
+    void addScopeTraceOn(bool on, const string& scope, int levels) {
+        UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' "
+                                    << " levels=" << levels << endl);
+        m_entries.emplace_back(V3ConfigScopeTraceEntry{scope, on, levels});
+        m_matchCache.clear();
+    }
+
+    bool getEntryMatch(const V3ConfigScopeTraceEntry* entp, const string& scopepart) {
+        // Return if a entry matches the scopepart, with memoization
+        const auto& key = V3ConfigScopeTraceEntryMatch{entp, scopepart};
+        const auto& it = m_matchCache.find(key);
+        if (it != m_matchCache.end()) return it->second;  // Cached
+        const bool matched = VString::wildmatch(scopepart, entp->m_scope);
+        m_matchCache.emplace(key, matched);
+        return matched;
+    }
+
+    bool getScopeTraceOn(const string& scope) {
+        // Apply in the order the user provided them, so they can choose on/off preferencing
+        int maxLevel = 1;
+        for (const auto& ch : scope) {
+            if (ch == '.') ++maxLevel;
+        }
+        UINFO(9, "getScopeTraceOn " << scope << " maxLevel=" << maxLevel << endl);
+
+        bool enabled = true;
+        for (const auto& ent : m_entries) {
+            // We apply shortest match first for each rule component
+            // (Otherwise the levels would be useless as "--scope top* --levels 1" would
+            // always match at every scopepart, and we wound't know how to count levels)
+            int partLevel = 1;
+            for (string::size_type partEnd = 0; true;) {
+                partEnd = scope.find('.', partEnd + 1);
+                if (partEnd == string::npos) partEnd = scope.length();
+                const std::string scopepart = scope.substr(0, partEnd);
+                if (getEntryMatch(&ent, scopepart)) {
+                    const bool levelMatch
+                        = !ent.m_levels || (ent.m_levels >= maxLevel - partLevel);
+                    if (levelMatch) enabled = ent.m_on;
+                    UINFO(9, "getScopeTraceOn-part " << scope << " enabled=" << enabled
+                                                     << " @ lev=" << partLevel
+                                                     << (levelMatch ? "[match]" : "[miss]")
+                                                     << " from scopepart=" << scopepart << endl);
+                    break;
+                }
+                if (partEnd == scope.length()) break;
+                ++partLevel;
+            }
+        }
+        return enabled;
+    }
+};
+
+//######################################################################
 // Resolve modules and files in the design
 
 class V3ConfigResolver final {
     V3ConfigModuleResolver m_modules;  // Access to module names (with wildcards)
     V3ConfigFileResolver m_files;  // Access to file names (with wildcards)
+    V3ConfigScopeTraceResolver m_scopeTraces;  // Regexp to trace enables
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
     FileLine* m_profileFileLine = nullptr;
@@ -359,6 +456,7 @@ public:
     }
     V3ConfigModuleResolver& modules() { return m_modules; }
     V3ConfigFileResolver& files() { return m_files; }
+    V3ConfigScopeTraceResolver& scopeTraces() { return m_scopeTraces; }
 
     void addProfileData(FileLine* fl, const string& model, const string& key, uint64_t cost) {
         if (!m_profileFileLine) m_profileFileLine = fl;
@@ -426,6 +524,10 @@ void V3Config::addModulePragma(const string& module, VPragmaType pragma) {
 void V3Config::addProfileData(FileLine* fl, const string& model, const string& key,
                               uint64_t cost) {
     V3ConfigResolver::s().addProfileData(fl, model, key, cost);
+}
+
+void V3Config::addScopeTraceOn(bool on, const string& scope, int levels) {
+    V3ConfigResolver::s().scopeTraces().addScopeTraceOn(on, scope, levels);
 }
 
 void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftask,
@@ -533,6 +635,9 @@ uint64_t V3Config::getProfileData(const string& model, const string& key) {
 }
 FileLine* V3Config::getProfileDataFileLine() {
     return V3ConfigResolver::s().getProfileDataFileLine();
+}
+bool V3Config::getScopeTraceOn(const string& scope) {
+    return V3ConfigResolver::s().scopeTraces().getScopeTraceOn(scope);
 }
 
 bool V3Config::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
