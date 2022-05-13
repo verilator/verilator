@@ -40,7 +40,7 @@ public:
                    __LINE__, m_info.product);
         }
     }
-    ~TestSimulator() {}
+    ~TestSimulator() = default;
     // METHORS
 private:
     static TestSimulator& singleton() {
