@@ -47,7 +47,7 @@
 // A simple synchronized first in first out queue
 template <class T> class VerilatedThreadQueue final {  // LCOV_EXCL_LINE  // lcov bug
 private:
-    VerilatedMutex m_mutex;  // Protects m_queue
+    mutable VerilatedMutex m_mutex;  // Protects m_queue
     std::condition_variable_any m_cv;
     std::deque<T> m_queue VL_GUARDED_BY(m_mutex);
 
@@ -208,7 +208,7 @@ protected:
     //=========================================================================
     // Internals available to format specific implementations
 
-    VerilatedMutex m_mutex;  // Ensure dump() etc only called from single thread
+    mutable VerilatedMutex m_mutex;  // Ensure dump() etc only called from single thread
 
     uint32_t nextCode() const { return m_nextCode; }
     uint32_t numSignals() const { return m_numSignals; }

@@ -155,7 +155,7 @@ class VlExecutionProfiler final {
 
     // STATE
     static VL_THREAD_LOCAL ExecutionTrace t_trace;  // thread-local trace buffers
-    VerilatedMutex m_mutex;
+    mutable VerilatedMutex m_mutex;
     // Map from thread id to &t_trace of given thread
     std::map<uint32_t, ExecutionTrace*> m_traceps VL_GUARDED_BY(m_mutex);
 
