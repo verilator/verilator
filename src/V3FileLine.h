@@ -26,6 +26,7 @@
 #include <sstream>
 #include <bitset>
 #include <map>
+#include <memory>
 #include <set>
 #include <deque>
 
@@ -97,7 +98,7 @@ class FileLine final {
     int m_lastColumn = 0;  // `line corrected token's last column number
     int m_filenameno;  // `line corrected filename number
     int m_contentLineno = 0;  // Line number within source stream
-    VFileContent* m_contentp = nullptr;  // Source text contents line is within
+    std::shared_ptr<VFileContent> m_contentp = nullptr;  // Source text contents line is within
     FileLine* m_parent = nullptr;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
     bool m_waive = false;  // Waive warning
@@ -180,7 +181,7 @@ public:
     int firstColumn() const { return m_firstColumn; }
     int lastLineno() const { return m_lastLineno; }
     int lastColumn() const { return m_lastColumn; }
-    VFileContent* contentp() const { return m_contentp; }
+    std::shared_ptr<VFileContent> contentp() const { return m_contentp; }
     // If not otherwise more specific, use last lineno for errors etc,
     // as the parser errors etc generally make more sense pointing at the last parse point
     int lineno() const { return m_lastLineno; }
