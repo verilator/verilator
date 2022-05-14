@@ -217,7 +217,7 @@ or "`ifdef`"'s may break other tools.
    :option:`public_flat` signals.
 
    To force a marked signal from C++, set the corresponding `__VforceVal`
-   variable to the desired value, and the `__VforceEn` signal to the bitmask
+   variable to the desired value, and the `__VforceEn` signal to the bit-mask
    indicating which bits of the signal to force. To force all bits of the
    target signal, set `__VforceEn` to all ones. To release the signal (or part
    thereof), set appropriate bits of the `__VforceEn` signal to zero.

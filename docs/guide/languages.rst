@@ -343,7 +343,7 @@ Verilator supports the procedural `force` (and corresponding `release`)
 statement. The behavior of the `force` statement however does not entirely
 comply with the IEEE 1800 SystemVerilog standard. According to the standard,
 when a procedural statement of the form `force a = b;` is executed, the
-simulation should behave as if from that point onwards, a continuous
+simulation should behave as if from that point forwards, a continuous
 assignment `assign a = b;` have been added to override the drivers of `a`.
 More specifically: the value of `a` should be updated, whenever the value of
 `b` changes, all the way until a `release a;` statement is executed.
