@@ -317,7 +317,7 @@ public:
         iterate(nodep);
         m_graph.latchCheck(nodep, kwd == VAlwaysKwd::ALWAYS_LATCH);
     }
-    virtual ~ActiveLatchCheckVisitor() {}
+    virtual ~ActiveLatchCheckVisitor() = default;
 };
 
 //######################################################################

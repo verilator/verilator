@@ -25,9 +25,10 @@
 #include "verilated_trace_defs.h"  // For VLT_TRACE_SCOPE_*
 
 #include "V3Global.h"
-#include "V3TraceDecl.h"
+#include "V3Config.h"
 #include "V3EmitCBase.h"
 #include "V3Stats.h"
+#include "V3TraceDecl.h"
 
 #include <algorithm>
 #include <functional>
@@ -140,10 +141,13 @@ private:
             return "Verilator trace_off";
         } else if (!nodep->isTrace()) {
             return "Verilator instance trace_off";
-        } else if (!v3Global.opt.traceUnderscore()) {
+        } else {
             const string prettyName = varp->prettyName();
-            if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
-            if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
+            if (!v3Global.opt.traceUnderscore()) {
+                if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
+                if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
+            }
+            if (!V3Config::getScopeTraceOn(prettyName)) return "Vlt scope trace_off";
         }
         return nullptr;
     }
