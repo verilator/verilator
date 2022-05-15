@@ -382,15 +382,24 @@ private:
         return false;
     }
 
-    void addToList(AstNode* nodep, AstNode* condp, int line) {
+    bool addToList(AstNode* nodep, AstNode* condp, int line) {
         // Set up head of new list if node is first in list
         if (!m_mgFirstp) {
             UASSERT_OBJ(condp, nodep, "Cannot start new list without condition " << line);
+            // Mark variable references in the condition
+            condp->foreach<AstVarRef>([](const AstVarRef* nodep) { nodep->varp()->user1(1); });
+            // Now check again if mergeable. We need this to pick up assignments to conditions,
+            // e.g.: 'c = c ? a : b' at the beginning of the list, which is in fact not mergeable
+            // because it updates the condition. We simply bail on these.
+            if (m_checkMergeable(nodep) != Mergeable::YES) {
+                // Clear marked variables
+                AstNode::user1ClearTree();
+                // We did not add to the list
+                return false;
+            }
             m_mgFirstp = nodep;
             m_mgCondp = condp;
             m_listLenght = 0;
-            // Mark variable references in the condition
-            condp->foreach<AstVarRef>([](const AstVarRef* nodep) { nodep->varp()->user1(1); });
             // Add any preceding nodes to the list that would allow us to extend the merge range
             for (;;) {
                 AstNode* const backp = m_mgFirstp->backp();
@@ -416,6 +425,8 @@ private:
         m_mgNextp = nodep->nextp();
         // If last under parent, done with current list
         if (!m_mgNextp) mergeEnd(__LINE__);
+        // We did add to the list
+        return true;
     }
 
     // If this node is the next expected node and is helpful to add to the list, do so,
@@ -424,13 +435,10 @@ private:
         UASSERT_OBJ(m_mgFirstp, nodep, "List must be open");
         if (m_mgNextp == nodep) {
             if (isSimplifiableNode(nodep)) {
-                addToList(nodep, nullptr, __LINE__);
-                return true;
-            }
-            if (isCheapNode(nodep)) {
+                if (addToList(nodep, nullptr, __LINE__)) return true;
+            } else if (isCheapNode(nodep)) {
                 nodep->user2(1);
-                addToList(nodep, nullptr, __LINE__);
-                return true;
+                if (addToList(nodep, nullptr, __LINE__)) return true;
             }
         }
         // Not added to list, so we are done with the current list
