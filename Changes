@@ -248,7 +248,7 @@ Verilator 4.204 2021-06-12
 * Fix to emit 'else if' without nesting (#2944). [Geza Lore]
 * Fix part select issues in LATCH warning (#2948) (#2938). [Julien Margetts]
 * Fix to not emit empty files with low split limits (#2961). [Geza Lore]
-* Fix merging of assignments in C++ code (#2970). [Ruper Swarbrick]
+* Fix merging of assignments in C++ code (#2970). [Rupert Swarbrick]
 * Fix unused variable warnings (#2991). [Pieter Kapsenberg]
 * Fix --protect-ids when using SV classes (#2994). [Geza Lore]
 * Fix constant function calls with uninitialized value (#2995). [yanx21]
