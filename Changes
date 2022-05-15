@@ -14,6 +14,9 @@ Verilator 5.001 devel
 **Major:**
 
 * This is a major new release, currently only in alpha testing.
+* Fully support the Active and NBA scheduling regions as defined by the
+  SystemVerilog standard (IEEE 1800-2017 chapter 4). This means all generated
+  clocks are now simulated correctly (#3278, #3384). [Geza Lore, Shunyao CAD]
 
 
 Verilator 4.223 devel

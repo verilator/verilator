@@ -163,7 +163,7 @@ module Vt_debug_emitv_t;
             $display("stmt");
         end
     end
-    always @([any] in) begin
+    always @([changed] in) begin
         begin
             $display("stmt");
         end

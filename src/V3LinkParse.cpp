@@ -305,7 +305,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrClockEn(true);
+            nodep->v3warn(DEPRECATED, "'clock_enable' attribute is deprecated and has no effect");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_FORCEABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");

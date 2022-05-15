@@ -934,7 +934,8 @@ public:
     }
     bool isBitLogic() const { return keyword().isBitLogic(); }
     bool isDouble() const { return keyword().isDouble(); }
-    bool isEventValue() const { return keyword().isEventValue(); }
+    bool isEvent() const { return keyword() == VBasicDTypeKwd::EVENT; }
+    bool isTriggerVec() const { return keyword() == VBasicDTypeKwd::TRIGGERVEC; }
     bool isOpaque() const { return keyword().isOpaque(); }
     bool isString() const { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
@@ -1979,7 +1980,6 @@ private:
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_funcLocal : 1;  // Local variable for a function
     bool m_funcReturn : 1;  // Return variable for a function
-    bool m_attrClockEn : 1;  // User clock enable attribute
     bool m_attrScBv : 1;  // User force bit vector attribute
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_attrSFormat : 1;  // User sformat attribute
@@ -2019,7 +2019,6 @@ private:
         m_sigUserRWPublic = false;
         m_funcLocal = false;
         m_funcReturn = false;
-        m_attrClockEn = false;
         m_attrScBv = false;
         m_attrIsolateAssign = false;
         m_attrSFormat = false;
@@ -2157,7 +2156,6 @@ public:
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
-    void attrClockEn(bool flag) { m_attrClockEn = flag; }
     void attrClocker(VVarAttrClocker flag) { m_attrClocker = flag; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScClocked(bool flag) { m_scClocked = flag; }
@@ -2262,7 +2260,6 @@ public:
     bool isFuncReturn() const { return m_funcReturn; }
     bool isPullup() const { return m_isPullup; }
     bool isPulldown() const { return m_isPulldown; }
-    bool attrClockEn() const { return m_attrClockEn; }
     bool attrScBv() const { return m_attrScBv; }
     bool attrFileDescr() const { return m_fileDescr; }
     bool attrScClocked() const { return m_scClocked; }
@@ -2276,14 +2273,13 @@ public:
     void propagateAttrFrom(AstVar* fromp) {
         // This is getting connected to fromp; keep attributes
         // Note the method below too
-        if (fromp->attrClockEn()) attrClockEn(true);
         if (fromp->attrFileDescr()) attrFileDescr(true);
         if (fromp->attrIsolateAssign()) attrIsolateAssign(true);
         if (fromp->isContinuously()) isContinuously(true);
     }
     bool gateMultiInputOptimizable() const {
         // Ok to gate optimize; must return false if propagateAttrFrom would do anything
-        return (!attrClockEn() && !isUsedClock());
+        return !isUsedClock();
     }
     void combineType(AstVar* typevarp) {
         // This is same as typevarp (for combining input & reg decls)
@@ -2372,15 +2368,20 @@ public:
     string nameDotless() const;
     string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
     AstNodeModule* modp() const { return m_modp; }
+    // op1: AstVarScope's
+    AstVarScope* varsp() const { return VN_AS(op1p(), VarScope); }
     void addVarp(AstVarScope* nodep) { addOp1p((AstNode*)nodep); }
-    AstVarScope* varsp() const { return VN_AS(op1p(), VarScope); }  // op1 = AstVarScope's
+    // op2: Logic blocks/AstActive/AstExecGraph
+    AstNode* blocksp() const { return op2p(); }
     void addActivep(AstNode* nodep) { addOp2p(nodep); }
-    AstNode* blocksp() const { return op2p(); }  // op2 = Block names
-    void addFinalClkp(AstNode* nodep) { addOp3p(nodep); }
-    AstNode* finalClksp() const { return op3p(); }  // op3 = Final assigns for clock correction
+    //
     AstScope* aboveScopep() const { return m_aboveScopep; }
     AstCell* aboveCellp() const { return m_aboveCellp; }
     bool isTop() const { return aboveScopep() == nullptr; }  // At top of hierarchy
+    // Create new MODULETEMP variable under this scope
+    AstVarScope* createTemp(const string& name, unsigned width);
+    AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
+    AstVarScope* createTempLike(const string& name, AstVarScope* vscp);
 };
 
 class AstTopScope final : public AstNode {
@@ -3317,15 +3318,16 @@ class AstSenItem final : public AstNode {
 private:
     VEdgeType m_edgeType;  // Edge type
 public:
-    class Combo {};  // for creator type-overload selection
-    class Illegal {};  // for creator type-overload selection
-    class Initial {};  // for creator type-overload selection
-    class Settle {};  // for creator type-overload selection
-    class Never {};  // for creator type-overload selection
-    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNode* varrefp)
+    class Combo {};  // for constructor type-overload selection
+    class Illegal {};  // for constructor type-overload selection
+    class Static {};  // for constructor type-overload selection
+    class Initial {};  // for constructor type-overload selection
+    class Final {};  // for constructor type-overload selection
+    class Never {};  // for constructor type-overload selection
+    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNode* senp)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{edgeType} {
-        setOp1p(varrefp);
+        setOp1p(senp);
     }
     AstSenItem(FileLine* fl, Combo)
         : ASTGEN_SUPER_SenItem(fl)
@@ -3333,12 +3335,15 @@ public:
     AstSenItem(FileLine* fl, Illegal)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_ILLEGAL} {}
+    AstSenItem(FileLine* fl, Static)
+        : ASTGEN_SUPER_SenItem(fl)
+        , m_edgeType{VEdgeType::ET_STATIC} {}
     AstSenItem(FileLine* fl, Initial)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_INITIAL} {}
-    AstSenItem(FileLine* fl, Settle)
+    AstSenItem(FileLine* fl, Final)
         : ASTGEN_SUPER_SenItem(fl)
-        , m_edgeType{VEdgeType::ET_SETTLE} {}
+        , m_edgeType{VEdgeType::ET_FINAL} {}
     AstSenItem(FileLine* fl, Never)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_NEVER} {}
@@ -3347,23 +3352,23 @@ public:
     virtual bool same(const AstNode* samep) const override {
         return edgeType() == static_cast<const AstSenItem*>(samep)->edgeType();
     }
-    VEdgeType edgeType() const { return m_edgeType; }  // * = Posedge/negedge
+    VEdgeType edgeType() const { return m_edgeType; }
     void edgeType(VEdgeType type) {
         m_edgeType = type;
         editCountInc();
-    }  // * = Posedge/negedge
-    AstNode* sensp() const { return op1p(); }  // op1 = Signal sensitized
-    AstNodeVarRef* varrefp() const {
-        return VN_CAST(op1p(), NodeVarRef);
-    }  // op1 = Signal sensitized
+    }
+    // op1 = Expression sensitized, if any
+    AstNode* sensp() const { return op1p(); }
+    AstNodeVarRef* varrefp() const { return VN_CAST(op1p(), NodeVarRef); }
     //
     bool isClocked() const { return edgeType().clockedStmt(); }
     bool isCombo() const { return edgeType() == VEdgeType::ET_COMBO; }
+    bool isHybrid() const { return edgeType() == VEdgeType::ET_HYBRID; }
+    bool isStatic() const { return edgeType() == VEdgeType::ET_STATIC; }
     bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }
+    bool isFinal() const { return edgeType() == VEdgeType::ET_FINAL; }
     bool isIllegal() const { return edgeType() == VEdgeType::ET_ILLEGAL; }
-    bool isSettle() const { return edgeType() == VEdgeType::ET_SETTLE; }
     bool isNever() const { return edgeType() == VEdgeType::ET_NEVER; }
-    bool hasVar() const { return !(isCombo() || isInitial() || isSettle() || isNever()); }
 };
 
 class AstSenTree final : public AstNode {
@@ -3387,9 +3392,11 @@ public:
     void multi(bool flag) { m_multi = true; }
     // METHODS
     bool hasClocked() const;  // Includes a clocked statement
-    bool hasSettle() const;  // Includes a SETTLE SenItem
+    bool hasStatic() const;  // Includes a STATIC SenItem
     bool hasInitial() const;  // Includes a INITIAL SenItem
+    bool hasFinal() const;  // Includes a FINAL SenItem
     bool hasCombo() const;  // Includes a COMBO SenItem
+    bool hasHybrid() const;  // Includes a HYBRID SenItem
 };
 
 class AstFinal final : public AstNodeProcedure {
@@ -3592,6 +3599,20 @@ public:
     }
     ASTNODE_NODE_FUNCS(Release);
     AstNode* lhsp() const { return op1p(); }
+};
+
+class AstFireEvent final : public AstNodeStmt {
+    // '-> _' and '->> _' event trigger statements
+    bool m_delayed;  // Delayed (->>) vs non-delayed (->)
+public:
+    AstFireEvent(FileLine* fl, AstNode* operandp, bool delayed)
+        : ASTGEN_SUPER_FireEvent(fl)
+        , m_delayed{delayed} {
+        setOp1p(operandp);
+    }
+    ASTNODE_NODE_FUNCS(FireEvent);
+    AstNode* operandp() const { return op1p(); }
+    bool isDeleyed() const { return m_delayed; }
 };
 
 class AstAssignPre final : public AstNodeAssign {
@@ -4827,24 +4848,6 @@ public:
     AstJumpLabel* labelp() const { return m_labelp; }
 };
 
-class AstChangeDet final : public AstNodeStmt {
-    // A comparison to determine change detection, common & must be fast.
-public:
-    // Null lhs+rhs used to indicate change needed with no spec vars
-    AstChangeDet(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER_ChangeDet(fl) {
-        setNOp1p(lhsp);
-        setNOp2p(rhsp);
-    }
-    ASTNODE_NODE_FUNCS(ChangeDet)
-    AstNode* lhsp() const { return op1p(); }
-    AstNode* rhsp() const { return op2p(); }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() * 2; }  // xor, or/logor
-    virtual bool same(const AstNode* samep) const override { return true; }
-};
-
 class AstConsAssoc final : public AstNodeMath {
     // Construct an assoc array and return object, '{}
     // Parents: math
@@ -5429,10 +5432,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_sensesp->clonep()) {
-            m_sensesp = m_sensesp->clonep();
-            UASSERT(m_sensesp, "Bad clone cross link: " << this);
-        }
+        if (m_sensesp->clonep()) m_sensesp = m_sensesp->clonep();
     }
     // Statements are broken into pieces, as some must come before others.
     void sensesp(AstSenTree* nodep) { m_sensesp = nodep; }
@@ -5440,13 +5440,12 @@ public:
     // op1 = Sensitivity tree, if a clocked block in early stages
     void sensesStorep(AstSenTree* nodep) { addOp1p(nodep); }
     AstSenTree* sensesStorep() const { return VN_AS(op1p(), SenTree); }
-    // op2 = Combo logic
+    // op2 = Logic
     AstNode* stmtsp() const { return op2p(); }
     void addStmtsp(AstNode* nodep) { addOp2p(nodep); }
     // METHODS
-    bool hasInitial() const { return m_sensesp->hasInitial(); }
-    bool hasSettle() const { return m_sensesp->hasSettle(); }
     bool hasClocked() const { return m_sensesp->hasClocked(); }
+    bool hasCombo() const { return m_sensesp->hasCombo(); }
 };
 
 class AstAttrOf final : public AstNode {
@@ -8884,7 +8883,6 @@ private:
     bool m_isTrace : 1;  // Function is related to tracing
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
     bool m_declPrivate : 1;  // Declare it private
-    bool m_isFinal : 1;  // This is a function corresponding to a SystemVerilog 'final' block
     bool m_slow : 1;  // Slow routine, called once or just at init time
     bool m_funcPublic : 1;  // From user public task/function
     bool m_isConstructor : 1;  // Is C class constructor
@@ -8913,7 +8911,6 @@ public:
         m_isTrace = false;
         m_dontCombine = false;
         m_declPrivate = false;
-        m_isFinal = false;
         m_slow = false;
         m_funcPublic = false;
         m_isConstructor = false;
@@ -8971,8 +8968,6 @@ public:
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
     void declPrivate(bool flag) { m_declPrivate = flag; }
-    bool isFinal() const { return m_isFinal; }
-    void isFinal(bool flag) { m_isFinal = flag; }
     bool slow() const { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool funcPublic() const { return m_funcPublic; }
@@ -9332,11 +9327,11 @@ private:
     AstConstPool* const m_constPoolp;  // Reference to constant pool, for faster lookup
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
+    AstCFunc* m_evalNbap = nullptr;  // The '_eval__nba' function
     AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
     AstTopScope* m_topScopep = nullptr;  // The singleton AstTopScope under the top module
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
-    bool m_changeRequest = false;  // Have _change_request method
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nextFreeMTaskID = 1;  // Next unique MTask ID within netlist
                                      // starts at 1 so 0 means no MTask ID
@@ -9367,8 +9362,6 @@ public:
     void addFilesp(AstNodeFile* filep) { addOp2p(filep); }
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
-    void changeRequest(bool specified) { m_changeRequest = specified; }
-    bool changeRequest() const { return m_changeRequest; }
     AstConstPool* constPoolp() { return m_constPoolp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp() {
@@ -9382,8 +9375,11 @@ public:
         }
         return m_dollarUnitPkgp;
     }
+
     AstCFunc* evalp() const { return m_evalp; }
-    void evalp(AstCFunc* evalp) { m_evalp = evalp; }
+    void evalp(AstCFunc* funcp) { m_evalp = funcp; }
+    AstCFunc* evalNbap() const { return m_evalNbap; }
+    void evalNbap(AstCFunc* funcp) { m_evalNbap = funcp; }
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstTopScope* topScopep() const { return m_topScopep; }

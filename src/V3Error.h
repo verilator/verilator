@@ -75,7 +75,7 @@ public:
         CASEX,          // Casex
         CASTCONST,      // Cast is constant
         CDCRSTLOGIC,    // Logic in async reset path
-        CLKDATA,        // Clock used as data
+        CLKDATA,        // Clock used as data. Historical, never issued.
         CMPCONST,       // Comparison is constant due to limited range
         COLONPLUS,      // :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
@@ -85,11 +85,11 @@ public:
         DEPRECATED,     // Feature will be deprecated
         ENDLABEL,       // End lable name mismatch
         EOFNEWLINE,     // End-of-file missing newline
-        GENCLK,         // Generated Clock
+        GENCLK,         // Generated Clock. Historical, never issued.
         HIERBLOCK,      // Ignored hierarchical block setting
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
-        IMPERFECTSCH,   // Imperfect schedule (disabled by default)
+        IMPERFECTSCH,   // Imperfect schedule (disabled by default). Historical, never issued.
         IMPLICIT,       // Implicit wire
         IMPORTSTAR,     // Import::* in $unit
         IMPURE,         // Impure function not being inlined
@@ -124,7 +124,7 @@ public:
         TICKCOUNT,      // Too large tick count
         TIMESCALEMOD,   // Need timescale for module
         UNDRIVEN,       // No drivers
-        UNOPT,          // Unoptimizable block
+        UNOPT,          // Unoptimizable block. Historical, never issued.
         UNOPTFLAT,      // Unoptimizable block after flattening
         UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
         UNPACKED,       // Unsupported unpacked

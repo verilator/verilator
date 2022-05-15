@@ -92,6 +92,13 @@ private:
             iterateAndNextNull(nodep->lhsp());
         }
     }
+    virtual void visit(AstFireEvent* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        {
+            m_setRefLvalue = VAccess::WRITE;
+            iterateAndNextNull(nodep->operandp());
+        }
+    }
     virtual void visit(AstCastDynamic* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {

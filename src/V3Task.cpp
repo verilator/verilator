@@ -1056,17 +1056,18 @@ private:
     }
 
     AstVarScope* makeDpiExporTrigger() {
-        AstVarScope* dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp();
+        AstNetlist* const netlistp = v3Global.rootp();
+        AstVarScope* dpiExportTriggerp = netlistp->dpiExportTriggerp();
         if (!dpiExportTriggerp) {
             // Create the global DPI export trigger flag the first time we encounter a DPI export.
             // This flag is set any time a DPI export is invoked, and cleared at the end of eval.
             FileLine* const fl = m_topScopep->fileline();
-            AstVar* const varp
-                = new AstVar{fl, VVarType::VAR, "__Vdpi_export_trigger", VFlagBitPacked{}, 1};
+            const string name{"__Vdpi_export_trigger"};
+            AstVar* const varp = new AstVar{fl, VVarType::VAR, name, VFlagBitPacked{}, 1};
             m_topScopep->scopep()->modp()->addStmtp(varp);
             dpiExportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
             m_topScopep->scopep()->addVarp(dpiExportTriggerp);
-            v3Global.rootp()->dpiExportTriggerp(dpiExportTriggerp);
+            netlistp->dpiExportTriggerp(dpiExportTriggerp);
         }
         return dpiExportTriggerp;
     }
@@ -1309,7 +1310,7 @@ private:
                 AstAlways* const alwaysp = new AstAlways{
                     fl, VAlwaysKwd::ALWAYS,
                     new AstSenTree{
-                        fl, new AstSenItem{fl, VEdgeType::ET_HIGHEDGE,
+                        fl, new AstSenItem{fl, VEdgeType::ET_DPIEXPORT,
                                            new AstVarRef{fl, dpiExportTriggerp, VAccess::READ}}},
                     nullptr};
                 for (AstVarScope* const varScopep : writtenps) {

@@ -52,10 +52,8 @@ module t_clk (/*AUTOARG*/
    // verilator lint_on MULTIDRIVEN
    reg [7:0] int_clocks_copy;
 
-   // verilator lint_off GENCLK
    reg       internal_clk; initial internal_clk = 0;
    reg       reset_int_;
-   // verilator lint_on GENCLK
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -170,9 +168,7 @@ module t_clk_two (/*AUTOARG*/
    );
    input fastclk;
    input reset_l;
-   // verilator lint_off GENCLK
    reg clk2;
-   // verilator lint_on GENCLK
    reg [31:0] count;
 
    t_clk_twob tb (.*);

@@ -372,6 +372,7 @@ class EmitCImp final : EmitCFunc {
                             // lower level subinst code does it.
                         } else if (varp->isParam()) {
                         } else if (varp->isStatic() && varp->isConst()) {
+                        } else if (varp->basicp() && varp->basicp()->isTriggerVec()) {
                         } else {
                             int vects = 0;
                             AstNodeDType* elementp = varp->dtypeSkipRefp();

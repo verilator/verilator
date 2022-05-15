@@ -33,49 +33,44 @@ module t(/*AUTOARG*/
 
    always @(e2) begin
       `WRITE_VERBOSE(("[%0t] e2\n", $time));
+      if (!e2.triggered) $stop;
       last_event[2] = 1;
    end
 
    always @(posedge clk) begin
       `WRITE_VERBOSE(("[%0t] cyc=%0d last_event=%5b\n", $time, cyc, last_event));
       cyc <= cyc + 1;
-      if (cyc == 1) begin
-         // Check no initial trigger
-         if (last_event != 0) $stop;
-      end
-      //
-      else if (cyc == 10) begin
-         last_event = 0;
-         -> e1;
-      end
-      else if (cyc == 12) begin
-         if (last_event != 32'b10) $stop;
-         last_event = 0;
-      end
-      else if (cyc == 13) begin
-         // Check not still triggering
-         if (last_event != 0) $stop;
-         last_event = 0;
-      end
-      //
-      else if (cyc == 10) begin
-         last_event = 0;
-         ->> e2;
-      end
-      else if (cyc == 12) begin
-         if (last_event != 32'b100) $stop;
-         last_event = 0;
-      end
-      else if (cyc == 13) begin
-         // Check not still triggering
-         if (last_event != 0) $stop;
-         last_event = 0;
-      end
-      //
-      else if (cyc == 99) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
+      case (cyc)
+         default: begin
+            // Check no initial or spurious trigger
+            if (last_event != 0) $stop;
+         end
+         //
+         10: begin
+            if (last_event != 0) $stop;
+            -> e1;
+            if (!e1.triggered) $stop;
+         end
+         11: begin
+            if (last_event != 32'b10) $stop;
+            last_event = 0;
+         end
+         //
+         13: begin
+            if (last_event != 0) $stop;
+            ->> e2;
+            if (e2.triggered) $stop;
+         end
+         14: begin
+            if (last_event != 32'b100) $stop;
+            last_event = 0;
+         end
+         //
+         99: begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
+      endcase
    end
 
 endmodule

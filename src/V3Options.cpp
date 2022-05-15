@@ -1192,7 +1192,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         }
     });
     DECL_OPTION("-o", Set, &m_exeName);
-    DECL_OPTION("-order-clock-delay", OnOff, &m_orderClockDly);
+    DECL_OPTION("-order-clock-delay", CbOnOff, [fl](bool flag) {
+        fl->v3warn(DEPRECATED, "Option order-clock-delay is deprecated and has no effect.");
+    });
     DECL_OPTION("-output-split", Set, &m_outputSplit);
     DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {
         m_outputSplitCFuncs = std::atoi(valp);

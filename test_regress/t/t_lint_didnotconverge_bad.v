@@ -9,7 +9,7 @@ module t (/*AUTOARG*/
    a, b
    );
 
-   // verilator lint_off UNOPT
+   // verilator lint_off UNOPTFLAT
 
    output logic a, b;
 

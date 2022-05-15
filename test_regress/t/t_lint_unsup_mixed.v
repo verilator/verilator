@@ -31,4 +31,6 @@ module t
         qb = qb + 1;
    end
 
+   always @(posedge clk) $display("%d", qb); // So qb is not optimized away
+
 endmodule

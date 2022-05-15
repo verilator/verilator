@@ -29,7 +29,6 @@
 #include "V3Case.h"
 #include "V3Cast.h"
 #include "V3Cdc.h"
-#include "V3Changed.h"
 #include "V3Class.h"
 #include "V3Clean.h"
 #include "V3Clock.h"
@@ -53,7 +52,6 @@
 #include "V3File.h"
 #include "V3Force.h"
 #include "V3Gate.h"
-#include "V3GenClk.h"
 #include "V3Graph.h"
 #include "V3HierBlock.h"
 #include "V3Inline.h"
@@ -70,7 +68,6 @@
 #include "V3Localize.h"
 #include "V3MergeCond.h"
 #include "V3Name.h"
-#include "V3Order.h"
 #include "V3Os.h"
 #include "V3Param.h"
 #include "V3ParseSym.h"
@@ -80,6 +77,7 @@
 #include "V3ProtectLib.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
+#include "V3Sched.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
 #include "V3Slice.h"
@@ -376,11 +374,8 @@ static void process() {
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
 
-        // Order the code; form SBLOCKs and BLOCKCALLs
-        V3Order::orderAll(v3Global.rootp());
-
-        // Change generated clocks to look at delayed signals
-        V3GenClk::genClkAll(v3Global.rootp());
+        // Schedule the logic
+        V3Sched::schedule(v3Global.rootp());
 
         // Convert sense lists into IF statements.
         V3Clock::clockAll(v3Global.rootp());
@@ -392,14 +387,12 @@ static void process() {
             V3Const::constifyAll(v3Global.rootp());
             V3Life::lifeAll(v3Global.rootp());
         }
+
         if (v3Global.opt.oLifePost()) V3LifePost::lifepostAll(v3Global.rootp());
 
         // Remove unused vars
         V3Const::constifyAll(v3Global.rootp());
         V3Dead::deadifyAllScoped(v3Global.rootp());
-
-        // Detect change loop
-        V3Changed::changedAll(v3Global.rootp());
 
         // Create tracing logic, since we ripped out some signals the user might want to trace
         // Note past this point, we presume traced variables won't move between CFuncs

@@ -206,7 +206,6 @@ class EmitXmlFileVisitor final : public VNVisitor {
         } else if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_NO) {
             puts(" clocker=\"false\"");
         }
-        if (nodep->attrClockEn()) puts(" clock_enable=\"true\"");
         if (nodep->attrIsolateAssign()) puts(" isolate_assignments=\"true\"");
         if (nodep->isLatched()) puts(" latched=\"true\"");
         if (nodep->isSigPublic()) puts(" public=\"true\"");

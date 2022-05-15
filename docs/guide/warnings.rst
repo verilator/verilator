@@ -5,6 +5,7 @@
 Errors and Warnings
 *******************
 
+.. _Disabling Warnings:
 
 Disabling Warnings
 ==================
@@ -313,20 +314,6 @@ List Of Warnings
    potential for reset glitches.
 
 
-.. option:: CLKDATA
-
-   .. TODO better example
-
-   Warns that clock signal is mixed used with/as data signal. The checking
-   for this warning is enabled only if user has explicitly marked some
-   signal as clocker using command line option or in-source meta comment
-   (see :vlopt:`--clk`).
-
-   The warning can be disabled without affecting the simulation result. But
-   it is recommended to check the warning as this may degrade the
-   performance of the Verilated model.
-
-
 .. option:: CMPCONST
 
    .. TODO better example
@@ -492,7 +479,7 @@ List Of Warnings
    passing. Thus to prevent an infinite loop, the Verilated executable
    gives the DIDNOTCONVERGE error.
 
-   To debug this, first review any UNOPT or UNOPTFLAT warnings that were
+   To debug this, first review any UNOPTFLAT warnings that were
    ignored.  Though typically it is safe to ignore UNOPTFLAT (at a
    performance cost), at the time of issuing a UNOPTFLAT Verilator did not
    know if the logic would eventually converge and assumed it would.
@@ -587,13 +574,6 @@ List Of Warnings
    with a newline."
 
 
-.. option:: GENCLK
-
-   Deprecated and no longer used as a warning.  Used to indicate that the
-   specified signal was is generated inside the model, and also being used
-   as a clock.
-
-
 .. option:: HIERBLOCK
 
    Warns that the top module is marked as a hierarchy block by the
@@ -649,16 +629,6 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly.
-
-
-.. option:: IMPERFECTSCH
-
-   .. TODO better example
-
-   Warns that the scheduling of the model is not absolutely perfect, and
-   some manual code edits may result in faster performance.  This warning
-   defaults to off, is not part of -Wall, and must be turned on explicitly
-   before the top module statement is processed.
 
 
 .. option:: IMPLICIT
@@ -1353,27 +1323,6 @@ List Of Warnings
    undriven (...) and will be removed".
 
 
-.. option:: UNOPT
-
-   .. TODO better example
-
-   Warns that due to some construct, optimization of the specified signal
-   or block is disabled.  The construct should be cleaned up to improve
-   simulation performance.
-
-   A less obvious case of this is when a module instantiates two
-   submodules.  Inside submodule A, signal I is input and signal O is
-   output.  Likewise in submodule B, signal O is an input and I is an
-   output.  A loop exists and a UNOPT warning will result if AI & AO both
-   come from and go to combinatorial blocks in both submodules, even if
-   they are unrelated always blocks.  This affects performance because
-   Verilator would have to evaluate each submodule multiple times to
-   stabilize the signals crossing between the modules.
-
-   Ignoring this warning will only slow simulations, it will simulate
-   correctly.
-
-
 .. option:: UNOPTFLAT
 
    .. TODO better example
@@ -1384,10 +1333,6 @@ List Of Warnings
    block.  The construct should be cleaned up to improve simulation
    performance; two times better performance may be possible by fixing
    these warnings.
-
-   Unlike the ``UNOPT`` warning, this occurs after flattening the netlist,
-   and indicates a more basic problem, as the less obvious case described
-   under ``UNOPT`` does not apply.
 
    Often UNOPTFLAT is caused by logic that isn't truly circular as viewed by
    synthesis which analyzes interconnection per-bit, but is circular to
@@ -1440,10 +1385,6 @@ List Of Warnings
    will cause the variable to be split internally, potentially resolving
    the conflict. If you run with `--report-unoptflat` Verilator will
    suggest possible candidates for :option:`/*verilator&32;split_var*/`.
-
-   The UNOPTFLAT warning may also be due to clock enables, identified from
-   the reported path going through a clock gating instance.  To fix these,
-   use the clock_enable meta comment described above.
 
    The UNOPTFLAT warning may also occur where outputs from a block of logic
    are independent, but occur in the same always block.  To fix this, use
@@ -1702,3 +1643,32 @@ List Of Warnings
    The correct fix is to either size the 1 (:code:`32'h1`), or add the
    width to the parameter definition (:code:`parameter [31:0]`), or add the
    width to the parameter usage (:code:`{PAR[31:0], PAR[31:0]}`).
+
+
+Historical Warnings
+===================
+
+The following list of warnings used to be issued by some earlier versions of
+Verilator. The current version never issues these warnings. For compatibility,
+these warning codes are still accepted by the message control mechanisms (see
+:ref:`Disabling Warnings`), but have no other effect.
+
+
+.. option:: CLKDATA
+
+   Historical, never issued by current version of Verilator.
+
+
+.. option:: GENCLK
+
+   Historical, never issued by current version of Verilator.
+
+
+.. option:: IMPERFECTSCH
+
+   Historical, never issued by current version of Verilator.
+
+
+.. option:: UNOPT
+
+   Historical, never issued by current version of Verilator.

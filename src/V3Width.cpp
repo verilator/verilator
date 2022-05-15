@@ -2519,7 +2519,7 @@ private:
             methodCallClass(nodep, adtypep);
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
-        } else if (basicp && basicp->isEventValue()) {
+        } else if (basicp && basicp->isEvent()) {
             methodCallEvent(nodep, basicp);
         } else if (basicp && basicp->isString()) {
             methodCallString(nodep, basicp);
@@ -3119,10 +3119,12 @@ private:
     void methodCallEvent(AstMethodCall* nodep, AstBasicDType*) {
         // Method call on event
         if (nodep->name() == "triggered") {
-            // We represent events as numbers, so can just return number
             methodOkArguments(nodep, 0, 0);
-            AstNode* const newp = nodep->fromp()->unlinkFrBack();
-            nodep->replaceWith(newp);
+            AstCMethodHard* const callp = new AstCMethodHard{
+                nodep->fileline(), nodep->fromp()->unlinkFrBack(), "isTriggered"};
+            callp->dtypeSetBit();
+            callp->pure(true);
+            nodep->replaceWith(callp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
             nodep->v3error("Unknown built-in event method " << nodep->prettyNameQ());
@@ -3979,7 +3981,7 @@ private:
             // if (debug()) nodep->dumpTree(cout, "  AssignOut: ");
         }
         if (const AstBasicDType* const basicp = nodep->rhsp()->dtypep()->basicp()) {
-            if (basicp->isEventValue()) {
+            if (basicp->isEvent()) {
                 // see t_event_copy.v for commentary on the mess involved
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
@@ -4782,6 +4784,9 @@ private:
         m_procedurep = nodep;
         userIterateChildren(nodep, nullptr);
         m_procedurep = nullptr;
+    }
+    virtual void visit(AstSenItem* nodep) override {
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
     }
     virtual void visit(AstWith* nodep) override {
         // Should otherwise be underneath a method call

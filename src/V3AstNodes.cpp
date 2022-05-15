@@ -706,6 +706,10 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
             info.m_type = "std::string";
         } else if (bdtypep->keyword().isMTaskState()) {
             info.m_type = "VlMTaskVertex";
+        } else if (bdtypep->isTriggerVec()) {
+            info.m_type = "VlTriggerVec<" + cvtToStr(dtypep->width()) + ">";
+        } else if (bdtypep->isEvent()) {
+            info.m_type = "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
             info.m_type = "CData" + bitvec;
         } else if (dtypep->widthMin() <= 16) {
@@ -854,6 +858,29 @@ string AstScope::nameDotless() const {
     return out;
 }
 
+AstVarScope* AstScope::createTemp(const string& name, unsigned width) {
+    FileLine* const flp = fileline();
+    AstVar* const varp
+        = new AstVar{flp, VVarType::MODULETEMP, name, VFlagBitPacked{}, static_cast<int>(width)};
+    modp()->addStmtp(varp);
+    AstVarScope* const vscp = new AstVarScope{flp, this, varp};
+    addVarp(vscp);
+    return vscp;
+}
+
+AstVarScope* AstScope::createTemp(const string& name, AstNodeDType* dtypep) {
+    FileLine* const flp = fileline();
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+    modp()->addStmtp(varp);
+    AstVarScope* const vscp = new AstVarScope{flp, this, varp};
+    addVarp(vscp);
+    return vscp;
+}
+
+AstVarScope* AstScope::createTempLike(const string& name, AstVarScope* vscp) {
+    return createTemp(name, vscp->dtypep());
+}
+
 string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
     string out;
     for (AstText* textp = scopeTextp; textp; textp = VN_AS(textp->nextp(), Text)) {
@@ -886,10 +913,10 @@ bool AstSenTree::hasClocked() const {
     }
     return false;
 }
-bool AstSenTree::hasSettle() const {
+bool AstSenTree::hasStatic() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
-        if (senp->isSettle()) return true;
+        if (senp->isStatic()) return true;
     }
     return false;
 }
@@ -900,10 +927,24 @@ bool AstSenTree::hasInitial() const {
     }
     return false;
 }
+bool AstSenTree::hasFinal() const {
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+        if (senp->isFinal()) return true;
+    }
+    return false;
+}
 bool AstSenTree::hasCombo() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isCombo()) return true;
+    }
+    return false;
+}
+bool AstSenTree::hasHybrid() const {
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+        if (senp->isHybrid()) return true;
     }
     return false;
 }
@@ -1738,7 +1779,6 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
-    if (attrClockEn()) str << " [aCLKEN]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
     if (isFuncReturn()) {

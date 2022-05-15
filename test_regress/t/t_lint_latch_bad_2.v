@@ -8,8 +8,8 @@ module t (/*AUTOARG*/ a, b, o);
    input  b;
    output reg o;
 
-   always @(a or b)
+   always_comb
      if (a)
-       o <= b;
+       o = b;
 
 endmodule

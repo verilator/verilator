@@ -246,7 +246,6 @@ private:
     bool m_gmake = false;           // main switch: --make gmake
     bool m_main = false;            // main swithc: --main
     bool m_mergeConstPool = true;   // main switch: --merge-const-pool
-    bool m_orderClockDly = true;    // main switch: --order-clock-delay
     bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
     bool m_pedantic = false;        // main switch: --Wpedantic
     bool m_pinsScUint = false;      // main switch: --pins-sc-uint
@@ -459,7 +458,6 @@ public:
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool main() const { return m_main; }
     bool mergeConstPool() const { return m_mergeConstPool; }
-    bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }

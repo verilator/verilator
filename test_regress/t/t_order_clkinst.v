@@ -15,6 +15,7 @@ module t (/*AUTOARG*/
    // verilator lint_off UNOPT
    // verilator lint_off UNOPTFLAT
    // verilator lint_off BLKANDNBLK
+   // verilator lint_off MULTIDRIVEN
 
    reg         c1_start; initial c1_start = 0;
    wire [31:0] c1_count;
@@ -49,7 +50,7 @@ module t (/*AUTOARG*/
            // should reach the normal '$finish' below on the next cycle.
            if (c1_count!=32'h3) $stop;
            if (s2_count!=32'h3) $stop;
-           if (c3_count!=32'h5) $stop;
+           if (c3_count!=32'h3) $stop;
         end
         8'd03: begin
            $write("*-* All Finished *-*\n");
@@ -67,11 +68,12 @@ module comb_loop (/*AUTOARG*/
    start
    );
    input start;
-   output reg [31:0] count; initial count = 0;
+   output reg [31:0] count = 0;
 
    reg [31:0]    runnerm1, runner; initial runner = 0;
 
    always @ (posedge start) begin
+      count = 0;
       runner = 3;
    end
 
@@ -101,6 +103,7 @@ module seq_loop (/*AUTOARG*/
    reg [31:0]    runnerm1, runner; initial runner = 0;
 
    always @ (posedge start) begin
+      count = 0;
       runner <= 3;
    end
 
