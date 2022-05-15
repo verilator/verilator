@@ -87,7 +87,7 @@ compiles under all the options above, plus using MSVC++.
 Install Prerequisites
 ---------------------
 
-To build or run Verilator you need these standard packages:
+To build or run Verilator, you need these standard packages:
 
 ::
 
@@ -98,13 +98,20 @@ To build or run Verilator you need these standard packages:
    sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
    sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
 
-To build or run the following are optional but should be installed for good
-performance:
+To build or run Verilator, the following are optional but should be installed
+for good performance:
 
 ::
 
    sudo apt-get install ccache  # If present at build, needed for run
-   sudo apt-get install libgoogle-perftools-dev numactl perl-doc
+   sudo apt-get install libgoogle-perftools-dev numactl
+
+The following is optional but is recommended for nicely rendered command line
+help when running Verilator:
+
+::
+
+   sudo apt-get install perl-doc
 
 To build Verilator you will need to install these packages; these do not
 need to be present to run Verilator:
@@ -118,7 +125,7 @@ Those developing Verilator itself may also want these (see internals.rst):
 ::
 
    sudo apt-get install gdb graphviz cmake clang clang-format-11 gprof lcov
-   sudo pip3 install sphinx sphinx_rtd_theme breathe
+   sudo pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe
    cpan install Pod::Perldoc
    cpan install Parallel::Forker
 
