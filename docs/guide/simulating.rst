@@ -405,7 +405,7 @@ others as they prove beneficial.
 Thread Profile-Guided Optimization
 ----------------------------------
 
-Verilator supports profile-guided optimization (verilation) of multi-threaded
+Verilator supports profile-guided optimization (Verilation) of multi-threaded
 models (Thread PGO) to improve performance.
 
 When using multithreading, Verilator computes how long macro tasks take and

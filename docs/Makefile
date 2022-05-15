@@ -35,6 +35,7 @@ default:
 # Intermediate rules
 
 vl-extract: ../bin/verilator ../Changes
+	ln -sf ../spelling.txt guide/spelling.txt
 	mkdir -p _build/gen
 	$(PYTHON3) bin/vl_sphinx_extract ../bin/verilator
 	sed 's/`/\&96;/g' < ../Changes > _build/gen/Changes
@@ -77,6 +78,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs *.idx
 	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas
 	rm -f *.tex
+	rm -f guide/spelling.txt
 
 distclean maintainer-clean::
 	rm -f *.info* *.1 *.html *.pdf $(INFOS)

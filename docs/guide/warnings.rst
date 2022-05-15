@@ -1506,7 +1506,7 @@ List Of Warnings
    Error that a construct might be legal according to IEEE but is not
    currently supported by Verilator.
 
-   A typical workaround is to recode the construct into a simpler and more
+   A typical workaround is to rewrite the construct into a simpler and more
    common alternative language construct.
 
    Alternatively, check if the construct is supported by other tools, and

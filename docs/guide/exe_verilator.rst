@@ -847,12 +847,12 @@ Summary:
 
 .. option:: --prof-exec
 
-   Enable collection of execution trace, that can be convered into a gantt
+   Enable collection of execution trace, that can be converted into a gantt
    chart with verilator_gantt See :ref:`Execution Profiling`.
 
 .. option:: --prof-pgo
 
-   Enable collection of profiling data for profile guided verilation. Currently
+   Enable collection of profiling data for profile guided Verilation. Currently
    this is only useful with :vlopt:`--threads`. See :ref:`Thread PGO`.
 
 .. option:: --prof-threads
