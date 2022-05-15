@@ -16,6 +16,7 @@ module t (/*AUTOARG*/);
       int aliases[$];
       int found[$];
       int i;
+      byte byteq[$] = {2, -1, 127};
 
       aliases = '{ 1, 4, 6, 8};
       tofind = 6;
@@ -35,8 +36,8 @@ module t (/*AUTOARG*/);
       // bug3387
       i = aliases.sum();
       `checkh(i, 'h13);
-      i = aliases.sum() with (2'(item));
-      `checkh(i, 'h3);
+      i = byteq.sum() with (int'(item));
+      `checkh(i, 128);
 
       // Unique (array method)
       tofind = 4;

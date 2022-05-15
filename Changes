@@ -15,6 +15,7 @@ Verilator 4.223 devel
 
 * Support compile time trace signal selection with tracing_on/off (#3323). [Shunyao CAD]
 * Fix hang with large case statement optimization (#3405). [Mike Urbach]
+* Fix 'with' operator with type casting (#3387). [xiak95]
 
 
 Verilator 4.222 2022-05-02

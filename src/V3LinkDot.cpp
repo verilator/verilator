@@ -1729,7 +1729,6 @@ class LinkDotScopeVisitor final : public VNVisitor {
     // Note we allow AstNodeStmt's as generates may be under them
     virtual void visit(AstCell*) override {}
     virtual void visit(AstVar*) override {}
-    virtual void visit(AstNodeMath*) override {}
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
