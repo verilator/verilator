@@ -123,10 +123,6 @@ public:
 protected:
     friend class VerilatedCovContext;
     virtual ~VerilatedCovImp() override { clearGuts(); }
-    static VerilatedCovImp& imp() VL_MT_SAFE {
-        static VerilatedCovImp s_singleton;
-        return s_singleton;
-    }
 
 private:
     // PRIVATE METHODS
