@@ -34,6 +34,8 @@ int main(int argc, char** argv, char** env) {
     // Using unique_ptr is similar to
     // "VerilatedContext* contextp = new VerilatedContext" then deleting at end.
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    // Do not instead make Vtop as a file-scope static variable, as the
+    // "C++ static initialization order fiasco" may cause a crash
 
     // Set debug level, 0 is off, 9 is highest presently used
     // May be overridden by commandArgs argument parsing

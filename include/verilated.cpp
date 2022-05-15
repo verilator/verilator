@@ -2289,7 +2289,17 @@ VerilatedContext::VerilatedContext()
 }
 
 // Must declare here not in interface, as otherwise forward declarations not known
-VerilatedContext::~VerilatedContext() {}
+VerilatedContext::~VerilatedContext() {
+    checkMagic(this);
+    m_magic = 0x1;  // Arbitrary but 0x1 is what Verilator src uses for a deleted pointer
+}
+
+void VerilatedContext::checkMagic(const VerilatedContext* contextp) {
+    if (VL_UNLIKELY(!contextp || contextp->m_magic != MAGIC)) {
+        VL_FATAL_MT("", 0, "",  // LCOV_EXCL_LINE
+                    "Attempt to create model using a bad/deleted VerilatedContext pointer");
+    }
+}
 
 VerilatedContext::Serialized::Serialized() {
     m_timeunit = VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure
@@ -2657,6 +2667,7 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
 
 VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
     : _vm_contextp__(contextp ? contextp : Verilated::threadContextp()) {
+    VerilatedContext::checkMagic(_vm_contextp__);
     Verilated::threadContextp(_vm_contextp__);
 #ifdef VL_THREADED
     __Vm_evalMsgQp = new VerilatedEvalMsgQueue;
@@ -2664,6 +2675,7 @@ VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
 }
 
 VerilatedSyms::~VerilatedSyms() {
+    VerilatedContext::checkMagic(_vm_contextp__);
 #ifdef VL_THREADED
     delete __Vm_evalMsgQp;
 #endif
