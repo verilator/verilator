@@ -2150,7 +2150,7 @@ static_assert(sizeof(VNRef<AstNode>) == sizeof(std::reference_wrapper<AstNode>),
 // without having to copy nodes into the collections.
 
 // Forward declaration to avoid including V3Hasher.h which needs V3Ast.h (this file).
-size_t V3HasherUncachedHash(AstNode&);
+size_t V3HasherUncachedHash(const AstNode&);
 
 // Specialization of std::hash for VNRef
 template <typename T_Node>  //

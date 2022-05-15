@@ -530,6 +530,6 @@ V3Hash V3Hasher::uncachedHash(const AstNode* nodep) {
 // This is used by the std::hash specialization for VNRef.
 // Declared separately to avoid a circular header dependency.
 
-size_t V3HasherUncachedHash(AstNode& node) {
+size_t V3HasherUncachedHash(const AstNode& node) {
     return static_cast<size_t>(V3Hasher::uncachedHash(&node).value());
 }
