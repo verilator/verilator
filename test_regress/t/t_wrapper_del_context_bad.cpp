@@ -13,7 +13,9 @@ int main(int argc, char** argv, char** env) {
     // Create contexts
     VerilatedContext* contextp{new VerilatedContext};
 
-    delete contextp;  // Test mistake - deleting contextp
+    // Ideally we'd do this, but then address sanitizer blows up
+    // delete contextp;  // Test mistake - deleting contextp
+    contextp->selfTestClearMagic();
 
     // instantiate verilated design
     std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp, "TOP"}};

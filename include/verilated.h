@@ -542,6 +542,7 @@ public:  // But for internal use only
 
     // Internal: Check magic number
     static void checkMagic(const VerilatedContext* contextp);
+    void selfTestClearMagic() { m_magic = 0x2; }
 };
 
 //===========================================================================
