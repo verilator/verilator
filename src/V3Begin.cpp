@@ -76,6 +76,33 @@ private:
         return a + "__DOT__" + b;
     }
 
+    void dotNames(const AstNodeBlock* const nodep, const char* const blockName) {
+        UINFO(8, "nname " << m_namedScope << endl);
+        if (nodep->name() != "") {  // Else unneeded unnamed block
+            // Create data for dotted variable resolution
+            string dottedname = nodep->name() + "__DOT__";  // So always found
+            string::size_type pos;
+            while ((pos = dottedname.find("__DOT__")) != string::npos) {
+                const string ident = dottedname.substr(0, pos);
+                dottedname = dottedname.substr(pos + strlen("__DOT__"));
+                if (nodep->name() != "") {
+                    m_displayScope = dot(m_displayScope, ident);
+                    m_namedScope = dot(m_namedScope, ident);
+                }
+                m_unnamedScope = dot(m_unnamedScope, ident);
+                // Create CellInline for dotted var resolution
+                if (!m_ftaskp) {
+                    AstCellInline* const inlinep = new AstCellInline(
+                        nodep->fileline(), m_unnamedScope, blockName, m_modp->timeunit());
+                    m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
+                }
+            }
+        }
+
+        // Remap var names and replace lower Begins
+        iterateAndNextNull(nodep->stmtsp());
+    }
+
     void liftNode(AstNode* nodep) {
         nodep->unlinkFrBack();
         if (m_ftaskp) {
@@ -141,30 +168,8 @@ private:
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
         {
-            UINFO(8, "nname " << m_namedScope << endl);
-            if (nodep->name() != "") {  // Else unneeded unnamed block
-                // Create data for dotted variable resolution
-                string dottedname = nodep->name() + "__DOT__";  // So always found
-                string::size_type pos;
-                while ((pos = dottedname.find("__DOT__")) != string::npos) {
-                    const string ident = dottedname.substr(0, pos);
-                    dottedname = dottedname.substr(pos + strlen("__DOT__"));
-                    if (nodep->name() != "") {
-                        m_displayScope = dot(m_displayScope, ident);
-                        m_namedScope = dot(m_namedScope, ident);
-                    }
-                    m_unnamedScope = dot(m_unnamedScope, ident);
-                    // Create CellInline for dotted var resolution
-                    if (!m_ftaskp) {
-                        AstCellInline* const inlinep = new AstCellInline(
-                            nodep->fileline(), m_unnamedScope, "__BEGIN__", m_modp->timeunit());
-                        m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
-                    }
-                }
-            }
+            dotNames(nodep, "__BEGIN__");
 
-            // Remap var names and replace lower Begins
-            iterateAndNextNull(nodep->stmtsp());
             UASSERT_OBJ(!nodep->genforp(), nodep, "GENFORs should have been expanded earlier");
 
             // Cleanup
