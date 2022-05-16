@@ -40,6 +40,11 @@ jobs:
           - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
           # Build -m32 only on ubuntu-20.04
           - {os: ubuntu-18.04, m32: 1}
+        include:
+          # Build GCC 10 on ubuntu-20.04
+          - os: ubuntu-20.04
+            compiler: { cc: gcc-10, cxx: g++-10 }
+            m32: 0
     runs-on: ${{ matrix.os }}
     name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} ${{ matrix.m32 && '| -m32' || '' }}
     env:
@@ -102,6 +107,13 @@ jobs:
           - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
           # Build -m32 only on ubuntu-20.04
           - {os: ubuntu-18.04, m32: 1}
+        include:
+          # Test with GCC 10 on ubuntu-20.04 without m32
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: dist-vlt-0}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: dist-vlt-1}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: dist-vlt-2}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: vltmt-0}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: vltmt-1}
     runs-on: ${{ matrix.os }}
     name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }} ${{ matrix.m32 && '| -m32' || '' }}
     env:
