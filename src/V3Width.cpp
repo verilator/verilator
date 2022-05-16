@@ -1323,10 +1323,10 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstTimingControl* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: timing control statement in this location\n"
+    virtual void visit(AstEventControl* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: event control statement in this location\n"
                                          << nodep->warnMore()
-                                         << "... Suggest have one timing control statement "
+                                         << "... Suggest have one event control statement "
                                          << "per procedure, at the top of the procedure");
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
