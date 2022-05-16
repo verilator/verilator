@@ -135,29 +135,25 @@ private:
                           "Unsupported: Complicated event expression in sensitive activity list");
             return nullptr;
         }
-        UASSERT_OBJ(nodep->varrefp(), nodep, "No clock found on sense item");
-        AstVarScope* const clkvscp = nodep->varrefp()->varScopep();
+        AstVarScope* const clkvscp = AstNode::findVarScopep(nodep->sensp());
+        UASSERT_OBJ(clkvscp, nodep, "No clock found on sense item");
         if (nodep->edgeType() == VEdgeType::ET_POSEDGE) {
             AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(
-                nodep->fileline(),
-                new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), VAccess::READ),
+                nodep->fileline(), new AstVarRef(nodep->fileline(), clkvscp, VAccess::READ),
                 new AstNot(nodep->fileline(),
                            new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ)));
         } else if (nodep->edgeType() == VEdgeType::ET_NEGEDGE) {
             AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
-            newp = new AstAnd(
-                nodep->fileline(),
-                new AstNot(nodep->fileline(),
-                           new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(),
-                                         VAccess::READ)),
-                new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ));
+            newp = new AstAnd(nodep->fileline(),
+                              new AstNot(nodep->fileline(),
+                                         new AstVarRef(nodep->fileline(), clkvscp, VAccess::READ)),
+                              new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ));
         } else if (nodep->edgeType() == VEdgeType::ET_BOTHEDGE) {
             AstVarScope* const lastVscp = getCreateLastClk(clkvscp);
-            newp = new AstXor(
-                nodep->fileline(),
-                new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), VAccess::READ),
-                new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ));
+            newp = new AstXor(nodep->fileline(),
+                              new AstVarRef(nodep->fileline(), clkvscp, VAccess::READ),
+                              new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ));
         } else if (nodep->edgeType() == VEdgeType::ET_HIGHEDGE) {
             newp = new AstVarRef(nodep->fileline(), clkvscp, VAccess::READ);
         } else if (nodep->edgeType() == VEdgeType::ET_LOWEDGE) {

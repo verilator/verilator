@@ -138,13 +138,13 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     if (fromSenListp->nextp()) return false;
     if (toSenListp->nextp()) return false;
 
-    const AstNodeVarRef* const fromVarrefp = fromSenListp->varrefp();
-    const AstNodeVarRef* const toVarrefp = toSenListp->varrefp();
-    if (!fromVarrefp || !toVarrefp) return false;
+    const auto* const fromVarscopep = AstNode::findVarScopep(fromSenListp->sensp());
+    const auto* const toVarscopep = AstNode::findVarScopep(toSenListp->sensp());
+    if (!fromVarscopep || !toVarscopep) return false;
 
     // We know nothing about the relationship between different clocks here,
     // so give up on proving anything.
-    if (fromVarrefp->varScopep() != toVarrefp->varScopep()) return false;
+    if (fromVarscopep != toVarscopep) return false;
 
     return fromSenListp->edgeType().exclusiveEdge(toSenListp->edgeType());
 }

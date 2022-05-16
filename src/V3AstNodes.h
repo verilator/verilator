@@ -3313,7 +3313,7 @@ public:
 
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE
-    // Children: (optional) VARREF
+    // Children: (optional) NODE
 private:
     VEdgeType m_edgeType;  // Edge type
 public:
@@ -3322,10 +3322,10 @@ public:
     class Initial {};  // for creator type-overload selection
     class Settle {};  // for creator type-overload selection
     class Never {};  // for creator type-overload selection
-    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNode* varrefp)
+    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNode* nodep)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{edgeType} {
-        setOp1p(varrefp);
+        setOp1p(nodep);
     }
     AstSenItem(FileLine* fl, Combo)
         : ASTGEN_SUPER_SenItem(fl)
@@ -3353,10 +3353,6 @@ public:
         editCountInc();
     }  // * = Posedge/negedge
     AstNode* sensp() const { return op1p(); }  // op1 = Signal sensitized
-    AstNodeVarRef* varrefp() const {
-        return VN_CAST(op1p(), NodeVarRef);
-    }  // op1 = Signal sensitized
-    //
     bool isClocked() const { return edgeType().clockedStmt(); }
     bool isCombo() const { return edgeType() == VEdgeType::ET_COMBO; }
     bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }

@@ -563,8 +563,8 @@ private:
         visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
     virtual void visit(AstSenItem* nodep) override {
-        if (nodep->varrefp()) {
-            if (const AstBasicDType* const basicp = nodep->varrefp()->dtypep()->basicp()) {
+        if (auto* const varp = AstNode::findVarp(nodep->sensp())) {
+            if (const AstBasicDType* const basicp = varp->dtypep()->basicp()) {
                 if (basicp->isEventValue()) {
                     // Events need to be treated as active high so we only activate on event being
                     // 1
@@ -578,15 +578,15 @@ private:
             // Delete the sensitivity
             // We'll add it as a generic COMBO SenItem in a moment.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->varrefp()) {
+        } else if (auto* const varp = AstNode::findVarp(nodep->sensp())) {
             // V3LinkResolve should have cleaned most of these up
-            if (!nodep->varrefp()->width1()) {
+            if (!varp->width1()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
-                                  << nodep->varrefp()->prettyNameQ());
+                                  << varp->prettyNameQ());
             }
             m_itemSequent = true;
-            nodep->varrefp()->varp()->usedClock(true);
+            varp->usedClock(true);
         }
     }
 

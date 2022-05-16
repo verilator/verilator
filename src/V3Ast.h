@@ -1735,6 +1735,9 @@ public:
     AstNodeDType* findBasicDType(VBasicDTypeKwd kwd) const;
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
+    static AstVar* findVarp(AstNode* nodep);
+    static AstVarScope* findVarScopep(AstNode* nodep);
+
     // METHODS - dump and error
     void v3errorEnd(std::ostringstream& str) const;
     void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN;

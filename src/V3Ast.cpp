@@ -1241,6 +1241,42 @@ AstNodeDType* AstNode::findVoidDType() const {
     return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
 }
 
+//======================================================================
+// Retrieval of var/var scope from reference if possible
+AstVar* AstNode::findVarp(AstNode* nodep) {
+    while (nodep && !VN_IS(nodep, Var)) {
+        if (auto* const memberSelp = VN_CAST(nodep, MemberSel)) {
+            nodep = memberSelp->fromp();
+        } else if (auto* const selp = VN_CAST(nodep, NodeSel)) {
+            nodep = selp->fromp();
+        } else if (auto* const preSelp = VN_CAST(nodep, NodePreSel)) {
+            nodep = preSelp->fromp();
+        } else if (auto* const varrefp = VN_CAST(nodep, NodeVarRef)) {
+            return varrefp->varp();
+        } else {
+            return nullptr;
+        }
+    }
+    return VN_CAST(nodep, Var);
+}
+
+AstVarScope* AstNode::findVarScopep(AstNode* nodep) {
+    while (nodep && !VN_IS(nodep, Var)) {
+        if (auto* const memberSelp = VN_CAST(nodep, MemberSel)) {
+            nodep = memberSelp->fromp();
+        } else if (auto* const selp = VN_CAST(nodep, NodeSel)) {
+            nodep = selp->fromp();
+        } else if (auto* const preSelp = VN_CAST(nodep, NodePreSel)) {
+            nodep = preSelp->fromp();
+        } else if (auto* const varrefp = VN_CAST(nodep, NodeVarRef)) {
+            return varrefp->varScopep();
+        } else {
+            return nullptr;
+        }
+    }
+    return VN_CAST(nodep, VarScope);
+}
+
 //######################################################################
 // VNDeleter
 
