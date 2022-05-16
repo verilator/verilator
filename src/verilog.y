@@ -3252,7 +3252,7 @@ statement_item<nodep>:          // IEEE: statement_item
         |       par_block                               { $$ = $1; }
         //                      // IEEE: procedural_timing_control_statement + procedural_timing_control
         |       delay_control stmtBlock                 { $$ = new AstDelay($1->fileline(), $1); $$->addNextNull($2); }
-        |       event_control stmtBlock                 { $$ = new AstTimingControl(FILELINE_OR_CRE($1), $1, $2); }
+        |       event_control stmtBlock                 { $$ = new AstEventControl(FILELINE_OR_CRE($1), $1, $2); }
         //UNSUP cycle_delay stmtBlock                   { UNSUP }
         //
         |       seq_block                               { $$ = $1; }

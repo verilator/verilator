@@ -5243,15 +5243,15 @@ public:
     }
 };
 
-class AstTimingControl final : public AstNodeStmt {
+class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
 public:
-    AstTimingControl(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
-        : ASTGEN_SUPER_TimingControl(fl) {
+    AstEventControl(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
+        : ASTGEN_SUPER_EventControl(fl) {
         setNOp1p(sensesp);
         setNOp2p(stmtsp);
     }
-    ASTNODE_NODE_FUNCS(TimingControl)
+    ASTNODE_NODE_FUNCS(EventControl)
     virtual string verilogKwd() const override { return "@(%l) %r"; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
