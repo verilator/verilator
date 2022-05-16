@@ -112,8 +112,8 @@ void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
                   << "     Example path: " << vvertexp->nodep()->typeName() << endl;
     }
     if (OrderVarVertex* const vvertexp = dynamic_cast<OrderVarVertex*>(vertexp)) {
-        std::cerr << vvertexp->varScp()->fileline()->warnOther()
-                  << "     Example path: " << vvertexp->varScp()->prettyName() << endl;
+        std::cerr << vvertexp->vscp()->fileline()->warnOther()
+                  << "     Example path: " << vvertexp->vscp()->prettyName() << endl;
     }
 }
 
@@ -924,9 +924,6 @@ class OrderProcess final : VNDeleter {
     V3List<OrderMoveDomScope*> m_pomReadyDomScope;  // List of ready domain/scope pairs, by loopId
     std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;  // Function ordinals
 
-    // STATS
-    std::array<VDouble0, OrderVEdgeType::_ENUM_END> m_statCut;  // Count of each edge type cut
-
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -999,15 +996,7 @@ class OrderProcess final : VNDeleter {
         pushDeletep(m_deleteDomainp);
     }
 
-    ~OrderProcess() {
-        // Stats
-        for (int type = 0; type < OrderVEdgeType::_ENUM_END; type++) {
-            const double count = double(m_statCut[type]);
-            if (count != 0.0) {
-                V3Stats::addStat(string("Order, cut, ") + OrderVEdgeType(type).ascii(), count);
-            }
-        }
-    }
+    ~OrderProcess() = default;
 
 public:
     // Order the logic
@@ -1071,16 +1060,18 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
         OrderEitherVertex* const fromVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
         if (edgep->weight() && fromVertexp->domainMatters()) {
             AstSenTree* fromDomainp = fromVertexp->domainp();
+            UASSERT(!fromDomainp->hasCombo(), "There should be no need for combinational domains");
+
             if (OrderVarVertex* const varVtxp = dynamic_cast<OrderVarVertex*>(fromVertexp)) {
-                AstVarScope* const vscp = varVtxp->varScp();
+                AstVarScope* const vscp = varVtxp->vscp();
                 if (AstSenTree* const externalDomainp = m_externalDomain(vscp)) {
+                    UASSERT(!externalDomainp->hasCombo(),
+                            "There should be no need for combinational domains");
                     fromDomainp = fromDomainp == m_deleteDomainp
                                       ? externalDomainp
                                       : combineDomains(fromDomainp, externalDomainp);
                 }
             }
-            UINFO(9, "     from d=" << cvtToHex(fromDomainp) << " " << fromVertexp << endl);
-            UASSERT(!fromDomainp->hasCombo(), "There should be no need for combinational domains");
 
             // Irrelevant input vertex (never triggered)
             if (fromDomainp == m_deleteDomainp) continue;
@@ -1088,29 +1079,22 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
             // First input to this vertex
             if (!domainp) domainp = fromDomainp;
 
-            // Once in combo, keep in combo; already as severe as we can get
-            if (domainp->hasCombo()) break;
-
             // Make a domain that merges the two domains
             if (domainp != fromDomainp) domainp = combineDomains(domainp, fromDomainp);
         }
     }
 
-    // Default the domain
-    // This is a node which has only constant inputs, or is otherwise indeterminate.
-    // Presumably it has inputs which we never trigger, or nothing it's sensitive to,
-    // so we can rip it out.
-    if (!domainp && vertexp->scopep()) domainp = m_deleteDomainp;
+    // If nothing triggers this vertex, we can delete the corresponding logic
+    if (!domainp) domainp = m_deleteDomainp;
 
-    if (domainp) {
-        vertexp->domainp(domainp);
-        UINFO(5, "      done d=" << cvtToHex(vertexp->domainp())
-                                 << (domainp == m_deleteDomainp       ? " [DEL]"
-                                     : vertexp->domainp()->hasCombo() ? " [COMB]"
-                                     : vertexp->domainp()->isMulti()  ? " [MULT]"
-                                                                      : "")
-                                 << " " << vertexp << endl);
-    }
+    // Set the domain of the vertex
+    vertexp->domainp(domainp);
+    UINFO(5, "      done d=" << cvtToHex(vertexp->domainp())
+                             << (domainp == m_deleteDomainp       ? " [DEL]"
+                                 : vertexp->domainp()->hasCombo() ? " [COMB]"
+                                 : vertexp->domainp()->isMulti()  ? " [MULT]"
+                                                                  : "")
+                             << " " << vertexp << endl);
 }
 
 //######################################################################
@@ -1131,7 +1115,7 @@ void OrderProcess::processEdgeReport() {
 
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
         if (OrderVarVertex* const vvertexp = dynamic_cast<OrderVarVertex*>(itp)) {
-            string name(vvertexp->varScp()->prettyName());
+            string name(vvertexp->vscp()->prettyName());
             if (dynamic_cast<OrderVarPreVertex*>(itp)) {
                 name += " {PRE}";
             } else if (dynamic_cast<OrderVarPostVertex*>(itp)) {
@@ -1141,7 +1125,7 @@ void OrderProcess::processEdgeReport() {
             }
             std::ostringstream os;
             os.setf(std::ios::left);
-            os << "  " << cvtToHex(vvertexp->varScp()) << " " << std::setw(50) << name << " ";
+            os << "  " << cvtToHex(vvertexp->vscp()) << " " << std::setw(50) << name << " ";
             AstSenTree* const senTreep = vvertexp->domainp();
             if (senTreep == m_deleteDomainp) {
                 os << "DELETED";
@@ -1314,67 +1298,65 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
     AstNode* nodep = lvertexp->nodep();
     AstNodeModule* const modp = scopep->modp();
     UASSERT(modp, "nullptr");
-    if (VN_IS(nodep, Active)) {
-        // Just ignore sensitivities, we'll deal with them when we move statements that need them
-    } else {  // Normal logic
-        // Move the logic into a CFunc
+
+    // We are move the logic into a CFunc, so unlink it from the AstActive
+    nodep->unlinkFrBack();
+
+    // Process procedures per statement (unless profCFuncs), so we can split CFuncs within
+    // procedures. Everything else is handled in one go
+    if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
+        nodep = procp->bodysp();
+        pushDeletep(procp);
+    }
+
+    // When profCFuncs, create a new function for all logic block
+    if (v3Global.opt.profCFuncs()) newFuncpr = nullptr;
+
+    while (nodep) {
+        // Split the CFunc if too large (but not when profCFuncs)
+        if (!v3Global.opt.profCFuncs()
+            && (v3Global.opt.outputSplitCFuncs()
+                && v3Global.opt.outputSplitCFuncs() < newStmtsr)) {
+            // Put every statement into a unique function to ease profiling or reduce function
+            // size
+            newFuncpr = nullptr;
+        }
+        if (!newFuncpr && domainp != m_deleteDomainp) {
+            const string name = cfuncName(modp, domainp, scopep, nodep);
+            newFuncpr = new AstCFunc(nodep->fileline(), name, scopep);
+            newFuncpr->isStatic(false);
+            newFuncpr->isLoose(true);
+            newFuncpr->slow(m_slow);
+            newStmtsr = 0;
+            scopep->addActivep(newFuncpr);
+            // Create top call to it
+            AstCCall* const callp = new AstCCall(nodep->fileline(), newFuncpr);
+            // Where will we be adding the call?
+            AstActive* const newActivep = new AstActive(nodep->fileline(), name, domainp);
+            newActivep->addStmtsp(callp);
+            if (!activep) {
+                activep = newActivep;
+            } else {
+                activep->addNext(newActivep);
+            }
+            UINFO(6, "      New " << newFuncpr << endl);
+        }
+
+        AstNode* const nextp = nodep->nextp();
+        // When processing statements in a procedure, unlink the current statement
         if (nodep->backp()) nodep->unlinkFrBack();
 
-        // Process procedures per statement (unless profCFuncs), so we can split CFuncs within
-        // procedures. Everything else is handled in one go
-        if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
-            nodep = procp->bodysp();
-            pushDeletep(procp);
+        if (domainp == m_deleteDomainp) {
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else {
+            newFuncpr->addStmtsp(nodep);
+            // Add in the number of nodes we're adding
+            if (v3Global.opt.outputSplitCFuncs()) newStmtsr += nodep->nodeCount();
         }
 
-        // When profCFuncs, create a new function for all logic block
-        if (v3Global.opt.profCFuncs()) newFuncpr = nullptr;
-
-        while (nodep) {
-            // Split the CFunc if too large (but not when profCFuncs)
-            if (!v3Global.opt.profCFuncs()
-                && (v3Global.opt.outputSplitCFuncs()
-                    && v3Global.opt.outputSplitCFuncs() < newStmtsr)) {
-                // Put every statement into a unique function to ease profiling or reduce function
-                // size
-                newFuncpr = nullptr;
-            }
-            if (!newFuncpr && domainp != m_deleteDomainp) {
-                const string name = cfuncName(modp, domainp, scopep, nodep);
-                newFuncpr = new AstCFunc(nodep->fileline(), name, scopep);
-                newFuncpr->isStatic(false);
-                newFuncpr->isLoose(true);
-                newFuncpr->slow(m_slow);
-                newStmtsr = 0;
-                scopep->addActivep(newFuncpr);
-                // Create top call to it
-                AstCCall* const callp = new AstCCall(nodep->fileline(), newFuncpr);
-                // Where will we be adding the call?
-                AstActive* const newActivep = new AstActive(nodep->fileline(), name, domainp);
-                newActivep->addStmtsp(callp);
-                if (!activep) {
-                    activep = newActivep;
-                } else {
-                    activep->addNext(newActivep);
-                }
-                UINFO(6, "      New " << newFuncpr << endl);
-            }
-
-            AstNode* const nextp = nodep->nextp();
-            // When processing statements in a procedure, unlink the current statement
-            if (nodep->backp()) nodep->unlinkFrBack();
-
-            if (domainp == m_deleteDomainp) {
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            } else {
-                newFuncpr->addStmtsp(nodep);
-                // Add in the number of nodes we're adding
-                if (v3Global.opt.outputSplitCFuncs()) newStmtsr += nodep->nodeCount();
-            }
-
-            nodep = nextp;
-        }
+        nodep = nextp;
     }
+
     return activep;
 }
 
@@ -1430,7 +1412,7 @@ void OrderProcess::processMTasks() {
                 const OrderVarVertex* const pre_varp
                     = dynamic_cast<const OrderVarVertex*>(edgep->fromp());
                 if (!pre_varp) continue;
-                AstVar* const varp = pre_varp->varScp()->varp();
+                AstVar* const varp = pre_varp->vscp()->varp();
                 // varp depends on logicp, so logicp produces varp,
                 // and vice-versa below
                 varp->addProducingMTaskId(mtaskId);
@@ -1440,7 +1422,7 @@ void OrderProcess::processMTasks() {
                 const OrderVarVertex* const post_varp
                     = dynamic_cast<const OrderVarVertex*>(edgep->top());
                 if (!post_varp) continue;
-                AstVar* const varp = post_varp->varScp()->varp();
+                AstVar* const varp = post_varp->vscp()->varp();
                 varp->addConsumingMTaskId(mtaskId);
             }
             // TODO? We ignore IO vars here, so those will have empty mtask

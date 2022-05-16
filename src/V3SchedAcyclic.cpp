@@ -69,9 +69,10 @@ public:
     AstNode* logicp() const { return m_logicp; }
     AstScope* scopep() const { return m_scopep; }
 
-    // For graph dumping
+    // LCOV_EXCL_START // Debug code
     string name() const override { return m_logicp->fileline()->ascii(); };
     string dotShape() const override { return "rectangle"; }
+    // LCOV_EXCL_STOP
 };
 
 class VarVertex final : public V3GraphVertex {
@@ -84,10 +85,11 @@ public:
     AstVarScope* vscp() const { return m_vscp; }
     AstVar* varp() const { return m_vscp->varp(); }
 
-    // For graph dumping
+    // LCOV_EXCL_START // Debug code
     string name() const override { return m_vscp->name(); }
     string dotShape() const override { return "ellipse"; }
     string dotColor() const override { return "blue"; }
+    // LCOV_EXCL_STOP
 };
 
 class Graph final : public V3Graph {
@@ -97,8 +99,9 @@ class Graph final : public V3Graph {
             AstNode* const logicp = lvtxp->logicp();
             std::cerr << logicp->fileline()->warnOther()
                       << "     Example path: " << logicp->typeName() << endl;
-        }
-        if (VarVertex* const vvtxp = dynamic_cast<VarVertex*>(vtxp)) {
+        } else {
+            VarVertex* const vvtxp = dynamic_cast<VarVertex*>(vtxp);
+            UASSERT(vvtxp, "Cannot be anything else");
             AstVarScope* const vscp = vvtxp->vscp();
             std::cerr << vscp->fileline()->warnOther()
                       << "     Example path: " << vscp->prettyName() << endl;
@@ -369,11 +372,7 @@ LogicByScope fixCuts(AstNetlist* netlistp, const std::vector<VarVertex*>& cutVer
         for (AstVarScope* const vscp : lvtx2Cuts[lvtxp]) {
             AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::READ};
             AstSenItem* const nextp = new AstSenItem{flp, VEdgeType::ET_HYBRID, refp};
-            if (!senItemsp) {
-                senItemsp = nextp;
-            } else {
-                senItemsp->addNext(nextp);
-            }
+            senItemsp = VN_AS(AstNode::addNext(senItemsp, nextp), SenItem);
         }
         AstSenTree* const senTree = new AstSenTree{flp, senItemsp};
         // Add logic to result with new sensitivity

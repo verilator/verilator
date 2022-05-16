@@ -1951,7 +1951,7 @@ public:
                         const OrderVarStdVertex* const ovvp
                             = dynamic_cast<OrderVarStdVertex*>(edgep->top());
                         if (!ovvp) continue;
-                        if (ovvp->varScp()->varp()->isSc()) {
+                        if (ovvp->vscp()->varp()->isSc()) {
                             ovvSetSystemC.insert(ovvp);
                         } else {
                             ovvSet.insert(ovvp);

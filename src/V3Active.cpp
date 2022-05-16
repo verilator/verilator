@@ -514,10 +514,9 @@ private:
         visitAlways(nodep, nodep->sensesp(), nodep->keyword());
     }
     virtual void visit(AstAlwaysPostponed* nodep) override {
-        if (!nodep->bodysp()) {  // Empty always. Remove it now.
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
+        // Might be empty with later optimizations, so this assertion can be removed,
+        // but for now it is guaranteed to be not empty.
+        UASSERT_OBJ(nodep->bodysp(), nodep, "Should not be empty");
         visitAlways(nodep, nullptr, VAlwaysKwd::ALWAYS);
     }
     virtual void visit(AstAlwaysPublic* nodep) override {

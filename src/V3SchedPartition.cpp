@@ -59,6 +59,8 @@ public:
     SchedSenVertex(V3Graph* graphp, const AstSenItem* senItemp)
         : V3GraphVertex{graphp}
         , m_senItemp{senItemp} {}
+
+    // LCOV_EXCL_START // Debug code
     string name() const override {
         std::ostringstream os;
         V3EmitV::verilogForTree(const_cast<AstSenItem*>(m_senItemp), os);
@@ -66,6 +68,7 @@ public:
     }
     string dotShape() const override { return "doubleoctagon"; }
     string dotColor() const override { return "red"; }
+    // LCOV_EXCL_STOP
 };
 
 class SchedLogicVertex final : public V3GraphVertex {
@@ -83,10 +86,12 @@ public:
     AstSenTree* senTreep() const { return m_senTreep; }
     AstNode* logicp() const { return m_logicp; }
 
+    // LCOV_EXCL_START // Debug code
     string name() const override {
         return m_logicp->typeName() + ("\n" + m_logicp->fileline()->ascii());
     };
     string dotShape() const override { return "rectangle"; }
+    // LCOV_EXCL_STOP
 };
 
 class SchedVarVertex final : public V3GraphVertex {
@@ -96,6 +101,8 @@ public:
     SchedVarVertex(V3Graph* graphp, AstVarScope* vscp)
         : V3GraphVertex{graphp}
         , m_vscp{vscp} {}
+
+    // LCOV_EXCL_START // Debug code
     string name() const override { return m_vscp->name(); }
     string dotShape() const override {
         return m_vscp->scopep()->isTop() && m_vscp->varp()->isNonOutput() ? "invhouse" : "ellipse";
@@ -103,6 +110,7 @@ public:
     string dotColor() const override {
         return m_vscp->scopep()->isTop() && m_vscp->varp()->isNonOutput() ? "green" : "black";
     }
+    // LCOV_EXCL_STOP
 };
 
 class SchedGraphBuilder final : public VNVisitor {
@@ -229,18 +237,23 @@ class SchedGraphBuilder final : public VNVisitor {
     virtual void visit(AstAssignPost* nodep) override {}
     virtual void visit(AstAlwaysPost* nodep) override {}
 
+    // LCOV_EXCL_START
     // Ignore
-    virtual void visit(AstInitialStatic* nodep) override {  // LCOV_EXCL_START
+    virtual void visit(AstInitialStatic* nodep) override {
         nodep->v3fatalSrc("Should not need ordering");
     }
-    virtual void visit(AstInitial* nodep) override {
+    virtual void visit(AstInitial* nodep) override {  //
         nodep->v3fatalSrc("Should not need ordering");
     }
-    virtual void visit(AstFinal* nodep) override {
+    virtual void visit(AstFinal* nodep) override {  //
         nodep->v3fatalSrc("Should not need ordering");
-    }  // LCOV_EXCL_STOP
+    }
 
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+    // Default - Any other AstActive content not handled above will hit this
+    virtual void visit(AstNode* nodep) override {  //
+        nodep->v3fatalSrc("Should behandled above");
+    }
+    // LCOV_EXCL_STOP
 
     SchedGraphBuilder(const LogicByScope& clockedLogic, const LogicByScope& combinationalLogic,
                       const LogicByScope& hybridLogic) {

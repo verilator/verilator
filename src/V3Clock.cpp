@@ -119,30 +119,26 @@ private:
         pushDeletep(nodep);  // Delete it later, AstActives still pointing to it
     }
     virtual void visit(AstActive* nodep) override {
-        // Careful if adding variables here, ACTIVES can be under other ACTIVES
-        // Need to save and restore any member state in AstUntilStable block
+        UASSERT_OBJ(nodep->hasClocked(), nodep, "Should have been converted by V3Sched");
+        UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not have been created if empty");
+
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
-        UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not have been created if empty");
         AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
-        if (nodep->hasClocked()) {
-            // Create 'if' statement, if needed
-            if (!m_lastSenp || !nodep->sensesp()->sameTree(m_lastSenp)) {
-                clearLastSen();
-                m_lastSenp = nodep->sensesp();
-                // Make a new if statement
-                m_lastIfp = makeActiveIf(m_lastSenp);
-                relinker.relink(m_lastIfp);
-            }
-            // Move statements to if
-            m_lastIfp->addIfsp(stmtsp);
-        } else if (nodep->hasCombo()) {
+
+        // Create 'if' statement, if needed
+        if (!m_lastSenp || !nodep->sensesp()->sameTree(m_lastSenp)) {
             clearLastSen();
-            // Move statements to body
-            relinker.relink(stmtsp);
-        } else {
-            nodep->v3fatalSrc("Should have been removed by V3Sched::schedule");
+            m_lastSenp = nodep->sensesp();
+            // Make a new if statement
+            m_lastIfp = makeActiveIf(m_lastSenp);
+            relinker.relink(m_lastIfp);
         }
+
+        // Move statements to if
+        m_lastIfp->addIfsp(stmtsp);
+
+        // Dispose of the AstActive
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstExecGraph* nodep) override {

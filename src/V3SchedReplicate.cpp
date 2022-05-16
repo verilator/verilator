@@ -70,7 +70,7 @@ public:
         m_drivingRegions = static_cast<RegionFlags>(m_drivingRegions | regions);
     }
 
-    // For graph dumping
+    // LCOV_EXCL_START // Debug code
     string dotColor() const override {
         switch (static_cast<unsigned>(m_drivingRegions)) {
         case NONE: return "black";
@@ -81,9 +81,10 @@ public:
         case INPUT | NBA: return "magenta";
         case ACTIVE | NBA: return "cyan";
         case INPUT | ACTIVE | NBA: return "gray80";  // don't want white on white background
-        default: v3fatal("There are only 3 region bits"); return "";  // LCOV_EXCL_LINE
+        default: v3fatal("There are only 3 region bits"); return "";
         }
     }
+    // LCOV_EXCL_STOP
 };
 
 class LogicVertex final : public Vertex {
