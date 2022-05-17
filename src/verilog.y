@@ -40,7 +40,8 @@
 #define BBUNSUP(fl, msg) (fl)->v3warn(E_UNSUPPORTED, msg)
 #define GATEUNSUP(fl, tok) \
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
-#define PRIMDLYUNSUP(nodep) { \
+#define PRIMDLYUNSUP(nodep) \
+    { \
         if (nodep) { \
             nodep->v3warn(ASSIGNDLY, "Unsupported: Ignoring delay on this primitive."); \
             nodep->deleteTree(); \
