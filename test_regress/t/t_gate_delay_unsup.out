@@ -1,0 +1,12 @@
+%Warning-ASSIGNDLY: t/t_gate_basic.v:23:12: Unsupported: Ignoring delay on this primitive.
+   23 |    not   #(0.108) NT0 (nt0, a[0]);
+      |            ^~~~~
+                    ... For warning description see https://verilator.org/warn/ASSIGNDLY?v=latest
+                    ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
+%Warning-ASSIGNDLY: t/t_gate_basic.v:24:11: Unsupported: Ignoring delay on this primitive.
+   24 |    and   #1       AN0 (an0, a[0], b[0]);
+      |           ^
+%Warning-ASSIGNDLY: t/t_gate_basic.v:25:12: Unsupported: Ignoring delay on this primitive.
+   25 |    nand  #(2,3)   ND0 (nd0, a[0], b[0], b[1]);
+      |            ^
+%Error: Exiting due to
