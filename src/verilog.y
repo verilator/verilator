@@ -40,6 +40,13 @@
 #define BBUNSUP(fl, msg) (fl)->v3warn(E_UNSUPPORTED, msg)
 #define GATEUNSUP(fl, tok) \
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
+#define PRIMDLYUNSUP(nodep) \
+    { \
+        if (nodep) { \
+            nodep->v3warn(ASSIGNDLY, "Unsupported: Ignoring delay on this primitive."); \
+            nodep->deleteTree(); \
+        } \
+    }
 
 //======================================================================
 // Statics (for here only)
@@ -60,6 +67,7 @@ public:
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
+    AstNode* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstNodeModule* m_modp = nullptr;  // Last module for timeunits
     bool m_pinAnsi = false;  // In ANSI port list
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
@@ -138,6 +146,7 @@ public:
         if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = nullptr);
         m_varDTypep = dtypep;
     }
+    void setNetDelay(AstNode* netDelayp) { m_netDelayp = netDelayp; }
     void pinPush() {
         m_pinStack.push(m_pinNum);
         m_pinNum = 1;
@@ -1708,11 +1717,13 @@ net_dataTypeE<nodeDTypep>:
                 var_data_type                           { $$ = $1; }
         |       signingE rangeList delayE
                         { $$ = GRAMMARP->addRange(new AstBasicDType{$2->fileline(), LOGIC, $1},
-                                                                    $2, true); }  // not implicit
+                                                                    $2, true);
+                          GRAMMARP->setNetDelay($3); }  // not implicit
         |       signing
                         { $$ = new AstBasicDType{$<fl>1, LOGIC, $1}; }  // not implicit
         |       /*implicit*/ delayE
-                        { $$ = new AstBasicDType{CRELINE(), LOGIC}; }  // not implicit
+                        { $$ = new AstBasicDType{CRELINE(), LOGIC};
+                          GRAMMARP->setNetDelay($1); }  // not implicit
         ;
 
 net_type:                       // ==IEEE: net_type
@@ -2389,7 +2400,15 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         ;
 
 continuous_assign<nodep>:       // IEEE: continuous_assign
-                yASSIGN strengthSpecE delayE assignList ';'     { $$ = $4; }
+                yASSIGN strengthSpecE delayE assignList ';'
+                {
+                    $$ = $4;
+                    if ($3)
+                        for (auto* nodep = $$; nodep; nodep = nodep->nextp()) {
+                            auto* const assignp = VN_AS(nodep, NodeAssign);
+                            assignp->addTimingControlp(nodep == $$ ? $3 : $3->cloneTree(false));
+                        }
+                }
         ;
 
 initial_construct<nodep>:       // IEEE: initial_construct
@@ -2630,22 +2649,21 @@ assignOne<nodep>:
                 variable_lvalue '=' expr                { $$ = new AstAssignW($2,$1,$3); }
         ;
 
-//UNSUPdelay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
-//UNSUP         /* empty */                             { $$ = nullptr; }
-//UNSUP |       delay_control                           { $$ = $1; }
-//UNSUP |       event_control                           { $$ = $1; }
+delay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
+                /* empty */                             { $$ = nullptr; }
+        |       delay_control                           { $$ = $1; }
+        |       event_control                           { $$ = $1; }
 //UNSUP |       yREPEAT '(' expr ')' event_control      { }
-//UNSUP ;
-
-delayE:
-                /* empty */                             { }
-        |       delay                                   { }
         ;
 
-delay:
+delayE<nodep>:
+                /* empty */                             { $$ = nullptr; }
+        |       delay                                   { $$ = $1; }
+        ;
+
+delay<nodep>:
                 delay_control
-                        { $1->v3warn(ASSIGNDLY, "Unsupported: Ignoring delay on this assignment/primitive.");
-                          DEL($1); }
+                        { $$ = $1; }
         ;
 
 delay_control<nodep>:   //== IEEE: delay_control
@@ -2682,8 +2700,9 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                         { $$ = VARDONEA($<fl>1,*$1, nullptr, $2); }
         |       netId sigAttrListE '=' expr
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          $$->addNext(new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4}); }
-        |       netId variable_dimensionList sigAttrListE
+                          auto* const assignp = new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4};
+                          if ($$->delayp()) assignp->addTimingControlp($$->delayp()->unlinkFrBack());  // IEEE 1800-2017 10.3.3
+                          $$->addNext(assignp); }        |       netId variable_dimensionList sigAttrListE
                         { $$ = VARDONEA($<fl>1,*$1, $2, $3); }
         ;
 
@@ -3141,12 +3160,10 @@ statement_item<nodep>:          // IEEE: statement_item
         |       fexprLvalue '=' dynamic_array_new ';'   { $$ = new AstAssign($2, $1, $3); }
         //
         //                      // IEEE: nonblocking_assignment
-        |       fexprLvalue yP_LTE delayE expr ';'      { $$ = new AstAssignDly($2,$1,$4); }
-        //UNSUP fexprLvalue yP_LTE delay_or_event_controlE expr ';'     { UNSUP }
-        //
-        //                      // IEEE: procedural_continuous_assignment
-        |       yASSIGN idClassSel '=' delayE expr ';'  { $$ = new AstAssign($1,$2,$5); }
-        //UNSUP:                        delay_or_event_controlE above
+        |       fexprLvalue yP_LTE delay_or_event_controlE expr ';'
+                        { $$ = new AstAssignDly{$2, $1, $4, $3}; }
+        |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'
+                        { $$ = new AstAssign{$1, $2, $5, $4}; }
         |       yDEASSIGN variable_lvalue ';'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); }
         |       yFORCE variable_lvalue '=' expr ';'
@@ -3224,10 +3241,8 @@ statement_item<nodep>:          // IEEE: statement_item
                         { // AssignDly because we don't have stratified queue, and need to
                           // read events, clear next event, THEN apply this set
                           $$ = new AstAssignDly($1, $2, new AstConst($1, AstConst::BitTrue())); }
-        //UNSUP yP_MINUSGTGT delay_or_event_controlE hierarchical_identifier/*event*/ ';'       { UNSUP }
-        //                      // IEEE remove below
-        |       yP_MINUSGTGT delayE idDotted/*hierarchical_identifier-event*/ ';'
-                        { $$ = new AstAssignDly($1, $3, new AstConst($1, AstConst::BitTrue())); }
+        |       yP_MINUSGTGT delay_or_event_controlE idDotted/*hierarchical_identifier-event*/ ';'
+                        { $$ = new AstAssignDly{$1, $3, new AstConst{$1, AstConst::BitTrue()}, $2}; }
         //
         //                      // IEEE: loop_statement
         |       yFOREVER stmtBlock                      { $$ = new AstWhile($1,new AstConst($1, AstConst::BitTrue()), $2); }
@@ -3251,7 +3266,7 @@ statement_item<nodep>:          // IEEE: statement_item
         //
         |       par_block                               { $$ = $1; }
         //                      // IEEE: procedural_timing_control_statement + procedural_timing_control
-        |       delay_control stmtBlock                 { $$ = new AstDelay($1->fileline(), $1); $$->addNextNull($2); }
+        |       delay_control stmtBlock                 { $$ = new AstDelay{$1->fileline(), $1, $2}; }
         |       event_control stmtBlock                 { $$ = new AstEventControl(FILELINE_OR_CRE($1), $1, $2); }
         //UNSUP cycle_delay stmtBlock                   { UNSUP }
         //
@@ -3313,11 +3328,10 @@ statementVerilatorPragmas<nodep>:
 //UNSUP ;
 
 foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of expression)
-                fexprLvalue '=' delayE expr     { $$ = new AstAssign($2,$1,$4); }
+                fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2, $1, $4, $3}; }
         |       fexprLvalue '=' yD_FOPEN '(' expr ')'           { $$ = new AstFOpenMcd($3,$1,$5); }
         |       fexprLvalue '=' yD_FOPEN '(' expr ',' expr ')'  { $$ = new AstFOpen($3,$1,$5,$7); }
         //
-        //UNSUP ~f~exprLvalue '=' delay_or_event_controlE expr { UNSUP }
         //UNSUP ~f~exprLvalue yP_PLUS(etc) expr         { UNSUP }
         |       fexprLvalue yP_PLUSEQ    expr           { $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),$3)); }
         |       fexprLvalue yP_MINUSEQ   expr           { $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),$3)); }
@@ -4687,22 +4701,22 @@ stream_expressionOrDataType<nodep>:     // IEEE: from streaming_concatenation
 // Gate declarations
 
 gateDecl<nodep>:
-                yBUF    delayE gateBufList ';'          { $$ = $3; }
-        |       yBUFIF0 delayE gateBufif0List ';'       { $$ = $3; }
-        |       yBUFIF1 delayE gateBufif1List ';'       { $$ = $3; }
-        |       yNOT    delayE gateNotList ';'          { $$ = $3; }
-        |       yNOTIF0 delayE gateNotif0List ';'       { $$ = $3; }
-        |       yNOTIF1 delayE gateNotif1List ';'       { $$ = $3; }
-        |       yAND  delayE gateAndList ';'            { $$ = $3; }
-        |       yNAND delayE gateNandList ';'           { $$ = $3; }
-        |       yOR   delayE gateOrList ';'             { $$ = $3; }
-        |       yNOR  delayE gateNorList ';'            { $$ = $3; }
-        |       yXOR  delayE gateXorList ';'            { $$ = $3; }
-        |       yXNOR delayE gateXnorList ';'           { $$ = $3; }
-        |       yPULLUP delayE gatePullupList ';'       { $$ = $3; }
-        |       yPULLDOWN delayE gatePulldownList ';'   { $$ = $3; }
-        |       yNMOS delayE gateBufif1List ';'         { $$ = $3; }  // ~=bufif1, as don't have strengths yet
-        |       yPMOS delayE gateBufif0List ';'         { $$ = $3; }  // ~=bufif0, as don't have strengths yet
+                yBUF    delayE gateBufList ';'          { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yBUFIF0 delayE gateBufif0List ';'       { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yBUFIF1 delayE gateBufif1List ';'       { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yNOT    delayE gateNotList ';'          { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yNOTIF0 delayE gateNotif0List ';'       { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yNOTIF1 delayE gateNotif1List ';'       { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yAND  delayE gateAndList ';'            { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yNAND delayE gateNandList ';'           { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yOR   delayE gateOrList ';'             { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yNOR  delayE gateNorList ';'            { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yXOR  delayE gateXorList ';'            { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yXNOR delayE gateXnorList ';'           { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yPULLUP delayE gatePullupList ';'       { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yPULLDOWN delayE gatePulldownList ';'   { $$ = $3; PRIMDLYUNSUP($2); }
+        |       yNMOS delayE gateBufif1List ';'         { $$ = $3; PRIMDLYUNSUP($2); }  // ~=bufif1, as don't have strengths yet
+        |       yPMOS delayE gateBufif0List ';'         { $$ = $3; PRIMDLYUNSUP($2); }  // ~=bufif0, as don't have strengths yet
         //
         |       yTRAN delayE gateUnsupList ';'          { $$ = $3; GATEUNSUP($3,"tran"); } // Unsupported
         |       yRCMOS delayE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"rcmos"); } // Unsupported

@@ -595,6 +595,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
@@ -3983,6 +3984,11 @@ private:
                 // see t_event_copy.v for commentary on the mess involved
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
+        }
+        if (nodep->timingControlp()) {
+            nodep->timingControlp()->v3warn(
+                ASSIGNDLY, "Unsupported: Ignoring timing control on this assignment.");
+            nodep->timingControlp()->unlinkFrBackWithNext()->deleteTree();
         }
         if (VN_IS(nodep->rhsp(), EmptyQueue)) {
             UINFO(9, "= {} -> .delete(): " << nodep);
