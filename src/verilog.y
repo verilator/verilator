@@ -3158,8 +3158,10 @@ statement_item<nodep>:          // IEEE: statement_item
         |       fexprLvalue '=' dynamic_array_new ';'   { $$ = new AstAssign($2, $1, $3); }
         //
         //                      // IEEE: nonblocking_assignment
-        |       fexprLvalue yP_LTE delay_or_event_controlE expr ';'      { $$ = new AstAssignDly{$2,$1,$4,$3}; }
-        |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'  { $$ = new AstAssign{$1,$2,$5,$4}; }
+        |       fexprLvalue yP_LTE delay_or_event_controlE expr ';'
+                        { $$ = new AstAssignDly{$2, $1, $4, $3}; }
+        |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'
+                        { $$ = new AstAssign{$1, $2, $5, $4}; }
         |       yDEASSIGN variable_lvalue ';'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); }
         |       yFORCE variable_lvalue '=' expr ';'
@@ -3324,7 +3326,7 @@ statementVerilatorPragmas<nodep>:
 //UNSUP ;
 
 foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of expression)
-                fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2,$1,$4,$3}; }
+                fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2, $1, $4, $3}; }
         |       fexprLvalue '=' yD_FOPEN '(' expr ')'           { $$ = new AstFOpenMcd($3,$1,$5); }
         |       fexprLvalue '=' yD_FOPEN '(' expr ',' expr ')'  { $$ = new AstFOpen($3,$1,$5,$7); }
         //
