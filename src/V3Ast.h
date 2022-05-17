@@ -2505,9 +2505,7 @@ public:
     AstNode* rhsp() const { return op1p(); }  // op1 = Assign from
     AstNode* lhsp() const { return op2p(); }  // op2 = Assign to
     // op3 = Timing controls (delays, event controls)
-    AstNode* timingControlp() const {
-        return op3p();
-    }
+    AstNode* timingControlp() const { return op3p(); }
     void addTimingControlp(AstNode* const np) { addNOp3p(np); }
     void rhsp(AstNode* np) { setOp1p(np); }
     void lhsp(AstNode* np) { setOp2p(np); }
