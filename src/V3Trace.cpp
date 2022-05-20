@@ -520,7 +520,7 @@ private:
                            "tracep->oldp(vlSymsp->__Vm_baseCode);\n");
             } else {
                 // Change dump sub function
-                if (v3Global.opt.trueTraceThreads()) {
+                if (v3Global.opt.useTraceOffloadThread()) {
                     addInitStr("const uint32_t base VL_ATTR_UNUSED = "
                                "vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ";\n");
