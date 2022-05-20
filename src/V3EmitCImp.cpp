@@ -751,20 +751,20 @@ class EmitCTrace final : EmitCFunc {
         const string func = nodep->full() ? "full" : "chg";
         bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("tracep->" + func + "Double");
+            puts("bufp->" + func + "Double");
             emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("tracep->" + func + "WData");
+            puts("bufp->" + func + "WData");
         } else if (nodep->isQuad()) {
-            puts("tracep->" + func + "QData");
+            puts("bufp->" + func + "QData");
         } else if (nodep->declp()->widthMin() > 16) {
-            puts("tracep->" + func + "IData");
+            puts("bufp->" + func + "IData");
         } else if (nodep->declp()->widthMin() > 8) {
-            puts("tracep->" + func + "SData");
+            puts("bufp->" + func + "SData");
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("tracep->" + func + "CData");
+            puts("bufp->" + func + "CData");
         } else {
-            puts("tracep->" + func + "Bit");
+            puts("bufp->" + func + "Bit");
             emitWidth = false;
         }
 

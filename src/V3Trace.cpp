@@ -180,6 +180,9 @@ private:
     TraceActivityVertex* const m_alwaysVtxp;  // "Always trace" vertex
     bool m_finding = false;  // Pass one of algorithm?
 
+    // Trace parallelism. Only VCD tracing can be parallelized at this time.
+    const uint32_t m_parallelism = 1;
+
     VDouble0 m_statUniqSigs;  // Statistic tracking
     VDouble0 m_statUniqCodes;  // Statistic tracking
 
@@ -388,7 +391,7 @@ private:
                 if (!it->second->duplicatep()) {
                     uint32_t cost = 0;
                     const AstTraceDecl* const declp = it->second->nodep();
-                    // The number of comparisons required by tracep->chg*
+                    // The number of comparisons required by bufp->chg*
                     cost += declp->isWide() ? declp->codeInc() : 1;
                     // Arrays are traced by element
                     cost *= declp->arrayRange().ranged() ? declp->arrayRange().elements() : 1;
@@ -494,7 +497,7 @@ private:
         };
         if (isTopFunc) {
             // Top functions
-            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase() + "* tracep");
+            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase() + "::Buffer* bufp");
             addInitStr(voidSelfAssign(m_topModp));
             addInitStr(symClassAssign());
             // Add global activity check to change dump functions
@@ -508,32 +511,33 @@ private:
                 m_regFuncp->addStmtsp(new AstText(flp, "tracep->addChgCb(", true));
             }
             m_regFuncp->addStmtsp(new AstAddrOfCFunc(flp, funcp));
-            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf);\n", true));
+            const string threadPool{m_parallelism > 1 ? "vlSymsp->__Vm_threadPoolp" : "nullptr"};
+            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf, " + threadPool + ");\n", true));
         } else {
             // Sub functions
-            funcp->argTypes(v3Global.opt.traceClassBase() + "* tracep");
+            funcp->argTypes(v3Global.opt.traceClassBase() + "::Buffer* bufp");
             // Setup base references. Note in rare occasions we can end up with an empty trace
             // sub function, hence the VL_ATTR_UNUSED attributes.
             if (full) {
                 // Full dump sub function
                 addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
-                           "tracep->oldp(vlSymsp->__Vm_baseCode);\n");
+                           "bufp->oldp(vlSymsp->__Vm_baseCode);\n");
             } else {
                 // Change dump sub function
                 if (v3Global.opt.useTraceOffloadThread()) {
                     addInitStr("const uint32_t base VL_ATTR_UNUSED = "
                                "vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ";\n");
-                    addInitStr("if (false && tracep) {}  // Prevent unused\n");
+                    addInitStr("if (false && bufp) {}  // Prevent unused\n");
                 } else {
                     addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
-                               "tracep->oldp(vlSymsp->__Vm_baseCode + "
+                               "bufp->oldp(vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ");\n");
                 }
             }
             // Add call to top function
             AstCCall* const callp = new AstCCall(funcp->fileline(), funcp);
-            callp->argTypes("tracep");
+            callp->argTypes("bufp");
             topFuncp->addStmtsp(callp);
         }
         // Done
@@ -747,13 +751,11 @@ private:
         m_regFuncp->isLoose(true);
         m_topScopep->addActivep(m_regFuncp);
 
-        const int parallelism = 1;  // Note: will bump this later, code below works for any value
-
         // Create the full dump functions, also allocates signal numbers
-        createFullTraceFunction(traces, nFullCodes, parallelism);
+        createFullTraceFunction(traces, nFullCodes, m_parallelism);
 
         // Create the incremental dump functions
-        createChgTraceFunctions(traces, nChgCodes, parallelism);
+        createChgTraceFunctions(traces, nChgCodes, m_parallelism);
 
         // Remove refs to traced values from TraceDecl nodes, these have now moved under
         // TraceInc

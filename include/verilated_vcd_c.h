@@ -28,39 +28,20 @@
 #include <string>
 #include <vector>
 
-class VerilatedVcd;
-
-//=============================================================================
-// VerilatedFile
-/// Class representing a file to write to. These virtual methods can be
-/// overrode for e.g. socket I/O.
-
-class VerilatedVcdFile VL_NOT_FINAL {
-private:
-    int m_fd = 0;  // File descriptor we're writing to
-public:
-    // METHODS
-    /// Construct a (as yet) closed file
-    VerilatedVcdFile() = default;
-    /// Close and destruct
-    virtual ~VerilatedVcdFile() = default;
-    /// Open a file with given filename
-    virtual bool open(const std::string& name) VL_MT_UNSAFE;
-    /// Close object's file
-    virtual void close() VL_MT_UNSAFE;
-    /// Write data to file (if it is open)
-    virtual ssize_t write(const char* bufp, ssize_t len) VL_MT_UNSAFE;
-};
+class VerilatedVcdBuffer;
+class VerilatedVcdFile;
 
 //=============================================================================
 // VerilatedVcd
 // Base class to create a Verilator VCD dump
 // This is an internally used class - see VerilatedVcdC for what to call from applications
 
-class VerilatedVcd VL_NOT_FINAL : public VerilatedTrace<VerilatedVcd> {
+class VerilatedVcd VL_NOT_FINAL : public VerilatedTrace<VerilatedVcd, VerilatedVcdBuffer> {
+public:
+    using Super = VerilatedTrace<VerilatedVcd, VerilatedVcdBuffer>;
+
 private:
-    // Give the superclass access to private bits (to avoid virtual functions)
-    friend class VerilatedTrace<VerilatedVcd>;
+    friend Buffer;  // Give the buffer access to the private bits
 
     //=========================================================================
     // VCD specific internals
@@ -74,9 +55,9 @@ private:
     int m_modDepth = 0;  // Depth of module hierarchy
 
     char* m_wrBufp;  // Output buffer
-    const char* m_wrFlushp;  // Output buffer flush trigger location
+    char* m_wrFlushp;  // Output buffer flush trigger location
     char* m_writep;  // Write pointer into output buffer
-    uint64_t m_wrChunkSize;  // Output buffer size
+    size_t m_wrChunkSize;  // Output buffer size
     uint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
     std::vector<char> m_suffixes;  // VCD line end string codes + metadata
@@ -107,8 +88,6 @@ private:
 
     static char* writeCode(char* writep, uint32_t code);
 
-    void finishLine(uint32_t code, char* writep);
-
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcd);
 
@@ -116,27 +95,22 @@ protected:
     //=========================================================================
     // Implementation of VerilatedTrace interface
 
-    // Implementations of protected virtual methods for VerilatedTrace
+    // Called when the trace moves forward to a new time point
     virtual void emitTimeChange(uint64_t timeui) override;
 
     // Hooks called from VerilatedTrace
     virtual bool preFullDump() override { return isOpen(); }
     virtual bool preChangeDump() override;
 
-    // Implementations of duck-typed methods for VerilatedTrace. These are
-    // called from only one place (namely full*) so always inline them.
-    inline void emitBit(uint32_t code, CData newval);
-    inline void emitCData(uint32_t code, CData newval, int bits);
-    inline void emitSData(uint32_t code, SData newval, int bits);
-    inline void emitIData(uint32_t code, IData newval, int bits);
-    inline void emitQData(uint32_t code, QData newval, int bits);
-    inline void emitWData(uint32_t code, const WData* newvalp, int bits);
-    inline void emitDouble(uint32_t code, double newval);
+    // Trace buffer management
+    virtual VerilatedVcdBuffer* getTraceBuffer() override;
+    virtual void commitTraceBuffer(VerilatedVcdBuffer*) override;
 
 public:
     //=========================================================================
     // External interface to client code
 
+    // CONSTRUCTOR
     explicit VerilatedVcd(VerilatedVcdFile* filep = nullptr);
     ~VerilatedVcd();
 
@@ -144,7 +118,7 @@ public:
     // Set size in megabytes after which new file should be created
     void rolloverMB(uint64_t rolloverMB) { m_rolloverMB = rolloverMB; }
 
-    // METHODS
+    // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
     void open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex);
     // Open next data-only file
@@ -167,14 +141,74 @@ public:
 };
 
 #ifndef DOXYGEN
-// Declare specializations here they are used in VerilatedVcdC just below
-template <> void VerilatedTrace<VerilatedVcd>::dump(uint64_t timeui);
-template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const char* unitp);
-template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const std::string& unit);
-template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const char* unitp);
-template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const std::string& unit);
-template <> void VerilatedTrace<VerilatedVcd>::dumpvars(int level, const std::string& hier);
+// Declare specialization here as it's used in VerilatedFstC just below
+template <> void VerilatedVcd::Super::dump(uint64_t);
+template <> void VerilatedVcd::Super::set_time_unit(const char*);
+template <> void VerilatedVcd::Super::set_time_unit(const std::string&);
+template <> void VerilatedVcd::Super::set_time_resolution(const char*);
+template <> void VerilatedVcd::Super::set_time_resolution(const std::string&);
+template <> void VerilatedVcd::Super::dumpvars(int, const std::string&);
 #endif  // DOXYGEN
+
+//=============================================================================
+// VerilatedVcdBuffer
+
+class VerilatedVcdBuffer final : public VerilatedTraceBuffer<VerilatedVcd, VerilatedVcdBuffer> {
+    // Give the trace file access to the private bits
+    friend VerilatedVcd;
+    friend VerilatedVcd::Super;
+
+    // Write pointer into output buffer
+    char* m_writep = m_owner.m_writep;
+    // Output buffer flush trigger location
+    char* const m_wrFlushp = m_owner.m_wrFlushp;
+    // VCD line end string codes + metadata
+    const char* const m_suffixes = m_owner.m_suffixes.data();
+    // The maximum number of bytes a single signal can emit
+    const size_t m_maxSignalBytes = m_owner.m_wrChunkSize;
+
+    void finishLine(uint32_t code, char* writep);
+
+    // CONSTRUCTOR
+    explicit VerilatedVcdBuffer(VerilatedVcd& owner);
+    ~VerilatedVcdBuffer() = default;
+
+public:
+    //=========================================================================
+    // Implementation of VerilatedTraceBuffer interface
+
+    // Implementations of duck-typed methods for VerilatedTraceBuffer. These are
+    // called from only one place (the full* methods), so always inline them.
+    inline void emitBit(uint32_t code, CData newval);
+    inline void emitCData(uint32_t code, CData newval, int bits);
+    inline void emitSData(uint32_t code, SData newval, int bits);
+    inline void emitIData(uint32_t code, IData newval, int bits);
+    inline void emitQData(uint32_t code, QData newval, int bits);
+    inline void emitWData(uint32_t code, const WData* newvalp, int bits);
+    inline void emitDouble(uint32_t code, double newval);
+};
+
+//=============================================================================
+// VerilatedFile
+/// Class representing a file to write to. These virtual methods can be
+/// overrode for e.g. socket I/O.
+
+class VerilatedVcdFile VL_NOT_FINAL {
+private:
+    int m_fd = 0;  // File descriptor we're writing to
+public:
+    // METHODS
+    /// Construct a (as yet) closed file
+    VerilatedVcdFile() = default;
+    /// Close and destruct
+    virtual ~VerilatedVcdFile() = default;
+    /// Open a file with given filename
+    virtual bool open(const std::string& name) VL_MT_UNSAFE;
+    /// Close object's file
+    virtual void close() VL_MT_UNSAFE;
+    /// Write data to file (if it is open)
+    virtual ssize_t write(const char* bufp, ssize_t len) VL_MT_UNSAFE;
+};
 
 //=============================================================================
 // VerilatedVcdC

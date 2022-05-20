@@ -83,9 +83,11 @@ static_assert(static_cast<int>(FST_ST_VCD_PROGRAM) == static_cast<int>(VLT_TRACE
 //=============================================================================
 // Specialization of the generics for this trace format
 
-#define VL_DERIVED_T VerilatedFst
+#define VL_SUB_T VerilatedFst
+#define VL_BUF_T VerilatedFstBuffer
 #include "verilated_trace_imp.h"
-#undef VL_DERIVED_T
+#undef VL_SUB_T
+#undef VL_BUF_T
 
 //=============================================================================
 // VerilatedFst
@@ -111,7 +113,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 
     m_curScope.clear();
 
-    VerilatedTrace<VerilatedFst>::traceInit();
+    Super::traceInit();
 
     // Clear the scope stack
     auto it = m_curScope.begin();
@@ -133,14 +135,14 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 
 void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
-    VerilatedTrace<VerilatedFst>::closeBase();
+    Super::closeBase();
     fstWriterClose(m_fst);
     m_fst = nullptr;
 }
 
 void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
-    VerilatedTrace<VerilatedFst>::flushBase();
+    Super::flushBase();
     fstWriterFlushContext(m_fst);
 }
 
@@ -162,7 +164,7 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVar
                            int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    const bool enabled = VerilatedTrace<VerilatedFst>::declCode(code, name, bits, false);
+    const bool enabled = Super::declCode(code, name, bits, false);
     if (!enabled) return;
 
     std::string nameasstr = namePrefix() + name;
@@ -245,18 +247,40 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 63, 0);
 }
 
+//=============================================================================
+// Get/commit trace buffer
+
+VerilatedFstBuffer* VerilatedFst::getTraceBuffer() { return new VerilatedFstBuffer{*this}; }
+
+void VerilatedFst::commitTraceBuffer(VerilatedFstBuffer* bufp) {
+#ifdef VL_TRACE_OFFLOAD
+    m_offloadBufferWritep = bufp->m_offloadBufferWritep;
+#else
+    delete bufp;
+#endif
+}
+
+//=============================================================================
+// VerilatedFstBuffer implementation
+
+VerilatedFstBuffer::VerilatedFstBuffer(VerilatedFst& owner)
+    : VerilatedTraceBuffer<VerilatedFst, VerilatedFstBuffer>{owner} {}
+
+//=============================================================================
+// Trace rendering primitives
+
 // Note: emit* are only ever called from one place (full* in
 // verilated_trace_imp.h, which is included in this file at the top),
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitBit(uint32_t code, CData newval) {
+void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitCData(uint32_t code, CData newval, int bits) {
+void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char buf[VL_BYTESIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
@@ -264,7 +288,7 @@ void VerilatedFst::emitCData(uint32_t code, CData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitSData(uint32_t code, SData newval, int bits) {
+void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int bits) {
     char buf[VL_SHORTSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
@@ -272,7 +296,7 @@ void VerilatedFst::emitSData(uint32_t code, SData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitIData(uint32_t code, IData newval, int bits) {
+void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char buf[VL_IDATASIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
@@ -280,7 +304,7 @@ void VerilatedFst::emitIData(uint32_t code, IData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitQData(uint32_t code, QData newval, int bits) {
+void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char buf[VL_QUADSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
@@ -288,7 +312,7 @@ void VerilatedFst::emitQData(uint32_t code, QData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitWData(uint32_t code, const WData* newvalp, int bits) {
+void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     int words = VL_WORDS_I(bits);
     char* wp = m_strbuf;
     // Convert the most significant word
@@ -304,6 +328,6 @@ void VerilatedFst::emitWData(uint32_t code, const WData* newvalp, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitDouble(uint32_t code, double newval) {
+void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }
