@@ -22,24 +22,34 @@
 #ifndef VERILATOR_VERILATED_TRACE_H_
 #define VERILATOR_VERILATED_TRACE_H_
 
-// In FST mode, VL_TRACE_THREADED enables offloading
+// clang-format off
+
+// In FST mode, VL_TRACE_THREADED enables offloading, but only if we also have
+// the FST writer thread. This means with --trace-threads 1, we get the FST
+// writer thread only, and with --trace-threads 2 we get offloading as well
 #if defined(VL_TRACE_FST_WRITER_THREAD) && defined(VL_TRACE_THREADED)
-#define VL_TRACE_OFFLOAD
+# define VL_TRACE_OFFLOAD
+#endif
+// VCD tracing can happen fully in parallel
+#if defined(VM_TRACE_VCD) && VM_TRACE_VCD && defined(VL_TRACE_THREADED)
+# define VL_TRACE_PARALLEL
 #endif
 
-// clang-format off
+#if defined(VL_TRACE_PARALLEL) && defined(VL_TRACE_OFFLOAD)
+# error "Cannot have VL_TRACE_PARALLEL and VL_TRACE_OFFLOAD together"
+#endif
 
 #include "verilated.h"
 #include "verilated_trace_defs.h"
 
 #include <bitset>
+#include <condition_variable>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #ifdef VL_TRACE_OFFLOAD
-# include <condition_variable>
 # include <deque>
 # include <thread>
 #endif
@@ -162,6 +172,30 @@ private:
             , m_userp{userp} {}
     };
 
+#ifdef VL_TRACE_PARALLEL
+    struct ParallelWorkerData {
+        const dumpCb_t m_cb;  // The callback
+        void* const m_userp;  // The use pointer to pass to the callback
+        Buffer* const m_bufp;  // The buffer pointer to pass to the callback
+        std::atomic<bool> m_ready{false};  // The ready flag
+        mutable VerilatedMutex m_mutex;  // Mutex for suspension until ready
+        std::condition_variable_any m_cv;  // Condition variable for suspension
+        bool m_waiting VL_GUARDED_BY(m_mutex) = false;  // Whether a thread is suspended in wait()
+
+        void wait();
+
+        ParallelWorkerData(dumpCb_t cb, void* userp, Buffer* bufp)
+            : m_cb{cb}
+            , m_userp{userp}
+            , m_bufp{bufp} {}
+    };
+
+    // Passed a ParallelWorkerData*, second argument is ignored
+    static void parallelWorkerTask(void*, bool);
+#endif
+
+    using ParallelCallbackMap = std::unordered_map<VlThreadPool*, std::vector<CallbackRecord>>;
+
 protected:
     uint32_t* m_sigs_oldvalp = nullptr;  // Previous value store
     EData* m_sigs_enabledp = nullptr;  // Bit vector of enabled codes (nullptr = all on)
@@ -169,11 +203,10 @@ private:
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize tracing
-    // Routines to perform full dump
-    std::unordered_map<VlThreadPool*, std::vector<CallbackRecord>> m_fullCbs;
-    // Routines to perform incremental dump
-    std::unordered_map<VlThreadPool*, std::vector<CallbackRecord>> m_chgCbs;
+    ParallelCallbackMap m_fullCbs;  // Routines to perform full dump
+    ParallelCallbackMap m_chgCbs;  // Routines to perform incremental dump
     std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
+    std::vector<VlThreadPool*> m_threadPoolps;  // All thread pools, in insertion order
     bool m_fullDump = true;  // Whether a full dump is required on the next call to 'dump'
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_numSignals = 0;  // Number of distinct signals
@@ -184,6 +217,8 @@ private:
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
 
+    void addThreadPool(VlThreadPool* threadPoolp) VL_MT_SAFE_EXCLUDES(m_mutex);
+
     void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec)
         VL_MT_SAFE_EXCLUDES(m_mutex);
 
@@ -191,8 +226,7 @@ private:
     // to access duck-typed functions to avoid a virtual function call.
     T_Trace* self() { return static_cast<T_Trace*>(this); }
 
-    void
-    runParallelCallbacks(std::unordered_map<VlThreadPool*, std::vector<CallbackRecord>> cbMap);
+    void runParallelCallbacks(const ParallelCallbackMap& cbMap);
 
     // Flush any remaining data for this file
     static void onFlush(void* selfp) VL_MT_UNSAFE_ONE;
@@ -464,7 +498,7 @@ public:
         const uint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
-    inline void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
+    VL_ATTR_ALWINLINE inline void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
         for (int i = 0; i < (bits + 31) / 32; ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
                 fullWData(oldp, newvalp, bits);

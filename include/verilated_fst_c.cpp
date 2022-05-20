@@ -254,10 +254,12 @@ VerilatedFstBuffer* VerilatedFst::getTraceBuffer() { return new VerilatedFstBuff
 
 void VerilatedFst::commitTraceBuffer(VerilatedFstBuffer* bufp) {
 #ifdef VL_TRACE_OFFLOAD
-    m_offloadBufferWritep = bufp->m_offloadBufferWritep;
-#else
-    delete bufp;
+    if (bufp->m_offloadBufferWritep) {
+        m_offloadBufferWritep = bufp->m_offloadBufferWritep;
+        return;  // Buffer will be deleted by the offload thread
+    }
 #endif
+    delete bufp;
 }
 
 //=============================================================================

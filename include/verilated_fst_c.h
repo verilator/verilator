@@ -113,12 +113,12 @@ public:
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
-template <> void VerilatedFst::Super::dump(uint64_t);
-template <> void VerilatedFst::Super::set_time_unit(const char*);
-template <> void VerilatedFst::Super::set_time_unit(const std::string&);
-template <> void VerilatedFst::Super::set_time_resolution(const char*);
-template <> void VerilatedFst::Super::set_time_resolution(const std::string&);
-template <> void VerilatedFst::Super::dumpvars(int, const std::string&);
+template <> void VerilatedFst::Super::dump(uint64_t time);
+template <> void VerilatedFst::Super::set_time_unit(const char* unitp);
+template <> void VerilatedFst::Super::set_time_unit(const std::string& unit);
+template <> void VerilatedFst::Super::set_time_resolution(const char* unitp);
+template <> void VerilatedFst::Super::set_time_resolution(const std::string& unit);
+template <> void VerilatedFst::Super::dumpvars(int level, const std::string& hier);
 #endif
 
 //=============================================================================
@@ -136,23 +136,23 @@ class VerilatedFstBuffer final : public VerilatedTraceBuffer<VerilatedFst, Veril
     // String buffer long enough to hold maxBits() chars
     char* const m_strbuf = m_owner.m_strbuf;
 
+public:
     // CONSTRUCTOR
     explicit VerilatedFstBuffer(VerilatedFst& owner);
     ~VerilatedFstBuffer() = default;
 
-public:
     //=========================================================================
     // Implementation of VerilatedTraceBuffer interface
 
     // Implementations of duck-typed methods for VerilatedTraceBuffer. These are
     // called from only one place (the full* methods), so always inline them.
-    inline void emitBit(uint32_t code, CData newval);
-    inline void emitCData(uint32_t code, CData newval, int bits);
-    inline void emitSData(uint32_t code, SData newval, int bits);
-    inline void emitIData(uint32_t code, IData newval, int bits);
-    inline void emitQData(uint32_t code, QData newval, int bits);
-    inline void emitWData(uint32_t code, const WData* newvalp, int bits);
-    inline void emitDouble(uint32_t code, double newval);
+    VL_ATTR_ALWINLINE inline void emitBit(uint32_t code, CData newval);
+    VL_ATTR_ALWINLINE inline void emitCData(uint32_t code, CData newval, int bits);
+    VL_ATTR_ALWINLINE inline void emitSData(uint32_t code, SData newval, int bits);
+    VL_ATTR_ALWINLINE inline void emitIData(uint32_t code, IData newval, int bits);
+    VL_ATTR_ALWINLINE inline void emitQData(uint32_t code, QData newval, int bits);
+    VL_ATTR_ALWINLINE inline void emitWData(uint32_t code, const WData* newvalp, int bits);
+    VL_ATTR_ALWINLINE inline void emitDouble(uint32_t code, double newval);
 };
 
 //=============================================================================

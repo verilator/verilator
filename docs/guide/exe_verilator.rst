@@ -1041,7 +1041,8 @@ Summary:
    is not thread safe. With "--threads 1", the generated model is single
    threaded but may run in a multithreaded environment. With "--threads N",
    where N >= 2, the model is generated to run multithreaded on up to N
-   threads. See :ref:`Multithreading`.
+   threads. See :ref:`Multithreading`. This option also applies to
+   :vlopt:`--trace` (but not :vlopt:`--trace-fst`).
 
 .. option:: --threads-dpi all
 
@@ -1119,7 +1120,8 @@ Summary:
    Having tracing compiled in may result in some small performance losses,
    even when tracing is not turned on during model execution.
 
-   See also :vlopt:`--trace-threads` option.
+   When using :vlopt:`--threads`, VCD tracing is parallelized, using the
+   same number of threads as passed to :vlopt:`--threads`.
 
 .. option:: --trace-coverage
 
@@ -1173,12 +1175,12 @@ Summary:
 .. option:: --trace-threads *threads*
 
    Enable waveform tracing using separate threads. This is typically faster
-   in simulation runtime but uses more total compute. This option is
-   independent of, and works with, both :vlopt:`--trace` and
-   :vlopt:`--trace-fst`.  Different trace formats can take advantage of
-   more trace threads to varying degrees. Currently VCD tracing can utilize
-   at most "--trace-threads 1", and FST tracing can utilize at most
-   "--trace-threads 2". This overrides :vlopt:`--no-threads` .
+   in simulation runtime but uses more total compute. This option only
+   applies to :vlopt:`--trace-fst`. FST tracing can utilize at most
+   "--trace-threads 2". This overrides :vlopt:`--no-threads`.
+
+   This option is accepted, but has absolutely no effect with
+   :vlopt:`--trace`, which respects :vlopt:`--threads` instead.
 
 .. option:: --trace-underscore
 

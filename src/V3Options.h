@@ -518,7 +518,11 @@ public:
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
-    bool useTraceOffloadThread() const { return traceFormat().fst() && traceThreads() > 1; }
+    bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }
+    bool useTraceParallel() const { return trace() && traceFormat().vcd() && threads() > 1; }
+    unsigned vmTraceThreads() const {
+        return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
+    }
     int unrollCount() const { return m_unrollCount; }
     int unrollStmts() const { return m_unrollStmts; }
 

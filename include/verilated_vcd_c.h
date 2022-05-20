@@ -58,6 +58,7 @@ private:
     char* m_wrFlushp;  // Output buffer flush trigger location
     char* m_writep;  // Write pointer into output buffer
     size_t m_wrChunkSize;  // Output buffer size
+    size_t m_maxSignalBytes = 0;  // Upper bound on number of bytes a single signal can generate
     uint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
     std::vector<char> m_suffixes;  // VCD line end string codes + metadata
@@ -65,7 +66,13 @@ private:
     using NameMap = std::map<const std::string, const std::string>;
     NameMap* m_namemapp = nullptr;  // List of names for the header
 
-    void bufferResize(uint64_t minsize);
+#ifdef VL_TRACE_PARALLEL
+    // Vector of free trace buffers as (pointer, size) pairs.
+    std::vector<std::pair<char*, size_t>> m_freeBuffers;
+    size_t m_numBuffers = 0;  // Number of trace buffers allocated
+#endif
+
+    void bufferResize(size_t minsize);
     void bufferFlush() VL_MT_UNSAFE_ONE;
     inline void bufferCheck() {
         // Flush the write buffer if there's not enough space left for new information
@@ -142,12 +149,12 @@ public:
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
-template <> void VerilatedVcd::Super::dump(uint64_t);
-template <> void VerilatedVcd::Super::set_time_unit(const char*);
-template <> void VerilatedVcd::Super::set_time_unit(const std::string&);
-template <> void VerilatedVcd::Super::set_time_resolution(const char*);
-template <> void VerilatedVcd::Super::set_time_resolution(const std::string&);
-template <> void VerilatedVcd::Super::dumpvars(int, const std::string&);
+template <> void VerilatedVcd::Super::dump(uint64_t time);
+template <> void VerilatedVcd::Super::set_time_unit(const char* unitp);
+template <> void VerilatedVcd::Super::set_time_unit(const std::string& unit);
+template <> void VerilatedVcd::Super::set_time_resolution(const char* unitp);
+template <> void VerilatedVcd::Super::set_time_resolution(const std::string& unit);
+template <> void VerilatedVcd::Super::dumpvars(int level, const std::string& hier);
 #endif  // DOXYGEN
 
 //=============================================================================
@@ -158,34 +165,51 @@ class VerilatedVcdBuffer final : public VerilatedTraceBuffer<VerilatedVcd, Veril
     friend VerilatedVcd;
     friend VerilatedVcd::Super;
 
-    // Write pointer into output buffer
-    char* m_writep = m_owner.m_writep;
-    // Output buffer flush trigger location
-    char* const m_wrFlushp = m_owner.m_wrFlushp;
+#ifdef VL_TRACE_PARALLEL
+    char* m_writep;  // Write pointer into m_bufp
+    char* m_bufp;  // The beginning of the trace buffer
+    size_t m_size;  // The size of the buffer at m_bufp
+    char* m_growp;  // Resize limit pointer
+#else
+    char* m_writep = m_owner.m_writep;  // Write pointer into output buffer
+    char* const m_wrFlushp = m_owner.m_wrFlushp;  // Output buffer flush trigger location
+#endif
+
     // VCD line end string codes + metadata
     const char* const m_suffixes = m_owner.m_suffixes.data();
     // The maximum number of bytes a single signal can emit
-    const size_t m_maxSignalBytes = m_owner.m_wrChunkSize;
+    const size_t m_maxSignalBytes = m_owner.m_maxSignalBytes;
 
     void finishLine(uint32_t code, char* writep);
 
-    // CONSTRUCTOR
-    explicit VerilatedVcdBuffer(VerilatedVcd& owner);
-    ~VerilatedVcdBuffer() = default;
+#ifdef VL_TRACE_PARALLEL
+    void adjustGrowp() {
+        m_growp = (m_bufp + m_size) - (2 * m_maxSignalBytes);
+        assert(m_growp >= m_bufp + m_maxSignalBytes);
+    }
+#endif
 
 public:
+    // CONSTRUCTOR
+#ifdef VL_TRACE_PARALLEL
+    explicit VerilatedVcdBuffer(VerilatedVcd& owner, char* bufp, size_t size);
+#else
+    explicit VerilatedVcdBuffer(VerilatedVcd& owner);
+#endif
+    ~VerilatedVcdBuffer() = default;
+
     //=========================================================================
     // Implementation of VerilatedTraceBuffer interface
 
     // Implementations of duck-typed methods for VerilatedTraceBuffer. These are
     // called from only one place (the full* methods), so always inline them.
-    inline void emitBit(uint32_t code, CData newval);
-    inline void emitCData(uint32_t code, CData newval, int bits);
-    inline void emitSData(uint32_t code, SData newval, int bits);
-    inline void emitIData(uint32_t code, IData newval, int bits);
-    inline void emitQData(uint32_t code, QData newval, int bits);
-    inline void emitWData(uint32_t code, const WData* newvalp, int bits);
-    inline void emitDouble(uint32_t code, double newval);
+    VL_ATTR_ALWINLINE inline void emitBit(uint32_t code, CData newval);
+    VL_ATTR_ALWINLINE inline void emitCData(uint32_t code, CData newval, int bits);
+    VL_ATTR_ALWINLINE inline void emitSData(uint32_t code, SData newval, int bits);
+    VL_ATTR_ALWINLINE inline void emitIData(uint32_t code, IData newval, int bits);
+    VL_ATTR_ALWINLINE inline void emitQData(uint32_t code, QData newval, int bits);
+    VL_ATTR_ALWINLINE inline void emitWData(uint32_t code, const WData* newvalp, int bits);
+    VL_ATTR_ALWINLINE inline void emitDouble(uint32_t code, double newval);
 };
 
 //=============================================================================

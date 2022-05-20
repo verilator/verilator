@@ -181,7 +181,8 @@ private:
     bool m_finding = false;  // Pass one of algorithm?
 
     // Trace parallelism. Only VCD tracing can be parallelized at this time.
-    const uint32_t m_parallelism = 1;
+    const uint32_t m_parallelism
+        = v3Global.opt.useTraceParallel() ? static_cast<uint32_t>(v3Global.opt.threads()) : 1;
 
     VDouble0 m_statUniqSigs;  // Statistic tracking
     VDouble0 m_statUniqCodes;  // Statistic tracking
@@ -524,7 +525,7 @@ private:
                            "bufp->oldp(vlSymsp->__Vm_baseCode);\n");
             } else {
                 // Change dump sub function
-                if (v3Global.opt.useTraceOffloadThread()) {
+                if (v3Global.opt.useTraceOffload()) {
                     addInitStr("const uint32_t base VL_ATTR_UNUSED = "
                                "vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ";\n");
@@ -732,7 +733,7 @@ private:
         // We will split functions such that each have to dump roughly the same amount of data
         // for this we need to keep tack of the number of codes used by the trace functions.
         uint32_t nFullCodes = 0;  // Number of non-duplicate codes (need to go into full* dump)
-        uint32_t nChgCodes = 0;  // Number of non-consant codes (need to go in to chg* dump)
+        uint32_t nChgCodes = 0;  // Number of non-constant codes (need to go in to chg* dump)
         sortTraces(traces, nFullCodes, nChgCodes);
 
         UINFO(5, "nFullCodes: " << nFullCodes << " nChgCodes: " << nChgCodes << endl);
