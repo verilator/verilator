@@ -119,14 +119,10 @@ class CMakeEmitter final {
         cmake_set_raw(*of, name + "_TRACE_STRUCTS", cvtToStr(v3Global.opt.traceStructs()));
         *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
         cmake_set_raw(*of, name + "_TRACE_VCD",
-                      (v3Global.opt.trace() && (v3Global.opt.traceFormat() == TraceFormat::VCD))
-                          ? "1"
-                          : "0");
-        *of << "# FST Tracing output mode? 0/1 (from --fst-trace)\n";
+                      (v3Global.opt.trace() && v3Global.opt.traceFormat().vcd()) ? "1" : "0");
+        *of << "# FST Tracing output mode? 0/1 (from --trace-fst)\n";
         cmake_set_raw(*of, name + "_TRACE_FST",
-                      (v3Global.opt.trace() && (v3Global.opt.traceFormat() != TraceFormat::VCD))
-                          ? "1"
-                          : "0");
+                      (v3Global.opt.trace() && v3Global.opt.traceFormat().fst()) ? "1" : "0");
 
         *of << "\n### Sources...\n";
         std::vector<string> classes_fast;

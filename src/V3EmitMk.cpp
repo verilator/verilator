@@ -65,6 +65,10 @@ public:
         of.puts("VM_TRACE = ");
         of.puts(v3Global.opt.trace() ? "1" : "0");
         of.puts("\n");
+        of.puts("# Tracing output mode in VCD format?  0/1 (from --trace)\n");
+        of.puts("VM_TRACE_VCD = ");
+        of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().vcd() ? "1" : "0");
+        of.puts("\n");
         of.puts("# Tracing output mode in FST format?  0/1 (from --trace-fst)\n");
         of.puts("VM_TRACE_FST = ");
         of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().fst() ? "1" : "0");

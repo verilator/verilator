@@ -137,6 +137,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
+    bool vcd() const { return m_e == VCD; }
     string classBase() const {
         static const char* const names[] = {"VerilatedVcd", "VerilatedFst"};
         return names[m_e];
