@@ -22,7 +22,8 @@
 #ifndef VERILATOR_VERILATED_TRACE_H_
 #define VERILATOR_VERILATED_TRACE_H_
 
-#ifdef VL_TRACE_THREADED
+// In FST mode, VL_TRACE_THREADED enables offloading
+#if defined(VL_TRACE_FST_WRITER_THREAD) && defined(VL_TRACE_THREADED)
 #define VL_TRACE_OFFLOAD
 #endif
 
