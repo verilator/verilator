@@ -19,6 +19,7 @@ Verilator 4.223 devel
 * Fix hang with large case statement optimization (#3405). [Mike Urbach]
 * Fix 'with' operator with type casting (#3387). [xiak95]
 * Fix incorrect conditional merging (#3409). [Raynard Qiao]
+* Fix passing VL_TRACE_FST_WRITER_THREAD in CMake build. [Geza Lore, Shunyao CAD]
 
 
 Verilator 4.222 2022-05-02
