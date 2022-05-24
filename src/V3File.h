@@ -176,6 +176,7 @@ public:
 
     // CALLBACKS - MUST OVERRIDE
     virtual void putcOutput(char chr) = 0;
+    virtual void putsOutput(const char* str) = 0;
 };
 
 //============================================================================
@@ -193,6 +194,7 @@ public:
 private:
     // CALLBACKS
     virtual void putcOutput(char chr) override { fputc(chr, m_fp); }
+    virtual void putsOutput(const char* str) override { fputs(str, m_fp); }
 };
 
 class V3OutCFile VL_NOT_FINAL : public V3OutFile {
