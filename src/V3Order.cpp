@@ -138,24 +138,15 @@ private:
 
 public:
     // METHODS
-    OrderVarVertex* getVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varscp,
-                                 VarVertexType type) {
+    OrderVarVertex* getVarVertex(V3Graph* graphp, AstVarScope* varscp, VarVertexType type) {
         const unsigned idx = static_cast<unsigned>(type);
         OrderVarVertex* vertexp = m_vertexps[idx];
         if (!vertexp) {
             switch (type) {
-            case VarVertexType::STD:
-                vertexp = new OrderVarStdVertex(graphp, scopep, varscp);
-                break;
-            case VarVertexType::PRE:
-                vertexp = new OrderVarPreVertex(graphp, scopep, varscp);
-                break;
-            case VarVertexType::PORD:
-                vertexp = new OrderVarPordVertex(graphp, scopep, varscp);
-                break;
-            case VarVertexType::POST:
-                vertexp = new OrderVarPostVertex(graphp, scopep, varscp);
-                break;
+            case VarVertexType::STD: vertexp = new OrderVarStdVertex{graphp, varscp}; break;
+            case VarVertexType::PRE: vertexp = new OrderVarPreVertex{graphp, varscp}; break;
+            case VarVertexType::PORD: vertexp = new OrderVarPordVertex{graphp, varscp}; break;
+            case VarVertexType::POST: vertexp = new OrderVarPostVertex{graphp, varscp}; break;
             }
             m_vertexps[idx] = vertexp;
         }
@@ -228,7 +219,7 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     OrderVarVertex* getVarVertex(AstVarScope* varscp, VarVertexType type) {
-        return m_orderUser(varscp).getVarVertex(m_graphp, m_scopep, varscp, type);
+        return m_orderUser(varscp).getVarVertex(m_graphp, varscp, type);
     }
 
     // VISITORS
@@ -631,9 +622,9 @@ public:
         // Clients of ProcessMoveBuildGraph must supply MoveVertexMaker
         // which creates new T_MoveVertex's. Each new vertex wraps lvertexp
         // (which may be nullptr.)
-        virtual T_MoveVertex* makeVertexp(  //
-            OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
-            const AstScope* scopep, const AstSenTree* domainp)
+        virtual T_MoveVertex* makeVertexp(OrderLogicVertex* lvertexp,
+                                          const OrderEitherVertex* varVertexp,
+                                          const AstSenTree* domainp)
             = 0;
         virtual void freeVertexp(T_MoveVertex* freeMep) = 0;
     };
@@ -680,8 +671,8 @@ public:
         // For each logic node, make a T_MoveVertex
         for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (OrderLogicVertex* const lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
-                T_MoveVertex* const moveVxp = m_vxMakerp->makeVertexp(
-                    lvertexp, nullptr, lvertexp->scopep(), lvertexp->domainp());
+                T_MoveVertex* const moveVxp
+                    = m_vxMakerp->makeVertexp(lvertexp, nullptr, lvertexp->domainp());
                 if (moveVxp) {
                     // Cross link so we can find it later
                     m_logic2move[lvertexp] = moveVxp;
@@ -782,10 +773,10 @@ private:
                 const V3GraphVertex* nonLogicVxp = edgep->top();
                 const VxDomPair key(nonLogicVxp, domainp);
                 if (!m_var2move[key]) {
-                    const OrderEitherVertex* const eithp
-                        = dynamic_cast<const OrderEitherVertex*>(nonLogicVxp);
+                    const OrderVarVertex* const eithp
+                        = static_cast<const OrderVarVertex*>(nonLogicVxp);
                     T_MoveVertex* const newMoveVxp
-                        = m_vxMakerp->makeVertexp(nullptr, eithp, eithp->scopep(), domainp);
+                        = m_vxMakerp->makeVertexp(nullptr, eithp, domainp);
                     m_var2move[key] = newMoveVxp;
 
                     // Find downstream logics that depend on (var, domain)
@@ -824,9 +815,9 @@ public:
         , m_pomWaitingp{pomWaitingp} {}
     // METHODS
     virtual OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
-                                         const AstScope* scopep,
                                          const AstSenTree* domainp) override {
         OrderMoveVertex* const resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
+        AstScope* const scopep = lvertexp ? lvertexp->scopep() : nullptr;
         resultp->domScopep(OrderMoveDomScope::findCreate(domainp, scopep));
         resultp->m_pomWaitingE.pushBack(*m_pomWaitingp, resultp);
         return resultp;
@@ -849,9 +840,8 @@ public:
         : m_pomGraphp{pomGraphp} {}
     virtual MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp,
                                          const OrderEitherVertex* varVertexp,
-                                         const AstScope* scopep,
                                          const AstSenTree* domainp) override {
-        return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, scopep, domainp);
+        return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, domainp);
     }
     virtual void freeVertexp(MTaskMoveVertex* freeMep) override {
         freeMep->unlinkDelete(m_pomGraphp);

@@ -72,17 +72,13 @@ public:
 // Vertex types
 
 class OrderEitherVertex VL_NOT_FINAL : public V3GraphVertex {
-    AstScope* const m_scopep;  // Scope the vertex is in
     AstSenTree* m_domainp;  // Clock domain (nullptr = to be computed as we iterate)
 
 protected:
     // CONSTRUCTOR
-    OrderEitherVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp)
+    OrderEitherVertex(V3Graph* graphp, AstSenTree* domainp)
         : V3GraphVertex{graphp}
-        , m_scopep{scopep}
-        , m_domainp{domainp} {
-        UASSERT(scopep, "Must not be null");
-    }
+        , m_domainp{domainp} {}
     virtual ~OrderEitherVertex() override = default;
 
 public:
@@ -92,24 +88,22 @@ public:
     // ACCESSORS
     AstSenTree* domainp() const { return m_domainp; }
     void domainp(AstSenTree* domainp) { m_domainp = domainp; }
-    AstScope* scopep() const { return m_scopep; }
-
-    // LCOV_EXCL_START // Debug code
-    virtual string dotName() const override { return cvtToHex(m_scopep) + "_"; }
-    // LCOV_EXCL_STOP
 };
 
 class OrderLogicVertex final : public OrderEitherVertex {
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // The logic this vertex represents
+    AstScope* const m_scopep;  // Scope the logic is under
     AstSenTree* const m_hybridp;
 
 public:
     // CONSTRUCTOR
     OrderLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp, AstSenTree* hybridp,
                      AstNode* nodep)
-        : OrderEitherVertex{graphp, scopep, domainp}
+        : OrderEitherVertex{graphp, domainp}
         , m_nodep{nodep}
+        , m_scopep{scopep}
         , m_hybridp{hybridp} {
+        UASSERT_OBJ(scopep, nodep, "Must not be null");
         UASSERT_OBJ(!(domainp && hybridp), nodep, "Cannot have bot domainp and hybridp set");
     }
     virtual ~OrderLogicVertex() override = default;
@@ -119,6 +113,7 @@ public:
 
     // ACCESSORS
     AstNode* nodep() const { return m_nodep; }
+    AstScope* scopep() const { return m_scopep; }
     AstSenTree* hybridp() const { return m_hybridp; }
 
     // LCOV_EXCL_START // Debug code
@@ -136,8 +131,8 @@ class OrderVarVertex VL_NOT_FINAL : public OrderEitherVertex {
 
 public:
     // CONSTRUCTOR
-    OrderVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* vscp)
-        : OrderEitherVertex{graphp, scopep, nullptr}
+    OrderVarVertex(V3Graph* graphp, AstVarScope* vscp)
+        : OrderEitherVertex{graphp, nullptr}
         , m_vscp{vscp} {}
     virtual ~OrderVarVertex() override = default;
 
@@ -156,8 +151,8 @@ public:
 class OrderVarStdVertex final : public OrderVarVertex {
 public:
     // CONSTRUCTOR
-    OrderVarStdVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
-        : OrderVarVertex{graphp, scopep, varScp} {}
+    OrderVarStdVertex(V3Graph* graphp, AstVarScope* varScp)
+        : OrderVarVertex{graphp, varScp} {}
     virtual ~OrderVarStdVertex() override = default;
 
     // METHODS
@@ -172,8 +167,8 @@ public:
 class OrderVarPreVertex final : public OrderVarVertex {
 public:
     // CONSTRUCTOR
-    OrderVarPreVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
-        : OrderVarVertex{graphp, scopep, varScp} {}
+    OrderVarPreVertex(V3Graph* graphp, AstVarScope* varScp)
+        : OrderVarVertex{graphp, varScp} {}
     virtual ~OrderVarPreVertex() override = default;
 
     // METHODS
@@ -188,8 +183,8 @@ public:
 class OrderVarPostVertex final : public OrderVarVertex {
 public:
     // CONSTRUCTOR
-    OrderVarPostVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
-        : OrderVarVertex{graphp, scopep, varScp} {}
+    OrderVarPostVertex(V3Graph* graphp, AstVarScope* varScp)
+        : OrderVarVertex{graphp, varScp} {}
     virtual ~OrderVarPostVertex() override = default;
 
     // METHODS
@@ -204,8 +199,8 @@ public:
 class OrderVarPordVertex final : public OrderVarVertex {
 public:
     // CONSTRUCTOR
-    OrderVarPordVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
-        : OrderVarVertex{graphp, scopep, varScp} {}
+    OrderVarPordVertex(V3Graph* graphp, AstVarScope* varScp)
+        : OrderVarVertex{graphp, varScp} {}
     virtual ~OrderVarPordVertex() override = default;
 
     // METHODS
@@ -325,16 +320,14 @@ class MTaskMoveVertex final : public V3GraphVertex {
     //  or a var node, it can't be both.
     OrderLogicVertex* const m_logicp;  // Logic represented by this vertex
     const OrderEitherVertex* const m_varp;  // Var represented by this vertex
-    const AstScope* const m_scopep;
     const AstSenTree* const m_domainp;
 
 public:
     MTaskMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp, const OrderEitherVertex* varp,
-                    const AstScope* scopep, const AstSenTree* domainp)
+                    const AstSenTree* domainp)
         : V3GraphVertex{graphp}
         , m_logicp{logicp}
         , m_varp{varp}
-        , m_scopep{scopep}
         , m_domainp{domainp} {
         UASSERT(!(logicp && varp), "MTaskMoveVertex: logicp and varp may not both be set!\n");
     }
@@ -343,7 +336,7 @@ public:
     // ACCESSORS
     OrderLogicVertex* logicp() const { return m_logicp; }
     const OrderEitherVertex* varp() const { return m_varp; }
-    const AstScope* scopep() const { return m_scopep; }
+    const AstScope* scopep() const { return m_logicp ? m_logicp->scopep() : nullptr; }
     const AstSenTree* domainp() const { return m_domainp; }
 
     virtual string dotColor() const override {
