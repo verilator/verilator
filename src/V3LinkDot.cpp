@@ -1478,11 +1478,11 @@ private:
         // Need to set pin numbers after varnames are created
         // But before we do the final resolution based on names
         VSymEnt* const foundp = m_statep->getNodeSym(m_modp)->findIdFlat(nodep->name());
-        AstVar* const refp = foundp ? VN_AS(foundp->nodep(), Var) : nullptr;
-        if (!refp) {
+        AstVar* const refp = foundp ? VN_CAST(foundp->nodep(), Var) : nullptr;
+        if (!foundp) {
             nodep->v3error(
                 "Input/output/inout declaration not found for port: " << nodep->prettyNameQ());
-        } else if (!refp->isIO() && !refp->isIfaceRef()) {
+        } else if (!refp || (!refp->isIO() && !refp->isIfaceRef())) {
             nodep->v3error("Pin is not an in/out/inout/interface: " << nodep->prettyNameQ());
         } else {
             if (refp->user4()) {

@@ -104,6 +104,27 @@ public:
         string newtext = deQuote(fileline, text);
         return new AstText(fileline, newtext);
     }
+    AstNode* createCellOrIfaceRef(FileLine* fileline, const string& name, AstPin* pinlistp, AstNodeRange* rangelistp) {
+        // Must clone m_instParamp as may be comma'ed list of instances
+        VSymEnt* const foundp = SYMP->symCurrentp()->findIdFallback(name);
+        if (foundp && VN_IS(foundp->nodep(), Port)) {
+            // It's a non-ANSI interface, not a cell declaration
+            m_varAttrp = nullptr;
+            m_varDecl = VVarType::IFACEREF;
+            m_varIO = VDirection::NONE;
+            m_varLifetime = VLifetime::NONE;
+            setDType(new AstIfaceRefDType{fileline, "", GRAMMARP->m_instModule});
+            m_varDeclTyped = true;
+            AstVar* const nodep = createVariable(fileline, name, rangelistp, nullptr);
+            return nodep;
+        }
+        AstCell* const nodep = new AstCell{fileline, GRAMMARP->m_instModuleFl,
+                         name, GRAMMARP->m_instModule, pinlistp,
+                         AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
+                                           GRAMMARP->scrubRange(rangelistp)};
+        nodep->trace(GRAMMARP->allTracingOn(fileline));
+        return nodep;
+    }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay(fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr);
         nodep->addNext(new AstStop(fileline, true));
@@ -1418,8 +1439,10 @@ port_declNetE:                  // IEEE: part of port_declaration, optional net 
         ;
 
 portSig<nodep>:
-                id/*port*/                              { $$ = new AstPort($<fl>1,PINNUMINC(),*$1); }
-        |       idSVKwd                                 { $$ = new AstPort($<fl>1,PINNUMINC(),*$1); }
+                id/*port*/
+                        { $$ = new AstPort{$<fl>1, PINNUMINC(), *$1}; SYMP->reinsert($$); }
+        |       idSVKwd
+                        { $$ = new AstPort{$<fl>1, PINNUMINC(), *$1}; SYMP->reinsert($$); }
         ;
 
 //**********************************************************************
@@ -2869,18 +2892,11 @@ instnameList<nodep>:
         |       instnameList ',' instnameParen          { $$ = $1->addNext($3); }
         ;
 
-instnameParen<cellp>:
-        //                      // Must clone m_instParamp as may be comma'ed list of instances
-                id instRangeListE '(' cellpinList ')'   { $$ = new AstCell($<fl>1, GRAMMARP->m_instModuleFl,
-                                                                           *$1, GRAMMARP->m_instModule, $4,
-                                                                           AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
-                                                                           GRAMMARP->scrubRange($2));
-                                                          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
-        |       id instRangeListE                       { $$ = new AstCell($<fl>1, GRAMMARP->m_instModuleFl,
-                                                                           *$1, GRAMMARP->m_instModule, nullptr,
-                                                                           AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
-                                                                           GRAMMARP->scrubRange($2));
-                                                          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
+instnameParen<nodep>:
+                id instRangeListE '(' cellpinList ')'
+                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2); }
+        |       id instRangeListE
+                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2); }
         //UNSUP instRangeListE '(' cellpinList ')'      { UNSUP } // UDP
         //                      // Adding above and switching to the Verilog-Perl syntax
         //                      // causes a shift conflict due to use of idClassSel inside exprScope.
