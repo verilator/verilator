@@ -308,7 +308,8 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
     }
     emitDispState.pushFormat(pfmt);
     if (!ignore) {
-        if (argp->dtypep()->basicp()->keyword() == VBasicDTypeKwd::STRING) {
+        if (argp->dtypep()->basicp()
+            && argp->dtypep()->basicp()->keyword() == VBasicDTypeKwd::STRING) {
             // string in SystemVerilog is std::string in C++ which is not POD
             emitDispState.pushArg(' ', nullptr, "-1");
         } else {

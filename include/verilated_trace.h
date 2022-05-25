@@ -22,6 +22,10 @@
 #ifndef VERILATOR_VERILATED_TRACE_H_
 #define VERILATOR_VERILATED_TRACE_H_
 
+#ifdef VL_TRACE_THREADED
+#define VL_TRACE_OFFLOAD
+#endif
+
 // clang-format off
 
 #include "verilated.h"
@@ -32,7 +36,7 @@
 #include <string>
 #include <vector>
 
-#ifdef VL_TRACE_THREADED
+#ifdef VL_TRACE_OFFLOAD
 # include <condition_variable>
 # include <deque>
 # include <thread>
@@ -40,9 +44,9 @@
 
 // clang-format on
 
-#ifdef VL_TRACE_THREADED
+#ifdef VL_TRACE_OFFLOAD
 //=============================================================================
-// Threaded tracing
+// Offloaded tracing
 
 // A simple synchronized first in first out queue
 template <class T> class VerilatedThreadQueue final {  // LCOV_EXCL_LINE  // lcov bug
@@ -88,7 +92,7 @@ public:
 
 // Commands used by thread tracing. Anonymous enum in class, as we want
 // it scoped, but we also want the automatic conversion to integer types.
-class VerilatedTraceCommand final {
+class VerilatedTraceOffloadCommand final {
 public:
     // These must all fit in 4 bit at the moment, as the tracing routines
     // pack parameters in the top bits.
@@ -172,33 +176,33 @@ private:
     // Close the file on termination
     static void onExit(void* selfp) VL_MT_UNSAFE_ONE;
 
-#ifdef VL_TRACE_THREADED
-    // Number of total trace buffers that have been allocated
-    uint32_t m_numTraceBuffers;
-    // Size of trace buffers
-    size_t m_traceBufferSize;
+#ifdef VL_TRACE_OFFLOAD
+    // Number of total offload buffers that have been allocated
+    uint32_t m_numOffloadBuffers;
+    // Size of offload buffers
+    size_t m_offloadBufferSize;
     // Buffers handed to worker for processing
-    VerilatedThreadQueue<uint32_t*> m_buffersToWorker;
+    VerilatedThreadQueue<uint32_t*> m_offloadBuffersToWorker;
     // Buffers returned from worker after processing
-    VerilatedThreadQueue<uint32_t*> m_buffersFromWorker;
+    VerilatedThreadQueue<uint32_t*> m_offloadBuffersFromWorker;
     // Write pointer into current buffer
-    uint32_t* m_traceBufferWritep;
-    // End of trace buffer
-    uint32_t* m_traceBufferEndp;
-    // The worker thread itself
+    uint32_t* m_offloadBufferWritep;
+    // End of offload buffer
+    uint32_t* m_offloadBufferEndp;
+    // The offload worker thread itself
     std::unique_ptr<std::thread> m_workerThread;
 
-    // Get a new trace buffer that can be populated. May block if none available
-    uint32_t* getTraceBuffer();
+    // Get a new offload buffer that can be populated. May block if none available
+    uint32_t* getOffloadBuffer();
 
-    // The function executed by the worker thread
-    void workerThreadMain();
+    // The function executed by the offload worker thread
+    void offloadWorkerThreadMain();
 
-    // Wait until given buffer is placed in m_buffersFromWorker
-    void waitForBuffer(const uint32_t* bufferp);
+    // Wait until given offload buffer is placed in m_offloadBuffersFromWorker
+    void waitForOffloadBuffer(const uint32_t* bufferp);
 
     // Shut down and join worker, if it's running, otherwise do nothing
-    void shutdownWorker();
+    void shutdownOffloadWorker();
 #endif
 
     // CONSTRUCTORS
@@ -307,56 +311,56 @@ public:
     void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
     void fullDouble(uint32_t* oldp, double newval);
 
-#ifdef VL_TRACE_THREADED
-    // Threaded tracing. Just dump everything in the trace buffer
+#ifdef VL_TRACE_OFFLOAD
+    // Offloaded tracing. Just dump everything in the offload buffer
     inline void chgBit(uint32_t code, CData newval) {
-        m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_BIT_0 | newval;
-        m_traceBufferWritep[1] = code;
-        m_traceBufferWritep += 2;
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+        m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::CHG_BIT_0 | newval;
+        m_offloadBufferWritep[1] = code;
+        m_offloadBufferWritep += 2;
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     inline void chgCData(uint32_t code, CData newval, int bits) {
-        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_CDATA;
-        m_traceBufferWritep[1] = code;
-        m_traceBufferWritep[2] = newval;
-        m_traceBufferWritep += 3;
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+        m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_CDATA;
+        m_offloadBufferWritep[1] = code;
+        m_offloadBufferWritep[2] = newval;
+        m_offloadBufferWritep += 3;
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     inline void chgSData(uint32_t code, SData newval, int bits) {
-        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_SDATA;
-        m_traceBufferWritep[1] = code;
-        m_traceBufferWritep[2] = newval;
-        m_traceBufferWritep += 3;
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+        m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_SDATA;
+        m_offloadBufferWritep[1] = code;
+        m_offloadBufferWritep[2] = newval;
+        m_offloadBufferWritep += 3;
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     inline void chgIData(uint32_t code, IData newval, int bits) {
-        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_IDATA;
-        m_traceBufferWritep[1] = code;
-        m_traceBufferWritep[2] = newval;
-        m_traceBufferWritep += 3;
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+        m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_IDATA;
+        m_offloadBufferWritep[1] = code;
+        m_offloadBufferWritep[2] = newval;
+        m_offloadBufferWritep += 3;
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     inline void chgQData(uint32_t code, QData newval, int bits) {
-        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_QDATA;
-        m_traceBufferWritep[1] = code;
-        *reinterpret_cast<QData*>(m_traceBufferWritep + 2) = newval;
-        m_traceBufferWritep += 4;
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+        m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_QDATA;
+        m_offloadBufferWritep[1] = code;
+        *reinterpret_cast<QData*>(m_offloadBufferWritep + 2) = newval;
+        m_offloadBufferWritep += 4;
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     inline void chgWData(uint32_t code, const WData* newvalp, int bits) {
-        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_WDATA;
-        m_traceBufferWritep[1] = code;
-        m_traceBufferWritep += 2;
-        for (int i = 0; i < (bits + 31) / 32; ++i) { *m_traceBufferWritep++ = newvalp[i]; }
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+        m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_WDATA;
+        m_offloadBufferWritep[1] = code;
+        m_offloadBufferWritep += 2;
+        for (int i = 0; i < (bits + 31) / 32; ++i) { *m_offloadBufferWritep++ = newvalp[i]; }
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     inline void chgDouble(uint32_t code, double newval) {
-        m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_DOUBLE;
-        m_traceBufferWritep[1] = code;
+        m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::CHG_DOUBLE;
+        m_offloadBufferWritep[1] = code;
         // cppcheck-suppress invalidPointerCast
-        *reinterpret_cast<double*>(m_traceBufferWritep + 2) = newval;
-        m_traceBufferWritep += 4;
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+        *reinterpret_cast<double*>(m_offloadBufferWritep + 2) = newval;
+        m_offloadBufferWritep += 4;
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
 
 #define CHG(name) chg##name##Impl
@@ -364,8 +368,8 @@ public:
 #define CHG(name) chg##name
 #endif
 
-    // In non-threaded mode, these are called directly by the trace callbacks,
-    // and are called chg*. In threaded mode, they are called by the worker
+    // In non-offload mode, these are called directly by the trace callbacks,
+    // and are called chg*. In offload mode, they are called by the worker
     // thread and are called chg*Impl
 
     // Check previous dumped value of signal. If changed, then emit trace entry

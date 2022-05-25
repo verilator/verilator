@@ -374,6 +374,10 @@ protected:
     // List of free descriptors in the MCT region [4, 32)
     std::vector<IData> m_fdFreeMct VL_GUARDED_BY(m_fdMutex);
 
+    // Magic to check for bad construction
+    static constexpr uint64_t MAGIC = 0xC35F9A6E5298EE6EULL;  // SHA256 "VerilatedContext"
+    uint64_t m_magic = MAGIC;
+
 private:
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedContext);
@@ -535,6 +539,10 @@ public:  // But for internal use only
     // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
     void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
+
+    // Internal: Check magic number
+    static void checkMagic(const VerilatedContext* contextp);
+    void selfTestClearMagic() { m_magic = 0x2; }
 };
 
 //===========================================================================

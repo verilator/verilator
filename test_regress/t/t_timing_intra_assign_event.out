@@ -1,0 +1,32 @@
+%Error-UNSUPPORTED: t/t_timing_intra_assign_event.v:15:5: Unsupported: event control statement in this location
+                                                        : ... In instance t
+                                                        : ... Suggest have one event control statement per procedure, at the top of the procedure
+   15 |     @e val = 2;
+      |     ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_timing_intra_assign_event.v:16:5: Unsupported: fork statements
+                                                        : ... In instance t
+   16 |     fork begin
+      |     ^~~~
+%Warning-ASSIGNDLY: t/t_timing_intra_assign_event.v:21:11: Unsupported: Ignoring timing control on this assignment.
+                                                         : ... In instance t
+   21 |     val = @e val + 2;
+      |           ^
+                    ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
+%Warning-ASSIGNDLY: t/t_timing_intra_assign_event.v:22:12: Unsupported: Ignoring timing control on this assignment.
+                                                         : ... In instance t
+   22 |     val <= @e val + 2;
+      |            ^
+%Error-UNSUPPORTED: t/t_timing_intra_assign_event.v:23:5: Unsupported: fork statements
+                                                        : ... In instance t
+   23 |     fork begin
+      |     ^~~~
+%Warning-STMTDLY: t/t_timing_intra_assign_event.v:29:6: Unsupported: Ignoring delay on this delayed statement.
+                                                      : ... In instance t
+   29 |     #1 $write("*-* All Finished *-*\n");
+      |      ^
+%Warning-STMTDLY: t/t_timing_intra_assign_event.v:33:12: Unsupported: Ignoring delay on this delayed statement.
+                                                       : ... In instance t
+   33 |   initial #1 ->e;
+      |            ^
+%Error: Exiting due to

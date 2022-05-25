@@ -1892,6 +1892,7 @@ sub _make_main {
             $fh->print("        if (save_time && ${time} == save_time) {\n");
             $fh->print("            save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
             $fh->print("            printf(\"Exiting after save_model\\n\");\n");
+            $fh->print("            topp.reset(nullptr);\n");
             $fh->print("            return 0;\n");
             $fh->print("        }\n");
         }

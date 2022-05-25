@@ -228,7 +228,7 @@ void VlPgoProfiler<T_Entries>::write(const char* modelp, const std::string& file
     // So when we have multiple models in an executable, possibly even
     // running on different threads, each will have a different symtab so
     // each will collect is own data correctly.  However when each is
-    // destroid we need to get all the data, not keep overwriting and only
+    // destroyed we need to get all the data, not keep overwriting and only
     // get the last model's data.
     static bool s_firstCall = true;
 

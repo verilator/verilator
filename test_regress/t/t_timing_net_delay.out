@@ -1,0 +1,11 @@
+%Warning-ASSIGNDLY: t/t_timing_net_delay.v:13:15: Unsupported: Ignoring timing control on this assignment.
+                                                : ... In instance t
+   13 |    wire[3:0] #4 val1 = cyc;
+      |               ^
+                    ... For warning description see https://verilator.org/warn/ASSIGNDLY?v=latest
+                    ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
+%Warning-ASSIGNDLY: t/t_timing_net_delay.v:17:12: Unsupported: Ignoring timing control on this assignment.
+                                                : ... In instance t
+   17 |    assign #4 val2 = cyc;
+      |            ^
+%Error: Exiting due to

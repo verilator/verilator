@@ -2521,10 +2521,12 @@ public:
 
 class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
 protected:
-    AstNodeAssign(VNType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+    AstNodeAssign(VNType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp,
+                  AstNode* timingControlp = nullptr)
         : AstNodeStmt{t, fl} {
         setOp1p(rhsp);
         setOp2p(lhsp);
+        addNOp3p(timingControlp);
         dtypeFrom(lhsp);
     }
 
@@ -2535,6 +2537,9 @@ public:
     // So iteration hits the RHS which is "earlier" in execution order, it's op1, not op2
     AstNode* rhsp() const { return op1p(); }  // op1 = Assign from
     AstNode* lhsp() const { return op2p(); }  // op2 = Assign to
+    // op3 = Timing controls (delays, event controls)
+    AstNode* timingControlp() const { return op3p(); }
+    void addTimingControlp(AstNode* const np) { addNOp3p(np); }
     void rhsp(AstNode* np) { setOp1p(np); }
     void lhsp(AstNode* np) { setOp2p(np); }
     virtual bool hasDType() const override { return true; }

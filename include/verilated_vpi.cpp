@@ -81,8 +81,9 @@ public:
         // To simplify our free list, we use a size large enough for all derived types
         // We reserve word zero for the next pointer, as that's safer in case a
         // dangling reference to the original remains around.
-        static const size_t chunk = 96;
-        if (VL_UNCOVERABLE(size > chunk)) VL_FATAL_MT(__FILE__, __LINE__, "", "increase chunk");
+        static constexpr size_t CHUNK_SIZE = 96;
+        if (VL_UNCOVERABLE(size > CHUNK_SIZE))
+            VL_FATAL_MT(__FILE__, __LINE__, "", "increase CHUNK_SIZE");
         if (VL_LIKELY(t_freeHead)) {
             uint8_t* const newp = t_freeHead;
             t_freeHead = *(reinterpret_cast<uint8_t**>(newp));
@@ -90,7 +91,7 @@ public:
             return newp + 8;
         }
         // +8: 8 bytes for next
-        uint8_t* newp = reinterpret_cast<uint8_t*>(::operator new(chunk + 8));
+        uint8_t* newp = reinterpret_cast<uint8_t*>(::operator new(CHUNK_SIZE + 8));
         *(reinterpret_cast<uint32_t*>(newp)) = activeMagic();
         return newp + 8;
     }

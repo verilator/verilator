@@ -351,7 +351,7 @@ public:
     // Can't just overload operator[] or provide a "at" reference to set,
     // because we need to be able to insert only when the value is set
     T_Value& at(int32_t index) {
-        static T_Value s_throwAway;
+        static VL_THREAD_LOCAL T_Value s_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
             s_throwAway = atDefault();
@@ -362,7 +362,7 @@ public:
     }
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(int32_t index) const {
-        static T_Value s_throwAway;
+        static VL_THREAD_LOCAL T_Value s_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
             return atDefault();

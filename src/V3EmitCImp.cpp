@@ -771,7 +771,7 @@ class EmitCTrace final : EmitCFunc {
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
-        puts(v3Global.opt.trueTraceThreads() && !nodep->full() ? "(base+" : "(oldp+");
+        puts(v3Global.opt.useTraceOffloadThread() && !nodep->full() ? "(base+" : "(oldp+");
         puts(cvtToStr(code - nodep->baseCode()));
         puts(",");
         emitTraceValue(nodep, arrayindex);

@@ -137,6 +137,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
+    bool vcd() const { return m_e == VCD; }
     string classBase() const {
         static const char* const names[] = {"VerilatedVcd", "VerilatedFst"};
         return names[m_e];
@@ -515,7 +516,7 @@ public:
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
-    bool trueTraceThreads() const {
+    bool useTraceOffloadThread() const {
         return traceThreads() == 0 ? 0 : traceThreads() - traceFormat().fst();
     }
     int unrollCount() const { return m_unrollCount; }

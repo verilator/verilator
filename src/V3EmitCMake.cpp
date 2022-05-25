@@ -114,19 +114,18 @@ class CMakeEmitter final {
         *of << "# Threaded output mode?  0/1/N threads (from --threads)\n";
         cmake_set_raw(*of, name + "_THREADS", cvtToStr(v3Global.opt.threads()));
         *of << "# Threaded tracing output mode?  0/1/N threads (from --trace-threads)\n";
-        cmake_set_raw(*of, name + "_TRACE_THREADS", cvtToStr(v3Global.opt.traceThreads()));
+        cmake_set_raw(*of, name + "_TRACE_THREADS",
+                      cvtToStr(v3Global.opt.useTraceOffloadThread()));
+        cmake_set_raw(*of, name + "_TRACE_FST_WRITER_THREAD",
+                      v3Global.opt.traceThreads() && v3Global.opt.traceFormat().fst() ? "1" : "0");
         *of << "# Struct output mode?  0/1 (from --trace-structs)\n";
         cmake_set_raw(*of, name + "_TRACE_STRUCTS", cvtToStr(v3Global.opt.traceStructs()));
         *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
         cmake_set_raw(*of, name + "_TRACE_VCD",
-                      (v3Global.opt.trace() && (v3Global.opt.traceFormat() == TraceFormat::VCD))
-                          ? "1"
-                          : "0");
-        *of << "# FST Tracing output mode? 0/1 (from --fst-trace)\n";
+                      (v3Global.opt.trace() && v3Global.opt.traceFormat().vcd()) ? "1" : "0");
+        *of << "# FST Tracing output mode? 0/1 (from --trace-fst)\n";
         cmake_set_raw(*of, name + "_TRACE_FST",
-                      (v3Global.opt.trace() && (v3Global.opt.traceFormat() != TraceFormat::VCD))
-                          ? "1"
-                          : "0");
+                      (v3Global.opt.trace() && v3Global.opt.traceFormat().fst()) ? "1" : "0");
 
         *of << "\n### Sources...\n";
         std::vector<string> classes_fast;

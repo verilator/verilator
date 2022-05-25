@@ -25,7 +25,13 @@ Verilator 4.223 devel
 **Minor:**
 
 * Support compile time trace signal selection with tracing_on/off (#3323). [Shunyao CAD]
+* Add assert when VerilatedContext is mis-deleted (#3121). [Rupert Swarbrick]
+* Define VM_TRACE_VCD when tracing in VCD format. [Geza Lore, Shunyao CAD]
+* Support non-ANSI interface port declarations (#3439). [Geza Lore, Shunyao CAD]
 * Fix hang with large case statement optimization (#3405). [Mike Urbach]
+* Fix 'with' operator with type casting (#3387). [xiak95]
+* Fix incorrect conditional merging (#3409). [Raynard Qiao]
+* Fix passing VL_TRACE_FST_WRITER_THREAD in CMake build. [Geza Lore, Shunyao CAD]
 
 
 Verilator 4.222 2022-05-02
@@ -257,7 +263,7 @@ Verilator 4.204 2021-06-12
 * Fix to emit 'else if' without nesting (#2944). [Geza Lore]
 * Fix part select issues in LATCH warning (#2948) (#2938). [Julien Margetts]
 * Fix to not emit empty files with low split limits (#2961). [Geza Lore]
-* Fix merging of assignments in C++ code (#2970). [Ruper Swarbrick]
+* Fix merging of assignments in C++ code (#2970). [Rupert Swarbrick]
 * Fix unused variable warnings (#2991). [Pieter Kapsenberg]
 * Fix --protect-ids when using SV classes (#2994). [Geza Lore]
 * Fix constant function calls with uninitialized value (#2995). [yanx21]
