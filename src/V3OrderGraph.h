@@ -80,9 +80,7 @@ protected:
     OrderEitherVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp)
         : V3GraphVertex{graphp}
         , m_scopep{scopep}
-        , m_domainp{domainp} {
-        UASSERT(scopep, "Must not be null");
-    }
+        , m_domainp{domainp} {}
     virtual ~OrderEitherVertex() override = default;
 
 public:
