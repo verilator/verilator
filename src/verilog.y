@@ -104,7 +104,8 @@ public:
         string newtext = deQuote(fileline, text);
         return new AstText(fileline, newtext);
     }
-    AstNode* createCellOrIfaceRef(FileLine* fileline, const string& name, AstPin* pinlistp, AstNodeRange* rangelistp) {
+    AstNode* createCellOrIfaceRef(FileLine* fileline, const string& name, AstPin* pinlistp,
+                                  AstNodeRange* rangelistp) {
         // Must clone m_instParamp as may be comma'ed list of instances
         VSymEnt* const foundp = SYMP->symCurrentp()->findIdFallback(name);
         if (foundp && VN_IS(foundp->nodep(), Port)) {
@@ -118,9 +119,12 @@ public:
             AstVar* const nodep = createVariable(fileline, name, rangelistp, nullptr);
             return nodep;
         }
-        AstCell* const nodep = new AstCell{fileline, GRAMMARP->m_instModuleFl,
-                         name, GRAMMARP->m_instModule, pinlistp,
-                         AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
+        AstCell* const nodep = new AstCell{fileline,
+                                           GRAMMARP->m_instModuleFl,
+                                           name,
+                                           GRAMMARP->m_instModule,
+                                           pinlistp,
+                                           AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
                                            GRAMMARP->scrubRange(rangelistp)};
         nodep->trace(GRAMMARP->allTracingOn(fileline));
         return nodep;
