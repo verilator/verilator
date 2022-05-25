@@ -1738,7 +1738,6 @@ void AstVoidDType::dumpSmall(std::ostream& str) const {
 }
 void AstVarScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (isCircular()) str << " [CIRC]";
     if (isTrace()) str << " [T]";
     if (scopep()) str << " [scopep=" << reinterpret_cast<const void*>(scopep()) << "]";
     if (varp()) {
