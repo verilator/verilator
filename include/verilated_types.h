@@ -95,19 +95,19 @@ public:
 
     // Return true iff at least one element is set
     bool any() const {
-        for (size_t i = 0; i < T_size; ++i)
+        for (size_t i = 0; i < m_flags.size(); ++i)
             if (m_flags[i]) return true;
         return false;
     }
 
     // Set all elements true in 'this' that are set in 'other'
     void set(const VlTriggerVec<T_size>& other) {
-        for (size_t i = 0; i < T_size; ++i) m_flags[i] |= other.m_flags[i];
+        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] |= other.m_flags[i];
     }
 
     // Set elements of 'this' to 'a & !b' element-wise
     void andNot(const VlTriggerVec<T_size>& a, const VlTriggerVec<T_size>& b) {
-        for (size_t i = 0; i < T_size; ++i) m_flags[i] = a.m_flags[i] & !b.m_flags[i];
+        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] = a.m_flags[i] & !b.m_flags[i];
     }
 };
 
