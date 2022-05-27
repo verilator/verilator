@@ -106,7 +106,7 @@ public:
     }
 
     // Get a reference to the user data
-    T_Data& operator()(const T_Node* nodep) {
+    T_Data& operator()(const T_Node* nodep) const {
         T_Data* const userp = getUserp(nodep);
         UASSERT_OBJ(userp, nodep, "Missing User data on const AstNode");
         return *userp;
