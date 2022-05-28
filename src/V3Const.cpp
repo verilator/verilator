@@ -299,7 +299,8 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     LeafInfo* m_leafp = nullptr;  // AstConst or AstVarRef that currently looking for
     const AstNode* const m_rootp;  // Root of this AST subtree
 
-    std::vector<AstNode*> m_frozenNodes;  // Nodes that cannot be optimized
+    std::vector<std::pair<AstNode*, int>>
+        m_frozenNodes;  // Nodes that cannot be optimized, int is lsb
     std::vector<BitPolarityEntry> m_bitPolarities;  // Polarity of bits found during iterate()
     std::vector<std::unique_ptr<VarInfo>> m_varInfos;  // VarInfo for each variable, [0] is nullptr
 
@@ -487,7 +488,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     restorer.restoreNow();
                     // Reach past a cast then add to frozen nodes to be added to final reduction
                     if (const AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
-                    m_frozenNodes.push_back(opp);
+                    m_frozenNodes.emplace_back(opp, m_lsb);
                     m_failed = origFailed;
                     continue;
                 }
@@ -652,17 +653,21 @@ public:
             }
         }
 
+        std::map<int, std::vector<AstNode*>> frozenNodes;  // Group by LSB
         // Check if frozen terms are clean or not
-        for (AstNode* const termp : visitor.m_frozenNodes) {
+        for (const std::pair<AstNode*, int>& termAndLsb : visitor.m_frozenNodes) {
+            AstNode* const termp = termAndLsb.first;
             // Comparison operators are clean
-            if (VN_IS(termp, Eq) || VN_IS(termp, Neq) || VN_IS(termp, Lt) || VN_IS(termp, Lte)
-                || VN_IS(termp, Gt) || VN_IS(termp, Gte)) {
+            if ((VN_IS(termp, Eq) || VN_IS(termp, Neq) || VN_IS(termp, Lt) || VN_IS(termp, Lte)
+                 || VN_IS(termp, Gt) || VN_IS(termp, Gte))
+                && termAndLsb.second == 0) {
                 hasCleanTerm = true;
             } else {
                 // Otherwise, conservatively assume the frozen term is dirty
                 hasDirtyTerm = true;
                 UINFO(9, "Dirty frozen term: " << termp << endl);
             }
+            frozenNodes[termAndLsb.second].push_back(termp);
         }
 
         // Figure out if a final negation is required
@@ -672,7 +677,11 @@ public:
         const bool needsCleaning = visitor.isAndTree() ? !hasCleanTerm : hasDirtyTerm;
 
         // Add size of reduction tree to op count
-        resultOps += termps.size() + visitor.m_frozenNodes.size() - 1;
+        resultOps += termps.size() - 1;
+        for (auto&& lsbAndNodes : frozenNodes) {
+            if (lsbAndNodes.first > 0) ++resultOps;  // Needs AstShiftR
+            resultOps += lsbAndNodes.second.size();
+        }
         // Add final polarity flip in Xor tree
         if (needsFlip) ++resultOps;
         // Add final cleaning AND
@@ -681,7 +690,8 @@ public:
         if (debug() >= 9) {  // LCOV_EXCL_START
             cout << "Bitop tree considered: " << endl;
             for (AstNode* const termp : termps) termp->dumpTree("Reduced term: ");
-            for (AstNode* const termp : visitor.m_frozenNodes) termp->dumpTree("Frozen term: ");
+            for (const std::pair<AstNode*, int>& termp : visitor.m_frozenNodes)
+                termp.first->dumpTree("Frozen term lsb:" + std::to_string(termp.second) + " :");
             cout << "Needs flipping: " << needsFlip << endl;
             cout << "Needs cleaning: " << needsCleaning << endl;
             cout << "Size: " << resultOps << " input size: " << visitor.m_ops << endl;
@@ -724,8 +734,19 @@ public:
             resultp = reduce(resultp, termp);
         }
         // Add any frozen terms to the reduction
-        for (AstNode* const frozenp : visitor.m_frozenNodes) {
-            resultp = reduce(resultp, frozenp->unlinkFrBack());
+        for (auto&& lsbAndNodes : frozenNodes) {
+            AstNode* termp = lsbAndNodes.second.front()->unlinkFrBack();
+            for (size_t i = 1; i < lsbAndNodes.second.size(); ++i) {
+                termp = reduce(termp, lsbAndNodes.second[i]->unlinkFrBack());
+            }
+            if (lsbAndNodes.first > 0) {  // LSB is not 0, so shiftR
+                AstNodeDType* const dtypep = termp->dtypep();
+                termp = new AstShiftR{termp->fileline(), termp,
+                                      new AstConst(termp->fileline(), AstConst::WidthedValue{},
+                                                   termp->width(), lsbAndNodes.first)};
+                termp->dtypep(dtypep);
+            }
+            resultp = reduce(resultp, termp);
         }
 
         // Set width of masks to expected result width. This is required to prevent later removal
