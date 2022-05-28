@@ -57,7 +57,8 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hcae926ece668f35d
+`define EXPECTED_SUM 64'h194081987b76c71c
+
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -79,10 +80,11 @@ module Test(/*AUTOARG*/
    logic d0, d1, d2, d3, d4, d5, d6, d7;
    logic bug3182_out;
    logic bug3197_out;
+   logic bug3445_out;
 
    output logic o;
 
-   logic [6:0] tmp;
+   logic [7:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -105,10 +107,12 @@ module Test(/*AUTOARG*/
       tmp[4] <= i[0] & (i[1] & (i[2] & (i[3] | d[4])));  // ConstBitOpTreeVisitor::m_frozenNodes
       tmp[5] <= bug3182_out;
       tmp[6] <= bug3197_out;
+      tmp[7] <= bug3445_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
    bug3197 i_bug3197(.clk(clk), .in(d), .out(bug3197_out));
+   bug3445 i_bug3445(.clk(clk), .in(d), .out(bug3445_out));
 
 endmodule
 
@@ -139,4 +143,39 @@ module bug3197(input wire clk, input wire [31:0] in, output out);
 
    wire tmp0 = (|d[38:0]);
    assign out = (d[39] | tmp0);
+endmodule
+
+module bug3445(input wire clk, input wire [31:0] in, output wire out);
+   logic [127:0] d;
+   always_ff @(posedge clk)
+      d <= {d[95:0], in};
+
+   typedef struct packed {
+      logic        a;
+      logic [ 2:0] b;
+      logic [ 2:0] c;
+      logic [ 1:0] d;
+      logic [ 7:0] e;
+      logic [31:0] f;
+      logic [ 3:0] g;
+      logic [31:0] h;
+      logic        i;
+      logic [41:0] j;
+   } packed_struct;
+   packed_struct st[2];
+
+   always_ff @(posedge clk) begin
+      st[0] <= d;
+      st[1] <= st[0];
+   end
+
+   logic result0, result1;
+   always_ff @(posedge clk) begin
+      // Cannot optimize further.
+      result0 <= (st[0].g[0] & st[0].h[0]) & (in[0] == 1'b0);
+      // There are redundant !in[0] terms. They should be simplified.
+      result1 <= (!in[0] & (st[1].g[0] & st[1].h[0])) & ((in[0] == 1'b0) & !in[0]);
+   end
+
+   assign out = result0 ^ result1;
 endmodule
