@@ -275,24 +275,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::onExit(void* selfp) {
 //=============================================================================
 // VerilatedTrace
 
-template <>
-VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
-    : m_sigs_oldvalp{nullptr}
-    , m_sigs_enabledp{nullptr}
-    , m_timeLastDump{0}
-    , m_fullDump{true}
-    , m_nextCode{0}
-    , m_numSignals{0}
-    , m_maxBits{0}
-    , m_scopeEscape{'.'}
-    , m_timeRes{1e-9}
-    , m_timeUnit {
-    1e-9
-}
-#ifdef VL_TRACE_OFFLOAD
-, m_numOffloadBuffers { 0 }
-#endif
-{
+template <> VerilatedTrace<VL_DERIVED_T>::VerilatedTrace() {
     set_time_unit(Verilated::threadContextp()->timeunitString());
     set_time_resolution(Verilated::threadContextp()->timeprecisionString());
 }

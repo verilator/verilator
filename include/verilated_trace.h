@@ -146,23 +146,23 @@ private:
             , m_userp{userp} {}
     };
 
-    uint32_t* m_sigs_oldvalp;  // Old value store
-    EData* m_sigs_enabledp;  // Bit vector of enabled codes (nullptr = all on)
-    uint64_t m_timeLastDump;  // Last time we did a dump
+    uint32_t* m_sigs_oldvalp = nullptr;  // Old value store
+    EData* m_sigs_enabledp = nullptr;  // Bit vector of enabled codes (nullptr = all on)
+    uint64_t m_timeLastDump = 0;  // Last time we did a dump
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize traciong
     std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
     std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
     std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
-    bool m_fullDump;  // Whether a full dump is required on the next call to 'dump'
-    uint32_t m_nextCode;  // Next code number to assign
-    uint32_t m_numSignals;  // Number of distinct signals
-    uint32_t m_maxBits;  // Number of bits in the widest signal
+    bool m_fullDump = true;  // Whether a full dump is required on the next call to 'dump'
+    uint32_t m_nextCode = 0;  // Next code number to assign
+    uint32_t m_numSignals = 0;  // Number of distinct signals
+    uint32_t m_maxBits = 0;  // Number of bits in the widest signal
     std::vector<std::string> m_namePrefixStack{""};  // Path prefixes to add to signal names
     std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
-    char m_scopeEscape;
-    double m_timeRes;  // Time resolution (ns/ms etc)
-    double m_timeUnit;  // Time units (ns/ms etc)
+    char m_scopeEscape = '.';
+    double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
+    double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
 
     void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec)
         VL_MT_SAFE_EXCLUDES(m_mutex);
@@ -178,17 +178,17 @@ private:
 
 #ifdef VL_TRACE_OFFLOAD
     // Number of total offload buffers that have been allocated
-    uint32_t m_numOffloadBuffers;
+    uint32_t m_numOffloadBuffers = 0;
     // Size of offload buffers
-    size_t m_offloadBufferSize;
+    size_t m_offloadBufferSize = 0;
     // Buffers handed to worker for processing
     VerilatedThreadQueue<uint32_t*> m_offloadBuffersToWorker;
     // Buffers returned from worker after processing
     VerilatedThreadQueue<uint32_t*> m_offloadBuffersFromWorker;
     // Write pointer into current buffer
-    uint32_t* m_offloadBufferWritep;
+    uint32_t* m_offloadBufferWritep = nullptr;
     // End of offload buffer
-    uint32_t* m_offloadBufferEndp;
+    uint32_t* m_offloadBufferEndp = nullptr;
     // The offload worker thread itself
     std::unique_ptr<std::thread> m_workerThread;
 
