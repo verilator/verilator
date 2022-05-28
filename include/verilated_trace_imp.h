@@ -10,15 +10,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
-///
-/// \file
-/// \brief Verilated common-format tracing implementation code
-///
-/// This file must be compiled and linked against all Verilated objects
-/// that use --trace.
-///
-/// Use "verilator --trace" to add this to the Makefile for the linker.
-///
+//
+// Verilated tracing implementation code template common to all formats.
+// This file is included by the format specific implementations and
+// should not be used otherwise.
+//
 //=============================================================================
 
 // clang-format off

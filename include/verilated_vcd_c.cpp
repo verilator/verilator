@@ -66,7 +66,7 @@ constexpr unsigned VL_TRACE_SUFFIX_ENTRY_SIZE = 8;  // Size of a suffix entry
 // Specialization of the generics for this trace format
 
 #define VL_DERIVED_T VerilatedVcd
-#include "verilated_trace_imp.cpp"
+#include "verilated_trace_imp.h"
 #undef VL_DERIVED_T
 
 //=============================================================================
@@ -604,7 +604,7 @@ void VerilatedVcd::finishLine(uint32_t code, char* writep) {
 // emit* trace routines
 
 // Note: emit* are only ever called from one place (full* in
-// verilated_trace_imp.cpp, which is included in this file at the top),
+// verilated_trace_imp.h, which is included in this file at the top),
 // so always inline them.
 
 VL_ATTR_ALWINLINE

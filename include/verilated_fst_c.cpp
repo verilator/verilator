@@ -84,7 +84,7 @@ static_assert(static_cast<int>(FST_ST_VCD_PROGRAM) == static_cast<int>(VLT_TRACE
 // Specialization of the generics for this trace format
 
 #define VL_DERIVED_T VerilatedFst
-#include "verilated_trace_imp.cpp"
+#include "verilated_trace_imp.h"
 #undef VL_DERIVED_T
 
 //=============================================================================
@@ -246,7 +246,7 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
 }
 
 // Note: emit* are only ever called from one place (full* in
-// verilated_trace_imp.cpp, which is included in this file at the top),
+// verilated_trace_imp.h, which is included in this file at the top),
 // so always inline them.
 
 VL_ATTR_ALWINLINE
