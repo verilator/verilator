@@ -300,7 +300,7 @@ public:
     // duck-typed void emitWData(uint32_t code, const WData* newvalp, int bits) = 0;
     // duck-typed void emitDouble(uint32_t code, double newval) = 0;
 
-    uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
+    VL_ATTR_ALWINLINE inline uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
 
     // Write to previous value buffer value and emit trace entry.
     void fullBit(uint32_t* oldp, CData newval);
@@ -373,23 +373,23 @@ public:
     // thread and are called chg*Impl
 
     // Check previous dumped value of signal. If changed, then emit trace entry
-    inline void CHG(Bit)(uint32_t* oldp, CData newval) {
+    VL_ATTR_ALWINLINE inline void CHG(Bit)(uint32_t* oldp, CData newval) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
-    inline void CHG(CData)(uint32_t* oldp, CData newval, int bits) {
+    VL_ATTR_ALWINLINE inline void CHG(CData)(uint32_t* oldp, CData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullCData(oldp, newval, bits);
     }
-    inline void CHG(SData)(uint32_t* oldp, SData newval, int bits) {
+    VL_ATTR_ALWINLINE inline void CHG(SData)(uint32_t* oldp, SData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullSData(oldp, newval, bits);
     }
-    inline void CHG(IData)(uint32_t* oldp, IData newval, int bits) {
+    VL_ATTR_ALWINLINE inline void CHG(IData)(uint32_t* oldp, IData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullIData(oldp, newval, bits);
     }
-    inline void CHG(QData)(uint32_t* oldp, QData newval, int bits) {
+    VL_ATTR_ALWINLINE inline void CHG(QData)(uint32_t* oldp, QData newval, int bits) {
         const uint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
@@ -401,7 +401,7 @@ public:
             }
         }
     }
-    inline void CHG(Double)(uint32_t* oldp, double newval) {
+    VL_ATTR_ALWINLINE inline void CHG(Double)(uint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
         if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
     }
