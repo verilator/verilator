@@ -725,41 +725,4 @@ static inline void cvtQDataToStr(char* dstp, QData value) {
 
 #define cvtEDataToStr cvtIDataToStr
 
-//=============================================================================
-
-#ifdef VERILATED_VCD_TEST
-
-void verilated_trace_imp_selftest() {
-#define SELF_CHECK(got, exp) \
-    do { \
-        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest"); \
-    } while (0)
-
-#define SELF_CHECK_TS(scale) \
-    SELF_CHECK(doubleToTimescale(timescaleToDouble(scale)), std::string{scale});
-    SELF_CHECK_TS("100s");
-    SELF_CHECK_TS("10s");
-    SELF_CHECK_TS("1s");
-    SELF_CHECK_TS("100ms");
-    SELF_CHECK_TS("10ms");
-    SELF_CHECK_TS("1ms");
-    SELF_CHECK_TS("100us");
-    SELF_CHECK_TS("10us");
-    SELF_CHECK_TS("1us");
-    SELF_CHECK_TS("100ns");
-    SELF_CHECK_TS("10ns");
-    SELF_CHECK_TS("1ns");
-    SELF_CHECK_TS("100ps");
-    SELF_CHECK_TS("10ps");
-    SELF_CHECK_TS("1ps");
-    SELF_CHECK_TS("100fs");
-    SELF_CHECK_TS("10fs");
-    SELF_CHECK_TS("1fs");
-    SELF_CHECK_TS("100as");
-    SELF_CHECK_TS("10as");
-    SELF_CHECK_TS("1as");
-}
-
-#endif
-
 #endif  // VL_CPPCHECK
