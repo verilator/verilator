@@ -678,7 +678,7 @@ public:
 
         // Add size of reduction tree to op count
         resultOps += termps.size() - 1;
-        for (auto&& lsbAndNodes : frozenNodes) {
+        for (const auto& lsbAndNodes : frozenNodes) {
             if (lsbAndNodes.first > 0) ++resultOps;  // Needs AstShiftR
             resultOps += lsbAndNodes.second.size();
         }
@@ -691,7 +691,7 @@ public:
             cout << "Bitop tree considered: " << endl;
             for (AstNode* const termp : termps) termp->dumpTree("Reduced term: ");
             for (const std::pair<AstNode*, int>& termp : visitor.m_frozenNodes)
-                termp.first->dumpTree("Frozen term lsb:" + std::to_string(termp.second) + " :");
+                termp.first->dumpTree("Frozen term with lsb " + std::to_string(termp.second) + ": ");
             cout << "Needs flipping: " << needsFlip << endl;
             cout << "Needs cleaning: " << needsCleaning << endl;
             cout << "Size: " << resultOps << " input size: " << visitor.m_ops << endl;
@@ -735,9 +735,9 @@ public:
         }
         // Add any frozen terms to the reduction
         for (auto&& lsbAndNodes : frozenNodes) {
-            AstNode* termp = lsbAndNodes.second.front()->unlinkFrBack();
-            for (size_t i = 1; i < lsbAndNodes.second.size(); ++i) {
-                termp = reduce(termp, lsbAndNodes.second[i]->unlinkFrBack());
+            AstNode* termp = nullptr;
+            for (AstNode* const itemp : lsbAndNodes.second) {
+                termp = reduce(termp, itemp->unlinkFrBack());
             }
             if (lsbAndNodes.first > 0) {  // LSB is not 0, so shiftR
                 AstNodeDType* const dtypep = termp->dtypep();
