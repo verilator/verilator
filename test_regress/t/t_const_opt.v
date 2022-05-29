@@ -145,6 +145,18 @@ module bug3197(input wire clk, input wire [31:0] in, output out);
    assign out = (d[39] | tmp0);
 endmodule
 
+
+// Bug #3445
+// An unoptimized node is kept as frozen node, but its LSB were not saved.
+// AST of RHS of result0 looks as below:
+//   AND(SHIFTR(AND(WORDSEL(ARRAYSEL(VARREF)), WORDSEL(ARRAYSEL(VARREF)))), 32'd11)
+//                  ~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~~
+// Two of WORDSELs are frozen nodes. They are under SHIFTR of 11 bits.
+//
+// Fixing #3445 needs to
+//  1. Take AstShiftR into op count when diciding optimizable or not
+//     (result0 in the test)
+//  2. Insert AstShiftR if LSB of the frozen node is not 0 (result1 in the test)
 module bug3445(input wire clk, input wire [31:0] in, output wire out);
    logic [127:0] d;
    always_ff @(posedge clk)
