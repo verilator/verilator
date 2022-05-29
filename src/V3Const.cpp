@@ -740,7 +740,7 @@ public:
                 termp = reduce(termp, lsbAndNodes.second[i]->unlinkFrBack());
             }
             if (lsbAndNodes.first > 0) {  // LSB is not 0, so shiftR
-                AstNodeDType*const dtypep = termp->dtypep();
+                AstNodeDType* const dtypep = termp->dtypep();
                 termp = new AstShiftR{termp->fileline(), termp,
                                       new AstConst(termp->fileline(), AstConst::WidthedValue{},
                                                    termp->width(), lsbAndNodes.first)};
