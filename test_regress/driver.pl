@@ -924,7 +924,6 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace" if $opt_trace;
     my $threads = ::calc_threads($Vltmt_threads);
     unshift @verilator_flags, "--threads $threads" if $param{vltmt} && $checkflags !~ /-threads /;
-    unshift @verilator_flags, "--trace-threads 1" if $param{vltmt} && $checkflags =~ /-trace /;
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim;

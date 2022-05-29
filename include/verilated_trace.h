@@ -22,27 +22,42 @@
 #ifndef VERILATOR_VERILATED_TRACE_H_
 #define VERILATOR_VERILATED_TRACE_H_
 
-#ifdef VL_TRACE_THREADED
-#define VL_TRACE_OFFLOAD
+// clang-format off
+
+// In FST mode, VL_TRACE_THREADED enables offloading, but only if we also have
+// the FST writer thread. This means with --trace-threads 1, we get the FST
+// writer thread only, and with --trace-threads 2 we get offloading as well
+#if defined(VL_TRACE_FST_WRITER_THREAD) && defined(VL_TRACE_THREADED)
+# define VL_TRACE_OFFLOAD
+#endif
+// VCD tracing can happen fully in parallel
+#if defined(VM_TRACE_VCD) && VM_TRACE_VCD && defined(VL_TRACE_THREADED)
+# define VL_TRACE_PARALLEL
 #endif
 
-// clang-format off
+#if defined(VL_TRACE_PARALLEL) && defined(VL_TRACE_OFFLOAD)
+# error "Cannot have VL_TRACE_PARALLEL and VL_TRACE_OFFLOAD together"
+#endif
 
 #include "verilated.h"
 #include "verilated_trace_defs.h"
 
 #include <bitset>
+#include <condition_variable>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #ifdef VL_TRACE_OFFLOAD
-# include <condition_variable>
 # include <deque>
 # include <thread>
 #endif
 
 // clang-format on
+
+class VlThreadPool;
+template <class T_Trace, class T_Buffer> class VerilatedTraceBuffer;
 
 #ifdef VL_TRACE_OFFLOAD
 //=============================================================================
@@ -106,7 +121,8 @@ public:
         CHG_WDATA = 0x6,
         CHG_DOUBLE = 0x8,
         // TODO: full..
-        TIME_CHANGE = 0xd,
+        TIME_CHANGE = 0xc,
+        TRACE_BUFFER = 0xd,
         END = 0xe,  // End of buffer
         SHUTDOWN = 0xf  // Shutdown worker thread, also marks end of buffer
     };
@@ -116,16 +132,22 @@ public:
 //=============================================================================
 // VerilatedTrace
 
-// VerilatedTrace uses F-bounded polymorphism to access duck-typed
-// implementations in the format specific derived class, which must be passed
-// as the type parameter T_Derived
-template <class T_Derived> class VerilatedTrace VL_NOT_FINAL {
+// T_Trace is the format specific subclass of VerilatedTrace.
+// T_Buffer is the format specific subclass of VerilatedTraceBuffer.
+template <class T_Trace, class T_Buffer> class VerilatedTrace VL_NOT_FINAL {
+    // Give the buffer (both base and derived) access to the private bits
+    friend VerilatedTraceBuffer<T_Trace, T_Buffer>;
+    friend T_Buffer;
+
 public:
+    using Buffer = T_Buffer;
+
     //=========================================================================
     // Generic tracing internals
 
-    using initCb_t = void (*)(void*, T_Derived*, uint32_t);  // Type of init callbacks
-    using dumpCb_t = void (*)(void*, T_Derived*);  // Type of all but init callbacks
+    using initCb_t = void (*)(void*, T_Trace*, uint32_t);  // Type of init callbacks
+    using dumpCb_t = void (*)(void*, Buffer*);  // Type of dump callbacks
+    using cleanupCb_t = void (*)(void*, T_Trace*);  // Type of cleanup callbacks
 
 private:
     struct CallbackRecord {
@@ -133,9 +155,10 @@ private:
         // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
         // assignment operator on inserting into collections, so they don't work
         // with const fields...
-        union {
-            initCb_t m_initCb;  // The callback function
-            dumpCb_t m_dumpCb;  // The callback function
+        union {  // The callback
+            initCb_t m_initCb;
+            dumpCb_t m_dumpCb;
+            cleanupCb_t m_cleanupCb;
         };
         void* m_userp;  // The user pointer to pass to the callback (the symbol table)
         CallbackRecord(initCb_t cb, void* userp)
@@ -144,16 +167,46 @@ private:
         CallbackRecord(dumpCb_t cb, void* userp)
             : m_dumpCb{cb}
             , m_userp{userp} {}
+        CallbackRecord(cleanupCb_t cb, void* userp)
+            : m_cleanupCb{cb}
+            , m_userp{userp} {}
     };
 
-    uint32_t* m_sigs_oldvalp = nullptr;  // Old value store
+#ifdef VL_TRACE_PARALLEL
+    struct ParallelWorkerData {
+        const dumpCb_t m_cb;  // The callback
+        void* const m_userp;  // The use pointer to pass to the callback
+        Buffer* const m_bufp;  // The buffer pointer to pass to the callback
+        std::atomic<bool> m_ready{false};  // The ready flag
+        mutable VerilatedMutex m_mutex;  // Mutex for suspension until ready
+        std::condition_variable_any m_cv;  // Condition variable for suspension
+        bool m_waiting VL_GUARDED_BY(m_mutex) = false;  // Whether a thread is suspended in wait()
+
+        void wait();
+
+        ParallelWorkerData(dumpCb_t cb, void* userp, Buffer* bufp)
+            : m_cb{cb}
+            , m_userp{userp}
+            , m_bufp{bufp} {}
+    };
+
+    // Passed a ParallelWorkerData*, second argument is ignored
+    static void parallelWorkerTask(void*, bool);
+#endif
+
+    using ParallelCallbackMap = std::unordered_map<VlThreadPool*, std::vector<CallbackRecord>>;
+
+protected:
+    uint32_t* m_sigs_oldvalp = nullptr;  // Previous value store
     EData* m_sigs_enabledp = nullptr;  // Bit vector of enabled codes (nullptr = all on)
+private:
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
-    std::vector<CallbackRecord> m_initCbs;  // Routines to initialize traciong
-    std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
-    std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
+    std::vector<CallbackRecord> m_initCbs;  // Routines to initialize tracing
+    ParallelCallbackMap m_fullCbs;  // Routines to perform full dump
+    ParallelCallbackMap m_chgCbs;  // Routines to perform incremental dump
     std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
+    std::vector<VlThreadPool*> m_threadPoolps;  // All thread pools, in insertion order
     bool m_fullDump = true;  // Whether a full dump is required on the next call to 'dump'
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_numSignals = 0;  // Number of distinct signals
@@ -164,12 +217,16 @@ private:
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
 
+    void addThreadPool(VlThreadPool* threadPoolp) VL_MT_SAFE_EXCLUDES(m_mutex);
+
     void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec)
         VL_MT_SAFE_EXCLUDES(m_mutex);
 
-    // Equivalent to 'this' but is of the sub-type 'T_Derived*'. Use 'self()->'
+    // Equivalent to 'this' but is of the sub-type 'T_Trace*'. Use 'self()->'
     // to access duck-typed functions to avoid a virtual function call.
-    T_Derived* self() { return static_cast<T_Derived*>(this); }
+    T_Trace* self() { return static_cast<T_Trace*>(this); }
+
+    void runParallelCallbacks(const ParallelCallbackMap& cbMap);
 
     // Flush any remaining data for this file
     static void onFlush(void* selfp) VL_MT_UNSAFE_ONE;
@@ -185,10 +242,14 @@ private:
     VerilatedThreadQueue<uint32_t*> m_offloadBuffersToWorker;
     // Buffers returned from worker after processing
     VerilatedThreadQueue<uint32_t*> m_offloadBuffersFromWorker;
+
+protected:
     // Write pointer into current buffer
     uint32_t* m_offloadBufferWritep = nullptr;
     // End of offload buffer
     uint32_t* m_offloadBufferEndp = nullptr;
+
+private:
     // The offload worker thread itself
     std::unique_ptr<std::thread> m_workerThread;
 
@@ -250,6 +311,10 @@ protected:
     virtual bool preFullDump() = 0;
     virtual bool preChangeDump() = 0;
 
+    // Trace buffer management
+    virtual Buffer* getTraceBuffer() = 0;
+    virtual void commitTraceBuffer(Buffer*) = 0;
+
 public:
     //=========================================================================
     // External interface to client code
@@ -271,18 +336,54 @@ public:
     void dump(uint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);
 
     //=========================================================================
+    // Internal interface to Verilator generated code
+
+    //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
     void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
-    void addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
-    void addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
-    void addCleanupCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpCb_t cb, void* userp, VlThreadPool* = nullptr) VL_MT_SAFE;
+    void addChgCb(dumpCb_t cb, void* userp, VlThreadPool* = nullptr) VL_MT_SAFE;
+    void addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE;
 
     void scopeEscape(char flag) { m_scopeEscape = flag; }
 
     void pushNamePrefix(const std::string&);
     void popNamePrefix(unsigned count = 1);
+};
 
+//=============================================================================
+// VerilatedTraceBuffer
+
+// T_Trace is the format specific subclass of VerilatedTrace.
+// T_Buffer is the format specific subclass of VerilatedTraceBuffer.
+// The format-specific hot-path methods use duck-typing via T_Buffer for performance.
+template <class T_Trace, class T_Buffer> class VerilatedTraceBuffer VL_NOT_FINAL {
+    friend T_Trace;  // Give the trace file access to the private bits
+
+protected:
+    T_Trace& m_owner;  // The VerilatedTrace subclass that owns this buffer
+
+    // Previous value store
+    uint32_t* const m_sigs_oldvalp = m_owner.m_sigs_oldvalp;
+    // Bit vector of enabled codes (nullptr = all on)
+    EData* const m_sigs_enabledp = m_owner.m_sigs_enabledp;
+
+#ifdef VL_TRACE_OFFLOAD
+    // Write pointer into current buffer
+    uint32_t* m_offloadBufferWritep = m_owner.m_offloadBufferWritep;
+    // End of offload buffer
+    uint32_t* const m_offloadBufferEndp = m_owner.m_offloadBufferEndp;
+#endif
+
+    // Equivalent to 'this' but is of the sub-type 'T_Derived*'. Use 'self()->'
+    // to access duck-typed functions to avoid a virtual function call.
+    inline T_Buffer* self() { return static_cast<T_Buffer*>(this); }
+
+    explicit VerilatedTraceBuffer(T_Trace& owner);
+    virtual ~VerilatedTraceBuffer() = default;
+
+public:
     //=========================================================================
     // Hot path internal interface to Verilator generated code
 
@@ -363,9 +464,13 @@ public:
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
 
-#define CHG(name) chg##name##Impl
-#else
-#define CHG(name) chg##name
+#define chgBit chgBitImpl
+#define chgCData chgCDataImpl
+#define chgSData chgSDataImpl
+#define chgIData chgIDataImpl
+#define chgQData chgQDataImpl
+#define chgWData chgWDataImpl
+#define chgDouble chgDoubleImpl
 #endif
 
     // In non-offload mode, these are called directly by the trace callbacks,
@@ -373,27 +478,27 @@ public:
     // thread and are called chg*Impl
 
     // Check previous dumped value of signal. If changed, then emit trace entry
-    VL_ATTR_ALWINLINE inline void CHG(Bit)(uint32_t* oldp, CData newval) {
+    VL_ATTR_ALWINLINE inline void chgBit(uint32_t* oldp, CData newval) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
-    VL_ATTR_ALWINLINE inline void CHG(CData)(uint32_t* oldp, CData newval, int bits) {
+    VL_ATTR_ALWINLINE inline void chgCData(uint32_t* oldp, CData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullCData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE inline void CHG(SData)(uint32_t* oldp, SData newval, int bits) {
+    VL_ATTR_ALWINLINE inline void chgSData(uint32_t* oldp, SData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullSData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE inline void CHG(IData)(uint32_t* oldp, IData newval, int bits) {
+    VL_ATTR_ALWINLINE inline void chgIData(uint32_t* oldp, IData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullIData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE inline void CHG(QData)(uint32_t* oldp, QData newval, int bits) {
+    VL_ATTR_ALWINLINE inline void chgQData(uint32_t* oldp, QData newval, int bits) {
         const uint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
-    inline void CHG(WData)(uint32_t* oldp, const WData* newvalp, int bits) {
+    VL_ATTR_ALWINLINE inline void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
         for (int i = 0; i < (bits + 31) / 32; ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
                 fullWData(oldp, newvalp, bits);
@@ -401,11 +506,20 @@ public:
             }
         }
     }
-    VL_ATTR_ALWINLINE inline void CHG(Double)(uint32_t* oldp, double newval) {
+    VL_ATTR_ALWINLINE inline void chgDouble(uint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
         if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
     }
 
-#undef CHG
+#ifdef VL_TRACE_OFFLOAD
+#undef chgBit
+#undef chgCData
+#undef chgSData
+#undef chgIData
+#undef chgQData
+#undef chgWData
+#undef chgDouble
+#endif
 };
+
 #endif  // guard

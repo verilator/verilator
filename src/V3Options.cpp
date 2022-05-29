@@ -775,8 +775,16 @@ void V3Options::notify() {
             && !v3Global.opt.xmlOnly());
     }
 
-    // --trace-threads implies --threads 1 unless explicitly specified
-    if (traceThreads() && !threads()) m_threads = 1;
+    if (trace()) {
+        // With --trace-fst, --trace-threads implies --threads 1 unless explicitly specified
+        if (traceFormat().fst() && traceThreads() && !threads()) m_threads = 1;
+
+        // With --trace, --trace-threads is ignored
+        if (traceFormat().vcd()) m_traceThreads = threads() ? 1 : 0;
+    }
+
+    UASSERT(!(useTraceParallel() && useTraceOffload()),
+            "Cannot use both parallel and offloaded tracing");
 
     // Default split limits if not specified
     if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
@@ -1350,7 +1358,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-trace-threads", CbVal, [this, fl](const char* valp) {
         m_trace = true;
         m_traceThreads = std::atoi(valp);
-        if (m_traceThreads < 0) fl->v3fatal("--trace-threads must be >= 0: " << valp);
+        if (m_traceThreads < 1) fl->v3fatal("--trace-threads must be >= 1: " << valp);
     });
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
 

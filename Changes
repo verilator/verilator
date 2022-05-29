@@ -11,6 +11,10 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.223 devel
 ==========================
 
+**Major:**
+
+* VCD tracing is now parallelized with --threads (#3449). [Geza Lore, Shunyao CAD]
+
 **Minor:**
 
 * Support compile time trace signal selection with tracing_on/off (#3323). [Shunyao CAD]

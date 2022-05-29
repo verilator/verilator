@@ -405,7 +405,7 @@ detailed descriptions of these arguments.
     --trace-max-width <width>   Maximum array depth for tracing
     --trace-params              Enable tracing of parameters
     --trace-structs             Enable tracing structure names
-    --trace-threads <threads>   Enable waveform creation on separate threads
+    --trace-threads <threads>   Enable FST waveform creation on separate threads
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations

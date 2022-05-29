@@ -221,9 +221,13 @@ model, it may be beneficial to performance to adjust the
 influences the partitioning of the model by adjusting the assumed execution
 time of DPI imports.
 
-The :vlopt:`--trace-threads` options can be used to produce trace dumps
-using multiple threads. If :vlopt:`--trace-threads` is set without
-:vlopt:`--threads`, then :vlopt:`--trace-threads` will imply
+When using :vlopt:`--trace` to perform VCD tracing, the VCD trace
+construction is parallelized using the same number of threads as specified
+with :vlopt:`--threads`, and is executed on the same thread pool as the model.
+
+The :vlopt:`--trace-threads` options can be used with :vlopt:`--trace-fst`
+to offload FST tracing using multiple threads. If :vlopt:`--trace-threads` is
+given without :vlopt:`--threads`, then :vlopt:`--trace-threads` will imply
 :vlopt:`--threads 1 <--threads>`, i.e.: the support libraries will be
 thread safe.
 
@@ -231,12 +235,12 @@ With :vlopt:`--trace-threads 0 <--trace-threads>`, trace dumps are produced
 on the main thread. This again gives the highest single thread performance.
 
 With :vlopt:`--trace-threads {N} <--trace-threads>`, where N is at least 1,
-N additional threads will be created and managed by the trace files (e.g.:
-VerilatedVcdC or VerilatedFstC), to generate the trace dump. The main
-thread will be released to proceed with execution as soon as possible,
-though some blocking of the main thread is still necessary while capturing
-the trace. Different trace formats can utilize a various number of
-threads. See the :vlopt:`--trace-threads` option.
+up to N additional threads will be created and managed by the trace files
+(e.g.: VerilatedFstC), to offload construction of the trace dump. The main
+thread will be released to proceed with execution as soon as possible, though
+some blocking of the main thread is still necessary while capturing the
+trace. FST tracing can utilize up to 2 offload threads, so there is no use
+of setting :vlopt:`--trace-threads` higher than 2 at the moment.
 
 When running a multithreaded model, the default Linux task scheduler often
 works against the model, by assuming threads are short lived, and thus
@@ -441,7 +445,7 @@ SystemC include directories and link to the SystemC libraries.
 
 .. describe:: TRACE_THREADS
 
-   Optional. Generated multi-threaded trace dumping, same as
+   Optional. Generated multi-threaded FST trace dumping, same as
    "--trace-threads".
 
 .. describe:: TOP_MODULE

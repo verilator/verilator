@@ -147,7 +147,7 @@ extern uint32_t VL_THREAD_ID() VL_MT_SAFE;
 
 #if VL_THREADED
 
-#define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before relaxing
+#define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before yielding
 
 /// Mutex, wrapped to allow -fthread_safety checks
 class VL_CAPABILITY("mutex") VerilatedMutex final {
