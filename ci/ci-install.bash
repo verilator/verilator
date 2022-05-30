@@ -54,8 +54,12 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update
-    sudo apt-get install libfl-dev libgoogle-perftools-dev ccache
-    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
+    sudo apt-get install libfl-dev ccache
+    if [ "$CI_RUNS_ON" != "ubuntu-22.04" ]; then
+      # Some conflict of libunwind verison on 22.04, can live without it for now
+      sudo apt-get install libgoogle-perftools-dev
+    fi
+    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install libsystemc libsystemc-dev
     fi
     if [ "$COVERAGE" = 1 ]; then
@@ -85,7 +89,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     sudo apt-get update
     # libfl-dev needed for internal coverage's test runs
     sudo apt-get install gdb gtkwave lcov libfl-dev ccache
-    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
+    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install libsystemc-dev
     fi
     if [ "$CI_M32" = 1 ]; then

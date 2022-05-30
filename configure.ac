@@ -349,7 +349,7 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
 # Currently enable c++17/c++14 due to packaged SystemC dependency
-# c++14 is the newest that Verilator is regressed to support
+# c++17 is the newest that Verilator is regularly tested to support
 # c++11 is the oldest that Verilator supports
 # gnu is requried for Cygwin to compile verilated.h successfully
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
