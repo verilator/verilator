@@ -111,6 +111,15 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         BitPolarityEntry() = default;
     };
 
+    struct FrozenNodeInfo final {  // Context when a frozen node is found
+        bool m_polarity;
+        int m_lsb;
+        bool operator<(const FrozenNodeInfo& other) const {
+            if (m_lsb != other.m_lsb) return m_lsb < other.m_lsb;
+            return m_polarity < other.m_polarity;
+        }
+    };
+
     class Restorer final {  // Restore the original state unless disableRestore() is called
         ConstBitOpTreeVisitor& m_visitor;
         const size_t m_polaritiesSize;
@@ -299,8 +308,8 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     LeafInfo* m_leafp = nullptr;  // AstConst or AstVarRef that currently looking for
     const AstNode* const m_rootp;  // Root of this AST subtree
 
-    std::vector<std::pair<AstNode*, int>>
-        m_frozenNodes;  // Nodes that cannot be optimized, int is lsb
+    std::vector<std::pair<AstNode*, FrozenNodeInfo>>
+        m_frozenNodes;  // Nodes that cannot be optimized
     std::vector<BitPolarityEntry> m_bitPolarities;  // Polarity of bits found during iterate()
     std::vector<std::unique_ptr<VarInfo>> m_varInfos;  // VarInfo for each variable, [0] is nullptr
 
@@ -488,7 +497,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     restorer.restoreNow();
                     // Reach past a cast then add to frozen nodes to be added to final reduction
                     if (const AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
-                    m_frozenNodes.emplace_back(opp, m_lsb);
+                    m_frozenNodes.emplace_back(opp, FrozenNodeInfo{m_polarity, m_lsb});
                     m_failed = origFailed;
                     continue;
                 }
@@ -653,21 +662,21 @@ public:
             }
         }
 
-        std::map<int, std::vector<AstNode*>> frozenNodes;  // Group by LSB
+        std::map<FrozenNodeInfo, std::vector<AstNode*>> frozenNodes;  // Group by FrozenNodeInfo
         // Check if frozen terms are clean or not
-        for (const std::pair<AstNode*, int>& termAndLsb : visitor.m_frozenNodes) {
-            AstNode* const termp = termAndLsb.first;
+        for (const auto& frozenInfo : visitor.m_frozenNodes) {
+            AstNode* const termp = frozenInfo.first;
             // Comparison operators are clean
             if ((VN_IS(termp, Eq) || VN_IS(termp, Neq) || VN_IS(termp, Lt) || VN_IS(termp, Lte)
                  || VN_IS(termp, Gt) || VN_IS(termp, Gte))
-                && termAndLsb.second == 0) {
+                && frozenInfo.second.m_lsb == 0) {
                 hasCleanTerm = true;
             } else {
                 // Otherwise, conservatively assume the frozen term is dirty
                 hasDirtyTerm = true;
                 UINFO(9, "Dirty frozen term: " << termp << endl);
             }
-            frozenNodes[termAndLsb.second].push_back(termp);
+            frozenNodes[frozenInfo.second].push_back(termp);
         }
 
         // Figure out if a final negation is required
@@ -679,7 +688,8 @@ public:
         // Add size of reduction tree to op count
         resultOps += termps.size() - 1;
         for (const auto& lsbAndNodes : frozenNodes) {
-            if (lsbAndNodes.first > 0) ++resultOps;  // Needs AstShiftR
+            if (lsbAndNodes.first.m_lsb > 0) ++resultOps;  // Needs AstShiftR
+            if (!lsbAndNodes.first.m_polarity) ++resultOps;  // Needs AstNot
             resultOps += lsbAndNodes.second.size();
         }
         // Add final polarity flip in Xor tree
@@ -690,8 +700,9 @@ public:
         if (debug() >= 9) {  // LCOV_EXCL_START
             cout << "Bitop tree considered: " << endl;
             for (AstNode* const termp : termps) termp->dumpTree("Reduced term: ");
-            for (const std::pair<AstNode*, int>& termp : visitor.m_frozenNodes)
-                termp.first->dumpTree("Frozen term with lsb " + std::to_string(termp.second)
+            for (const std::pair<AstNode*, FrozenNodeInfo>& termp : visitor.m_frozenNodes)
+                termp.first->dumpTree("Frozen term with lsb " + std::to_string(termp.second.m_lsb)
+                                      + " polarity " + std::to_string(termp.second.m_polarity)
                                       + ": ");
             cout << "Needs flipping: " << needsFlip << endl;
             cout << "Needs cleaning: " << needsCleaning << endl;
@@ -735,16 +746,22 @@ public:
             resultp = reduce(resultp, termp);
         }
         // Add any frozen terms to the reduction
-        for (auto&& lsbAndNodes : frozenNodes) {
+        for (auto&& nodes : frozenNodes) {
+            // nodes.second has same lsb and polarity
             AstNode* termp = nullptr;
-            for (AstNode* const itemp : lsbAndNodes.second) {
+            for (AstNode* const itemp : nodes.second) {
                 termp = reduce(termp, itemp->unlinkFrBack());
             }
-            if (lsbAndNodes.first > 0) {  // LSB is not 0, so shiftR
+            if (nodes.first.m_lsb > 0) {  // LSB is not 0, so shiftR
                 AstNodeDType* const dtypep = termp->dtypep();
                 termp = new AstShiftR{termp->fileline(), termp,
                                       new AstConst(termp->fileline(), AstConst::WidthedValue{},
-                                                   termp->width(), lsbAndNodes.first)};
+                                                   termp->width(), nodes.first.m_lsb)};
+                termp->dtypep(dtypep);
+            }
+            if (!nodes.first.m_polarity) {  // Polarity is inverted, so append Not
+                AstNodeDType* const dtypep = termp->dtypep();
+                termp = new AstNot{termp->fileline(), termp};
                 termp->dtypep(dtypep);
             }
             resultp = reduce(resultp, termp);
