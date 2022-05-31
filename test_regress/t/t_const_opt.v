@@ -4,6 +4,11 @@
 // any use, without warranty, 2021 Yutetsu TAKATSUKASA.
 // SPDX-License-Identifier: CC0-1.0
 
+// This function always returns 0, so safe to take bitwise OR with any value.
+// Calling this function stops constant folding as Verialtor does not know
+// what this function returns.
+import "DPI-C" context function int fake_dependency();
+
 module t(/*AUTOARG*/
    // Inputs
    clk
@@ -57,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h194081987b76c71c
+`define EXPECTED_SUM 64'hdccb9e7b8b638233
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -120,11 +125,6 @@ module bug3182(in, out);
    input wire [4:0] in;
    output wire out;
 
-   // This function always returns 0, so safe to take bitwise OR with any value.
-   // Calling this function stops constant folding as Verialtor does not know
-   // what this function returns.
-   import "DPI-C" context function int fake_dependency();
-
    logic [4:0] bit_source;
 
    /* verilator lint_off WIDTH */
@@ -147,16 +147,18 @@ endmodule
 
 
 // Bug #3445
-// An unoptimized node is kept as frozen node, but its LSB were not saved.
+// An unoptimized node is kept as frozen node, but its LSB and polarity were not saved.
 // AST of RHS of result0 looks as below:
 //   AND(SHIFTR(AND(WORDSEL(ARRAYSEL(VARREF)), WORDSEL(ARRAYSEL(VARREF)))), 32'd11)
 //                  ~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~~
 // Two of WORDSELs are frozen nodes. They are under SHIFTR of 11 bits.
 //
 // Fixing #3445 needs to
-//  1. Take AstShiftR into op count when diciding optimizable or not
-//     (result0 in the test)
+//  1. Take AstShiftR and AstNot into op count when diciding optimizable or not
+//     (result0 and result2 in the test)
 //  2. Insert AstShiftR if LSB of the frozen node is not 0 (result1 in the test)
+//  3. Insert AstNot if polarity of the frozen node is false (resutl3 in the
+//  test)
 module bug3445(input wire clk, input wire [31:0] in, output wire out);
    logic [127:0] d;
    always_ff @(posedge clk)
@@ -174,20 +176,30 @@ module bug3445(input wire clk, input wire [31:0] in, output wire out);
       logic        i;
       logic [41:0] j;
    } packed_struct;
-   packed_struct st[2];
+   packed_struct st[4];
 
+   // This is always 1'b0, but Verilator cannot notice it.
+   // This signal helps to reveal wrong optimization of result2 and result3.
+   logic zero;
    always_ff @(posedge clk) begin
       st[0] <= d;
       st[1] <= st[0];
+      st[2] <= st[1];
+      st[3] <= st[2];
+      zero <= fake_dependency() > 0;
    end
 
-   logic result0, result1;
+   logic result0, result1, result2, result3;
    always_ff @(posedge clk) begin
       // Cannot optimize further.
       result0 <= (st[0].g[0] & st[0].h[0]) & (in[0] == 1'b0);
       // There are redundant !in[0] terms. They should be simplified.
       result1 <= (!in[0] & (st[1].g[0] & st[1].h[0])) & ((in[0] == 1'b0) & !in[0]);
+      // Cannot optimize further.
+      result2 <= !(st[2].g[0] & st[2].h[0]) & (zero == 1'b0);
+      // There are redundant zero terms. They should be simplified.
+      result3 <= (!zero & !(st[3].g[0] & st[3].h[0])) & ((zero == 1'b0) & !zero);
    end
 
-   assign out = result0 ^ result1;
+   assign out = result0 ^ result1 ^ (result2 | result3);
 endmodule
