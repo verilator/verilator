@@ -274,7 +274,7 @@ path through the graph is the sum of macro-task execution costs. Sarkar
 does almost the same thing, except that he has nonzero estimates for
 synchronization costs.
 
-Verilator's cost estimates are assigned by ``InstrCountCostVisitor``.  This
+Verilator's cost estimates are assigned by ``InstrCountVisitor``.  This
 class is perhaps the most fragile piece of the multithread
 implementation. It's easy to have a bug where you count something cheap
 (eg. accessing one element of a huge array) as if it were expensive (eg.
