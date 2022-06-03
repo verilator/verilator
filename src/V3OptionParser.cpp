@@ -30,6 +30,7 @@ struct V3OptionParser::Impl {
     // Setting for isOnOffAllowed() and isPartialMatchAllowed()
     enum class en : uint8_t {
         NONE,  // "-opt"
+        FONOFF,  // "-fopt" and "-fno-opt"
         ONOFF,  // "-opt" and "-no-opt"
         VALUE  // "-opt val"
     };
@@ -39,6 +40,7 @@ struct V3OptionParser::Impl {
         bool m_undocumented = false;  // This option is not documented
     public:
         virtual bool isValueNeeded() const override final { return MODE == en::VALUE; }
+        virtual bool isFOnOffAllowed() const override final { return MODE == en::FONOFF; }
         virtual bool isOnOffAllowed() const override final { return MODE == en::ONOFF; }
         virtual bool isPartialMatchAllowed() const override final { return ALLOW_PARTIAL_MATCH; }
         virtual bool isUndocumented() const override { return m_undocumented; }
@@ -47,6 +49,7 @@ struct V3OptionParser::Impl {
 
     // Actual action classes
     template <typename T> class ActionSet;  // "-opt" for bool-ish, "-opt val" for int and string
+    template <typename BOOL> class ActionFOnOff;  // "-fopt" and "-fno-opt" for bool-ish
     template <typename BOOL> class ActionOnOff;  // "-opt" and "-no-opt" for bool-ish
     class ActionCbCall;  // Callback without argument for "-opt"
     class ActionCbOnOff;  // Callback for "-opt" and "-no-opt"
@@ -80,6 +83,7 @@ V3OPTION_PARSER_DEF_ACT_CLASS(ActionSet, VOptionBool, m_valp->setTrueOrFalse(tru
 V3OPTION_PARSER_DEF_ACT_CLASS(ActionSet, int, *m_valp = std::atoi(argp), en::VALUE);
 V3OPTION_PARSER_DEF_ACT_CLASS(ActionSet, string, *m_valp = argp, en::VALUE);
 
+V3OPTION_PARSER_DEF_ACT_CLASS(ActionFOnOff, bool, *m_valp = !hasPrefixFNo(optp), en::FONOFF);
 V3OPTION_PARSER_DEF_ACT_CLASS(ActionOnOff, bool, *m_valp = !hasPrefixNo(optp), en::ONOFF);
 #ifndef V3OPTION_PARSER_NO_VOPTION_BOOL
 V3OPTION_PARSER_DEF_ACT_CLASS(ActionOnOff, VOptionBool, m_valp->setTrueOrFalse(!hasPrefixNo(optp)),
@@ -117,12 +121,23 @@ V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbPartialMatchVal, void(const char*, cons
 
 V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
     const auto it = m_pimpl->m_options.find(optp);
-    if (it != m_pimpl->m_options.end()) return it->second.get();
+    if (it != m_pimpl->m_options.end()) return it->second.get();  // Exact match
     for (auto&& act : m_pimpl->m_options) {
+        if (act.second->isFOnOffAllowed()) {  // Find starts with "-fno"
+            if (const char* const nop
+                = VString::startsWith(optp, "-fno-") ? (optp + strlen("-fno-")) : nullptr) {
+                if (act.first.substr(strlen("-f"), std::string::npos)
+                    == nop) {  // [-f]opt = [-fno-]opt
+                    return act.second.get();
+                }
+            }
+        }
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
-            const char* const nop = VString::startsWith(optp, "-no") ? (optp + 3) : nullptr;
-            if (nop && (act.first == nop || act.first == (string{"-"} + nop))) {
-                return act.second.get();
+            if (const char* const nop
+                = VString::startsWith(optp, "-no") ? (optp + strlen("-no")) : nullptr) {
+                if (act.first == nop || act.first == (string{"-"} + nop)) {
+                    return act.second.get();
+                }
             }
         } else if (act.second->isPartialMatchAllowed()) {
             if (VString::startsWith(optp, act.first)) return act.second.get();
@@ -141,6 +156,12 @@ V3OptionParser::ActionIfs& V3OptionParser::add(const std::string& opt, ARG arg) 
     const auto insertedResult = m_pimpl->m_options.emplace(opt, std::move(act));
     UASSERT(insertedResult.second, opt << " is already registered");
     return *insertedResult.first->second;
+}
+
+bool V3OptionParser::hasPrefixFNo(const char* strp) {
+    UASSERT(strp[0] == '-', strp << " does not start with '-'");
+    if (strp[1] == '-') ++strp;
+    return VString::startsWith(strp, "-fno");
 }
 
 bool V3OptionParser::hasPrefixNo(const char* strp) {
@@ -178,6 +199,10 @@ void V3OptionParser::finalize() {
     for (auto&& opt : m_pimpl->m_options) {
         if (opt.second->isUndocumented()) continue;
         m_pimpl->m_spellCheck.pushCandidate(opt.first);
+        if (opt.second->isFOnOffAllowed()) {
+            m_pimpl->m_spellCheck.pushCandidate(
+                "-fno-" + opt.first.substr(strlen("-f"), std::string::npos));
+        }
         if (opt.second->isOnOffAllowed()) m_pimpl->m_spellCheck.pushCandidate("-no" + opt.first);
     }
     m_pimpl->m_isFinalized = true;
@@ -202,6 +227,7 @@ V3OPTION_PARSER_DEF_OP(Set, VOptionBool*, ActionSet<VOptionBool>)
 #endif
 V3OPTION_PARSER_DEF_OP(Set, int*, ActionSet<int>)
 V3OPTION_PARSER_DEF_OP(Set, string*, ActionSet<string>)
+V3OPTION_PARSER_DEF_OP(FOnOff, bool*, ActionFOnOff<bool>)
 V3OPTION_PARSER_DEF_OP(OnOff, bool*, ActionOnOff<bool>)
 #ifndef V3OPTION_PARSER_NO_VOPTION_BOOL
 V3OPTION_PARSER_DEF_OP(OnOff, VOptionBool*, ActionOnOff<VOptionBool>)

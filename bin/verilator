@@ -319,6 +319,7 @@ detailed descriptions of these arguments.
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
+    --fno-merge-const-pool      Disable merging of different types in const pool
      -G<name>=<value>           Overwrite top-level parameter
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
@@ -344,7 +345,6 @@ detailed descriptions of these arguments.
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
-    --no-merge-const-pool       Disable merging of different types in const pool
     --mod-prefix <topname>      Name to prepend to lower classes
     --no-clk <signal-name>      Prevent marking specified signal as clock
     --no-decoration             Disable comments and symbol decorations

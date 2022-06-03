@@ -431,6 +431,14 @@ Summary:
    flattening large designs may require significant CPU time, memory and
    storage.
 
+.. option:: --fno-merge-const-pool
+
+   Rarely needed; only use if recommended by maintainers.  In order to
+   minimize cache footprint, values of different data type, that are yet
+   emitted identically in C++ are merged in the constant pool.  This option
+   disables this and causes every constant pool entry with a distinct data
+   type to be emitted separately.
+
 .. option:: -G<name>=<value>
 
    Overwrites the given parameter of the toplevel module. The value is
@@ -647,13 +655,6 @@ Summary:
    will be placed in this directory.  If not specified, "obj_dir" is used.
    The directory is created if it does not exist and the parent directories
    exist; otherwise manually create the Mdir before calling Verilator.
-
-.. option:: --no-merge-const-pool
-
-   Rarely needed.  In order to minimize cache footprint, values of different
-   data type, that are yet emitted identically in C++ are merged in the
-   constant pool.  This option disables this and causes every constant pool
-   entry with a distinct data type to be emitted separately.
 
 .. option:: --mod-prefix <topname>
 

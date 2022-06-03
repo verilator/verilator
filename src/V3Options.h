@@ -239,6 +239,7 @@ private:
     bool m_dumpDefines = false;     // main switch: --dump-defines
     bool m_dumpTreeAddrids = false; // main switch: --dump-tree-addrids
     bool m_exe = false;             // main switch: --exe
+    bool m_fMergeConstPool = true;  // main switch: --fmerge-const-pool
     bool m_flatten = false;         // main switch: --flatten
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_hierChild = false;       // main switch: --hierarchical-child
@@ -246,7 +247,6 @@ private:
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
     bool m_main = false;            // main swithc: --main
-    bool m_mergeConstPool = true;   // main switch: --merge-const-pool
     bool m_orderClockDly = true;    // main switch: --order-clock-delay
     bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
     bool m_pedantic = false;        // main switch: --Wpedantic
@@ -448,6 +448,7 @@ public:
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpDefines; }
     bool exe() const { return m_exe; }
+    bool fMergeConstPool() const { return m_fMergeConstPool; }
     bool flatten() const { return m_flatten; }
     bool gmake() const { return m_gmake; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
@@ -459,7 +460,6 @@ public:
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool main() const { return m_main; }
-    bool mergeConstPool() const { return m_mergeConstPool; }
     bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }

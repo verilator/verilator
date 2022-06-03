@@ -14,7 +14,7 @@ top_filename("t/t_extract_static_const.v");
 golden_filename("t/t_extract_static_const.out");
 
 compile(
-    verilator_flags2 => ["--stats", "--no-merge-const-pool"],
+    verilator_flags2 => ["--stats", "--fno-merge-const-pool"],
     );
 
 execute(
