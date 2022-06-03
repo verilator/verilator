@@ -33,5 +33,5 @@ add_executable(example ../make_tracing_c/sim_main.cpp)
 # Add the Verilated circuit to the target
 verilate(example COVERAGE TRACE
   INCLUDE_DIRS "../make_tracing_c"
-  VERILATOR_ARGS -f ../make_tracing_c/input.vc -Os -x-assign 0
+  VERILATOR_ARGS -f ../make_tracing_c/input.vc -x-assign fast
   SOURCES ../make_tracing_c/top.v)
