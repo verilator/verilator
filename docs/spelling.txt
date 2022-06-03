@@ -683,6 +683,7 @@ onehot
 ooo
 oprofile
 oversubscription
+parallelized
 param
 parameterized
 params
@@ -771,6 +772,7 @@ specparam
 splitme
 spp
 sqrt
+src
 srcdir
 srcfile
 sscanf
@@ -889,6 +891,7 @@ writeme
 writemem
 writememb
 writememh
+xiak
 xin
 xml
 xnor
