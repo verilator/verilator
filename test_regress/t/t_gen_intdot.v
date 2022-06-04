@@ -40,14 +40,6 @@ module t (/*AUTOARG*/
       end
    end
 
-//`define WAVES
-`ifdef WAVES
-   initial begin
-      $dumpfile({`STRINGIFY(`TEST_OBJ_DIR),"/simx.vcd"});
-      $dumpvars(12, t);
-   end
-`endif
-
 endmodule
 
 module Generate (clk, value, result);
@@ -57,10 +49,10 @@ module Generate (clk, value, result);
 
    reg Internal;
 
-   assign result = Internal ^ clk;
+   assign result = Internal;
 
    always @(posedge clk)
-     Internal <= #1 value;
+     Internal <= value;
 endmodule
 
 module Checker (clk, value);
@@ -89,7 +81,9 @@ module Genit (clk, value, result);
 
 `ifndef ATSIM  // else unsupported
  `ifndef NC  // else unsupported
-  `define WITH_FOR_GENVAR
+  `ifndef IVERILOG  // else unsupported
+   `define WITH_FOR_GENVAR
+  `endif
  `endif
 `endif
 
