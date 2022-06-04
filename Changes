@@ -26,6 +26,7 @@ Verilator 4.223 devel
 * Define VM_TRACE_VCD when tracing in VCD format. [Geza Lore, Shunyao CAD]
 * Add assert when VerilatedContext is mis-deleted (#3121). [Rupert Swarbrick]
 * Fix hang with large case statement optimization (#3405). [Mike Urbach]
+* Fix BLKANDNBLK on $readmem/$writemem (#3379). [Alex Solomatnikov]
 * Fix 'with' operator with type casting (#3387). [xiak95]
 * Fix incorrect conditional merging (#3409). [Raynard Qiao]
 * Fix passing VL_TRACE_FST_WRITER_THREAD in CMake build. [Geza Lore, Shunyao CAD]

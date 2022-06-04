@@ -94,6 +94,7 @@ private:
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
     bool m_inInitial = false;  // True in initial blocks
+    bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
     using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
@@ -105,6 +106,7 @@ private:
     void markVarUsage(AstNodeVarRef* nodep, bool blocking) {
         // Ignore if warning is disabled on this reference (used by V3Force).
         if (nodep->fileline()->warnIsOff(V3ErrorCode::BLKANDNBLK)) return;
+        if (m_ignoreBlkAndNBlk) return;
         if (blocking) nodep->user5(true);
         AstVarScope* const vscp = nodep->varScopep();
         // UINFO(4, " MVU " << blocking << " " << nodep << endl);
@@ -483,6 +485,13 @@ private:
                 }
             }
         }
+    }
+
+    virtual void visit(AstNodeReadWriteMem* nodep) override {
+        VL_RESTORER(m_ignoreBlkAndNBlk);
+        m_ignoreBlkAndNBlk = true;  // $readmem/$writemem often used in mem models
+        // so we will suppress BLKANDNBLK warnings
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
