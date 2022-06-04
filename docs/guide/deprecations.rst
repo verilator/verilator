@@ -20,9 +20,9 @@ Option `--cdc`
   The experimental `--cdc` option is believed to be generally unused and is
   planned for removal no sooner than January 2023.
 
-Option `--O<letter>`
-  The debug `--O<letter>` options have been replaced with
-  `--fno-<optimization>` debug options to match GCC. The old options are
+Option `-O<letter>`
+  The debug `-O<letter>` options have been replaced with
+  `-fno-<optimization>` debug options to match GCC. The old options are
   planned for removal no sooner than June 2023.
 
 Option `--prof-threads`

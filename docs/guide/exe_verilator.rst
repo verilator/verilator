@@ -431,47 +431,47 @@ Summary:
    flattening large designs may require significant CPU time, memory and
    storage.
 
-.. option:: --fno-acyc-simp
+.. option:: -fno-acyc-simp
 
-.. option:: --fno-assemble
+.. option:: -fno-assemble
 
-.. option:: --fno-case
+.. option:: -fno-case
 
-.. option:: --fno-combine
+.. option:: -fno-combine
 
-.. option:: --fno-const
+.. option:: -fno-const
 
-.. option:: --fno-const-bit-op-tree
+.. option:: -fno-const-bit-op-tree
 
-.. option:: --fno-dedup
+.. option:: -fno-dedup
 
-.. option:: --fno-expand
+.. option:: -fno-expand
 
-.. option:: --fno-gate
+.. option:: -fno-gate
 
-.. option:: --fno-inline
+.. option:: -fno-inline
 
-.. option:: --fno-life
+.. option:: -fno-life
 
-.. option:: --fno-life-post
+.. option:: -fno-life-post
 
-.. option:: --fno-localize
+.. option:: -fno-localize
 
-.. option:: --fno-merge-cond
+.. option:: -fno-merge-cond
 
-.. option:: --fno-merge-const-pool
+.. option:: -fno-merge-const-pool
 
-.. option:: --fno-reloop
+.. option:: -fno-reloop
 
-.. option:: --fno-reorder
+.. option:: -fno-reorder
 
-.. option:: --fno-split
+.. option:: -fno-split
 
-.. option:: --fno-subst
+.. option:: -fno-subst
 
-.. option:: --fno-subst-const
+.. option:: -fno-subst-const
 
-.. option:: --fno-table
+.. option:: -fno-table
 
    Rarely needed. Disables one of the internal optimization steps. These
    are typically used only when recommended by a maintainer to help debug
