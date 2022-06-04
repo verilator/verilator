@@ -319,7 +319,7 @@ detailed descriptions of these arguments.
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
-    --fno-merge-const-pool      Disable merging of different types in const pool
+    --fno-<optimization>        Disable internal optimization stage
      -G<name>=<value>           Overwrite top-level parameter
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace

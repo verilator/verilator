@@ -1090,7 +1090,7 @@ private:
 
     bool matchBitOpTree(AstNode* nodep) {
         if (nodep->widthMin() != 1) return false;
-        if (!v3Global.opt.oConstBitOpTree()) return false;
+        if (!v3Global.opt.fConstBitOpTree()) return false;
 
         string debugPrefix;
         if (debug() >= 9) {  // LCOV_EXCL_START
@@ -1412,7 +1412,7 @@ private:
         return (VN_IS(nodep, And) || VN_IS(nodep, Or) || VN_IS(nodep, Xor));
     }
     bool ifAdjacentSel(const AstSel* lhsp, const AstSel* rhsp) {
-        if (!v3Global.opt.oAssemble()) return false;  // opt disabled
+        if (!v3Global.opt.fAssemble()) return false;  // opt disabled
         if (!lhsp || !rhsp) return false;
         const AstNode* const lfromp = lhsp->fromp();
         const AstNode* const rfromp = rhsp->fromp();
@@ -1427,7 +1427,7 @@ private:
     }
     bool ifMergeAdjacent(AstNode* lhsp, AstNode* rhsp) {
         // called by concatmergeable to determine if {lhsp, rhsp} make sense
-        if (!v3Global.opt.oAssemble()) return false;  // opt disabled
+        if (!v3Global.opt.fAssemble()) return false;  // opt disabled
         // two same varref
         if (operandsSame(lhsp, rhsp)) return true;
         const AstSel* lselp = VN_CAST(lhsp, Sel);
@@ -1464,7 +1464,7 @@ private:
     }
     bool concatMergeable(const AstNode* lhsp, const AstNode* rhsp, unsigned depth) {
         // determine if {a OP b, c OP d} => {a, c} OP {b, d} is advantageous
-        if (!v3Global.opt.oAssemble()) return false;  // opt disabled
+        if (!v3Global.opt.fAssemble()) return false;  // opt disabled
         if (lhsp->type() != rhsp->type()) return false;
         if (!ifConcatMergeableBiop(lhsp)) return false;
         if (depth > CONCAT_MERGABLE_MAX_DEPTH) return false;  // As worse case O(n^2) algorithm
@@ -2550,7 +2550,7 @@ private:
             if (nodep->access().isReadOnly()
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst
-                     && v3Global.opt.oConst()
+                     && v3Global.opt.fConst()
                      // Default value, not a "known" constant for this usage
                      && !nodep->varp()->isClassMember()
                      && !(nodep->varp()->isFuncLocal() && nodep->varp()->isNonOutput())

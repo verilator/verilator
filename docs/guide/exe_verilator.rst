@@ -431,13 +431,51 @@ Summary:
    flattening large designs may require significant CPU time, memory and
    storage.
 
+.. option:: --fno-acyc-simp
+
+.. option:: --fno-assemble
+
+.. option:: --fno-case
+
+.. option:: --fno-combine
+
+.. option:: --fno-const
+
+.. option:: --fno-const-bit-op-tree
+
+.. option:: --fno-dedup
+
+.. option:: --fno-expand
+
+.. option:: --fno-gate
+
+.. option:: --fno-inline
+
+.. option:: --fno-life
+
+.. option:: --fno-life-post
+
+.. option:: --fno-localize
+
+.. option:: --fno-merge-cond
+
 .. option:: --fno-merge-const-pool
 
-   Rarely needed; only use if recommended by maintainers.  In order to
-   minimize cache footprint, values of different data type, that are yet
-   emitted identically in C++ are merged in the constant pool.  This option
-   disables this and causes every constant pool entry with a distinct data
-   type to be emitted separately.
+.. option:: --fno-reloop
+
+.. option:: --fno-reorder
+
+.. option:: --fno-split
+
+.. option:: --fno-subst
+
+.. option:: --fno-subst-const
+
+.. option:: --fno-table
+
+   Rarely needed. Disables one of the internal optimization steps. These
+   are typically used only when recommended by a maintainer to help debug
+   or work around an issue.
 
 .. option:: -G<name>=<value>
 
@@ -704,9 +742,9 @@ Summary:
 
    Rarely needed.  Enables or disables a specific optimizations, with the
    optimization selected based on the letter passed.  A lowercase letter
-   disables an optimization, an upper case letter enables it.  This is
-   intended for debugging use only; see the source code for
-   version-dependent mappings of optimizations to -O letters.
+   disables an optimization, an upper case letter enables it.  This option
+   is deprecated and the various `-f<optimization>` arguments should be
+   used instead.
 
 .. option:: -o <executable>
 

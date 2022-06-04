@@ -254,7 +254,7 @@ void GraphAcyc::simplify(bool allowCut) {
         if (allowCut) {
             // The main algorithm works without these, though slower
             // So if changing the main algorithm, comment these out for a test run
-            if (v3Global.opt.oAcycSimp()) {
+            if (v3Global.opt.fAcycSimp()) {
                 cutBasic(vertexp);
                 cutBackward(vertexp);
             }

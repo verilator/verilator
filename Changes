@@ -17,6 +17,7 @@ Verilator 4.223 devel
 
 **Minor:**
 
+* Add -f<optimization> options to replace -O<letter> options (#3436).
 * Changed --no-merge-const-pool to -fno-merge-const-pool (#3436).
 * Support compile time trace signal selection with tracing_on/off (#3323). [Shunyao CAD]
 * Add assert when VerilatedContext is mis-deleted (#3121). [Rupert Swarbrick]

@@ -77,7 +77,6 @@ my $opt_gdbbt;
 my $opt_gdbsim;
 my $opt_hashset;
 my $opt_jobs = 1;
-my $opt_optimize;
 my $opt_quiet;
 my $opt_rerun;
 my $opt_rrsim;
@@ -104,7 +103,6 @@ if (! GetOptions(
           "hashset=s"   => \$opt_hashset,
           "help"        => \&usage,
           "j=i"         => \$opt_jobs,
-          "optimize:s"  => \$opt_optimize,
           "quiet!"      => \$opt_quiet,
           "rerun!"      => \$opt_rerun,
           "rr!"         => \$opt_rr,
@@ -661,7 +659,7 @@ sub new {
         verilator_define => 'VERILATOR',
         verilator_flags => ["-cc",
                             "-Mdir $self->{obj_dir}",
-                            "-OD",  # As currently disabled unless -O3
+                            "--fdedup",  # As currently disabled unless -O3
                             "--debug-check",
                             "--comp-limit-members 10", ],
         verilator_flags2 => [],
@@ -934,19 +932,6 @@ sub compile_vlt_flags {
         $param{make_main} && $param{verilator_make_gmake};
     unshift @verilator_flags, "../" . $self->{main_filename} if
         $param{make_main} && $param{verilator_make_gmake};
-    if (defined $opt_optimize) {
-        my $letters = "";
-        if ($opt_optimize =~ /[a-zA-Z]/) {
-            $letters = $opt_optimize;
-        } else {  # Randomly turn on/off different optimizations
-            foreach my $l ('a' .. 'z') {
-                $letters .= ((rand() > 0.5) ? $l : uc $l);
-            }
-            unshift @verilator_flags, "--trace" if rand() > 0.5;
-            unshift @verilator_flags, "--coverage" if rand() > 0.5;
-        }
-        unshift @verilator_flags, "--O" . $letters;
-    }
 
     my @cmdargs = (
                    "--prefix " . $param{VM_PREFIX},
@@ -2905,11 +2890,6 @@ Displays this message and program version and exits.
 
 Run number of parallel tests, or 0 to determine the count based on the
 number of cores installed.  Requires Perl's Parallel::Forker package.
-
-=item --optimize
-
-Randomly turn on/off different optimizations.  With specific flags,
-use those optimization settings
 
 =item --quiet
 
