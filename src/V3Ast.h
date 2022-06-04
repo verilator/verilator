@@ -316,7 +316,7 @@ public:
                                             "POS",
                                             "NEG",
                                             "EVENT",
-                                            "DPIEXPORT"
+                                            "DPIEXPORT",
                                             "TRUE",
                                             "COMBO",
                                             "HYBRID",
