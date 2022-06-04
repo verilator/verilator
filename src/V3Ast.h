@@ -310,20 +310,9 @@ public:
         return VEdgeType::ET_ILLEGAL;
     }
     const char* ascii() const {
-        static const char* const names[] = {"%E-edge",
-                                            "CHANGED",
-                                            "BOTH",
-                                            "POS",
-                                            "NEG",
-                                            "EVENT",
-                                            "DPIEXPORT",
-                                            "TRUE",
-                                            "COMBO",
-                                            "HYBRID",
-                                            "STATIC",
-                                            "INITIAL",
-                                            "FINAL",
-                                            "NEVER"};
+        static const char* const names[]
+            = {"%E-edge", "CHANGED", "BOTH",   "POS",    "NEG",     "EVENT", "DPIEXPORT",
+               "TRUE",    "COMBO",   "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
