@@ -237,7 +237,7 @@ static void process() {
         // Module inlining
         // Cannot remove dead variables after this, as alias information for final
         // V3Scope's V3LinkDot is in the AstVar.
-        if (v3Global.opt.oInline()) {
+        if (v3Global.opt.fInline()) {
             V3Inline::inlineAll(v3Global.rootp());
             V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules
         }
@@ -308,11 +308,11 @@ static void process() {
         // Push constants across variables and remove redundant assignments
         V3Const::constifyAll(v3Global.rootp());
 
-        if (v3Global.opt.oLife()) V3Life::lifeAll(v3Global.rootp());
+        if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
 
         // Make large low-fanin logic blocks into lookup tables
         // This should probably be done much later, once we have common logic elimination.
-        if (!v3Global.opt.lintOnly() && v3Global.opt.oTable()) {
+        if (!v3Global.opt.lintOnly() && v3Global.opt.fTable()) {
             V3Table::tableAll(v3Global.rootp());
         }
 
@@ -326,7 +326,7 @@ static void process() {
         V3Active::activeAll(v3Global.rootp());
 
         // Split single ALWAYS blocks into multiple blocks for better ordering chances
-        if (v3Global.opt.oSplit()) V3Split::splitAlwaysAll(v3Global.rootp());
+        if (v3Global.opt.fSplit()) V3Split::splitAlwaysAll(v3Global.rootp());
         V3SplitAs::splitAsAll(v3Global.rootp());
 
         // Create tracing sample points, before we start eliminating signals
@@ -338,11 +338,11 @@ static void process() {
 
         // Gate-based logic elimination; eliminate signals and push constant across cell boundaries
         // Instant propagation makes lots-o-constant reduction possibilities.
-        if (v3Global.opt.oGate()) {
+        if (v3Global.opt.fGate()) {
             V3Gate::gateAll(v3Global.rootp());
             // V3Gate calls constant propagation itself.
         } else {
-            v3info("Command Line disabled gate optimization with -Og/-O0.  "
+            v3info("Command Line disabled gate optimization with -fno-gate.  "
                    "This may cause ordering problems.");
         }
 
@@ -361,7 +361,7 @@ static void process() {
         }
 
         // Reorder assignments in pipelined blocks
-        if (v3Global.opt.oReorder()) V3Split::splitReorderAll(v3Global.rootp());
+        if (v3Global.opt.fReorder()) V3Split::splitReorderAll(v3Global.rootp());
 
         // Create delayed assignments
         // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step
@@ -383,12 +383,12 @@ static void process() {
         // Cleanup any dly vars or other temps that are simple assignments
         // Life must be done before Subst, as it assumes each CFunc under
         // _eval is called only once.
-        if (v3Global.opt.oLife()) {
+        if (v3Global.opt.fLife()) {
             V3Const::constifyAll(v3Global.rootp());
             V3Life::lifeAll(v3Global.rootp());
         }
 
-        if (v3Global.opt.oLifePost()) V3LifePost::lifepostAll(v3Global.rootp());
+        if (v3Global.opt.fLifePost()) V3LifePost::lifepostAll(v3Global.rootp());
 
         // Remove unused vars
         V3Const::constifyAll(v3Global.rootp());
@@ -415,13 +415,13 @@ static void process() {
         v3Global.assertScoped(false);
 
         // Move variables from modules to function local variables where possible
-        if (v3Global.opt.oLocalize()) V3Localize::localizeAll(v3Global.rootp());
+        if (v3Global.opt.fLocalize()) V3Localize::localizeAll(v3Global.rootp());
 
         // Remove remaining scopes; make varrefs/funccalls relative to current module
         V3Descope::descopeAll(v3Global.rootp());
 
         // Icache packing; combine common code in each module's functions into subroutines
-        if (v3Global.opt.oCombine()) V3Combine::combineAll(v3Global.rootp());
+        if (v3Global.opt.fCombine()) V3Combine::combineAll(v3Global.rootp());
     }
 
     V3Error::abortIfErrors();
@@ -445,30 +445,30 @@ static void process() {
     }
 
     // Expand macros and wide operators into C++ primitives
-    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.oExpand()) {
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.fExpand()) {
         V3Expand::expandAll(v3Global.rootp());
     }
 
     // Propagate constants across WORDSEL arrayed temporaries
-    if (!v3Global.opt.xmlOnly() && v3Global.opt.oSubst()) {
+    if (!v3Global.opt.xmlOnly() && v3Global.opt.fSubst()) {
         // Constant folding of expanded stuff
         V3Const::constifyCpp(v3Global.rootp());
         V3Subst::substituteAll(v3Global.rootp());
     }
 
-    if (!v3Global.opt.xmlOnly() && v3Global.opt.oSubstConst()) {
+    if (!v3Global.opt.xmlOnly() && v3Global.opt.fSubstConst()) {
         // Constant folding of substitutions
         V3Const::constifyCpp(v3Global.rootp());
         V3Dead::deadifyAll(v3Global.rootp());
     }
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly()) {
-        if (v3Global.opt.oMergeCond()) {
+        if (v3Global.opt.fMergeCond()) {
             // Merge conditionals
             V3MergeCond::mergeAll(v3Global.rootp());
         }
 
-        if (v3Global.opt.oReloop()) {
+        if (v3Global.opt.fReloop()) {
             // Reform loops to reduce code size
             // Must be after all Sel/array index based optimizations
             V3Reloop::reloopAll(v3Global.rootp());

@@ -397,11 +397,11 @@ private:
         // Then propagate more complicated equations
         optimizeSignals(true);
         // Remove redundant logic
-        if (v3Global.opt.oDedupe()) {
+        if (v3Global.opt.fDedupe()) {
             dedupe();
             if (debug() >= 6) m_graph.dumpDotFilePrefixed("gate_dedup");
         }
-        if (v3Global.opt.oAssemble()) {
+        if (v3Global.opt.fAssemble()) {
             mergeAssigns();
             if (debug() >= 6) m_graph.dumpDotFilePrefixed("gate_assm");
         }

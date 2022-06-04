@@ -13,7 +13,7 @@ top_filename("t/t_const_opt.v");
 
 # Run the same design as t_const_opt.pl without bitopt tree optimization to make sure that the result is same.
 compile(
-    verilator_flags2 => ["-Wno-UNOPTTHREADS", "--stats", "-Oo", "$Self->{t_dir}/t_const_opt.cpp"],
+    verilator_flags2 => ["-Wno-UNOPTTHREADS", "--stats", "-fno-const-bit-op-tree", "$Self->{t_dir}/t_const_opt.cpp"],
     );
 
 execute(

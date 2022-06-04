@@ -246,7 +246,6 @@ private:
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
     bool m_main = false;            // main swithc: --main
-    bool m_mergeConstPool = true;   // main switch: --merge-const-pool
     bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
     bool m_pedantic = false;        // main switch: --Wpedantic
     bool m_pinsScUint = false;      // main switch: --pins-sc-uint
@@ -340,27 +339,27 @@ private:
     V3LangCode  m_defaultLanguage;      // main switch: --language
 
     // MEMBERS (optimizations)
-    //                          // main switch: -Op: --public
-    bool        m_oAcycSimp;    // main switch: -Oy: acyclic pre-optimizations
-    bool        m_oAssemble;    // main switch: -Om: assign assemble
-    bool        m_oCase;        // main switch: -Oe: case tree conversion
-    bool        m_oCombine;     // main switch: -Ob: common icode packing
-    bool        m_oConst;       // main switch: -Oc: constant folding
-    bool        m_oConstBitOpTree;  // main switch: -Oo: constant bit op tree
-    bool        m_oDedupe;      // main switch: -Od: logic deduplication
-    bool        m_oExpand;      // main switch: -Ox: expansion of C macros
-    bool        m_oGate;        // main switch: -Og: gate wire elimination
-    bool        m_oInline;      // main switch: -Oi: module inlining
-    bool        m_oLife;        // main switch: -Ol: variable lifetime
-    bool        m_oLifePost;    // main switch: -Ot: delayed assignment elimination
-    bool        m_oLocalize;    // main switch: -Oz: convert temps to local variables
-    bool        m_oMergeCond;   // main switch: -Ob: merge conditionals
-    bool        m_oReloop;      // main switch: -Ov: reform loops
-    bool        m_oReorder;     // main switch: -Or: reorder assignments in blocks
-    bool        m_oSplit;       // main switch: -Os: always assignment splitting
-    bool        m_oSubst;       // main switch: -Ou: substitute expression temp values
-    bool        m_oSubstConst;  // main switch: -Ok: final constant substitution
-    bool        m_oTable;       // main switch: -Oa: lookup table creation
+    bool m_fAcycSimp;    // main switch: -fno-acyc-simp: acyclic pre-optimizations
+    bool m_fAssemble;    // main switch: -fno-assemble: assign assemble
+    bool m_fCase;        // main switch: -fno-case: case tree conversion
+    bool m_fCombine;     // main switch: -fno-combine: common icode packing
+    bool m_fConst;       // main switch: -fno-const: constant folding
+    bool m_fConstBitOpTree;  // main switch: -fno-const-bit-op-tree constant bit op tree
+    bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
+    bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
+    bool m_fGate;        // main switch: -fno-gate: gate wire elimination
+    bool m_fInline;      // main switch: -fno-inline: module inlining
+    bool m_fLife;        // main switch: -fno-life: variable lifetime
+    bool m_fLifePost;    // main switch: -fno-life-post: delayed assignment elimination
+    bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
+    bool m_fMergeCond;   // main switch: -fno-merge-cond: merge conditionals
+    bool m_fMergeConstPool = true;  // main switch: --fmerge-const-pool
+    bool m_fReloop;      // main switch: -fno-reloop: reform loops
+    bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
+    bool m_fSplit;       // main switch: -fno-split: always assignment splitting
+    bool m_fSubst;       // main switch: -fno-subst: substitute expression temp values
+    bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
+    bool m_fTable;       // main switch: -fno-table: lookup table creation
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -458,7 +457,6 @@ public:
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool main() const { return m_main; }
-    bool mergeConstPool() const { return m_mergeConstPool; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }
@@ -516,8 +514,10 @@ public:
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
-    bool useTraceOffloadThread() const {
-        return traceThreads() == 0 ? 0 : traceThreads() - traceFormat().fst();
+    bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }
+    bool useTraceParallel() const { return trace() && traceFormat().vcd() && threads() > 1; }
+    unsigned vmTraceThreads() const {
+        return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
     }
     int unrollCount() const { return m_unrollCount; }
     int unrollStmts() const { return m_unrollStmts; }
@@ -571,26 +571,27 @@ public:
     bool isNoClocker(const string& signame) const;
 
     // ACCESSORS (optimization options)
-    bool oAcycSimp() const { return m_oAcycSimp; }
-    bool oAssemble() const { return m_oAssemble; }
-    bool oCase() const { return m_oCase; }
-    bool oCombine() const { return m_oCombine; }
-    bool oConst() const { return m_oConst; }
-    bool oConstBitOpTree() const { return m_oConstBitOpTree; }
-    bool oDedupe() const { return m_oDedupe; }
-    bool oExpand() const { return m_oExpand; }
-    bool oGate() const { return m_oGate; }
-    bool oInline() const { return m_oInline; }
-    bool oLife() const { return m_oLife; }
-    bool oLifePost() const { return m_oLifePost; }
-    bool oLocalize() const { return m_oLocalize; }
-    bool oMergeCond() const { return m_oMergeCond; }
-    bool oReloop() const { return m_oReloop; }
-    bool oReorder() const { return m_oReorder; }
-    bool oSplit() const { return m_oSplit; }
-    bool oSubst() const { return m_oSubst; }
-    bool oSubstConst() const { return m_oSubstConst; }
-    bool oTable() const { return m_oTable; }
+    bool fAcycSimp() const { return m_fAcycSimp; }
+    bool fAssemble() const { return m_fAssemble; }
+    bool fCase() const { return m_fCase; }
+    bool fCombine() const { return m_fCombine; }
+    bool fConst() const { return m_fConst; }
+    bool fConstBitOpTree() const { return m_fConstBitOpTree; }
+    bool fDedupe() const { return m_fDedupe; }
+    bool fExpand() const { return m_fExpand; }
+    bool fGate() const { return m_fGate; }
+    bool fInline() const { return m_fInline; }
+    bool fLife() const { return m_fLife; }
+    bool fLifePost() const { return m_fLifePost; }
+    bool fLocalize() const { return m_fLocalize; }
+    bool fMergeCond() const { return m_fMergeCond; }
+    bool fMergeConstPool() const { return m_fMergeConstPool; }
+    bool fReloop() const { return m_fReloop; }
+    bool fReorder() const { return m_fReorder; }
+    bool fSplit() const { return m_fSplit; }
+    bool fSubst() const { return m_fSubst; }
+    bool fSubstConst() const { return m_fSubstConst; }
+    bool fTable() const { return m_fTable; }
 
     string traceClassBase() const { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }

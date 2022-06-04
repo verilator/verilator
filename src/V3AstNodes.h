@@ -8533,6 +8533,7 @@ public:
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNode* itemsp() const { return op2p(); }  // op2 = AstPatReplicate, AstPatMember, etc
+    void addItemsp(AstNode* nodep) { addOp2p(nodep); }
 };
 class AstPatMember final : public AstNodeMath {
     // Verilog '{a} or '{a{b}}

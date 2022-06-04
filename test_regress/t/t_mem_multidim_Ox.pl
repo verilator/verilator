@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 top_filename("t/t_mem_multidim.v");
 
 compile(
-    verilator_flags2 => ['--Ox'],
+    verilator_flags2 => ['--fno-expand'],
     );
 
 execute(

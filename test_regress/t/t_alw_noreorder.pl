@@ -12,7 +12,7 @@ scenarios(vlt_all => 1);
 
 top_filename("t/t_alw_reorder.v");
 compile(
-    verilator_flags2 => ["--stats -Or"],
+    verilator_flags2 => ["--stats -fno-reorder"],
     );
 
 file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);

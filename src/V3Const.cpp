@@ -111,6 +111,15 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         BitPolarityEntry() = default;
     };
 
+    struct FrozenNodeInfo final {  // Context when a frozen node is found
+        bool m_polarity;
+        int m_lsb;
+        bool operator<(const FrozenNodeInfo& other) const {
+            if (m_lsb != other.m_lsb) return m_lsb < other.m_lsb;
+            return m_polarity < other.m_polarity;
+        }
+    };
+
     class Restorer final {  // Restore the original state unless disableRestore() is called
         ConstBitOpTreeVisitor& m_visitor;
         const size_t m_polaritiesSize;
@@ -299,7 +308,8 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     LeafInfo* m_leafp = nullptr;  // AstConst or AstVarRef that currently looking for
     const AstNode* const m_rootp;  // Root of this AST subtree
 
-    std::vector<AstNode*> m_frozenNodes;  // Nodes that cannot be optimized
+    std::vector<std::pair<AstNode*, FrozenNodeInfo>>
+        m_frozenNodes;  // Nodes that cannot be optimized
     std::vector<BitPolarityEntry> m_bitPolarities;  // Polarity of bits found during iterate()
     std::vector<std::unique_ptr<VarInfo>> m_varInfos;  // VarInfo for each variable, [0] is nullptr
 
@@ -487,7 +497,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     restorer.restoreNow();
                     // Reach past a cast then add to frozen nodes to be added to final reduction
                     if (const AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
-                    m_frozenNodes.push_back(opp);
+                    m_frozenNodes.emplace_back(opp, FrozenNodeInfo{m_polarity, m_lsb});
                     m_failed = origFailed;
                     continue;
                 }
@@ -652,17 +662,21 @@ public:
             }
         }
 
+        std::map<FrozenNodeInfo, std::vector<AstNode*>> frozenNodes;  // Group by FrozenNodeInfo
         // Check if frozen terms are clean or not
-        for (AstNode* const termp : visitor.m_frozenNodes) {
+        for (const auto& frozenInfo : visitor.m_frozenNodes) {
+            AstNode* const termp = frozenInfo.first;
             // Comparison operators are clean
-            if (VN_IS(termp, Eq) || VN_IS(termp, Neq) || VN_IS(termp, Lt) || VN_IS(termp, Lte)
-                || VN_IS(termp, Gt) || VN_IS(termp, Gte)) {
+            if ((VN_IS(termp, Eq) || VN_IS(termp, Neq) || VN_IS(termp, Lt) || VN_IS(termp, Lte)
+                 || VN_IS(termp, Gt) || VN_IS(termp, Gte))
+                && frozenInfo.second.m_lsb == 0) {
                 hasCleanTerm = true;
             } else {
                 // Otherwise, conservatively assume the frozen term is dirty
                 hasDirtyTerm = true;
                 UINFO(9, "Dirty frozen term: " << termp << endl);
             }
+            frozenNodes[frozenInfo.second].push_back(termp);
         }
 
         // Figure out if a final negation is required
@@ -672,7 +686,12 @@ public:
         const bool needsCleaning = visitor.isAndTree() ? !hasCleanTerm : hasDirtyTerm;
 
         // Add size of reduction tree to op count
-        resultOps += termps.size() + visitor.m_frozenNodes.size() - 1;
+        resultOps += termps.size() - 1;
+        for (const auto& lsbAndNodes : frozenNodes) {
+            if (lsbAndNodes.first.m_lsb > 0) ++resultOps;  // Needs AstShiftR
+            if (!lsbAndNodes.first.m_polarity) ++resultOps;  // Needs AstNot
+            resultOps += lsbAndNodes.second.size();
+        }
         // Add final polarity flip in Xor tree
         if (needsFlip) ++resultOps;
         // Add final cleaning AND
@@ -681,7 +700,10 @@ public:
         if (debug() >= 9) {  // LCOV_EXCL_START
             cout << "Bitop tree considered: " << endl;
             for (AstNode* const termp : termps) termp->dumpTree("Reduced term: ");
-            for (AstNode* const termp : visitor.m_frozenNodes) termp->dumpTree("Frozen term: ");
+            for (const std::pair<AstNode*, FrozenNodeInfo>& termp : visitor.m_frozenNodes)
+                termp.first->dumpTree("Frozen term with lsb " + std::to_string(termp.second.m_lsb)
+                                      + " polarity " + std::to_string(termp.second.m_polarity)
+                                      + ": ");
             cout << "Needs flipping: " << needsFlip << endl;
             cout << "Needs cleaning: " << needsCleaning << endl;
             cout << "Size: " << resultOps << " input size: " << visitor.m_ops << endl;
@@ -724,8 +746,25 @@ public:
             resultp = reduce(resultp, termp);
         }
         // Add any frozen terms to the reduction
-        for (AstNode* const frozenp : visitor.m_frozenNodes) {
-            resultp = reduce(resultp, frozenp->unlinkFrBack());
+        for (auto&& nodes : frozenNodes) {
+            // nodes.second has same lsb and polarity
+            AstNode* termp = nullptr;
+            for (AstNode* const itemp : nodes.second) {
+                termp = reduce(termp, itemp->unlinkFrBack());
+            }
+            if (nodes.first.m_lsb > 0) {  // LSB is not 0, so shiftR
+                AstNodeDType* const dtypep = termp->dtypep();
+                termp = new AstShiftR{termp->fileline(), termp,
+                                      new AstConst(termp->fileline(), AstConst::WidthedValue{},
+                                                   termp->width(), nodes.first.m_lsb)};
+                termp->dtypep(dtypep);
+            }
+            if (!nodes.first.m_polarity) {  // Polarity is inverted, so append Not
+                AstNodeDType* const dtypep = termp->dtypep();
+                termp = new AstNot{termp->fileline(), termp};
+                termp->dtypep(dtypep);
+            }
+            resultp = reduce(resultp, termp);
         }
 
         // Set width of masks to expected result width. This is required to prevent later removal
@@ -1051,7 +1090,7 @@ private:
 
     bool matchBitOpTree(AstNode* nodep) {
         if (nodep->widthMin() != 1) return false;
-        if (!v3Global.opt.oConstBitOpTree()) return false;
+        if (!v3Global.opt.fConstBitOpTree()) return false;
 
         string debugPrefix;
         if (debug() >= 9) {  // LCOV_EXCL_START
@@ -1373,7 +1412,7 @@ private:
         return (VN_IS(nodep, And) || VN_IS(nodep, Or) || VN_IS(nodep, Xor));
     }
     bool ifAdjacentSel(const AstSel* lhsp, const AstSel* rhsp) {
-        if (!v3Global.opt.oAssemble()) return false;  // opt disabled
+        if (!v3Global.opt.fAssemble()) return false;  // opt disabled
         if (!lhsp || !rhsp) return false;
         const AstNode* const lfromp = lhsp->fromp();
         const AstNode* const rfromp = rhsp->fromp();
@@ -1388,7 +1427,7 @@ private:
     }
     bool ifMergeAdjacent(AstNode* lhsp, AstNode* rhsp) {
         // called by concatmergeable to determine if {lhsp, rhsp} make sense
-        if (!v3Global.opt.oAssemble()) return false;  // opt disabled
+        if (!v3Global.opt.fAssemble()) return false;  // opt disabled
         // two same varref
         if (operandsSame(lhsp, rhsp)) return true;
         const AstSel* lselp = VN_CAST(lhsp, Sel);
@@ -1425,7 +1464,7 @@ private:
     }
     bool concatMergeable(const AstNode* lhsp, const AstNode* rhsp, unsigned depth) {
         // determine if {a OP b, c OP d} => {a, c} OP {b, d} is advantageous
-        if (!v3Global.opt.oAssemble()) return false;  // opt disabled
+        if (!v3Global.opt.fAssemble()) return false;  // opt disabled
         if (lhsp->type() != rhsp->type()) return false;
         if (!ifConcatMergeableBiop(lhsp)) return false;
         if (depth > CONCAT_MERGABLE_MAX_DEPTH) return false;  // As worse case O(n^2) algorithm
@@ -2511,7 +2550,7 @@ private:
             if (nodep->access().isReadOnly()
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst
-                     && v3Global.opt.oConst()
+                     && v3Global.opt.fConst()
                      // Default value, not a "known" constant for this usage
                      && !nodep->varp()->isClassMember()
                      && !(nodep->varp()->isFuncLocal() && nodep->varp()->isNonOutput())

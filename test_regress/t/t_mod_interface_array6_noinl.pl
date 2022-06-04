@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 top_filename("t/t_mod_interface_array6.v");
 
 compile(
-    v_flags2 => ["-Oi"],
+    v_flags2 => ["-fno-inline"],
     );
 
 execute(

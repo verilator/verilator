@@ -4,6 +4,11 @@
 // any use, without warranty, 2021 Yutetsu TAKATSUKASA.
 // SPDX-License-Identifier: CC0-1.0
 
+// This function always returns 0, so safe to take bitwise OR with any value.
+// Calling this function stops constant folding as Verialtor does not know
+// what this function returns.
+import "DPI-C" context function int fake_dependency();
+
 module t(/*AUTOARG*/
    // Inputs
    clk
@@ -57,7 +62,8 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hcae926ece668f35d
+`define EXPECTED_SUM 64'hdccb9e7b8b638233
+
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -79,10 +85,11 @@ module Test(/*AUTOARG*/
    logic d0, d1, d2, d3, d4, d5, d6, d7;
    logic bug3182_out;
    logic bug3197_out;
+   logic bug3445_out;
 
    output logic o;
 
-   logic [6:0] tmp;
+   logic [7:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -105,21 +112,18 @@ module Test(/*AUTOARG*/
       tmp[4] <= i[0] & (i[1] & (i[2] & (i[3] | d[4])));  // ConstBitOpTreeVisitor::m_frozenNodes
       tmp[5] <= bug3182_out;
       tmp[6] <= bug3197_out;
+      tmp[7] <= bug3445_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
    bug3197 i_bug3197(.clk(clk), .in(d), .out(bug3197_out));
+   bug3445 i_bug3445(.clk(clk), .in(d), .out(bug3445_out));
 
 endmodule
 
 module bug3182(in, out);
    input wire [4:0] in;
    output wire out;
-
-   // This function always returns 0, so safe to take bitwise OR with any value.
-   // Calling this function stops constant folding as Verialtor does not know
-   // what this function returns.
-   import "DPI-C" context function int fake_dependency();
 
    logic [4:0] bit_source;
 
@@ -139,4 +143,63 @@ module bug3197(input wire clk, input wire [31:0] in, output out);
 
    wire tmp0 = (|d[38:0]);
    assign out = (d[39] | tmp0);
+endmodule
+
+
+// Bug #3445
+// An unoptimized node is kept as frozen node, but its LSB and polarity were not saved.
+// AST of RHS of result0 looks as below:
+//   AND(SHIFTR(AND(WORDSEL(ARRAYSEL(VARREF)), WORDSEL(ARRAYSEL(VARREF)))), 32'd11)
+//                  ~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~~
+// Two of WORDSELs are frozen nodes. They are under SHIFTR of 11 bits.
+//
+// Fixing #3445 needs to
+//  1. Take AstShiftR and AstNot into op count when diciding optimizable or not
+//     (result0 and result2 in the test)
+//  2. Insert AstShiftR if LSB of the frozen node is not 0 (result1 in the test)
+//  3. Insert AstNot if polarity of the frozen node is false (resutl3 in the
+//  test)
+module bug3445(input wire clk, input wire [31:0] in, output wire out);
+   logic [127:0] d;
+   always_ff @(posedge clk)
+      d <= {d[95:0], in};
+
+   typedef struct packed {
+      logic        a;
+      logic [ 2:0] b;
+      logic [ 2:0] c;
+      logic [ 1:0] d;
+      logic [ 7:0] e;
+      logic [31:0] f;
+      logic [ 3:0] g;
+      logic [31:0] h;
+      logic        i;
+      logic [41:0] j;
+   } packed_struct;
+   packed_struct st[4];
+
+   // This is always 1'b0, but Verilator cannot notice it.
+   // This signal helps to reveal wrong optimization of result2 and result3.
+   logic zero;
+   always_ff @(posedge clk) begin
+      st[0] <= d;
+      st[1] <= st[0];
+      st[2] <= st[1];
+      st[3] <= st[2];
+      zero <= fake_dependency() > 0;
+   end
+
+   logic result0, result1, result2, result3;
+   always_ff @(posedge clk) begin
+      // Cannot optimize further.
+      result0 <= (st[0].g[0] & st[0].h[0]) & (in[0] == 1'b0);
+      // There are redundant !in[0] terms. They should be simplified.
+      result1 <= (!in[0] & (st[1].g[0] & st[1].h[0])) & ((in[0] == 1'b0) & !in[0]);
+      // Cannot optimize further.
+      result2 <= !(st[2].g[0] & st[2].h[0]) & (zero == 1'b0);
+      // There are redundant zero terms. They should be simplified.
+      result3 <= (!zero & !(st[3].g[0] & st[3].h[0])) & ((zero == 1'b0) & !zero);
+   end
+
+   assign out = result0 ^ result1 ^ (result2 | result3);
 endmodule
