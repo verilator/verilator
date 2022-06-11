@@ -2021,12 +2021,12 @@ private:
         return Default;
     }
 
-    template <typename T_Node> constexpr static void checkTypeParameter() {
+    template <typename T_Node> struct CheckTypeParameter {
         static_assert(!std::is_const<T_Node>::value,
                       "Type parameter 'T_Node' should not be const qualified");
         static_assert(std::is_base_of<AstNode, T_Node>::value,
                       "Type parameter 'T_Node' must be a subtype of AstNode");
-    }
+    };
 
 public:
     // Traverse subtree and call given function 'f' in pre-order on each node that has type
@@ -2035,25 +2035,25 @@ public:
     // operation function in 'foreach' should be completely predictable by branch target caches in
     // modern CPUs, while it is basically unpredictable for VNVisitor.
     template <typename T_Node> void foreach (std::function<void(T_Node*)> f) {
-        checkTypeParameter<T_Node>();
+        (void)CheckTypeParameter<T_Node>();
         foreachImpl<T_Node, /* VisitNext: */ false>(this, f);
     }
 
     // Same as above, but for 'const' nodes
     template <typename T_Node> void foreach (std::function<void(const T_Node*)> f) const {
-        checkTypeParameter<T_Node>();
+        (void)CheckTypeParameter<T_Node>();
         foreachImpl<const T_Node, /* VisitNext: */ false>(this, f);
     }
 
     // Same as 'foreach' but also follows 'this->nextp()'
     template <typename T_Node> void foreachAndNext(std::function<void(T_Node*)> f) {
-        checkTypeParameter<T_Node>();
+        (void)CheckTypeParameter<T_Node>();
         foreachImpl<T_Node, /* VisitNext: */ true>(this, f);
     }
 
     // Same as 'foreach' but also follows 'this->nextp()'
     template <typename T_Node> void foreachAndNext(std::function<void(const T_Node*)> f) const {
-        checkTypeParameter<T_Node>();
+        (void)CheckTypeParameter<T_Node>();
         foreachImpl<const T_Node, /* VisitNext: */ true>(this, f);
     }
 
@@ -2062,13 +2062,13 @@ public:
     // present. Traversal is performed in some arbitrary order and is terminated as soon as the
     // result can be determined.
     template <typename T_Node> bool exists(std::function<bool(T_Node*)> p) {
-        checkTypeParameter<T_Node>();
+        (void)CheckTypeParameter<T_Node>();
         return predicateImpl<T_Node, /* Default: */ false, /* VisitNext: */ false>(this, p);
     }
 
     // Same as above, but for 'const' nodes
     template <typename T_Node> void exists(std::function<bool(const T_Node*)> p) const {
-        checkTypeParameter<T_Node>();
+        (void)CheckTypeParameter<T_Node>();
         return predicateImpl<const T_Node, /* Default: */ false, /* VisitNext: */ false>(this, p);
     }
 
@@ -2077,13 +2077,13 @@ public:
     // present. Traversal is performed in some arbitrary order and is terminated as soon as the
     // result can be determined.
     template <typename T_Node> bool forall(std::function<bool(T_Node*)> p) {
-        checkTypeParameter<T_Node>();
+        (void)CheckTypeParameter<T_Node>();
         return predicateImpl<T_Node, /* Default: */ true, /* VisitNext: */ false>(this, p);
     }
 
     // Same as above, but for 'const' nodes
     template <typename T_Node> void forall(std::function<bool(const T_Node*)> p) const {
-        checkTypeParameter<T_Node>();
+        (void)CheckTypeParameter<T_Node>();
         return predicateImpl<const T_Node, /* Default: */ true, /* VisitNext: */ false>(this, p);
     }
 
