@@ -477,10 +477,12 @@ private:
             AstNode* currp = m_workQueuep->front();
             m_workQueuep->pop();
 
-            // Analyse sub-tree list for code motion
+            // Analyse sub-tree list for code motion and conditional merging
             CodeMotionAnalysisVisitor::analyze(currp, stmtProperties);
             // Perform the code motion within the whole sub-tree list
-            currp = CodeMotionOptimizeVisitor::optimize(currp, stmtProperties);
+            if (v3Global.opt.fMergeCondMotion()) {
+                currp = CodeMotionOptimizeVisitor::optimize(currp, stmtProperties);
+            }
 
             // Merge conditionals in the whole sub-tree list (this might create new work items)
             iterateAndNextNull(currp);

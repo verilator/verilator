@@ -459,6 +459,8 @@ Summary:
 
 .. option:: -fno-merge-cond
 
+.. option:: -fno-merge-cond-motion
+
 .. option:: -fno-merge-const-pool
 
 .. option:: -fno-reloop
