@@ -12,13 +12,7 @@ scenarios(
     vlt => 1,
     );
 
-while (1) {
-
-    compile();
-
-    execute();
-
-    ok(1);
-    last;
-}
+compile();
+execute();
+ok(1);
 1;
