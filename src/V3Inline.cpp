@@ -311,8 +311,8 @@ private:
                 // code will be emitted.
                 UINFO(9, "assign to public and unpacked: " << nodep << endl);
                 m_modp->addStmtp(
-                    new AstAssignW(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
-                                   new AstVarRef(flp, exprvarrefp->varp(), VAccess::READ)));
+                    new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
+                                   new AstVarRef{flp, exprvarrefp->varp(), VAccess::READ}});
             } else if (nodep->isIfaceRef()) {
                 m_modp->addStmtp(
                     new AstAssignVarScope(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
