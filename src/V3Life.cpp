@@ -251,6 +251,7 @@ public:
         }
         // this->lifeDump();
     }
+    void clear() { m_map.clear(); }
     // DEBUG
     void lifeDump() {
         UINFO(5, "  LifeMap:" << endl);
@@ -283,6 +284,10 @@ private:
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
+    void setNoopt() {
+        m_noopt = true;
+        m_lifep->clear();
+    }
 
     // VISITORS
     virtual void visit(AstVarRef* nodep) override {
@@ -389,7 +394,7 @@ private:
         const bool prev_noopt = m_noopt;
         {
             m_lifep = bodyLifep;
-            m_noopt = true;
+            setNoopt();
             iterateAndNextNull(nodep->stmtsp());
             m_lifep = prevLifep;
             m_noopt = prev_noopt;
