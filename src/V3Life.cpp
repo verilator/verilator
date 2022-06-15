@@ -218,10 +218,10 @@ public:
     void lifeToAbove() {
         // Any varrefs under a if/else branch affect statements outside and after the if/else
         if (!m_aboveLifep) v3fatalSrc("Pushing life when already at the top level");
-        for (LifeMap::iterator it = m_map.begin(); it != m_map.end(); ++it) {
-            AstVarScope* const nodep = it->first;
+        for (auto& itr : m_map) {
+            AstVarScope* const nodep = itr.first;
             m_aboveLifep->complexAssignFind(nodep);
-            if (it->second.everSet()) {
+            if (itr.second.everSet()) {
                 // Record there may be an assignment, so we don't constant propagate across the if.
                 complexAssignFind(nodep);
             } else {
@@ -235,14 +235,14 @@ public:
         // life1p->lifeDump();
         // life2p->lifeDump();
         AstNode::user1ClearTree();  // user1p() used on entire tree
-        for (LifeMap::iterator it = life1p->m_map.begin(); it != life1p->m_map.end(); ++it) {
+        for (auto& itr : life1p->m_map) {
             // When the if branch sets a var before it's used, mark that variable
-            if (it->second.setBeforeUse()) it->first->user1(1);
+            if (itr.second.setBeforeUse()) itr.first->user1(1);
         }
-        for (LifeMap::iterator it = life2p->m_map.begin(); it != life2p->m_map.end(); ++it) {
+        for (auto& itr : life2p->m_map) {
             // When the else branch sets a var before it's used
-            AstVarScope* const nodep = it->first;
-            if (it->second.setBeforeUse() && nodep->user1()) {
+            AstVarScope* const nodep = itr.first;
+            if (itr.second.setBeforeUse() && nodep->user1()) {
                 // Both branches set the var, we can remove the assignment before the IF.
                 UINFO(4, "DUALBRANCH " << nodep << endl);
                 const auto itab = m_map.find(nodep);
@@ -255,11 +255,11 @@ public:
     // DEBUG
     void lifeDump() {
         UINFO(5, "  LifeMap:" << endl);
-        for (LifeMap::iterator it = m_map.begin(); it != m_map.end(); ++it) {
-            UINFO(5, "     Ent:  " << (it->second.setBeforeUse() ? "[F]  " : "     ") << it->first
+        for (const auto& itr : m_map) {
+            UINFO(5, "     Ent:  " << (itr.second.setBeforeUse() ? "[F]  " : "     ") << itr.first
                                    << endl);
-            if (it->second.assignp()) {  //
-                UINFO(5, "       Ass: " << it->second.assignp() << endl);
+            if (itr.second.assignp()) {  //
+                UINFO(5, "       Ass: " << itr.second.assignp() << endl);
             }
         }
     }
@@ -391,13 +391,12 @@ private:
         // Just don't optimize blocks with labels; they're rare - so far.
         LifeBlock* const prevLifep = m_lifep;
         LifeBlock* const bodyLifep = new LifeBlock(prevLifep, m_statep);
-        const bool prev_noopt = m_noopt;
         {
+            VL_RESTORER(m_noopt);
             m_lifep = bodyLifep;
             setNoopt();
             iterateAndNextNull(nodep->stmtsp());
             m_lifep = prevLifep;
-            m_noopt = prev_noopt;
         }
         UINFO(4, "   joinjump" << endl);
         // For the next assignments, clear any variables that were read or written in the block
