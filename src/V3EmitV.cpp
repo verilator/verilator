@@ -800,6 +800,10 @@ class EmitVPrefixedFormatter final : public V3OutFormatter {
         }
     }
 
+    virtual void putsOutput(const char* strg) override {
+        for (const char* cp = strg; *cp; cp++) putcOutput(*cp);
+    }
+
 public:
     void prefixFl(FileLine* fl) { m_prefixFl = fl; }
     FileLine* prefixFl() const { return m_prefixFl; }

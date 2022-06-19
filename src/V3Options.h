@@ -353,7 +353,8 @@ private:
     bool m_fLifePost;    // main switch: -fno-life-post: delayed assignment elimination
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
     bool m_fMergeCond;   // main switch: -fno-merge-cond: merge conditionals
-    bool m_fMergeConstPool = true;  // main switch: --fmerge-const-pool
+    bool m_fMergeCondMotion = true; // main switch: -fno-merge-cond-motion: perform code motion
+    bool m_fMergeConstPool = true;  // main switch: -fno-merge-const-pool
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
     bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
     bool m_fSplit;       // main switch: -fno-split: always assignment splitting
@@ -585,6 +586,7 @@ public:
     bool fLifePost() const { return m_fLifePost; }
     bool fLocalize() const { return m_fLocalize; }
     bool fMergeCond() const { return m_fMergeCond; }
+    bool fMergeCondMotion() const { return m_fMergeCondMotion; }
     bool fMergeConstPool() const { return m_fMergeConstPool; }
     bool fReloop() const { return m_fReloop; }
     bool fReorder() const { return m_fReorder; }

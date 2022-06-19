@@ -5,14 +5,14 @@
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+# When releasing, also update header of Changes file
+# and commit using "devel release" or "Version bump" message
+# Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
 AC_INIT([Verilator],[5.001 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
-# When releasing, also update header of Changes file
-# and commit using "devel release" or "Version bump" message
-# Then 'make maintainer-dist'
 
 AC_CONFIG_HEADERS(src/config_build.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)

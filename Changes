@@ -19,7 +19,14 @@ Verilator 5.001 devel
   clocks are now simulated correctly (#3278, #3384). [Geza Lore, Shunyao CAD]
 
 
-Verilator 4.223 devel
+Verilator 4.225 devel
+==========================
+
+**Minor:**
+
+
+
+Verilator 4.224 2022-06-19
 ==========================
 
 **Major:**
@@ -30,16 +37,24 @@ Verilator 4.223 devel
 
 * Add -f<optimization> options to replace -O<letter> options (#3436).
 * Changed --no-merge-const-pool to -fno-merge-const-pool (#3436).
+* Changed --no-decoration to remove output whitespace (#3460). [Kamil Rakoczy]
 * Support compile time trace signal selection with tracing_on/off (#3323). [Shunyao CAD]
 * Support non-ANSI interface port declarations (#3439). [Geza Lore, Shunyao CAD]
 * Support concat assignment to packed array (#3446).
 * Improve conditional merging optimization (#3125). [Geza Lore, Shunyao CAD]
 * Define VM_TRACE_VCD when tracing in VCD format. [Geza Lore, Shunyao CAD]
 * Add assert when VerilatedContext is mis-deleted (#3121). [Rupert Swarbrick]
+* Internal prep work towards timing control. [Krzysztof Bieganski]
 * Fix hang with large case statement optimization (#3405). [Mike Urbach]
+* Fix UNOPTFLAT warning from initial static var (#3406). [Kamil Rakoczy]
+* Fix compile error when enable VL_LEAK_CHECKS (#3411). [HungMingWu]
+* Fix cmake rules to support higher-level targets (#3377) (#3386). [Martin Stadler]
+* Fix BLKANDNBLK on $readmem/$writemem (#3379). [Alex Solomatnikov]
 * Fix 'with' operator with type casting (#3387). [xiak95]
 * Fix incorrect conditional merging (#3409). [Raynard Qiao]
 * Fix passing VL_TRACE_FST_WRITER_THREAD in CMake build. [Geza Lore, Shunyao CAD]
+* Fix compile error under strict C++11 mode (#3463). [Kevin Kiningham]
+* Fix public unpacked input ports (#3465). [Todd Strader]
 
 
 Verilator 4.222 2022-05-02
