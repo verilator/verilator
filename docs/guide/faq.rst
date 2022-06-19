@@ -72,23 +72,38 @@ a good thing for getting working silicon.
 Will Verilator output remain under my own license/copyright?
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Yes, it's just like using GCC on your programs; this is why Verilator uses
-the "GNU **Lesser** Public License Version 3" instead of the more typical
-"GNU Public License".  See the licenses for details, but in brief, if you
-change Verilator itself or the header files Verilator includes, you must
-make the source code available under the GNU Lesser Public License.
-However, Verilator output (the Verilated code) only "include"s the licensed
-files, and so you are **not** required to open-source release any output
-from Verilator.
+Your SystemVerilog, VPI/DPI, or main() C++ code remains under your own license.
+
+It's just like how using GCC on your programs does not change the copyright
+of your program; this is why Verilator uses the "GNU **Lesser** Public
+License Version 3" instead of the more typical "GNU Public License".  See
+the licenses for details.
+
+Some examples:
+
+* Any SystemVerilog or other input fed into Verilator remain your own.
+
+* Any of your VPI/DPI C++ routines that Verilator calls remain your own.
+
+* Any of your main() C++ code that calls into Verilator remain your own.
+
+* If you change Verilator itself, for example changing or adding a file
+  under the src/ directory in the repository, you must make the source code
+  available under the GNU Lesser Public License.
+
+* If you change a header Verilator provides, for example under include/ in
+  the repository, you must make the source code available under the GNU
+  Lesser Public License.
 
 You also have the option of using the Perl Artistic License, which again
-does not require you to release your Verilog or generated code, and also
-allows you to modify Verilator for internal use without distributing the
-modified version.  But please contribute back to the community!
+does not require you to release your Verilog, C++, or generated code. This
+license also allows you to modify Verilator for internal use without
+distributing the modified version.  But please contribute back to the
+community!
 
-One limit is that you cannot under either license release a closed-source
-Verilog simulation product incorporating Verilator. That is you can have a
-commercial product, but must make the source code available.
+Under both license you can offer a commercial product that is based on
+Verilator either directly or embedded within.  However under both licenses,
+any changes you make to Verilator for such a product must be open sourced.
 
 As is standard with Open Source, contributions back to Verilator will be
 placed under the Verilator copyright and LGPL/Artistic license.  Small test

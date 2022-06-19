@@ -28,7 +28,7 @@ for my $file (glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}*.cpp")) {
 # have been evaluated inside the compiler. So there should be
 # no references to 'sum' in the .cpp.
 for my $file (glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}*.cpp")) {
-    file_grep_not($file, qr/sum/);
+    file_grep_not($file, qr/[^a-zA-Z]sum[^a-zA-Z]/);
 }
 
 ok(1);

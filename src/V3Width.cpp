@@ -504,6 +504,7 @@ private:
         //   width: LHS + RHS
         AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
         userIterate(vdtypep, WidthVP(SELF, BOTH).p());
+        // Conversions
         if (VN_IS(vdtypep, QueueDType)) {
             // Queue "element 0" is lhsp, so we need to swap arguments
             auto* const newp = new AstConsQueue(nodep->fileline(), nodep->rhsp()->unlinkFrBack(),
@@ -521,6 +522,16 @@ private:
             userIterateChildren(newp, m_vup);
             return;
         }
+        if (VN_IS(vdtypep, UnpackArrayDType)) {
+            auto* const newp = new AstPattern{nodep->fileline(), nullptr};
+            patConcatConvertRecurse(newp, nodep);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            userIterate(newp, m_vup);
+            return;
+        }
+
+        // Concat handling
         if (m_vup->prelim()) {
             if (VN_IS(vdtypep, AssocArrayDType)  //
                 || VN_IS(vdtypep, DynArrayDType)  //
@@ -595,6 +606,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
@@ -661,7 +673,8 @@ private:
             }
 
             AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
-            if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)) {
+            if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)
+                || VN_IS(vdtypep, UnpackArrayDType)) {
                 if (times != 1)
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-1 replication to form "
                                                      << vdtypep->prettyDTypeNameQ()
@@ -673,7 +686,7 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
-            if (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, UnpackArrayDType)) {
+            if (VN_IS(vdtypep, AssocArrayDType)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
                                                  << vdtypep->prettyDTypeNameQ() << " data type");
             }
@@ -1323,10 +1336,10 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstTimingControl* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: timing control statement in this location\n"
+    virtual void visit(AstEventControl* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: event control statement in this location\n"
                                          << nodep->warnMore()
-                                         << "... Suggest have one timing control statement "
+                                         << "... Suggest have one event control statement "
                                          << "per procedure, at the top of the procedure");
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -2725,7 +2738,7 @@ private:
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
-            newp->dtypeFrom(adtypep->subDTypep());
+            newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
@@ -2949,7 +2962,7 @@ private:
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
-            newp->dtypeFrom(adtypep->subDTypep());
+            newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
@@ -3983,6 +3996,11 @@ private:
                 // see t_event_copy.v for commentary on the mess involved
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
+        }
+        if (nodep->timingControlp()) {
+            nodep->timingControlp()->v3warn(
+                ASSIGNDLY, "Unsupported: Ignoring timing control on this assignment.");
+            nodep->timingControlp()->unlinkFrBackWithNext()->deleteTree();
         }
         if (VN_IS(nodep->rhsp(), EmptyQueue)) {
             UINFO(9, "= {} -> .delete(): " << nodep);
@@ -6223,6 +6241,21 @@ private:
             element += range.leftToRightInc();
         }
         return patmap;
+    }
+
+    void patConcatConvertRecurse(AstPattern* patternp, AstConcat* nodep) {
+        if (AstConcat* lhsp = VN_CAST(nodep->lhsp(), Concat)) {
+            patConcatConvertRecurse(patternp, lhsp);
+        } else {
+            patternp->addItemsp(new AstPatMember{nodep->lhsp()->fileline(),
+                                                 nodep->lhsp()->unlinkFrBack(), nullptr, nullptr});
+        }
+        if (AstConcat* rhsp = VN_CAST(nodep->rhsp(), Concat)) {
+            patConcatConvertRecurse(patternp, rhsp);
+        } else {
+            patternp->addItemsp(new AstPatMember{nodep->rhsp()->fileline(),
+                                                 nodep->rhsp()->unlinkFrBack(), nullptr, nullptr});
+        }
     }
 
     void makeOpenArrayShell(AstNodeFTaskRef* nodep) {

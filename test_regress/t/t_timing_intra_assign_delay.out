@@ -1,0 +1,31 @@
+%Warning-ASSIGNDLY: t/t_timing_intra_assign_delay.v:12:11: Unsupported: Ignoring timing control on this assignment.
+                                                         : ... In instance t
+   12 |   assign #10 val2 = val1;
+      |           ^~
+                    ... For warning description see https://verilator.org/warn/ASSIGNDLY?v=latest
+                    ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
+%Warning-STMTDLY: t/t_timing_intra_assign_delay.v:16:6: Unsupported: Ignoring delay on this delayed statement.
+                                                      : ... In instance t
+   16 |     #10 val1 = 2;
+      |      ^~
+%Error-UNSUPPORTED: t/t_timing_intra_assign_delay.v:17:5: Unsupported: fork statements
+                                                        : ... In instance t
+   17 |     fork #5 val1 = 3; join_none
+      |     ^~~~
+%Warning-ASSIGNDLY: t/t_timing_intra_assign_delay.v:18:13: Unsupported: Ignoring timing control on this assignment.
+                                                         : ... In instance t
+   18 |     val1 = #10 val1 + 2;
+      |             ^~
+%Warning-ASSIGNDLY: t/t_timing_intra_assign_delay.v:19:14: Unsupported: Ignoring timing control on this assignment.
+                                                         : ... In instance t
+   19 |     val1 <= #10 val1 + 2;
+      |              ^~
+%Error-UNSUPPORTED: t/t_timing_intra_assign_delay.v:20:5: Unsupported: fork statements
+                                                        : ... In instance t
+   20 |     fork #5 val1 = 5; join_none
+      |     ^~~~
+%Warning-STMTDLY: t/t_timing_intra_assign_delay.v:21:6: Unsupported: Ignoring delay on this delayed statement.
+                                                      : ... In instance t
+   21 |     #20 $write("*-* All Finished *-*\n");
+      |      ^~
+%Error: Exiting due to

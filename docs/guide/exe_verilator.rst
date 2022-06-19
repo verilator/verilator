@@ -431,6 +431,54 @@ Summary:
    flattening large designs may require significant CPU time, memory and
    storage.
 
+.. option:: -fno-acyc-simp
+
+.. option:: -fno-assemble
+
+.. option:: -fno-case
+
+.. option:: -fno-combine
+
+.. option:: -fno-const
+
+.. option:: -fno-const-bit-op-tree
+
+.. option:: -fno-dedup
+
+.. option:: -fno-expand
+
+.. option:: -fno-gate
+
+.. option:: -fno-inline
+
+.. option:: -fno-life
+
+.. option:: -fno-life-post
+
+.. option:: -fno-localize
+
+.. option:: -fno-merge-cond
+
+.. option:: -fno-merge-cond-motion
+
+.. option:: -fno-merge-const-pool
+
+.. option:: -fno-reloop
+
+.. option:: -fno-reorder
+
+.. option:: -fno-split
+
+.. option:: -fno-subst
+
+.. option:: -fno-subst-const
+
+.. option:: -fno-table
+
+   Rarely needed. Disables one of the internal optimization steps. These
+   are typically used only when recommended by a maintainer to help debug
+   or work around an issue.
+
 .. option:: -G<name>=<value>
 
    Overwrites the given parameter of the toplevel module. The value is
@@ -648,13 +696,6 @@ Summary:
    The directory is created if it does not exist and the parent directories
    exist; otherwise manually create the Mdir before calling Verilator.
 
-.. option:: --no-merge-const-pool
-
-   Rarely needed.  In order to minimize cache footprint, values of different
-   data type, that are yet emitted identically in C++ are merged in the
-   constant pool.  This option disables this and causes every constant pool
-   entry with a distinct data type to be emitted separately.
-
 .. option:: --mod-prefix <topname>
 
    Specifies the name to prepend to all lower level classes.  Defaults to
@@ -703,9 +744,9 @@ Summary:
 
    Rarely needed.  Enables or disables a specific optimizations, with the
    optimization selected based on the letter passed.  A lowercase letter
-   disables an optimization, an upper case letter enables it.  This is
-   intended for debugging use only; see the source code for
-   version-dependent mappings of optimizations to -O letters.
+   disables an optimization, an upper case letter enables it.  This option
+   is deprecated and the various `-f<optimization>` arguments should be
+   used instead.
 
 .. option:: -o <executable>
 
@@ -847,12 +888,12 @@ Summary:
 
 .. option:: --prof-exec
 
-   Enable collection of execution trace, that can be convered into a gantt
+   Enable collection of execution trace, that can be converted into a gantt
    chart with verilator_gantt See :ref:`Execution Profiling`.
 
 .. option:: --prof-pgo
 
-   Enable collection of profiling data for profile guided verilation. Currently
+   Enable collection of profiling data for profile guided Verilation. Currently
    this is only useful with :vlopt:`--threads`. See :ref:`Thread PGO`.
 
 .. option:: --prof-threads
@@ -1041,7 +1082,8 @@ Summary:
    is not thread safe. With "--threads 1", the generated model is single
    threaded but may run in a multithreaded environment. With "--threads N",
    where N >= 2, the model is generated to run multithreaded on up to N
-   threads. See :ref:`Multithreading`.
+   threads. See :ref:`Multithreading`. This option also applies to
+   :vlopt:`--trace` (but not :vlopt:`--trace-fst`).
 
 .. option:: --threads-dpi all
 
@@ -1119,7 +1161,8 @@ Summary:
    Having tracing compiled in may result in some small performance losses,
    even when tracing is not turned on during model execution.
 
-   See also :vlopt:`--trace-threads` option.
+   When using :vlopt:`--threads`, VCD tracing is parallelized, using the
+   same number of threads as passed to :vlopt:`--threads`.
 
 .. option:: --trace-coverage
 
@@ -1173,12 +1216,12 @@ Summary:
 .. option:: --trace-threads *threads*
 
    Enable waveform tracing using separate threads. This is typically faster
-   in simulation runtime but uses more total compute. This option is
-   independent of, and works with, both :vlopt:`--trace` and
-   :vlopt:`--trace-fst`.  Different trace formats can take advantage of
-   more trace threads to varying degrees. Currently VCD tracing can utilize
-   at most "--trace-threads 1", and FST tracing can utilize at most
-   "--trace-threads 2". This overrides :vlopt:`--no-threads` .
+   in simulation runtime but uses more total compute. This option only
+   applies to :vlopt:`--trace-fst`. FST tracing can utilize at most
+   "--trace-threads 2". This overrides :vlopt:`--no-threads`.
+
+   This option is accepted, but has absolutely no effect with
+   :vlopt:`--trace`, which respects :vlopt:`--threads` instead.
 
 .. option:: --trace-underscore
 
@@ -1676,9 +1719,28 @@ The grammar of configuration commands is as follows:
 
 .. option:: tracing_off [-file "<filename>" [-lines <line> [ - <line> ]]]
 
-   Enable/disable waveform tracing for all future signals declared in the
-   specified filename (or wildcard with '\*' or '?', or all files if
-   omitted) and range of line numbers (or all lines if omitted).
+.. option:: tracing_on  [-scope "<scopename>" [-levels <levels> ]]
 
-   For tracing_off, instances below any module in the files/ranges
-   specified will also not be traced.
+.. option:: tracing_off [-scope "<scopename>" [-levels <levels> ]]
+
+   Enable/disable waveform tracing for all future signals declared in
+   all files.
+
+   With -file, enable/disable waveform tracing in the specified
+   filename (or wildcard with '\*' or '?'), and -line range of line
+   numbers (or all lines if omitted).
+
+   For tracing_off with -file, instances below any module in the
+   files/ranges specified will also not be traced.  To overcome this
+   feature, use tracing_on on the upper module declaration and on any
+   cells, or use the -scope flavor of the command.
+
+   With -scope enable/disable waveform tracing for the specified scope (or
+   wildcard with '\*' or '?'), and optional --levels number of levels
+   below.  These controls only take place after other file/line/module
+   based controls have indicated the signal should be traced.
+
+   With -levels (used with -scope), the number of levels below that
+   scope which the rule is to match, where 0 means all levels below, 1
+   the exact level as the provided scope, and 2 meaning an additional
+   level of children below the provided scope, etc.

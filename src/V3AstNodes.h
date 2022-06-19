@@ -2142,6 +2142,9 @@ public:
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
+    // op2 = Net delay
+    AstNode* delayp() const { return op2p(); }
+    void delayp(AstNode* const nodep) { setNOp2p(nodep); }
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
     // (Slow) recurse down to find basic data type (Note don't need virtual -
     // AstVar isn't a NodeDType)
@@ -3481,8 +3484,8 @@ public:
 
 class AstAssign final : public AstNodeAssign {
 public:
-    AstAssign(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER_Assign(fl, lhsp, rhsp) {
+    AstAssign(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_Assign(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTNODE_NODE_FUNCS(Assign)
@@ -3507,8 +3510,8 @@ public:
 
 class AstAssignDly final : public AstNodeAssign {
 public:
-    AstAssignDly(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER_AssignDly(fl, lhsp, rhsp) {}
+    AstAssignDly(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignDly(fl, lhsp, rhsp, timingControlp) {}
     ASTNODE_NODE_FUNCS(AssignDly)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignDly(this->fileline(), lhsp, rhsp);
@@ -3817,15 +3820,18 @@ public:
 class AstDelay final : public AstNodeStmt {
     // Delay statement
 public:
-    AstDelay(FileLine* fl, AstNode* lhsp)
+    AstDelay(FileLine* fl, AstNode* lhsp, AstNode* stmtsp)
         : ASTGEN_SUPER_Delay(fl) {
         setOp1p(lhsp);
+        setNOp2p(stmtsp);
     }
     ASTNODE_NODE_FUNCS(Delay)
     virtual bool same(const AstNode* samep) const override { return true; }
     //
-    AstNode* lhsp() const { return op1p(); }  // op2 = Statements to evaluate
+    AstNode* lhsp() const { return op1p(); }  // op1 = delay value
     void lhsp(AstNode* nodep) { setOp1p(nodep); }
+    void stmtsp(AstNode* nodep) { setOp2p(nodep); }  // op2 = statements under delay
+    AstNode* stmtsp() const { return op2p(); }
 };
 
 class AstGenCase final : public AstNodeCase {
@@ -5243,15 +5249,15 @@ public:
     }
 };
 
-class AstTimingControl final : public AstNodeStmt {
+class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
 public:
-    AstTimingControl(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
-        : ASTGEN_SUPER_TimingControl(fl) {
+    AstEventControl(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
+        : ASTGEN_SUPER_EventControl(fl) {
         setNOp1p(sensesp);
         setNOp2p(stmtsp);
     }
-    ASTNODE_NODE_FUNCS(TimingControl)
+    ASTNODE_NODE_FUNCS(EventControl)
     virtual string verilogKwd() const override { return "@(%l) %r"; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
@@ -8532,6 +8538,7 @@ public:
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNode* itemsp() const { return op2p(); }  // op2 = AstPatReplicate, AstPatMember, etc
+    void addItemsp(AstNode* nodep) { addOp2p(nodep); }
 };
 class AstPatMember final : public AstNodeMath {
     // Verilog '{a} or '{a{b}}

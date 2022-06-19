@@ -2,9 +2,11 @@ ABCp
 Accellera
 Affe
 Aleksander
+Alexandre
 Ami
 Amir
 Anastasiadis
+Anikin
 Antonin
 Antwerpen
 Arasanipalai
@@ -70,6 +72,7 @@ Eda
 Eddleston
 Egbert
 Egil
+Ehab
 Eiler
 Eivind
 El
@@ -82,6 +85,7 @@ Fabrizio
 Fekete
 Ferrandi
 Flachs
+Flavien
 Foletto
 Forker
 Francillon
@@ -104,6 +108,7 @@ Goessling
 Gonnen
 Goorah
 Gossner
+Graybeal
 Grobman
 Gunter
 Guo
@@ -121,6 +126,7 @@ Hornung
 Hossell
 Hsu
 Hyperthreading
+Ibrahim
 Iles
 Inlines
 Inout
@@ -134,6 +140,7 @@ Jannis
 Jens
 Jeras
 Jiuyang
+Joannou
 Joly
 Jullien
 Junji
@@ -147,6 +154,7 @@ Kamendje
 Kandadi
 Kaplan
 Karge
+Karlsson
 Katz
 Katzman
 Keren
@@ -161,6 +169,7 @@ Kolecki
 Koonce
 Korteland
 Koszek
+Kouping
 Kravitz
 Krolnik
 Kruse
@@ -194,6 +203,7 @@ Mednick
 Michiels
 Microsystems
 Milanovic
+Millis
 MinW
 Mindspeed
 Miodrag
@@ -224,12 +234,14 @@ Petr
 Piechotka
 Piersall
 Plunkett
+Popolon
 Popov
 Prabhat
 Prabhu
 Prateek
 Pre
 Preprocess
+Pretet
 Priyadharshini
 Pullup
 Pulver
@@ -262,12 +274,15 @@ Shi
 Shinkarovsky
 Shirakawa
 Shuba
+Shunyao
 Slatter
 SoC
 Sobhan
 Sokorac
 Solaris
 Solomatnikov
+Solt
+Southwell
 Srini
 Stamness
 Stephane
@@ -286,6 +301,7 @@ SystemVerilog
 Takatsukasa
 Tambe
 Tariq
+Tejada
 Tengstrand
 Terpstra
 Thiede
@@ -293,8 +309,10 @@ Thierry
 Thyer
 Tichelaar
 Tomov
+Tood
 Topa
 Tota
+Trefor
 Tresidder
 Tri
 Tristate
@@ -304,11 +322,13 @@ Ubixum
 Uints
 Undefines
 Unsized
+Urbach
 Uselib
 Usha
 Usuario
 VERILATOR
 Vasu
+Vdeeptemp
 Vdly
 Vemumtab
 Vemuri
@@ -351,7 +371,9 @@ Zhang
 abirkmanis
 accessor
 accessors
+adrienlemasle
 agrobman
+ahouska
 al
 ala
 andit
@@ -372,8 +394,12 @@ backtrace
 backtraces
 basename
 bbox
+benchmarking
 biguint
 biops
+bitOpTree
+bitOpTree
+bitop
 bitstoreal
 blackbox
 bokke
@@ -389,6 +415,7 @@ casez
 casted
 cb
 ccache
+ccall
 cdc
 ceil
 celldefine
@@ -411,6 +438,8 @@ concat
 concats
 config
 const
+constexpr
+constpool
 coredump
 countbits
 countones
@@ -426,6 +455,7 @@ da
 dat
 datadir
 datafiles
+david
 ddd
 deassign
 debugi
@@ -434,6 +464,7 @@ defname
 defparam
 demangling
 der
+dereference
 desassign
 destructor
 detections
@@ -462,6 +493,7 @@ dumpvars
 dut
 dx
 elab
+elike
 elsif
 endcase
 endcelldefine
@@ -480,15 +512,18 @@ enums
 env
 envvar
 eof
+errae
 erroring
 et
 eval
+evals
 exe
 executables
 expr
 extern
 fanin
 fasttrace
+fauto
 fbranch
 fclose
 fdisplay
@@ -503,6 +538,7 @@ filt
 flto
 flushCall
 fopen
+forceable
 foreach
 fprintf
 fprofile
@@ -521,6 +557,7 @@ funcs
 fwrite
 gantt
 gcc
+gcda
 gdb
 genblk
 genvar
@@ -552,6 +589,7 @@ incdir
 includer
 inferfaces
 inhibitSim
+initarray
 initializer
 initializers
 inits
@@ -570,6 +608,7 @@ killua
 lang
 lcov
 ld
+leavinel
 len
 libext
 libgoogle
@@ -584,6 +623,7 @@ ln
 loc
 localparam
 localparams
+localtime
 logicals
 longint
 lsb
@@ -618,6 +658,7 @@ multithreaded
 multithreading
 mutexes
 mux
+myftptoyman
 mysignal
 namespace
 nand
@@ -642,15 +683,19 @@ onehot
 ooo
 oprofile
 oversubscription
+parallelized
 param
 parameterized
 params
 parens
+pawel
 pc
 pdf
 perf
 perftools
+pgo
 picoChip
+pinIndex
 pinout
 plusargs
 pmos
@@ -676,6 +721,7 @@ prev
 printf
 printtimescale
 profcfunc
+profiler
 prototyptes
 ps
 pthread
@@ -703,12 +749,14 @@ regs
 reloop
 resetall
 respecified
+rodata
 rr
 rst
 runtime
 runtimes
 rw
 sVerilator
+sawatzke
 sc
 scalared
 sccanf
@@ -724,6 +772,7 @@ specparam
 splitme
 spp
 sqrt
+src
 srcdir
 srcfile
 sscanf
@@ -743,6 +792,7 @@ subcells
 subexpressions
 submodule
 submodules
+substring
 sv
 svBitVal
 svBitVecVal
@@ -777,6 +827,7 @@ trunc
 txt
 typ
 typedef
+typedef'ed
 typedefed
 typedefs
 typename
@@ -790,6 +841,7 @@ uniquified
 unistd
 unlink
 unlinked
+unnamedblk
 unopt
 unoptflat
 unoptimizable
@@ -839,11 +891,14 @@ writeme
 writemem
 writememb
 writememh
+xiak
 xin
 xml
 xnor
 xout
 xuejiazidi
 yanx
+ypq
 yurivict
 zdave
+Øyvind

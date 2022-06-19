@@ -87,7 +87,7 @@ sub check_cpp {
     my $fh = IO::File->new("<$filename") or error("$! $filenme");
     my @funcs;
     while (defined(my $line = $fh->getline)) {
-        if ($line =~ /^(void|IData)\s+(.*::.*)/) {
+        if ($line =~ /^(void|IData)\s+(.*::.*){/) {
             my $func = $2;
             $func =~ s/\(.*$//;
             print "\tFunc $func\n" if $Self->{verbose};

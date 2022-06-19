@@ -14,7 +14,7 @@ top_filename("t/t_interface_modport.v");
 
 compile(
     # Avoid inlining so we find bugs in the non-inliner connection code
-    verilator_flags2 => ["-Oi"],
+    verilator_flags2 => ["-fno-inline"],
     );
 
 execute(

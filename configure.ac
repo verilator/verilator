@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.222 2022-05-02],
+AC_INIT([Verilator],[4.224 2022-06-19],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -348,14 +348,18 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
-# Currently enabled c++14 due to packaged SystemC dependency
-# c++14 is the newest that Verilator is regressed to support
+# Currently enable c++17/c++14 due to packaged SystemC dependency
+# c++17 is the newest that Verilator is regularly tested to support
 # c++11 is the oldest that Verilator supports
 # gnu is requried for Cygwin to compile verilated.h successfully
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
+case "$(which lsb_release 2>&1 > /dev/null && lsb_release -d)" in
+*Ubuntu*22.04*)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
+;;
+esac
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++14)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++11)

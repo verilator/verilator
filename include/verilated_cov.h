@@ -157,8 +157,8 @@ protected:
     friend class VerilatedCovImp;
     // CONSTRUCTORS
     // Internal: Only made as part of VerilatedCovImp
-    VerilatedCovContext() {}
-    virtual ~VerilatedCovContext() {}
+    VerilatedCovContext() = default;
+    virtual ~VerilatedCovContext() = default;
 
     // METHODS
     // Internal: access to implementation class

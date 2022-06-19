@@ -582,12 +582,12 @@ private:
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstTimingControl* nodep) override {
+    virtual void visit(AstEventControl* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
         AstAlways* const alwaysp = VN_CAST(nodep->backp(), Always);
         if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB) {
-            alwaysp->v3error("Timing control statements not legal under always_comb "
+            alwaysp->v3error("Event control statements not legal under always_comb "
                              "(IEEE 1800-2017 9.2.2.2.2)\n"
                              << nodep->warnMore() << "... Suggest use a normal 'always'");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

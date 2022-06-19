@@ -133,7 +133,7 @@ private:
                                   && !constp->num().isString();  // Not a string
         if (useConstPool) {
             // Extract into constant pool.
-            const bool merge = v3Global.opt.mergeConstPool();
+            const bool merge = v3Global.opt.fMergeConstPool();
             varp = v3Global.rootp()->constPoolp()->findConst(constp, merge)->varp();
             nodep->deleteTree();
             ++m_extractedToConstPool;

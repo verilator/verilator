@@ -700,6 +700,10 @@ int V3OutFormatter::endLevels(const char* strg) {
 }
 
 void V3OutFormatter::puts(const char* strg) {
+    if (!v3Global.opt.decoration()) {
+        putsOutput(strg);
+        return;
+    }
     if (m_prependIndent && strg[0] != '\n') {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
@@ -759,13 +763,8 @@ void V3OutFormatter::puts(const char* strg) {
             break;
         case '(':
             indentInc();
-            if (v3Global.opt.decoration()) {
-                // Line up continuation with open paren, plus one indent
-                m_parenVec.push(m_column);
-            } else {
-                // Line up continuation with block+1
-                m_parenVec.push(m_indentLevel * m_blockIndent);
-            }
+            // Line up continuation with open paren, plus one indent
+            m_parenVec.push(m_column);
             break;
         case ')':
             if (!m_parenVec.empty()) m_parenVec.pop();
@@ -806,6 +805,7 @@ void V3OutFormatter::putBreakExpr() {
 
 // Add a line break if too wide
 void V3OutFormatter::putBreak() {
+    if (!v3Global.opt.decoration()) return;
     if (!m_nobreak) {
         // char s[1000]; sprintf(s, "{%d,%d}", m_column, m_parenVec.top()); putsNoTracking(s);
         if (exceededWidth()) {
@@ -824,11 +824,19 @@ void V3OutFormatter::putsQuoted(const string& strg) {
     putcNoTracking('"');
 }
 void V3OutFormatter::putsNoTracking(const string& strg) {
+    if (!v3Global.opt.decoration()) {
+        putsOutput(strg.c_str());
+        return;
+    }
     // Don't track {}'s, probably because it's a $display format string
     for (const char c : strg) putcNoTracking(c);
 }
 
 void V3OutFormatter::putcNoTracking(char chr) {
+    if (!v3Global.opt.decoration()) {
+        putcOutput(chr);
+        return;
+    }
     switch (chr) {
     case '\n':
         m_lineno++;

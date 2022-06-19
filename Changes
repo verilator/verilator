@@ -8,6 +8,37 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 4.223 devel
+==========================
+
+**Major:**
+
+* VCD tracing is now parallelized with --threads (#3449). [Geza Lore, Shunyao CAD]
+
+**Minor:**
+
+* Add -f<optimization> options to replace -O<letter> options (#3436).
+* Changed --no-merge-const-pool to -fno-merge-const-pool (#3436).
+* Changed --no-decoration to remove output whitespace (#3460). [Kamil Rakoczy]
+* Support compile time trace signal selection with tracing_on/off (#3323). [Shunyao CAD]
+* Support non-ANSI interface port declarations (#3439). [Geza Lore, Shunyao CAD]
+* Support concat assignment to packed array (#3446).
+* Improve conditional merging optimization (#3125). [Geza Lore, Shunyao CAD]
+* Define VM_TRACE_VCD when tracing in VCD format. [Geza Lore, Shunyao CAD]
+* Add assert when VerilatedContext is mis-deleted (#3121). [Rupert Swarbrick]
+* Internal prep work towards timing control. [Krzysztof Bieganski]
+* Fix hang with large case statement optimization (#3405). [Mike Urbach]
+* Fix UNOPTFLAT warning from initial static var (#3406). [Kamil Rakoczy]
+* Fix compile error when enable VL_LEAK_CHECKS (#3411). [HungMingWu]
+* Fix cmake rules to support higher-level targets (#3377) (#3386). [Martin Stadler]
+* Fix BLKANDNBLK on $readmem/$writemem (#3379). [Alex Solomatnikov]
+* Fix 'with' operator with type casting (#3387). [xiak95]
+* Fix incorrect conditional merging (#3409). [Raynard Qiao]
+* Fix passing VL_TRACE_FST_WRITER_THREAD in CMake build. [Geza Lore, Shunyao CAD]
+* Fix compile error under strict C++11 mode (#3463). [Kevin Kiningham]
+* Fix public unpacked input ports (#3465). [Todd Strader]
+
+
 Verilator 4.222 2022-05-02
 ==========================
 
@@ -43,7 +74,7 @@ Verilator 4.220 2022-03-12
 * Add VERILATOR_VERSION_INTEGER for determining API (#3343). [Larry Doolittle]
 * Improve various V3Combine algorithm details (#3328). [Yutetsu TAKATSUKASA]
 * Improve various V3Order algorithm details. [Geza Lore]
-* Fix macOS arm64 build (#3285) (#3291). [Guokai Chen]
+* Fix MacOS arm64 build (#3285) (#3291). [Guokai Chen]
 * Fix signed number operation (#3294) (#3308). [Raynard Qiao]
 * Fix FST traces to include vector range (#3296) (#3297). [Jamie Iles]
 * Fix skipping public enum values with four-state values (#3303).
@@ -108,7 +139,7 @@ Verilator 4.216 2021-12-05
 **Minor:**
 
 * Internal code cleanups and improvements. [Geza Lore]
-* Improve --thread verilation-time performance.
+* Improve --thread Verilation-time performance.
 * Support task name in $display %m (#3211). [Julie Schwartz]
 * Make 'bit', 'logic' and 'time' types unsigned by default. [Geza Lore]
 * Optimize $random concatenates/selects (#3114).
@@ -132,7 +163,7 @@ Verilator 4.214 2021-10-17
 
 **Major:**
 
-* Add profile-guided optmization of mtasks (#3150).
+* Add profile-guided optimization of mtasks (#3150).
 
 **Minor:**
 
@@ -198,7 +229,7 @@ Verilator 4.210 2021-07-07
 
 * Add --prof-c to pass profiling to compiler (#3059). [Alexander Grobman]
 * Optimize a lot more model variables into function locals (#3027). [Geza Lore]
-* Support middle-of-design nested topmodules (#3026). [Dan Petrisko]
+* Support middle-of-design nested top modules (#3026). [Dan Petrisko]
 * Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]
 * Remove deprecated --inhibit-sim option (#3035). [Geza Lore]
 * Merge const static data globally into a new constant pool (#3013). [Geza Lore]
@@ -237,10 +268,10 @@ Verilator 4.204 2021-06-12
 * Fix to emit 'else if' without nesting (#2944). [Geza Lore]
 * Fix part select issues in LATCH warning (#2948) (#2938). [Julien Margetts]
 * Fix to not emit empty files with low split limits (#2961). [Geza Lore]
-* Fix merging of assignments in C++ code (#2970). [Ruper Swarbrick]
+* Fix merging of assignments in C++ code (#2970). [Rupert Swarbrick]
 * Fix unused variable warnings (#2991). [Pieter Kapsenberg]
 * Fix --protect-ids when using SV classes (#2994). [Geza Lore]
-* Fix constant function calls with uninit value (#2995). [yanx21]
+* Fix constant function calls with uninitialized value (#2995). [yanx21]
 * Fix Makefiles to support Windows EXEEXT usage (#3008). [Miodrag Milanovic]
 
 
@@ -278,7 +309,7 @@ Verilator 4.202 2021-04-24
 * Fix Cygwin example compile issues (#2856). [Mark Shaw]
 * Fix select of with index variable (#2880). [Alexander Grobman]
 * Fix cmake version number to be numeric (#2881). [Yuri Victorovich]
-* Fix MinGW not supportting 'localtime_r' (#2882). [HyungKi Jeong]
+* Fix MinGW not supporting 'localtime_r' (#2882). [HyungKi Jeong]
 * Fix cast from packed, typedef'ed interface signal (#2884). [Todd Strader]
 * Fix VPI package reported as vpiModule (#2885). [Todd Strader]
 * Fix dumping waveforms to multiple FST files (#2889). [David Metz]
@@ -425,7 +456,7 @@ Verilator 4.102 2020-10-15
 * Support # as a comment in -f files (#2497). [phantom-killua]
 * Support 'this' (#2585). [Rafal Kapuscik]
 * Support defines for FST tracing (#2592). [Markus Krause]
-* Support non-overapping implication inside properties (#1292). [Peter Monsson]
+* Support non-overlapping implication inside properties (#1292). [Peter Monsson]
 * Fix timescale with --hierarchical (#2554). [Yutetsu TAKATSUKASA]
 * Fix cmake build with --hierarchical (#2560). [Yutetsu TAKATSUKASA]
 * Fix -G dropping public indication (#2561). [Andrew Goessling]
@@ -451,7 +482,7 @@ Verilator 4.100 2020-09-07
 * Support (with limitations) class extern, class extends, virtual class.
 * Support $urandom, $urandom_range without stability.
 * Support assume property. [Peter Monsson]
-* Support non-overapping implication inside properties (#1292). [Peter Monsson]
+* Support non-overlapping implication inside properties (#1292). [Peter Monsson]
 * Fix false DECLFILENAME on black-boxed modules (#2430). [Philipp Wagner]
 * Fix naming of "id : begin" blocks.
 * Fix class constructor error on assignments to const.

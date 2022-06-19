@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x %x %x %x\n", $time, cyc, crc, Result, Result2);
+      $write("[%0t] cyc==%0d crc=%x %x %x\n", $time, cyc, crc, Result, Result2);
 `endif
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
@@ -62,10 +62,10 @@ module Test (clk, Value, Result);
 
    reg Internal;
 
-   assign Result = Internal ^ clk;
+   assign Result = Internal;
 
    always @(posedge clk)
-     Internal <= #1 Value;
+     Internal <= Value;
 endmodule
 
 module Test_wrap1 (clk, Value, Result);

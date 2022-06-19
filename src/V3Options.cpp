@@ -775,8 +775,16 @@ void V3Options::notify() {
             && !v3Global.opt.xmlOnly());
     }
 
-    // --trace-threads implies --threads 1 unless explicitly specified
-    if (traceThreads() && !threads()) m_threads = 1;
+    if (trace()) {
+        // With --trace-fst, --trace-threads implies --threads 1 unless explicitly specified
+        if (traceFormat().fst() && traceThreads() && !threads()) m_threads = 1;
+
+        // With --trace, --trace-threads is ignored
+        if (traceFormat().vcd()) m_traceThreads = threads() ? 1 : 0;
+    }
+
+    UASSERT(!(useTraceParallel() && useTraceOffload()),
+            "Cannot use both parallel and offloaded tracing");
 
     // Default split limits if not specified
     if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
@@ -1075,6 +1083,29 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-flatten", OnOff, &m_flatten);
 
+    DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
+    DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
+    DECL_OPTION("-fcase", FOnOff, &m_fCase);
+    DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
+    DECL_OPTION("-fconst", FOnOff, &m_fConst);
+    DECL_OPTION("-fconst-bit-op-tree", FOnOff, &m_fConstBitOpTree);
+    DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
+    DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
+    DECL_OPTION("-fgate", FOnOff, &m_fGate);
+    DECL_OPTION("-finline", FOnOff, &m_fInline);
+    DECL_OPTION("-flife", FOnOff, &m_fLife);
+    DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
+    DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);
+    DECL_OPTION("-fmerge-cond", FOnOff, &m_fMergeCond);
+    DECL_OPTION("-fmerge-cond-motion", FOnOff, &m_fMergeCondMotion);
+    DECL_OPTION("-fmerge-const-pool", FOnOff, &m_fMergeConstPool);
+    DECL_OPTION("-freloop", FOnOff, &m_fReloop);
+    DECL_OPTION("-freorder", FOnOff, &m_fReorder);
+    DECL_OPTION("-fsplit", FOnOff, &m_fSplit);
+    DECL_OPTION("-fsubst", FOnOff, &m_fSubst);
+    DECL_OPTION("-fsubst-const", FOnOff, &m_fSubstConst);
+    DECL_OPTION("-ftable", FOnOff, &m_fTable);
+
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
     DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
@@ -1144,50 +1175,51 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         }
     });
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
-    DECL_OPTION("-merge-const-pool", OnOff, &m_mergeConstPool);
     DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
 
-    DECL_OPTION("-O", CbPartialMatch, [this](const char* optp) {
-        // Optimization
+    DECL_OPTION("-O0", CbCall, [this]() { optimize(0); });
+    DECL_OPTION("-O1", CbCall, [this]() { optimize(1); });
+    DECL_OPTION("-O2", CbCall, [this]() { optimize(2); });
+    DECL_OPTION("-O3", CbCall, [this]() { optimize(3); });
+
+    DECL_OPTION("-O", CbPartialMatch, [this, fl](const char* optp) {
+        // Optimization, e.g. -O1rX
+        // LCOV_EXCL_START
+        fl->v3warn(DEPRECATED, "Option -O<letter> is deprecated. "
+                               "Use -f<optimization> or -fno-<optimization> instead.");
         for (const char* cp = optp; *cp; ++cp) {
             const bool flag = isupper(*cp);
             switch (tolower(*cp)) {
-            case '0': optimize(0); break;  // 0=all off
-            case '1': optimize(1); break;  // 1=all on
-            case '2': optimize(2); break;  // 2=not used
-            case '3': optimize(3); break;  // 3=high
-            case 'a': m_oTable = flag; break;
-            case 'b': m_oCombine = flag; break;
-            case 'c': m_oConst = flag; break;
-            case 'd': m_oDedupe = flag; break;
-            case 'e': m_oCase = flag; break;
-            //    f
-            case 'g': m_oGate = flag; break;
-            //    h
-            case 'i': m_oInline = flag; break;
-            //    j
-            case 'k': m_oSubstConst = flag; break;
-            case 'l': m_oLife = flag; break;
-            case 'm': m_oAssemble = flag; break;
-            //    n
-            case 'o':
-                m_oConstBitOpTree = flag;
-                break;  // Can remove ~2022-01 when stable
-            //    o will be used as an escape for a second character of optimization disables
+            case '0': optimize(0); break;
+            case '1': optimize(1); break;
+            case '2': optimize(2); break;
+            case '3': optimize(3); break;
+            case 'a': m_fTable = flag; break;  // == -fno-table
+            case 'b': m_fCombine = flag; break;  // == -fno-combine
+            case 'c': m_fConst = flag; break;  // == -fno-const
+            case 'd': m_fDedupe = flag; break;  // == -fno-dedup
+            case 'e': m_fCase = flag; break;  // == -fno-case
+            case 'g': m_fGate = flag; break;  // == -fno-gate
+            case 'i': m_fInline = flag; break;  // == -fno-inline
+            case 'k': m_fSubstConst = flag; break;  // == -fno-subst-const
+            case 'l': m_fLife = flag; break;  // == -fno-life
+            case 'm': m_fAssemble = flag; break;  // == -fno-assemble
+            case 'o': m_fConstBitOpTree = flag; break;  // == -fno-const-bit-op-tree
             case 'p':
                 m_public = !flag;
                 break;  // With -Op so flag=0, we want public on so few optimizations done
-            //    q
-            case 'r': m_oReorder = flag; break;
-            case 's': m_oSplit = flag; break;
-            case 't': m_oLifePost = flag; break;
-            case 'u': m_oSubst = flag; break;
-            case 'v': m_oReloop = flag; break;
-            case 'w': m_oMergeCond = flag; break;
-            case 'x': m_oExpand = flag; break;
-            case 'y': m_oAcycSimp = flag; break;
-            case 'z': m_oLocalize = flag; break;
-            default: break;  // No error, just ignore
+            case 'r': m_fReorder = flag; break;  // == -fno-reorder
+            case 's': m_fSplit = flag; break;  // == -fno-split
+            case 't': m_fLifePost = flag; break;  // == -fno-life-post
+            case 'u': m_fSubst = flag; break;  // == -fno-subst
+            case 'v': m_fReloop = flag; break;  // == -fno-reloop
+            case 'w': m_fMergeCond = flag; break;  // == -fno-merge-cond
+            case 'x': m_fExpand = flag; break;  // == -fno-expand
+            case 'y': m_fAcycSimp = flag; break;  // == -fno-acyc-simp
+            case 'z': m_fLocalize = flag; break;  // == -fno-localize
+            default:
+                break;  // No error, just ignore
+                // LCOV_EXCL_STOP
             }
         }
     });
@@ -1350,7 +1382,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-trace-threads", CbVal, [this, fl](const char* valp) {
         m_trace = true;
         m_traceThreads = std::atoi(valp);
-        if (m_traceThreads < 0) fl->v3fatal("--trace-threads must be >= 0: " << valp);
+        if (m_traceThreads < 1) fl->v3fatal("--trace-threads must be >= 1: " << valp);
     });
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
 
@@ -1779,26 +1811,26 @@ int V3Options::dumpTreeLevel(const string& srcfile_path) {
 void V3Options::optimize(int level) {
     // Set all optimizations to on/off
     const bool flag = level > 0;
-    m_oAcycSimp = flag;
-    m_oAssemble = flag;
-    m_oCase = flag;
-    m_oCombine = flag;
-    m_oConst = flag;
-    m_oConstBitOpTree = flag;
-    m_oDedupe = flag;
-    m_oExpand = flag;
-    m_oGate = flag;
-    m_oInline = flag;
-    m_oLife = flag;
-    m_oLifePost = flag;
-    m_oLocalize = flag;
-    m_oMergeCond = flag;
-    m_oReloop = flag;
-    m_oReorder = flag;
-    m_oSplit = flag;
-    m_oSubst = flag;
-    m_oSubstConst = flag;
-    m_oTable = flag;
+    m_fAcycSimp = flag;
+    m_fAssemble = flag;
+    m_fCase = flag;
+    m_fCombine = flag;
+    m_fConst = flag;
+    m_fConstBitOpTree = flag;
+    m_fDedupe = flag;
+    m_fExpand = flag;
+    m_fGate = flag;
+    m_fInline = flag;
+    m_fLife = flag;
+    m_fLifePost = flag;
+    m_fLocalize = flag;
+    m_fMergeCond = flag;
+    m_fReloop = flag;
+    m_fReorder = flag;
+    m_fSplit = flag;
+    m_fSubst = flag;
+    m_fSubstConst = flag;
+    m_fTable = flag;
     // And set specific optimization levels
     if (level >= 3) {
         m_inlineMult = -1;  // Maximum inlining

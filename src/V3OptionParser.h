@@ -66,6 +66,7 @@ private:
     // METHODS
     ActionIfs* find(const char* optp);
     template <class ACT, class ARG> ActionIfs& add(const string& opt, ARG arg);
+    static bool hasPrefixFNo(const char* strp);  // Returns true if strp starts with "-fno"
     static bool hasPrefixNo(const char* strp);  // Returns true if strp starts with "-no"
 
 public:
@@ -87,6 +88,7 @@ class V3OptionParser::ActionIfs VL_NOT_FINAL {
 public:
     virtual ~ActionIfs() = default;
     virtual bool isValueNeeded() const = 0;  // Need val of "-opt val"
+    virtual bool isFOnOffAllowed() const = 0;  // true if "-fno-opt" is allowd
     virtual bool isOnOffAllowed() const = 0;  // true if "-no-opt" is allowd
     virtual bool isPartialMatchAllowed() const = 0;  // true if "-Wno-" matches "-Wno-fatal"
     virtual bool isUndocumented() const = 0;  // Will not be suggested in typo
@@ -101,13 +103,15 @@ class V3OptionParser::AppendHelper final {
 public:
     // TYPES
     // Tag to specify which operator() to call
-    struct Set {};  // For ActionSet
+    struct FOnOff {};  // For ActionFOnOff
     struct OnOff {};  // For ActionOnOff
+    struct Set {};  // For ActionSet
+
     struct CbCall {};  // For ActionCbCall
-    struct CbOnOff {};  // For ActionOnOff
-    struct CbVal {};  // For ActionCbVal
+    struct CbOnOff {};  // For ActionOnOff of ActionFOnOff
     struct CbPartialMatch {};  // For ActionCbPartialMatch
     struct CbPartialMatchVal {};  // For ActionCbPartialMatchVal
+    struct CbVal {};  // For ActionCbVal
 
 private:
     // MEMBERS
@@ -122,6 +126,7 @@ public:
     ActionIfs& operator()(const char* optp, Set, int*) const;
     ActionIfs& operator()(const char* optp, Set, string*) const;
 
+    ActionIfs& operator()(const char* optp, FOnOff, bool*) const;
     ActionIfs& operator()(const char* optp, OnOff, bool*) const;
 #ifndef V3OPTION_PARSER_NO_VOPTION_BOOL
     ActionIfs& operator()(const char* optp, OnOff, VOptionBool*) const;
@@ -144,13 +149,14 @@ public:
 
 #define V3OPTION_PARSER_DECL_TAGS \
     const auto Set VL_ATTR_UNUSED = V3OptionParser::AppendHelper::Set{}; \
+    const auto FOnOff VL_ATTR_UNUSED = V3OptionParser::AppendHelper::FOnOff{}; \
     const auto OnOff VL_ATTR_UNUSED = V3OptionParser::AppendHelper::OnOff{}; \
     const auto CbCall VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbCall{}; \
     const auto CbOnOff VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbOnOff{}; \
-    const auto CbVal VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbVal{}; \
     const auto CbPartialMatch VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbPartialMatch{}; \
     const auto CbPartialMatchVal VL_ATTR_UNUSED \
-        = V3OptionParser::AppendHelper::CbPartialMatchVal {}
+        = V3OptionParser::AppendHelper::CbPartialMatchVal{}; \
+    const auto CbVal VL_ATTR_UNUSED = V3OptionParser::AppendHelper::CbVal{};
 
 //######################################################################
 

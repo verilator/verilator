@@ -21,7 +21,7 @@ Welcome to Verilator
 .. list-table::
 
    * - **Welcome to Verilator, the fastest Verilog/SystemVerilog simulator.**
-        * Accepts synthesizable Verilog or SystemVerilog
+        * Accepts Verilog or SystemVerilog
         * Performs lint code-quality checks
         * Compiles into multithreaded C++, or SystemC
         * Creates XML to front-end your own tools
@@ -57,17 +57,18 @@ files, the "Verilated" code.
 
 The user writes a little C++/SystemC wrapper file, which instantiates the
 "Verilated" model of the user's top level module. These C++/SystemC files
-are then compiled by a C++ compiler (gcc/clang/MSVC++). The resulting
-executable performs the design simulation. Verilator also supports linking
-its generated libraries, optionally encrypted, into other simulators.
+are then compiled by a C++ compiler (gcc/clang/MSVC++). Executing the
+resulting executable performs the design simulation. Verilator also
+supports linking Verilated generated libraries, optionally encrypted, into
+other simulators.
 
 Verilator may not be the best choice if you are expecting a full featured
-replacement for NC-Verilog, VCS or another commercial Verilog simulator, or
-if you are looking for a behavioral Verilog simulator e.g. for a quick
-class project (we recommend `Icarus Verilog`_ for this.) However, if you
-are looking for a path to migrate SystemVerilog to C++ or SystemC, or your
-team is comfortable writing just a touch of C++ code, Verilator is the tool
-for you.
+replacement for Incisive, ModelSim/Questa, VCS or another commercial
+Verilog simulator, or if you are looking for a behavioral Verilog simulator
+e.g. for a quick class project (we recommend `Icarus Verilog`_ for this.)
+However, if you are looking for a path to migrate SystemVerilog to C++ or
+SystemC, or your team is comfortable writing just a touch of C++ code,
+Verilator is the tool for you.
 
 
 Performance

@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 top_filename("t/t_interface2.v");
 
 compile(
-    verilator_flags2 => ["--top-module t -Oi"],
+    verilator_flags2 => ["--top-module t -fno-inline"],
     );
 
 execute(

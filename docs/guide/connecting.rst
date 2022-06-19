@@ -110,6 +110,9 @@ model.  Here is a simple example:
              Verilated::commandArgs(argc, argv);   // Remember args
 
              top = new Vtop;             // Create model
+             // Do not instead make Vtop as a file-scope static
+             // variable, as the "C++ static initialization order fiasco"
+             // may cause a crash
 
              top->reset_l = 0;           // Set some inputs
 

@@ -1309,7 +1309,8 @@ void AstClassPackage::cloneRelink() {
 }
 void AstClass::insertCache(AstNode* nodep) {
     const bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
-                       || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto()));
+                       || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
+                       || VN_IS(nodep, CFunc));
     if (doit) {
         if (m_members.find(nodep->name()) != m_members.end()) {
             nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
@@ -1320,7 +1321,14 @@ void AstClass::insertCache(AstNode* nodep) {
 }
 void AstClass::repairCache() {
     clearCache();
-    for (AstNode* itemp = membersp(); itemp; itemp = itemp->nextp()) { insertCache(itemp); }
+    for (auto* itemp = membersp(); itemp; itemp = itemp->nextp()) {
+        if (const auto* const scopep = VN_CAST(itemp, Scope)) {
+            for (auto* itemp = scopep->blocksp(); itemp; itemp = itemp->nextp())
+                insertCache(itemp);
+        } else {
+            insertCache(itemp);
+        }
+    }
 }
 bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp) {
     // TAIL RECURSIVE

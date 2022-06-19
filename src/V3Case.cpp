@@ -496,7 +496,7 @@ private:
         V3Case::caseLint(nodep);
         iterateChildren(nodep);
         if (debug() >= 9) nodep->dumpTree(cout, " case_old: ");
-        if (isCaseTreeFast(nodep) && v3Global.opt.oCase()) {
+        if (isCaseTreeFast(nodep) && v3Global.opt.fCase()) {
             // It's a simple priority encoder or complete statement
             // we can make a tree of statements to avoid extra comparisons
             ++m_statCaseFast;

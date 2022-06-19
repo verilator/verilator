@@ -91,7 +91,7 @@ class VerilatedEvalMsgQueue final {
 
     std::atomic<uint64_t> m_depth;  // Current depth of queue (see comments below)
 
-    VerilatedMutex m_mutex;  // Mutex protecting queue
+    mutable VerilatedMutex m_mutex;  // Mutex protecting queue
     VerilatedThreadQueue m_queue VL_GUARDED_BY(m_mutex);  // Message queue
 public:
     // CONSTRUCTORS

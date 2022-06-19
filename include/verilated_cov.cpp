@@ -103,7 +103,7 @@ private:
     using ItemList = std::deque<VerilatedCovImpItem*>;
 
     // MEMBERS
-    VerilatedMutex m_mutex;  // Protects all members
+    mutable VerilatedMutex m_mutex;  // Protects all members
     ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  // Unique arbitrary value for values
     IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  // Unique arbitrary value for keys
     ItemList m_items VL_GUARDED_BY(m_mutex);  // List of all items
@@ -123,10 +123,6 @@ public:
 protected:
     friend class VerilatedCovContext;
     virtual ~VerilatedCovImp() override { clearGuts(); }
-    static VerilatedCovImp& imp() VL_MT_SAFE {
-        static VerilatedCovImp s_singleton;
-        return s_singleton;
-    }
 
 private:
     // PRIVATE METHODS
