@@ -129,16 +129,6 @@ Summary:
    is also used). Verilator manages the build itself, and for this --build
    requires GNU Make to be available on the platform.
 
-.. option:: -CFLAGS <flags>
-
-   Add specified C compiler argument to the generated makefiles. For
-   multiple flags either pass them as a single argument with space
-   separators quoted in the shell (:command:`-CFLAGS "-a -b"`), or use
-   multiple -CFLAGS options (:command:`-CFLAGS -a -CFLAGS -b`).
-
-   When make is run on the generated makefile these will be passed to the
-   C++ compiler (g++/clang++/msvc++).
-
 .. option:: --cc
 
    Specifies C++ without SystemC output mode; see also :vlopt:`--sc`
@@ -155,6 +145,16 @@ Summary:
    Currently only checks some items that other CDC tools missed; if you
    have interest in adding more traditional CDC checks, please contact the
    authors.
+
+.. option:: -CFLAGS <flags>
+
+   Add specified C compiler argument to the generated makefiles. For
+   multiple flags either pass them as a single argument with space
+   separators quoted in the shell (:command:`-CFLAGS "-a -b"`), or use
+   multiple -CFLAGS options (:command:`-CFLAGS -a -CFLAGS -b`).
+
+   When make is run on the generated makefile these will be passed to the
+   C++ compiler (g++/clang++/msvc++).
 
 .. option:: --clk <signal-name>
 
@@ -178,6 +178,11 @@ Summary:
    clocker will cause the signal indicated to be considered a clock, and
    remove it from the combinatorial logic reevaluation checking code. This
    may greatly improve performance.
+
+.. option:: --no-clk <signal-name>
+
+   Prevent the specified signal from being marked as clock. See
+   :vlopt:`--clk`.
 
 .. option:: --compiler <compiler-name>
 
@@ -287,6 +292,13 @@ Summary:
    file to the specified level (e.g. :vlopt:`--debugi-V3Width 9
    <--debugi>`). Higher levels produce more detailed messages.  See
    :vlopt:`--debug` for other implications of enabling debug.
+
+.. option:: --no-decoration
+
+   When creating output Verilated code, minimize comments, white space,
+   symbol names and other decorative items, at the cost of greatly reduced
+   readability. This may assist C++ compile times. This will not typically
+   change the ultimate model's performance, but may in some cases.
 
 .. option:: --default-language <value>
 
@@ -585,21 +597,6 @@ Summary:
    to limit the number of parallel build jobs but attempt to execute all
    independent build steps in parallel.
 
-.. option:: -LDFLAGS <flags>
-
-   Add specified C linker arguments to the generated makefiles.  For multiple
-   flags either pass them as a single argument with space separators quoted
-   in the shell (``-LDFLAGS "-a -b"``), or use multiple -LDFLAGS arguments
-   (``-LDFLAGS -a -LDFLAGS -b``).
-
-   When make is run on the generated makefile these will be passed to the
-   C++ linker (ld) **after** the primary file being linked.  This flag is
-   called :vlopt:`-LDFLAGS` as that's the traditional name in simulators;
-   it's would have been better called LDLIBS as that's the Makefile
-   variable it controls.  (In Make, LDFLAGS is before the first object,
-   LDLIBS after.  -L libraries need to be in the Make variable LDLIBS, not
-   LDFLAGS.)
-
 .. option:: --l2-name <value>
 
    Instead of using the module name when showing Verilog scope, use the
@@ -616,12 +613,20 @@ Summary:
    A synonym for :vlopt:`--default-language`, for compatibility with other
    tools and earlier versions of Verilator.
 
-.. option:: +libext+<ext>[+<ext>][...]
+.. option:: -LDFLAGS <flags>
 
-   Specify the extensions that should be used for finding modules.  If for
-   example module "my" is referenced, look in :file:`my.<ext>`.  Note
-   "+libext+" is fairly standard across Verilog tools.  Defaults to
-   ".v+.sv".
+   Add specified C linker arguments to the generated makefiles.  For multiple
+   flags either pass them as a single argument with space separators quoted
+   in the shell (``-LDFLAGS "-a -b"``), or use multiple -LDFLAGS arguments
+   (``-LDFLAGS -a -LDFLAGS -b``).
+
+   When make is run on the generated makefile these will be passed to the
+   C++ linker (ld) **after** the primary file being linked.  This flag is
+   called :vlopt:`-LDFLAGS` as that's the traditional name in simulators;
+   it's would have been better called LDLIBS as that's the Makefile
+   variable it controls.  (In Make, LDFLAGS is before the first object,
+   LDLIBS after.  -L libraries need to be in the Make variable LDLIBS, not
+   LDFLAGS.)
 
 .. option:: --lib-create <name>
 
@@ -639,6 +644,13 @@ Summary:
    precision of the upper instantiating module.
 
    See also :vlopt:`--protect-lib`.
+
+.. option:: +libext+<ext>[+<ext>][...]
+
+   Specify the extensions that should be used for finding modules.  If for
+   example module "my" is referenced, look in :file:`my.<ext>`.  Note
+   "+libext+" is fairly standard across Verilog tools.  Defaults to
+   ".v+.sv".
 
 .. option:: --lint-only
 
@@ -678,17 +690,6 @@ Summary:
    Set the maximum number literal width (e.g. in 1024'd22 this it the
    1024).  Defaults to 64K.
 
-.. option:: --MMD =item --no-MMD
-
-   Enable/disable creation of .d dependency files, used for make dependency
-   detection, similar to gcc -MMD option.  By default this option is
-   enabled for :vlopt:`--cc` or :vlopt:`--sc` modes.
-
-.. option:: --MP
-
-   When creating .d dependency files with :vlopt:`--MMD` option, make phony
-   targets.  Similar to :command:`gcc -MP` option.
-
 .. option:: --Mdir <directory>
 
    Specifies the name of the Make object directory.  All generated files
@@ -696,33 +697,23 @@ Summary:
    The directory is created if it does not exist and the parent directories
    exist; otherwise manually create the Mdir before calling Verilator.
 
+.. option:: --MMD
+
+.. option:: --no-MMD
+
+   Enable/disable creation of .d dependency files, used for make dependency
+   detection, similar to gcc -MMD option.  By default this option is
+   enabled for :vlopt:`--cc` or :vlopt:`--sc` modes.
+
 .. option:: --mod-prefix <topname>
 
    Specifies the name to prepend to all lower level classes.  Defaults to
    the same as :vlopt:`--prefix`.
 
-.. option:: --no-clk <signal-name>
+.. option:: --MP
 
-   Prevent the specified signal from being marked as clock. See
-   :vlopt:`--clk`.
-
-.. option:: --no-decoration
-
-   When creating output Verilated code, minimize comments, white space,
-   symbol names and other decorative items, at the cost of greatly reduced
-   readability. This may assist C++ compile times. This will not typically
-   change the ultimate model's performance, but may in some cases.
-
-.. option:: --no-pins64
-
-   Backward compatible alias for :vlopt:`--pins-bv 33 <--pins-bv>`.
-
-.. option:: --no-skip-identical =item --skip-identical
-
-   Rarely needed.  Disables or enables skipping execution of Verilator if
-   all source files are identical, and all output files exist with newer
-   dates.  By default this option is enabled for :vlopt:`--cc` or
-   :vlopt:`--sc` modes only.
+   When creating .d dependency files with :vlopt:`--MMD` option, make phony
+   targets.  Similar to :command:`gcc -MP` option.
 
 .. option:: +notimingchecks
 
@@ -801,11 +792,6 @@ Summary:
    With :vlopt:`-E`, disable generation of :code:`&96;line` markers and
    blank lines, similar to :command:`gcc -P`.
 
-.. option:: --pins64
-
-   Backward compatible alias for :vlopt:`--pins-bv 65 <--pins-bv>`.  Note
-   that's a 65, not a 64.
-
 .. option:: --pins-bv <width>
 
    Specifies SystemC inputs/outputs of greater than or equal to <width>
@@ -838,6 +824,15 @@ Summary:
    of uint32_t.  Likewise pins of width 9-16 will use uint16_t instead of
    uint32_t.
 
+.. option:: --pins64
+
+   Backward compatible alias for :vlopt:`--pins-bv 65 <--pins-bv>`.  Note
+   that's a 65, not a 64.
+
+.. option:: --no-pins64
+
+   Backward compatible alias for :vlopt:`--pins-bv 33 <--pins-bv>`.
+
 .. option:: --pipe-filter <command>
 
    Rarely needed.  Verilator will spawn the specified command as a
@@ -866,6 +861,11 @@ Summary:
    Specifies the name of the top level class and makefile.  Defaults to V
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
+
+.. option:: --private
+
+   Opposite of :vlopt:`--public`.  Is the default; this option exists for
+   backwards compatibility.
 
 .. option:: --prof-c
 
@@ -900,23 +900,6 @@ Summary:
 
    Deprecated. Same as --prof-exec and --prof-pgo together.
 
-.. option:: --protect-key <key>
-
-   Specifies the private key for :vlopt:`--protect-ids`. For best security
-   this key should be 16 or more random bytes, a reasonable secure choice
-   is the output of :command:`verilator --generate-key` . Typically, a key
-   would be created by the user once for a given protected design library,
-   then every Verilator run for subsequent versions of that library would
-   be passed the same :vlopt:`--protect-key`. Thus, if the input Verilog is
-   similar between library versions (Verilator runs), the Verilated code
-   will likewise be mostly similar.
-
-   If :vlopt:`--protect-key` is not specified and a key is needed,
-   Verilator will generate a new key for every Verilator run. As the key is
-   not saved, this is best for security, but means every Verilator run will
-   give vastly different output even for identical input, perhaps harming
-   compile times (and certainly thrashing any "ccache").
-
 .. option:: --protect-ids
 
    Hash any private identifiers (variable, module, and assertion block
@@ -937,6 +920,23 @@ Summary:
    prototypes.  Use of the VPI is not recommended as many design details
    may be exposed, and an INSECURE warning will be issued.
 
+.. option:: --protect-key <key>
+
+   Specifies the private key for :vlopt:`--protect-ids`. For best security
+   this key should be 16 or more random bytes, a reasonable secure choice
+   is the output of :command:`verilator --generate-key` . Typically, a key
+   would be created by the user once for a given protected design library,
+   then every Verilator run for subsequent versions of that library would
+   be passed the same :vlopt:`--protect-key`. Thus, if the input Verilog is
+   similar between library versions (Verilator runs), the Verilated code
+   will likewise be mostly similar.
+
+   If :vlopt:`--protect-key` is not specified and a key is needed,
+   Verilator will generate a new key for every Verilator run. As the key is
+   not saved, this is best for security, but means every Verilator run will
+   give vastly different output even for identical input, perhaps harming
+   compile times (and certainly thrashing any "ccache").
+
 .. option:: --protect-lib <name>
 
    Produces a DPI library similar to :vlopt:`--lib-create`, but hides
@@ -947,11 +947,6 @@ Summary:
    encrypted RTL (i.e. IEEE P1735).  See :file:`examples/make_protect_lib`
    in the distribution for a demonstration of how to build and use the DPI
    library.
-
-.. option:: --private
-
-   Opposite of :vlopt:`--public`.  Is the default; this option exists for
-   backwards compatibility.
 
 .. option:: --public
 
@@ -1044,6 +1039,15 @@ Summary:
 .. option:: --sc
 
    Specifies SystemC output mode; see also :vlopt:`--cc` option.
+
+.. option:: --skip-identical
+
+.. option:: --no-skip-identical
+
+   Rarely needed.  Disables or enables skipping execution of Verilator if
+   all source files are identical, and all output files exist with newer
+   dates.  By default this option is enabled for :vlopt:`--cc` or
+   :vlopt:`--sc` modes only.
 
 .. option:: --stats
 
