@@ -23,11 +23,6 @@
 #define VERILATOR_VERILATED_PROFILER_H_
 
 #include "verilatedos.h"
-
-#ifndef VL_PROFILER
-#error "verilated_profiler.h/cpp expects VL_PROFILER (from --prof-{exec, pgo}"
-#endif
-
 #include "verilated.h"
 
 #include <array>
@@ -186,6 +181,9 @@ public:
     void clear() VL_MT_SAFE_EXCLUDES(m_mutex);
     // Write profiling data into file
     void dump(const char* filenamep, uint64_t tickEnd) VL_MT_SAFE_EXCLUDES(m_mutex);
+
+    // Called via VlStartWorkerCb in VlWorkerThread::startWorker
+    static void startWorkerSetup(VlExecutionProfiler* profilep, uint32_t threadId);
 };
 
 //=============================================================================

@@ -50,12 +50,18 @@
 #endif
 // clang-format on
 
+class VlExecutionProfiler;
+class VlThreadPool;
+
 // VlMTaskVertex and VlThreadpool will work with multiple model class types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
 // as a void* here.
 using VlSelfP = void*;
 
 using VlExecFnp = void (*)(VlSelfP, bool);
+
+// VlWorkerThread::startWorker callback, used to hook in VlExecutionProfiler
+using VlStartWorkerCb = void (*)(VlExecutionProfiler*, uint32_t threadId);
 
 // Track dependencies for a single MTask.
 class VlMTaskVertex final {
@@ -129,9 +135,6 @@ public:
     }
 };
 
-class VlExecutionProfiler;
-class VlThreadPool;
-
 class VlWorkerThread final {
 private:
     // TYPES
@@ -171,7 +174,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit VlWorkerThread(uint32_t threadId, VerilatedContext* contextp,
-                            VlExecutionProfiler* profilerp);
+                            VlExecutionProfiler* profilerp, VlStartWorkerCb startCb);
     ~VlWorkerThread();
 
     // METHODS
@@ -209,7 +212,7 @@ public:
     }
     void workerLoop();
     static void startWorker(VlWorkerThread* workerp, uint32_t threadId,
-                            VlExecutionProfiler* profilerp);
+                            VlExecutionProfiler* profilerp, VlStartWorkerCb startCb);
 };
 
 class VlThreadPool final {
@@ -221,7 +224,8 @@ public:
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
     // pool will create these threads and make them available to execute tasks
     // via this->workerp(index)->addTask(...)
-    VlThreadPool(VerilatedContext* contextp, int nThreads, VlExecutionProfiler* profilerp);
+    VlThreadPool(VerilatedContext* contextp, int nThreads, VlExecutionProfiler* profilerp,
+                 VlStartWorkerCb startCb);
     ~VlThreadPool();
 
     // METHODS

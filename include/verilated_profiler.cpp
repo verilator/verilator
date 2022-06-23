@@ -99,6 +99,10 @@ void VlExecutionProfiler::configure(const VerilatedContext& context) {
     }
 }
 
+void VlExecutionProfiler::startWorkerSetup(VlExecutionProfiler* profilep, uint32_t threadId) {
+    profilep->setupThread(threadId);
+}
+
 void VlExecutionProfiler::setupThread(uint32_t threadId) {
     // Reserve some space in the thread-local profiling buffer, in order to try to avoid malloc
     // while profiling.
