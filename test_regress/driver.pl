@@ -1110,11 +1110,6 @@ sub compile {
             return 1;
         }
 
-        if ($self->{vltmt} && !$self->cfg_with_threaded) {
-            $self->skip("Test requires Verilator configured with threads\n");
-            return 1;
-        }
-
         if ($param{verilator_make_cmake} && !$self->have_cmake) {
             $self->skip("Test requires CMake; ignore error since not available or version too old\n");
             return 1;
@@ -2338,10 +2333,6 @@ our $_Cxx_Version;
 sub cxx_version {
     $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
     return $_Cxx_Version;
-}
-
-sub cfg_with_threaded {
-    return 1;  # C++11 now always required
 }
 
 our $_Cfg_with_ccache;

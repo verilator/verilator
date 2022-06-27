@@ -17,10 +17,8 @@ compile(
     verilator_flags2 => ["--cc",
                          "--coverage-toggle --coverage-line --coverage-user",
                          "--trace --vpi ",
-                         ($Self->cfg_with_threaded
-                          ? "--threads 2 $root/include/verilated_threads.cpp" : ""),
-                         ($Self->cfg_with_threaded
-                          ? "--trace-threads 1" : ""),
+                         "--threads 2",
+                         "--trace-threads 1",
                          "--prof-exec", "--prof-pgo",
                          "$root/include/verilated_save.cpp"],
     );
@@ -58,7 +56,7 @@ foreach my $file (sort keys %hit) {
         && $file !~ /_sc/
         && $file !~ /_fst/
         && $file !~ /_heavy/
-        && ($file !~ /_thread/ || $Self->cfg_with_threaded)) {
+        && ($file !~ /_thread/)) {
         error("Include file not covered by t_verilated_all test: ", $file);
     }
 }
