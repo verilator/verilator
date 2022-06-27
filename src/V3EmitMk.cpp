@@ -116,7 +116,7 @@ public:
                             putMakeClassEntry(of, v3Global.opt.traceSourceLang() + ".cpp");
                         }
                     }
-                    if (v3Global.opt.mtasks()) putMakeClassEntry(of, "verilated_threads.cpp");
+                    if (v3Global.opt.threads()) putMakeClassEntry(of, "verilated_threads.cpp");
                     if (v3Global.opt.usesProfiler()) {
                         putMakeClassEntry(of, "verilated_profiler.cpp");
                     }

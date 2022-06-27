@@ -47,11 +47,9 @@ VlMTaskVertex::VlMTaskVertex(uint32_t upstreamDepCount)
 //=============================================================================
 // VlWorkerThread
 
-VlWorkerThread::VlWorkerThread(uint32_t threadId, VerilatedContext* contextp,
-                               VlExecutionProfiler* profilerp, VlStartWorkerCb startCb)
+VlWorkerThread::VlWorkerThread(VerilatedContext* contextp)
     : m_ready_size{0}
-    , m_cthread{startWorker, this, threadId, profilerp, startCb}
-    , m_contextp{contextp} {}
+    , m_cthread{startWorker, this, contextp} {}
 
 VlWorkerThread::~VlWorkerThread() {
     shutdown();
@@ -59,47 +57,49 @@ VlWorkerThread::~VlWorkerThread() {
     m_cthread.join();
 }
 
-void VlWorkerThread::shutdownTask(void*, bool) {
+static void shutdownTask(void*, bool) {
     // Deliberately empty, we use the address of this function as a magic number
+}
+
+void VlWorkerThread::shutdown() { addTask(shutdownTask, nullptr); }
+
+void VlWorkerThread::wait() {
+    // Enqueue a task that sets this flag. Execution is in-order so this ensures completion.
+    std::atomic<bool> flag{false};
+    addTask([](void* flagp, bool) { static_cast<std::atomic<bool>*>(flagp)->store(true); }, &flag);
+    // Spin wait
+    for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
+        if (flag.load()) return;
+        VL_CPU_RELAX();
+    }
+    // Yield wait
+    while (!flag.load()) std::this_thread::yield();
 }
 
 void VlWorkerThread::workerLoop() {
     ExecRec work;
 
+    // Wait for the first task without spinning, in case the thread is never actually used.
+    dequeWork</* SpinWait: */ false>(&work);
+
     while (true) {
-        dequeWork(&work);
         if (VL_UNLIKELY(work.m_fnp == shutdownTask)) break;
         work.m_fnp(work.m_selfp, work.m_evenCycle);
+        // Wait for next task with spinning.
+        dequeWork</* SpinWait: */ true>(&work);
     }
 }
 
-void VlWorkerThread::startWorker(VlWorkerThread* workerp, uint32_t threadId,
-                                 VlExecutionProfiler* profilerp, VlStartWorkerCb startCb) {
-    Verilated::threadContextp(workerp->m_contextp);
-    if (VL_UNLIKELY(startCb)) startCb(profilerp, threadId);
+void VlWorkerThread::startWorker(VlWorkerThread* workerp, VerilatedContext* contextp) {
+    Verilated::threadContextp(contextp);
     workerp->workerLoop();
 }
 
 //=============================================================================
 // VlThreadPool
 
-VlThreadPool::VlThreadPool(VerilatedContext* contextp, int nThreads,
-                           VlExecutionProfiler* profilerp, VlStartWorkerCb startCb) {
-    // --threads N passes nThreads=N-1, as the "main" threads counts as 1
-    ++nThreads;
-    const unsigned cpus = std::thread::hardware_concurrency();
-    if (cpus < nThreads) {
-        static int warnedOnce = 0;
-        if (!warnedOnce++) {
-            VL_PRINTF_MT("%%Warning: System has %u CPUs but model Verilated with"
-                         " --threads %d; may run slow.\n",
-                         cpus, nThreads);
-        }
-    }
-    // Create worker threads
-    for (uint32_t threadId = 1; threadId < nThreads; ++threadId) {
-        m_workers.push_back(new VlWorkerThread{threadId, contextp, profilerp, startCb});
-    }
+VlThreadPool::VlThreadPool(VerilatedContext* contextp, unsigned nThreads) {
+    for (unsigned i = 0; i < nThreads; ++i) m_workers.push_back(new VlWorkerThread{contextp});
 }
 
 VlThreadPool::~VlThreadPool() {

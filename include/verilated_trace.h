@@ -194,8 +194,6 @@ private:
     static void parallelWorkerTask(void*, bool);
 #endif
 
-    using ParallelCallbackMap = std::unordered_map<VlThreadPool*, std::vector<CallbackRecord>>;
-
 protected:
     uint32_t* m_sigs_oldvalp = nullptr;  // Previous value store
     EData* m_sigs_enabledp = nullptr;  // Bit vector of enabled codes (nullptr = all on)
@@ -203,10 +201,10 @@ private:
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize tracing
-    ParallelCallbackMap m_fullCbs;  // Routines to perform full dump
-    ParallelCallbackMap m_chgCbs;  // Routines to perform incremental dump
+    std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
+    std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
     std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
-    std::vector<VlThreadPool*> m_threadPoolps;  // All thread pools, in insertion order
+    VerilatedContext* m_contextp = nullptr;  // The context used by the traced models
     bool m_fullDump = true;  // Whether a full dump is required on the next call to 'dump'
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_numSignals = 0;  // Number of distinct signals
@@ -217,16 +215,16 @@ private:
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
 
-    void addThreadPool(VlThreadPool* threadPoolp) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void addContext(VerilatedContext*) VL_MT_SAFE_EXCLUDES(m_mutex);
 
-    void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec)
+    void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord&& cbRec)
         VL_MT_SAFE_EXCLUDES(m_mutex);
 
     // Equivalent to 'this' but is of the sub-type 'T_Trace*'. Use 'self()->'
     // to access duck-typed functions to avoid a virtual function call.
     T_Trace* self() { return static_cast<T_Trace*>(this); }
 
-    void runParallelCallbacks(const ParallelCallbackMap& cbMap);
+    void runCallbacks(const std::vector<CallbackRecord>& cbVec);
 
     // Flush any remaining data for this file
     static void onFlush(void* selfp) VL_MT_UNSAFE_ONE;
@@ -341,10 +339,10 @@ public:
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
-    void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
-    void addFullCb(dumpCb_t cb, void* userp, VlThreadPool* = nullptr) VL_MT_SAFE;
-    void addChgCb(dumpCb_t cb, void* userp, VlThreadPool* = nullptr) VL_MT_SAFE;
-    void addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE;
+    void addInitCb(initCb_t cb, void* userp, VerilatedContext*) VL_MT_SAFE;
+    void addFullCb(dumpCb_t cb, void* userp, VerilatedContext*) VL_MT_SAFE;
+    void addChgCb(dumpCb_t cb, void* userp, VerilatedContext*) VL_MT_SAFE;
+    void addCleanupCb(cleanupCb_t cb, void* userp, VerilatedContext*) VL_MT_SAFE;
 
     void scopeEscape(char flag) { m_scopeEscape = flag; }
 

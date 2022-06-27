@@ -14,8 +14,11 @@
 
 int main(int argc, char *argv[]) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    std::unique_ptr<Vt_hier_block> top{new Vt_hier_block{contextp.get(), "top"}};
+#if VL_THREADED
+    contextp->threads(6);
+#endif
     contextp->commandArgs(argc, argv);
+    std::unique_ptr<Vt_hier_block> top{new Vt_hier_block{contextp.get(), "top"}};
     for (int i = 0; i < 100 && !contextp->gotFinish(); ++i) {
         top->eval();
         top->clk ^= 1;
