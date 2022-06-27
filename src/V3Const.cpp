@@ -80,6 +80,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     using ResultTerm = std::tuple<AstNode*, unsigned, bool>;
 
     class LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
+        // MEMBERS
         bool m_polarity = true;
         int m_lsb = 0;  // LSB of actually used bit of m_refp->varp()
         int m_msb = 0;  // MSB of actually used bit of m_refp->varp()
@@ -88,10 +89,13 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         const AstConst* m_constp = nullptr;
 
     public:
+        // CONSTRUCTORS
         LeafInfo() = default;
         explicit LeafInfo(int lsb)
             : m_lsb{lsb} {}
         explicit LeafInfo(const LeafInfo& other) = default;
+
+        // METHODS
         void setLeaf(AstVarRef* refp) {
             UASSERT(!m_refp && !m_constp, "Must be called just once");
             m_refp = refp;
@@ -106,14 +110,15 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             m_msb = std::min(m_msb, m_lsb + castp->width() - 1);
         }
         void updateBitRange(AstShiftR*, AstConst* constp) { m_lsb += constp->toUInt(); }
+        void wordIdx(int i) { m_wordIdx = i; }
+        void polarity(bool p) { m_polarity = p; }
+
         AstVarRef* refp() const { return m_refp; }
         const AstConst* constp() const { return m_constp; }
         int wordIdx() const { return m_wordIdx; }
         bool polarity() const { return m_polarity; }
         int lsb() const { return m_lsb; }
 
-        void wordIdx(int i) { m_wordIdx = i; }
-        void polarity(bool p) { m_polarity = p; }
         int msb() const { return std::min(m_msb, varWidth() - 1); }
         int varWidth() const {
             UASSERT(m_refp, "m_refp should be set");
