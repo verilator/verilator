@@ -50,31 +50,26 @@ VlMTaskVertex::VlMTaskVertex(uint32_t upstreamDepCount)
 VlWorkerThread::VlWorkerThread(uint32_t threadId, VerilatedContext* contextp,
                                VlExecutionProfiler* profilerp, VlStartWorkerCb startCb)
     : m_ready_size{0}
-    , m_exiting{false}
     , m_cthread{startWorker, this, threadId, profilerp, startCb}
     , m_contextp{contextp} {}
 
 VlWorkerThread::~VlWorkerThread() {
-    m_exiting.store(true, std::memory_order_release);
-    wakeUp();
+    shutdown();
     // The thread should exit; join it.
     m_cthread.join();
 }
 
+void VlWorkerThread::shutdownTask(void*, bool) {
+    // Deliberately empty, we use the address of this function as a magic number
+}
+
 void VlWorkerThread::workerLoop() {
     ExecRec work;
-    work.m_fnp = nullptr;
 
     while (true) {
-        if (VL_LIKELY(!work.m_fnp)) dequeWork(&work);
-
-        // Do this here, not above, to avoid a race with the destructor.
-        if (VL_UNLIKELY(m_exiting.load(std::memory_order_acquire))) break;
-
-        if (VL_LIKELY(work.m_fnp)) {
-            work.m_fnp(work.m_selfp, work.m_evenCycle);
-            work.m_fnp = nullptr;
-        }
+        dequeWork(&work);
+        if (VL_UNLIKELY(work.m_fnp == shutdownTask)) break;
+        work.m_fnp(work.m_selfp, work.m_evenCycle);
     }
 }
 

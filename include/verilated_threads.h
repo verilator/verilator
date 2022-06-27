@@ -165,7 +165,6 @@ private:
     // Store the size atomically, so we can spin wait
     std::atomic<size_t> m_ready_size;
 
-    std::atomic<bool> m_exiting;  // Worker thread should exit
     std::thread m_cthread;  // Underlying C++ thread record
     VerilatedContext* const m_contextp;  // Context for spawned thread
 
@@ -198,7 +197,6 @@ public:
         m_ready.erase(m_ready.begin());
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
-    inline void wakeUp() { addTask(nullptr, nullptr, false); }
     inline void addTask(VlExecFnp fnp, VlSelfP selfp, bool evenCycle)
         VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
@@ -210,6 +208,10 @@ public:
         }
         if (notify) m_cv.notify_one();
     }
+
+    inline void shutdown() { addTask(shutdownTask, nullptr, false); }
+    static void shutdownTask(void*, bool);
+
     void workerLoop();
     static void startWorker(VlWorkerThread* workerp, uint32_t threadId,
                             VlExecutionProfiler* profilerp, VlStartWorkerCb startCb);
