@@ -81,7 +81,8 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
 
     class LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
         bool m_polarity = true;
-        int m_lsb = 0;
+        int m_lsb = 0;  // LSB of actually used bit of m_refp->varp()
+        int m_msb = 0;  // MSB of actually used bit of m_refp->varp()
         int m_wordIdx = -1;  // -1 means AstWordSel is not used.
         AstVarRef* m_refp = nullptr;
         const AstConst* m_constp = nullptr;
@@ -94,10 +95,12 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         void setLeaf(AstVarRef* refp) {
             UASSERT(!m_refp && !m_constp, "Must be called just once");
             m_refp = refp;
+            m_msb = refp->varp()->widthMin() - 1;
         }
         void setLeaf(const AstConst* constp) {
             UASSERT(!m_refp && !m_constp, "Must be called just once");
             m_constp = constp;
+            m_msb = constp->widthMin() - 1;
         }
         void updateBitRange(AstShiftR*, AstConst* constp) { m_lsb += constp->toUInt(); }
         AstVarRef* refp() const { return m_refp; }
@@ -108,6 +111,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
 
         void wordIdx(int i) { m_wordIdx = i; }
         void polarity(bool p) { m_polarity = p; }
+        int msb() const { return std::min(m_msb, varWidth() - 1); }
         int varWidth() const {
             UASSERT(m_refp, "m_refp should be set");
             const int width = m_refp->varp()->widthMin();
@@ -470,7 +474,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             incrOps(andp, __LINE__);
 
             // Mark all bits checked in this reduction
-            const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.varWidth());
+            const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.msb() + 1);
             for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
                 const int maskIdx = bitIdx - ref.lsb();
                 if (maskNum.bitIs0(maskIdx)) continue;
@@ -486,7 +490,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             incrOps(nodep, __LINE__);
 
             // Mark all bits checked by this comparison
-            for (int bitIdx = ref.lsb(); bitIdx < ref.varWidth(); ++bitIdx) {
+            for (int bitIdx = ref.lsb(); bitIdx <= ref.msb(); ++bitIdx) {
                 m_bitPolarities.emplace_back(ref, true, bitIdx);
             }
         }
@@ -525,7 +529,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     // The conditional on the lsb being in range is necessary for some degenerate
                     // case, e.g.: (IData)((QData)wide[0] >> 32), or <1-bit-var> >> 1, which is
                     // just zero
-                    if (leafInfo.lsb() < leafInfo.varWidth()) {
+                    if (leafInfo.lsb() <= leafInfo.msb()) {
                         m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.polarity(),
                                                      leafInfo.lsb());
                     } else if (isAndTree() && leafInfo.polarity()) {
@@ -562,7 +566,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                 incrOps(andp, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.varWidth());
+                const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.msb() + 1);
                 for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
                     const int maskIdx = bitIdx - ref.lsb();
                     if (maskNum.bitIs0(maskIdx)) continue;
@@ -578,7 +582,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                 incrOps(nodep, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.lsb() + compNum.width(), ref.varWidth());
+                const int maxBitIdx = std::min(ref.lsb() + compNum.width(), ref.msb() + 1);
                 for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
                     const int maskIdx = bitIdx - ref.lsb();
                     const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
