@@ -102,6 +102,9 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             m_constp = constp;
             m_msb = constp->widthMin() - 1;
         }
+        void updateBitRange(const AstCCast* castp) {
+            m_msb = std::min(m_msb, m_lsb + castp->width() - 1);
+        }
         void updateBitRange(AstShiftR*, AstConst* constp) { m_lsb += constp->toUInt(); }
         AstVarRef* refp() const { return m_refp; }
         const AstConst* constp() const { return m_constp; }
@@ -410,7 +413,10 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     virtual void visit(AstNode* nodep) override {
         CONST_BITOP_SET_FAILED("Hit unexpected op", nodep);
     }
-    virtual void visit(AstCCast* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstCCast* nodep) override {
+        iterateChildren(nodep);
+        if (m_leafp) m_leafp->updateBitRange(nodep);
+    }
     virtual void visit(AstShiftR* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
@@ -424,7 +430,8 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     virtual void visit(AstNot* nodep) override {
         CONST_BITOP_RETURN_IF(nodep->widthMin() != 1, nodep);
         AstNode* lhsp = nodep->lhsp();
-        if (AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+        AstCCast* const castp = VN_CAST(lhsp, CCast);
+        if (castp) lhsp = castp->lhsp();
         CONST_BITOP_RETURN_IF(!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, Xor) && !VN_IS(lhsp, RedXor)
                                   && !VN_IS(lhsp, ShiftR),
                               lhsp);
@@ -433,6 +440,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Don't restore m_polarity for Xor as it counts parity of the entire tree
         if (!isXorTree()) m_polarity = !m_polarity;
+        if (m_leafp && castp) m_leafp->updateBitRange(castp);
     }
     virtual void visit(AstWordSel* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
@@ -456,15 +464,17 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         Restorer restorer{*this};
         CONST_BITOP_RETURN_IF(!VN_IS(m_rootp, Xor), nodep);
         AstNode* lhsp = nodep->lhsp();
-        if (const AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+        const AstCCast* const castp = VN_CAST(lhsp, CCast);
+        if (castp) lhsp = castp->lhsp();
         if (const AstAnd* const andp = VN_CAST(lhsp, And)) {  // '^(mask & leaf)'
             CONST_BITOP_RETURN_IF(!andp, lhsp);
 
             const LeafInfo& mask = findLeaf(andp->lhsp(), true);
             CONST_BITOP_RETURN_IF(!mask.constp() || mask.lsb() != 0, andp->lhsp());
 
-            const LeafInfo& ref = findLeaf(andp->rhsp(), false);
+            LeafInfo ref = findLeaf(andp->rhsp(), false);
             CONST_BITOP_RETURN_IF(!ref.refp(), andp->rhsp());
+            if (castp) ref.updateBitRange(castp);
 
             restorer.disableRestore();  // Now all subtree succeeded
 
@@ -482,8 +492,9 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                 m_bitPolarities.emplace_back(ref, true, bitIdx);
             }
         } else {  // '^leaf'
-            const LeafInfo& ref = findLeaf(lhsp, false);
+            LeafInfo ref = findLeaf(lhsp, false);
             CONST_BITOP_RETURN_IF(!ref.refp(), lhsp);
+            if (castp) ref.updateBitRange(castp);
 
             restorer.disableRestore();  // Now all checks passed
 
