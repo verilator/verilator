@@ -104,7 +104,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         void wordIdx(int i) { m_wordIdx = i; }
         void lsb(int l) { m_lsb = l; }
         void polarity(bool p) { m_polarity = p; }
-        int width() const {
+        int varWidth() const {
             UASSERT(m_refp, "m_refp should be set");
             const int width = m_refp->varp()->widthMin();
             if (!m_refp->isWide()) {
@@ -371,7 +371,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         const size_t idx = baseIdx + std::max(0, ref.wordIdx());
         VarInfo* varInfop = m_varInfos[idx].get();
         if (!varInfop) {
-            varInfop = new VarInfo{this, ref.refp(), ref.width()};
+            varInfop = new VarInfo{this, ref.refp(), ref.varWidth()};
             m_varInfos[idx].reset(varInfop);
         } else {
             if (!varInfop->sameVarAs(ref.refp()))
@@ -467,7 +467,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             incrOps(andp, __LINE__);
 
             // Mark all bits checked in this reduction
-            const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.width());
+            const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.varWidth());
             for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
                 const int maskIdx = bitIdx - ref.lsb();
                 if (maskNum.bitIs0(maskIdx)) continue;
@@ -483,7 +483,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             incrOps(nodep, __LINE__);
 
             // Mark all bits checked by this comparison
-            for (int bitIdx = ref.lsb(); bitIdx < ref.width(); ++bitIdx) {
+            for (int bitIdx = ref.lsb(); bitIdx < ref.varWidth(); ++bitIdx) {
                 m_bitPolarities.emplace_back(ref, true, bitIdx);
             }
         }
@@ -522,7 +522,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     // The conditional on the lsb being in range is necessary for some degenerate
                     // case, e.g.: (IData)((QData)wide[0] >> 32), or <1-bit-var> >> 1, which is
                     // just zero
-                    if (leafInfo.lsb() < leafInfo.width()) {
+                    if (leafInfo.lsb() < leafInfo.varWidth()) {
                         m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.polarity(),
                                                      leafInfo.lsb());
                     } else if (isAndTree() && leafInfo.polarity()) {
@@ -559,7 +559,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                 incrOps(andp, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.width());
+                const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.varWidth());
                 for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
                     const int maskIdx = bitIdx - ref.lsb();
                     if (maskNum.bitIs0(maskIdx)) continue;
@@ -575,7 +575,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                 incrOps(nodep, __LINE__);
 
                 // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.lsb() + compNum.width(), ref.width());
+                const int maxBitIdx = std::min(ref.lsb() + compNum.width(), ref.varWidth());
                 for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
                     const int maskIdx = bitIdx - ref.lsb();
                     const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
