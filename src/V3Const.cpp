@@ -87,6 +87,10 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         const AstConst* m_constp = nullptr;
 
     public:
+        LeafInfo() = default;
+        explicit LeafInfo(int lsb)
+            : m_lsb{lsb} {}
+        explicit LeafInfo(const LeafInfo& other) = default;
         void setLeaf(AstVarRef* refp) {
             UASSERT(!m_refp && !m_constp, "Must be called just once");
             m_refp = refp;
@@ -95,6 +99,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             UASSERT(!m_refp && !m_constp, "Must be called just once");
             m_constp = constp;
         }
+        void updateBitRange(AstShiftR*, AstConst* constp) { m_lsb += constp->toUInt(); }
         AstVarRef* refp() const { return m_refp; }
         const AstConst* constp() const { return m_constp; }
         int wordIdx() const { return m_wordIdx; }
@@ -102,7 +107,6 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         int lsb() const { return m_lsb; }
 
         void wordIdx(int i) { m_wordIdx = i; }
-        void lsb(int l) { m_lsb = l; }
         void polarity(bool p) { m_polarity = p; }
         int varWidth() const {
             UASSERT(m_refp, "m_refp should be set");
@@ -382,7 +386,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
 
     // Traverse down to see AstConst or AstVarRef
     LeafInfo findLeaf(AstNode* nodep, bool expectConst) {
-        LeafInfo info;
+        LeafInfo info{m_lsb};
         {
             VL_RESTORER(m_leafp);
             m_leafp = &info;
@@ -410,6 +414,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         m_lsb += constp->toUInt();
         incrOps(nodep, __LINE__);
         iterate(nodep->lhsp());
+        m_leafp->updateBitRange(nodep, constp);
         m_lsb -= constp->toUInt();
     }
     virtual void visit(AstNot* nodep) override {
@@ -437,12 +442,10 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         m_leafp->setLeaf(nodep);
         m_leafp->polarity(m_polarity);
-        m_leafp->lsb(m_lsb);
     }
     virtual void visit(AstConst* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         m_leafp->setLeaf(nodep);
-        m_leafp->lsb(m_lsb);
     }
 
     virtual void visit(AstRedXor* nodep) override {
@@ -503,7 +506,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
 
             for (const bool right : {false, true}) {
                 Restorer restorer{*this};
-                LeafInfo leafInfo;
+                LeafInfo leafInfo{m_lsb};
                 m_leafp = &leafInfo;
                 AstNode* opp = right ? nodep->rhsp() : nodep->lhsp();
                 const bool origFailed = m_failed;
