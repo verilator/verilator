@@ -3583,7 +3583,11 @@ public:
     }
     virtual ~ConstVisitor() override {
         if (m_doCpp) {
-            V3Stats::addStat("Optimizations, Const bit op reduction", m_statBitOpReduction);
+            if (m_globalPass) {
+                V3Stats::addStat("Optimizations, Const bit op reduction", m_statBitOpReduction);
+            } else {
+                V3Stats::addStatSum("Optimizations, Const bit op reduction", m_statBitOpReduction);
+            }
         }
     }
 
@@ -3672,6 +3676,12 @@ void V3Const::constifyCpp(AstNetlist* nodep) {
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
     ConstVisitor visitor{ConstVisitor::PROC_V_NOWARN, /* globalPass: */ false};
+    nodep = visitor.mainAcceptEdit(nodep);
+    return nodep;
+}
+
+AstNode* V3Const::constifyCppNode(AstNode* nodep) {
+    ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ false};
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
 }
