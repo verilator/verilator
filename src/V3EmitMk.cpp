@@ -197,7 +197,6 @@ public:
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
-        if (v3Global.opt.usesProfiler()) of.puts("\t-DVL_PROFILER \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("\t" + i + " \\\n");
         of.puts("\n");

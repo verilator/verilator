@@ -187,7 +187,7 @@ VM_SLOW += $(VM_CLASSES_SLOW) $(VM_SUPPORT_SLOW)
 VK_FAST_OBJS = $(addsuffix .o, $(VM_FAST))
 VK_SLOW_OBJS = $(addsuffix .o, $(VM_SLOW))
 
-VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
+VK_USER_OBJS = $(addsuffix .o, $(VM_USER_CLASSES))
 
 # Note VM_GLOBAL_FAST and VM_GLOBAL_SLOW holds the files required from the
 # run-time library. In practice everything is actually in VM_GLOBAL_FAST,

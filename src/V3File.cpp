@@ -920,13 +920,16 @@ void V3OutFormatter::printf(const char* fmt...) {
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
 V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
-    : V3OutFormatter{filename, lang} {
+    : V3OutFormatter{filename, lang}
+    , m_bufferp{new std::array<char, WRITE_BUFFER_SIZE_BYTES>{}} {
     if ((m_fp = V3File::new_fopen_w(filename)) == nullptr) {
         v3fatal("Cannot write " << filename);
     }
 }
 
 V3OutFile::~V3OutFile() {
+    writeBlock();
+
     if (m_fp) fclose(m_fp);
     m_fp = nullptr;
 }

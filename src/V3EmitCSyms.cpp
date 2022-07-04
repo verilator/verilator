@@ -694,8 +694,8 @@ void EmitCSyms::emitSymImp() {
     puts("}\n\n");
 
     // Constructor
-    puts(symClassName() + "::" + symClassName() + "(VerilatedContext* contextp, const char* namep,"
-         + topClassName() + "* modelp)\n");
+    puts(symClassName() + "::" + symClassName()
+         + "(VerilatedContext* contextp, const char* namep, " + topClassName() + "* modelp)\n");
     puts("    : VerilatedSyms{contextp}\n");
     puts("    // Setup internal state of the Syms class\n");
     puts("    , __Vm_modelp{modelp}\n");
@@ -724,7 +724,10 @@ void EmitCSyms::emitSymImp() {
         // duration of the eval call.
         puts("    , __Vm_threadPoolp{new VlThreadPool{_vm_contextp__, "
              + cvtToStr(v3Global.opt.threads() - 1) + ", "
-             + (v3Global.opt.profExec() ? "&__Vm_executionProfiler" : "nullptr") + "}}\n");
+             + (v3Global.opt.profExec()
+                    ? "&__Vm_executionProfiler, &VlExecutionProfiler::startWorkerSetup"
+                    : "nullptr, nullptr")
+             + "}}\n");
     }
 
     puts("    // Setup module instances\n");
@@ -965,7 +968,8 @@ void EmitCSyms::emitSymImp() {
     }
 
     closeSplit();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    m_ofp = nullptr;
+    VL_DO_CLEAR(delete m_ofpBase, m_ofpBase = nullptr);
 }
 
 //######################################################################

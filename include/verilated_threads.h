@@ -50,12 +50,18 @@
 #endif
 // clang-format on
 
+class VlExecutionProfiler;
+class VlThreadPool;
+
 // VlMTaskVertex and VlThreadpool will work with multiple model class types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
 // as a void* here.
 using VlSelfP = void*;
 
 using VlExecFnp = void (*)(VlSelfP, bool);
+
+// VlWorkerThread::startWorker callback, used to hook in VlExecutionProfiler
+using VlStartWorkerCb = void (*)(VlExecutionProfiler*, uint32_t threadId);
 
 // Track dependencies for a single MTask.
 class VlMTaskVertex final {
@@ -129,9 +135,6 @@ public:
     }
 };
 
-class VlExecutionProfiler;
-class VlThreadPool;
-
 class VlWorkerThread final {
 private:
     // TYPES
@@ -162,7 +165,6 @@ private:
     // Store the size atomically, so we can spin wait
     std::atomic<size_t> m_ready_size;
 
-    std::atomic<bool> m_exiting;  // Worker thread should exit
     std::thread m_cthread;  // Underlying C++ thread record
     VerilatedContext* const m_contextp;  // Context for spawned thread
 
@@ -171,7 +173,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit VlWorkerThread(uint32_t threadId, VerilatedContext* contextp,
-                            VlExecutionProfiler* profilerp);
+                            VlExecutionProfiler* profilerp, VlStartWorkerCb startCb);
     ~VlWorkerThread();
 
     // METHODS
@@ -195,7 +197,6 @@ public:
         m_ready.erase(m_ready.begin());
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
-    inline void wakeUp() { addTask(nullptr, nullptr, false); }
     inline void addTask(VlExecFnp fnp, VlSelfP selfp, bool evenCycle)
         VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
@@ -207,9 +208,13 @@ public:
         }
         if (notify) m_cv.notify_one();
     }
+
+    inline void shutdown() { addTask(shutdownTask, nullptr, false); }
+    static void shutdownTask(void*, bool);
+
     void workerLoop();
     static void startWorker(VlWorkerThread* workerp, uint32_t threadId,
-                            VlExecutionProfiler* profilerp);
+                            VlExecutionProfiler* profilerp, VlStartWorkerCb startCb);
 };
 
 class VlThreadPool final {
@@ -221,7 +226,8 @@ public:
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
     // pool will create these threads and make them available to execute tasks
     // via this->workerp(index)->addTask(...)
-    VlThreadPool(VerilatedContext* contextp, int nThreads, VlExecutionProfiler* profilerp);
+    VlThreadPool(VerilatedContext* contextp, int nThreads, VlExecutionProfiler* profilerp,
+                 VlStartWorkerCb startCb);
     ~VlThreadPool();
 
     // METHODS

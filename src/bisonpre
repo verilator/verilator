@@ -150,7 +150,7 @@ def clean_output(filename, outname, is_output, is_c):
         lines = out
         out = []
 
-    with open(outname, "w") as fh:
+    with open(outname, "w", encoding="utf-8") as fh:
         for line in lines:
             # Fix filename refs
             line = re.sub(basename, newbase, line)

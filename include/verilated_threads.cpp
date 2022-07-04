@@ -24,10 +24,6 @@
 #include "verilatedos.h"
 #include "verilated_threads.h"
 
-#ifdef VL_PROFILER
-#include "verilated_profiler.h"
-#endif
-
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -52,44 +48,35 @@ VlMTaskVertex::VlMTaskVertex(uint32_t upstreamDepCount)
 // VlWorkerThread
 
 VlWorkerThread::VlWorkerThread(uint32_t threadId, VerilatedContext* contextp,
-                               VlExecutionProfiler* profilerp)
+                               VlExecutionProfiler* profilerp, VlStartWorkerCb startCb)
     : m_ready_size{0}
-    , m_exiting{false}
-    , m_cthread{startWorker, this, threadId, profilerp}
+    , m_cthread{startWorker, this, threadId, profilerp, startCb}
     , m_contextp{contextp} {}
 
 VlWorkerThread::~VlWorkerThread() {
-    m_exiting.store(true, std::memory_order_release);
-    wakeUp();
+    shutdown();
     // The thread should exit; join it.
     m_cthread.join();
 }
 
+void VlWorkerThread::shutdownTask(void*, bool) {
+    // Deliberately empty, we use the address of this function as a magic number
+}
+
 void VlWorkerThread::workerLoop() {
     ExecRec work;
-    work.m_fnp = nullptr;
 
     while (true) {
-        if (VL_LIKELY(!work.m_fnp)) dequeWork(&work);
-
-        // Do this here, not above, to avoid a race with the destructor.
-        if (VL_UNLIKELY(m_exiting.load(std::memory_order_acquire))) break;
-
-        if (VL_LIKELY(work.m_fnp)) {
-            work.m_fnp(work.m_selfp, work.m_evenCycle);
-            work.m_fnp = nullptr;
-        }
+        dequeWork(&work);
+        if (VL_UNLIKELY(work.m_fnp == shutdownTask)) break;
+        work.m_fnp(work.m_selfp, work.m_evenCycle);
     }
 }
 
 void VlWorkerThread::startWorker(VlWorkerThread* workerp, uint32_t threadId,
-                                 VlExecutionProfiler* profilerp) {
+                                 VlExecutionProfiler* profilerp, VlStartWorkerCb startCb) {
     Verilated::threadContextp(workerp->m_contextp);
-#ifdef VL_PROFILER
-    // Note: setupThread is not defined without VL_PROFILER, hence the #ifdef. Still, we might
-    // not be profiling execution (e.g.: PGO only), so profilerp might still be nullptr.
-    if (profilerp) profilerp->setupThread(threadId);
-#endif
+    if (VL_UNLIKELY(startCb)) startCb(profilerp, threadId);
     workerp->workerLoop();
 }
 
@@ -97,7 +84,7 @@ void VlWorkerThread::startWorker(VlWorkerThread* workerp, uint32_t threadId,
 // VlThreadPool
 
 VlThreadPool::VlThreadPool(VerilatedContext* contextp, int nThreads,
-                           VlExecutionProfiler* profiler) {
+                           VlExecutionProfiler* profilerp, VlStartWorkerCb startCb) {
     // --threads N passes nThreads=N-1, as the "main" threads counts as 1
     ++nThreads;
     const unsigned cpus = std::thread::hardware_concurrency();
@@ -111,7 +98,7 @@ VlThreadPool::VlThreadPool(VerilatedContext* contextp, int nThreads,
     }
     // Create worker threads
     for (uint32_t threadId = 1; threadId < nThreads; ++threadId) {
-        m_workers.push_back(new VlWorkerThread{threadId, contextp, profiler});
+        m_workers.push_back(new VlWorkerThread{threadId, contextp, profilerp, startCb});
     }
 }
 
