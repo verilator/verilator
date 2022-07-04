@@ -22,6 +22,7 @@
 
 #include "V3Error.h"
 
+#include <array>
 #include <stack>
 #include <set>
 #include <list>
@@ -183,18 +184,56 @@ public:
 // V3OutFile: A class for printing to a file, with automatic indentation of C++ code.
 
 class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
+    // Size of m_bufferp.
+    // 128kB has been experimentally determined to be in the zone of buffer sizes that work best.
+    // It is also considered to be the smallest I/O buffer size in GNU coreutils (io_blksize) that
+    // allows to best minimize syscall overhead.
+    // The hard boundaries are CPU L2/L3 cache size on the top and filesystem block size
+    // on the bottom.
+    static constexpr std::size_t WRITE_BUFFER_SIZE_BYTES = 128 * 1024;
+
     // MEMBERS
+    std::unique_ptr<std::array<char, WRITE_BUFFER_SIZE_BYTES>> m_bufferp;  // Write buffer
+    std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
     FILE* m_fp = nullptr;
 
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);
+    V3OutFile(const V3OutFile&) = delete;
+    V3OutFile& operator=(const V3OutFile&) = delete;
+    V3OutFile(V3OutFile&&) = delete;
+    V3OutFile& operator=(V3OutFile&&) = delete;
+
     virtual ~V3OutFile() override;
     void putsForceIncs();
 
 private:
+    void writeBlock() {
+        if (VL_LIKELY(m_usedBytes > 0)) fwrite(m_bufferp->data(), m_usedBytes, 1, m_fp);
+        m_usedBytes = 0;
+    }
+
     // CALLBACKS
-    virtual void putcOutput(char chr) override { fputc(chr, m_fp); }
-    virtual void putsOutput(const char* str) override { fputs(str, m_fp); }
+    virtual void putcOutput(char chr) override {
+        m_bufferp->at(m_usedBytes++) = chr;
+        if (VL_UNLIKELY(m_usedBytes >= WRITE_BUFFER_SIZE_BYTES)) writeBlock();
+    }
+    virtual void putsOutput(const char* str) override {
+        std::size_t len = strlen(str);
+        std::size_t availableBytes = WRITE_BUFFER_SIZE_BYTES - m_usedBytes;
+        while (VL_UNLIKELY(len >= availableBytes)) {
+            memcpy(m_bufferp->data() + m_usedBytes, str, availableBytes);
+            m_usedBytes = WRITE_BUFFER_SIZE_BYTES;
+            writeBlock();
+            str += availableBytes;
+            len -= availableBytes;
+            availableBytes = WRITE_BUFFER_SIZE_BYTES;
+        }
+        if (len > 0) {
+            memcpy(m_bufferp->data() + m_usedBytes, str, len);
+            m_usedBytes += len;
+        }
+    }
 };
 
 class V3OutCFile VL_NOT_FINAL : public V3OutFile {

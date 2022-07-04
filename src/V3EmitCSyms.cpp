@@ -951,7 +951,8 @@ void EmitCSyms::emitSymImp() {
     }
 
     closeSplit();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    m_ofp = nullptr;
+    VL_DO_CLEAR(delete m_ofpBase, m_ofpBase = nullptr);
 }
 
 //######################################################################
