@@ -321,6 +321,7 @@ protected:
         bool m_gotError = false;  // A $finish statement executed
         bool m_gotFinish = false;  // A $finish or $stop statement executed
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
+        bool m_gotEvalInTime = false;
         // Slow path
         int8_t m_timeunit;  // Time unit as 0..15
         int8_t m_timeprecision;  // Time precision as 0..15
@@ -442,6 +443,11 @@ public:
     void gotFinish(bool flag) VL_MT_SAFE;
     /// Return if got a $finish or $stop/error
     bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
+    /// Set if simulation was evaled in this timestamp
+    void setEval() VL_MT_SAFE;
+    /// Return if simulation was evaled in this timestamp
+    bool getEval() const VL_MT_SAFE { return m_s.m_gotEvalInTime; }
+
     /// Select initial value of otherwise uninitialized signals.
     /// 0 = Set to zeros
     /// 1 = Set all bits to one
@@ -481,7 +487,10 @@ public:
     /// Set current simulation time. See time() for side effect details
     void time(uint64_t value) VL_MT_SAFE { m_s.m_time = value; }
     /// Advance current simulation time. See time() for side effect details
-    void timeInc(uint64_t add) VL_MT_UNSAFE { m_s.m_time += add; }
+    void timeInc(uint64_t add) VL_MT_UNSAFE {
+        m_s.m_time += add;
+        if (add) m_s.m_gotEvalInTime = true;
+    }
     /// Return time units as power-of-ten
     int timeunit() const VL_MT_SAFE { return -m_s.m_timeunit; }
     /// Set time units as power-of-ten
@@ -759,6 +768,10 @@ public:
     static void gotFinish(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotFinish(flag); }
     /// Return VerilatedContext::gotFinish using current thread's VerilatedContext
     static bool gotFinish() VL_MT_SAFE { return Verilated::threadContextp()->gotFinish(); }
+    //. Call VerilatedContext::setEval using current thread's VerilatedContext
+    static void setEval() VL_MT_SAFE { Verilated::threadContextp()->setEval(); }
+    //. Call VerilatedContext::getEval using current thread's VerilatedContext
+    static bool getEval() VL_MT_SAFE { return Verilated::threadContextp()->getEval(); }
     /// Call VerilatedContext::randReset using current thread's VerilatedContext
     static void randReset(int val) VL_MT_SAFE { Verilated::threadContextp()->randReset(val); }
     /// Return VerilatedContext::randReset using current thread's VerilatedContext

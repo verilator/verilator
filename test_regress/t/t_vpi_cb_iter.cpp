@@ -97,9 +97,17 @@ static void reregister_rw_cb() {
     }
     if (verbose) vpi_printf(const_cast<char*>("- Registering cbReadWriteSynch callback\n"));
     t_cb_data cb_data_testcase;
+    t_vpi_time cbTime;
     bzero(&cb_data_testcase, sizeof(cb_data_testcase));
     cb_data_testcase.cb_rtn = the_rw_callback;
     cb_data_testcase.reason = cbReadWriteSynch;
+
+    // ReadWrite Callback is time delayed callback.
+    // Registering with time 0 requires to call it in the same time stamp
+    // IEEE 1800-2017 38.36.2
+    cbTime.low = 1;
+    cbTime.high = 0;
+    cb_data_testcase.time = &cbTime;
 
     vh_rw_cb = vpi_register_cb(&cb_data_testcase);
     TEST_CHECK_NZ(vh_rw_cb);
@@ -112,9 +120,16 @@ static void register_filler_cb() {
         vpi_printf(const_cast<char*>("- Registering filler cbReadWriteSynch callback\n"));
     }
     t_cb_data cb_data_1;
+    t_vpi_time cbTime;
     bzero(&cb_data_1, sizeof(cb_data_1));
     cb_data_1.cb_rtn = the_filler_callback;
     cb_data_1.reason = cbReadWriteSynch;
+    // ReadWrite Callback is time delayed callback.
+    // Registering with time 0 requires to call it in the same time stamp
+    // IEEE 1800-2017 38.36.2
+    cbTime.low = 1;
+    cbTime.high = 0;
+    cb_data_1.time = &cbTime;
 
     TestVpiHandle cb_data_1_h = vpi_register_cb(&cb_data_1);
     TEST_CHECK_NZ(cb_data_1_h);
@@ -159,7 +174,8 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
 
     while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
-        main_time += 1;
+        // Take sim time as next deadline, ReadWrite is time delayed callback
+        main_time = VerilatedVpi::cbNextDeadline();
         if (verbose) VL_PRINTF("Sim Time %d got_error %d\n", main_time, errors);
         topp->clk = !topp->clk;
         topp->eval();

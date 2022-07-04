@@ -2358,6 +2358,10 @@ void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_gotFinish = flag;
 }
+void VerilatedContext::setEval() VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_s.m_gotEvalInTime = true;
+}
 void VerilatedContext::profExecStart(uint64_t flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_ns.m_profExecStart = flag;

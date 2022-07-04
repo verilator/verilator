@@ -28,8 +28,14 @@ const std::vector<int> cbs_to_test{cbReadWriteSynch,    cbReadOnlySynch,   cbNex
                                    cbStartOfSimulation, cbEndOfSimulation, cbValueChange};
 
 enum CallbackState { PRE_REGISTER, ACTIVE, ACTIVE_AGAIN, REM_REREG_ACTIVE, POST_REMOVE };
-const std::vector<CallbackState> cb_states{PRE_REGISTER, ACTIVE, ACTIVE_AGAIN, REM_REREG_ACTIVE,
-                                           POST_REMOVE};
+const std::map<int, std::vector<CallbackState>> cb_states{
+    {cbReadWriteSynch, {ACTIVE, POST_REMOVE}},  // time calltaback should fire once
+    {cbReadOnlySynch, {ACTIVE, POST_REMOVE}},  // time callback should fire only once
+    {cbNextSimTime, {ACTIVE, POST_REMOVE}},  // time callback should fire once
+    {cbStartOfSimulation, {PRE_REGISTER, ACTIVE, ACTIVE_AGAIN, REM_REREG_ACTIVE, POST_REMOVE}},
+    {cbEndOfSimulation, {PRE_REGISTER, ACTIVE, ACTIVE_AGAIN, REM_REREG_ACTIVE, POST_REMOVE}},
+    {cbValueChange, {PRE_REGISTER, ACTIVE, ACTIVE_AGAIN, REM_REREG_ACTIVE, POST_REMOVE}},
+};
 
 #define CB_COUNT cbAtEndOfSimTime + 1
 TestVpiHandle vh_registered_cbs[CB_COUNT] = {0};
@@ -93,6 +99,10 @@ static int the_callback(p_cb_data cb_data) {
 static int register_cb(const int next_state) {
     int cb = *cb_iter;
     t_cb_data cb_data_testcase;
+    t_vpi_time cb_time;
+    cb_time.low = 1;
+    cb_time.high = 0;
+
     s_vpi_value v;  // Needed in this scope as is in cb_data
     bzero(&cb_data_testcase, sizeof(cb_data_testcase));
     cb_data_testcase.cb_rtn = the_callback;
@@ -106,6 +116,8 @@ static int register_cb(const int next_state) {
         cb_data_testcase.obj = count_h;
         cb_data_testcase.value = &v;
     }
+    // Timed callbacks require time value
+    if (cb == cbReadWriteSynch || cb == cbReadOnlySynch) cb_data_testcase.time = &cb_time;
 
     // State of callback next time through loop
     if (verbose) vpi_printf(const_cast<char*>("     Updating callback for next loop:\n"));
@@ -152,6 +164,10 @@ void reset_expected() {
     for (int idx = 0; idx < CB_COUNT; idx++) { callbacks_expected_called[idx] = false; }
 }
 
+void reset_callbacks() {
+    for (int idx = 0; idx < CB_COUNT; idx++) { callbacks_called[idx] = false; }
+}
+
 void cb_will_be_called(const int cb) {
     callback_expected_counts[cb] = callback_expected_counts[cb] + 1;
     callbacks_expected_called[cb] = true;
@@ -176,12 +192,12 @@ static int test_callbacks(p_cb_data cb_data) {
 
     // Update expected values based on state of callback in next time through main loop
     reset_expected();
+    reset_callbacks();
 
     const int current_state = *state_iter;
-    const int next_state = (current_state + 1) % cb_states.size();
+    const int next_state = *(state_iter + 1);
 
-    switch (next_state) {
-    case PRE_REGISTER:
+    switch (current_state) {
     case ACTIVE:
     case ACTIVE_AGAIN:
     case REM_REREG_ACTIVE: {
@@ -191,14 +207,14 @@ static int test_callbacks(p_cb_data cb_data) {
     default: break;
     }
 
-    int ret = register_cb(next_state);
+    int ret = register_cb(current_state);
     if (ret) return ret;
 
     // Update iterators for next loop
     ++state_iter;
-    if (state_iter == cb_states.cend()) {
+    if (state_iter == cb_states.at(cb).cend()) {
         ++cb_iter;
-        state_iter = cb_states.cbegin();
+        if (cb_iter != cbs_to_test.cend()) state_iter = cb_states.at(*cb_iter).cbegin();
     }
 
     // Re-register this cb for next time step
@@ -240,7 +256,7 @@ static int register_test_callback() {
     CHECK_RESULT_NZ(vh_test_cb);
 
     cb_iter = cbs_to_test.cbegin();
-    state_iter = cb_states.cbegin();
+    state_iter = cb_states.at(*cb_iter).cbegin();
 
     return 0;
 }
@@ -280,7 +296,7 @@ int main(int argc, char** argv, char** env) {
                 cbs_called = VerilatedVpi::callCbs(i);
             }
             if (verbose) VL_PRINTF(" - any callbacks called? %s\n", cbs_called ? "YES" : "NO");
-            callbacks_called[i] = cbs_called;
+            callbacks_called[i] |= cbs_called;
         }
 
         VerilatedVpi::callTimedCbs();

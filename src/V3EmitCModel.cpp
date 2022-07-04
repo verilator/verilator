@@ -161,7 +161,7 @@ class EmitCModel final : public EmitCFunc {
         if (!optSystemC()) {
             puts("/// Evaluate the model.  Application must call when inputs change.\n");
         }
-        puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
+        puts("void eval() { contextp()->setEval(); eval_step(); " + callEvalEndStep + "}\n");
         if (!optSystemC()) {
             puts("/// Evaluate when calling multiple units/models per time step.\n");
         }
