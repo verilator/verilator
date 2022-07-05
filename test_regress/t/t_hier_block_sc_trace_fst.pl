@@ -22,11 +22,11 @@ compile(
     verilator_flags2 => ['--sc',
                          '--stats',
                          '--hierarchical',
-                         ($Self->{vltmt} ? ' --threads 6' : ''),
                          '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"',
                          "--CFLAGS", '"-O0 -ggdb"',
                          "--trace-fst"
     ],
+    threads => $Self->{vltmt} ? 6 : 0
     );
 
 execute(

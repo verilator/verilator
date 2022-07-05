@@ -16,8 +16,8 @@ top_filename("t/t_trace_litendian.v");
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # Strangely, asking for more threads makes it go away.
 compile(
-    verilator_flags2 => ['--cc --trace-fst --trace-params -Wno-LITENDIAN',
-                        ($Self->{vltmt} ?  '--threads 6' : '')],
+    verilator_flags2 => ['--cc --trace-fst --trace-params -Wno-LITENDIAN'],
+    threads => $Self->{vltmt} ? 6 : 0
     );
 
 execute(

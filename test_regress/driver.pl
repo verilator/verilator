@@ -578,6 +578,7 @@ sub new {
         make_pli => 0,          # need to compile pli
         sc_time_resolution => "SC_PS",  # Keep - PS is SystemC default
         sim_time => 1100,
+        threads => -1,          # --threads (negative means auto based on scenario)
         benchmark => $opt_benchmark,
         verbose => $opt_verbose,
         run_env => '',
@@ -902,6 +903,7 @@ sub compile_vlt_flags {
                           @{$param{verilator_flags}},
                           @{$param{verilator_flags2}},
                           @{$param{verilator_flags3}});
+    die "%Error: specify threads via 'threads =>' argument, not as a command line option" unless ($checkflags !~ /(^|\s)-?-threads\s/ && $checkflags !~ /(^|\s)-?-no-threads($|\s)/);
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
                       || $checkflags =~ /-trace-fst\b/);
@@ -920,8 +922,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--rr" if $opt_rr;
     unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
     unshift @verilator_flags, "--trace" if $opt_trace;
-    my $threads = ::calc_threads($Vltmt_threads);
-    unshift @verilator_flags, "--threads $threads" if $param{vltmt} && $checkflags !~ /-threads /;
+    unshift @verilator_flags, "--threads $param{threads}" if $param{threads} >= 0;
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim;
@@ -971,6 +972,9 @@ sub compile {
                  %{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
     $self->oprint("Compile\n") if $self->{verbose};
+
+    die "%Error: 'threads =>' argument must be <= 1 for vlt scenario" if $param{vlt} && $param{threads} > 1;
+    $param{threads} = ::calc_threads($Vltmt_threads) if ($param{threads} < 0 && $param{vltmt});
 
     compile_vlt_cmd(%param);
 

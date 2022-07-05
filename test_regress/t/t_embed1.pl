@@ -22,6 +22,7 @@ mkdir $child_dir;
         (VM_PREFIX => "$Self->{VM_PREFIX}_child",
          top_filename => "$Self->{name}_child.v",
          verilator_flags => ["-cc", "-Mdir", "${child_dir}", "--debug-check"],
+         threads => $Self->{vltmt} ? $Self->get_default_vltmt_threads() : 0
         );
 
     run(logfile => "${child_dir}/vlt_compile.log",

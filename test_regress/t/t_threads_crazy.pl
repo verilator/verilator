@@ -15,7 +15,8 @@ if ($Self->cfg_with_m32) {
 }
 
 compile(
-    verilator_flags2 => ['--cc --threads 1024'],
+    verilator_flags2 => ['--cc'],
+    threads => 1024
     );
 
 execute(

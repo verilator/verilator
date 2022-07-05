@@ -18,11 +18,12 @@ scenarios(vlt_all => 1);
 
 compile(
     v_flags2 => ['t/t_hier_block.cpp'],
-    verilator_flags2 => ['--stats', ($Self->{vltmt} ? ' --threads 6' : ''),
+    verilator_flags2 => ['--stats',
                          '--hierarchical',
                          '--Wno-TIMESCALEMOD',
                          '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"'
     ],
+    threads => $Self->{vltmt} ? 6 : 0
     );
 
 execute(

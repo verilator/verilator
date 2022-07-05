@@ -56,10 +56,10 @@ while (1) {
 
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
-                             ($Self->{vltmt} ? ' --threads 1' : ''),
                              "-LDFLAGS",
                              "'-Wl,-rpath,$abs_secret_dir -L$abs_secret_dir -l$secret_prefix'"],
         xsim_flags2 => ["$secret_dir/secret.sv"],
+        threads => $Self->{vltmt} ? 1 : 0
         );
 
     execute(
