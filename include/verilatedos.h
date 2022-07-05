@@ -235,6 +235,16 @@
 #endif
 
 //=========================================================================
+// C++-2017
+
+#if __cplusplus >= 201703L
+# define VL_CONSTEXPR_CXX17 constexpr
+#else
+# define VL_CONSTEXPR_CXX17
+#endif
+
+
+//=========================================================================
 // Optimization
 
 #ifndef VL_INLINE_OPT

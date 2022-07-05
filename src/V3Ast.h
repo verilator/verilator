@@ -1948,7 +1948,7 @@ private:
             ASTNODE_PREFETCH(nodep->op2p());
             ASTNODE_PREFETCH(nodep->op3p());
             ASTNODE_PREFETCH(nodep->op4p());
-            if /* TODO: 'constexpr' in C++17 */ (VisitNext) ASTNODE_PREFETCH(nodep->nextp());
+            if VL_CONSTEXPR_CXX17 (VisitNext) ASTNODE_PREFETCH(nodep->nextp());
 
             // Apply function in pre-order
             if (privateTypeTest<typename std::remove_const<T_Arg>::type>(nodep)) {
@@ -1964,7 +1964,7 @@ private:
             }
 
             // Traverse 'nextp()' chain if requested
-            if /* TODO: 'constexpr' in C++17 */ (VisitNext) {
+            if VL_CONSTEXPR_CXX17 (VisitNext) {
                 nodep = nodep->nextp();
             } else {
                 break;
@@ -1987,7 +1987,7 @@ private:
             ASTNODE_PREFETCH(nodep->op2p());
             ASTNODE_PREFETCH(nodep->op3p());
             ASTNODE_PREFETCH(nodep->op4p());
-            if /* TODO: 'constexpr' in C++17 */ (VisitNext) ASTNODE_PREFETCH(nodep->nextp());
+            if VL_CONSTEXPR_CXX17 (VisitNext) ASTNODE_PREFETCH(nodep->nextp());
 
             // Apply function in pre-order
             if (privateTypeTest<typename std::remove_const<T_Arg>::type>(nodep)) {
@@ -2011,7 +2011,7 @@ private:
             }
 
             // Traverse 'nextp()' chain if requested
-            if /* TODO: 'constexpr' in C++17 */ (VisitNext) {
+            if VL_CONSTEXPR_CXX17 (VisitNext) {
                 nodep = nodep->nextp();
             } else {
                 break;
