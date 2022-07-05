@@ -109,7 +109,9 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         void updateBitRange(const AstCCast* castp) {
             m_msb = std::min(m_msb, m_lsb + castp->width() - 1);
         }
-        void updateBitRange(AstShiftR*, AstConst* constp) { m_lsb += constp->toUInt(); }
+        void updateBitRange(const AstShiftR* shiftp) {
+            m_lsb += VN_AS(shiftp->rhsp(), Const)->toUInt();
+        }
         void wordIdx(int i) { m_wordIdx = i; }
         void polarity(bool p) { m_polarity = p; }
 
@@ -429,7 +431,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         m_lsb += constp->toUInt();
         incrOps(nodep, __LINE__);
         iterate(nodep->lhsp());
-        m_leafp->updateBitRange(nodep, constp);
+        m_leafp->updateBitRange(nodep);
         m_lsb -= constp->toUInt();
     }
     virtual void visit(AstNot* nodep) override {
