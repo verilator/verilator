@@ -207,13 +207,31 @@ module bug3445(input wire clk, input wire [31:0] in, output wire out);
    assign out = result0 ^ result1 ^ (result2 | result3);
 endmodule
 
+// Bug3470
+// CCast had been ignored in bit op tree optimization
+// Assume the following HDL input:
+//     (^d[38:32]) ^ (^d[31:0])
+//     where d is logic [38:0]
+// ^d[31:0] becomes REDXOR(CCast(uint32_t, d)),
+// but CCast was ignored and interpreted as ^d[38:0].
+// Finally (^d[38:32]) ^ (^d31:0]) was wrongly transformed to
+// (^d[38:32]) ^ (^d[38:0])
+//   ->  (^d[38:32]) ^ ((^d[38:32]) ^ (^d[31:0]))
+//   -> ^d[31:0]
+// Of course the correct result is ^d[38:0] = ^d
 module bug3470(input wire clk, input wire [31:0] in, output wire out);
    logic [38:0] d;
    always_ff @(posedge clk)
       d <= {d[6:0], in};
 
-   logic tmp;
-   always_ff @(posedge clk)
+   logic tmp, expected;
+   always_ff @(posedge clk) begin
      tmp <= ^(d >> 32) ^ (^d[31:0]);
+     expected <= ^d;
+   end
+
+   always @(posedge clk)
+      if (tmp != expected) $stop;
+
    assign out = tmp;
 endmodule
