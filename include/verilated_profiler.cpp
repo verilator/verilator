@@ -108,10 +108,13 @@ void VlExecutionProfiler::setupThread(uint32_t threadId) {
     // while profiling.
     t_trace.reserve(RESERVED_TRACE_CAPACITY);
     // Register thread-local buffer in list of all buffers
+    bool exists;
     {
         const VerilatedLockGuard lock{m_mutex};
-        bool exists = !m_traceps.emplace(threadId, &t_trace).second;
-        assert(!exists);
+        exists = !m_traceps.emplace(threadId, &t_trace).second;
+    }
+    if (VL_UNLIKELY(exists)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "multiple initialization of profiler on some thread");
     }
 }
 
