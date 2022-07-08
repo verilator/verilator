@@ -4551,26 +4551,21 @@ public:
 class AstTestPlusArgs final : public AstNodeMath {
     // Parents: expr
     // Child: variable to set.  If nullptr then this is a $test$plusargs instead of $value$plusargs
-private:
-    string m_text;
-
 public:
-    AstTestPlusArgs(FileLine* fl, const string& text)
-        : ASTGEN_SUPER_TestPlusArgs(fl)
-        , m_text{text} {}
+    AstTestPlusArgs(FileLine* fl, AstNode* searchp)
+        : ASTGEN_SUPER_TestPlusArgs(fl) {
+        setOp1p(searchp);
+    }
     ASTNODE_NODE_FUNCS(TestPlusArgs)
-    virtual string name() const override { return m_text; }
     virtual string verilogKwd() const override { return "$test$plusargs"; }
     virtual string emitVerilog() override { return verilogKwd(); }
     virtual string emitC() override { return "VL_VALUEPLUSARGS_%nq(%lw, %P, nullptr)"; }
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isPredictOptimizable() const override { return false; }
     virtual bool cleanOut() const override { return true; }
-    virtual bool same(const AstNode* samep) const override {
-        return text() == static_cast<const AstTestPlusArgs*>(samep)->text();
-    }
-    string text() const { return m_text; }  // * = Text to display
-    void text(const string& text) { m_text = text; }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    AstNode* searchp() const { return op1p(); }  // op1 = Search expression
+    void searchp(AstNode* nodep) { setOp1p(nodep); }
 };
 
 class AstGenFor final : public AstNodeFor {
