@@ -20,7 +20,7 @@ execute(
     );
 
 file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}__stats.txt",
-          qr/Node count, DISPLAY \s+ 41 \s+ 27 \s+ 27 \s+ 6/);
+          qr/Node count, DISPLAY \s+ 44 \s+ 27 \s+ 27 \s+ 6/);
 
 ok(1);
 1;
