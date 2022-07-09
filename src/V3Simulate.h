@@ -15,7 +15,7 @@
 //*************************************************************************
 //
 // void example_usage() {
-//      SimulateVisitor simvis (false, false);
+//      SimulateVisitor simvis{false, false};
 //      simvis.clear();
 //      // Set all inputs to the constant
 //      for (deque<AstVarScope*>::iterator it = m_inVarps.begin(); it!=m_inVarps.end(); ++it) {
@@ -130,7 +130,7 @@ private:
                     const int width = itemp->width();
                     const int lsb = itemp->lsb();
                     const int msb = lsb + width - 1;
-                    V3Number fieldNum(nump, width);
+                    V3Number fieldNum{nump, width};
                     fieldNum.opSel(*nump, msb, lsb);
                     out << itemp->name() << ": ";
                     if (AstNodeDType* const childTypep = itemp->subDTypep()) {
@@ -152,7 +152,7 @@ private:
                     const int width = childTypep->width();
                     const int lsb = width * element;
                     const int msb = lsb + width - 1;
-                    V3Number fieldNum(nump, width);
+                    V3Number fieldNum{nump, width};
                     fieldNum.opSel(*nump, msb, lsb);
                     const int arrayElem = arrayp->lo() + element;
                     out << arrayElem << " = " << prettyNumber(&fieldNum, childTypep);
@@ -236,7 +236,7 @@ private:
         }
         if (allocNewConst) {
             // Need to allocate new constant
-            constp = new AstConst(nodep->fileline(), AstConst::DtypedValue(), nodep->dtypep(), 0);
+            constp = new AstConst{nodep->fileline(), AstConst::DtypedValue{}, nodep->dtypep(), 0};
             // Mark as in use, add to free list for later reuse
             constp->user2(1);
             freeList.push_back(constp);
@@ -683,15 +683,15 @@ private:
                 initp = vscpnump;
             } else {  // Assignment to unassigned variable, all bits are X
                 // TODO generic initialization which builds X/arrays by recursion
-                AstConst* const outconstp = new AstConst(
-                    nodep->fileline(), AstConst::WidthedValue(), basicp->widthMin(), 0);
+                AstConst* const outconstp = new AstConst{
+                    nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
                 if (basicp->isZeroInit()) {
                     outconstp->num().setAllBits0();
                 } else {
                     outconstp->num().setAllBitsX();
                 }
 
-                initp = new AstInitArray(nodep->fileline(), arrayp, outconstp);
+                initp = new AstInitArray{nodep->fileline(), arrayp, outconstp};
                 m_reclaimValuesp.push_back(initp);
             }
             const uint32_t index = fetchConst(selp->bitp())->toUInt();
@@ -706,7 +706,7 @@ private:
     }
     void handleAssignSel(AstNodeAssign* nodep, AstSel* selp) {
         AstVarRef* varrefp = nullptr;
-        V3Number lsb(nodep);
+        V3Number lsb{nodep};
         iterateAndNextNull(nodep->rhsp());  // Value to assign
         handleAssignSelRecurse(nodep, selp, varrefp /*ref*/, lsb /*ref*/, 0);
         if (!m_checkOnly && optimizable()) {
@@ -719,8 +719,8 @@ private:
             } else if (AstConst* const vscpnump = fetchConstNull(vscp)) {
                 outconstp = vscpnump;
             } else {  // Assignment to unassigned variable, all bits are X or 0
-                outconstp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                         varrefp->varp()->widthMin(), 0);
+                outconstp = new AstConst{nodep->fileline(), AstConst::WidthedValue{},
+                                         varrefp->varp()->widthMin(), 0};
                 if (varrefp->varp()->basicp() && varrefp->varp()->basicp()->isZeroInit()) {
                     outconstp->num().setAllBits0();
                 } else {
@@ -742,7 +742,7 @@ private:
             lsbRef = fetchConst(selp->lsbp())->num();
             return;  // And presumably still optimizable()
         } else if (AstSel* const subselp = VN_CAST(selp->lhsp(), Sel)) {
-            V3Number sublsb(nodep);
+            V3Number sublsb{nodep};
             handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb /*ref*/, depth + 1);
             if (optimizable()) {
                 lsbRef = sublsb;
@@ -829,7 +829,7 @@ private:
                         if (hit) break;
                         iterateAndNextNull(ep);
                         if (optimizable()) {
-                            V3Number match(nodep, 1);
+                            V3Number match{nodep, 1};
                             match.opEq(fetchConst(nodep->exprp())->num(), fetchConst(ep)->num());
                             if (match.isNeqZero()) {
                                 iterateAndNextNull(itemp->bodysp());
@@ -1097,7 +1097,7 @@ private:
             }
 
             AstConst* const resultConstp
-                = new AstConst(nodep->fileline(), AstConst::String(), result);
+                = new AstConst{nodep->fileline(), AstConst::String{}, result};
             setValue(nodep, resultConstp);
             m_reclaimValuesp.push_back(resultConstp);
         }
