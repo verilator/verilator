@@ -225,6 +225,9 @@ private:
         if (!m_outWidthBytes || !m_inWidthBits) {
             chkvis.clearOptimizable(nodep, "Table has no outputs");
         }
+        if (chkvis.isOutputter()) {
+            chkvis.clearOptimizable(nodep, "Table creates display output");
+        }
         UINFO(4, "  Test: Opt=" << (chkvis.optimizable() ? "OK" : "NO") << ", Instrs="
                                 << chkvis.instrCount() << " Data=" << chkvis.dataCount()
                                 << " in width (bits)=" << m_inWidthBits << " out width (bytes)="

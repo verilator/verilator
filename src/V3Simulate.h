@@ -100,6 +100,7 @@ private:
     bool m_anyAssignDly;  ///< True if found a delayed assignment
     bool m_anyAssignComb;  ///< True if found a non-delayed assignment
     bool m_inDlyAssign;  ///< Under delayed assignment
+    bool m_isOutputter;  // Creates output
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp;  ///< Jump label we're branching from
@@ -205,6 +206,7 @@ public:
     AstNode* whyNotNodep() const { return m_whyNotNodep; }
 
     bool isAssignDly() const { return m_anyAssignDly; }
+    bool isOutputter() const { return m_isOutputter; }
     int instrCount() const { return m_instrCount; }
     int dataCount() const { return m_dataCount; }
 
@@ -342,15 +344,16 @@ private:
         nodep->user2p((void*)valuep);
     }
 
-    void checkNodeInfo(AstNode* nodep) {
+    void checkNodeInfo(AstNode* nodep, bool ignorePredict = false) {
         if (m_checkOnly) {
             m_instrCount += nodep->instrCount();
             m_dataCount += nodep->width();
         }
-        if (!nodep->isPredictOptimizable()) {
+        if (!ignorePredict && !nodep->isPredictOptimizable()) {
             // UINFO(9, "     !predictopt " << nodep << endl);
             clearOptimizable(nodep, "Isn't predictable");
         }
+        if (nodep->isOutputter()) m_isOutputter = true;
     }
 
     void badNodeType(AstNode* nodep) {
@@ -756,6 +759,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
         if (VN_IS(nodep, AssignForce)) {
             clearOptimizable(nodep, "Force");
         } else if (VN_IS(nodep, AssignDly)) {
@@ -970,6 +974,7 @@ private:
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
         UINFO(5, "   FUNCREF " << nodep << endl);
+        checkNodeInfo(nodep);
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -1053,6 +1058,7 @@ private:
     virtual void visit(AstSFormatF* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
         iterateChildren(nodep);
         if (m_params) {
             AstNode* nextArgp = nodep->exprsp();
@@ -1106,6 +1112,9 @@ private:
     virtual void visit(AstDisplay* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
+        // We ignore isPredictOptimizable as $display is often in constant
+        // functions and we want them to work if used with parameters
+        checkNodeInfo(nodep, /*display:*/ true);
         iterateChildren(nodep);
         if (m_params) {
             AstConst* const textp = fetchConst(nodep->fmtp());
@@ -1155,6 +1164,7 @@ public:
         m_anyAssignComb = false;
         m_anyAssignDly = false;
         m_inDlyAssign = false;
+        m_isOutputter = false;
         m_instrCount = 0;
         m_dataCount = 0;
         m_jumpp = nullptr;
