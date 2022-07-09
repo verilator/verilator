@@ -41,7 +41,6 @@
 #define DEBUG \
     if (0) printf
 
-unsigned int main_time = 0;
 int errors = 0;
 
 //======================================================================
@@ -250,24 +249,27 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 #else
 
-double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    uint64_t sim_time = 1100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
-    // we're going to be checking for these errors do don't crash out
-    Verilated::fatalOnVpiError(0);
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    uint64_t sim_time = 1100;
+    contextp->commandArgs(argc, argv);
+    contextp->debug(0);
+    // we're going to be checking for these errors do don't crash out
+    contextp->fatalOnVpiError(0);
+
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
-    Verilated::scopesDump();
+    contextp->scopesDump();
 #endif
 #endif
 
 #if VM_TRACE
-    Verilated::traceEverOn(true);
+    contextp->traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
@@ -276,19 +278,19 @@ int main(int argc, char** argv, char** env) {
 
     topp->eval();
     topp->clk = 0;
-    main_time += 10;
+    contextp->timeInc(10);
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
-        main_time += 1;
+    while (contextp->time() < sim_time && !contextp->gotFinish()) {
+        contextp->timeInc(1);
         topp->eval();
         VerilatedVpi::callValueCbs();
         topp->clk = !topp->clk;
         // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump(main_time);
+        if (tfp) tfp->dump(contextp->time());
 #endif
     }
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
@@ -297,7 +299,6 @@ int main(int argc, char** argv, char** env) {
     if (tfp) tfp->close();
 #endif
 
-    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }
 

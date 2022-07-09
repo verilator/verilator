@@ -110,39 +110,39 @@ void mon_eval() {
 
 //======================================================================
 
-unsigned int main_time = 0;
-
-double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    uint64_t sim_time = 1100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    uint64_t sim_time = 1100;
+    contextp->commandArgs(argc, argv);
+    contextp->debug(0);
+
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
 // clang-format off
 #ifdef VERILATOR
 # ifdef TEST_VERBOSE
-    Verilated::scopesDump();
+    contextp->scopesDump();
 # endif
 #endif
     // clang-format on
 
     topp->eval();
     topp->clk = 0;
-    main_time += 10;
+    contextp->timeInc(10);
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
-        main_time += 1;
+    while (contextp->time() < sim_time && !contextp->gotFinish()) {
+        contextp->timeInc(1);
         topp->eval();
         topp->clk = !topp->clk;
         // mon_do();
     }
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 
-    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }

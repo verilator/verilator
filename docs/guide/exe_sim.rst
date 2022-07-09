@@ -8,7 +8,7 @@ Simulation Runtime Arguments
 
 The following are the arguments that may be passed to a Verilated
 executable, provided that executable calls
-:code:`Verilated::commandArgs()`.
+:code:`VerilatedContext*->commandArgs(argc, argv)`.
 
 All simulation runtime arguments begin with "+verilator", so that the
 user's executable may skip over all "+verilator" arguments when parsing its
@@ -96,7 +96,7 @@ Summary:
 .. option:: +verilator+noassert
 
    Disable assert checking per runtime argument. This is the same as
-   calling :code:`Verilated::assertOn(false)` in the model.
+   calling :code:`VerilatedContext*->assertOn(false)` in the model.
 
 .. option:: +verilator+V
 

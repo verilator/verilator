@@ -8,8 +8,6 @@
 
 VM_PREFIX* tb = nullptr;
 
-double sc_time_stamp() { return 0; }
-
 bool check() {
     bool pass;
     int c = (tb->A >> tb->SEL) & 0x1;
