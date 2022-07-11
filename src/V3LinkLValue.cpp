@@ -210,6 +210,13 @@ private:
             iterateAndNextNull(nodep->msbp());
         }
     }
+    virtual void visit(AstTestPlusArgs* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        {
+            m_setRefLvalue = VAccess::NOCHANGE;
+            iterateAndNextNull(nodep->searchp());
+        }
+    }
     virtual void visit(AstValuePlusArgs* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
