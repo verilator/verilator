@@ -146,7 +146,7 @@ extern IData VL_SYSTEM_IW(int lhswords, WDataInP const lhsp);
 extern IData VL_SYSTEM_IQ(QData lhs);
 inline IData VL_SYSTEM_II(IData lhs) VL_MT_SAFE { return VL_SYSTEM_IQ(lhs); }
 
-extern IData VL_TESTPLUSARGS_I(const std::string& formatp);
+extern IData VL_TESTPLUSARGS_I(const std::string& format);
 extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 
 //=========================================================================

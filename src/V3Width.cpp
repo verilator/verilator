@@ -4351,7 +4351,7 @@ private:
     }
     virtual void visit(AstTestPlusArgs* nodep) override {
         if (m_vup->prelim()) {
-            userIterateAndNext(nodep->searchp(), WidthVP(SELF, BOTH).p());
+            userIterateAndNext(nodep->searchp(), WidthVP{SELF, BOTH}.p());
             nodep->dtypeChgWidthSigned(32, 1, VSigning::SIGNED);  // Spec says integer return
         }
     }

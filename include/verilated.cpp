@@ -1606,8 +1606,8 @@ IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
     return code >> 8;  // Want exit status
 }
 
-IData VL_TESTPLUSARGS_I(const std::string& formatp) VL_MT_SAFE {
-    const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(formatp.c_str());
+IData VL_TESTPLUSARGS_I(const std::string& format) VL_MT_SAFE {
+    const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(format.c_str());
     return match.empty() ? 0 : 1;
 }
 
