@@ -88,6 +88,7 @@ private:
             if (VN_IS(nodep, Var)
                 || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
                 || VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)  // Or arrays
+                || VN_IS(nodep->dtypep()->skipRefp(), WildcardArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), DynArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), ClassRefDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), QueueDType)

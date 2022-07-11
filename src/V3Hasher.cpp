@@ -133,6 +133,11 @@ private:
             iterateNull(nodep->virtRefDTypep());
         });
     }
+    virtual void visit(AstWildcardArrayDType* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
+            iterateNull(nodep->virtRefDTypep());
+        });
+    }
     virtual void visit(AstBasicDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {
             m_hash += nodep->keyword();
