@@ -173,7 +173,7 @@ class CMakeEmitter final {
                                     + ".cpp");
             }
         }
-        if (v3Global.opt.mtasks()) {
+        if (v3Global.opt.threads()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
         }
         if (v3Global.opt.usesProfiler()) {

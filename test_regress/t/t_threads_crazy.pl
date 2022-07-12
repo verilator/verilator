@@ -10,20 +10,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vltmt => 1);
 
-if ($Self->cfg_with_m32) {
-    skip("Does not work with -m32 (resource unavailable)");
-}
-
 compile(
     verilator_flags2 => ['--cc'],
-    threads => 1024
+    threads => 4,
+    context_threads => 2
     );
 
 execute(
-    check_finished => 1,
+    fails => 1
     );
 
-file_grep($Self->{run_log_filename}, qr/System has .* CPUs but.*--threads 1024/);
-
+file_grep($Self->{run_log_filename}, qr/%Error: .*\/verilated\.cpp:\d+: VerilatedContext has 2 threads but model 'Vt_threads_crazy' \(instantiated as 'top'\) was Verilated with --threads 4\./);
 ok(1);
 1;

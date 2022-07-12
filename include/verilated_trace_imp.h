@@ -478,55 +478,52 @@ template <> VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWo
 #endif
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runParallelCallbacks(const ParallelCallbackMap& cbMap) {
-    for (VlThreadPool* threadPoolp : m_threadPoolps) {
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<CallbackRecord>& cbVec) {
 #ifdef VL_TRACE_PARALLEL
-        // If tracing in parallel, dispatch to the thread pool (if exists)
-        if (threadPoolp && threadPoolp->numThreads()) {
-            // List of work items for thread (std::list, as ParallelWorkerData is not movable)
-            std::list<ParallelWorkerData> workerData;
-            // We use the whole pool + the main thread
-            const unsigned threads = threadPoolp->numThreads() + 1;
-            // Main thread executes all jobs with index % threads == 0
-            std::vector<ParallelWorkerData*> mainThreadWorkerData;
-            // The tracing callbacks to execute on this thread-pool
-            const auto& cbVec = cbMap.at(threadPoolp);
-            // Enuque all the jobs
-            for (unsigned i = 0; i < cbVec.size(); ++i) {
-                const CallbackRecord& cbr = cbVec[i];
-                // Always get the trace buffer on the main thread
-                Buffer* const bufp = getTraceBuffer();
-                // Create new work item
-                workerData.emplace_back(cbr.m_dumpCb, cbr.m_userp, bufp);
-                // Grab the new work item
-                ParallelWorkerData* const itemp = &workerData.back();
-                // Enqueue task to thread pool, or main thread
-                if (unsigned rem = i % threads) {
-                    threadPoolp->workerp(rem - 1)->addTask(parallelWorkerTask, itemp, false);
-                } else {
-                    mainThreadWorkerData.push_back(itemp);
-                }
-            }
-            // Execute main thead jobs
-            for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
-                parallelWorkerTask(itemp, false);
-            }
-            // Commit all trace buffers in order
-            for (ParallelWorkerData& item : workerData) {
-                // Wait until ready
-                item.wait();
-                // Commit the buffer
-                commitTraceBuffer(item.m_bufp);
-            }
-            continue;
+    // If tracing in parallel, dispatch to the thread pool
+    VlThreadPool* threadPoolp = static_cast<VlThreadPool*>(m_contextp->threadPoolp());
+    // List of work items for thread (std::list, as ParallelWorkerData is not movable)
+    std::list<ParallelWorkerData> workerData;
+    // We use the whole pool + the main thread
+    const unsigned threads = threadPoolp->numThreads() + 1;
+    // Main thread executes all jobs with index % threads == 0
+    std::vector<ParallelWorkerData*> mainThreadWorkerData;
+    // Enuque all the jobs
+    for (unsigned i = 0; i < cbVec.size(); ++i) {
+        const CallbackRecord& cbr = cbVec[i];
+        // Always get the trace buffer on the main thread
+        Buffer* const bufp = getTraceBuffer();
+        // Create new work item
+        workerData.emplace_back(cbr.m_dumpCb, cbr.m_userp, bufp);
+        // Grab the new work item
+        ParallelWorkerData* const itemp = &workerData.back();
+        // Enqueue task to thread pool, or main thread
+        if (unsigned rem = i % threads) {
+            threadPoolp->workerp(rem - 1)->addTask(parallelWorkerTask, itemp);
+        } else {
+            mainThreadWorkerData.push_back(itemp);
         }
+    }
+    // Execute main thead jobs
+    for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
+        parallelWorkerTask(itemp, false);
+    }
+    // Commit all trace buffers in order
+    for (ParallelWorkerData& item : workerData) {
+        // Wait until ready
+        item.wait();
+        // Commit the buffer
+        commitTraceBuffer(item.m_bufp);
+    }
+
+    // Done
+    return;
 #endif
-        // Fall back on sequential execution
-        for (const CallbackRecord& cbr : cbMap.at(threadPoolp)) {
-            Buffer* const traceBufferp = getTraceBuffer();
-            cbr.m_dumpCb(cbr.m_userp, traceBufferp);
-            commitTraceBuffer(traceBufferp);
-        }
+    // Fall back on sequential execution
+    for (const CallbackRecord& cbr : cbVec) {
+        Buffer* const traceBufferp = getTraceBuffer();
+        cbr.m_dumpCb(cbr.m_userp, traceBufferp);
+        commitTraceBuffer(traceBufferp);
     }
 }
 
@@ -579,9 +576,9 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
     // Run the callbacks
     if (VL_UNLIKELY(m_fullDump)) {
         m_fullDump = false;  // No more need for next dump to be full
-        runParallelCallbacks(m_fullCbs);
+        runCallbacks(m_fullCbs);
     } else {
-        runParallelCallbacks(m_chgCbs);
+        runCallbacks(m_chgCbs);
     }
 
     for (uint32_t i = 0; i < m_cleanupCbs.size(); ++i) {
@@ -607,18 +604,20 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
 // Non-hot path internal interface to Verilator generated code
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addThreadPool(VlThreadPool* threadPoolp)
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addContext(VerilatedContext* contextp)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
-    for (VlThreadPool* const poolp : m_threadPoolps) {
-        if (poolp == threadPoolp) return;
+    if (m_contextp && contextp != m_contextp) {
+        VL_FATAL_MT(
+            __FILE__, __LINE__, "",
+            "A trace file instance can only handle models from the same simulation context");
     }
-    m_threadPoolps.push_back(threadPoolp);
+    m_contextp = contextp;
 }
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackRecord>& cbVec,
-                                                           CallbackRecord& cbRec)
+                                                           CallbackRecord&& cbRec)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     if (VL_UNCOVERABLE(timeLastDump() != 0)) {  // LCOV_EXCL_START
@@ -630,28 +629,28 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackR
 }
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp) VL_MT_SAFE {
-    CallbackRecord cbr{cb, userp};
-    addCallbackRecord(m_initCbs, cbr);
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp,
+                                                   VerilatedContext* contextp) VL_MT_SAFE {
+    addContext(contextp);
+    addCallbackRecord(m_initCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, void* userp,
-                                                   VlThreadPool* threadPoolp) VL_MT_SAFE {
-    CallbackRecord cbr{cb, userp};
-    addThreadPool(threadPoolp);
-    addCallbackRecord(m_fullCbs[threadPoolp], cbr);
+                                                   VerilatedContext* contextp) VL_MT_SAFE {
+    addContext(contextp);
+    addCallbackRecord(m_fullCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpCb_t cb, void* userp,
-                                                  VlThreadPool* threadPoolp) VL_MT_SAFE {
-    CallbackRecord cbr{cb, userp};
-    addThreadPool(threadPoolp);
-    addCallbackRecord(m_chgCbs[threadPoolp], cbr);
+                                                  VerilatedContext* contextp) VL_MT_SAFE {
+    addContext(contextp);
+    addCallbackRecord(m_chgCbs, CallbackRecord{cb, userp});
 }
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE {
-    CallbackRecord cbr{cb, userp};
-    addCallbackRecord(m_cleanupCbs, cbr);
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp,
+                                                      VerilatedContext* contextp) VL_MT_SAFE {
+    addContext(contextp);
+    addCallbackRecord(m_cleanupCbs, CallbackRecord{cb, userp});
 }
 
 template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::pushNamePrefix(const std::string& prefix) {

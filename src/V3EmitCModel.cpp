@@ -89,11 +89,12 @@ class EmitCModel final : public EmitCFunc {
         puts("\n");
 
         puts("// This class is the main interface to the Verilated model\n");
+        puts("class " + topClassName() + " VL_NOT_FINAL : ");
         if (optSystemC()) {
-            puts("SC_MODULE(" + topClassName() + ") {\n");
-        } else {
-            puts("class " + topClassName() + " VL_NOT_FINAL {\n");
+            // SC_MODULE, but with multiple-inheritance of VerilatedModel
+            puts("public ::sc_core::sc_module, ");
         }
+        puts("public VerilatedModel {\n");
         ofp()->resetPrivate();
         ofp()->putsPrivate(true);  // private:
 
@@ -221,6 +222,11 @@ class EmitCModel final : public EmitCFunc {
                  + topClassName() + "& rhs);\n");
         }
 
+        puts("\n// Abstract methods from VerilatedModel\n");
+        puts("const char* hierName() override;\n");
+        puts("const char* modelName() override;\n");
+        puts("unsigned threads() override;\n");
+
         puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
         ofp()->putsEndGuard();
@@ -235,7 +241,8 @@ class EmitCModel final : public EmitCFunc {
         puts(topClassName() + "::" + topClassName());
         if (optSystemC()) {
             puts("(sc_module_name /* unused */)\n");
-            puts("    : vlSymsp{new " + symClassName() + "(nullptr, name(), this)}\n");
+            puts("    : vlSymsp{new " + symClassName()
+                 + "(Verilated::threadContextp(), name(), this)}\n");
         } else {
             puts(+"(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
             puts("    : vlSymsp{new " + symClassName() + "(_vcontextp__, _vcname__, this)}\n");
@@ -263,6 +270,8 @@ class EmitCModel final : public EmitCFunc {
         puts("    , rootp{&(vlSymsp->TOP)}\n");
 
         puts("{\n");
+        puts("// Register model with the context\n");
+        puts("vlSymsp->_vm_contextp__->addModel(this);\n");
 
         if (optSystemC()) {
             // Create sensitivity list for when to evaluate the model.
@@ -301,7 +310,7 @@ class EmitCModel final : public EmitCFunc {
         if (!optSystemC()) {
             puts("\n");
             puts(topClassName() + "::" + topClassName() + "(const char* _vcname__)\n");
-            puts("    : " + topClassName() + "(nullptr, _vcname__)\n{\n}\n");
+            puts("    : " + topClassName() + "(Verilated::threadContextp(), _vcname__)\n{\n}\n");
         }
     }
 
@@ -428,7 +437,7 @@ class EmitCModel final : public EmitCFunc {
         }
 
         if (v3Global.opt.profExec()) {
-            puts("vlSymsp->__Vm_executionProfiler.configure(*(vlSymsp->_vm_contextp__));\n");
+            puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
             puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalBegin();\n");
         }
 
@@ -477,6 +486,13 @@ class EmitCModel final : public EmitCFunc {
         puts("\nVL_ATTR_COLD void " + topClassName() + "::final() {\n");
         puts(/**/ topModNameProtected + "__" + protect("_final") + "(&(vlSymsp->TOP));\n");
         puts("}\n");
+
+        putSectionDelimiter("Implementations of abstract methods from VerilatedModel\n");
+        puts("const char* " + topClassName() + "::hierName() { return vlSymsp->name(); }\n");
+        puts("const char* " + topClassName() + "::modelName() { return \"" + topClassName()
+             + "\"; }\n");
+        puts("unsigned " + topClassName() + "::threads() { return "
+             + cvtToStr(std::max(1, v3Global.opt.threads())) + "; }\n");
     }
 
     void emitTraceMethods(AstNodeModule* modp) {
@@ -529,7 +545,8 @@ class EmitCModel final : public EmitCFunc {
             puts(/**/ "}");
         }
         puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
-        puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
+        puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init")
+             + ", &(vlSymsp->TOP), contextp());\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), tfp->spTrace());\n");
 
