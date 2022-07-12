@@ -248,8 +248,8 @@ private:
         VL_RESTORER(m_funcp);
         if (!nodep->user1()) {
             // Static functions should have been moved under the corresponding AstClassPackage
-            UASSERT(!(nodep->isStatic() && VN_IS(m_modp, Class)),
-                    "Static function under AstClass");
+            UASSERT_OBJ(!(nodep->isStatic() && VN_IS(m_modp, Class)), nodep,
+                        "Static function under AstClass");
             m_funcp = nodep;
             iterateChildren(nodep);
             nodep->user1(true);

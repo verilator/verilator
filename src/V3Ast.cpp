@@ -281,13 +281,13 @@ void AstNode::addNextHere(AstNode* newp) {
     //  This could be at head, tail, or both (single)
     //  New  could be head of single node, or list
     UASSERT(newp, "Null item passed to addNext");
-    UASSERT(!newp->backp(), "New node (back) already assigned?");
+    UASSERT_OBJ(!newp->backp(), newp, "New node (back) already assigned?");
     debugTreeChange(this, "-addHereThs: ", __LINE__, false);
     debugTreeChange(newp, "-addHereNew: ", __LINE__, true);
     newp->editCountInc();
 
     AstNode* const addlastp = newp->m_headtailp;  // Last node in list to be added
-    UASSERT(!addlastp->m_nextp, "Headtailp tail isn't at the tail");
+    UASSERT_OBJ(!addlastp->m_nextp, addlastp, "Headtailp tail isn't at the tail");
 
     // Forward links
     AstNode* const oldnextp = this->m_nextp;
@@ -437,7 +437,7 @@ void VNRelinker::dump(std::ostream& str) const {
 AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
     debugTreeChange(this, "-unlinkWNextThs: ", __LINE__, true);
     AstNode* const oldp = this;
-    UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
+    UASSERT_OBJ(oldp->m_backp, oldp, "Node has no back, already unlinked?");
     oldp->editCountInc();
     AstNode* const backp = oldp->m_backp;
     if (linkerp) {
@@ -497,7 +497,7 @@ AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
 AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
     debugTreeChange(this, "-unlinkFrBkThs: ", __LINE__, true);
     AstNode* const oldp = this;
-    UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
+    UASSERT_OBJ(oldp->m_backp, oldp, "Node has no back, already unlinked?");
     oldp->editCountInc();
     AstNode* const backp = oldp->m_backp;
     if (linkerp) {
@@ -565,7 +565,7 @@ void AstNode::relink(VNRelinker* linkerp) {
     }
     AstNode* const newp = this;
     UASSERT(linkerp && linkerp->m_backp, "Need non-empty linker");
-    UASSERT(!newp->backp(), "New node already linked?");
+    UASSERT_OBJ(!newp->m_backp, newp, "New node already linked?");
     newp->editCountInc();
 
     if (debug() > 8) {
