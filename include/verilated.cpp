@@ -66,6 +66,10 @@
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
+
+#ifdef VL_THREADED
+# include "verilated_threads.h"
+#endif
 // clang-format on
 
 // Max characters in static char string for VL_VALUE_STRING
@@ -1606,8 +1610,8 @@ IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
     return code >> 8;  // Want exit status
 }
 
-IData VL_TESTPLUSARGS_I(const char* formatp) VL_MT_SAFE {
-    const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(formatp);
+IData VL_TESTPLUSARGS_I(const std::string& format) VL_MT_SAFE {
+    const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(format.c_str());
     return match.empty() ? 0 : 1;
 }
 
@@ -2428,6 +2432,33 @@ const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
     return vl_time_str(timeprecision());
 }
 
+void VerilatedContext::threads(unsigned n) {
+    if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: Simulation threads must be >= 1");
+
+    if (m_threadPool) {
+        VL_FATAL_MT(
+            __FILE__, __LINE__, "",
+            "%Error: Cannot set simulation threads after the thread pool has been created.");
+    }
+
+#if VL_THREADED
+    if (m_threads == n) return;  // To avoid unnecessary warnings
+    m_threads = n;
+    const unsigned hardwareThreadsAvailable = std::thread::hardware_concurrency();
+    if (m_threads > hardwareThreadsAvailable) {
+        VL_PRINTF_MT("%%Warning: System has %u hardware threads but simulation thread count set "
+                     "to %u. This will likely cause significant slowdown.\n",
+                     hardwareThreadsAvailable, m_threads);
+    }
+#else
+    if (n > 1) {
+        VL_PRINTF_MT("%%Warning: Verilator run-time library built without VL_THREADS. Ignoring "
+                     "call to 'VerilatedContext::threads' with argument %u.\n",
+                     n);
+    }
+#endif
+}
+
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock{m_argMutex};
     m_args.m_argVec.clear();  // Empty first, then add
@@ -2456,6 +2487,33 @@ void VerilatedContext::internalsDump() const VL_MT_SAFE {
     impp()->scopesDump();
     VerilatedImp::exportsDump();
     VerilatedImp::userDump();
+}
+
+void VerilatedContext::addModel(VerilatedModel* modelp) {
+    threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
+
+    if (modelp->threads() > m_threads) {
+        std::ostringstream msg;
+        msg << "VerilatedContext has " << m_threads << " threads but model '"
+            << modelp->modelName() << "' (instantiated as '" << modelp->hierName()
+            << "') was Verilated with --threads " << modelp->threads() << ".\n";
+        const std::string str = msg.str();
+        VL_FATAL_MT(__FILE__, __LINE__, modelp->hierName(), str.c_str());
+    }
+}
+
+VerilatedVirtualBase* VerilatedContext::threadPoolp() {
+    if (m_threads == 1) return nullptr;
+#if VL_THREADED
+    if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
+#endif
+    return m_threadPool.get();
+}
+
+VerilatedVirtualBase*
+VerilatedContext::enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&)) {
+    if (!m_executionProfiler) m_executionProfiler.reset(construct(*this));
+    return m_executionProfiler.get();
 }
 
 //======================================================================
@@ -2849,6 +2907,12 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 void VerilatedImp::versionDump() VL_MT_SAFE {
     VL_PRINTF_MT("  Version: %s %s\n", Verilated::productName(), Verilated::productVersion());
 }
+
+//===========================================================================
+// VerilatedModel:: Methods
+
+VerilatedModel::VerilatedModel(VerilatedContext& context)
+    : m_context{context} {}
 
 //===========================================================================
 // VerilatedModule:: Methods

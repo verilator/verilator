@@ -66,41 +66,66 @@ template <size_t N> static size_t roundUptoMultipleOf(size_t value) {
     return (value + mask) & ~mask;
 }
 
-VlExecutionProfiler::VlExecutionProfiler() {
+VlExecutionProfiler::VlExecutionProfiler(VerilatedContext& context)
+    : m_context{context} {
     // Setup profiling on main thread
     setupThread(0);
 }
 
-void VlExecutionProfiler::configure(const VerilatedContext& context) {
+void VlExecutionProfiler::configure() {
+
     if (VL_UNLIKELY(m_enabled)) {
         --m_windowCount;
-        if (VL_UNLIKELY(m_windowCount == context.profExecWindow())) {
+        if (VL_UNLIKELY(m_windowCount == m_context.profExecWindow())) {
             VL_DEBUG_IF(VL_DBG_MSGF("+ profile start collection\n"););
             clear();  // Clear the profile after the cache warm-up cycles.
             m_tickBegin = VL_CPU_TICK();
         } else if (VL_UNLIKELY(m_windowCount == 0)) {
             const uint64_t tickEnd = VL_CPU_TICK();
             VL_DEBUG_IF(VL_DBG_MSGF("+ profile end\n"););
-            const std::string& fileName = context.profExecFilename();
+            const std::string& fileName = m_context.profExecFilename();
             dump(fileName.c_str(), tickEnd);
             m_enabled = false;
         }
         return;
     }
 
-    const uint64_t startReq = context.profExecStart() + 1;  // + 1, so we can start at time 0
+    const uint64_t startReq = m_context.profExecStart() + 1;  // + 1, so we can start at time 0
 
-    if (VL_UNLIKELY(m_lastStartReq < startReq && VL_TIME_Q() >= context.profExecStart())) {
+    if (VL_UNLIKELY(m_lastStartReq < startReq && VL_TIME_Q() >= m_context.profExecStart())) {
         VL_DEBUG_IF(VL_DBG_MSGF("+ profile start warmup\n"););
         VL_DEBUG_IF(assert(m_windowCount == 0););
         m_enabled = true;
-        m_windowCount = context.profExecWindow() * 2;
+        m_windowCount = m_context.profExecWindow() * 2;
         m_lastStartReq = startReq;
     }
 }
 
-void VlExecutionProfiler::startWorkerSetup(VlExecutionProfiler* profilep, uint32_t threadId) {
-    profilep->setupThread(threadId);
+VerilatedVirtualBase* VlExecutionProfiler::construct(VerilatedContext& context) {
+    VlExecutionProfiler* const selfp = new VlExecutionProfiler{context};
+#if VL_THREADED
+    if (VlThreadPool* const threadPoolp = static_cast<VlThreadPool*>(context.threadPoolp())) {
+        for (int i = 0; i < threadPoolp->numThreads(); ++i) {
+            // Data to pass to worker thread initialization
+            struct Data {
+                VlExecutionProfiler* const selfp;
+                const uint32_t threadId;
+            } data{selfp, static_cast<uint32_t>(i + 1)};
+
+            // Initialize worker thread
+            threadPoolp->workerp(i)->addTask(
+                [](void* userp, bool) {
+                    Data* const datap = static_cast<Data*>(userp);
+                    datap->selfp->setupThread(datap->threadId);
+                },
+                &data);
+
+            // Wait until initializationis complete
+            threadPoolp->workerp(i)->wait();
+        }
+    }
+#endif
+    return selfp;
 }
 
 void VlExecutionProfiler::setupThread(uint32_t threadId) {
@@ -108,10 +133,13 @@ void VlExecutionProfiler::setupThread(uint32_t threadId) {
     // while profiling.
     t_trace.reserve(RESERVED_TRACE_CAPACITY);
     // Register thread-local buffer in list of all buffers
+    bool exists;
     {
         const VerilatedLockGuard lock{m_mutex};
-        bool exists = !m_traceps.emplace(threadId, &t_trace).second;
-        assert(!exists);
+        exists = !m_traceps.emplace(threadId, &t_trace).second;
+    }
+    if (VL_UNLIKELY(exists)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "multiple initialization of profiler on some thread");
     }
 }
 

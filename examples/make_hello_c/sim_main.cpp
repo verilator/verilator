@@ -21,11 +21,14 @@ int main(int argc, char** argv, char** env) {
     // Prevent unused variable warnings
     if (false && argc && argv && env) {}
 
+    // Construct a VerilatedContext to hold simulation time, etc.
+    VerilatedContext* contextp = new VerilatedContext;
+
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vtop* top = new Vtop;
+    Vtop* top = new Vtop{contextp};
 
     // Simulate until $finish
-    while (!Verilated::gotFinish()) {
+    while (!contextp->gotFinish()) {
 
         // Evaluate model
         top->eval();

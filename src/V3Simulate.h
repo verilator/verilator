@@ -15,7 +15,7 @@
 //*************************************************************************
 //
 // void example_usage() {
-//      SimulateVisitor simvis (false, false);
+//      SimulateVisitor simvis{false, false};
 //      simvis.clear();
 //      // Set all inputs to the constant
 //      for (deque<AstVarScope*>::iterator it = m_inVarps.begin(); it!=m_inVarps.end(); ++it) {
@@ -100,6 +100,7 @@ private:
     bool m_anyAssignDly;  ///< True if found a delayed assignment
     bool m_anyAssignComb;  ///< True if found a non-delayed assignment
     bool m_inDlyAssign;  ///< Under delayed assignment
+    bool m_isOutputter;  // Creates output
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp;  ///< Jump label we're branching from
@@ -130,7 +131,7 @@ private:
                     const int width = itemp->width();
                     const int lsb = itemp->lsb();
                     const int msb = lsb + width - 1;
-                    V3Number fieldNum(nump, width);
+                    V3Number fieldNum{nump, width};
                     fieldNum.opSel(*nump, msb, lsb);
                     out << itemp->name() << ": ";
                     if (AstNodeDType* const childTypep = itemp->subDTypep()) {
@@ -152,7 +153,7 @@ private:
                     const int width = childTypep->width();
                     const int lsb = width * element;
                     const int msb = lsb + width - 1;
-                    V3Number fieldNum(nump, width);
+                    V3Number fieldNum{nump, width};
                     fieldNum.opSel(*nump, msb, lsb);
                     const int arrayElem = arrayp->lo() + element;
                     out << arrayElem << " = " << prettyNumber(&fieldNum, childTypep);
@@ -205,6 +206,7 @@ public:
     AstNode* whyNotNodep() const { return m_whyNotNodep; }
 
     bool isAssignDly() const { return m_anyAssignDly; }
+    bool isOutputter() const { return m_isOutputter; }
     int instrCount() const { return m_instrCount; }
     int dataCount() const { return m_dataCount; }
 
@@ -236,7 +238,7 @@ private:
         }
         if (allocNewConst) {
             // Need to allocate new constant
-            constp = new AstConst(nodep->fileline(), AstConst::DtypedValue(), nodep->dtypep(), 0);
+            constp = new AstConst{nodep->fileline(), AstConst::DtypedValue{}, nodep->dtypep(), 0};
             // Mark as in use, add to free list for later reuse
             constp->user2(1);
             freeList.push_back(constp);
@@ -342,15 +344,16 @@ private:
         nodep->user2p((void*)valuep);
     }
 
-    void checkNodeInfo(AstNode* nodep) {
+    void checkNodeInfo(AstNode* nodep, bool ignorePredict = false) {
         if (m_checkOnly) {
             m_instrCount += nodep->instrCount();
             m_dataCount += nodep->width();
         }
-        if (!nodep->isPredictOptimizable()) {
+        if (!ignorePredict && !nodep->isPredictOptimizable()) {
             // UINFO(9, "     !predictopt " << nodep << endl);
             clearOptimizable(nodep, "Isn't predictable");
         }
+        if (nodep->isOutputter()) m_isOutputter = true;
     }
 
     void badNodeType(AstNode* nodep) {
@@ -683,15 +686,15 @@ private:
                 initp = vscpnump;
             } else {  // Assignment to unassigned variable, all bits are X
                 // TODO generic initialization which builds X/arrays by recursion
-                AstConst* const outconstp = new AstConst(
-                    nodep->fileline(), AstConst::WidthedValue(), basicp->widthMin(), 0);
+                AstConst* const outconstp = new AstConst{
+                    nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
                 if (basicp->isZeroInit()) {
                     outconstp->num().setAllBits0();
                 } else {
                     outconstp->num().setAllBitsX();
                 }
 
-                initp = new AstInitArray(nodep->fileline(), arrayp, outconstp);
+                initp = new AstInitArray{nodep->fileline(), arrayp, outconstp};
                 m_reclaimValuesp.push_back(initp);
             }
             const uint32_t index = fetchConst(selp->bitp())->toUInt();
@@ -706,7 +709,7 @@ private:
     }
     void handleAssignSel(AstNodeAssign* nodep, AstSel* selp) {
         AstVarRef* varrefp = nullptr;
-        V3Number lsb(nodep);
+        V3Number lsb{nodep};
         iterateAndNextNull(nodep->rhsp());  // Value to assign
         handleAssignSelRecurse(nodep, selp, varrefp /*ref*/, lsb /*ref*/, 0);
         if (!m_checkOnly && optimizable()) {
@@ -719,8 +722,8 @@ private:
             } else if (AstConst* const vscpnump = fetchConstNull(vscp)) {
                 outconstp = vscpnump;
             } else {  // Assignment to unassigned variable, all bits are X or 0
-                outconstp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                         varrefp->varp()->widthMin(), 0);
+                outconstp = new AstConst{nodep->fileline(), AstConst::WidthedValue{},
+                                         varrefp->varp()->widthMin(), 0};
                 if (varrefp->varp()->basicp() && varrefp->varp()->basicp()->isZeroInit()) {
                     outconstp->num().setAllBits0();
                 } else {
@@ -742,7 +745,7 @@ private:
             lsbRef = fetchConst(selp->lsbp())->num();
             return;  // And presumably still optimizable()
         } else if (AstSel* const subselp = VN_CAST(selp->lhsp(), Sel)) {
-            V3Number sublsb(nodep);
+            V3Number sublsb{nodep};
             handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb /*ref*/, depth + 1);
             if (optimizable()) {
                 lsbRef = sublsb;
@@ -756,6 +759,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
         if (VN_IS(nodep, AssignForce)) {
             clearOptimizable(nodep, "Force");
         } else if (VN_IS(nodep, AssignDly)) {
@@ -829,7 +833,7 @@ private:
                         if (hit) break;
                         iterateAndNextNull(ep);
                         if (optimizable()) {
-                            V3Number match(nodep, 1);
+                            V3Number match{nodep, 1};
                             match.opEq(fetchConst(nodep->exprp())->num(), fetchConst(ep)->num());
                             if (match.isNeqZero()) {
                                 iterateAndNextNull(itemp->bodysp());
@@ -970,6 +974,7 @@ private:
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
         UINFO(5, "   FUNCREF " << nodep << endl);
+        checkNodeInfo(nodep);
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -1053,6 +1058,7 @@ private:
     virtual void visit(AstSFormatF* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
         iterateChildren(nodep);
         if (m_params) {
             AstNode* nextArgp = nodep->exprsp();
@@ -1097,7 +1103,7 @@ private:
             }
 
             AstConst* const resultConstp
-                = new AstConst(nodep->fileline(), AstConst::String(), result);
+                = new AstConst{nodep->fileline(), AstConst::String{}, result};
             setValue(nodep, resultConstp);
             m_reclaimValuesp.push_back(resultConstp);
         }
@@ -1106,6 +1112,9 @@ private:
     virtual void visit(AstDisplay* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
+        // We ignore isPredictOptimizable as $display is often in constant
+        // functions and we want them to work if used with parameters
+        checkNodeInfo(nodep, /*display:*/ true);
         iterateChildren(nodep);
         if (m_params) {
             AstConst* const textp = fetchConst(nodep->fmtp());
@@ -1155,6 +1164,7 @@ public:
         m_anyAssignComb = false;
         m_anyAssignDly = false;
         m_inDlyAssign = false;
+        m_isOutputter = false;
         m_instrCount = 0;
         m_dataCount = 0;
         m_jumpp = nullptr;

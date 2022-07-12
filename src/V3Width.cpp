@@ -448,7 +448,6 @@ private:
     // Widths: Constant, terminal
     virtual void visit(AstTime* nodep) override { nodep->dtypeSetUInt64(); }
     virtual void visit(AstTimeD* nodep) override { nodep->dtypeSetDouble(); }
-    virtual void visit(AstTestPlusArgs* nodep) override { nodep->dtypeSetSigned32(); }
     virtual void visit(AstScopeName* nodep) override {
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
     }
@@ -4351,6 +4350,12 @@ private:
         }
         userIterateAndNext(nodep->lsbp(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->msbp(), WidthVP(SELF, BOTH).p());
+    }
+    virtual void visit(AstTestPlusArgs* nodep) override {
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->searchp(), WidthVP{SELF, BOTH}.p());
+            nodep->dtypeChgWidthSigned(32, 1, VSigning::SIGNED);  // Spec says integer return
+        }
     }
     virtual void visit(AstValuePlusArgs* nodep) override {
         if (m_vup->prelim()) {

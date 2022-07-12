@@ -16,7 +16,8 @@ my $root = "..";
 
 compile(
     # Can't use --coverage and --savable together, so cheat and compile inline
-    verilator_flags2 => ["--cc --coverage-toggle --coverage-line --coverage-user --trace --threads 1 --vpi $root/include/verilated_save.cpp"],
+    verilator_flags2 => ["--cc --coverage-toggle --coverage-line --coverage-user --trace --vpi $root/include/verilated_save.cpp"],
+    threads => 1
     );
 
 execute(

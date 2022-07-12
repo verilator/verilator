@@ -24,6 +24,9 @@ Verilator 4.225 devel
 
 **Minor:**
 
+* Fix incorrect bit op tree optimization (#3470). [algrobman]
+* Fix empty string arguments to display (#3484). [Grulfen]
+* Fix table misoptimizing away display (#3488). [Stefan Post]
 
 
 Verilator 4.224 2022-06-19

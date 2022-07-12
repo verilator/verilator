@@ -14,7 +14,8 @@ scenarios(vltmt => 1);
 top_filename("t/t_gen_alw.v");
 
 compile(
-    v_flags2 => ["--debug --debugi 5 --threads 2"]
+    v_flags2 => ["--debug --debugi 5"],
+    threads => 2
     );
 
 foreach my $dotname ("linkcells", "task_call", "gate_simp", "gate_opt",

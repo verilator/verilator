@@ -48,11 +48,12 @@ void make_and_destroy() {
 #ifdef VL_NO_LEGACY
     VerilatedContext* contextp = new VerilatedContext;
     VM_PREFIX* topp = new VM_PREFIX{contextp};
+    contextp->debug(0);
 #else
     VM_PREFIX* topp = new VM_PREFIX;
+    Verilated::debug(0);
 #endif
 
-    Verilated::debug(0);
     topp->eval();
     topp->clk = true;
     while (!

@@ -18,14 +18,17 @@ scenarios(vlt_all => 1);
 top_filename("t/t_gen_alw.v");
 
 compile(
-    v_flags2 => ["--prof-exec"],
+    make_top_shell => 0,
+    make_main => 0,
+    v_flags2 => ["--prof-exec --exe $Self->{t_dir}/$Self->{name}.cpp"],
     # Checks below care about thread count, so use 2 (minimum reasonable)
-    threads => $Self->{vltmt} ? 2 : 0
+    threads => $Self->{vltmt} ? 2 : 0,
+    make_flags => 'CPPFLAGS_ADD=-DVL_NO_LEGACY',
     );
 
 execute(
-    all_run_flags => ["+verilator+prof+exec+start+2",
-                      " +verilator+prof+exec+window+2",
+    all_run_flags => ["+verilator+prof+exec+start+4",
+                      " +verilator+prof+exec+window+4",
                       " +verilator+prof+exec+file+$Self->{obj_dir}/profile_exec.dat",
                       " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
@@ -49,7 +52,7 @@ if ($Self->{vltmt}) {
     file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 1/i);
     file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 0/i);
 }
-file_grep("$Self->{obj_dir}/gantt.log", qr/Total evals += 2/i);
+file_grep("$Self->{obj_dir}/gantt.log", qr/Total evals += 4/i);
 
 # Diff to itself, just to check parsing
 vcd_identical("$Self->{obj_dir}/profile_exec.vcd", "$Self->{obj_dir}/profile_exec.vcd");

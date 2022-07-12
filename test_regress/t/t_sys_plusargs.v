@@ -22,6 +22,12 @@ module t;
       //if ($test$plusargs("")!==1) $stop;  // Simulators differ in this answer
       if ($test$plusargs("NOTTHERE")!==0) $stop;
 
+      sv_in = "PLUS";
+`ifdef VERILATOR
+      if ($c1(0)) sv_in = "NEVER"; // Prevent constant propagation
+`endif
+      if ($test$plusargs(sv_in)!==1) $stop;
+
       p_i = 10;
       if ($value$plusargs("NOTTHERE%d", p_i) !== 0) $stop;
       if ($value$plusargs("NOTTHERE%0d", p_i) !== 0) $stop;

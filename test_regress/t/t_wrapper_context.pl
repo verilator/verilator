@@ -14,8 +14,9 @@ compile(
     make_top_shell => 0,
     make_main => 0,
     # link threads library, add custom .cpp code, add tracing & coverage support
-    verilator_flags2 => ["-threads 1 --exe $Self->{t_dir}/$Self->{name}.cpp",
+    verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp",
                          "--trace --coverage -cc"],
+    threads => 1,
     make_flags => 'CPPFLAGS_ADD=-DVL_NO_LEGACY',
     );
 

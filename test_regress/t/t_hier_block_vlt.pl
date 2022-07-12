@@ -22,8 +22,8 @@ compile(
                          '--hierarchical',
                          '+define+SHOW_TIMESCALE',
                          '+define+USE_VLT', 't/t_hier_block_vlt.vlt',
-                         '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"',
-                         ($Self->{vltmt} ? ' --threads 6' : '')],
+                         '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"'],
+    threads => $Self->{vltmt} ? 6 : 0
     );
 
 execute(

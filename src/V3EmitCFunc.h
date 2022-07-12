@@ -573,7 +573,7 @@ public:
     }
     virtual void visit(AstTestPlusArgs* nodep) override {
         puts("VL_TESTPLUSARGS_I(");
-        putsQuoted(nodep->text());
+        emitCvtPackStr(nodep->searchp());
         puts(")");
     }
     virtual void visit(AstFError* nodep) override {

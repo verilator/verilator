@@ -3918,7 +3918,7 @@ system_f_call_or_t<nodep>:      // IEEE: part of system_tf_call (can be task or 
         |       yD_STABLE '(' expr ',' expr ')'         { $$ = $3; BBUNSUP($1, "Unsupported: $stable and clock arguments"); }
         |       yD_TAN '(' expr ')'                     { $$ = new AstTanD($1,$3); }
         |       yD_TANH '(' expr ')'                    { $$ = new AstTanhD($1,$3); }
-        |       yD_TESTPLUSARGS '(' str ')'             { $$ = new AstTestPlusArgs($1,*$3); }
+        |       yD_TESTPLUSARGS '(' expr ')'            { $$ = new AstTestPlusArgs($1, $3); }
         |       yD_TIME parenE                          { $$ = new AstTime($1, VTimescale(VTimescale::NONE)); }
         |       yD_TYPENAME '(' exprOrDataType ')'      { $$ = new AstAttrOf($1, VAttrType::TYPENAME, $3); }
         |       yD_UNGETC '(' expr ',' expr ')'         { $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first

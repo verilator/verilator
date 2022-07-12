@@ -22,6 +22,8 @@ mkdir $child_dir;
         (VM_PREFIX => "$Self->{VM_PREFIX}_child",
          top_filename => "$Self->{name}_child.v",
          verilator_flags => ["-cc", "-Mdir", "${child_dir}", "--debug-check"],
+         # Can't use multi threading (like hier blocks), but needs to be thread safe
+         threads => $Self->{vltmt} ? 1 : 0,
         );
 
     run(logfile => "${child_dir}/vlt_compile.log",

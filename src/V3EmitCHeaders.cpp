@@ -251,15 +251,15 @@ class EmitCHeader final : public EmitCConstInit {
         emitTextSection(modp, VNType::atScHdr);
 
         // Open class body {{{
+        puts("\nclass ");
+        puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            puts("class ");
-            puts(prefixNameProtect(modp));
             if (classp->extendsp()) {
                 puts(" : public ");
                 puts(prefixNameProtect(classp->extendsp()->classp()));
             }
         } else {
-            puts("VL_MODULE(" + prefixNameProtect(modp) + ")");
+            puts(" final : public VerilatedModule");
         }
         puts(" {\n");
         ofp()->resetPrivate();

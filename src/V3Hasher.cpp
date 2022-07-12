@@ -225,11 +225,6 @@ private:
             m_hash += nodep->text();
         });
     }
-    virtual void visit(AstTestPlusArgs* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
-            m_hash += nodep->text();
-        });
-    }
     virtual void visit(AstAddrOfCFunc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->funcp());

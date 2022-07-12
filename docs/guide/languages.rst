@@ -478,7 +478,7 @@ $test$plusargs, $value$plusargs
 
   .. code-block:: C++
 
-        Verilated::commandArgs(argc, argv);
+        {VerilatedContext*} ->commandArgs(argc, argv);
 
   to register the command line before calling $test$plusargs or
   $value$plusargs.

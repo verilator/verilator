@@ -319,43 +319,45 @@ private:
             while (argp) {
                 if (skipCount) {
                     argp = argp->nextp();
-                    skipCount--;
+                    --skipCount;
                     continue;
                 }
                 const AstConst* const constp = VN_CAST(argp, Const);
                 const bool isFromString = (constp) ? constp->num().isFromString() : false;
                 if (isFromString) {
                     const int numchars = argp->dtypep()->width() / 8;
-                    string str(numchars, ' ');
-                    // now scan for % operators
-                    bool inpercent = false;
-                    for (int i = 0; i < numchars; i++) {
-                        const int ii = numchars - i - 1;
-                        const char c = constp->num().dataByte(ii);
-                        str[i] = c;
-                        if (!inpercent && c == '%') {
-                            inpercent = true;
-                        } else if (inpercent) {
-                            inpercent = false;
-                            switch (c) {
-                            case '0':  // FALLTHRU
-                            case '1':  // FALLTHRU
-                            case '2':  // FALLTHRU
-                            case '3':  // FALLTHRU
-                            case '4':  // FALLTHRU
-                            case '5':  // FALLTHRU
-                            case '6':  // FALLTHRU
-                            case '7':  // FALLTHRU
-                            case '8':  // FALLTHRU
-                            case '9':  // FALLTHRU
-                            case '.': inpercent = true; break;
-                            case '%': break;
-                            default:
-                                if (V3Number::displayedFmtLegal(c, isScan)) ++skipCount;
+                    if (!constp->num().toString().empty()) {
+                        string str(numchars, ' ');
+                        // now scan for % operators
+                        bool inpercent = false;
+                        for (int i = 0; i < numchars; i++) {
+                            const int ii = numchars - i - 1;
+                            const char c = constp->num().dataByte(ii);
+                            str[i] = c;
+                            if (!inpercent && c == '%') {
+                                inpercent = true;
+                            } else if (inpercent) {
+                                inpercent = false;
+                                switch (c) {
+                                case '0':  // FALLTHRU
+                                case '1':  // FALLTHRU
+                                case '2':  // FALLTHRU
+                                case '3':  // FALLTHRU
+                                case '4':  // FALLTHRU
+                                case '5':  // FALLTHRU
+                                case '6':  // FALLTHRU
+                                case '7':  // FALLTHRU
+                                case '8':  // FALLTHRU
+                                case '9':  // FALLTHRU
+                                case '.': inpercent = true; break;
+                                case '%': break;
+                                default:
+                                    if (V3Number::displayedFmtLegal(c, isScan)) ++skipCount;
+                                }
                             }
                         }
+                        newFormat.append(str);
                     }
-                    newFormat.append(str);
                     AstNode* const nextp = argp->nextp();
                     argp->unlinkFrBack();
                     VL_DO_DANGLING(pushDeletep(argp), argp);

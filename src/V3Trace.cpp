@@ -512,8 +512,10 @@ private:
                 m_regFuncp->addStmtsp(new AstText(flp, "tracep->addChgCb(", true));
             }
             m_regFuncp->addStmtsp(new AstAddrOfCFunc(flp, funcp));
-            const string threadPool{m_parallelism > 1 ? "vlSymsp->__Vm_threadPoolp" : "nullptr"};
-            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf, " + threadPool + ");\n", true));
+            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf", true));
+            m_regFuncp->addStmtsp(
+                new AstText(flp, ", vlSelf->vlSymsp->__Vm_modelp->contextp()", true));
+            m_regFuncp->addStmtsp(new AstText(flp, ");\n", true));
         } else {
             // Sub functions
             funcp->argTypes(v3Global.opt.traceClassBase() + "::Buffer* bufp");
@@ -700,7 +702,8 @@ private:
         // Register it
         m_regFuncp->addStmtsp(new AstText(fl, "tracep->addCleanupCb(", true));
         m_regFuncp->addStmtsp(new AstAddrOfCFunc(fl, cleanupFuncp));
-        m_regFuncp->addStmtsp(new AstText(fl, ", vlSelf);\n", true));
+        m_regFuncp->addStmtsp(
+            new AstText(fl, ", vlSelf, vlSelf->vlSymsp->__Vm_modelp->contextp());\n", true));
 
         // Clear global activity flag
         cleanupFuncp->addStmtsp(

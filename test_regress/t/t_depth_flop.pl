@@ -11,7 +11,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vltmt => 1);  # Note issue shows up with --threads
 
 compile(
-    verilator_flags2 => ['--compiler clang --threads 2 -Wno-UNOPTTHREADS'],
+    verilator_flags2 => ['--compiler clang -Wno-UNOPTTHREADS'],
+    threads => 2
     );
 
 ok(1);

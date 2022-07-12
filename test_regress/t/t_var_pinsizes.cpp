@@ -7,8 +7,6 @@
 
 VM_PREFIX* tb = nullptr;
 
-double sc_time_stamp() { return 0; }
-
 int main() {
     Verilated::debug(0);
     tb = new VM_PREFIX("tb");

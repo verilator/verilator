@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hdccb9e7b8b638233
+`define EXPECTED_SUM 64'hde21e019a3e12039
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -86,10 +86,11 @@ module Test(/*AUTOARG*/
    logic bug3182_out;
    logic bug3197_out;
    logic bug3445_out;
+   logic bug3470_out;
 
    output logic o;
 
-   logic [7:0] tmp;
+   logic [8:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -113,11 +114,13 @@ module Test(/*AUTOARG*/
       tmp[5] <= bug3182_out;
       tmp[6] <= bug3197_out;
       tmp[7] <= bug3445_out;
+      tmp[8] <= bug3470_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
    bug3197 i_bug3197(.clk(clk), .in(d), .out(bug3197_out));
    bug3445 i_bug3445(.clk(clk), .in(d), .out(bug3445_out));
+   bug3470 i_bug3470(.clk(clk), .in(d), .out(bug3470_out));
 
 endmodule
 
@@ -202,4 +205,33 @@ module bug3445(input wire clk, input wire [31:0] in, output wire out);
    end
 
    assign out = result0 ^ result1 ^ (result2 | result3);
+endmodule
+
+// Bug3470
+// CCast had been ignored in bit op tree optimization
+// Assume the following HDL input:
+//     (^d[38:32]) ^ (^d[31:0])
+//     where d is logic [38:0]
+// ^d[31:0] becomes REDXOR(CCast(uint32_t, d)),
+// but CCast was ignored and interpreted as ^d[38:0].
+// Finally (^d[38:32]) ^ (^d31:0]) was wrongly transformed to
+// (^d[38:32]) ^ (^d[38:0])
+//   ->  (^d[38:32]) ^ ((^d[38:32]) ^ (^d[31:0]))
+//   -> ^d[31:0]
+// Of course the correct result is ^d[38:0] = ^d
+module bug3470(input wire clk, input wire [31:0] in, output wire out);
+   logic [38:0] d;
+   always_ff @(posedge clk)
+      d <= {d[6:0], in};
+
+   logic tmp, expected;
+   always_ff @(posedge clk) begin
+     tmp <= ^(d >> 32) ^ (^d[31:0]);
+     expected <= ^d;
+   end
+
+   always @(posedge clk)
+      if (tmp != expected) $stop;
+
+   assign out = tmp;
 endmodule

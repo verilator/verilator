@@ -92,6 +92,8 @@ int main(int argc, char** argv, char** env) {
     std::unique_ptr<VerilatedContext> context1p{new VerilatedContext};
 
     // configuration
+    context0p->threads(1);
+    context1p->threads(1);
     context0p->fatalOnError(false);
     context1p->fatalOnError(false);
     context0p->traceEverOn(true);
