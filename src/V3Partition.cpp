@@ -30,6 +30,7 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
+#include <algorithm>
 #include <list>
 #include <memory>
 #include <unordered_set>
@@ -1529,20 +1530,6 @@ private:
         }
     }
 
-    static const GraphWay* s_shortestWaywardCpInclusiveWay;
-    static int shortestWaywardCpInclusive(const void* vap, const void* vbp) {
-        const GraphWay* const wp = s_shortestWaywardCpInclusiveWay;
-        const LogicMTask* const ap = *reinterpret_cast<const LogicMTask* const*>(vap);
-        const LogicMTask* const bp = *reinterpret_cast<const LogicMTask* const*>(vbp);
-        const uint32_t aCp = ap->critPathCost(*wp) + ap->stepCost();
-        const uint32_t bCp = bp->critPathCost(*wp) + bp->stepCost();
-        if (aCp < bCp) return -1;
-        if (aCp > bCp) return 1;
-        if (ap->id() < bp->id()) return -1;
-        if (ap->id() > bp->id()) return 1;
-        return 0;
-    }
-
     void siblingPairFromRelatives(GraphWay way, V3GraphVertex* mtaskp, bool exhaustive) {
         std::vector<LogicMTask*> shortestPrereqs;
 
@@ -1556,10 +1543,13 @@ private:
 
         if (shortestPrereqs.empty()) return;
 
-        // qsort_r would be nice here, but it isn't portable
-        s_shortestWaywardCpInclusiveWay = &way;
-        qsort(&shortestPrereqs[0], shortestPrereqs.size(), sizeof(LogicMTask*),
-              &shortestWaywardCpInclusive);
+        std::sort(shortestPrereqs.begin(), shortestPrereqs.end(),
+                  [way](const LogicMTask* ap, const LogicMTask* bp) {
+                      const uint32_t aCp = ap->critPathCost(way) + ap->stepCost();
+                      const uint32_t bCp = bp->critPathCost(way) + bp->stepCost();
+                      if (aCp != bCp) return aCp < bCp;
+                      return ap->id() < bp->id();
+                  });
 
         // Don't make all NxN/2 possible pairs of prereqs, that's a lot
         // to cart around. Just make a few pairs.
@@ -1690,8 +1680,6 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(PartContraction);
 };
-
-const GraphWay* PartContraction::s_shortestWaywardCpInclusiveWay = nullptr;
 
 //######################################################################
 // DpiImportCallVisitor
