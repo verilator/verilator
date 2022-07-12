@@ -273,11 +273,11 @@ public:
     /// Used to get to e.g. simulation time via contextp()->time()
     inline VerilatedContext* contextp() const { return &m_context; }
     /// Returns the hierarchical name of this module instance.
-    virtual const char* hierName() = 0;
+    virtual const char* hierName() const = 0;
     /// Returns the name of this model (the name of the generated model class).
-    virtual const char* modelName() = 0;
+    virtual const char* modelName() const = 0;
     /// Returns the thread level parallelism, this model was Verilated with. Always 1 or higher.
-    virtual unsigned threads() = 0;
+    virtual unsigned threads() const = 0;
 };
 
 //=========================================================================

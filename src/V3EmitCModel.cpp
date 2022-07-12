@@ -220,9 +220,9 @@ class EmitCModel final : public EmitCFunc {
         }
 
         puts("\n// Abstract methods from VerilatedModel\n");
-        puts("const char* hierName() override;\n");
-        puts("const char* modelName() override;\n");
-        puts("unsigned threads() override;\n");
+        puts("const char* hierName() const override final;\n");
+        puts("const char* modelName() const override final;\n");
+        puts("unsigned threads() const override final;\n");
 
         puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
@@ -482,10 +482,10 @@ class EmitCModel final : public EmitCFunc {
         puts("}\n");
 
         putSectionDelimiter("Implementations of abstract methods from VerilatedModel\n");
-        puts("const char* " + topClassName() + "::hierName() { return vlSymsp->name(); }\n");
-        puts("const char* " + topClassName() + "::modelName() { return \"" + topClassName()
+        puts("const char* " + topClassName() + "::hierName() const { return vlSymsp->name(); }\n");
+        puts("const char* " + topClassName() + "::modelName() const { return \"" + topClassName()
              + "\"; }\n");
-        puts("unsigned " + topClassName() + "::threads() { return "
+        puts("unsigned " + topClassName() + "::threads() const { return "
              + cvtToStr(std::max(1, v3Global.opt.threads())) + "; }\n");
     }
 
