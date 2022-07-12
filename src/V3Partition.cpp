@@ -1541,25 +1541,32 @@ private:
             if (shortestPrereqs.size() > PART_SIBLING_EDGE_LIMIT) break;
         }
 
-        if (shortestPrereqs.empty()) return;
+        if (shortestPrereqs.size() <= 1) return;
 
-        std::sort(shortestPrereqs.begin(), shortestPrereqs.end(),
-                  [way](const LogicMTask* ap, const LogicMTask* bp) {
-                      const uint32_t aCp = ap->critPathCost(way) + ap->stepCost();
-                      const uint32_t bCp = bp->critPathCost(way) + bp->stepCost();
-                      if (aCp != bCp) return aCp < bCp;
-                      return ap->id() < bp->id();
-                  });
+        const auto cmp = [way](const LogicMTask* ap, const LogicMTask* bp) {
+            const uint32_t aCp = ap->critPathCost(way) + ap->stepCost();
+            const uint32_t bCp = bp->critPathCost(way) + bp->stepCost();
+            if (aCp != bCp) return aCp < bCp;
+            return ap->id() < bp->id();
+        };
 
-        // Don't make all NxN/2 possible pairs of prereqs, that's a lot
-        // to cart around. Just make a few pairs.
-        auto it = shortestPrereqs.cbegin();
-        for (unsigned i = 0; exhaustive || (i < 3); ++i) {
-            if (it == shortestPrereqs.cend()) break;
-            LogicMTask* const ap = *(it++);
-            if (it == shortestPrereqs.cend()) break;
-            LogicMTask* const bp = *(it++);
-            makeSiblingMC(ap, bp);
+        // Don't make all possible pairs of prereqs when not requested (non-exhaustive).
+        // Just make a few pairs.
+        constexpr size_t MAX_NONEXHAUSTIVE_PAIRS = 3;
+
+        size_t end;  // End index of pairs to add to candidates (exclusive)
+
+        if (exhaustive || (shortestPrereqs.size() <= 2 * MAX_NONEXHAUSTIVE_PAIRS)) {
+            end = shortestPrereqs.size() & ~static_cast<size_t>(1);  // Round down to even
+            std::sort(shortestPrereqs.begin(), shortestPrereqs.end(), cmp);
+        } else {
+            end = 2 * MAX_NONEXHAUSTIVE_PAIRS;
+            std::partial_sort(shortestPrereqs.begin(), shortestPrereqs.begin() + end,
+                              shortestPrereqs.end(), cmp);
+        }
+
+        for (size_t i = 0; i < end; i += 2) {
+            makeSiblingMC(shortestPrereqs[i], shortestPrereqs[i + 1]);
         }
     }
 
