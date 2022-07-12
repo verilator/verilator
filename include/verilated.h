@@ -81,6 +81,7 @@
 #endif
 // clang-format on
 
+class VerilatedContext;
 class VerilatedContextImp;
 class VerilatedContextImpData;
 class VerilatedCovContext;
@@ -261,11 +262,16 @@ public:
 class VerilatedModel VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedModel);
 
+    VerilatedContext& m_context;  // The VerilatedContext this model is instantiated under
+
 protected:
-    explicit VerilatedModel() = default;
+    explicit VerilatedModel(VerilatedContext& context);
     virtual ~VerilatedModel() = default;
 
 public:
+    /// Returns the VerilatedContext this model is instantiated under
+    /// Used to get to e.g. simulation time via contextp()->time()
+    inline VerilatedContext* contextp() const { return &m_context; }
     /// Returns the hierarchical name of this module instance.
     virtual const char* hierName() = 0;
     /// Returns the name of this model (the name of the generated model class).

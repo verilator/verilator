@@ -2909,6 +2909,12 @@ void VerilatedImp::versionDump() VL_MT_SAFE {
 }
 
 //===========================================================================
+// VerilatedModel:: Methods
+
+VerilatedModel::VerilatedModel(VerilatedContext& context)
+    : m_context{context} {}
+
+//===========================================================================
 // VerilatedModule:: Methods
 
 VerilatedModule::VerilatedModule(const char* namep)

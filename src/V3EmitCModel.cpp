@@ -195,9 +195,6 @@ class EmitCModel final : public EmitCFunc {
             }
         }
 
-        puts("/// Return current simulation context for this model.\n");
-        puts("/// Used to get to e.g. simulation time via contextp()->time()\n");
-        puts("VerilatedContext* contextp() const;\n");
         if (!optSystemC()) {
             puts("/// Retrieve name of this model instance (as passed to constructor).\n");
             puts("const char* name() const;\n");
@@ -241,11 +238,12 @@ class EmitCModel final : public EmitCFunc {
         puts(topClassName() + "::" + topClassName());
         if (optSystemC()) {
             puts("(sc_module_name /* unused */)\n");
-            puts("    : vlSymsp{new " + symClassName()
-                 + "(Verilated::threadContextp(), name(), this)}\n");
+            puts("    : VerilatedModel{*Verilated::threadContextp()}\n");
+            puts("    , vlSymsp{new " + symClassName() + "(contextp(), name(), this)}\n");
         } else {
             puts(+"(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
-            puts("    : vlSymsp{new " + symClassName() + "(_vcontextp__, _vcname__, this)}\n");
+            puts("    : VerilatedModel{*_vcontextp__}\n");
+            puts("    , vlSymsp{new " + symClassName() + "(contextp(), _vcname__, this)}\n");
         }
 
         // Set up IO references
@@ -271,7 +269,7 @@ class EmitCModel final : public EmitCFunc {
 
         puts("{\n");
         puts("// Register model with the context\n");
-        puts("vlSymsp->_vm_contextp__->addModel(this);\n");
+        puts("contextp()->addModel(this);\n");
 
         if (optSystemC()) {
             // Create sensitivity list for when to evaluate the model.
@@ -469,10 +467,6 @@ class EmitCModel final : public EmitCFunc {
         }
 
         putSectionDelimiter("Utilities");
-        // ::contextp
-        puts("\nVerilatedContext* " + topClassName() + "::contextp() const {\n");
-        puts(/**/ "return vlSymsp->_vm_contextp__;\n");
-        puts("}\n");
 
         if (!optSystemC()) {
             // ::name
