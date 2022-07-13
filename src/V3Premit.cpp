@@ -109,10 +109,7 @@ private:
         } else if (m_inTracep) {
             m_inTracep->addPrecondsp(newp);
         } else if (m_stmtp) {
-            VNRelinker linker;
-            m_stmtp->unlinkFrBack(&linker);
-            newp->addNext(m_stmtp);
-            linker.relink(newp);
+            m_stmtp->addHereThisAsNext(newp);
         } else {
             newp->v3fatalSrc("No statement insertion point.");
         }
