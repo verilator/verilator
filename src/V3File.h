@@ -28,6 +28,7 @@
 #include <list>
 #include <vector>
 #include <fstream>
+#include <memory>
 
 //============================================================================
 // V3File: Create streams, recording dependency information
