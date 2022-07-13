@@ -623,17 +623,9 @@ V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language 
 //----------------------------------------------------------------------
 
 string V3OutFormatter::indentSpaces(int num) {
-    // Indent the specified number of spaces.  Use spaces.
-    static char str[MAXSPACE + 20];
-    char* cp = str;
-    if (num > MAXSPACE) num = MAXSPACE;
-    while (num > 0) {
-        *cp++ = ' ';
-        --num;
-    }
-    *cp++ = '\0';
-    string st{str};  // No const, move optimization
-    return st;
+    // Indent the specified number of spaces.
+    if (num <= 0) return std::string{};
+    return std::string(std::min<size_t>(num, MAXSPACE), ' ');
 }
 
 bool V3OutFormatter::tokenMatch(const char* cp, const char* cmp) {
