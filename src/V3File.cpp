@@ -489,8 +489,8 @@ private:
 #ifdef INFILTER_PIPE
         int fd_stdin[2];
         int fd_stdout[2];
-        static const int P_RD = 0;
-        static const int P_WR = 1;
+        constexpr int P_RD = 0;
+        constexpr int P_WR = 1;
 
         if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
             v3fatal("--pipe-filter: Can't pipe: " << strerror(errno));
