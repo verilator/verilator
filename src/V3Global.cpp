@@ -27,9 +27,12 @@
 #include "V3Stats.h"
 
 //######################################################################
-// V3 Class -- top level
+// V3Global
 
-AstNetlist* V3Global::makeNetlist() { return new AstNetlist(); }
+void V3Global::boot() {
+    UASSERT(!m_rootp, "call once");
+    m_rootp = new AstNetlist();
+}
 
 void V3Global::clear() {
 #ifdef VL_LEAK_CHECK

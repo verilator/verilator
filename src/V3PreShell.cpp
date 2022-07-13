@@ -49,9 +49,8 @@ protected:
         return level;
     }
 
-    void boot(char** env) {
+    void boot() {
         // Create the implementation pointer
-        if (env) {}
         if (!s_preprocp) {
             FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
             s_preprocp = V3PreProc::createPreProc(cmdfl);
@@ -162,7 +161,7 @@ VInFilter* V3PreShellImp::s_filterp = nullptr;
 //######################################################################
 // V3PreShell
 
-void V3PreShell::boot(char** env) { V3PreShellImp::s_preImp.boot(env); }
+void V3PreShell::boot() { V3PreShellImp::s_preImp.boot(); }
 bool V3PreShell::preproc(FileLine* fl, const string& modname, VInFilter* filterp,
                          V3ParseImp* parsep, const string& errmsg) {
     return V3PreShellImp::s_preImp.preproc(fl, modname, filterp, parsep, errmsg);
