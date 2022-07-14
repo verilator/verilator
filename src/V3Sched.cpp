@@ -455,18 +455,36 @@ struct TriggerKit {
 };
 
 //============================================================================
+// Utility for extra trigger allocation
+
+class ExtraTriggers final {
+    std::vector<string> m_descriptions;  // Human readable descirption of extra triggers
+
+public:
+    ExtraTriggers() = default;
+
+    size_t allocate(const string& description) {
+        const size_t index = m_descriptions.size();
+        m_descriptions.push_back(description);
+        return index;
+    }
+    size_t size() const { return m_descriptions.size(); }
+    const string& description(size_t index) const { return m_descriptions[index]; }
+};
+
+//============================================================================
 // Create a TRIGGERVEC and the related TriggerKit for the given AstSenTree vector
 
 const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
                                 std::vector<const AstSenTree*> senTreeps, const string& name,
-                                unsigned extra, bool slow = false) {
+                                const ExtraTriggers& extraTriggers, bool slow = false) {
     AstTopScope* const topScopep = netlistp->topScopep();
     AstScope* const scopeTopp = topScopep->scopep();
     FileLine* const flp = scopeTopp->fileline();
 
     std::unordered_map<const AstSenTree*, AstSenTree*> map;
 
-    const uint32_t nTriggers = senTreeps.size() + extra;
+    const uint32_t nTriggers = senTreeps.size() + extraTriggers.size();
 
     // Create the TRIGGERVEC variable
     AstBasicDType* const tDtypep = new AstBasicDType(flp, VBasicDTypeKwd::TRIGGERVEC,
@@ -517,10 +535,12 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
     };
 
     // Add a print for each of the extra triggers
-    for (unsigned i = 0; i < extra; ++i) addDebug(i);
+    for (unsigned i = 0; i < extraTriggers.size(); ++i) {
+        addDebug(i, "Internal '" + name + "' trigger - " + extraTriggers.description(i));
+    }
 
     // Add trigger computation
-    uint32_t triggerNumber = extra;
+    uint32_t triggerNumber = extraTriggers.size();
     AstNode* initialTrigsp = nullptr;
     for (const AstSenTree* const senTreep : senTreeps) {
         UASSERT_OBJ(senTreep->hasClocked() || senTreep->hasHybrid(), senTreep,
@@ -686,8 +706,8 @@ void createSettle(AstNetlist* netlistp, SenExprBuilder& senExprBulider,
     if (comb.empty() && hybrid.empty()) return;
 
     // We have an extra trigger denoting this is the first iteration of the settle loop
-    constexpr unsigned firstIterationTrigger = 0;
-    constexpr unsigned extraTriggers = firstIterationTrigger + 1;
+    ExtraTriggers extraTriggers;
+    const size_t firstIterationTrigger = extraTriggers.allocate("first iteration");
 
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&comb, &hybrid});
@@ -752,10 +772,11 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilde
     // We have some extra trigger denoting external conditions
     AstVarScope* const dpiExportTriggerVscp = netlistp->dpiExportTriggerp();
 
-    unsigned extraTriggers = 0;
-    const unsigned firstIterationTrigger = extraTriggers++;
-    const unsigned dpiExportTriggerIndex
-        = dpiExportTriggerVscp ? extraTriggers++ : std::numeric_limits<unsigned>::max();
+    ExtraTriggers extraTriggers;
+    const size_t firstIterationTrigger = extraTriggers.allocate("first iteration");
+    const size_t dpiExportTriggerIndex = dpiExportTriggerVscp
+                                             ? extraTriggers.allocate("DPI export trigger")
+                                             : std::numeric_limits<unsigned>::max();
 
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&logic});
@@ -985,10 +1006,11 @@ void schedule(AstNetlist* netlistp) {
     // Step 8: Create the pre/act/nba triggers
     AstVarScope* const dpiExportTriggerVscp = netlistp->dpiExportTriggerp();
 
-    unsigned extraTriggers = 0;
     // We may have an extra trigger for variable updated in DPI exports
-    const unsigned dpiExportTriggerIndex
-        = dpiExportTriggerVscp ? extraTriggers++ : std::numeric_limits<unsigned>::max();
+    ExtraTriggers extraTriggers;
+    const size_t dpiExportTriggerIndex = dpiExportTriggerVscp
+                                             ? extraTriggers.allocate("DPI export trigger")
+                                             : std::numeric_limits<unsigned>::max();
 
     const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_pre,  //
                                                &logicRegions.m_act,  //
