@@ -281,13 +281,13 @@ void AstNode::addNextHere(AstNode* newp) {
     //  This could be at head, tail, or both (single)
     //  New  could be head of single node, or list
     UASSERT(newp, "Null item passed to addNext");
-    UASSERT(!newp->backp(), "New node (back) already assigned?");
+    UASSERT_OBJ(!newp->backp(), newp, "New node (back) already assigned?");
     debugTreeChange(this, "-addHereThs: ", __LINE__, false);
     debugTreeChange(newp, "-addHereNew: ", __LINE__, true);
     newp->editCountInc();
 
     AstNode* const addlastp = newp->m_headtailp;  // Last node in list to be added
-    UASSERT(!addlastp->m_nextp, "Headtailp tail isn't at the tail");
+    UASSERT_OBJ(!addlastp->m_nextp, addlastp, "Headtailp tail isn't at the tail");
 
     // Forward links
     AstNode* const oldnextp = this->m_nextp;
@@ -437,7 +437,7 @@ void VNRelinker::dump(std::ostream& str) const {
 AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
     debugTreeChange(this, "-unlinkWNextThs: ", __LINE__, true);
     AstNode* const oldp = this;
-    UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
+    UASSERT_OBJ(oldp->m_backp, oldp, "Node has no back, already unlinked?");
     oldp->editCountInc();
     AstNode* const backp = oldp->m_backp;
     if (linkerp) {
@@ -497,7 +497,7 @@ AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
 AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
     debugTreeChange(this, "-unlinkFrBkThs: ", __LINE__, true);
     AstNode* const oldp = this;
-    UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
+    UASSERT_OBJ(oldp->m_backp, oldp, "Node has no back, already unlinked?");
     oldp->editCountInc();
     AstNode* const backp = oldp->m_backp;
     if (linkerp) {
@@ -565,7 +565,7 @@ void AstNode::relink(VNRelinker* linkerp) {
     }
     AstNode* const newp = this;
     UASSERT(linkerp && linkerp->m_backp, "Need non-empty linker");
-    UASSERT(!newp->backp(), "New node already linked?");
+    UASSERT_OBJ(!newp->m_backp, newp, "New node already linked?");
     newp->editCountInc();
 
     if (debug() > 8) {
@@ -631,11 +631,56 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
 }
 
 void AstNode::addHereThisAsNext(AstNode* newp) {
-    // {old}->this->{next} becomes {old}->new->this->{next}
-    VNRelinker handle;
-    this->unlinkFrBackWithNext(&handle);
-    newp->addNext(this);
-    handle.relink(newp);
+    // {back}->this->{next} becomes {back}->new->this->{next}
+    UASSERT_OBJ(!newp->backp(), newp, "New node already linked?");
+    UASSERT_OBJ(this->m_backp, this, "'this' node has no back, already unlinked?");
+    UASSERT_OBJ(newp->m_headtailp, newp, "m_headtailp not set on new node");
+    //
+    AstNode* const backp = this->m_backp;
+    AstNode* const newLastp = newp->m_headtailp;
+    //
+    this->editCountInc();
+    // Common linkage
+    newLastp->m_nextp = this;
+    this->m_backp = newLastp;
+    newp->m_backp = backp;
+    // newLastp will not be the last node in the list as 'this' will follow it.
+    // If newLastp == newp, then below handles newp becoming head
+    newLastp->m_headtailp = nullptr;
+    // Linkage dependent on position
+    if (backp && backp->m_nextp == this) {
+        // If 'this' is not at the head of a list, then the new node will also not be at the head
+        // of a list, so we can just link in the new node in the middle.
+        backp->m_nextp = newp;
+        newp->m_headtailp = nullptr;
+    } else {
+        // If 'this' is at the head of a list, then the new node becomes the head of that list.
+        if (backp) {
+            if (backp->m_op1p == this) {
+                backp->m_op1p = newp;
+            } else if (backp->m_op2p == this) {
+                backp->m_op2p = newp;
+            } else if (backp->m_op3p == this) {
+                backp->m_op3p = newp;
+            } else {
+                UASSERT_OBJ(backp->m_op4p == this, this, "Don't know where newp should go");
+                backp->m_op4p = newp;
+            }
+        }
+        // We also need to update m_headtailp.
+        AstNode* const tailp = this->m_headtailp;
+        this->m_headtailp = nullptr;
+        newp->m_headtailp = tailp;
+        tailp->m_headtailp = newp;
+    }
+    // Iterator fixup
+    if (newLastp->m_iterpp) {
+        *(newLastp->m_iterpp) = this;
+    } else if (this->m_iterpp) {
+        *(this->m_iterpp) = newp;
+    }
+    //
+    debugTreeChange(this, "-addHereThisAsNext: ", __LINE__, true);
 }
 
 void AstNode::swapWith(AstNode* bp) {

@@ -1800,7 +1800,6 @@ public:
     void deleteTree();  // Always deletes the next link
     void checkTree();  // User Interface version
     void checkIter() const;
-    void clearIter() { m_iterpp = nullptr; }
     void dumpPtrs(std::ostream& os = std::cout) const;
     void dumpTree(std::ostream& os = std::cout, const string& indent = "    ",
                   int maxDepth = 0) const;

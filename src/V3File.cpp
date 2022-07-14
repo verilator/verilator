@@ -489,8 +489,8 @@ private:
 #ifdef INFILTER_PIPE
         int fd_stdin[2];
         int fd_stdout[2];
-        static const int P_RD = 0;
-        static const int P_WR = 1;
+        constexpr int P_RD = 0;
+        constexpr int P_WR = 1;
 
         if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
             v3fatal("--pipe-filter: Can't pipe: " << strerror(errno));
@@ -623,17 +623,9 @@ V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language 
 //----------------------------------------------------------------------
 
 string V3OutFormatter::indentSpaces(int num) {
-    // Indent the specified number of spaces.  Use spaces.
-    static char str[MAXSPACE + 20];
-    char* cp = str;
-    if (num > MAXSPACE) num = MAXSPACE;
-    while (num > 0) {
-        *cp++ = ' ';
-        --num;
-    }
-    *cp++ = '\0';
-    string st{str};  // No const, move optimization
-    return st;
+    // Indent the specified number of spaces.
+    if (num <= 0) return std::string{};
+    return std::string(std::min<size_t>(num, MAXSPACE), ' ');
 }
 
 bool V3OutFormatter::tokenMatch(const char* cp, const char* cmp) {

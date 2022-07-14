@@ -121,6 +121,28 @@ private:
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
     bool m_emitConstInit = false;  // Emitting constant initializer
 
+    // State associated with processing $display style string formatting
+    struct EmitDispState {
+        string m_format;  // "%s" and text from user
+        std::vector<char> m_argsChar;  // Format of each argument to be printed
+        std::vector<AstNode*> m_argsp;  // Each argument to be printed
+        std::vector<string> m_argsFunc;  // Function before each argument to be printed
+        EmitDispState() { clear(); }
+        void clear() {
+            m_format = "";
+            m_argsChar.clear();
+            m_argsp.clear();
+            m_argsFunc.clear();
+        }
+        void pushFormat(const string& fmt) { m_format += fmt; }
+        void pushFormat(char fmt) { m_format += fmt; }
+        void pushArg(char fmtChar, AstNode* nodep, const string& func) {
+            m_argsChar.push_back(fmtChar);
+            m_argsp.push_back(nodep);
+            m_argsFunc.push_back(func);
+        }
+    } m_emitDispState;
+
 protected:
     EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"

@@ -73,11 +73,7 @@ void V3LinkLevel::modSortByLevel() {
     // Reorder the netlist's modules to have modules in level sorted order
     stable_sort(mods.begin(), mods.end(), CmpLevel());  // Sort the vector
     UINFO(9, "modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
-    for (AstNodeModule* nodep : mods) {
-        nodep->clearIter();  // Because we didn't iterate to find the node
-        // pointers, may have a stale m_iterp() needing cleanup
-        nodep->unlinkFrBack();
-    }
+    for (AstNodeModule* nodep : mods) nodep->unlinkFrBack();
     UASSERT_OBJ(!v3Global.rootp()->modulesp(), v3Global.rootp(), "Unlink didn't work");
     for (AstNodeModule* nodep : mods) v3Global.rootp()->addModulep(nodep);
     UINFO(9, "modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666

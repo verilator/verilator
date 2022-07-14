@@ -68,10 +68,7 @@ private:
         // Put assignment before the referencing statement
         AstAssign* const assp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, nodep};
-        VNRelinker linker2;
-        m_stmtp->unlinkFrBack(&linker2);
-        assp->addNext(m_stmtp);
-        linker2.relink(assp);
+        m_stmtp->addHereThisAsNext(assp);
     }
 
     // VISITORS

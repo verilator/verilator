@@ -709,7 +709,7 @@ int main(int argc, char** argv, char** env) {
 
     // Preprocessor
     // Before command parsing so we can handle -Ds on command line.
-    V3PreShell::boot(env);
+    V3PreShell::boot();
 
     // Command option parsing
     v3Global.opt.bin(argv[0]);

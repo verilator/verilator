@@ -120,11 +120,7 @@ public:
 
     // CONSTRUCTORS
     V3Global() {}
-    AstNetlist* makeNetlist();
-    void boot() {
-        UASSERT(!m_rootp, "call once");
-        m_rootp = makeNetlist();
-    }
+    void boot();
     void clear();
     void shutdown();  // Release allocated resorces
     // ACCESSORS (general)
