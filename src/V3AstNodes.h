@@ -290,6 +290,22 @@ public:
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
 };
 
+class AstStrengthSpec final : public AstNode {
+private:
+    VStrength m_s0, m_s1;
+
+public:
+    AstStrengthSpec(FileLine* fl, VStrength s0, VStrength s1)
+        : ASTGEN_SUPER_StrengthSpec(fl)
+        , m_s0{s0}
+        , m_s1{s1} {}
+
+    ASTNODE_NODE_FUNCS(StrengthSpec)
+    VStrength strength0() { return m_s0; }
+    VStrength strength1() { return m_s1; }
+    virtual void dump(std::ostream& str) const override;
+};
+
 class AstGatePin final : public AstNodeMath {
     // Possibly expand a gate primitive input pin value to match the range of the gate primitive
 public:
@@ -3634,6 +3650,8 @@ public:
     AstAssignW(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignW)
+    AstStrengthSpec* strengthSpecp() const { return VN_AS(op4p(), StrengthSpec); }
+    void strengthSpecp(AstStrengthSpec* const strengthSpecp) { setOp4p((AstNode*)strengthSpecp); }
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignW(this->fileline(), lhsp, rhsp);
     }

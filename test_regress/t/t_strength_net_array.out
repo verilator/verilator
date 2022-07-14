@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_strength_net_array.v:9:30: Unsupported: Signal strengths are unsupported in wires of size > 1
+                                                 : ... In instance t
+    9 |    assign (strong0, weak1) a = 8'hac;
+      |                              ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_strength_net_array.v:10:28: Unsupported: Signal strengths are unsupported in wires of size > 1
+                                                  : ... In instance t
+   10 |    assign (pull0, pull1) a = '1;
+      |                            ^
+%Error: Exiting due to

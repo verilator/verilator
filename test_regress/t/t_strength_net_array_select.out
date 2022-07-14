@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_strength_net_array_select.v:9:31: Unsupported: Assignments with signal strength with LHS of type: SELBIT
+                                                        : ... In instance t
+    9 |    assign (pull0, pull1) a[0] = 0;
+      |                               ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

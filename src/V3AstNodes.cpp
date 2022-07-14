@@ -1786,6 +1786,10 @@ void AstSenItem::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << edgeType().ascii() << "]";
 }
+void AstStrengthSpec::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " (" << m_s0.ascii() << ", " << m_s1.ascii() << ")";
+}
 void AstParseRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << expect().ascii() << "]";

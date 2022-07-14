@@ -976,6 +976,32 @@ inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) {
 }
 
 //######################################################################
+
+class VStrength final {
+public:
+    enum en : uint8_t { HIGHZ, SMALL, MEDIUM, WEAK, LARGE, PULL, STRONG, SUPPLY };
+    enum en m_e;
+
+    inline VStrength(en strengthLevel)
+        : m_e(strengthLevel) {}
+    explicit inline VStrength(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[]
+            = {"highz", "small", "medium", "weak", "large", "pull", "strong", "supply"};
+        return names[m_e];
+    }
+};
+inline bool operator==(const VStrength& lhs, const VStrength& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VStrength& lhs, VStrength::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VStrength::en lhs, const VStrength& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VStrength& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
 // VNumRange - Structure containing numeric range information
 // See also AstRange, which is a symbolic version of this
 

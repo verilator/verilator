@@ -241,6 +241,7 @@ RAW_OBJS = \
 	V3Reloop.o \
 	V3Scope.o \
 	V3Scoreboard.o \
+	V3SignalStrength.o \
 	V3Slice.o \
 	V3Split.o \
 	V3SplitAs.o \
