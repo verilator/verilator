@@ -699,9 +699,9 @@ void createSettle(AstNetlist* netlistp, SenExprBuilder& senExprBulider,
     AstSenTree* const inputChanged = trig.createTriggerSenTree(netlistp, firstIterationTrigger);
 
     // Create and the body function
-    AstCFunc* const stlFuncp
-        = V3Order::order(netlistp, {&comb, &hybrid}, trigToSen, "stl", false, true,
-                         [=](const AstVarScope*) { return inputChanged; });
+    AstCFunc* const stlFuncp = V3Order::order(
+        netlistp, {&comb, &hybrid}, trigToSen, "stl", false, true,
+        [=](const AstVarScope*, std::vector<AstSenTree*>& out) { out.push_back(inputChanged); });
     splitCheck(stlFuncp);
 
     // Create the eval loop
@@ -763,10 +763,13 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilde
     AstSenTree* const inputChanged = trig.createTriggerSenTree(netlistp, firstIterationTrigger);
 
     // Create and Order the body function
-    AstCFunc* const icoFuncp = V3Order::order(
-        netlistp, {&logic}, trigToSen, "ico", false, false, [=](const AstVarScope* vscp) {
-            return vscp->scopep()->isTop() && vscp->varp()->isNonOutput() ? inputChanged : nullptr;
-        });
+    AstCFunc* const icoFuncp
+        = V3Order::order(netlistp, {&logic}, trigToSen, "ico", false, false,
+                         [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+                             if (vscp->scopep()->isTop() && vscp->varp()->isNonOutput()) {
+                                 out.push_back(inputChanged);
+                             }
+                         });
     splitCheck(icoFuncp);
 
     // Create the eval loop
@@ -1016,7 +1019,7 @@ void schedule(AstNetlist* netlistp) {
 
     AstCFunc* const actFuncp = V3Order::order(
         netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
-        "act", false, false, [](const AstVarScope*) { return nullptr; });
+        "act", false, false);
     splitCheck(actFuncp);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-act");
 
@@ -1030,9 +1033,9 @@ void schedule(AstNetlist* netlistp) {
     std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSenNba;
     invertAndMergeSenTreeMap(trigToSenNba, nbaTrigMap);
 
-    AstCFunc* const nbaFuncp = V3Order::order(
-        netlistp, {&logicRegions.m_nba, &logicReplicas.m_nba}, trigToSenNba, "nba",
-        v3Global.opt.mtasks(), false, [](const AstVarScope*) { return nullptr; });
+    AstCFunc* const nbaFuncp
+        = V3Order::order(netlistp, {&logicRegions.m_nba, &logicReplicas.m_nba}, trigToSenNba,
+                         "nba", v3Global.opt.mtasks(), false);
     splitCheck(nbaFuncp);
     netlistp->evalNbap(nbaFuncp);  // Remember for V3LifePost
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-nba");

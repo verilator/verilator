@@ -895,10 +895,10 @@ class OrderProcess final : VNDeleter {
     // Map from Trigger reference AstSenItem to the original AstSenTree
     const std::unordered_map<const AstSenItem*, const AstSenTree*>& m_trigToSen;
 
-    // This is a function provided by the invoker of the ordering that can and provide additional
+    // This is a function provided by the invoker of the ordering that can provide additional
     // sensitivity expression that when triggered indicates the passed AstVarScope might have
     // changed external to the code being ordered.
-    const std::function<AstSenTree*(const AstVarScope*)> m_externalDomain;
+    const V3Order::ExternalDomainsProvider m_externalDomains;
 
     SenTreeFinder m_finder;  // Global AstSenTree manager
     AstSenTree* const m_deleteDomainp;  // Dummy AstSenTree indicating needs deletion
@@ -957,6 +957,8 @@ class OrderProcess final : VNDeleter {
 
     // Make a domain that merges the two domains
     AstSenTree* combineDomains(AstSenTree* ap, AstSenTree* bp) {
+        if (ap == m_deleteDomainp) return bp;
+        UASSERT_OBJ(bp != m_deleteDomainp, bp, "Should not be delete domain");
         AstSenTree* const senTreep = ap->cloneTree(false);
         senTreep->addSensesp(bp->sensesp()->cloneTree(true));
         V3Const::constifyExpensiveEdit(senTreep);  // Remove duplicates
@@ -974,11 +976,10 @@ class OrderProcess final : VNDeleter {
     // CONSTRUCTOR
     OrderProcess(AstNetlist* netlistp, OrderGraph& graph,
                  const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
-                 const string& tag, bool slow,
-                 std::function<AstSenTree*(const AstVarScope*)> externalDomain)
+                 const string& tag, bool slow, V3Order::ExternalDomainsProvider externalDomains)
         : m_graph{graph}
         , m_trigToSen{trigToSen}
-        , m_externalDomain{externalDomain}
+        , m_externalDomains{externalDomains}
         , m_finder{netlistp}
         , m_deleteDomainp{makeDeleteDomainSenTree(netlistp->fileline())}
         , m_tag{tag}
@@ -994,8 +995,8 @@ public:
     main(AstNetlist* netlistp, OrderGraph& graph,
          const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
          const string& tag, bool parallel, bool slow,
-         std::function<AstSenTree*(const AstVarScope*)> externalDomain) {
-        OrderProcess visitor{netlistp, graph, trigToSen, tag, slow, externalDomain};
+         V3Order::ExternalDomainsProvider externalDomains) {
+        OrderProcess visitor{netlistp, graph, trigToSen, tag, slow, externalDomains};
         visitor.process(parallel);
         return std::move(visitor.m_result);
     }
@@ -1046,6 +1047,9 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
     if (OrderLogicVertex* const lvtxp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
         domainp = lvtxp->hybridp();
     }
+
+    std::vector<AstSenTree*> externalDomainps;
+
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
         OrderEitherVertex* const fromVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
         if (edgep->weight() && fromVertexp->domainMatters()) {
@@ -1054,12 +1058,13 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
 
             if (OrderVarVertex* const varVtxp = dynamic_cast<OrderVarVertex*>(fromVertexp)) {
                 AstVarScope* const vscp = varVtxp->vscp();
-                if (AstSenTree* const externalDomainp = m_externalDomain(vscp)) {
-                    UASSERT(!externalDomainp->hasCombo(),
-                            "There should be no need for combinational domains");
-                    fromDomainp = fromDomainp == m_deleteDomainp
-                                      ? externalDomainp
-                                      : combineDomains(fromDomainp, externalDomainp);
+                // Add in any external domains
+                externalDomainps.clear();
+                m_externalDomains(vscp, externalDomainps);
+                for (AstSenTree* const externalDomainp : externalDomainps) {
+                    UASSERT_OBJ(!externalDomainp->hasCombo(), vscp,
+                                "There should be no need for combinational domains");
+                    fromDomainp = combineDomains(fromDomainp, externalDomainp);
                 }
             }
 
@@ -1538,12 +1543,12 @@ AstCFunc* order(AstNetlist* netlistp,  //
                 const string& tag,  //
                 bool parallel,  //
                 bool slow,  //
-                std::function<AstSenTree*(const AstVarScope*)> externalDomain) {
+                ExternalDomainsProvider externalDomains) {
     // Order the code
     const std::unique_ptr<OrderGraph> graph
         = OrderBuildVisitor::process(netlistp, logic, trigToSen);
     const auto& nodeps = OrderProcess::main(netlistp, *graph.get(), trigToSen, tag, parallel, slow,
-                                            externalDomain);
+                                            externalDomains);
 
     // Create the result function
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();

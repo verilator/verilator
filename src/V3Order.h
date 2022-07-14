@@ -38,13 +38,17 @@ struct LogicByScope;
 
 namespace V3Order {
 
-AstCFunc* order(AstNetlist* netlistp,  //
-                const std::vector<V3Sched::LogicByScope*>& logic,  //
-                const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
-                const string& tag,  //
-                bool parallel,  //
-                bool slow,  //
-                std::function<AstSenTree*(const AstVarScope*)> externalDomain);
+using ExternalDomainsProvider = std::function<void(const AstVarScope*, std::vector<AstSenTree*>&)>;
+
+AstCFunc* order(
+    AstNetlist* netlistp,  //
+    const std::vector<V3Sched::LogicByScope*>& logic,  //
+    const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
+    const string& tag,  //
+    bool parallel,  //
+    bool slow,  //
+    ExternalDomainsProvider externalDomains
+    = [](const AstVarScope*, std::vector<AstSenTree*>&) {});
 
 };  // namespace V3Order
 
