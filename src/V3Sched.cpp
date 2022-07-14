@@ -495,8 +495,8 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
     // Create the trigger computation function
     AstCFunc* const funcp = makeSubFunction(netlistp, "_eval_triggers__" + name, slow);
 
-    // Create the trigger dump function (for debugging)
-    AstCFunc* const dumpp = makeSubFunction(netlistp, "_dump_triggers__" + name, slow);
+    // Create the trigger dump function (for debugging, always 'slow')
+    AstCFunc* const dumpp = makeSubFunction(netlistp, "_dump_triggers__" + name, true);
     dumpp->ifdef("VL_DEBUG");
 
     // Add a print to the dumping function if there are no triggers pending
