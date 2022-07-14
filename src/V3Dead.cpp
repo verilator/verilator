@@ -433,6 +433,11 @@ public:
         // Operate on whole netlist
         iterate(nodep);
 
+        if (AstVarScope* const vscp = nodep->dpiExportTriggerp()) {
+            vscp->user1Inc();
+            vscp->varp()->user1Inc();
+        }
+
         deadCheckVar();
         // We only eliminate scopes when in a flattened structure
         // Otherwise we have no easy way to know if a scope is used

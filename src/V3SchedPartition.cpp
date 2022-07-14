@@ -130,11 +130,22 @@ class SchedGraphBuilder final : public VNVisitor {
     AstSenTree* m_senTreep = nullptr;  // AstSenTree of the current AstActive
     // Predicate for whether a read of the given variable triggers this block
     std::function<bool(AstVarScope*)> m_readTriggersThisLogic;
+    // The DPI export trigger variable, if any
+    AstVarScope* const m_dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp();
 
     VL_DEBUG_FUNC;
 
     SchedVarVertex* getVarVertex(AstVarScope* vscp) const {
-        if (!vscp->user1p()) vscp->user1p(new SchedVarVertex{m_graphp, vscp});
+        if (!vscp->user1p()) {
+            SchedVarVertex* const vtxp = new SchedVarVertex{m_graphp, vscp};
+            // If this variable can be written via a DPI export, add a source edge from the
+            // DPI export trigger vertex. This ensures calls to DPI exports that might write a
+            // clock end up in the 'act' region.
+            if (vscp->varp()->isWrittenByDpi()) {
+                new V3GraphEdge{m_graphp, getVarVertex(m_dpiExportTriggerp), vtxp, 1};
+            }
+            vscp->user1p(vtxp);
+        }
         return vscp->user1u().to<SchedVarVertex*>();
     }
 
@@ -154,8 +165,7 @@ class SchedGraphBuilder final : public VNVisitor {
 
                 // Connect up the variable references
                 senItemp->sensp()->foreach<AstVarRef>([&](AstVarRef* refp) {
-                    SchedVarVertex* const varVtxp = getVarVertex(refp->varScopep());
-                    new V3GraphEdge{m_graphp, varVtxp, vtxp, 1};
+                    new V3GraphEdge{m_graphp, getVarVertex(refp->varScopep()), vtxp, 1};
                 });
 
                 // Store back to hash map so we can find it next time
@@ -188,21 +198,20 @@ class SchedGraphBuilder final : public VNVisitor {
         // Add edges based on references
         nodep->foreach<AstVarRef>([=](const AstVarRef* vrefp) {
             AstVarScope* const vscp = vrefp->varScopep();
-            SchedVarVertex* const varVtxp = getVarVertex(vscp);
             if (vrefp->access().isReadOrRW() && m_readTriggersThisLogic(vscp)) {
-                new V3GraphEdge{m_graphp, varVtxp, logicVtxp, 10};
+                new V3GraphEdge{m_graphp, getVarVertex(vscp), logicVtxp, 10};
             }
             if (vrefp->access().isWriteOrRW()) {
-                new V3GraphEdge{m_graphp, logicVtxp, varVtxp, 10};
+                new V3GraphEdge{m_graphp, logicVtxp, getVarVertex(vscp), 10};
             }
         });
 
-        // If the logic calls a DPI import, it might fire the DPI Export trigger
-        if (AstVarScope* const dpiExporTrigger = v3Global.rootp()->dpiExportTriggerp()) {
+        // If the logic calls a 'context' DPI import, it might fire the DPI Export trigger
+        if (m_dpiExportTriggerp) {
             nodep->foreach<AstCCall>([=](const AstCCall* callp) {
                 if (!callp->funcp()->dpiImportWrapper()) return;
-                SchedVarVertex* const varVtxp = getVarVertex(dpiExporTrigger);
-                new V3GraphEdge{m_graphp, logicVtxp, varVtxp, 10};
+                if (!callp->funcp()->dpiContext()) return;
+                new V3GraphEdge{m_graphp, logicVtxp, getVarVertex(m_dpiExportTriggerp), 10};
             });
         }
     }

@@ -266,7 +266,6 @@ public:
         ET_POSEDGE,
         ET_NEGEDGE,
         ET_EVENT,  // VlEvent::isFired
-        ET_DPIEXPORT,  // Used exclusively to check the AstNetlist::dpiExportTriggerp()
         // Involving an expression
         ET_TRUE,
         //
@@ -287,7 +286,6 @@ public:
             true,  // ET_POSEDGE
             true,  // ET_NEGEDGE
             true,  // ET_EVENT
-            true,  // ET_DPIEXPORT
             true,  // ET_TRUE
 
             false,  // ET_COMBO
@@ -311,14 +309,14 @@ public:
     }
     const char* ascii() const {
         static const char* const names[]
-            = {"%E-edge", "CHANGED", "BOTH",   "POS",    "NEG",     "EVENT", "DPIEXPORT",
-               "TRUE",    "COMBO",   "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"%E-edge", "CHANGED", "BOTH",   "POS",     "NEG",   "EVENT", "TRUE",
+               "COMBO",   "HYBRID",  "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
-        static const char* const names[] = {
-            "%E-edge", "[changed]", "edge",     "posedge",  "negedge",   "[event]", "[dpiexport]",
-            "[true]",  "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
+        static const char* const names[]
+            = {"%E-edge", "[changed]", "edge",     "posedge",   "negedge", "[event]", "[true]",
+               "*",       "[hybrid]",  "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions

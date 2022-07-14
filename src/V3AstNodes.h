@@ -2001,6 +2001,7 @@ private:
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     bool m_isForceable : 1;  // May be forced/released externally from user C code
+    bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
 
     void init() {
         m_ansi = false;
@@ -2040,6 +2041,7 @@ private:
         m_trace = false;
         m_isLatched = false;
         m_isForceable = false;
+        m_isWrittenByDpi = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2205,6 +2207,8 @@ public:
     void isLatched(bool flag) { m_isLatched = flag; }
     bool isForceable() const { return m_isForceable; }
     void setForceable() { m_isForceable = true; }
+    bool isWrittenByDpi() const { return m_isWrittenByDpi; }
+    void setWrittenByDpi() { m_isWrittenByDpi = true; }
     // METHODS
     virtual void name(const string& name) override { m_name = name; }
     virtual void tag(const string& text) override { m_tag = text; }
@@ -3636,17 +3640,6 @@ public:
         return new AstAssignPost(this->fileline(), lhsp, rhsp);
     }
     virtual bool brokeLhsMustBeLvalue() const override { return true; }
-};
-
-class AstDpiExportUpdated final : public AstNodeStmt {
-    // Denotes that the referenced variable may have been updated via a DPI Export
-public:
-    AstDpiExportUpdated(FileLine* fl, AstVarScope* varScopep)
-        : ASTGEN_SUPER_DpiExportUpdated(fl) {
-        addOp1p(new AstVarRef{fl, varScopep, VAccess::WRITE});
-    }
-    ASTNODE_NODE_FUNCS(DpiExportUpdated)
-    AstVarScope* varScopep() const { return VN_AS(op1p(), VarRef)->varScopep(); }
 };
 
 class AstExprStmt final : public AstNodeMath {

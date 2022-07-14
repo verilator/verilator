@@ -177,15 +177,8 @@ class OrderBuildVisitor final : public VNVisitor {
     AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
-    // The ordering graph built by this visitor
-    OrderGraph* const m_graphp = new OrderGraph;
-    // Singleton DPI Export trigger event vertex
-    OrderVarVertex* const m_dpiExportTriggerVxp
-        = v3Global.rootp()->dpiExportTriggerp()
-              ? getVarVertex(v3Global.rootp()->dpiExportTriggerp(), VarVertexType::STD)
-              : nullptr;
-
-    OrderLogicVertex* m_logicVxp = nullptr;  // Current loic block being analyzed
+    OrderGraph* const m_graphp = new OrderGraph;  // The ordering graph built by this visitor
+    OrderLogicVertex* m_logicVxp = nullptr;  // Current logic block being analyzed
 
     // Map from Trigger reference AstSenItem to the original AstSenTree
     const std::unordered_map<const AstSenItem*, const AstSenTree*>& m_trigToSen;
@@ -411,25 +404,7 @@ class OrderBuildVisitor final : public VNVisitor {
             }
         }
     }
-    virtual void visit(AstDpiExportUpdated* nodep) override {
-        // This is under a logic block (AstAlways) sensitive to a change in the DPI export trigger.
-        // We just need to add an edge to the enclosing logic vertex (the vertex for the
-        // AstAlways).
-        OrderVarVertex* const varVxp = getVarVertex(nodep->varScopep(), VarVertexType::STD);
-        new OrderEdge(m_graphp, m_logicVxp, varVxp, WEIGHT_NORMAL);
-        // Only used for ordering, so we can get rid of it here
-        nodep->unlinkFrBack();
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
-    virtual void visit(AstCCall* nodep) override {
-        // Calls to 'context' imported DPI function may call DPI exported functions
-        if (m_dpiExportTriggerVxp && nodep->funcp()->dpiImportWrapper()
-            && nodep->funcp()->dpiContext()) {
-            UASSERT_OBJ(m_logicVxp, nodep, "Call not under logic");
-            new OrderEdge(m_graphp, m_logicVxp, m_dpiExportTriggerVxp, WEIGHT_NORMAL);
-        }
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstCCall* nodep) override { iterateChildren(nodep); }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
     virtual void visit(AstInitial* nodep) override {  // LCOV_EXCL_START

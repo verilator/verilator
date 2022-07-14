@@ -120,7 +120,8 @@ public:
     VarVertex(V3Graph* graphp, AstVarScope* vscp)
         : Vertex{graphp}
         , m_vscp{vscp} {
-        if (isTopInput()) addDrivingRegions(INPUT);
+        // Top level inputs are
+        if (isTopInput() || varp()->isWrittenByDpi()) addDrivingRegions(INPUT);
     }
     AstVarScope* vscp() const { return m_vscp; }
     AstVar* varp() const { return m_vscp->varp(); }

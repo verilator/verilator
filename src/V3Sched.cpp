@@ -264,7 +264,6 @@ class SenExprBuilder final {
     // STATE
     AstCFunc* const m_initp;  // The initialization function
     AstScope* const m_scopeTopp;  // Top level scope
-    AstVarScope* const m_dpiExportTriggerp;  // The DPI export trigger variable
 
     std::vector<AstNodeStmt*> m_updates;  // Update assignments
 
@@ -362,13 +361,6 @@ class SenExprBuilder final {
             callp->dtypeSetBit();
             return {callp, false};
         }
-        case VEdgeType::ET_DPIEXPORT: {
-            // If the DPI export trigger is checked, always clear it after trigger computation
-            UASSERT_OBJ(m_dpiExportTriggerp, senItemp, "ET_DPIEXPORT without trigger variable");
-            AstVarRef* const refp = new AstVarRef{flp, m_dpiExportTriggerp, VAccess::WRITE};
-            m_updates.push_back(new AstAssign{flp, refp, new AstConst{flp, AstConst::BitFalse{}}});
-            return {currp(), false};
-        }
         default:  // LCOV_EXCL_START
             senItemp->v3fatalSrc("Unknown edge type");
             return {nullptr, false};
@@ -401,8 +393,7 @@ public:
     // CONSTRUCTOR
     SenExprBuilder(AstNetlist* netlistp, AstCFunc* initp)
         : m_initp{initp}
-        , m_scopeTopp{netlistp->topScopep()->scopep()}
-        , m_dpiExportTriggerp{netlistp->dpiExportTriggerp()} {}
+        , m_scopeTopp{netlistp->topScopep()->scopep()} {}
 };
 
 //============================================================================
@@ -445,6 +436,21 @@ struct TriggerKit {
         m_funcp->stmtsp()->addHereThisAsNext(new AstAssign{
             flp, callp,
             new AstEq{flp, new AstVarRef{flp, counterp, VAccess::READ}, new AstConst{flp, 0}}});
+    }
+
+    // Utility to set then clear the dpiExportTrigger trigger
+    void addDpiExportTriggerAssignment(AstVarScope* dpiExportTriggerVscp, uint32_t index) const {
+        FileLine* const flp = dpiExportTriggerVscp->fileline();
+        AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
+        AstCMethodHard* const callp
+            = new AstCMethodHard{flp, vrefp, "at", new AstConst{flp, index}};
+        callp->dtypeSetBit();
+        callp->pure(true);
+        AstNode* stmtp
+            = new AstAssign{flp, callp, new AstVarRef{flp, dpiExportTriggerVscp, VAccess::READ}};
+        stmtp->addNext(new AstAssign{flp, new AstVarRef{flp, dpiExportTriggerVscp, VAccess::WRITE},
+                                     new AstConst{flp, AstConst::BitFalse{}}});
+        m_funcp->stmtsp()->addHereThisAsNext(stmtp);
     }
 };
 
@@ -743,14 +749,22 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilde
         });
     }
 
-    // We have an extra trigger denoting this is the first iteration of the ico loop
-    constexpr unsigned firstIterationTrigger = 0;
-    constexpr unsigned extraTriggers = firstIterationTrigger + 1;
+    // We have some extra trigger denoting external conditions
+    AstVarScope* const dpiExportTriggerVscp = netlistp->dpiExportTriggerp();
+
+    unsigned extraTriggers = 0;
+    const unsigned firstIterationTrigger = extraTriggers++;
+    const unsigned dpiExportTriggerIndex
+        = dpiExportTriggerVscp ? extraTriggers++ : std::numeric_limits<unsigned>::max();
 
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&logic});
     const TriggerKit& trig
         = createTriggers(netlistp, senExprBuilder, senTreeps, "ico", extraTriggers);
+
+    if (dpiExportTriggerVscp) {
+        trig.addDpiExportTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
+    }
 
     // Remap sensitivities
     remapSensitivities(logic, trig.m_map);
@@ -759,8 +773,12 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilde
     std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSen;
     invertAndMergeSenTreeMap(trigToSen, trig.m_map);
 
-    // First trigger is for pure combinational triggers (first iteration)
+    // The trigger top level inputs (first iteration)
     AstSenTree* const inputChanged = trig.createTriggerSenTree(netlistp, firstIterationTrigger);
+
+    // The DPI Export trigger
+    AstSenTree* const dpiExportTriggered
+        = trig.createTriggerSenTree(netlistp, dpiExportTriggerIndex);
 
     // Create and Order the body function
     AstCFunc* const icoFuncp
@@ -769,6 +787,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilde
                              if (vscp->scopep()->isTop() && vscp->varp()->isNonOutput()) {
                                  out.push_back(inputChanged);
                              }
+                             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                          });
     splitCheck(icoFuncp);
 
@@ -964,10 +983,22 @@ void schedule(AstNetlist* netlistp) {
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
     // Step 8: Create the pre/act/nba triggers
+    AstVarScope* const dpiExportTriggerVscp = netlistp->dpiExportTriggerp();
+
+    unsigned extraTriggers = 0;
+    // We may have an extra trigger for variable updated in DPI exports
+    const unsigned dpiExportTriggerIndex
+        = dpiExportTriggerVscp ? extraTriggers++ : std::numeric_limits<unsigned>::max();
+
     const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_pre,  //
                                                &logicRegions.m_act,  //
                                                &logicRegions.m_nba});
-    const TriggerKit& actTrig = createTriggers(netlistp, senExprBuilder, senTreeps, "act", 0);
+    const TriggerKit& actTrig
+        = createTriggers(netlistp, senExprBuilder, senTreeps, "act", extraTriggers);
+
+    if (dpiExportTriggerVscp) {
+        actTrig.addDpiExportTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
+    }
 
     AstTopScope* const topScopep = netlistp->topScopep();
     AstScope* const scopeTopp = topScopep->scopep();
@@ -1017,9 +1048,15 @@ void schedule(AstNetlist* netlistp) {
     invertAndMergeSenTreeMap(trigToSenAct, preTrigMap);
     invertAndMergeSenTreeMap(trigToSenAct, actTrigMap);
 
+    // The DPI Export trigger AstSenTree
+    AstSenTree* const dpiExportTriggered
+        = actTrig.createTriggerSenTree(netlistp, dpiExportTriggerIndex);
+
     AstCFunc* const actFuncp = V3Order::order(
         netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
-        "act", false, false);
+        "act", false, false, [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+            if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+        });
     splitCheck(actFuncp);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-act");
 
@@ -1033,9 +1070,11 @@ void schedule(AstNetlist* netlistp) {
     std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSenNba;
     invertAndMergeSenTreeMap(trigToSenNba, nbaTrigMap);
 
-    AstCFunc* const nbaFuncp
-        = V3Order::order(netlistp, {&logicRegions.m_nba, &logicReplicas.m_nba}, trigToSenNba,
-                         "nba", v3Global.opt.mtasks(), false);
+    AstCFunc* const nbaFuncp = V3Order::order(
+        netlistp, {&logicRegions.m_nba, &logicReplicas.m_nba}, trigToSenNba, "nba",
+        v3Global.opt.mtasks(), false, [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+            if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+        });
     splitCheck(nbaFuncp);
     netlistp->evalNbap(nbaFuncp);  // Remember for V3LifePost
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-nba");
@@ -1044,6 +1083,8 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, icoLoopp, actTrig, preTrigVscp, nbaTrigVscp, actFuncp, nbaFuncp);
 
     splitCheck(initp);
+
+    netlistp->dpiExportTriggerp(nullptr);
 
     V3Global::dumpCheckGlobalTree("sched", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
