@@ -990,6 +990,12 @@ private:
                 UINFO(1, "    Related dtype: " << fromDtp << endl);
                 nodep->v3fatalSrc("Wildcard array reference is not to wildcard array");
             }
+            const AstBasicDType* const basicp = nodep->bitp()->dtypep()->skipRefp()->basicp();
+            if (!basicp
+                || (basicp->keyword() != VBasicDTypeKwd::STRING
+                    && !basicp->keyword().isIntNumeric())) {
+                nodep->v3error("Wildcard index must be integral (IEEE 1800-2017 7.8.1)");
+            }
             iterateCheckTyped(nodep, "Wildcard associative select", nodep->bitp(),
                               adtypep->findStringDType(), BOTH);
             nodep->dtypeFrom(adtypep->subDTypep());
