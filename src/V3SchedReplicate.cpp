@@ -121,16 +121,15 @@ public:
         : Vertex{graphp}
         , m_vscp{vscp} {
         // Top level inputs are
-        if (isTopInput() || varp()->isWrittenByDpi()) addDrivingRegions(INPUT);
+        if (varp()->isPrimaryInish() || varp()->isWrittenByDpi()) addDrivingRegions(INPUT);
     }
     AstVarScope* vscp() const { return m_vscp; }
     AstVar* varp() const { return m_vscp->varp(); }
     AstScope* scopep() const { return m_vscp->scopep(); }
-    bool isTopInput() const { return scopep()->isTop() && varp()->isNonOutput(); }
 
     // For graph dumping
     string name() const override { return m_vscp->name(); }
-    string dotShape() const override { return isTopInput() ? "invhouse" : "ellipse"; }
+    string dotShape() const override { return varp()->isPrimaryInish() ? "invhouse" : "ellipse"; }
 };
 
 class Graph final : public V3Graph {};

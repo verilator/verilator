@@ -805,10 +805,9 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilde
     AstCFunc* const icoFuncp
         = V3Order::order(netlistp, {&logic}, trigToSen, "ico", false, false,
                          [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
-                             if (vscp->scopep()->isTop() && vscp->varp()->isNonOutput()) {
-                                 out.push_back(inputChanged);
-                             }
-                             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+                             AstVar* const varp = vscp->varp();
+                             if (varp->isPrimaryInish()) out.push_back(inputChanged);
+                             if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                          });
     splitCheck(icoFuncp);
 
