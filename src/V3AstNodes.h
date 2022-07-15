@@ -4988,6 +4988,47 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
+class AstConsWildcard final : public AstNodeMath {
+    // Construct a wildcard assoc array and return object, '{}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstConsWildcard(FileLine* fl, AstNode* defaultp)
+        : ASTGEN_SUPER_ConsWildcard(fl) {
+        setNOp1p(defaultp);
+    }
+    ASTNODE_NODE_FUNCS(ConsWildcard)
+    virtual string emitVerilog() override { return "'{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* defaultp() const { return op1p(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+class AstSetWildcard final : public AstNodeMath {
+    // Set a wildcard assoc array element and return object, '{}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstSetWildcard(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNode* valuep)
+        : ASTGEN_SUPER_SetWildcard(fl) {
+        setOp1p(lhsp);
+        setNOp2p(keyp);
+        setOp3p(valuep);
+    }
+    ASTNODE_NODE_FUNCS(SetWildcard)
+    virtual string emitVerilog() override { return "'{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* keyp() const { return op2p(); }
+    AstNode* valuep() const { return op3p(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
 class AstConsDynArray final : public AstNodeMath {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
     // Parents: math

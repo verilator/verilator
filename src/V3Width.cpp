@@ -2201,6 +2201,31 @@ private:
                          EXTEND_EXP);
         }
     }
+    virtual void visit(AstConsWildcard* nodep) override {
+        // Type computed when constructed here
+        auto* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), WildcardArrayDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsWildcard requires wildcard upper parent data type");
+        if (m_vup->prelim()) {
+            nodep->dtypeFrom(vdtypep);
+            if (nodep->defaultp()) {
+                iterateCheck(nodep, "default", nodep->defaultp(), CONTEXT, FINAL,
+                             vdtypep->subDTypep(), EXTEND_EXP);
+            }
+        }
+    }
+    virtual void visit(AstSetWildcard* nodep) override {
+        // Type computed when constructed here
+        auto* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), WildcardArrayDType);
+        UASSERT_OBJ(vdtypep, nodep, "SetWildcard requires wildcard upper parent data type");
+        if (m_vup->prelim()) {
+            nodep->dtypeFrom(vdtypep);
+            userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, BOTH}.p());
+            iterateCheck(nodep, "key", nodep->keyp(), CONTEXT, FINAL, vdtypep->findStringDType(),
+                         EXTEND_EXP);
+            iterateCheck(nodep, "value", nodep->valuep(), CONTEXT, FINAL, vdtypep->subDTypep(),
+                         EXTEND_EXP);
+        }
+    }
     virtual void visit(AstConsDynArray* nodep) override {
         // Type computed when constructed here
         AstDynArrayDType* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), DynArrayDType);
@@ -3508,6 +3533,8 @@ private:
                 VL_DO_DANGLING(patternArray(nodep, vdtypep, defaultp), nodep);
             } else if (auto* const vdtypep = VN_CAST(dtypep, AssocArrayDType)) {
                 VL_DO_DANGLING(patternAssoc(nodep, vdtypep, defaultp), nodep);
+            } else if (auto* const vdtypep = VN_CAST(dtypep, WildcardArrayDType)) {
+                VL_DO_DANGLING(patternWildcard(nodep, vdtypep, defaultp), nodep);
             } else if (auto* const vdtypep = VN_CAST(dtypep, DynArrayDType)) {
                 VL_DO_DANGLING(patternDynArray(nodep, vdtypep, defaultp), nodep);
             } else if (auto* const vdtypep = VN_CAST(dtypep, QueueDType)) {
@@ -3684,6 +3711,26 @@ private:
             AstNode* const keyp = patp->keyp();
             auto* const newap
                 = new AstSetAssoc(nodep->fileline(), newp, keyp->unlinkFrBack(), valuep);
+            newap->dtypeFrom(arrayDtp);
+            newp = newap;
+        }
+        nodep->replaceWith(newp);
+        // if (debug() >= 9) newp->dumpTree("-apat-out: ");
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+    }
+    void patternWildcard(AstPattern* nodep, AstWildcardArrayDType* arrayDtp,
+                         AstPatMember* defaultp) {
+        AstNode* defaultValuep = nullptr;
+        if (defaultp) defaultValuep = defaultp->lhssp()->unlinkFrBack();
+        AstNode* newp = new AstConsWildcard{nodep->fileline(), defaultValuep};
+        newp->dtypeFrom(arrayDtp);
+        for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
+             patp = VN_AS(patp->nextp(), PatMember)) {
+            patp->dtypep(arrayDtp->subDTypep());
+            AstNode* const valuep = patternMemberValueIterate(patp);
+            AstNode* const keyp = patp->keyp();
+            auto* const newap
+                = new AstSetWildcard{nodep->fileline(), newp, keyp->unlinkFrBack(), valuep};
             newap->dtypeFrom(arrayDtp);
             newp = newap;
         }
