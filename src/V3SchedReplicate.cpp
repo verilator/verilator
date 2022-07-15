@@ -121,7 +121,9 @@ public:
         : Vertex{graphp}
         , m_vscp{vscp} {
         // Top level inputs are
-        if (varp()->isPrimaryInish() || varp()->isWrittenByDpi()) addDrivingRegions(INPUT);
+        if (varp()->isPrimaryInish() || varp()->isSigUserRWPublic() || varp()->isWrittenByDpi()) {
+            addDrivingRegions(INPUT);
+        }
     }
     AstVarScope* vscp() const { return m_vscp; }
     AstVar* varp() const { return m_vscp->varp(); }
