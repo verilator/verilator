@@ -1601,11 +1601,19 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
         // It should have already been copied into the settle domain.  Presumably it has
         // inputs which we never trigger, or nothing it's sensitive to, so we can rip it out.
         if (!domainp && vertexp->scopep()) domainp = m_deleteDomainp;
+        // However, anything that is public RW must be added to the combo domain since the
+        // user may change it at any time
+        if (domainp && vvertexp && vvertexp->varScp()->varp()->isSigUserRWPublic())
+            domainp = m_comboDomainp;
     }
     //
     vertexp->domainp(domainp);
     if (vertexp->domainp()) {
         UINFO(5, "      done d=" << cvtToHex(vertexp->domainp())
+                                 << (vertexp->domainp() == m_deleteDomainp ? " [DEL]" : "")
+                                 << (vertexp->domainp()->hasClocked() ? " [CLKD]" : "")
+                                 << (vertexp->domainp()->hasSettle() ? " [SETL]" : "")
+                                 << (vertexp->domainp()->hasInitial() ? " [INIT]" : "")
                                  << (vertexp->domainp()->hasCombo() ? " [COMB]" : "")
                                  << (vertexp->domainp()->isMulti() ? " [MULT]" : "") << " "
                                  << vertexp << endl);
