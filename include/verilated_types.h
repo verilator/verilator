@@ -923,12 +923,9 @@ template <class T_Value, std::size_t T_Depth> struct VlUnpacked final {
     T_Value& operator[](size_t index) { return m_storage[index]; }
     const T_Value& operator[](size_t index) const { return m_storage[index]; }
 
-    bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) const {
-        for (int i = 0; i < T_Depth; ++i) {
-            if (m_storage[i] != that.m_storage[i]) return true;
-        }
-        return false;
-    }
+    // *this != that, which might be used for change detection/trigger computation, but avoid
+    // operator overloading in VlUnpacked for safety in other contexts.
+    inline bool neq(const VlUnpacked<T_Value, T_Depth>& that) const { return neq(*this, that); }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {
@@ -939,6 +936,22 @@ template <class T_Value, std::size_t T_Depth> struct VlUnpacked final {
             comma = ", ";
         }
         return out + "} ";
+    }
+
+private:
+    template <typename T_Val, std::size_t T_Dep>
+    static bool neq(const VlUnpacked<T_Val, T_Dep>& a, const VlUnpacked<T_Val, T_Dep>& b) {
+        for (int i = 0; i < T_Dep; ++i) {
+            // Recursive 'neq', in case T_Val is also a VlUnpacked<_, _>
+            if (neq(a.m_storage[i], b.m_storage[i])) return true;
+        }
+        return false;
+    }
+
+    template <typename T_Other>  //
+    inline static bool neq(const T_Other& a, const T_Other& b) {
+        // Base case (T_Other is not VlUnpacked<_, _>), fall back on !=
+        return a != b;
     }
 };
 

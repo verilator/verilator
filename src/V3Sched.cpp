@@ -325,6 +325,11 @@ class SenExprBuilder final {
             return {nullptr, false};  // We already warn for this in V3LinkResolve
         case VEdgeType::ET_CHANGED:
         case VEdgeType::ET_HYBRID:  //
+            if (VN_IS(senp->dtypep(), UnpackArrayDType)) {
+                AstCMethodHard* const resultp = new AstCMethodHard{flp, currp(), "neq", prevp()};
+                resultp->dtypeSetBit();
+                return {resultp, true};
+            }
             return {new AstNeq(flp, currp(), prevp()), true};
         case VEdgeType::ET_BOTHEDGE:  //
             return {lsb(new AstXor{flp, currp(), prevp()}), false};
