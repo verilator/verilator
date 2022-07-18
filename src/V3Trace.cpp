@@ -513,8 +513,7 @@ private:
             }
             m_regFuncp->addStmtsp(new AstAddrOfCFunc(flp, funcp));
             m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf", true));
-            m_regFuncp->addStmtsp(
-                new AstText(flp, ", vlSelf->vlSymsp->__Vm_modelp->contextp()", true));
+            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf->vlSymsp->__Vm_modelp", true));
             m_regFuncp->addStmtsp(new AstText(flp, ");\n", true));
         } else {
             // Sub functions
@@ -702,8 +701,7 @@ private:
         // Register it
         m_regFuncp->addStmtsp(new AstText(fl, "tracep->addCleanupCb(", true));
         m_regFuncp->addStmtsp(new AstAddrOfCFunc(fl, cleanupFuncp));
-        m_regFuncp->addStmtsp(
-            new AstText(fl, ", vlSelf, vlSelf->vlSymsp->__Vm_modelp->contextp());\n", true));
+        m_regFuncp->addStmtsp(new AstText(fl, ", vlSelf, vlSelf->vlSymsp->__Vm_modelp);\n", true));
 
         // Clear global activity flag
         cleanupFuncp->addStmtsp(

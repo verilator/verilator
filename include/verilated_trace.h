@@ -215,7 +215,7 @@ private:
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
 
-    void addContext(VerilatedContext*) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
 
     void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord&& cbRec)
         VL_MT_SAFE_EXCLUDES(m_mutex);
@@ -339,10 +339,10 @@ public:
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
-    void addInitCb(initCb_t cb, void* userp, VerilatedContext*) VL_MT_SAFE;
-    void addFullCb(dumpCb_t cb, void* userp, VerilatedContext*) VL_MT_SAFE;
-    void addChgCb(dumpCb_t cb, void* userp, VerilatedContext*) VL_MT_SAFE;
-    void addCleanupCb(cleanupCb_t cb, void* userp, VerilatedContext*) VL_MT_SAFE;
+    void addInitCb(initCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
+    void addFullCb(dumpCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
+    void addChgCb(dumpCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
+    void addCleanupCb(cleanupCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
 
     void scopeEscape(char flag) { m_scopeEscape = flag; }
 

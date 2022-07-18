@@ -540,7 +540,7 @@ class EmitCModel final : public EmitCFunc {
         }
         puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
         puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init")
-             + ", &(vlSymsp->TOP), contextp());\n");
+             + ", &(vlSymsp->TOP), this);\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), tfp->spTrace());\n");
 

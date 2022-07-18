@@ -604,9 +604,10 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
 // Non-hot path internal interface to Verilator generated code
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addContext(VerilatedContext* contextp)
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
+    VerilatedContext* const contextp = modelp->contextp();
     if (m_contextp && contextp != m_contextp) {
         VL_FATAL_MT(
             __FILE__, __LINE__, "",
@@ -630,26 +631,26 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackR
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp,
-                                                   VerilatedContext* contextp) VL_MT_SAFE {
-    addContext(contextp);
+                                                   VerilatedModel* modelp) VL_MT_SAFE {
+    addModel(modelp);
     addCallbackRecord(m_initCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, void* userp,
-                                                   VerilatedContext* contextp) VL_MT_SAFE {
-    addContext(contextp);
+                                                   VerilatedModel* modelp) VL_MT_SAFE {
+    addModel(modelp);
     addCallbackRecord(m_fullCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpCb_t cb, void* userp,
-                                                  VerilatedContext* contextp) VL_MT_SAFE {
-    addContext(contextp);
+                                                  VerilatedModel* modelp) VL_MT_SAFE {
+    addModel(modelp);
     addCallbackRecord(m_chgCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp,
-                                                      VerilatedContext* contextp) VL_MT_SAFE {
-    addContext(contextp);
+                                                      VerilatedModel* modelp) VL_MT_SAFE {
+    addModel(modelp);
     addCallbackRecord(m_cleanupCbs, CallbackRecord{cb, userp});
 }
 
