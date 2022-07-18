@@ -498,7 +498,9 @@ private:
         };
         if (isTopFunc) {
             // Top functions
-            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase() + "::Buffer* bufp");
+            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase()
+                            + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer")
+                            + "* bufp");
             addInitStr(voidSelfAssign(m_topModp));
             addInitStr(symClassAssign());
             // Add global activity check to change dump functions
@@ -517,7 +519,9 @@ private:
             m_regFuncp->addStmtsp(new AstText(flp, ");\n", true));
         } else {
             // Sub functions
-            funcp->argTypes(v3Global.opt.traceClassBase() + "::Buffer* bufp");
+            funcp->argTypes(v3Global.opt.traceClassBase()
+                            + "::" + +(v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer")
+                            + "* bufp");
             // Setup base references. Note in rare occasions we can end up with an empty trace
             // sub function, hence the VL_ATTR_UNUSED attributes.
             if (full) {

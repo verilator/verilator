@@ -102,7 +102,8 @@ ssize_t VerilatedVcdFile::write(const char* bufp, ssize_t len) VL_MT_UNSAFE {
 //=============================================================================
 // Opening/Closing
 
-VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep) {
+VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
+    : VerilatedTrace{false} {
     // Not in header to avoid link issue if header is included without this .cpp file
     m_fileNewed = (filep == nullptr);
     m_filep = m_fileNewed ? new VerilatedVcdFile : filep;
@@ -583,7 +584,8 @@ void VerilatedVcd::declDouble(uint32_t code, const char* name, bool array, int a
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedVcdBuffer* VerilatedVcd::getTraceBuffer() {
+VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer() {
+    VerilatedVcd::Buffer* const bufp = new Buffer{*this};
 #ifdef VL_TRACE_PARALLEL
     // Note: This is called from VeriltedVcd::dump, which already holds the lock
     // If no buffer available, allocate a new one
@@ -597,14 +599,16 @@ VerilatedVcdBuffer* VerilatedVcd::getTraceBuffer() {
     // Grab a buffer
     const auto pair = m_freeBuffers.back();
     m_freeBuffers.pop_back();
-    // Return the buffer
-    return new VerilatedVcdBuffer{*this, pair.first, pair.second};
-#else
-    return new VerilatedVcdBuffer{*this};
+    // Initialize
+    bufp->m_writep = bufp->m_bufp = pair.first;
+    bufp->m_size = pair.second;
+    bufp->adjustGrowp();
 #endif
+    // Return the buffer
+    return bufp;
 }
 
-void VerilatedVcd::commitTraceBuffer(VerilatedVcdBuffer* bufp) {
+void VerilatedVcd::commitTraceBuffer(VerilatedVcd::Buffer* bufp) {
 #ifdef VL_TRACE_PARALLEL
     // Note: This is called from VeriltedVcd::dump, which already holds the lock
     // Resize output buffer. Note, we use the full size of the trace buffer, as
@@ -630,19 +634,6 @@ void VerilatedVcd::commitTraceBuffer(VerilatedVcdBuffer* bufp) {
 
 //=============================================================================
 // VerilatedVcdBuffer implementation
-
-#ifdef VL_TRACE_PARALLEL
-VerilatedVcdBuffer::VerilatedVcdBuffer(VerilatedVcd& owner, char* bufp, size_t size)
-    : VerilatedTraceBuffer<VerilatedVcd, VerilatedVcdBuffer>{owner}
-    , m_writep{bufp}
-    , m_bufp{bufp}
-    , m_size{size} {
-    adjustGrowp();
-}
-#else
-VerilatedVcdBuffer::VerilatedVcdBuffer(VerilatedVcd& owner)
-    : VerilatedTraceBuffer<VerilatedVcd, VerilatedVcdBuffer>{owner} {}
-#endif
 
 //=============================================================================
 // Trace rendering primitives

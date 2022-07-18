@@ -41,7 +41,7 @@ public:
     using Super = VerilatedTrace<VerilatedVcd, VerilatedVcdBuffer>;
 
 private:
-    friend Buffer;  // Give the buffer access to the private bits
+    friend VerilatedVcdBuffer;  // Give the buffer access to the private bits
 
     //=========================================================================
     // VCD specific internals
@@ -110,8 +110,8 @@ protected:
     virtual bool preChangeDump() override;
 
     // Trace buffer management
-    virtual VerilatedVcdBuffer* getTraceBuffer() override;
-    virtual void commitTraceBuffer(VerilatedVcdBuffer*) override;
+    virtual Buffer* getTraceBuffer() override;
+    virtual void commitTraceBuffer(Buffer*) override;
 
 public:
     //=========================================================================
@@ -160,16 +160,20 @@ template <> void VerilatedVcd::Super::dumpvars(int level, const std::string& hie
 //=============================================================================
 // VerilatedVcdBuffer
 
-class VerilatedVcdBuffer final : public VerilatedTraceBuffer<VerilatedVcd, VerilatedVcdBuffer> {
-    // Give the trace file access to the private bits
+class VerilatedVcdBuffer VL_NOT_FINAL {
+    // Give the trace file ans sub-classes access to the private bits
     friend VerilatedVcd;
     friend VerilatedVcd::Super;
+    friend VerilatedVcd::Buffer;
+    friend VerilatedVcd::OffloadBuffer;
+
+    VerilatedVcd& m_owner;  // Trace file owning this buffer. Required by subclasses.
 
 #ifdef VL_TRACE_PARALLEL
-    char* m_writep;  // Write pointer into m_bufp
-    char* m_bufp;  // The beginning of the trace buffer
-    size_t m_size;  // The size of the buffer at m_bufp
-    char* m_growp;  // Resize limit pointer
+    char* m_writep = nullptr;  // Write pointer into m_bufp
+    char* m_bufp = nullptr;  // The beginning of the trace buffer
+    size_t m_size = 0;  // The size of the buffer at m_bufp
+    char* m_growp = nullptr;  // Resize limit pointer
 #else
     char* m_writep = m_owner.m_writep;  // Write pointer into output buffer
     char* const m_wrFlushp = m_owner.m_wrFlushp;  // Output buffer flush trigger location
@@ -189,18 +193,13 @@ class VerilatedVcdBuffer final : public VerilatedTraceBuffer<VerilatedVcd, Veril
     }
 #endif
 
-public:
     // CONSTRUCTOR
-#ifdef VL_TRACE_PARALLEL
-    explicit VerilatedVcdBuffer(VerilatedVcd& owner, char* bufp, size_t size);
-#else
-    explicit VerilatedVcdBuffer(VerilatedVcd& owner);
-#endif
-    ~VerilatedVcdBuffer() = default;
+    explicit VerilatedVcdBuffer(VerilatedVcd& owner)
+        : m_owner{owner} {}
+    virtual ~VerilatedVcdBuffer() = default;
 
     //=========================================================================
     // Implementation of VerilatedTraceBuffer interface
-
     // Implementations of duck-typed methods for VerilatedTraceBuffer. These are
     // called from only one place (the full* methods), so always inline them.
     VL_ATTR_ALWINLINE inline void emitBit(uint32_t code, CData newval);

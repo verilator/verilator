@@ -93,7 +93,17 @@ static_assert(static_cast<int>(FST_ST_VCD_PROGRAM) == static_cast<int>(VLT_TRACE
 // VerilatedFst
 
 VerilatedFst::VerilatedFst(void* fst)
-    : m_fst{fst} {}
+    :
+#ifdef VL_TRACE_OFFLOAD
+    VerilatedTrace {
+    true
+}
+#else
+    VerilatedTrace {
+    false
+}
+#endif
+, m_fst{fst} {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
@@ -250,13 +260,21 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedFstBuffer* VerilatedFst::getTraceBuffer() { return new VerilatedFstBuffer{*this}; }
+VerilatedFst::Buffer* VerilatedFst::getTraceBuffer() {
+#ifdef VL_THREADED
+    if (offload()) return new OffloadBuffer{*this};
+#endif
+    return new Buffer{*this};
+}
 
-void VerilatedFst::commitTraceBuffer(VerilatedFstBuffer* bufp) {
-#ifdef VL_TRACE_OFFLOAD
-    if (bufp->m_offloadBufferWritep) {
-        m_offloadBufferWritep = bufp->m_offloadBufferWritep;
-        return;  // Buffer will be deleted by the offload thread
+void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
+#ifdef VL_THREADED
+    if (offload()) {
+        OffloadBuffer* const offloadBufferp = static_cast<OffloadBuffer*>(bufp);
+        if (offloadBufferp->m_offloadBufferWritep) {
+            m_offloadBufferWritep = offloadBufferp->m_offloadBufferWritep;
+            return;  // Buffer will be deleted by the offload thread
+        }
     }
 #endif
     delete bufp;
@@ -264,9 +282,6 @@ void VerilatedFst::commitTraceBuffer(VerilatedFstBuffer* bufp) {
 
 //=============================================================================
 // VerilatedFstBuffer implementation
-
-VerilatedFstBuffer::VerilatedFstBuffer(VerilatedFst& owner)
-    : VerilatedTraceBuffer<VerilatedFst, VerilatedFstBuffer>{owner} {}
 
 //=============================================================================
 // Trace rendering primitives

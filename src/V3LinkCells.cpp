@@ -480,7 +480,7 @@ private:
         // mangled_name, BlockOptions
         const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
         const auto hierIt = vlstd::as_const(hierBlocks).find(v3Global.opt.topModule());
-        UASSERT((hierIt != hierBlocks.end()) == v3Global.opt.hierChild(),
+        UASSERT((hierIt != hierBlocks.end()) == !!v3Global.opt.hierChild(),
                 "information of the top module must exist if --hierarchical-child is set");
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {

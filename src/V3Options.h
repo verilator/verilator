@@ -241,7 +241,6 @@ private:
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
     bool m_hierarchical = false;    // main switch: --hierarchical
-    bool m_hierChild = false;       // main switch: --hierarchical-child
     bool m_ignc = false;            // main switch: --ignc
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
@@ -288,6 +287,7 @@ private:
     int         m_dumpTree = 0;     // main switch: --dump-tree
     int         m_expandLimit = 64;  // main switch: --expand-limit
     int         m_gateStmts = 100;    // main switch: --gate-stmts
+    int         m_hierChild = 0;      // main switch: --hierarchical-child
     int         m_ifDepth = 0;      // main switch: --if-depth
     int         m_inlineMult = 2000;   // main switch: --inline-mult
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
@@ -518,7 +518,9 @@ public:
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
     bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }
-    bool useTraceParallel() const { return trace() && traceFormat().vcd() && threads() > 1; }
+    bool useTraceParallel() const {
+        return trace() && traceFormat().vcd() && threads() && (threads() > 1 || hierChild() > 1);
+    }
     unsigned vmTraceThreads() const {
         return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
     }
@@ -605,7 +607,7 @@ public:
     }
 
     bool hierarchical() const { return m_hierarchical; }
-    bool hierChild() const { return m_hierChild; }
+    int hierChild() const { return m_hierChild; }
     bool hierTop() const { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
     // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top

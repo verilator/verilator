@@ -1124,7 +1124,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         const V3HierarchicalBlockOption opt(valp);
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
-    DECL_OPTION("-hierarchical-child", OnOff, &m_hierChild);
+    DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
 
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });

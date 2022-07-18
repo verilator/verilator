@@ -156,7 +156,7 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     opts.push_back(" --lib-create " + modp()->name());  // possibly mangled name
     if (v3Global.opt.protectKeyProvided())
         opts.push_back(" --protect-key " + v3Global.opt.protectKeyDefaulted());
-    opts.push_back(" --hierarchical-child");
+    opts.push_back(" --hierarchical-child " + cvtToStr(std::max(1, v3Global.opt.threads())));
 
     const StrGParams gparamsStr = stringifyParams(gparams(), true);
     for (StrGParams::const_iterator paramIt = gparamsStr.begin(); paramIt != gparamsStr.end();
