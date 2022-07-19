@@ -264,7 +264,7 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::closeBase() {
 }
 
 template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::flushBase() {
-#ifdef VL_THREDED
+#ifdef VL_THREADED
     if (offload()) {
         // Hand an empty buffer to the worker thread
         uint32_t* const bufferp = getOffloadBuffer();
