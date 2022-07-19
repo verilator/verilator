@@ -261,11 +261,6 @@ void VerilatedVcd::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     // This function is on the flush() call path
     const VerilatedLockGuard lock{m_mutex};
     if (!isOpen()) return;
-    if (m_evcd) {
-        printStr("$vcdclose ");
-        printQuad(timeLastDump());
-        printStr(" $end\n");
-    }
     closePrev();
     // closePrev() called Super::flush(), so we just
     // need to shut down the tracing thread here.
@@ -515,38 +510,29 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
 
     // Print reference
     std::string decl = "$var ";
-    if (m_evcd) {
-        decl += "port";
-    } else {
-        decl += wirep;  // usually "wire"
-    }
+    decl += wirep;  // usually "wire"
 
     constexpr size_t bufsize = 1000;
     char buf[bufsize];
     VL_SNPRINTF(buf, bufsize, " %2d ", bits);
     decl += buf;
-    if (m_evcd) {
-        VL_SNPRINTF(buf, bufsize, "<%u", code);
-        decl += buf;
-    } else {
-        // Add string code to decl
-        char* const endp = writeCode(buf, code);
-        *endp = '\0';
-        decl += buf;
-        // Build suffix array entry
-        char* const entryp = &m_suffixes[code * VL_TRACE_SUFFIX_ENTRY_SIZE];
-        const size_t length = endp - buf;
-        assert(length <= VL_TRACE_MAX_VCD_CODE_SIZE);
-        // 1 bit values don't have a ' ' separator between value and string code
-        const bool isBit = bits == 1;
-        entryp[0] = ' ';  // Separator
-        // Use memcpy as we checked size above, and strcpy is flagged unsafe
-        std::memcpy(entryp + !isBit, buf,
-                    std::strlen(buf));  // Code (overwrite separator if isBit)
-        entryp[length + !isBit] = '\n';  // Replace '\0' with line termination '\n'
-        // Set length of suffix (used to increment write pointer)
-        entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = !isBit + length + 1;
-    }
+    // Add string code to decl
+    char* const endp = writeCode(buf, code);
+    *endp = '\0';
+    decl += buf;
+    // Build suffix array entry
+    char* const entryp = &m_suffixes[code * VL_TRACE_SUFFIX_ENTRY_SIZE];
+    const size_t length = endp - buf;
+    assert(length <= VL_TRACE_MAX_VCD_CODE_SIZE);
+    // 1 bit values don't have a ' ' separator between value and string code
+    const bool isBit = bits == 1;
+    entryp[0] = ' ';  // Separator
+    // Use memcpy as we checked size above, and strcpy is flagged unsafe
+    std::memcpy(entryp + !isBit, buf,
+                std::strlen(buf));  // Code (overwrite separator if isBit)
+    entryp[length + !isBit] = '\n';  // Replace '\0' with line termination '\n'
+    // Set length of suffix (used to increment write pointer)
+    entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = !isBit + length + 1;
     decl += " ";
     decl += basename;
     if (array) {

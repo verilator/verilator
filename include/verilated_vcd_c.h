@@ -49,7 +49,6 @@ private:
     VerilatedVcdFile* m_filep;  // File we're writing to
     bool m_fileNewed;  // m_filep needs destruction
     bool m_isOpen = false;  // True indicates open file
-    bool m_evcd = false;  // True for evcd format
     std::string m_filename;  // Filename we're writing to (if open)
     uint64_t m_rolloverMB = 0;  // MB of file size to rollover at
     int m_modDepth = 0;  // Depth of module hierarchy
