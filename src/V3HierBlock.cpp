@@ -306,10 +306,6 @@ public:
 
 //######################################################################
 
-bool V3HierBlockPlan::isHierBlock(const AstNodeModule* modp) const {
-    return m_blocks.find(modp) != m_blocks.end();
-}
-
 void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams) {
     const iterator it = m_blocks.find(modp);
     if (it == m_blocks.end()) {
