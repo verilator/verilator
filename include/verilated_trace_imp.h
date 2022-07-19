@@ -26,7 +26,7 @@
 
 #include "verilated_intrinsics.h"
 #include "verilated_trace.h"
-#ifdef VL_TRACE_PARALLEL
+#ifdef VL_THREADED
 # include "verilated_threads.h"
 # include <list>
 #endif
@@ -462,7 +462,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
     }
 }
 
-#ifdef VL_TRACE_PARALLEL
+#ifdef VL_THREADED
 template <>  //
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap, bool) {
     ParallelWorkerData* const wdp = reinterpret_cast<ParallelWorkerData*>(datap);
@@ -490,45 +490,47 @@ template <> VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWo
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<CallbackRecord>& cbVec) {
-#ifdef VL_TRACE_PARALLEL
-    // If tracing in parallel, dispatch to the thread pool
-    VlThreadPool* threadPoolp = static_cast<VlThreadPool*>(m_contextp->threadPoolp());
-    // List of work items for thread (std::list, as ParallelWorkerData is not movable)
-    std::list<ParallelWorkerData> workerData;
-    // We use the whole pool + the main thread
-    const unsigned threads = threadPoolp->numThreads() + 1;
-    // Main thread executes all jobs with index % threads == 0
-    std::vector<ParallelWorkerData*> mainThreadWorkerData;
-    // Enuque all the jobs
-    for (unsigned i = 0; i < cbVec.size(); ++i) {
-        const CallbackRecord& cbr = cbVec[i];
-        // Always get the trace buffer on the main thread
-        Buffer* const bufp = getTraceBuffer();
-        // Create new work item
-        workerData.emplace_back(cbr.m_dumpCb, cbr.m_userp, bufp);
-        // Grab the new work item
-        ParallelWorkerData* const itemp = &workerData.back();
-        // Enqueue task to thread pool, or main thread
-        if (unsigned rem = i % threads) {
-            threadPoolp->workerp(rem - 1)->addTask(parallelWorkerTask, itemp);
-        } else {
-            mainThreadWorkerData.push_back(itemp);
+#ifdef VL_THREADED
+    if (parallel()) {
+        // If tracing in parallel, dispatch to the thread pool
+        VlThreadPool* threadPoolp = static_cast<VlThreadPool*>(m_contextp->threadPoolp());
+        // List of work items for thread (std::list, as ParallelWorkerData is not movable)
+        std::list<ParallelWorkerData> workerData;
+        // We use the whole pool + the main thread
+        const unsigned threads = threadPoolp->numThreads() + 1;
+        // Main thread executes all jobs with index % threads == 0
+        std::vector<ParallelWorkerData*> mainThreadWorkerData;
+        // Enuque all the jobs
+        for (unsigned i = 0; i < cbVec.size(); ++i) {
+            const CallbackRecord& cbr = cbVec[i];
+            // Always get the trace buffer on the main thread
+            Buffer* const bufp = getTraceBuffer();
+            // Create new work item
+            workerData.emplace_back(cbr.m_dumpCb, cbr.m_userp, bufp);
+            // Grab the new work item
+            ParallelWorkerData* const itemp = &workerData.back();
+            // Enqueue task to thread pool, or main thread
+            if (unsigned rem = i % threads) {
+                threadPoolp->workerp(rem - 1)->addTask(parallelWorkerTask, itemp);
+            } else {
+                mainThreadWorkerData.push_back(itemp);
+            }
         }
-    }
-    // Execute main thead jobs
-    for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
-        parallelWorkerTask(itemp, false);
-    }
-    // Commit all trace buffers in order
-    for (ParallelWorkerData& item : workerData) {
-        // Wait until ready
-        item.wait();
-        // Commit the buffer
-        commitTraceBuffer(item.m_bufp);
-    }
+        // Execute main thead jobs
+        for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
+            parallelWorkerTask(itemp, false);
+        }
+        // Commit all trace buffers in order
+        for (ParallelWorkerData& item : workerData) {
+            // Wait until ready
+            item.wait();
+            // Commit the buffer
+            commitTraceBuffer(item.m_bufp);
+        }
 
-    // Done
-    return;
+        // Done
+        return;
+    }
 #endif
     // Fall back on sequential execution
     for (const CallbackRecord& cbr : cbVec) {

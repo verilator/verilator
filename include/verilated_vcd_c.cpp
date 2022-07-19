@@ -230,9 +230,11 @@ VerilatedVcd::~VerilatedVcd() {
     if (m_wrBufp) VL_DO_CLEAR(delete[] m_wrBufp, m_wrBufp = nullptr);
     deleteNameMap();
     if (m_filep && m_fileNewed) VL_DO_CLEAR(delete m_filep, m_filep = nullptr);
-#ifdef VL_TRACE_PARALLEL
-    assert(m_numBuffers == m_freeBuffers.size());
-    for (auto& pair : m_freeBuffers) VL_DO_CLEAR(delete[] pair.first, pair.first = nullptr);
+#ifdef VL_THREADED
+    if (parallel()) {
+        assert(m_numBuffers == m_freeBuffers.size());
+        for (auto& pair : m_freeBuffers) VL_DO_CLEAR(delete[] pair.first, pair.first = nullptr);
+    }
 #endif
 }
 
@@ -572,49 +574,55 @@ void VerilatedVcd::declDouble(uint32_t code, const char* name, bool array, int a
 
 VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer() {
     VerilatedVcd::Buffer* const bufp = new Buffer{*this};
-#ifdef VL_TRACE_PARALLEL
-    // Note: This is called from VeriltedVcd::dump, which already holds the lock
-    // If no buffer available, allocate a new one
-    if (m_freeBuffers.empty()) {
-        constexpr size_t pageSize = 4096;
-        // 4 * m_maxSignalBytes, so we can reserve 2 * m_maxSignalBytes at the end for safety
-        size_t startingSize = roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);
-        m_freeBuffers.emplace_back(new char[startingSize], startingSize);
-        ++m_numBuffers;
+#ifdef VL_THREADED
+    if (parallel()) {
+        // Note: This is called from VeriltedVcd::dump, which already holds the lock
+        // If no buffer available, allocate a new one
+        if (m_freeBuffers.empty()) {
+            constexpr size_t pageSize = 4096;
+            // 4 * m_maxSignalBytes, so we can reserve 2 * m_maxSignalBytes at the end for safety
+            size_t startingSize = roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);
+            m_freeBuffers.emplace_back(new char[startingSize], startingSize);
+            ++m_numBuffers;
+        }
+        // Grab a buffer
+        const auto pair = m_freeBuffers.back();
+        m_freeBuffers.pop_back();
+        // Initialize
+        bufp->m_writep = bufp->m_bufp = pair.first;
+        bufp->m_size = pair.second;
+        bufp->adjustGrowp();
     }
-    // Grab a buffer
-    const auto pair = m_freeBuffers.back();
-    m_freeBuffers.pop_back();
-    // Initialize
-    bufp->m_writep = bufp->m_bufp = pair.first;
-    bufp->m_size = pair.second;
-    bufp->adjustGrowp();
 #endif
     // Return the buffer
     return bufp;
 }
 
 void VerilatedVcd::commitTraceBuffer(VerilatedVcd::Buffer* bufp) {
-#ifdef VL_TRACE_PARALLEL
-    // Note: This is called from VeriltedVcd::dump, which already holds the lock
-    // Resize output buffer. Note, we use the full size of the trace buffer, as
-    // this is a lot more stable than the actual occupancy of the trace buffer.
-    // This helps us to avoid re-allocations due to small size changes.
-    bufferResize(bufp->m_size);
-    // Compute occupancy of buffer
-    const size_t usedSize = bufp->m_writep - bufp->m_bufp;
-    // Copy to output buffer
-    std::memcpy(m_writep, bufp->m_bufp, usedSize);
-    // Adjust write pointer
-    m_writep += usedSize;
-    // Flush if necessary
-    bufferCheck();
-    // Put buffer back on free list
-    m_freeBuffers.emplace_back(bufp->m_bufp, bufp->m_size);
+    if (parallel()) {
+#if VL_THREADED
+        // Note: This is called from VeriltedVcd::dump, which already holds the lock
+        // Resize output buffer. Note, we use the full size of the trace buffer, as
+        // this is a lot more stable than the actual occupancy of the trace buffer.
+        // This helps us to avoid re-allocations due to small size changes.
+        bufferResize(bufp->m_size);
+        // Compute occupancy of buffer
+        const size_t usedSize = bufp->m_writep - bufp->m_bufp;
+        // Copy to output buffer
+        std::memcpy(m_writep, bufp->m_bufp, usedSize);
+        // Adjust write pointer
+        m_writep += usedSize;
+        // Flush if necessary
+        bufferCheck();
+        // Put buffer back on free list
+        m_freeBuffers.emplace_back(bufp->m_bufp, bufp->m_size);
 #else
-    // Needs adjusting for emitTimeChange
-    m_writep = bufp->m_writep;
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
 #endif
+    } else {
+        // Needs adjusting for emitTimeChange
+        m_writep = bufp->m_writep;
+    }
     delete bufp;
 }
 
@@ -656,35 +664,39 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
     // suffix, which was stored in the last byte of the suffix buffer entry.
     m_writep = writep + suffixp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1];
 
-#ifdef VL_TRACE_PARALLEL
-    // Double the size of the buffer if necessary
-    if (VL_UNLIKELY(m_writep >= m_growp)) {
-        // Compute occupied size of current buffer
-        const size_t usedSize = m_writep - m_bufp;
-        // We are always doubling the size
-        m_size *= 2;
-        // Allocate the new buffer
-        char* const newBufp = new char[m_size];
-        // Copy from current buffer to new buffer
-        std::memcpy(newBufp, m_bufp, usedSize);
-        // Delete current buffer
-        delete[] m_bufp;
-        // Make new buffer the current buffer
-        m_bufp = newBufp;
-        // Adjust write pointer
-        m_writep = m_bufp + usedSize;
-        // Adjust resize limit
-        adjustGrowp();
-    }
+    if (m_owner.parallel()) {
+#ifdef VL_THREADED
+        // Double the size of the buffer if necessary
+        if (VL_UNLIKELY(m_writep >= m_growp)) {
+            // Compute occupied size of current buffer
+            const size_t usedSize = m_writep - m_bufp;
+            // We are always doubling the size
+            m_size *= 2;
+            // Allocate the new buffer
+            char* const newBufp = new char[m_size];
+            // Copy from current buffer to new buffer
+            std::memcpy(newBufp, m_bufp, usedSize);
+            // Delete current buffer
+            delete[] m_bufp;
+            // Make new buffer the current buffer
+            m_bufp = newBufp;
+            // Adjust write pointer
+            m_writep = m_bufp + usedSize;
+            // Adjust resize limit
+            adjustGrowp();
+        }
 #else
-    // Flush the write buffer if there's not enough space left for new information
-    // We only call this once per vector, so we need enough slop for a very wide "b###" line
-    if (VL_UNLIKELY(m_writep > m_wrFlushp)) {
-        m_owner.m_writep = m_writep;
-        m_owner.bufferFlush();
-        m_writep = m_owner.m_writep;
-    }
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
 #endif
+    } else {
+        // Flush the write buffer if there's not enough space left for new information
+        // We only call this once per vector, so we need enough slop for a very wide "b###" line
+        if (VL_UNLIKELY(m_writep > m_wrFlushp)) {
+            m_owner.m_writep = m_writep;
+            m_owner.bufferFlush();
+            m_writep = m_owner.m_writep;
+        }
+    }
 }
 
 //=============================================================================

@@ -65,7 +65,7 @@ private:
     using NameMap = std::map<const std::string, const std::string>;
     NameMap* m_namemapp = nullptr;  // List of names for the header
 
-#ifdef VL_TRACE_PARALLEL
+#ifdef VL_THREADED
     // Vector of free trace buffers as (pointer, size) pairs.
     std::vector<std::pair<char*, size_t>> m_freeBuffers;
     size_t m_numBuffers = 0;  // Number of trace buffers allocated
@@ -168,29 +168,29 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
 
     VerilatedVcd& m_owner;  // Trace file owning this buffer. Required by subclasses.
 
-#ifdef VL_TRACE_PARALLEL
-    char* m_writep = nullptr;  // Write pointer into m_bufp
-    char* m_bufp = nullptr;  // The beginning of the trace buffer
-    size_t m_size = 0;  // The size of the buffer at m_bufp
-    char* m_growp = nullptr;  // Resize limit pointer
-#else
-    char* m_writep = m_owner.m_writep;  // Write pointer into output buffer
-    char* const m_wrFlushp = m_owner.m_wrFlushp;  // Output buffer flush trigger location
-#endif
+    // Write pointer into output buffer (in parallel mode, this is set up in 'getTraceBuffer')
+    char* m_writep = m_owner.parallel() ? nullptr : m_owner.m_writep;
+    // Output buffer flush trigger location (only used when not parallel)
+    char* const m_wrFlushp = m_owner.parallel() ? nullptr : m_owner.m_wrFlushp;
 
     // VCD line end string codes + metadata
     const char* const m_suffixes = m_owner.m_suffixes.data();
     // The maximum number of bytes a single signal can emit
     const size_t m_maxSignalBytes = m_owner.m_maxSignalBytes;
 
-    void finishLine(uint32_t code, char* writep);
+#ifdef VL_THREADED
+    // Additional data for parallel tracing only
+    char* m_bufp = nullptr;  // The beginning of the trace buffer
+    size_t m_size = 0;  // The size of the buffer at m_bufp
+    char* m_growp = nullptr;  // Resize limit pointer
 
-#ifdef VL_TRACE_PARALLEL
     void adjustGrowp() {
         m_growp = (m_bufp + m_size) - (2 * m_maxSignalBytes);
         assert(m_growp >= m_bufp + m_maxSignalBytes);
     }
 #endif
+
+    void finishLine(uint32_t code, char* writep);
 
     // CONSTRUCTOR
     explicit VerilatedVcdBuffer(VerilatedVcd& owner)

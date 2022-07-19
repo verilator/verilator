@@ -182,7 +182,7 @@ private:
 
     const bool m_offload;  // Whether to use the offload thread (ignored if !VL_THREADED)
 
-#ifdef VL_TRACE_PARALLEL
+#ifdef VL_THREADED
     struct ParallelWorkerData {
         const dumpCb_t m_cb;  // The callback
         void* const m_userp;  // The use pointer to pass to the callback
@@ -316,6 +316,14 @@ protected:
 #else
     static constexpr bool offload() { return false; }
 #endif
+
+    inline bool parallel() const {
+#ifdef VL_TRACE_PARALLEL
+        return true;
+#else
+        return false;
+#endif
+    }
 
     //=========================================================================
     // Virtual functions to be provided by the format specific implementation
