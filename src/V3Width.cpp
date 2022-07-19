@@ -2480,6 +2480,7 @@ private:
             }
         } else if (VN_IS(fromDtp, EnumDType)  //
                    || VN_IS(fromDtp, AssocArrayDType)  //
+                   || VN_IS(fromDtp, WildcardArrayDType)  //
                    || VN_IS(fromDtp, UnpackArrayDType)  //
                    || VN_IS(fromDtp, DynArrayDType)  //
                    || VN_IS(fromDtp, QueueDType)  //
@@ -4260,6 +4261,7 @@ private:
                         added = true;
                         newFormat += "%g";
                     } else if (VN_IS(dtypep, AssocArrayDType)  //
+                               || VN_IS(dtypep, WildcardArrayDType)  //
                                || VN_IS(dtypep, ClassRefDType)  //
                                || VN_IS(dtypep, DynArrayDType)  //
                                || VN_IS(dtypep, QueueDType)) {
