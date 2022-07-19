@@ -559,13 +559,14 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
     // This does get the mutex, but if multiple threads are trying to dump
     // chances are the data being dumped will have other problems
     const VerilatedLockGuard lock{m_mutex};
-    if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
+    if (VL_UNCOVERABLE(m_didSomeDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
         VL_PRINTF_MT("%%Warning: previous dump at t=%" PRIu64 ", requesting t=%" PRIu64
                      ", dump call ignored\n",
                      m_timeLastDump, timeui);
         return;
     }  // LCOV_EXCL_STOP
     m_timeLastDump = timeui;
+    m_didSomeDump = true;
 
     Verilated::quiesce();
 
@@ -646,11 +647,14 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     VerilatedContext* const contextp = modelp->contextp();
-    if (m_contextp && contextp != m_contextp) {
-        VL_FATAL_MT(
-            __FILE__, __LINE__, "",
-            "A trace file instance can only handle models from the same simulation context");
+    if (VL_UNCOVERABLE(m_contextp && contextp != m_contextp)) {  // LCOV_EXCL_START
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "A trace file instance can only handle models from the same context");
     }
+    if (VL_UNCOVERABLE(m_didSomeDump)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "Cannot add models to a trace file if 'dump' has already been called");
+    }  // LCOV_EXCL_STOP
     m_contextp = contextp;
 }
 
@@ -659,11 +663,6 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackR
                                                            CallbackRecord&& cbRec)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
-    if (VL_UNCOVERABLE(timeLastDump() != 0)) {  // LCOV_EXCL_START
-        const std::string msg = (std::string{"Internal: "} + __FILE__ + "::" + __FUNCTION__
-                                 + " called with already open file");
-        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-    }  // LCOV_EXCL_STOP
     cbVec.push_back(cbRec);
 }
 
@@ -676,29 +675,29 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp,
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, void* userp,
                                                    VerilatedModel* modelp) VL_MT_SAFE {
-    assert(!offload());
     addModel(modelp);
+    assert(!offload());
     addCallbackRecord(m_fullCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpOffloadCb_t cb, void* userp,
                                                    VerilatedModel* modelp) VL_MT_SAFE {
-    assert(offload());
     addModel(modelp);
+    assert(offload());
     addCallbackRecord(m_fullOffloadCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpCb_t cb, void* userp,
                                                   VerilatedModel* modelp) VL_MT_SAFE {
-    assert(!offload());
     addModel(modelp);
+    assert(!offload());
     addCallbackRecord(m_chgCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpOffloadCb_t cb, void* userp,
                                                   VerilatedModel* modelp) VL_MT_SAFE {
-    assert(offload());
     addModel(modelp);
+    assert(offload());
     addCallbackRecord(m_chgOffloadCbs, CallbackRecord{cb, userp});
 }
 template <>

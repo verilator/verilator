@@ -208,7 +208,6 @@ protected:
     uint32_t* m_sigs_oldvalp = nullptr;  // Previous value store
     EData* m_sigs_enabledp = nullptr;  // Bit vector of enabled codes (nullptr = all on)
 private:
-    uint64_t m_timeLastDump = 0;  // Last time we did a dump
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize tracing
     std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
@@ -226,6 +225,8 @@ private:
     char m_scopeEscape = '.';
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
+    uint64_t m_timeLastDump = 0;  // Last time we did a dump
+    bool m_didSomeDump = false;  // Did at least one dump (i.e.: m_timeLastDump is valid)
 
     void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
 
@@ -290,7 +291,6 @@ protected:
     uint32_t numSignals() const { return m_numSignals; }
     uint32_t maxBits() const { return m_maxBits; }
     void fullDump(bool value) { m_fullDump = value; }
-    uint64_t timeLastDump() { return m_timeLastDump; }
 
     double timeRes() const { return m_timeRes; }
     double timeUnit() const { return m_timeUnit; }
