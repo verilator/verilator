@@ -60,6 +60,14 @@ private:
     void declare(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum, bool bussed, int msb, int lsb);
 
+    static constexpr bool useFstWriterThread() {
+#ifdef VL_TRACE_FST_WRITER_THREAD
+        return true;
+#else
+        return false;
+#endif
+    }
+
 protected:
     //=========================================================================
     // Implementation of VerilatedTrace interface

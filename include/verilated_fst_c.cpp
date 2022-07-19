@@ -28,7 +28,7 @@
 #include "verilated_fst_c.h"
 
 // GTKWave configuration
-#ifdef VL_TRACE_FST_WRITER_THREAD
+#ifdef VL_THREADED
 # define HAVE_LIBPTHREAD
 # define FST_WRITER_PARALLEL
 #endif
@@ -116,9 +116,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
-#ifdef VL_TRACE_FST_WRITER_THREAD
-    fstWriterSetParallelMode(m_fst, 1);
-#endif
+    if (useFstWriterThread()) fstWriterSetParallelMode(m_fst, 1);
     fullDump(true);  // First dump must be full for fst
 
     m_curScope.clear();
