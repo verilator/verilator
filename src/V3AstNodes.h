@@ -877,8 +877,12 @@ public:
     virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
-    virtual int widthAlignBytes() const override { return sizeof(std::map<std::string,std::string>); }
-    virtual int widthTotalBytes() const override { return sizeof(std::map<std::string,std::string>); }
+    virtual int widthAlignBytes() const override {
+        return sizeof(std::map<std::string, std::string>);
+    }
+    virtual int widthTotalBytes() const override {
+        return sizeof(std::map<std::string, std::string>);
+    }
     virtual bool isCompound() const override { return true; }
 };
 
