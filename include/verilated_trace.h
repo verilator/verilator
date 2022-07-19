@@ -24,21 +24,6 @@
 
 // clang-format off
 
-// In FST mode, VL_TRACE_THREADED enables offloading, but only if we also have
-// the FST writer thread. This means with --trace-threads 1, we get the FST
-// writer thread only, and with --trace-threads 2 we get offloading as well
-#if defined(VL_TRACE_FST_WRITER_THREAD) && defined(VL_TRACE_THREADED)
-# define VL_TRACE_OFFLOAD
-#endif
-// VCD tracing can happen fully in parallel
-#if defined(VM_TRACE_VCD) && VM_TRACE_VCD && defined(VL_TRACE_THREADED)
-# define VL_TRACE_PARALLEL
-#endif
-
-#if defined(VL_TRACE_PARALLEL) && defined(VL_TRACE_OFFLOAD)
-# error "Cannot have VL_TRACE_PARALLEL and VL_TRACE_OFFLOAD together"
-#endif
-
 #include "verilated.h"
 #include "verilated_trace_defs.h"
 
@@ -47,6 +32,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #ifdef VL_THREADED
@@ -131,6 +117,22 @@ public:
 #endif
 
 //=============================================================================
+// VerilatedTraceConfig
+
+// Simple data representing trace configuration required by generated models.
+class VerilatedTraceConfig final {
+public:
+    const bool m_useParallel;  // Use parallel tracing
+    const bool m_useOffloading;  // Offloading trace rendering
+    const bool m_useFstWriterThread;  // Use the separate FST writer thread
+
+    VerilatedTraceConfig(bool useParallel, bool useOffloading, bool useFstWriterThread)
+        : m_useParallel{useParallel}
+        , m_useOffloading{useOffloading}
+        , m_useFstWriterThread{useFstWriterThread} {}
+};
+
+//=============================================================================
 // VerilatedTrace
 
 // T_Trace is the format specific subclass of VerilatedTrace.
@@ -180,7 +182,8 @@ private:
             , m_userp{userp} {}
     };
 
-    const bool m_offload;  // Whether to use the offload thread (ignored if !VL_THREADED)
+    bool m_offload = false;  // Use the offload thread (ignored if !VL_THREADED)
+    bool m_parallel = false;  // Use parallel tracing (ignored if !VL_THREADED)
 
 #ifdef VL_THREADED
     struct ParallelWorkerData {
@@ -215,7 +218,6 @@ private:
     std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
     std::vector<CallbackRecord> m_chgOffloadCbs;  // Routines to perform offloaded incremental dump
     std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
-    VerilatedContext* m_contextp = nullptr;  // The context used by the traced models
     bool m_fullDump = true;  // Whether a full dump is required on the next call to 'dump'
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_numSignals = 0;  // Number of distinct signals
@@ -227,8 +229,8 @@ private:
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
     bool m_didSomeDump = false;  // Did at least one dump (i.e.: m_timeLastDump is valid)
-
-    void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
+    VerilatedContext* m_contextp = nullptr;  // The context used by the traced models
+    std::unordered_set<const VerilatedModel*> m_models;  // The collection of models being traced
 
     void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord&& cbRec)
         VL_MT_SAFE_EXCLUDES(m_mutex);
@@ -313,17 +315,11 @@ protected:
 
 #ifdef VL_THREADED
     inline bool offload() const { return m_offload; }
+    inline bool parallel() const { return m_parallel; }
 #else
     static constexpr bool offload() { return false; }
+    static constexpr bool parallel() { return false; }
 #endif
-
-    inline bool parallel() const {
-#ifdef VL_TRACE_PARALLEL
-        return true;
-#else
-        return false;
-#endif
-    }
 
     //=========================================================================
     // Virtual functions to be provided by the format specific implementation
@@ -340,11 +336,14 @@ protected:
     virtual Buffer* getTraceBuffer() = 0;
     virtual void commitTraceBuffer(Buffer*) = 0;
 
+    // Configure sub-class
+    virtual void configure(const VerilatedTraceConfig&) = 0;
+
 public:
     //=========================================================================
     // External interface to client code
 
-    explicit VerilatedTrace(bool offload);
+    explicit VerilatedTrace();
     ~VerilatedTrace();
 
     // Set time units (s/ms, defaults to ns)
@@ -366,12 +365,13 @@ public:
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
-    void addInitCb(initCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
-    void addFullCb(dumpCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
-    void addFullCb(dumpOffloadCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
-    void addChgCb(dumpCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
-    void addChgCb(dumpOffloadCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
-    void addCleanupCb(cleanupCb_t cb, void* userp, VerilatedModel*) VL_MT_SAFE;
+    void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
+    void addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
+    void addChgCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
+    void addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE;
 
     void scopeEscape(char flag) { m_scopeEscape = flag; }
 

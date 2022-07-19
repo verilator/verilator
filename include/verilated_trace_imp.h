@@ -293,14 +293,7 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
 //=============================================================================
 // VerilatedTrace
 
-template <>
-VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace(bool offload)
-    : m_offload{offload} {
-#ifndef VL_THREADED
-    if (m_offload) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "Cannot use trace offloading without VL_THREADED");
-    }
-#endif
+template <> VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace() {
     set_time_unit(Verilated::threadContextp()->timeunitString());
     set_time_resolution(Verilated::threadContextp()->timeprecisionString());
 }
@@ -648,8 +641,17 @@ template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
+
+    const bool firstModel = m_models.empty();
+    const bool newModel = m_models.insert(modelp).second;
     VerilatedContext* const contextp = modelp->contextp();
-    if (VL_UNCOVERABLE(m_contextp && contextp != m_contextp)) {  // LCOV_EXCL_START
+
+    // Validate
+    if (!newModel) {  // LCOV_EXCL_START
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "The same model has already been added to this trace file");
+    }
+    if (VL_UNCOVERABLE(m_contextp && contextp != m_contextp)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "A trace file instance can only handle models from the same context");
     }
@@ -657,7 +659,35 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "Cannot add models to a trace file if 'dump' has already been called");
     }  // LCOV_EXCL_STOP
+
+    // Keep hold of the context
     m_contextp = contextp;
+
+    // Get the desired trace config from the model
+    const std::unique_ptr<VerilatedTraceConfig> configp = modelp->traceConfig();
+#ifndef VL_THREADED
+    if (configp->m_useOffloading) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Cannot use trace offloading without VL_THREADED");
+    }
+#endif
+
+    // Configure trace base class
+    if (!firstModel) {
+        if (m_offload != configp->m_useOffloading) {
+            VL_FATAL_MT(__FILE__, __LINE__, "",
+                        "Either all or no models using the same trace file must use offloading");
+        }
+    }
+    m_offload = configp->m_useOffloading;
+    // If at least one model requests parallel tracing, then use it
+    m_parallel |= configp->m_useParallel;
+
+    if (VL_UNCOVERABLE(m_parallel && m_offload)) {  // LCOV_EXCL_START
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Cannot use parallel tracing with offloading");
+    }  // LCOV_EXCL_STOP
+
+    // Configure format specific sub class
+    configure(*(configp.get()));
 }
 
 template <>
@@ -669,43 +699,27 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackR
 }
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp,
-                                                   VerilatedModel* modelp) VL_MT_SAFE {
-    addModel(modelp);
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_initCbs, CallbackRecord{cb, userp});
 }
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, void* userp,
-                                                   VerilatedModel* modelp) VL_MT_SAFE {
-    addModel(modelp);
-    assert(!offload());
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_fullCbs, CallbackRecord{cb, userp});
 }
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpOffloadCb_t cb, void* userp,
-                                                   VerilatedModel* modelp) VL_MT_SAFE {
-    addModel(modelp);
-    assert(offload());
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_fullOffloadCbs, CallbackRecord{cb, userp});
 }
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpCb_t cb, void* userp,
-                                                  VerilatedModel* modelp) VL_MT_SAFE {
-    addModel(modelp);
-    assert(!offload());
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_chgCbs, CallbackRecord{cb, userp});
 }
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpOffloadCb_t cb, void* userp,
-                                                  VerilatedModel* modelp) VL_MT_SAFE {
-    addModel(modelp);
-    assert(offload());
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_chgOffloadCbs, CallbackRecord{cb, userp});
 }
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp,
-                                                      VerilatedModel* modelp) VL_MT_SAFE {
-    addModel(modelp);
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_cleanupCbs, CallbackRecord{cb, userp});
 }
 

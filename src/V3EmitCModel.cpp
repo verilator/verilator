@@ -223,6 +223,9 @@ class EmitCModel final : public EmitCFunc {
         puts("const char* hierName() const override final;\n");
         puts("const char* modelName() const override final;\n");
         puts("unsigned threads() const override final;\n");
+        if (v3Global.opt.trace()) {
+            puts("std::unique_ptr<VerilatedTraceConfig> traceConfig() const override final;\n");
+        }
 
         puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
@@ -487,6 +490,17 @@ class EmitCModel final : public EmitCFunc {
              + "\"; }\n");
         puts("unsigned " + topClassName() + "::threads() const { return "
              + cvtToStr(std::max(1, v3Global.opt.threads())) + "; }\n");
+
+        if (v3Global.opt.trace()) {
+            puts("std::unique_ptr<VerilatedTraceConfig> " + topClassName()
+                 + "::traceConfig() const {\n");
+            puts("return std::unique_ptr<VerilatedTraceConfig>{new VerilatedTraceConfig{");
+            puts(v3Global.opt.useTraceParallel() ? "true" : "false");
+            puts(v3Global.opt.useTraceOffload() ? ", true" : ", false");
+            puts(v3Global.opt.useFstWriterThread() ? ", true" : ", false");
+            puts("}};\n");
+            puts("};\n");
+        }
     }
 
     void emitTraceMethods(AstNodeModule* modp) {
@@ -539,8 +553,8 @@ class EmitCModel final : public EmitCFunc {
             puts(/**/ "}");
         }
         puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
-        puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init")
-             + ", &(vlSymsp->TOP), this);\n");
+        puts(/**/ "tfp->spTrace()->addModel(this);\n");
+        puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), tfp->spTrace());\n");
 

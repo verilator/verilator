@@ -91,6 +91,8 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+template <class, class> class VerilatedTrace;
+class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
@@ -278,6 +280,12 @@ public:
     virtual const char* modelName() const = 0;
     /// Returns the thread level parallelism, this model was Verilated with. Always 1 or higher.
     virtual unsigned threads() const = 0;
+
+private:
+    // The following are for use by Verilator internals only
+    template <class, class> friend class VerilatedTrace;
+    // Run-time trace configuration requested by this model
+    virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 };
 
 //=========================================================================

@@ -55,18 +55,12 @@ private:
     fstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
     char* m_strbuf = nullptr;  // String buffer long enough to hold maxBits() chars
 
+    bool m_useFstWriterThread = false;  // Whether to use the separate FST writer thread
+
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
     void declare(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum, bool bussed, int msb, int lsb);
-
-    static constexpr bool useFstWriterThread() {
-#ifdef VL_TRACE_FST_WRITER_THREAD
-        return true;
-#else
-        return false;
-#endif
-    }
 
 protected:
     //=========================================================================
@@ -82,6 +76,9 @@ protected:
     // Trace buffer management
     virtual Buffer* getTraceBuffer() override;
     virtual void commitTraceBuffer(Buffer*) override;
+
+    // Configure sub-class
+    virtual void configure(const VerilatedTraceConfig&) override;
 
 public:
     //=========================================================================

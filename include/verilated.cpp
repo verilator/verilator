@@ -72,6 +72,8 @@
 #endif
 // clang-format on
 
+#include "verilated_trace.h"
+
 // Max characters in static char string for VL_VALUE_STRING
 constexpr unsigned VL_VALUE_STRING_MAX_WIDTH = 8192;
 
@@ -2913,6 +2915,8 @@ void VerilatedImp::versionDump() VL_MT_SAFE {
 
 VerilatedModel::VerilatedModel(VerilatedContext& context)
     : m_context{context} {}
+
+std::unique_ptr<VerilatedTraceConfig> VerilatedModel::traceConfig() const { return nullptr; }
 
 //===========================================================================
 // VerilatedModule:: Methods

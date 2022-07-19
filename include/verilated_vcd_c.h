@@ -112,6 +112,9 @@ protected:
     virtual Buffer* getTraceBuffer() override;
     virtual void commitTraceBuffer(Buffer*) override;
 
+    // Configure sub-class
+    virtual void configure(const VerilatedTraceConfig&) override { return; };
+
 public:
     //=========================================================================
     // External interface to client code
