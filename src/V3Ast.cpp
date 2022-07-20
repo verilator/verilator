@@ -674,10 +674,10 @@ void AstNode::addHereThisAsNext(AstNode* newp) {
         tailp->m_headtailp = newp;
     }
     // Iterator fixup
-    if (newLastp->m_iterpp) {
-        *(newLastp->m_iterpp) = this;
-    } else if (this->m_iterpp) {
+    if (newLastp->m_iterpp) *(newLastp->m_iterpp) = this;
+    if (this->m_iterpp) {
         *(this->m_iterpp) = newp;
+        this->m_iterpp = nullptr;
     }
     //
     debugTreeChange(this, "-addHereThisAsNext: ", __LINE__, true);
