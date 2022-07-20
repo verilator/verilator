@@ -981,6 +981,27 @@ private:
         }
     }
 
+    virtual void visit(AstWildcardSel* nodep) override {
+        // Signed/Real: Output type based on array-declared type; binary operator
+        if (m_vup->prelim()) {
+            const AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
+            const AstWildcardArrayDType* const adtypep = VN_CAST(fromDtp, WildcardArrayDType);
+            if (!adtypep) {
+                UINFO(1, "    Related dtype: " << fromDtp << endl);
+                nodep->v3fatalSrc("Wildcard array reference is not to wildcard array");
+            }
+            const AstBasicDType* const basicp = nodep->bitp()->dtypep()->skipRefp()->basicp();
+            if (!basicp
+                || (basicp->keyword() != VBasicDTypeKwd::STRING
+                    && !basicp->keyword().isIntNumeric())) {
+                nodep->v3error("Wildcard index must be integral (IEEE 1800-2017 7.8.1)");
+            }
+            iterateCheckTyped(nodep, "Wildcard associative select", nodep->bitp(),
+                              adtypep->findStringDType(), BOTH);
+            nodep->dtypeFrom(adtypep->subDTypep());
+        }
+    }
+
     virtual void visit(AstSliceSel* nodep) override {
         // Always creates as output an unpacked array
         if (m_vup->prelim()) {
@@ -1575,6 +1596,14 @@ private:
         UINFO(4, "dtWidthed " << nodep << endl);
     }
     virtual void visit(AstUnsizedArrayDType* nodep) override {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        // Iterate into subDTypep() to resolve that type and update pointer.
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        // Cleanup array size
+        nodep->dtypep(nodep);  // The array itself, not subDtype
+        UINFO(4, "dtWidthed " << nodep << endl);
+    }
+    virtual void visit(AstWildcardArrayDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         // Iterate into subDTypep() to resolve that type and update pointer.
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
@@ -2178,6 +2207,31 @@ private:
                          EXTEND_EXP);
         }
     }
+    virtual void visit(AstConsWildcard* nodep) override {
+        // Type computed when constructed here
+        auto* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), WildcardArrayDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsWildcard requires wildcard upper parent data type");
+        if (m_vup->prelim()) {
+            nodep->dtypeFrom(vdtypep);
+            if (nodep->defaultp()) {
+                iterateCheck(nodep, "default", nodep->defaultp(), CONTEXT, FINAL,
+                             vdtypep->subDTypep(), EXTEND_EXP);
+            }
+        }
+    }
+    virtual void visit(AstSetWildcard* nodep) override {
+        // Type computed when constructed here
+        auto* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), WildcardArrayDType);
+        UASSERT_OBJ(vdtypep, nodep, "SetWildcard requires wildcard upper parent data type");
+        if (m_vup->prelim()) {
+            nodep->dtypeFrom(vdtypep);
+            userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, BOTH}.p());
+            iterateCheck(nodep, "key", nodep->keyp(), CONTEXT, FINAL, vdtypep->findStringDType(),
+                         EXTEND_EXP);
+            iterateCheck(nodep, "value", nodep->valuep(), CONTEXT, FINAL, vdtypep->subDTypep(),
+                         EXTEND_EXP);
+        }
+    }
     virtual void visit(AstConsDynArray* nodep) override {
         // Type computed when constructed here
         AstDynArrayDType* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), DynArrayDType);
@@ -2426,6 +2480,7 @@ private:
             }
         } else if (VN_IS(fromDtp, EnumDType)  //
                    || VN_IS(fromDtp, AssocArrayDType)  //
+                   || VN_IS(fromDtp, WildcardArrayDType)  //
                    || VN_IS(fromDtp, UnpackArrayDType)  //
                    || VN_IS(fromDtp, DynArrayDType)  //
                    || VN_IS(fromDtp, QueueDType)  //
@@ -2523,6 +2578,8 @@ private:
             methodCallEnum(nodep, adtypep);
         } else if (AstAssocArrayDType* const adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
             methodCallAssoc(nodep, adtypep);
+        } else if (AstWildcardArrayDType* const adtypep = VN_CAST(fromDtp, WildcardArrayDType)) {
+            methodCallWildcard(nodep, adtypep);
         } else if (AstDynArrayDType* const adtypep = VN_CAST(fromDtp, DynArrayDType)) {
             methodCallDyn(nodep, adtypep);
         } else if (AstQueueDType* const adtypep = VN_CAST(fromDtp, QueueDType)) {
@@ -2684,6 +2741,89 @@ private:
             nodep->v3error("Unknown built-in enum method " << nodep->prettyNameQ());
         }
     }
+    void methodCallWildcard(AstMethodCall* nodep, AstWildcardArrayDType* adtypep) {
+        AstCMethodHard* newp = nullptr;
+        if (nodep->name() == "num"  // function int num()
+            || nodep->name() == "size") {
+            methodOkArguments(nodep, 0, 0);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      "size"};  // So don't need num()
+            newp->dtypeSetSigned32();
+        } else if (nodep->name() == "first"  // function int first(ref index)
+                   || nodep->name() == "last"  //
+                   || nodep->name() == "next"  //
+                   || nodep->name() == "prev"  //
+                   || nodep->name() == "unique_index"  //
+                   || nodep->name() == "find_index" || nodep->name() == "find_first_index"
+                   || nodep->name() == "find_last_index") {
+            nodep->v3error("Array method " << nodep->prettyNameQ()
+                                           << " not legal on wildcard associative arrays");
+        } else if (nodep->name() == "exists") {  // function int exists(input index)
+            // IEEE really should have made this a "bit" return
+            methodOkArguments(nodep, 1, 1);
+            AstNode* const index_exprp = methodCallWildcardIndexExpr(nodep, adtypep);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(), "exists",
+                                      index_exprp->unlinkFrBack()};
+            newp->dtypeSetSigned32();
+            newp->pure(true);
+        } else if (nodep->name() == "delete") {  // function void delete([input integer index])
+            methodOkArguments(nodep, 0, 1);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            if (!nodep->pinsp()) {
+                newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                          "clear"};
+                newp->makeStatement();
+            } else {
+                AstNode* const index_exprp = methodCallWildcardIndexExpr(nodep, adtypep);
+                newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                          "erase", index_exprp->unlinkFrBack()};
+                newp->makeStatement();
+            }
+        } else if (nodep->name() == "sort" || nodep->name() == "rsort"
+                   || nodep->name() == "reverse" || nodep->name() == "shuffle") {
+            nodep->v3error("Array method " << nodep->prettyNameQ()
+                                           << " not legal on associative arrays");
+        } else if (nodep->name() == "and" || nodep->name() == "or" || nodep->name() == "xor"
+                   || nodep->name() == "sum" || nodep->name() == "product") {
+            // All value return
+            AstWith* const withp
+                = methodWithArgument(nodep, false, false, adtypep->subDTypep(),
+                                     adtypep->findStringDType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      "r_" + nodep->name(), withp};
+            newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
+            if (!nodep->firstAbovep()) newp->makeStatement();
+        } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique") {
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      nodep->name()};
+            newp->dtypeFrom(adtypep);
+            if (!nodep->firstAbovep()) newp->makeStatement();
+        } else if (nodep->name() == "find" || nodep->name() == "find_first"
+                   || nodep->name() == "find_last") {
+            AstWith* const withp
+                = methodWithArgument(nodep, true, false, nodep->findBitDType(),
+                                     adtypep->findStringDType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(), withp};
+            newp->dtypeFrom(adtypep);
+            if (!nodep->firstAbovep()) newp->makeStatement();
+        } else {
+            nodep->v3error("Unknown wildcard associative array method " << nodep->prettyNameQ());
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+        }
+        if (newp) {
+            newp->protect(false);
+            newp->didWidth(true);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+    }
     void methodCallAssoc(AstMethodCall* nodep, AstAssocArrayDType* adtypep) {
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "num"  // function int num()
@@ -2785,6 +2925,13 @@ private:
     AstNode* methodCallAssocIndexExpr(AstMethodCall* nodep, AstAssocArrayDType* adtypep) {
         AstNode* const index_exprp = VN_CAST(nodep->pinsp(), Arg)->exprp();
         iterateCheck(nodep, "index", index_exprp, CONTEXT, FINAL, adtypep->keyDTypep(),
+                     EXTEND_EXP);
+        VL_DANGLING(index_exprp);  // May have been edited
+        return VN_AS(nodep->pinsp(), Arg)->exprp();
+    }
+    AstNode* methodCallWildcardIndexExpr(AstMethodCall* nodep, AstWildcardArrayDType* adtypep) {
+        AstNode* const index_exprp = VN_CAST(nodep->pinsp(), Arg)->exprp();
+        iterateCheck(nodep, "index", index_exprp, CONTEXT, FINAL, adtypep->findStringDType(),
                      EXTEND_EXP);
         VL_DANGLING(index_exprp);  // May have been edited
         return VN_AS(nodep->pinsp(), Arg)->exprp();
@@ -3393,6 +3540,8 @@ private:
                 VL_DO_DANGLING(patternArray(nodep, vdtypep, defaultp), nodep);
             } else if (auto* const vdtypep = VN_CAST(dtypep, AssocArrayDType)) {
                 VL_DO_DANGLING(patternAssoc(nodep, vdtypep, defaultp), nodep);
+            } else if (auto* const vdtypep = VN_CAST(dtypep, WildcardArrayDType)) {
+                VL_DO_DANGLING(patternWildcard(nodep, vdtypep, defaultp), nodep);
             } else if (auto* const vdtypep = VN_CAST(dtypep, DynArrayDType)) {
                 VL_DO_DANGLING(patternDynArray(nodep, vdtypep, defaultp), nodep);
             } else if (auto* const vdtypep = VN_CAST(dtypep, QueueDType)) {
@@ -3569,6 +3718,26 @@ private:
             AstNode* const keyp = patp->keyp();
             auto* const newap
                 = new AstSetAssoc(nodep->fileline(), newp, keyp->unlinkFrBack(), valuep);
+            newap->dtypeFrom(arrayDtp);
+            newp = newap;
+        }
+        nodep->replaceWith(newp);
+        // if (debug() >= 9) newp->dumpTree("-apat-out: ");
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+    }
+    void patternWildcard(AstPattern* nodep, AstWildcardArrayDType* arrayDtp,
+                         AstPatMember* defaultp) {
+        AstNode* defaultValuep = nullptr;
+        if (defaultp) defaultValuep = defaultp->lhssp()->unlinkFrBack();
+        AstNode* newp = new AstConsWildcard{nodep->fileline(), defaultValuep};
+        newp->dtypeFrom(arrayDtp);
+        for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
+             patp = VN_AS(patp->nextp(), PatMember)) {
+            patp->dtypep(arrayDtp->subDTypep());
+            AstNode* const valuep = patternMemberValueIterate(patp);
+            AstNode* const keyp = patp->keyp();
+            auto* const newap
+                = new AstSetWildcard{nodep->fileline(), newp, keyp->unlinkFrBack(), valuep};
             newap->dtypeFrom(arrayDtp);
             newp = newap;
         }
@@ -4092,6 +4261,7 @@ private:
                         added = true;
                         newFormat += "%g";
                     } else if (VN_IS(dtypep, AssocArrayDType)  //
+                               || VN_IS(dtypep, WildcardArrayDType)  //
                                || VN_IS(dtypep, ClassRefDType)  //
                                || VN_IS(dtypep, DynArrayDType)  //
                                || VN_IS(dtypep, QueueDType)) {

@@ -1,0 +1,73 @@
+%Error: t/t_assoc_wildcard_bad.v:23:13: The 1 arguments passed to .num method does not match its requiring 0 arguments
+                                      : ... In instance t
+   23 |       v = a.num("badarg");
+      |             ^~~
+%Error: t/t_assoc_wildcard_bad.v:24:13: The 1 arguments passed to .size method does not match its requiring 0 arguments
+                                      : ... In instance t
+   24 |       v = a.size("badarg");
+      |             ^~~~
+%Error: t/t_assoc_wildcard_bad.v:25:13: The 0 arguments passed to .exists method does not match its requiring 1 arguments
+                                      : ... In instance t
+   25 |       v = a.exists();   
+      |             ^~~~~~
+%Error: t/t_assoc_wildcard_bad.v:26:13: The 2 arguments passed to .exists method does not match its requiring 1 arguments
+                                      : ... In instance t
+   26 |       v = a.exists(k, "bad2");
+      |             ^~~~~~
+%Error: t/t_assoc_wildcard_bad.v:27:9: The 2 arguments passed to .delete method does not match its requiring 0 to 1 arguments
+                                     : ... In instance t
+   27 |       a.delete(k, "bad2");
+      |         ^~~~~~
+%Error: t/t_assoc_wildcard_bad.v:29:9: Array method 'sort' not legal on associative arrays
+                                     : ... In instance t
+   29 |       a.sort;   
+      |         ^~~~
+%Error: t/t_assoc_wildcard_bad.v:30:9: Array method 'rsort' not legal on associative arrays
+                                     : ... In instance t
+   30 |       a.rsort;   
+      |         ^~~~~
+%Error: t/t_assoc_wildcard_bad.v:31:9: Array method 'reverse' not legal on associative arrays
+                                     : ... In instance t
+   31 |       a.reverse;   
+      |         ^~~~~~~
+%Error: t/t_assoc_wildcard_bad.v:32:9: Array method 'shuffle' not legal on associative arrays
+                                     : ... In instance t
+   32 |       a.shuffle;   
+      |         ^~~~~~~
+%Error: t/t_assoc_wildcard_bad.v:34:9: Array method 'first' not legal on wildcard associative arrays
+                                     : ... In instance t
+   34 |       a.first;   
+      |         ^~~~~
+%Error: t/t_assoc_wildcard_bad.v:35:9: Array method 'last' not legal on wildcard associative arrays
+                                     : ... In instance t
+   35 |       a.last;   
+      |         ^~~~
+%Error: t/t_assoc_wildcard_bad.v:36:9: Array method 'next' not legal on wildcard associative arrays
+                                     : ... In instance t
+   36 |       a.next;   
+      |         ^~~~
+%Error: t/t_assoc_wildcard_bad.v:37:9: Array method 'prev' not legal on wildcard associative arrays
+                                     : ... In instance t
+   37 |       a.prev;   
+      |         ^~~~
+%Error: t/t_assoc_wildcard_bad.v:38:9: Array method 'unique_index' not legal on wildcard associative arrays
+                                     : ... In instance t
+   38 |       a.unique_index;   
+      |         ^~~~~~~~~~~~
+%Error: t/t_assoc_wildcard_bad.v:39:9: Array method 'find_index' not legal on wildcard associative arrays
+                                     : ... In instance t
+   39 |       a.find_index;   
+      |         ^~~~~~~~~~
+%Error: t/t_assoc_wildcard_bad.v:40:9: Array method 'find_first_index' not legal on wildcard associative arrays
+                                     : ... In instance t
+   40 |       a.find_first_index;   
+      |         ^~~~~~~~~~~~~~~~
+%Error: t/t_assoc_wildcard_bad.v:41:9: Array method 'find_last_index' not legal on wildcard associative arrays
+                                     : ... In instance t
+   41 |       a.find_last_index;   
+      |         ^~~~~~~~~~~~~~~
+%Error: t/t_assoc_wildcard_bad.v:43:8: Wildcard index must be integral (IEEE 1800-2017 7.8.1)
+                                     : ... In instance t
+   43 |       a[x] = "bad";
+      |        ^
+%Error: Exiting due to

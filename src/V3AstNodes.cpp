@@ -673,6 +673,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         const CTypeRecursed key = adtypep->keyDTypep()->cTypeRecurse(true);
         const CTypeRecursed val = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlAssocArray<" + key.m_type + ", " + val.m_type + ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, WildcardArrayDType)) {
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
+        info.m_type = "VlAssocArray<std::string, " + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlQueue<" + sub.m_type + ">";
@@ -1682,6 +1685,10 @@ string AstQueueDType::prettyDTypeName() const {
     string str = subDTypep()->prettyDTypeName() + "[$";
     if (boundConst()) str += ":" + cvtToStr(boundConst());
     return str + "]";
+}
+void AstWildcardArrayDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "[*]";
 }
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);

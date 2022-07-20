@@ -88,6 +88,7 @@ private:
         if (const AstNodeArrayDType* const adtypep = VN_CAST(ddtypep, NodeArrayDType)) {
             fromRange = adtypep->declRange();
         } else if (VN_IS(ddtypep, AssocArrayDType)) {
+        } else if (VN_IS(ddtypep, WildcardArrayDType)) {
         } else if (VN_IS(ddtypep, DynArrayDType)) {
         } else if (VN_IS(ddtypep, QueueDType)) {
         } else if (const AstNodeUOrStructDType* const adtypep
@@ -253,6 +254,15 @@ private:
             // SELBIT(array, index) -> ASSOCSEL(array, index)
             AstNode* const subp = rhsp;
             AstAssocSel* const newp = new AstAssocSel(nodep->fileline(), fromp, subp);
+            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
+            if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (const AstWildcardArrayDType* const adtypep
+                   = VN_CAST(ddtypep, WildcardArrayDType)) {
+            // SELBIT(array, index) -> WILDCARDSEL(array, index)
+            AstNode* const subp = rhsp;
+            AstWildcardSel* const newp = new AstWildcardSel{nodep->fileline(), fromp, subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp);

@@ -278,6 +278,17 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
+class AstWildcardRange final : public AstNodeRange {
+    // Wildcard range specification, for wildcard index type associative arrays
+public:
+    explicit AstWildcardRange(FileLine* fl)
+        : ASTGEN_SUPER_WildcardRange(fl) {}
+    ASTNODE_NODE_FUNCS(WildcardRange)
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitVerilog() { return "[*]"; }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
 class AstGatePin final : public AstNodeMath {
     // Possibly expand a gate primitive input pin value to match the range of the gate primitive
 public:
@@ -816,6 +827,62 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
+    virtual bool isCompound() const override { return true; }
+};
+
+class AstWildcardArrayDType final : public AstNodeDType {
+    // Wildcard index type associative array data type, ie "some_dtype var_name [*]"
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+private:
+    AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
+public:
+    AstWildcardArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
+        : ASTGEN_SUPER_WildcardArrayDType(fl) {
+        childDTypep(dtp);  // Only for parser
+        refDTypep(nullptr);
+        dtypep(nullptr);  // V3Width will resolve
+    }
+    ASTNODE_NODE_FUNCS(WildcardArrayDType)
+    virtual const char* broken() const override {
+        BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+                     || (!m_refDTypep && childDTypep())));
+        return nullptr;
+    }
+    virtual void cloneRelink() override {
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
+    }
+    virtual bool same(const AstNode* samep) const override {
+        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
+        return (subDTypep() == asamep->subDTypep());
+    }
+    virtual bool similarDType(AstNodeDType* samep) const override {
+        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
+        return type() == samep->type() && asamep->subDTypep()
+               && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
+    }
+    virtual void dumpSmall(std::ostream& str) const override;
+    virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    // op1 = Range of variable
+    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    virtual AstNodeDType* subDTypep() const override {
+        return m_refDTypep ? m_refDTypep : childDTypep();
+    }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
+    virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const override {
+        return sizeof(std::map<std::string, std::string>);
+    }
+    virtual int widthTotalBytes() const override {
+        return sizeof(std::map<std::string, std::string>);
+    }
     virtual bool isCompound() const override { return true; }
 };
 
@@ -1667,6 +1734,44 @@ public:
     ASTNODE_NODE_FUNCS(AssocSel)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssocSel(this->fileline(), lhsp, rhsp);
+    }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        V3ERROR_NA;
+    }
+    virtual string emitVerilog() override { return "%k(%l%f[%r])"; }
+    virtual string emitC() override { return "%li%k[%ri]"; }
+    virtual bool cleanOut() const override { return true; }
+    virtual bool cleanLhs() const override { return false; }
+    virtual bool cleanRhs() const override { return true; }
+    virtual bool sizeMattersLhs() const override { return false; }
+    virtual bool sizeMattersRhs() const override { return false; }
+    virtual bool isGateOptimizable() const override {
+        return true;
+    }  // esp for V3Const::ifSameAssign
+    virtual bool isPredictOptimizable() const override { return false; }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+};
+
+class AstWildcardSel final : public AstNodeSel {
+    // Parents: math|stmt
+    // Children: varref|arraysel, math
+private:
+    void init(AstNode* fromp) {
+        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), WildcardArrayDType)) {
+            // Strip off array to find what array references
+            dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), WildcardArrayDType)->subDTypep());
+        }
+    }
+
+public:
+    AstWildcardSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
+        : ASTGEN_SUPER_WildcardSel(fl, fromp, bitp) {
+        init(fromp);
+    }
+    ASTNODE_NODE_FUNCS(WildcardSel)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+        return new AstWildcardSel{this->fileline(), lhsp, rhsp};
     }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
@@ -4876,6 +4981,47 @@ public:
         setOp3p(valuep);
     }
     ASTNODE_NODE_FUNCS(SetAssoc)
+    virtual string emitVerilog() override { return "'{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* keyp() const { return op2p(); }
+    AstNode* valuep() const { return op3p(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
+class AstConsWildcard final : public AstNodeMath {
+    // Construct a wildcard assoc array and return object, '{}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstConsWildcard(FileLine* fl, AstNode* defaultp)
+        : ASTGEN_SUPER_ConsWildcard(fl) {
+        setNOp1p(defaultp);
+    }
+    ASTNODE_NODE_FUNCS(ConsWildcard)
+    virtual string emitVerilog() override { return "'{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* defaultp() const { return op1p(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+class AstSetWildcard final : public AstNodeMath {
+    // Set a wildcard assoc array element and return object, '{}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstSetWildcard(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNode* valuep)
+        : ASTGEN_SUPER_SetWildcard(fl) {
+        setOp1p(lhsp);
+        setNOp2p(keyp);
+        setOp3p(valuep);
+    }
+    ASTNODE_NODE_FUNCS(SetWildcard)
     virtual string emitVerilog() override { return "'{}"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }

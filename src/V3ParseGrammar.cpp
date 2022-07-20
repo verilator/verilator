@@ -138,6 +138,8 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
                 AstNode* const keyp = arangep->elementsp()->unlinkFrBack();
                 arrayp = new AstBracketArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp,
                                                   keyp);
+            } else if (VN_IS(nrangep, WildcardRange)) {
+                arrayp = new AstWildcardArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp};
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }
