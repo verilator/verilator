@@ -256,25 +256,7 @@ extern void _vl_debug_print_w(int lbits, WDataInP const iwp);
 //=========================================================================
 // Pli macros
 
-extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
-
-// These are deprecated and used only to establish the default precision/units.
-// Use Verilator timescale-override for better control.
 // clang-format off
-#ifndef VL_TIME_PRECISION
-# ifdef VL_TIME_PRECISION_STR
-#  define VL_TIME_PRECISION VL_TIME_STR_CONVERT(VL_STRINGIFY(VL_TIME_PRECISION_STR))
-# else
-#  define VL_TIME_PRECISION (-12)  ///< Timescale default units if not in Verilog - picoseconds
-# endif
-#endif
-#ifndef VL_TIME_UNIT
-# ifdef VL_TIME_UNIT_STR
-#  define VL_TIME_UNIT VL_TIME_STR_CONVERT(VL_STRINGIFY(VL_TIME_PRECISION_STR))
-# else
-#  define VL_TIME_UNIT (-12)  ///< Timescale default units if not in Verilog - picoseconds
-# endif
-#endif
 
 #if defined(SYSTEMC_VERSION)
 /// Return current simulation time

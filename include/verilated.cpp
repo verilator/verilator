@@ -2164,29 +2164,6 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
 //===========================================================================
 // Timescale conversion
 
-// Helper function for conversion of timescale strings
-// Converts (1|10|100)(s|ms|us|ns|ps|fs) to power of then
-int VL_TIME_STR_CONVERT(const char* strp) VL_PURE {
-    int scale = 0;
-    if (!strp) return 0;
-    if (*strp++ != '1') return 0;
-    while (*strp == '0') {
-        ++scale;
-        ++strp;
-    }
-    switch (*strp++) {
-    case 's': break;
-    case 'm': scale -= 3; break;
-    case 'u': scale -= 6; break;
-    case 'n': scale -= 9; break;
-    case 'p': scale -= 12; break;
-    case 'f': scale -= 15; break;
-    default: return 0;
-    }
-    if ((scale < 0) && (*strp++ != 's')) return 0;
-    if (*strp) return 0;
-    return scale;
-}
 static const char* vl_time_str(int scale) VL_PURE {
     static const char* const names[]
         = {"100s",  "10s",  "1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us",
@@ -2308,8 +2285,9 @@ void VerilatedContext::checkMagic(const VerilatedContext* contextp) {
 }
 
 VerilatedContext::Serialized::Serialized() {
-    m_timeunit = VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure
-    m_timeprecision = VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
+    constexpr int8_t picosecond = -12;
+    m_timeunit = picosecond;  // Initial value until overriden by _Vconfigure
+    m_timeprecision = picosecond;  // Initial value until overriden by _Vconfigure
 }
 
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
