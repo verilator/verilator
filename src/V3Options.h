@@ -521,6 +521,7 @@ public:
     bool useTraceParallel() const {
         return trace() && traceFormat().vcd() && threads() && (threads() > 1 || hierChild() > 1);
     }
+    bool useFstWriterThread() const { return traceThreads() && traceFormat().fst(); }
     unsigned vmTraceThreads() const {
         return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
     }

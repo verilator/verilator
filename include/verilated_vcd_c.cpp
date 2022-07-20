@@ -102,8 +102,7 @@ ssize_t VerilatedVcdFile::write(const char* bufp, ssize_t len) VL_MT_UNSAFE {
 //=============================================================================
 // Opening/Closing
 
-VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
-    : VerilatedTrace{false} {
+VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep) {
     // Not in header to avoid link issue if header is included without this .cpp file
     m_fileNewed = (filep == nullptr);
     m_filep = m_fileNewed ? new VerilatedVcdFile : filep;

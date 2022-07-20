@@ -73,15 +73,6 @@ public:
         of.puts("VM_TRACE_FST = ");
         of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().fst() ? "1" : "0");
         of.puts("\n");
-        of.puts(
-            "# Tracing threaded output mode?  0/1/N threads (from --threads/--trace-thread)\n");
-        of.puts("VM_TRACE_THREADS = ");
-        of.puts(cvtToStr(v3Global.opt.vmTraceThreads()));
-        of.puts("\n");
-        of.puts("# Separate FST writer thread? 0/1 (from --trace-fst with --trace-thread > 0)\n");
-        of.puts("VM_TRACE_FST_WRITER_THREAD = ");
-        of.puts(v3Global.opt.traceThreads() && v3Global.opt.traceFormat().fst() ? "1" : "0");
-        of.puts("\n");
 
         of.puts("\n### Object file lists...\n");
         for (int support = 0; support < 3; ++support) {

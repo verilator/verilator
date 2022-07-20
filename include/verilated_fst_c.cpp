@@ -93,17 +93,7 @@ static_assert(static_cast<int>(FST_ST_VCD_PROGRAM) == static_cast<int>(VLT_TRACE
 // VerilatedFst
 
 VerilatedFst::VerilatedFst(void* fst)
-    :
-#ifdef VL_TRACE_OFFLOAD
-    VerilatedTrace {
-    true
-}
-#else
-    VerilatedTrace {
-    false
-}
-#endif
-, m_fst{fst} {}
+    : m_fst{fst} {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
@@ -116,7 +106,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
-    if (useFstWriterThread()) fstWriterSetParallelMode(m_fst, 1);
+    if (m_useFstWriterThread) fstWriterSetParallelMode(m_fst, 1);
     fullDump(true);  // First dump must be full for fst
 
     m_curScope.clear();
@@ -276,6 +266,14 @@ void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
     }
 #endif
     delete bufp;
+}
+
+//=============================================================================
+// Configure
+
+void VerilatedFst::configure(const VerilatedTraceConfig& config) {
+    // If at least one model requests the FST writer thread, then use it
+    m_useFstWriterThread |= config.m_useFstWriterThread;
 }
 
 //=============================================================================
