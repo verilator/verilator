@@ -75,7 +75,7 @@ public:
         of.puts("\n");
 
         of.puts("\n### Object file lists...\n");
-        for (int support = 0; support < 3; ++support) {
+        for (int support = 0; support < 2; ++support) {
             for (const bool& slow : {false, true}) {
                 if (support == 2) {
                     of.puts("# Global classes, need linked once per executable");
@@ -103,9 +103,6 @@ public:
                     if (v3Global.opt.coverage()) putMakeClassEntry(of, "verilated_cov.cpp");
                     if (v3Global.opt.trace()) {
                         putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
-                        if (v3Global.opt.systemC()) {
-                            putMakeClassEntry(of, v3Global.opt.traceSourceLang() + ".cpp");
-                        }
                     }
                     if (v3Global.opt.threads()) putMakeClassEntry(of, "verilated_threads.cpp");
                     if (v3Global.opt.usesProfiler()) {
@@ -238,7 +235,12 @@ public:
             of.puts("\n### Link rules... (from --exe)\n");
             of.puts(v3Global.opt.exeName()
                     + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a $(VM_HIER_LIBS)\n");
-            of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
+            string rtlib = "libverilator_rt";
+            if (v3Global.opt.threads()) rtlib += "_mt";
+            rtlib += "_dbg.a";
+            of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) "
+                    "$(VERILATOR_ROOT)/lib/"
+                    + rtlib + " -o $@\n");
             of.puts("\n");
         }
 

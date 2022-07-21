@@ -63,7 +63,16 @@ public:
     }
 
     // Override VerilatedVcdC. Must be called after starting simulation.
-    virtual void open(const char* filename) /*override*/ VL_MT_SAFE;
+    virtual void open(const char* filename) /*override*/ VL_MT_SAFE {
+        if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {
+            vl_fatal(__FILE__, __LINE__, "VerilatedVcdSc",
+                     ("%Error: VerilatedVcdSc::open(\"" + std::string(filename)
+                      + "\") is called before sc_core::sc_start(). "
+                        "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.")
+                         .c_str());
+        }
+        VerilatedVcdC::open(filename);
+    }
 
 private:
     // METHODS - Fake outs for linker
@@ -74,14 +83,15 @@ private:
 #endif
     virtual void set_time_unit(double v, sc_time_unit tu) {}  // LCOV_EXCL_LINE
 
-//--------------------------------------------------
-// SystemC 2.1.v1
-#define DECL_TRACE_METHOD_A(tp) virtual void trace(const tp& object, const std::string& name);
-#define DECL_TRACE_METHOD_B(tp) \
-    virtual void trace(const tp& object, const std::string& name, int width);
+    virtual void write_comment(const std::string&) {}
+    virtual void trace(const unsigned int&, const std::string&, const char**) {}
 
-    virtual void write_comment(const std::string&);
-    virtual void trace(const unsigned int&, const std::string&, const char**);
+//--------------------------------------------------
+// SystemC 2.3.*
+#define DECL_TRACE_METHOD_A(tp) \
+    virtual void trace(const tp&, const std::string&) {}
+#define DECL_TRACE_METHOD_B(tp) \
+    virtual void trace(const tp&, const std::string&, int) {}
 
     // clang-format off
     // Formatting matches that of sc_trace.h

@@ -25,8 +25,10 @@ vpath %.h @srcdir@
 
 #### End of system configuration section. ####
 
+RT_VARIANTS := rt rt_mt
+RT_VARIANTS := $(RT_VARIANTS) $(RT_VARIANTS:%=%_dbg)
 
-default: dbg opt
+default: dbg opt $(RT_VARIANTS)
 debug: dbg
 optimize: opt
 
@@ -36,18 +38,22 @@ endif
 
 UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
 
+LIBDIR = ../lib
+
 #*********************************************************************
 
-obj_opt:
-	mkdir -p $@
-obj_dbg:
+.SECONDARY: obj_opt obj_dbg $(RT_VARIANTS:%=obj_%)
+
+obj_%:
 	mkdir -p $@
 ../bin:
+	mkdir -p $@
+$(LIBDIR):
 	mkdir -p $@
 
 .SUFFIXES:
 
-.PHONY: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
+.PHONY: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT) $(RT_VARIANTS)
 
 opt: ../bin/verilator_bin$(EXEEXT)
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
@@ -68,6 +74,12 @@ dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT
 ../bin/verilator_coverage_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
+
+# Run-time library build rules
+$(RT_VARIANTS): %: $(LIBDIR)/libverilator_%.a
+
+$(LIBDIR)/libverilator_%.a: prefiles | obj_% $(LIBDIR)
+	$(MAKE) -C obj_$* VARIANT=$* -f ../runtime/Makefile_obj.mk
 
 ifneq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... don't rebuild each commit
  ifneq ($(UNDER_GIT),)	# If local git tree... else don't burden users

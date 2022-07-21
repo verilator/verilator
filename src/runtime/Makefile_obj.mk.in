@@ -1,0 +1,103 @@
+# -*- Makefile -*-
+#*****************************************************************************
+#
+# DESCRIPTION: Verilator: Makefile for building the run-time library
+#
+# Code available from: https://verilator.org
+#
+#*****************************************************************************
+#
+# Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+#
+#****************************************************************************/
+
+######################################################################
+#### Start of system configuration section. ####
+
+SRCDIR = ..
+INCDIR = $(SRCDIR)/../include
+LIBDIR = $(SRCDIR)/../lib
+
+# Programs
+CXX = @CXX@
+AR = @AR@
+OBJCACHE = @OBJCACHE@
+
+prefix = @prefix@
+
+# Compile options
+CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
+CPPFLAGS += @CPPFLAGS@
+CXXFLAGS += @CXXFLAGS@
+CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
+
+#### End of system configuration section. ####
+######################################################################
+
+CPPFLAGS += -MMD -MP -I$(INCDIR) -I$(INCDIR)/vltstd
+CPPFLAGS += -DVL_NO_SC_DEPENDENCY=1
+ifeq ($(CFG_WITH_CCWARN),yes)
+CXXFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) -Werror
+endif
+
+$(info Building run-time library variant '$(VARIANT)')
+
+isVariant = $(filter $(1),$(subst _, ,$(VARIANT)))
+
+ifeq ($(call isVariant, mt),mt)
+CPPFLAGS += -DVL_THREADED
+endif
+
+ifeq ($(call isVariant, dbg),dbg)
+CPPFLAGS += -DVL_DEBUG=1
+CXXFLAGS += -O0 -g3 -ggdb
+else
+CXXFLAGS += -O3
+endif
+
+######################################################################
+# File lists
+
+TARGET := $(LIBDIR)/libverilator_$(VARIANT).a
+
+SRC_FILES := \
+  $(INCDIR)/verilated.cpp \
+  $(INCDIR)/verilated_cov.cpp \
+  $(INCDIR)/verilated_dpi.cpp \
+  $(INCDIR)/verilated_fst_c.cpp \
+  $(INCDIR)/verilated_profiler.cpp \
+  $(INCDIR)/verilated_save.cpp \
+  $(INCDIR)/verilated_vcd_c.cpp \
+  $(INCDIR)/verilated_vpi.cpp \
+
+ifeq ($(call isVariant, mt), mt)
+SRC_FILES += $(INCDIR)/verilated_threads.cpp
+endif
+
+OBJ_FILES := $(SRC_FILES:$(INCDIR)/%.cpp=%.o)
+
+######################################################################
+# Top level rules
+
+.PHONY: all clean
+
+all: $(TARGET)
+
+clean:
+	-rm -f *.o *.d
+
+######################################################################
+# Build rules
+
+$(LIBDIR):
+	mkdir -p $@
+
+%.o: $(INCDIR)/%.cpp
+	$(OBJCACHE) $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+
+$(TARGET): $(OBJ_FILES) | $(LIBDIR)
+	$(AR) -crs $@ $^

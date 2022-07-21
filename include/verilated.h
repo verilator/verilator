@@ -34,7 +34,7 @@
 // clang-format off
 #include "verilatedos.h"
 #include "verilated_config.h"
-#if VM_SC
+#if VM_SC && !defined(VL_NO_SC_DEPENDENCY)
 # include "verilated_sc.h"  // Get SYSTEMC_VERSION and time declarations
 #endif
 
@@ -533,7 +533,7 @@ public:
     /// Get time precision as power-of-ten
     int timeprecision() const VL_MT_SAFE { return -m_s.m_timeprecision; }
     /// Return time precision as power-of-ten
-    void timeprecision(int value) VL_MT_SAFE;
+    inline void timeprecision(int value) VL_MT_SAFE;
     /// Get time precision as IEEE-standard text
     const char* timeprecisionString() const VL_MT_SAFE;
 
@@ -945,6 +945,45 @@ inline int VerilatedContext::debug() VL_MT_SAFE { return Verilated::debug(); }
 #include "verilated_funcs.h"
 
 //======================================================================
+
+#ifndef VL_NO_SC_DEPENDENCY
+#include <sstream>
+
+const char* vl_time_str(int scale) VL_PURE;
+
+void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
+    if (value < 0) value = -value;  // Stored as 0..15
+    const VerilatedLockGuard lock{m_mutex};
+    m_s.m_timeprecision = value;
+#ifdef SYSTEMC_VERSION
+    const sc_time sc_res = sc_get_time_resolution();
+    int sc_prec = 99;
+    if (sc_res == sc_time(1, SC_SEC)) {
+        sc_prec = 0;
+    } else if (sc_res == sc_time(1, SC_MS)) {
+        sc_prec = 3;
+    } else if (sc_res == sc_time(1, SC_US)) {
+        sc_prec = 6;
+    } else if (sc_res == sc_time(1, SC_NS)) {
+        sc_prec = 9;
+    } else if (sc_res == sc_time(1, SC_PS)) {
+        sc_prec = 12;
+    } else if (sc_res == sc_time(1, SC_FS)) {
+        sc_prec = 15;
+    }
+    if (value != sc_prec) {
+        std::ostringstream msg;
+        msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
+            << ", which does not match Verilog timeprecision 10^-" << value
+            << ". Suggest use 'sc_set_time_resolution(" << vl_time_str(value)
+            << ")', or Verilator '--timescale-override " << vl_time_str(sc_prec) << "/"
+            << vl_time_str(sc_prec) << "'";
+        const std::string msgs = msg.str();
+        VL_FATAL_MT("", 0, "", msgs.c_str());
+    }
+#endif
+}
+#endif
 
 #undef VERILATOR_VERILATED_H_INTERNAL_
 #endif  // Guard

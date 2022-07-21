@@ -2164,7 +2164,7 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
 //===========================================================================
 // Timescale conversion
 
-static const char* vl_time_str(int scale) VL_PURE {
+const char* vl_time_str(int scale) VL_PURE {
     static const char* const names[]
         = {"100s",  "10s",  "1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us",
            "100ns", "10ns", "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs"};
@@ -2374,38 +2374,6 @@ void VerilatedContext::timeunit(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_timeunit = value;
-}
-void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
-    if (value < 0) value = -value;  // Stored as 0..15
-    const VerilatedLockGuard lock{m_mutex};
-    m_s.m_timeprecision = value;
-#ifdef SYSTEMC_VERSION
-    const sc_time sc_res = sc_get_time_resolution();
-    int sc_prec = 99;
-    if (sc_res == sc_time(1, SC_SEC)) {
-        sc_prec = 0;
-    } else if (sc_res == sc_time(1, SC_MS)) {
-        sc_prec = 3;
-    } else if (sc_res == sc_time(1, SC_US)) {
-        sc_prec = 6;
-    } else if (sc_res == sc_time(1, SC_NS)) {
-        sc_prec = 9;
-    } else if (sc_res == sc_time(1, SC_PS)) {
-        sc_prec = 12;
-    } else if (sc_res == sc_time(1, SC_FS)) {
-        sc_prec = 15;
-    }
-    if (value != sc_prec) {
-        std::ostringstream msg;
-        msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
-            << ", which does not match Verilog timeprecision 10^-" << value
-            << ". Suggest use 'sc_set_time_resolution(" << vl_time_str(value)
-            << ")', or Verilator '--timescale-override " << vl_time_str(sc_prec) << "/"
-            << vl_time_str(sc_prec) << "'";
-        const std::string msgs = msg.str();
-        VL_FATAL_MT("", 0, "", msgs.c_str());
-    }
-#endif
 }
 const char* VerilatedContext::timeunitString() const VL_MT_SAFE { return vl_time_str(timeunit()); }
 const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
