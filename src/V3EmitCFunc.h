@@ -371,6 +371,14 @@ public:
         }
         puts(")");
     }
+    virtual void visit(AstWildcardSel* nodep) override {
+        iterateAndNextNull(nodep->fromp());
+        putbs(".at(");
+        AstWildcardArrayDType* const adtypep = VN_AS(nodep->fromp()->dtypep(), WildcardArrayDType);
+        UASSERT_OBJ(adtypep, nodep, "Wildcard select on non-wildcard-associative type");
+        iterateAndNextNull(nodep->bitp());
+        puts(")");
+    }
     virtual void visit(AstCCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
         const AstNodeModule* const funcModp = EmitCParentModule::get(funcp);
@@ -1173,6 +1181,24 @@ public:
         }
     }
     virtual void visit(AstSetAssoc* nodep) override {
+        iterateAndNextNull(nodep->lhsp());
+        putbs(".set(");
+        iterateAndNextNull(nodep->keyp());
+        puts(", ");
+        putbs("");
+        iterateAndNextNull(nodep->valuep());
+        puts(")");
+    }
+    virtual void visit(AstConsWildcard* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        puts("()");
+        if (nodep->defaultp()) {
+            putbs(".setDefault(");
+            iterateAndNextNull(nodep->defaultp());
+            puts(")");
+        }
+    }
+    virtual void visit(AstSetWildcard* nodep) override {
         iterateAndNextNull(nodep->lhsp());
         putbs(".set(");
         iterateAndNextNull(nodep->keyp());

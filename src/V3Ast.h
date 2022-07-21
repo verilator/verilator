@@ -1728,13 +1728,13 @@ public:
     void dtypeSetVoid() { dtypep(findVoidDType()); }
 
     // Data type locators
-    AstNodeDType* findBitDType() { return findBasicDType(VBasicDTypeKwd::LOGIC); }
-    AstNodeDType* findDoubleDType() { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
-    AstNodeDType* findStringDType() { return findBasicDType(VBasicDTypeKwd::STRING); }
-    AstNodeDType* findSigned32DType() { return findBasicDType(VBasicDTypeKwd::INTEGER); }
-    AstNodeDType* findUInt32DType() { return findBasicDType(VBasicDTypeKwd::UINT32); }
-    AstNodeDType* findUInt64DType() { return findBasicDType(VBasicDTypeKwd::UINT64); }
-    AstNodeDType* findCHandleDType() { return findBasicDType(VBasicDTypeKwd::CHANDLE); }
+    AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
+    AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
+    AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }
+    AstNodeDType* findSigned32DType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
+    AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
+    AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }
+    AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findEmptyQueueDType() const;
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findQueueIndexDType() const;

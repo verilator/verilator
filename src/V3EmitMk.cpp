@@ -73,15 +73,6 @@ public:
         of.puts("VM_TRACE_FST = ");
         of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().fst() ? "1" : "0");
         of.puts("\n");
-        of.puts(
-            "# Tracing threaded output mode?  0/1/N threads (from --threads/--trace-thread)\n");
-        of.puts("VM_TRACE_THREADS = ");
-        of.puts(cvtToStr(v3Global.opt.vmTraceThreads()));
-        of.puts("\n");
-        of.puts("# Separate FST writer thread? 0/1 (from --trace-fst with --trace-thread > 0)\n");
-        of.puts("VM_TRACE_FST_WRITER_THREAD = ");
-        of.puts(v3Global.opt.traceThreads() && v3Global.opt.traceFormat().fst() ? "1" : "0");
-        of.puts("\n");
 
         of.puts("\n### Object file lists...\n");
         for (int support = 0; support < 3; ++support) {
@@ -369,13 +360,13 @@ class EmitMkHierVerilation final {
 
         // Rules to process hierarchical blocks
         of.puts("\n# Verilate hierarchical blocks\n");
-        for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
-            const string prefix = it->second->hierPrefix();
-            const string argsFile = it->second->commandArgsFileName(false);
-            of.puts(it->second->hierGenerated(true));
+        for (const V3HierBlock* const blockp : m_planp->hierBlocksSorted()) {
+            const string prefix = blockp->hierPrefix();
+            const string argsFile = blockp->commandArgsFileName(false);
+            of.puts(blockp->hierGenerated(true));
             of.puts(": $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFile) + " ");
-            const V3HierBlock::HierBlockSet& children = it->second->children();
+            const V3HierBlock::HierBlockSet& children = blockp->children();
             for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                  child != children.end(); ++child) {
                 of.puts((*child)->hierWrapper(true) + " ");
@@ -384,16 +375,16 @@ class EmitMkHierVerilation final {
             emitLaunchVerilator(of, argsFile);
 
             // Rule to build lib*.a
-            of.puts(it->second->hierLib(true));
+            of.puts(blockp->hierLib(true));
             of.puts(": ");
-            of.puts(it->second->hierMk(true));
+            of.puts(blockp->hierMk(true));
             of.puts(" ");
             for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                  child != children.end(); ++child) {
                 of.puts((*child)->hierLib(true));
                 of.puts(" ");
             }
-            of.puts("\n\t$(MAKE) -f " + it->second->hierMk(false) + " -C " + prefix);
+            of.puts("\n\t$(MAKE) -f " + blockp->hierMk(false) + " -C " + prefix);
             of.puts(" VM_PREFIX=" + prefix);
             of.puts("\n\n");
         }

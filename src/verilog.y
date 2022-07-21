@@ -2077,10 +2077,8 @@ variable_dimension<nodeRangep>: // ==IEEE: variable_dimension
         //                      // IEEE: associative_dimension (if data_type)
         //                      // Can't tell which until see if expr is data type or not
         |       '[' exprOrDataType ']'                  { $$ = new AstBracketRange($1, $2); }
-        |       yP_BRASTAR ']'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: [*] wildcard associative arrays"); }
-        |       '[' '*' ']'
-                        { $$ = nullptr; BBUNSUP($2, "Unsupported: [*] wildcard associative arrays"); }
+        |       yP_BRASTAR ']'                          { $$ = new AstWildcardRange{$1}; }
+        |       '[' '*' ']'                             { $$ = new AstWildcardRange{$1}; }
         //                      // IEEE: queue_dimension
         //                      // '[' '$' ']' -- $ is part of expr, see '[' constExpr ']'
         //                      // '[' '$' ':' expr ']' -- anyrange:expr:$

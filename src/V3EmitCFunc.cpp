@@ -611,6 +611,17 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
                 emitSetVarConstant(varNameProtected + ".at(" + cvtToStr(itr.first) + ")",
                                    VN_AS(valuep, Const));
             }
+        } else if (AstWildcardArrayDType* const adtypep = VN_CAST(dtypep, WildcardArrayDType)) {
+            if (initarp->defaultp()) {
+                emitSetVarConstant(varNameProtected + ".atDefault()",
+                                   VN_AS(initarp->defaultp(), Const));
+            }
+            const auto& mapr = initarp->map();
+            for (const auto& itr : mapr) {
+                AstNode* const valuep = itr.second->valuep();
+                emitSetVarConstant(varNameProtected + ".at(" + cvtToStr(itr.first) + ")",
+                                   VN_AS(valuep, Const));
+            }
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             if (initarp->defaultp()) {
                 puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
@@ -638,6 +649,11 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
     AstBasicDType* const basicp = dtypep->basicp();
     // Returns string to do resetting, empty to do nothing (which caller should handle)
     if (AstAssocArrayDType* const adtypep = VN_CAST(dtypep, AssocArrayDType)) {
+        // Access std::array as C array
+        const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
+        return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
+                                   suffix + ".atDefault()" + cvtarray);
+    } else if (AstWildcardArrayDType* const adtypep = VN_CAST(dtypep, WildcardArrayDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,

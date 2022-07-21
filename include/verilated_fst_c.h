@@ -43,7 +43,7 @@ public:
     using Super = VerilatedTrace<VerilatedFst, VerilatedFstBuffer>;
 
 private:
-    friend Buffer;  // Give the buffer access to the private bits
+    friend VerilatedFstBuffer;  // Give the buffer access to the private bits
 
     //=========================================================================
     // FST specific internals
@@ -54,6 +54,8 @@ private:
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
     char* m_strbuf = nullptr;  // String buffer long enough to hold maxBits() chars
+
+    bool m_useFstWriterThread = false;  // Whether to use the separate FST writer thread
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
@@ -72,8 +74,11 @@ protected:
     virtual bool preChangeDump() override { return isOpen(); }
 
     // Trace buffer management
-    virtual VerilatedFstBuffer* getTraceBuffer() override;
-    virtual void commitTraceBuffer(VerilatedFstBuffer*) override;
+    virtual Buffer* getTraceBuffer() override;
+    virtual void commitTraceBuffer(Buffer*) override;
+
+    // Configure sub-class
+    virtual void configure(const VerilatedTraceConfig&) override;
 
 public:
     //=========================================================================
@@ -124,10 +129,14 @@ template <> void VerilatedFst::Super::dumpvars(int level, const std::string& hie
 //=============================================================================
 // VerilatedFstBuffer
 
-class VerilatedFstBuffer final : public VerilatedTraceBuffer<VerilatedFst, VerilatedFstBuffer> {
+class VerilatedFstBuffer VL_NOT_FINAL {
     // Give the trace file access to the private bits
     friend VerilatedFst;
     friend VerilatedFst::Super;
+    friend VerilatedFst::Buffer;
+    friend VerilatedFst::OffloadBuffer;
+
+    VerilatedFst& m_owner;  // Trace file owning this buffer. Required by subclasses.
 
     // The FST file handle
     void* const m_fst = m_owner.m_fst;
@@ -136,10 +145,10 @@ class VerilatedFstBuffer final : public VerilatedTraceBuffer<VerilatedFst, Veril
     // String buffer long enough to hold maxBits() chars
     char* const m_strbuf = m_owner.m_strbuf;
 
-public:
     // CONSTRUCTOR
-    explicit VerilatedFstBuffer(VerilatedFst& owner);
-    ~VerilatedFstBuffer() = default;
+    explicit VerilatedFstBuffer(VerilatedFst& owner)
+        : m_owner{owner} {}
+    virtual ~VerilatedFstBuffer() = default;
 
     //=========================================================================
     // Implementation of VerilatedTraceBuffer interface

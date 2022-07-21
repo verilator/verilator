@@ -229,9 +229,11 @@ VerilatedVcd::~VerilatedVcd() {
     if (m_wrBufp) VL_DO_CLEAR(delete[] m_wrBufp, m_wrBufp = nullptr);
     deleteNameMap();
     if (m_filep && m_fileNewed) VL_DO_CLEAR(delete m_filep, m_filep = nullptr);
-#ifdef VL_TRACE_PARALLEL
-    assert(m_numBuffers == m_freeBuffers.size());
-    for (auto& pair : m_freeBuffers) VL_DO_CLEAR(delete[] pair.first, pair.first = nullptr);
+#ifdef VL_THREADED
+    if (parallel()) {
+        assert(m_numBuffers == m_freeBuffers.size());
+        for (auto& pair : m_freeBuffers) VL_DO_CLEAR(delete[] pair.first, pair.first = nullptr);
+    }
 #endif
 }
 
@@ -260,11 +262,6 @@ void VerilatedVcd::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     // This function is on the flush() call path
     const VerilatedLockGuard lock{m_mutex};
     if (!isOpen()) return;
-    if (m_evcd) {
-        printStr("$vcdclose ");
-        printQuad(timeLastDump());
-        printStr(" $end\n");
-    }
     closePrev();
     // closePrev() called Super::flush(), so we just
     // need to shut down the tracing thread here.
@@ -514,38 +511,29 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
 
     // Print reference
     std::string decl = "$var ";
-    if (m_evcd) {
-        decl += "port";
-    } else {
-        decl += wirep;  // usually "wire"
-    }
+    decl += wirep;  // usually "wire"
 
     constexpr size_t bufsize = 1000;
     char buf[bufsize];
     VL_SNPRINTF(buf, bufsize, " %2d ", bits);
     decl += buf;
-    if (m_evcd) {
-        VL_SNPRINTF(buf, bufsize, "<%u", code);
-        decl += buf;
-    } else {
-        // Add string code to decl
-        char* const endp = writeCode(buf, code);
-        *endp = '\0';
-        decl += buf;
-        // Build suffix array entry
-        char* const entryp = &m_suffixes[code * VL_TRACE_SUFFIX_ENTRY_SIZE];
-        const size_t length = endp - buf;
-        assert(length <= VL_TRACE_MAX_VCD_CODE_SIZE);
-        // 1 bit values don't have a ' ' separator between value and string code
-        const bool isBit = bits == 1;
-        entryp[0] = ' ';  // Separator
-        // Use memcpy as we checked size above, and strcpy is flagged unsafe
-        std::memcpy(entryp + !isBit, buf,
-                    std::strlen(buf));  // Code (overwrite separator if isBit)
-        entryp[length + !isBit] = '\n';  // Replace '\0' with line termination '\n'
-        // Set length of suffix (used to increment write pointer)
-        entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = !isBit + length + 1;
-    }
+    // Add string code to decl
+    char* const endp = writeCode(buf, code);
+    *endp = '\0';
+    decl += buf;
+    // Build suffix array entry
+    char* const entryp = &m_suffixes[code * VL_TRACE_SUFFIX_ENTRY_SIZE];
+    const size_t length = endp - buf;
+    assert(length <= VL_TRACE_MAX_VCD_CODE_SIZE);
+    // 1 bit values don't have a ' ' separator between value and string code
+    const bool isBit = bits == 1;
+    entryp[0] = ' ';  // Separator
+    // Use memcpy as we checked size above, and strcpy is flagged unsafe
+    std::memcpy(entryp + !isBit, buf,
+                std::strlen(buf));  // Code (overwrite separator if isBit)
+    entryp[length + !isBit] = '\n';  // Replace '\0' with line termination '\n'
+    // Set length of suffix (used to increment write pointer)
+    entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = !isBit + length + 1;
     decl += " ";
     decl += basename;
     if (array) {
@@ -583,66 +571,62 @@ void VerilatedVcd::declDouble(uint32_t code, const char* name, bool array, int a
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedVcdBuffer* VerilatedVcd::getTraceBuffer() {
-#ifdef VL_TRACE_PARALLEL
-    // Note: This is called from VeriltedVcd::dump, which already holds the lock
-    // If no buffer available, allocate a new one
-    if (m_freeBuffers.empty()) {
-        constexpr size_t pageSize = 4096;
-        // 4 * m_maxSignalBytes, so we can reserve 2 * m_maxSignalBytes at the end for safety
-        size_t startingSize = roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);
-        m_freeBuffers.emplace_back(new char[startingSize], startingSize);
-        ++m_numBuffers;
+VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer() {
+    VerilatedVcd::Buffer* const bufp = new Buffer{*this};
+#ifdef VL_THREADED
+    if (parallel()) {
+        // Note: This is called from VeriltedVcd::dump, which already holds the lock
+        // If no buffer available, allocate a new one
+        if (m_freeBuffers.empty()) {
+            constexpr size_t pageSize = 4096;
+            // 4 * m_maxSignalBytes, so we can reserve 2 * m_maxSignalBytes at the end for safety
+            size_t startingSize = roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);
+            m_freeBuffers.emplace_back(new char[startingSize], startingSize);
+            ++m_numBuffers;
+        }
+        // Grab a buffer
+        const auto pair = m_freeBuffers.back();
+        m_freeBuffers.pop_back();
+        // Initialize
+        bufp->m_writep = bufp->m_bufp = pair.first;
+        bufp->m_size = pair.second;
+        bufp->adjustGrowp();
     }
-    // Grab a buffer
-    const auto pair = m_freeBuffers.back();
-    m_freeBuffers.pop_back();
-    // Return the buffer
-    return new VerilatedVcdBuffer{*this, pair.first, pair.second};
-#else
-    return new VerilatedVcdBuffer{*this};
 #endif
+    // Return the buffer
+    return bufp;
 }
 
-void VerilatedVcd::commitTraceBuffer(VerilatedVcdBuffer* bufp) {
-#ifdef VL_TRACE_PARALLEL
-    // Note: This is called from VeriltedVcd::dump, which already holds the lock
-    // Resize output buffer. Note, we use the full size of the trace buffer, as
-    // this is a lot more stable than the actual occupancy of the trace buffer.
-    // This helps us to avoid re-allocations due to small size changes.
-    bufferResize(bufp->m_size);
-    // Compute occupancy of buffer
-    const size_t usedSize = bufp->m_writep - bufp->m_bufp;
-    // Copy to output buffer
-    std::memcpy(m_writep, bufp->m_bufp, usedSize);
-    // Adjust write pointer
-    m_writep += usedSize;
-    // Flush if necessary
-    bufferCheck();
-    // Put buffer back on free list
-    m_freeBuffers.emplace_back(bufp->m_bufp, bufp->m_size);
+void VerilatedVcd::commitTraceBuffer(VerilatedVcd::Buffer* bufp) {
+    if (parallel()) {
+#if VL_THREADED
+        // Note: This is called from VeriltedVcd::dump, which already holds the lock
+        // Resize output buffer. Note, we use the full size of the trace buffer, as
+        // this is a lot more stable than the actual occupancy of the trace buffer.
+        // This helps us to avoid re-allocations due to small size changes.
+        bufferResize(bufp->m_size);
+        // Compute occupancy of buffer
+        const size_t usedSize = bufp->m_writep - bufp->m_bufp;
+        // Copy to output buffer
+        std::memcpy(m_writep, bufp->m_bufp, usedSize);
+        // Adjust write pointer
+        m_writep += usedSize;
+        // Flush if necessary
+        bufferCheck();
+        // Put buffer back on free list
+        m_freeBuffers.emplace_back(bufp->m_bufp, bufp->m_size);
 #else
-    // Needs adjusting for emitTimeChange
-    m_writep = bufp->m_writep;
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
 #endif
+    } else {
+        // Needs adjusting for emitTimeChange
+        m_writep = bufp->m_writep;
+    }
     delete bufp;
 }
 
 //=============================================================================
 // VerilatedVcdBuffer implementation
-
-#ifdef VL_TRACE_PARALLEL
-VerilatedVcdBuffer::VerilatedVcdBuffer(VerilatedVcd& owner, char* bufp, size_t size)
-    : VerilatedTraceBuffer<VerilatedVcd, VerilatedVcdBuffer>{owner}
-    , m_writep{bufp}
-    , m_bufp{bufp}
-    , m_size{size} {
-    adjustGrowp();
-}
-#else
-VerilatedVcdBuffer::VerilatedVcdBuffer(VerilatedVcd& owner)
-    : VerilatedTraceBuffer<VerilatedVcd, VerilatedVcdBuffer>{owner} {}
-#endif
 
 //=============================================================================
 // Trace rendering primitives
@@ -679,35 +663,39 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
     // suffix, which was stored in the last byte of the suffix buffer entry.
     m_writep = writep + suffixp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1];
 
-#ifdef VL_TRACE_PARALLEL
-    // Double the size of the buffer if necessary
-    if (VL_UNLIKELY(m_writep >= m_growp)) {
-        // Compute occupied size of current buffer
-        const size_t usedSize = m_writep - m_bufp;
-        // We are always doubling the size
-        m_size *= 2;
-        // Allocate the new buffer
-        char* const newBufp = new char[m_size];
-        // Copy from current buffer to new buffer
-        std::memcpy(newBufp, m_bufp, usedSize);
-        // Delete current buffer
-        delete[] m_bufp;
-        // Make new buffer the current buffer
-        m_bufp = newBufp;
-        // Adjust write pointer
-        m_writep = m_bufp + usedSize;
-        // Adjust resize limit
-        adjustGrowp();
-    }
+    if (m_owner.parallel()) {
+#ifdef VL_THREADED
+        // Double the size of the buffer if necessary
+        if (VL_UNLIKELY(m_writep >= m_growp)) {
+            // Compute occupied size of current buffer
+            const size_t usedSize = m_writep - m_bufp;
+            // We are always doubling the size
+            m_size *= 2;
+            // Allocate the new buffer
+            char* const newBufp = new char[m_size];
+            // Copy from current buffer to new buffer
+            std::memcpy(newBufp, m_bufp, usedSize);
+            // Delete current buffer
+            delete[] m_bufp;
+            // Make new buffer the current buffer
+            m_bufp = newBufp;
+            // Adjust write pointer
+            m_writep = m_bufp + usedSize;
+            // Adjust resize limit
+            adjustGrowp();
+        }
 #else
-    // Flush the write buffer if there's not enough space left for new information
-    // We only call this once per vector, so we need enough slop for a very wide "b###" line
-    if (VL_UNLIKELY(m_writep > m_wrFlushp)) {
-        m_owner.m_writep = m_writep;
-        m_owner.bufferFlush();
-        m_writep = m_owner.m_writep;
-    }
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
 #endif
+    } else {
+        // Flush the write buffer if there's not enough space left for new information
+        // We only call this once per vector, so we need enough slop for a very wide "b###" line
+        if (VL_UNLIKELY(m_writep > m_wrFlushp)) {
+            m_owner.m_writep = m_writep;
+            m_owner.bufferFlush();
+            m_writep = m_owner.m_writep;
+        }
+    }
 }
 
 //=============================================================================

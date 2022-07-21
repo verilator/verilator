@@ -109,7 +109,6 @@ public:
     using HierVector = std::vector<const V3HierBlock*>;
     VL_DEBUG_FUNC;  // Declare debug()
 
-    bool isHierBlock(const AstNodeModule* modp) const;
     void add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams);
     void registerUsage(const AstNodeModule* parentp, const AstNodeModule* childp);
 
