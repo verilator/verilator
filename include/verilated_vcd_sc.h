@@ -98,9 +98,6 @@ private:
     DECL_TRACE_METHOD_B( unsigned short )
     DECL_TRACE_METHOD_B( unsigned int )
     DECL_TRACE_METHOD_B( unsigned long )
-#ifdef SYSTEMC_64BIT_PATCHES
-    DECL_TRACE_METHOD_B( unsigned long long)
-#endif
     DECL_TRACE_METHOD_B( char )
     DECL_TRACE_METHOD_B( short )
     DECL_TRACE_METHOD_B( int )
