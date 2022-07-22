@@ -451,7 +451,13 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
         for (int i = 0; i < words; ++i) { \
             int msb = ((i + 1) * VL_IDATASIZE) - 1; \
             msb = (msb >= (obits)) ? ((obits)-1) : msb; \
-            (owp)[i] = _butemp.range(msb, i * VL_IDATASIZE).to_uint(); \
+            uint32_t _wtmp = 0; \
+            for(int j = msb; j < (i * VL_IDATASIZE); j++) { \
+                if (_butemp.test(j)) { \
+                    _wtmp |= (1 << (j-msb));\
+                } \
+            } \
+            (owp)[i] = _wtmp; \
         } \
         (owp)[words - 1] &= VL_MASK_E(obits); \
     }
@@ -495,10 +501,8 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
 #define VL_ASSIGN_SBW(obits, svar, rwp) \
     { \
         sc_biguint<(obits)> _butemp; \
-        for (int i = 0; i < VL_WORDS_I(obits); ++i) { \
-            int msb = ((i + 1) * VL_IDATASIZE) - 1; \
-            msb = (msb >= (obits)) ? ((obits)-1) : msb; \
-            _butemp.range(msb, i* VL_IDATASIZE) = (rwp)[i]; \
+        for (int i = 0; i< (obits); ++i) { \
+            _butemp.set(i, (rwp).test(i)); \
         } \
         (svar).write(_butemp); \
     }
