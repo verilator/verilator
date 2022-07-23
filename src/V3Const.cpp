@@ -570,12 +570,26 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
 
             auto setPolarities = [this, &compNum](const LeafInfo& ref, const V3Number* maskp) {
                 const bool maskFlip = isOrTree();
-                const int maxBitIdx = std::min(
-                    ref.lsb() + (maskp ? maskp->width() : compNum.width()), ref.msb() + 1);
+                int constantWidth = compNum.width();
+                if (maskp) constantWidth = std::max(constantWidth, maskp->width());
+                const int maxBitIdx = std::max(ref.lsb() + constantWidth, ref.msb() + 1);
                 // Mark all bits checked by this comparison
                 for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
                     const int maskIdx = bitIdx - ref.lsb();
-                    if (maskp && maskp->bitIs0(maskIdx)) continue;
+                    const bool mask0 = maskp && maskp->bitIs0(maskIdx);
+                    const bool outOfRange = bitIdx > ref.msb();
+                    if (mask0 || outOfRange) {  // RHS is 0
+                        if (compNum.bitIs1(maskIdx)) {
+                            // LHS is 1
+                            // And tree: 1 == 0 => never happens, constant result:0 by setting v && !v
+                            // Or tree : 1 != 0 => always true, constant result:1 by setting v || !v
+                            m_bitPolarities.emplace_back(ref, true, 0);
+                            m_bitPolarities.emplace_back(ref, false, 0);
+                            break;
+                        } else {  // LHS == RHS == 0, so this bitIdx is irrelevant.
+                            continue;
+                        }
+                    }
                     const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
                     m_bitPolarities.emplace_back(ref, polarity, bitIdx);
                 }
