@@ -87,10 +87,11 @@ module Test(/*AUTOARG*/
    logic bug3197_out;
    logic bug3445_out;
    logic bug3470_out;
+   logic bug3509_out;
 
    output logic o;
 
-   logic [8:0] tmp;
+   logic [9:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -115,12 +116,14 @@ module Test(/*AUTOARG*/
       tmp[6] <= bug3197_out;
       tmp[7] <= bug3445_out;
       tmp[8] <= bug3470_out;
+      tmp[9] <= bug3509_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
    bug3197 i_bug3197(.clk(clk), .in(d), .out(bug3197_out));
    bug3445 i_bug3445(.clk(clk), .in(d), .out(bug3445_out));
    bug3470 i_bug3470(.clk(clk), .in(d), .out(bug3470_out));
+   bug3509 i_bug3509(.clk(clk), .in(d), .out(bug3509_out));
 
 endmodule
 
@@ -234,4 +237,55 @@ module bug3470(input wire clk, input wire [31:0] in, output wire out);
       if (tmp != expected) $stop;
 
    assign out = tmp;
+endmodule
+
+// Bug3509
+// Only bit range of "var" was considered in
+// "comp == (mask & var)"
+//   and
+// "comp != (mask & var)"
+//
+// It caused wrong result if "comp" has wider bit width because
+// upper bit of "comp" was ignored.
+//
+// If "comp" has '1' in upper bit range than "var",
+// the result is constant after optimization.
+module bug3509(input wire clk, input wire [31:0] in, output reg out);
+   reg [2:0] r0;
+   always_ff @(posedge clk)
+      r0 <= in[2:0];
+
+   wire [3:0] w1_0 = {1'b0, in[2:0]};
+   wire [3:0] w1_1 = {1'b0, r0};
+
+   wire tmp[4];
+
+   // tmp[0:1] is always 0 because w1[3] == 1'b0
+   // tmp[2:3] is always 1 because w1[3] == 1'b0
+   assign tmp[0] = w1_0[3:2] == 2'h2 && w1_0[1:0] != 2'd3;
+   assign tmp[1] = w1_1[3:2] == 2'h2 && w1_1[1:0] != 2'd3;
+   assign tmp[2] = w1_0[3:2] != 2'h2 || w1_0[1:0] == 2'd3;
+   assign tmp[3] = w1_1[3:2] != 2'h2 || w1_1[1:0] == 2'd3;
+   always_ff @(posedge clk) begin
+      out <= tmp[0] | tmp[1] | !tmp[2] | !tmp[3];
+   end
+
+   always @(posedge clk) begin
+      if(tmp[0]) begin
+         $display("tmp[0] != 0");
+         $stop;
+      end
+      if(tmp[1]) begin
+         $display("tmp[1] != 0");
+         $stop;
+      end
+      if(!tmp[2]) begin
+         $display("tmp[2] != 1");
+         $stop;
+      end
+      if(!tmp[3]) begin
+         $display("tmp[3] != 1");
+         $stop;
+      end
+   end
 endmodule
