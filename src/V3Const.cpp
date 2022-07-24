@@ -581,13 +581,12 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     if (mask0 || outOfRange) {  // RHS is 0
                         if (compNum.bitIs1(maskIdx)) {
                             // LHS is 1
-                            // And tree: 1 == 0 => never happens, constant result:0 by setting v &&
-                            // !v Or tree : 1 != 0 => always true, constant result:1 by setting v
-                            // || !v
+                            // And tree: 1 == 0 => always false, set v && !v
+                            // Or tree : 1 != 0 => always true, set v || !v
                             m_bitPolarities.emplace_back(ref, true, 0);
                             m_bitPolarities.emplace_back(ref, false, 0);
                             break;
-                        } else {  // LHS == RHS == 0, so this bitIdx is irrelevant.
+                        } else {  // This bitIdx is irrelevant
                             continue;
                         }
                     }
