@@ -3441,14 +3441,14 @@ private:
                                 }
                                 memp = VN_AS(memp->nextp(), MemberDType);
                             }
-                        } 
+                        }
                         else if (const AstNodeDType* nodedtypep = VN_CAST(patp->keyp(), NodeDType)){
                             // data_type: default_value
                             const string dtype = nodedtypep->dtypep()->prettyDTypeName();
                             auto it = dtypemap.find(dtype);
                             if (it == dtypemap.end()) {
                                 dtypemap.emplace(dtype, patp);
-                            } 
+                            }
                             else {
                                 //override stored default_value
                                 it->second = patp->cloneTree(false);
@@ -3471,7 +3471,7 @@ private:
                             }
                             memp = VN_AS(memp->nextp(), MemberDType);
                         }
-                    }                   
+                    }
                 } while (false);
 
                 // Next

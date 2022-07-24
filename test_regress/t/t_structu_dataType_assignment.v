@@ -9,7 +9,7 @@
 module top();
 
   typedef struct { // IEEE 1800-2017 SV CH:5.10
-    int a; 
+    int a;
     shortint b;
   } ab_struct;
 
@@ -32,11 +32,10 @@ module top();
     int B, C;
     } BC1, BC2;
   } DEF_struct;
-  
 
 
   // struct ab
-  ab_struct ab; 
+  ab_struct ab;
   ab_struct abkey[1:0];
 
   // struct st
@@ -48,7 +47,7 @@ module top();
 
   // struct DEF
   DEF_struct DEF;
-  
+
   initial begin;
    // struct ab
    ab = '{0, 0}; //constant member by position
@@ -107,7 +106,7 @@ module top();
    if (sa.c != '1) $stop;
    if (sa.s != 5) $stop;
 
-   
+
    // struct DEF
    DEF = '{A:1, BC1:'{B:2, C:3}, BC2:'{B:4,C:5}};
    if (DEF.A != 1) $stop;
