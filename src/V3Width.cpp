@@ -3423,7 +3423,7 @@ private:
             while (patp) {
                 do {
                     if (patp->keyp()) {
-                        //'{member:value} or '{data_type: default_value}
+                        // '{member:value} or '{data_type: default_value}
                         if (const AstText* textp = VN_CAST(patp->keyp(), Text)) {
                             // member: value
                             memp = vdtypep->findMember(textp->text());
