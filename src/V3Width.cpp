@@ -3450,7 +3450,7 @@ private:
                                 dtypemap.emplace(dtype, patp);
                             }
                             else {
-                                //override stored default_value
+                                // Override stored default_value
                                 it->second = patp->cloneTree(false);
                             }
                         }
