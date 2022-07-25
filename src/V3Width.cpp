@@ -3560,7 +3560,8 @@ private:
         // determine the dtypep for that PatMember's value, and then
         // width the initial value appropriately.
         using PatMap = std::map<const AstMemberDType*, AstPatMember*>;  // Store member: value
-        using DTypeMap = std::map<const std::string, AstPatMember*>;  // Store data_type: default_value
+        using DTypeMap
+            = std::map<const std::string, AstPatMember*>;  // Store data_type: default_value
         PatMap patmap;
         DTypeMap dtypemap;
         {
@@ -3575,44 +3576,42 @@ private:
                             memp = vdtypep->findMember(textp->text());
                             if (!memp) {
                                 patp->keyp()->v3error("Assignment pattern key '"
-                                                        << textp->text()
-                                                        << "' not found as member");
+                                                      << textp->text() << "' not found as member");
                                 break;
                             } else {
-                                const std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
+                                const std::pair<PatMap::iterator, bool> ret
+                                    = patmap.emplace(memp, patp);
                                 if (!ret.second) {
                                     patp->v3error("Assignment pattern contains duplicate entry: "
-                                                    << VN_AS(patp->keyp(), Text)->text());
+                                                  << VN_AS(patp->keyp(), Text)->text());
                                 }
                                 memp = VN_AS(memp->nextp(), MemberDType);
                             }
-                        }
-                        else if (const AstNodeDType* nodedtypep = VN_CAST(patp->keyp(), NodeDType)){
+                        } else if (const AstNodeDType* nodedtypep
+                                   = VN_CAST(patp->keyp(), NodeDType)) {
                             // data_type: default_value
                             const string dtype = nodedtypep->dtypep()->prettyDTypeName();
                             auto it = dtypemap.find(dtype);
                             if (it == dtypemap.end()) {
                                 dtypemap.emplace(dtype, patp);
-                            }
-                            else {
+                            } else {
                                 // Override stored default_value
                                 it->second = patp->cloneTree(false);
                             }
-                        }
-                        else {
+                        } else {
                             // Undefined pattern
                             patp->keyp()->v3error(
                                 "Assignment pattern key not supported/understood: "
                                 << patp->keyp()->prettyTypeName());
                         }
-                    }
-                    else{
+                    } else {
                         // constant expr
                         if (memp) {
-                            const std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
+                            const std::pair<PatMap::iterator, bool> ret
+                                = patmap.emplace(memp, patp);
                             if (!ret.second) {
                                 patp->v3error("Assignment pattern contains duplicate entry: "
-                                                << VN_AS(patp->keyp(), Text)->text());
+                                              << VN_AS(patp->keyp(), Text)->text());
                             }
                             memp = VN_AS(memp->nextp(), MemberDType);
                         }
@@ -3637,16 +3636,14 @@ private:
                     patp = it2->second;
                     newpatp = patp->cloneTree(false);
                     patp = newpatp;
-                }
-                else if (defaultp) {
+                } else if (defaultp) {
                     // default_value for any unassigned member yet
                     newpatp = defaultp->cloneTree(false);
                     patp = newpatp;
                 } else {
                     if (!VN_IS(vdtypep, UnionDType)) {
                         nodep->v3error("Assignment pattern missed initializing elements: "
-                                        << memp->virtRefDTypep()->prettyDTypeName()
-                                        << " "
+                                       << memp->virtRefDTypep()->prettyDTypeName() << " "
                                        << memp->prettyName());
                     }
                 }
