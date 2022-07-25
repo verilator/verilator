@@ -3413,8 +3413,8 @@ private:
         // which member each AstPatMember corresponds to before we can
         // determine the dtypep for that PatMember's value, and then
         // width the initial value appropriately.
-        using PatMap = std::map<const AstMemberDType*, AstPatMember*>; // Store member: value
-        using DTypeMap = std::map<const std::string, AstPatMember*>; // Store data_type: default_value
+        using PatMap = std::map<const AstMemberDType*, AstPatMember*>;  // Store member: value
+        using DTypeMap = std::map<const std::string, AstPatMember*>;  // Store data_type: default_value
         PatMap patmap;
         DTypeMap dtypemap;
         {
