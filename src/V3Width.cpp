@@ -3463,7 +3463,7 @@ private:
                     }
                     else{
                         // constant expr
-                        if(memp){
+                        if (memp) {
                             const std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
                             if (!ret.second) {
                                 patp->v3error("Assignment pattern contains duplicate entry: "
