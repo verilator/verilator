@@ -3420,7 +3420,7 @@ private:
         {
             const AstMemberDType* memp = vdtypep->membersp();
             AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember);
-            for (; patp ;) {
+            while (patp) {
                 do {
                     if (patp->keyp()) {
                         //'{member:value} or '{data_type: default_value}
