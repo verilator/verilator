@@ -3487,7 +3487,7 @@ private:
             if (it == patmap.end()) {
                 const string memp_DType = memp->virtRefDTypep()->prettyDTypeName();
                 const auto it2 = dtypemap.find(memp_DType);
-                if(it2 != dtypemap.end()){
+                if (it2 != dtypemap.end()) {
                     // default_value for data_type
                     patp = it2->second;
                     newpatp = patp->cloneTree(false);
