@@ -316,7 +316,7 @@ private:
 
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
-    int         m_compLimitParens = 0;  // compiler selection; number of nested parens
+    int         m_compLimitParens = 240;  // compiler selection; number of nested parens
 
     string      m_bin;          // main switch: --bin {binary}
     string      m_exeName;      // main switch: -o {name}

@@ -1010,11 +1010,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (!strcmp(valp, "clang")) {
             m_compLimitBlocks = 80;  // limit unknown
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
-            m_compLimitParens = 80;  // limit unknown
+            m_compLimitParens = 240;  // controlled by -fbracket-depth, which defaults to 256
         } else if (!strcmp(valp, "gcc")) {
             m_compLimitBlocks = 0;  // Bug free
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
-            m_compLimitParens = 0;  // Bug free
+            m_compLimitParens = 240;  // Unlimited, but generate same code as for clang
         } else if (!strcmp(valp, "msvc")) {
             m_compLimitBlocks = 80;  // 128, but allow some room
             m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
