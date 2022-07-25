@@ -1460,7 +1460,6 @@ void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE {
 void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp, ...) VL_MT_SAFE {
     if (obits_ignored) {}
     std::string temp_output;
-    temp_output = "";
     va_list ap;
     va_start(ap, formatp);
     _vl_vsformat(temp_output, formatp, ap);
