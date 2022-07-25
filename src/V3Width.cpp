@@ -3494,7 +3494,7 @@ private:
                     patp = newpatp;
                 }
                 else if (defaultp) {
-                    //default_value for any unassigned member yet
+                    // default_value for any unassigned member yet
                     newpatp = defaultp->cloneTree(false);
                     patp = newpatp;
                 } else {
