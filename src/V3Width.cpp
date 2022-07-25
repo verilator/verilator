@@ -3455,7 +3455,7 @@ private:
                             }
                         }
                         else {
-                            // undefined pattern
+                            // Undefined pattern
                             patp->keyp()->v3error(
                                 "Assignment pattern key not supported/understood: "
                                 << patp->keyp()->prettyTypeName());
