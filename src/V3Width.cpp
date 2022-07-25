@@ -3432,8 +3432,7 @@ private:
                                                         << textp->text()
                                                         << "' not found as member");
                                 break;
-                            }
-                            else{
+                            } else {
                                 const std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
                                 if (!ret.second) {
                                     patp->v3error("Assignment pattern contains duplicate entry: "
