@@ -255,14 +255,11 @@
 // Internal coverage
 
 #ifdef VL_GCOV
-extern "C" {
-void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
-}
-// Flush internal code coverage data before e.g. std::abort()
-# define VL_GCOV_FLUSH() \
-    __gcov_flush()
+extern "C" void __gcov_dump();
+// Dump internal code coverage data before e.g. std::abort()
+# define VL_GCOV_DUMP() __gcov_dump()
 #else
-# define VL_GCOV_FLUSH()
+# define VL_GCOV_DUMP()
 #endif
 
 //=========================================================================
