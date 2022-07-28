@@ -1764,6 +1764,7 @@ private:
         lp->rhsp(lrp);
         nodep->lhsp(llp);
         nodep->rhsp(rlp);
+        nodep->dtypep(llp->dtypep());  // dtype of Biop is before shift.
         VL_DO_DANGLING(rp->deleteTree(), rp);
         VL_DO_DANGLING(rrp->deleteTree(), rrp);
         // nodep->dumpTree(cout, "  repShiftSame_new: ");
