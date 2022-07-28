@@ -790,6 +790,8 @@ private:
     // otherwise end the current merge. Return ture if added, false if ended merge.
     bool addIfHelpfulElseEndMerge(AstNodeStmt* nodep) {
         UASSERT_OBJ(m_mgFirstp, nodep, "List must be open");
+        if (!checkOrMakeMergeable(nodep)) return false;
+        if (!m_mgFirstp) return false;  // If 'checkOrMakeMergeable' closed the list
         if (m_mgNextp == nodep) {
             if (isSimplifiableNode(nodep)) {
                 if (addToList(nodep, nullptr)) return true;
