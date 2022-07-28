@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hde21e019a3e12039
+`define EXPECTED_SUM 64'h9366e49d91bfe942
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -88,10 +88,12 @@ module Test(/*AUTOARG*/
    logic bug3445_out;
    logic bug3470_out;
    logic bug3509_out;
+   wire  bug3399_out0;
+   wire  bug3399_out1;
 
    output logic o;
 
-   logic [9:0] tmp;
+   logic [11:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -117,6 +119,8 @@ module Test(/*AUTOARG*/
       tmp[7] <= bug3445_out;
       tmp[8] <= bug3470_out;
       tmp[9] <= bug3509_out;
+      tmp[10]<= bug3399_out0;
+      tmp[11]<= bug3399_out1;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
@@ -124,6 +128,7 @@ module Test(/*AUTOARG*/
    bug3445 i_bug3445(.clk(clk), .in(d), .out(bug3445_out));
    bug3470 i_bug3470(.clk(clk), .in(d), .out(bug3470_out));
    bug3509 i_bug3509(.clk(clk), .in(d), .out(bug3509_out));
+   bug3399 i_bug3399(.clk(clk), .in(d), .out0(bug3399_out0), .out1(bug3399_out1));
 
 endmodule
 
@@ -288,4 +293,25 @@ module bug3509(input wire clk, input wire [31:0] in, output reg out);
          $stop;
       end
    end
+endmodule
+
+// Bug3399
+// replaceShiftSame() in V3Const.cpp optimizes
+// Or(Shift(ll,CONSTlr),Shift(rl,CONSTrr==lr)) -> Shift(Or(ll,rl),CONSTlr)
+// (Or/And may also be reversed)
+//
+// dtype of Or after the transformation must be as same as ll and rl, but was dtype of Or BEFORE transformation.
+// When the result of Shift was 1 bit width, bit op tree optimization
+// optimized the tree even though the graph needs more width.
+// Remember that the target of bit op tree optimization is 1 bit width.
+module bug3399(input wire clk, input wire [31:0] in, inout wire out0, inout wire out1);
+   logic [1:0] driver = '0;
+   logic [1:0] d;
+   always_ff @(posedge clk) begin
+      driver <= 2'b11;
+      d <= in[1:0];
+   end
+
+   assign out0 = driver[0] ? d[0] : 1'bz;
+   assign out1 = driver[1] ? d[1] : 1'bz;
 endmodule
