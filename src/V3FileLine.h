@@ -247,7 +247,7 @@ public:
 
     // OPERATORS
     void v3errorEnd(std::ostringstream& str, const string& extra = "");
-    void v3errorEndFatal(std::ostringstream& str);
+    void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN;
     /// When building an error, prefix for printing continuation lines
     /// e.g. information referring to the same FileLine as before
     string warnMore() const;

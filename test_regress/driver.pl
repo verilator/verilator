@@ -2259,10 +2259,15 @@ sub vcd_identical {
         print "\t$cmd\n" if $::Debug;
         $out = `$cmd`;
         if ($? != 0 || $out ne '') {
-            print $out;
-            $self->error("VCD miscompares $fn1 $fn2\n");
-            $self->copy_if_golden($fn1, $fn2);
-            return 0;
+            $cmd = qq{vcddiff "$fn2" "$fn1"};
+            print "\t$cmd\n" if $::Debug;
+            $out = `$cmd`;
+            if ($? != 0 || $out ne '') {
+                print $out;
+                $self->error("VCD miscompares $fn2 $fn1\n");
+                $self->copy_if_golden($fn1, $fn2);
+                return 0;
+            }
         }
     }
     {
