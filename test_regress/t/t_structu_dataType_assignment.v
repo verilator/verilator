@@ -130,6 +130,13 @@ module top();
    if (DEF.BC2.B != 5) $stop;
    if (DEF.BC2.C != 5) $stop;
 
+   DEF = '{default:10};
+   if (DEF.A != 10) $stop;
+   if (DEF.BC1.B != 10) $stop;
+   if (DEF.BC1.C != 10) $stop;
+   if (DEF.BC2.B != 10) $stop;
+   if (DEF.BC2.C != 10) $stop;
+
    $write("*-* All Finished *-*\n");
    $finish;
   end
