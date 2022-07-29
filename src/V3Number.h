@@ -337,7 +337,7 @@ public:
     bool isAnyX() const;
     bool isAnyXZ() const;
     bool isAnyZ() const;
-    bool isMsbXZ() const { return bitIsXZ(m_width); }
+    bool isMsbXZ() const { return bitIsXZ(m_width - 1); }
     uint32_t toUInt() const;
     int32_t toSInt() const;
     uint64_t toUQuad() const;
