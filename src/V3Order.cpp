@@ -479,7 +479,7 @@ class OrderBuildVisitor final : public VNVisitor {
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
-    OrderBuildVisitor(AstNetlist* nodep, const std::vector<V3Sched::LogicByScope*>& coll,
+    OrderBuildVisitor(AstNetlist* /*nodep*/, const std::vector<V3Sched::LogicByScope*>& coll,
                       const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen)
         : m_trigToSen{trigToSen} {
 
@@ -1522,8 +1522,8 @@ AstCFunc* order(AstNetlist* netlistp,  //
     // Order the code
     const std::unique_ptr<OrderGraph> graph
         = OrderBuildVisitor::process(netlistp, logic, trigToSen);
-    const auto& nodeps = OrderProcess::main(netlistp, *graph.get(), trigToSen, tag, parallel, slow,
-                                            externalDomains);
+    const auto& nodeps
+        = OrderProcess::main(netlistp, *graph, trigToSen, tag, parallel, slow, externalDomains);
 
     // Create the result function
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();

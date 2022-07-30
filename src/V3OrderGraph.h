@@ -140,9 +140,9 @@ public:
     AstVarScope* vscp() const { return m_vscp; }
 
     // LCOV_EXCL_START // Debug code
-    virtual string dotShape() const override final { return "ellipse"; }
+    string dotShape() const override final { return "ellipse"; }
     virtual string nameSuffix() const = 0;
-    virtual string name() const override final {
+    string name() const override final {
         return cvtToHex(m_vscp) + " " + nameSuffix() + "\\n " + m_vscp->name();
     }
     // LCOV_EXCL_STOP

@@ -93,7 +93,7 @@ public:
 };
 
 class Graph final : public V3Graph {
-    void loopsVertexCb(V3GraphVertex* vtxp) {
+    void loopsVertexCb(V3GraphVertex* vtxp) override {
         // TODO: 'typeName' is an internal thing. This should be more human readable.
         if (LogicVertex* const lvtxp = dynamic_cast<LogicVertex*>(vtxp)) {
             AstNode* const logicp = lvtxp->logicp();

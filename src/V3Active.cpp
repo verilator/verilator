@@ -468,8 +468,10 @@ private:
         wantactivep->addStmtsp(nodep);
 
         // Warn and convert any delayed assignments
-        ActiveDlyVisitor{nodep,
-                         m_clockedProcess ? ActiveDlyVisitor::CT_SEQ : ActiveDlyVisitor::CT_COMB};
+        {
+            ActiveDlyVisitor{nodep, m_clockedProcess ? ActiveDlyVisitor::CT_SEQ
+                                                     : ActiveDlyVisitor::CT_COMB};
+        }
 
         // check combinational processes for latches
         if (!m_clockedProcess || kwd == VAlwaysKwd::ALWAYS_LATCH) {

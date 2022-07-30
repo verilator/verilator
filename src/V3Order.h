@@ -32,7 +32,7 @@ class AstVarScope;
 
 namespace V3Sched {
 struct LogicByScope;
-};
+};  // namespace V3Sched
 
 //============================================================================
 

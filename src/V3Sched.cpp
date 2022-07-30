@@ -75,7 +75,7 @@ AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow) {
     return funcp;
 }
 
-std::vector<const AstSenTree*> getSenTreesUsedBy(std::vector<const LogicByScope*> lbsps) {
+std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicByScope*>& lbsps) {
     const VNUser1InUse user1InUse;
     std::vector<const AstSenTree*> result;
     for (const LogicByScope* const lbsp : lbsps) {
@@ -106,8 +106,9 @@ void remapSensitivities(LogicByScope& lbs,
     }
 }
 
-void invertAndMergeSenTreeMap(std::unordered_map<const AstSenItem*, const AstSenTree*>& result,
-                              std::unordered_map<const AstSenTree*, AstSenTree*> senTreeMap) {
+void invertAndMergeSenTreeMap(
+    std::unordered_map<const AstSenItem*, const AstSenTree*>& result,
+    const std::unordered_map<const AstSenTree*, AstSenTree*>& senTreeMap) {
     for (const auto& pair : senTreeMap) {
         UASSERT_OBJ(!pair.second->sensesp()->nextp(), pair.second, "Should be single AstSenIem");
         result.emplace(pair.second->sensesp(), pair.first);
@@ -417,7 +418,7 @@ struct TriggerKit {
     VL_UNCOPYABLE(TriggerKit);
 
     // Utility that assigns the given index trigger to fire when the given variable is zero
-    void addFirstIterationTriggerAssignment(AstVarScope* counterp, uint32_t index) const {
+    void addFirstIterationTriggerAssignment(AstVarScope* counterp, uint32_t /*index*/) const {
         FileLine* const flp = counterp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
         AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "at", new AstConst{flp, 0}};
@@ -480,8 +481,9 @@ public:
 // Create a TRIGGERVEC and the related TriggerKit for the given AstSenTree vector
 
 const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
-                                std::vector<const AstSenTree*> senTreeps, const string& name,
-                                const ExtraTriggers& extraTriggers, bool slow = false) {
+                                const std::vector<const AstSenTree*>& senTreeps,
+                                const string& name, const ExtraTriggers& extraTriggers,
+                                bool slow = false) {
     AstTopScope* const topScopep = netlistp->topScopep();
     AstScope* const scopeTopp = topScopep->scopep();
     FileLine* const flp = scopeTopp->fileline();
@@ -610,7 +612,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
 // Helpers to construct an evaluation loop.
 
 AstNode* buildLoop(AstNetlist* netlistp, const string& name,
-                   std::function<void(AstVarScope*, AstWhile*)> build)  //
+                   const std::function<void(AstVarScope*, AstWhile*)>& build)  //
 {
     AstTopScope* const topScopep = netlistp->topScopep();
     AstScope* const scopeTopp = topScopep->scopep();
@@ -941,7 +943,7 @@ void createEval(AstNetlist* netlistp,  //
 // Top level entry-point to scheduling
 
 void schedule(AstNetlist* netlistp) {
-    const auto addSizeStat = [](const string name, const LogicByScope& lbs) {
+    const auto addSizeStat = [](const string& name, const LogicByScope& lbs) {
         uint64_t size = 0;
         lbs.foreachLogic([&](AstNode* nodep) { size += nodep->nodeCount(); });
         V3Stats::addStat("Scheduling, " + name, size);

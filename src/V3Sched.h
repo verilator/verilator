@@ -63,7 +63,7 @@ struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>>
         clear();
     };
 
-    void foreachLogic(std::function<void(AstNode*)> f) const {
+    void foreachLogic(const std::function<void(AstNode*)>& f) const {
         for (const auto& pair : *this) {
             for (AstNode* nodep = pair.second->stmtsp(); nodep; nodep = nodep->nextp()) f(nodep);
         }

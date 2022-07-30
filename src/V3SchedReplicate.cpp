@@ -63,7 +63,7 @@ class Vertex VL_NOT_FINAL : public V3GraphVertex {
     RegionFlags m_drivingRegions{NONE};  // The regions driving this vertex
 
 public:
-    Vertex(V3Graph* graphp)
+    explicit Vertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
     uint8_t drivingRegions() const { return m_drivingRegions; }
     void addDrivingRegions(uint8_t regions) {
