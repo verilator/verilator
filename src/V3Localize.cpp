@@ -69,7 +69,7 @@ private:
                 && m_accessors(nodep).size() == 1);  // .. a block temp used in a single CFunc
     }
 
-    bool existsNonLeaf(const std::unordered_set<AstCFunc*>& funcps) {
+    static bool existsNonLeaf(const std::unordered_set<AstCFunc*>& funcps) {
         for (const AstCFunc* const funcp : funcps) {
             if (funcp->user1()) return true;
         }

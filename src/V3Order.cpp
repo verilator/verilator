@@ -495,7 +495,7 @@ class OrderBuildVisitor final : public VNVisitor {
             }
         }
     }
-    virtual ~OrderBuildVisitor() = default;
+    ~OrderBuildVisitor() override = default;
 
 public:
     // Process the netlist and return the constructed ordering graph. It's 'process' because
@@ -962,7 +962,7 @@ class OrderProcess final : VNDeleter {
         pushDeletep(m_deleteDomainp);
     }
 
-    ~OrderProcess() = default;
+    ~OrderProcess() override = default;
 
 public:
     // Order the logic

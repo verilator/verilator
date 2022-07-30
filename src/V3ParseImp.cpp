@@ -468,13 +468,13 @@ void V3ParseImp::tokenPipeline() {
             if (nexttok == yP_COLONCOLON) {
                 token = yaID__CC;
             } else if (nexttok == '#') {
-                const V3ParseBisonYYSType curValue
+                const V3ParseBisonYYSType curValueHold
                     = yylval;  // Remember value, as about to read ahead
                 {
                     const size_t depth = tokenPipeScanParam(0);
                     if (tokenPeekp(depth)->token == yP_COLONCOLON) token = yaID__CC;
                 }
-                yylval = curValue;
+                yylval = curValueHold;
             }
         }
         // If add to above "else if", also add to "if (token" further above

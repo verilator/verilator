@@ -674,10 +674,11 @@ private:
             AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
             if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)
                 || VN_IS(vdtypep, UnpackArrayDType)) {
-                if (times != 1)
+                if (times != 1) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-1 replication to form "
                                                      << vdtypep->prettyDTypeNameQ()
                                                      << " data type");
+                }
                 // Don't iterate lhsp as SELF, the potential Concat below needs
                 // the adtypep passed down to recognize the QueueDType
                 userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, BOTH).p());
@@ -1125,9 +1126,10 @@ private:
     }
     virtual void visit(AstEmptyQueue* nodep) override {
         nodep->dtypeSetEmptyQueue();
-        if (!VN_IS(nodep->backp(), Assign))
+        if (!VN_IS(nodep->backp(), Assign)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported/Illegal: empty queue ('{}') in this context");
+        }
     }
     virtual void visit(AstFell* nodep) override {
         if (m_vup->prelim()) {
@@ -4042,6 +4044,7 @@ private:
                     argsp->v3error("Illegal to foreach loop on basic '" + fromDtp->prettyTypeName()
                                    + "'");
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                    VL_DO_DANGLING(bodyPointp->deleteTree(), bodyPointp);
                     return;
                 }
                 if (varp) {
@@ -4594,9 +4597,11 @@ private:
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
-            if (auto* const patternp = VN_CAST(nodep->exprp(), Pattern))
-                if (const auto* modVarp = nodep->modVarp())
+            if (auto* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
+                if (const auto* modVarp = nodep->modVarp()) {
                     patternp->childDTypep(modVarp->childDTypep()->cloneTree(false));
+                }
+            }
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {

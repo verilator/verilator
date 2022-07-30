@@ -194,16 +194,16 @@ public:
     /// Construct new object
     VerilatedSave() = default;
     /// Flush, close and destruct
-    virtual ~VerilatedSave() override { close(); }
+    ~VerilatedSave() override { close(); }
     // METHODS
     /// Open the file; call isOpen() to see if errors
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;
     /// Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     /// Flush and close the file
-    virtual void close() override VL_MT_UNSAFE_ONE;
+    void close() override VL_MT_UNSAFE_ONE;
     /// Flush data to file
-    virtual void flush() override VL_MT_UNSAFE_ONE;
+    void flush() override VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================
@@ -221,7 +221,7 @@ public:
     /// Construct new object
     VerilatedRestore() = default;
     /// Flush, close and destruct
-    virtual ~VerilatedRestore() override { close(); }
+    ~VerilatedRestore() override { close(); }
 
     // METHODS
     /// Open the file; call isOpen() to see if errors
@@ -229,9 +229,9 @@ public:
     /// Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     /// Close the file
-    virtual void close() override VL_MT_UNSAFE_ONE;
-    virtual void flush() override VL_MT_UNSAFE_ONE {}
-    virtual void fill() override VL_MT_UNSAFE_ONE;
+    void close() override VL_MT_UNSAFE_ONE;
+    void flush() override VL_MT_UNSAFE_ONE {}
+    void fill() override VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================

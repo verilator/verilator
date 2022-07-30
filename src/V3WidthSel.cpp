@@ -70,7 +70,7 @@ private:
             , m_fromRange{fromRange} {}
         ~FromData() = default;
     };
-    FromData fromDataForArray(AstNode* nodep, AstNode* basefromp) {
+    static FromData fromDataForArray(AstNode* nodep, AstNode* basefromp) {
         // What is the data type and information for this SEL-ish's from()?
         UINFO(9, "  fromData start ddtypep = " << basefromp << endl);
         VNumRange fromRange;  // constructs to isRanged(false)

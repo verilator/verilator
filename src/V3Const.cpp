@@ -325,7 +325,6 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             return ResultTerm{resultp, ops, clean};
         }
 
-    public:
         // CONSTRUCTORS
         VarInfo(ConstBitOpTreeVisitor* parent, AstVarRef* refp, int width)
             : m_parentp{parent}
@@ -754,10 +753,11 @@ public:
         if (debug() >= 9) {  // LCOV_EXCL_START
             cout << "Bitop tree considered: " << endl;
             for (AstNode* const termp : termps) termp->dumpTree("Reduced term: ");
-            for (const std::pair<AstNode*, FrozenNodeInfo>& termp : visitor.m_frozenNodes)
+            for (const std::pair<AstNode*, FrozenNodeInfo>& termp : visitor.m_frozenNodes) {
                 termp.first->dumpTree("Frozen term with lsb " + std::to_string(termp.second.m_lsb)
                                       + " polarity " + std::to_string(termp.second.m_polarity)
                                       + ": ");
+            }
             cout << "Needs flipping: " << needsFlip << endl;
             cout << "Needs cleaning: " << needsCleaning << endl;
             cout << "Size: " << resultOps << " input size: " << visitor.m_ops << endl;

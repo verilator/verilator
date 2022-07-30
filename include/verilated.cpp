@@ -679,7 +679,10 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
     if (std::numeric_limits<T>::is_integer) {
         constexpr int b = 128;
         constexpr int w = VL_WORDS_I(b);
-        VlWide<w> tmp0, tmp1, tmp2, tmp3;
+        VlWide<w> tmp0;
+        VlWide<w> tmp1;
+        VlWide<w> tmp2;
+        VlWide<w> tmp3;
 
         WDataInP shifted = VL_EXTEND_WQ(b, 0, tmp0, static_cast<QData>(ld));
         if (shift < 0) {

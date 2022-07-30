@@ -1902,7 +1902,7 @@ private:
     static int debug() { return LinkDotState::debug(); }
 
     // METHODS - Variables
-    void createImplicitVar(VSymEnt* lookupSymp, AstVarRef* nodep, AstNodeModule* modp,
+    void createImplicitVar(VSymEnt* /*lookupSymp*/, AstVarRef* nodep, AstNodeModule* modp,
                            VSymEnt* moduleSymp, bool noWarn) {
         // Create implicit after warning
         if (!nodep->varp()) {

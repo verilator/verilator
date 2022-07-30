@@ -220,7 +220,9 @@ class CombineVisitor final : VNVisitor {
 
     // CONSTRUCTORS
     explicit CombineVisitor(AstNetlist* nodep) { iterate(nodep); }
-    ~CombineVisitor() { V3Stats::addStat("Optimizations, Combined CFuncs", m_cfuncsCombined); }
+    ~CombineVisitor() override {
+        V3Stats::addStat("Optimizations, Combined CFuncs", m_cfuncsCombined);
+    }
 
 public:
     static void apply(AstNetlist* netlistp) { CombineVisitor{netlistp}; }

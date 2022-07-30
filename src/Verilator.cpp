@@ -696,7 +696,7 @@ static void execHierVerilation() {
 
 //######################################################################
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv, char** /*env*/) {
     // General initialization
     std::ios::sync_with_stdio();
 

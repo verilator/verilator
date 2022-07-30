@@ -115,13 +115,13 @@ private:
                 // Move later, or we wouldn't keep interating the class
                 // We're really moving the VarScope but we might not
                 // have a pointer to it yet
-                m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
+                m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
             }
             if (!m_ftaskp && nodep->lifetime().isStatic()) {
-                m_toPackageMoves.push_back(std::make_pair(nodep, m_classPackagep));
+                m_toPackageMoves.emplace_back(std::make_pair(nodep, m_classPackagep));
                 // We're really moving the VarScope but we might not
                 // have a pointer to it yet
-                m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
+                m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
             }
         }
     }
@@ -137,7 +137,7 @@ private:
             m_ftaskp = nodep;
             iterateChildren(nodep);
             if (m_packageScopep && nodep->lifetime().isStatic()) {
-                m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep));
+                m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
             }
         }
     }
@@ -152,12 +152,16 @@ private:
     virtual void visit(AstInitial* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);
-        if (m_packageScopep) { m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep)); }
+        if (m_packageScopep) {
+            m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
+        }
     }
     virtual void visit(AstInitialStatic* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);
-        if (m_packageScopep) { m_toScopeMoves.push_back(std::make_pair(nodep, m_packageScopep)); }
+        if (m_packageScopep) {
+            m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
+        }
     }
 
     virtual void visit(AstNodeMath* nodep) override {}  // Short circuit

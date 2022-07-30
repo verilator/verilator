@@ -60,6 +60,7 @@ public:
     }
 
     // Override VerilatedFstC. Must be called after starting simulation.
+    // cppcheck-suppress missingOverride  // GCC won't accept override
     virtual void open(const char* filename) /*override*/ VL_MT_SAFE;
 
 private:

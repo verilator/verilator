@@ -371,7 +371,7 @@ private:
         return newFormat;
     }
 
-    static void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
+    static void expectDescriptor(AstNode* /*nodep*/, AstNodeVarRef* filep) {
         // This might fail on complex expressions like arrays
         // We use attrFileDescr() only for lint suppression, so that's ok
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);

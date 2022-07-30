@@ -600,7 +600,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
     } else if (const AstInitArray* const initarp = VN_CAST(varp->valuep(), InitArray)) {
-        if (AstAssocArrayDType* const adtypep = VN_CAST(dtypep, AssocArrayDType)) {
+        if (VN_IS(dtypep, AssocArrayDType)) {
             if (initarp->defaultp()) {
                 emitSetVarConstant(varNameProtected + ".atDefault()",
                                    VN_AS(initarp->defaultp(), Const));
@@ -611,7 +611,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
                 emitSetVarConstant(varNameProtected + ".at(" + cvtToStr(itr.first) + ")",
                                    VN_AS(valuep, Const));
             }
-        } else if (AstWildcardArrayDType* const adtypep = VN_CAST(dtypep, WildcardArrayDType)) {
+        } else if (VN_IS(dtypep, WildcardArrayDType)) {
             if (initarp->defaultp()) {
                 emitSetVarConstant(varNameProtected + ".atDefault()",
                                    VN_AS(initarp->defaultp(), Const));

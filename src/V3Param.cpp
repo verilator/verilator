@@ -289,7 +289,7 @@ class ParamProcessor final {
             }
         }
     }
-    string paramSmallName(AstNodeModule* modp, AstNode* varp) {
+    static string paramSmallName(AstNodeModule* modp, AstNode* varp) {
         if (varp->user4() <= 1) makeSmallNames(modp);
         int index = varp->user4() / 256;
         const char ch = varp->user4() & 255;
