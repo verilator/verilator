@@ -607,7 +607,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (!outvarp) {
             // This is the final pre-forced resolution of the tristate, so we apply
             // the pull direction to any undriven pins.
-            V3Number pull(invarp, lhsp->width());
             const AstPull* const pullp = static_cast<AstPull*>(lhsp->user3p());
             bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
             undrivenp
@@ -989,12 +988,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (!dropop[2]) iterateAndNextNull(nodep->fhsp());
         } else {
             AstNode* nonXp = nullptr;
-            if (!dropop[0])
+            if (!dropop[0]) {
                 nonXp = nodep->rhsp();
-            else if (!dropop[1])
+            } else if (!dropop[1]) {
                 nonXp = nodep->thsp();
-            else if (!dropop[2])
+            } else if (!dropop[2]) {
                 nonXp = nodep->fhsp();
+            }
             // Replace 'z with non-Z
             if (dropop[0] || dropop[1] || dropop[2]) {
                 // Unsupported: A $countones('0) should compare with the enables, but we don't

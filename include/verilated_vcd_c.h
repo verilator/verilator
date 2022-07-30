@@ -102,18 +102,18 @@ protected:
     // Implementation of VerilatedTrace interface
 
     // Called when the trace moves forward to a new time point
-    virtual void emitTimeChange(uint64_t timeui) override;
+    void emitTimeChange(uint64_t timeui) override;
 
     // Hooks called from VerilatedTrace
-    virtual bool preFullDump() override { return isOpen(); }
-    virtual bool preChangeDump() override;
+    bool preFullDump() override { return isOpen(); }
+    bool preChangeDump() override;
 
     // Trace buffer management
-    virtual Buffer* getTraceBuffer() override;
-    virtual void commitTraceBuffer(Buffer*) override;
+    Buffer* getTraceBuffer() override;
+    void commitTraceBuffer(Buffer*) override;
 
     // Configure sub-class
-    virtual void configure(const VerilatedTraceConfig&) override { return; };
+    void configure(const VerilatedTraceConfig&) override { return; };
 
 public:
     //=========================================================================

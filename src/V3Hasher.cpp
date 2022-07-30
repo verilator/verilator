@@ -494,7 +494,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    HasherVisitor(AstNode* nodep)
+    explicit HasherVisitor(AstNode* nodep)
         : m_cacheInUser4{true} {
         iterate(nodep);
     }
@@ -517,7 +517,7 @@ V3Hash V3Hasher::operator()(AstNode* nodep) const {
 
 V3Hash V3Hasher::rehash(AstNode* nodep) const {
     nodep->user4(0);
-    HasherVisitor{nodep};
+    { HasherVisitor{nodep}; }
     return V3Hash(nodep->user4());
 }
 

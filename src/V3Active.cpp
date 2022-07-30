@@ -75,7 +75,7 @@ public:
 
 class LatchDetectGraph final : public V3Graph {
 protected:
-    LatchDetectGraphVertex* m_curVertexp;  // Current latch detection graph vertex
+    LatchDetectGraphVertex* m_curVertexp = nullptr;  // Current latch detection graph vertex
     std::vector<AstVarRef*> m_outputs;  // Vector of lvalues encountered on this pass
 
     VL_DEBUG_FUNC;  // Declare debug()
@@ -290,13 +290,13 @@ private:
     // STATE
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
         if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()) {
             m_graph.addAssignment(nodep);
         }
     }
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) override {
         if (!nodep->isBoundsCheck()) {
             LatchDetectGraphVertex* const parentp = m_graph.currentp();
             LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
@@ -308,7 +308,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -317,7 +317,7 @@ public:
         iterate(nodep);
         m_graph.latchCheck(nodep, kwd == VAlwaysKwd::ALWAYS_LATCH);
     }
-    virtual ~ActiveLatchCheckVisitor() = default;
+    ~ActiveLatchCheckVisitor() override = default;
 };
 
 //######################################################################
@@ -387,7 +387,7 @@ public:
         : m_check{check} {
         iterate(nodep);
     }
-    virtual ~ActiveDlyVisitor() override = default;
+    ~ActiveDlyVisitor() override = default;
 };
 
 //######################################################################
@@ -530,7 +530,7 @@ private:
 
         // Warn and/or convert any delayed assignments
         if (combo && !sequent) {
-            ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB};
+            { ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB}; }
             const ActiveLatchCheckVisitor latchvisitor{nodep, kwd};
         } else if (!combo && sequent) {
             ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_SEQ};
@@ -598,7 +598,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ActiveVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ActiveVisitor() override = default;
+    ~ActiveVisitor() override = default;
 };
 
 //######################################################################

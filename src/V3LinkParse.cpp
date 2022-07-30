@@ -445,7 +445,7 @@ private:
                                      selp->rhsp()->unlinkFrBackWithNext()};
             selp->replaceWith(newp);
             VL_DO_DANGLING(selp->deleteTree(), selp);
-        } else if (AstSelLoopVars* const selp = VN_CAST(bracketp, SelLoopVars)) {
+        } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
             nodep->v3error(

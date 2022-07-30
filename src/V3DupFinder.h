@@ -52,7 +52,7 @@ public:
     V3DupFinder()
         : m_hasherp{new V3Hasher}
         , m_hasher{*m_hasherp} {}
-    V3DupFinder(const V3Hasher& hasher)
+    explicit V3DupFinder(const V3Hasher& hasher)
         : m_hasherp{nullptr}
         , m_hasher{hasher} {}
     ~V3DupFinder() {

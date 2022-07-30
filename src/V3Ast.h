@@ -2605,7 +2605,7 @@ protected:
         : AstNodeMath{t, fl}
         , m_access{access}
         , m_name{name} {
-        this->varp(nullptr);
+        varp(nullptr);
     }
     AstNodeVarRef(VNType t, FileLine* fl, const string& name, AstVar* varp, const VAccess& access)
         : AstNodeMath{t, fl}

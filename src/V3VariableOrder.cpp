@@ -48,7 +48,7 @@ public:
         : m_mtaskIds(mtaskIds) {  // Cannot be {} or GCC 4.8 false warning
         m_serial = ++s_serialNext;  // Cannot be ()/{} or GCC 4.8 false warning
     }
-    virtual ~VarTspSorter() = default;
+    ~VarTspSorter() override = default;
     // METHODS
     virtual bool operator<(const TspStateBase& other) const override {
         return operator<(dynamic_cast<const VarTspSorter&>(other));

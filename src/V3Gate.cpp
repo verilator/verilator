@@ -81,16 +81,16 @@ public:
     AstScope* scopep() const { return m_scopep; }
     bool reducible() const { return m_reducible; }
     bool dedupable() const { return m_dedupable; }
-    void setConsumed(const char* consumedReason) {
+    void setConsumed(const char* /*consumedReason*/) {
         m_consumed = true;
         // UINFO(0, "\t\tSetConsumed "<<consumedReason<<" "<<this<<endl);
     }
     bool consumed() const { return m_consumed; }
-    void clearReducible(const char* nonReducibleReason) {
+    void clearReducible(const char* /*nonReducibleReason*/) {
         m_reducible = false;
         // UINFO(0, "     NR: "<<nonReducibleReason<<"  "<<name()<<endl);
     }
-    void clearDedupable(const char* nonDedupableReason) {
+    void clearDedupable(const char* /*nonDedupableReason*/) {
         m_dedupable = false;
         // UINFO(0, "     ND: "<<nonDedupableReason<<"  "<<name()<<endl);
     }

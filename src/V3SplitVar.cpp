@@ -610,7 +610,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     }
     AstVarRef* createTempVar(AstNode* context, AstNode* nodep, AstUnpackArrayDType* dtypep,
                              const std::string& name_prefix, std::vector<AstVar*>& vars,
-                             int start_idx, bool lvalue, bool ftask) {
+                             int start_idx, bool lvalue, bool /*ftask*/) {
         FileLine* const fl = nodep->fileline();
         const std::string name = m_tempNames.get(nodep) + "__" + name_prefix;
         AstNodeAssign* const assignp = VN_CAST(context, NodeAssign);
@@ -773,8 +773,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
 
 public:
     explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
-        : m_refs{}
-        , m_tempNames{"__VsplitVar"} {
+        : m_tempNames{"__VsplitVar"} {
         iterate(nodep);
     }
     ~SplitUnpackedVarVisitor() override {
@@ -1114,10 +1113,10 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                          << " is added for " << varp->prettyNameQ() << '\n');
         }
     }
-    static void updateReferences(AstVar* varp, PackedVarRef& ref,
+    static void updateReferences(AstVar* varp, PackedVarRef& pref,
                                  const std::vector<SplitNewVar>& vars) {
         for (const bool lvalue : {false, true}) {  // Refer the new split variables
-            std::vector<PackedVarRefEntry>& refs = lvalue ? ref.lhs() : ref.rhs();
+            std::vector<PackedVarRefEntry>& refs = lvalue ? pref.lhs() : pref.rhs();
             for (PackedVarRefEntry& ref : refs) {
                 auto varit
                     = std::upper_bound(vars.begin(), vars.end(), ref.lsb(), SplitNewVar::Match());

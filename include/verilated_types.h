@@ -91,9 +91,9 @@ class VlReadMem final {
     const int m_bits;  // Bit width of values
     const std::string& m_filename;  // Filename
     const QData m_end;  // End address (as specified by user)
-    FILE* m_fp;  // File handle for filename
-    QData m_addr;  // Next address to read
-    int m_linenum;  // Line number last read from file
+    FILE* m_fp = nullptr;  // File handle for filename
+    QData m_addr = 0;  // Next address to read
+    int m_linenum = 0;  // Line number last read from file
     bool m_anyAddr = false;  // Had address directive in the file
 public:
     VlReadMem(bool hex, int bits, const std::string& filename, QData start, QData end);
@@ -107,8 +107,8 @@ public:
 class VlWriteMem final {
     const bool m_hex;  // Hex format
     const int m_bits;  // Bit width of values
-    FILE* m_fp;  // File handle for filename
-    QData m_addr;  // Next address to write
+    FILE* m_fp = nullptr;  // File handle for filename
+    QData m_addr = 0;  // Next address to write
 public:
     VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end);
     ~VlWriteMem();

@@ -72,10 +72,10 @@ int FileLineSingleton::nameToNumber(const string& filename) {
 //! Experimental. Updated to also put out the language.
 void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os << "<files>\n";
-    for (auto it = m_namemap.cbegin(); it != m_namemap.cend(); ++it) {
-        os << "<file id=\"" << filenameLetters(it->second) << "\" filename=\""
-           << V3OutFormatter::quoteNameControls(it->first, V3OutFormatter::LA_XML)
-           << "\" language=\"" << numberToLang(it->second).ascii() << "\"/>\n";
+    for (const auto& itr : m_namemap) {
+        os << "<file id=\"" << filenameLetters(itr.second) << "\" filename=\""
+           << V3OutFormatter::quoteNameControls(itr.first, V3OutFormatter::LA_XML)
+           << "\" language=\"" << numberToLang(itr.second).ascii() << "\"/>\n";
     }
     os << "</files>\n";
 }

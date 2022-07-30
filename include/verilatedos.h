@@ -456,7 +456,8 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // or 0x0 if not implemented on this platform
 #define VL_GET_CPU_TICK(val) \
     { \
-        uint32_t hi, lo; \
+        uint32_t hi; \
+        uint32_t lo; \
         asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); \
         (val) = ((uint64_t)lo) | (((uint64_t)hi) << 32); \
     }

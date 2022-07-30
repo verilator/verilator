@@ -774,7 +774,7 @@ void EmitCSyms::emitSymImp() {
                 puts(protectIf(aboveScopep->nameDotless(), aboveScopep->protect()));
             }
             puts(".");
-            puts(protName.substr(protName.rfind(".") + 1));
+            puts(protName.substr(protName.rfind('.') + 1));
             puts(" = &");
             puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
             ++m_numStmts;

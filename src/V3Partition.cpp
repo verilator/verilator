@@ -261,7 +261,7 @@ private:
     // METHODS
 protected:
     friend class PartPropagateCp<PartPropagateCpSelfTest>;
-    void notifyEdgeCp(V3GraphVertex* vxp, GraphWay way, V3GraphVertex* throughp,
+    void notifyEdgeCp(V3GraphVertex* /*vxp*/, GraphWay way, V3GraphVertex* throughp,
                       uint32_t cp) const {
         const uint32_t throughCost = critPathCost(throughp, way);
         UASSERT_SELFTEST(uint32_t, cp, (1 + throughCost));
@@ -272,7 +272,7 @@ private:
         // Don't need to check this in the self test; it supports an assert
         // that runs in production code.
     }
-    void setCritPathCost(V3GraphVertex* vxp, GraphWay way, uint32_t cost) {
+    void setCritPathCost(V3GraphVertex* vxp, GraphWay /*way*/, uint32_t cost) {
         m_cp[vxp] = cost;
         // Confirm that we only set each node's CP once.  That's an
         // important property of PartPropagateCp which allows it to be far
@@ -281,7 +281,7 @@ private:
         UASSERT_OBJ(it == m_seen.end(), vxp, "Set CP on node twice");
         m_seen[vxp] = cost;
     }
-    uint32_t critPathCost(V3GraphVertex* vxp, GraphWay way) const {
+    uint32_t critPathCost(V3GraphVertex* vxp, GraphWay /*way*/) const {
         const auto it = m_cp.find(vxp);
         if (it != m_cp.end()) return it->second;
         return 0;
@@ -743,7 +743,7 @@ public:
     bool mergeWouldCreateCycle() const;  // Instead of virtual method
 
     bool removedFromSb() const { return (m_id & REMOVED_MASK) != 0; }
-    void removedFromSb(bool removed) { m_id |= REMOVED_MASK; }
+    void removedFromSb(bool /*removed*/) { m_id |= REMOVED_MASK; }
     bool operator<(const MergeCandidate& other) const { return m_id < other.m_id; }
 };
 

@@ -378,7 +378,7 @@ public:
         : m_tempNames{"__Vtemp"} {
         iterate(nodep);
     }
-    virtual ~PremitVisitor() {
+    ~PremitVisitor() override {
         V3Stats::addStat("Optimizations, Prelim extracted value to ConstPool",
                          m_extractedToConstPool);
     }

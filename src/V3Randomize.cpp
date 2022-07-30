@@ -75,7 +75,7 @@ private:
         }
     }
     void markAllDerived() {
-        for (auto p : m_baseToDerivedMap) {
+        for (const auto& p : m_baseToDerivedMap) {
             if (p.first->user1()) markDerived(p.first);
         }
     }

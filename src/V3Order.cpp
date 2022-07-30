@@ -737,7 +737,7 @@ class OrderBuildVisitor final : public VNVisitor {
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
-    OrderBuildVisitor(AstNetlist* nodep) {
+    explicit OrderBuildVisitor(AstNetlist* nodep) {
         // Enable debugging (3 is default if global debug; we want acyc debugging)
         if (debug()) m_graphp->debug(5);
 
@@ -753,7 +753,7 @@ class OrderBuildVisitor final : public VNVisitor {
         // Build the rest of the graph
         iterate(nodep);
     }
-    virtual ~OrderBuildVisitor() = default;
+    ~OrderBuildVisitor() override = default;
 
 public:
     // Process the netlist and return the constructed ordering graph. It's 'process' because
@@ -1331,7 +1331,7 @@ class OrderProcess final : VNDeleter {
         pushDeletep(m_deleteDomainp);
     }
 
-    ~OrderProcess() {
+    ~OrderProcess() override {
         // Stats
         for (int type = 0; type < OrderVEdgeType::_ENUM_END; type++) {
             const double count = double(m_statCut[type]);
@@ -2103,9 +2103,9 @@ void V3Order::orderAll(AstNetlist* netlistp) {
     // Build ordering graph
     std::unique_ptr<OrderGraph> orderGraph = OrderBuildVisitor::process(netlistp);
     // Order the netlist
-    OrderProcess::main(netlistp, *orderGraph.get());
+    OrderProcess::main(netlistp, *orderGraph);
     // Reset debug level
-    orderGraph.get()->debug(V3Error::debugDefault());
+    orderGraph->debug(V3Error::debugDefault());
     // Dump tree
     V3Global::dumpCheckGlobalTree("order", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

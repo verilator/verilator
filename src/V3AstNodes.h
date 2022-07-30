@@ -186,7 +186,7 @@ public:
 class AstEmpty final : public AstNode {
     // Represents something missing, e.g. a missing argument in FOREACH
 public:
-    AstEmpty(FileLine* fl)
+    explicit AstEmpty(FileLine* fl)
         : ASTGEN_SUPER_Empty(fl) {}
     ASTNODE_NODE_FUNCS(Empty)
     virtual bool same(const AstNode* samep) const override { return true; }
@@ -194,7 +194,7 @@ public:
 
 class AstEmptyQueue final : public AstNodeMath {
 public:
-    AstEmptyQueue(FileLine* fl)
+    explicit AstEmptyQueue(FileLine* fl)
         : ASTGEN_SUPER_EmptyQueue(fl) {}
     ASTNODE_NODE_FUNCS(EmptyQueue)
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }

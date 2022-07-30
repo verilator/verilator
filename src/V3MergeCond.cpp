@@ -414,7 +414,7 @@ public:
     // Given an AstNode list (held via AstNode::nextp()), move conditional statements as close
     // together as possible
     static AstNode* optimize(AstNode* nodep, const StmtPropertiesAllocator& stmtProperties) {
-        CodeMotionOptimizeVisitor{nodep, stmtProperties};
+        { CodeMotionOptimizeVisitor{nodep, stmtProperties}; }
         // It is possible for the head of the list to be moved later such that it is no longer
         // in head position. If so, rewind the list and return the new head.
         while (nodep->backp()->nextp() == nodep) nodep = nodep->backp();
