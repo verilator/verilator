@@ -205,7 +205,7 @@ private:
         // Forward to . so we have a whole word
         const std::string suffix = *bpost ? std::string{bpost + 1} : "";
 
-        const std::string out = prefix + "*" + suffix;
+        std::string out = prefix + "*" + suffix;
 
         // cout << "\nch pre="<<prefix<<"  s="<<suffix<<"\nch a="<<old<<"\nch b="<<add
         // <<"\ncho="<<out<<endl;

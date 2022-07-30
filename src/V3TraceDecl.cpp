@@ -192,7 +192,9 @@ private:
         m_subFuncSize += stmtp->nodeCount();
     }
 
-    std::string getScopeChar(VltTraceScope sct) { return std::string(1, (char)(0x80 + sct)); }
+    std::string getScopeChar(VltTraceScope sct) {
+        return std::string(1, static_cast<char>(0x80 + sct));
+    }
 
     std::string addAboveInterface(const std::string& scopeName) {
         std::string out;

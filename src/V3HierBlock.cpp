@@ -201,7 +201,7 @@ string V3HierBlock::hierGenerated(bool withDir) const {
 }
 
 string V3HierBlock::vFileIfNecessary() const {
-    const string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
+    string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
     for (const string& v : v3Global.opt.vFiles()) {
         // Already listed in vFiles, so no need to add the file.
         if (filename == V3Os::filenameRealPath(v)) return "";

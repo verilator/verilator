@@ -48,7 +48,7 @@ private:
     //=========================================================================
     // FST specific internals
 
-    void* m_fst;
+    void* m_fst = nullptr;
     std::map<uint32_t, fstHandle> m_code2symbol;
     std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;

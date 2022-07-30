@@ -134,7 +134,6 @@ public:
         initUnpacked(ulims);
     }
 
-public:
     ~VerilatedVarProps() = default;
     // METHODS
     bool magicOk() const { return m_magic == MAGIC; }

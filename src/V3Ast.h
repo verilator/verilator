@@ -95,7 +95,7 @@ public:
     //   const char* ascii() const {...};
     enum en m_e;
     // cppcheck-suppress uninitVar  // responsibility of each subclass
-    inline VNType() {}
+    inline VNType() = default;
     // cppcheck-suppress noExplicitConstructor
     inline VNType(en _e)
         : m_e{_e} {}
@@ -1008,7 +1008,7 @@ public:
         return false;
     }
     //
-    VNumRange() {}
+    VNumRange() = default;
     VNumRange(int hi, int lo, bool littleEndian) { init(hi, lo, littleEndian); }
     VNumRange(int left, int right)
         : m_left{left}
@@ -1134,7 +1134,7 @@ class VNUser final {
     } m_u;
 
 public:
-    VNUser() {}
+    VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
     VNUser(int i) {
@@ -2464,7 +2464,7 @@ public:
     void fromp(AstNode* nodep) { return setOp1p(nodep); }
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
-    void attrp(AstAttrOf* nodep) { return setOp4p((AstNode*)nodep); }
+    void attrp(AstAttrOf* nodep) { return setOp4p(reinterpret_cast<AstNode*>(nodep)); }
     // METHODS
     virtual bool same(const AstNode*) const override { return true; }
 };
@@ -2556,7 +2556,7 @@ public:
     AstNode* bodysp() const { return op4p(); }  // op4 = body of loop
     virtual bool isGateOptimizable() const override { return false; }
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual bool same(const AstNode* /*samep*/) const override { return true; }
 };
 
 class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
@@ -2583,7 +2583,7 @@ public:
     virtual bool isGateOptimizable() const override { return false; }
     virtual bool isGateDedupable() const override { return true; }
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual bool same(const AstNode* /*samep*/) const override { return true; }
     void branchPred(VBranchPred flag) { m_branchPred = flag; }
     VBranchPred branchPred() const { return m_branchPred; }
     void isBoundsCheck(bool flag) { m_isBoundsCheck = flag; }

@@ -339,7 +339,7 @@ bool V3Options::hasParameter(const string& name) {
 }
 
 string V3Options::parameter(const string& name) {
-    const string value = m_parameters.find(name)->second;
+    string value = m_parameters.find(name)->second;
     m_parameters.erase(m_parameters.find(name));
     return value;
 }
@@ -477,7 +477,7 @@ string V3Options::fileExists(const string& filename) {
         return "";  // Not found
     }
     // Check if it is a directory, ignore if so
-    const string filenameOut = V3Os::filenameFromDirBase(dir, basename);
+    string filenameOut = V3Os::filenameFromDirBase(dir, basename);
     if (!fileStatNormal(filenameOut)) return "";  // Directory
     return filenameOut;
 }
@@ -518,11 +518,11 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // using the incdir and libext's.
     // Return "" if not found.
     for (const string& dir : m_impp->m_incDirUsers) {
-        const string exists = filePathCheckOneDir(modname, dir);
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirFallbacks) {
-        const string exists = filePathCheckOneDir(modname, dir);
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
 

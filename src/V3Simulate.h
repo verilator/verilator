@@ -183,7 +183,7 @@ public:
             }
             m_whyNotOptimizable = why;
             std::ostringstream stack;
-            for (auto& callstack : vlstd::reverse_view(m_callStack)) {
+            for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
                 AstFuncRef* const funcp = callstack->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from "
                       << funcp->prettyName() << "() with parameters:";
@@ -193,9 +193,10 @@ public:
                     AstVar* const portp = conIt->first;
                     AstNode* const pinp = conIt->second->exprp();
                     AstNodeDType* const dtypep = pinp->dtypep();
-                    if (AstConst* const valp = fetchConstNull(pinp))
+                    if (AstConst* const valp = fetchConstNull(pinp)) {
                         stack << "\n           " << portp->prettyName() << " = "
                               << prettyNumber(&valp->num(), dtypep);
+                    }
                 }
             }
             m_whyNotOptimizable += stack.str();
@@ -380,7 +381,7 @@ private:
         UASSERT_OBJ(vscp, nodep, "Not linked");
         return vscp;
     }
-    int unrollCount() {
+    int unrollCount() const {
         return m_params ? v3Global.opt.unrollCount() * 16 : v3Global.opt.unrollCount();
     }
     bool jumpingOver(AstNode* nodep) {

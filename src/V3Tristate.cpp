@@ -360,7 +360,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     VDouble0 m_statTriSigs;  // stat tracking
 
     // METHODS
-    string dbgState() {
+    string dbgState() const {
         string o = (m_graphing ? " gr " : " ng ");
         if (m_alhs) o += "alhs ";
         return o;

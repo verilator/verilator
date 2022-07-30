@@ -51,7 +51,7 @@ public:
         }
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
     }
-    virtual ~VerilatedFstSc() { close(); }
+    ~VerilatedFstSc() override { close(); }
 
     // METHODS
     /// Called by SystemC simulate()

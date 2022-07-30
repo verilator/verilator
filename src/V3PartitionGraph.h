@@ -30,7 +30,7 @@
 
 class AbstractMTask VL_NOT_FINAL : public V3GraphVertex {
 public:
-    AbstractMTask(V3Graph* graphp)
+    explicit AbstractMTask(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
     virtual ~AbstractMTask() override = default;
     virtual uint32_t id() const = 0;
@@ -42,7 +42,7 @@ public:
     // TYPES
     using VxList = std::list<MTaskMoveVertex*>;
     // CONSTRUCTORS
-    AbstractLogicMTask(V3Graph* graphp)
+    explicit AbstractLogicMTask(V3Graph* graphp)
         : AbstractMTask{graphp} {}
     virtual ~AbstractLogicMTask() override = default;
     // METHODS
