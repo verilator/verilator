@@ -165,14 +165,14 @@ class VlExecutionProfiler final : public VerilatedVirtualBase {
 public:
     // CONSTRUCTOR
     explicit VlExecutionProfiler(VerilatedContext& context);
-    virtual ~VlExecutionProfiler() = default;
+    ~VlExecutionProfiler() override = default;
 
     // METHODS
 
     // Is profiling enabled
     inline bool enabled() const { return m_enabled; }
     // Append a trace record to the trace buffer of the current thread
-    inline VlExecutionRecord& addRecord() {
+    static inline VlExecutionRecord& addRecord() {
         t_trace.emplace_back();
         return t_trace.back();
     }

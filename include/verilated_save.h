@@ -77,7 +77,7 @@ public:
     virtual void flush() VL_MT_UNSAFE_ONE {}
     /// Write data to stream
     VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
-        const uint8_t* __restrict dp = (const uint8_t* __restrict)datap;
+        const uint8_t* __restrict dp = static_cast<const uint8_t* __restrict>(datap);
         while (size) {
             bufferCheck();
             size_t blk = size;
@@ -287,7 +287,8 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& r
     uint32_t len = 0;
     os >> len;
     rhs.resize(len);
-    return os.read((void*)rhs.data(), len);
+    // C cast is required below
+    return os.read((void*)(rhs.data()), len);
 }
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp);
 VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhsp);

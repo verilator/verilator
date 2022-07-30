@@ -1612,7 +1612,7 @@ string V3PreProcImp::getline() {
 
     // Make new string with data up to the newline.
     const int len = rtnp - m_lineChars.c_str() + 1;
-    const string theLine(m_lineChars, 0, len);
+    string theLine(m_lineChars, 0, len);
     m_lineChars = m_lineChars.erase(0, len);  // Remove returned characters
     if (debug() >= 4) {
         const string lncln = V3PreLex::cleanDbgStrg(theLine);

@@ -54,7 +54,7 @@ public:
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
     }
     /// Destruct, flush, and close the dump
-    virtual ~VerilatedVcdSc() { close(); }
+    ~VerilatedVcdSc() override { close(); }
 
     // METHODS - for SC kernel
     // Called by SystemC simulate()

@@ -126,7 +126,7 @@ string VFileContent::getLine(int lineno) const {
             return "";
         }
     }
-    const string text = m_lines[lineno];
+    string text = m_lines[lineno];
     UINFO(9, "Get Stream[ct" << m_id << "+" << lineno << "]: " << text);
     return text;
 }

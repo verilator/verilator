@@ -92,8 +92,7 @@ static_assert(static_cast<int>(FST_ST_VCD_PROGRAM) == static_cast<int>(VLT_TRACE
 //=============================================================================
 // VerilatedFst
 
-VerilatedFst::VerilatedFst(void* fst)
-    : m_fst{fst} {}
+VerilatedFst::VerilatedFst(void* /*fst*/) {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);

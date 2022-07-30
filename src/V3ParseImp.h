@@ -173,9 +173,10 @@ public:
     }
     static int debug() {
         static int level = -1;
-        if (VL_UNLIKELY(level < 0))
+        if (VL_UNLIKELY(level < 0)) {
             level = std::max(std::max(debugBison(), debugFlex()),
                              v3Global.opt.debugSrcLevel("V3ParseImp"));
+        }
         return level;
     }
 
@@ -273,7 +274,7 @@ public:
 
     //==== Symbol tables
     V3ParseSym* symp() { return m_symp; }
-    AstPackage* unitPackage(FileLine* fl) {
+    AstPackage* unitPackage(FileLine* /*fl*/) {
         // Find one made earlier?
         const VSymEnt* const rootSymp
             = symp()->symRootp()->findIdFlat(AstPackage::dollarUnitName());

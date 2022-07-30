@@ -120,7 +120,8 @@ public:
     /// Zero coverage points
     void zero() VL_MT_SAFE;
 
-public:  // But Internal use only
+    // METHODS - public but Internal use only
+
     // Insert a coverage item
     // We accept from 1-30 key/value pairs, all as strings.
     // Call _insert1, followed by _insert2 and _insert3
@@ -158,7 +159,7 @@ protected:
     // CONSTRUCTORS
     // Internal: Only made as part of VerilatedCovImp
     VerilatedCovContext() = default;
-    virtual ~VerilatedCovContext() = default;
+    ~VerilatedCovContext() override = default;
 
     // METHODS
     // Internal: access to implementation class

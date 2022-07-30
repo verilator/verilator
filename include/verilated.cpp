@@ -700,7 +700,8 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
             = VL_EXTEND_WQ(b, 0, tmp2, std::numeric_limits<uint64_t>::max());  // breaks shifted
         if (VL_GT_W(w, integer, max64Bit)) {
             WDataOutP v = VL_ASSIGN_W(b, tmp3, integer);  // breaks fracDigitsPow10
-            VlWide<w> zero, ten;
+            VlWide<w> zero;
+            VlWide<w> ten;
             VL_ZERO_W(b, zero);
             VL_EXTEND_WI(b, 0, ten, 10);
             char buf[128];  // 128B is obviously long enough to represent 128bit integer in decimal
@@ -1850,8 +1851,7 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     , m_bits{bits}
     , m_filename(filename)  // Need () or GCC 4.8 false warning
     , m_end{end}
-    , m_addr{start}
-    , m_linenum{0} {
+    , m_addr{start} {
     m_fp = std::fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
@@ -1985,8 +1985,7 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
 
 VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end)
     : m_hex{hex}
-    , m_bits{bits}
-    , m_addr{0} {
+    , m_bits{bits} {
     if (VL_UNLIKELY(start > end)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
         return;
@@ -2311,7 +2310,7 @@ std::string VerilatedContext::dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMut
     return m_dumpfile;
 }
 std::string VerilatedContext::dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
-    const std::string out = dumpfile();
+    std::string out = dumpfile();
     if (VL_UNLIKELY(out.empty())) {
         VL_PRINTF_MT("%%Warning: $dumpvar ignored as not proceeded by $dumpfile\n");
         return "";

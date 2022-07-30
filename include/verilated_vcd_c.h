@@ -113,7 +113,7 @@ protected:
     void commitTraceBuffer(Buffer*) override;
 
     // Configure sub-class
-    void configure(const VerilatedTraceConfig&) override { return; };
+    void configure(const VerilatedTraceConfig&) override{};
 
 public:
     //=========================================================================
@@ -253,7 +253,6 @@ public:
     /// Destruct, flush, and close the dump
     virtual ~VerilatedVcdC() { close(); }
 
-public:
     // METHODS - User called
 
     /// Return if file is open

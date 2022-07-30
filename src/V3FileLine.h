@@ -162,7 +162,7 @@ public:
         m_firstColumn = firstColumn;
         m_lastColumn = lastColumn;
     }
-    void language(V3LangCode lang) { singleton().numberToLang(filenameno(), lang); }
+    void language(V3LangCode lang) const { singleton().numberToLang(filenameno(), lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void parent(FileLine* fileline) { m_parent = fileline; }
     void lineDirective(const char* textp, int& enterExitRef);
@@ -213,7 +213,7 @@ public:
     void warnStyleOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOn = from.m_warnOn; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
-    bool lastWarnWaived() { return m_waive; }
+    bool lastWarnWaived() const { return m_waive; }
 
     // Specific flag ACCESSORS/METHODS
     bool celldefineOn() const { return m_warnOn.test(V3ErrorCode::I_CELLDEFINE); }

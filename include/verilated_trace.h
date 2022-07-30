@@ -401,7 +401,7 @@ protected:
     EData* const m_sigs_enabledp;  // Bit vector of enabled codes (nullptr = all on)
 
     explicit VerilatedTraceBuffer(Trace& owner);
-    virtual ~VerilatedTraceBuffer() = default;
+    ~VerilatedTraceBuffer() override = default;
 
 public:
     //=========================================================================
@@ -487,7 +487,7 @@ class VerilatedTraceOffloadBuffer final : public VerilatedTraceBuffer<T_Buffer> 
     uint32_t* const m_offloadBufferEndp;  // End of offload buffer
 
     explicit VerilatedTraceOffloadBuffer(Trace& owner);
-    virtual ~VerilatedTraceOffloadBuffer() = default;
+    ~VerilatedTraceOffloadBuffer() override = default;
 
 public:
     //=========================================================================
