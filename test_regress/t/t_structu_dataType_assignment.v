@@ -34,6 +34,20 @@ module top();
   } DEF_struct;
 
 
+  typedef struct { // IEEE 1800-2017 SV CH:10.9.2
+    int A;
+    struct {
+      int B, C;
+      struct{
+        int D, E;
+        struct{
+          int F;
+          shortint G;
+        } FG1;
+      } DE1;
+    } BC1;
+  } HIJ_struct;
+
   // struct ab
   ab_struct ab;
   ab_struct abkey[1:0];
@@ -47,6 +61,9 @@ module top();
 
   // struct DEF
   DEF_struct DEF;
+
+  // struct HIJ
+  HIJ_struct HIJ;
 
   initial begin;
    // struct ab
@@ -136,6 +153,32 @@ module top();
    if (DEF.BC1.C != 10) $stop;
    if (DEF.BC2.B != 10) $stop;
    if (DEF.BC2.C != 10) $stop;
+
+   DEF = '{int:10};
+   if (DEF.A != 10) $stop;
+   if (DEF.BC1.B != 10) $stop;
+   if (DEF.BC1.C != 10) $stop;
+   if (DEF.BC2.B != 10) $stop;
+   if (DEF.BC2.C != 10) $stop;
+
+   // struct HIJ
+   HIJ = '{int:10, default: 5};
+   if (HIJ.A != 10) $stop;
+   if (HIJ.BC1.B != 10) $stop;
+   if (HIJ.BC1.C != 10) $stop;
+   if (HIJ.BC1.DE1.D != 10) $stop;
+   if (HIJ.BC1.DE1.E != 10) $stop;
+   if (HIJ.BC1.DE1.FG1.F != 10) $stop;
+   if (HIJ.BC1.DE1.FG1.G != 5) $stop;
+
+   HIJ = '{shortint:10, default: 5};
+   if (HIJ.A != 5) $stop;
+   if (HIJ.BC1.B != 5) $stop;
+   if (HIJ.BC1.C != 5) $stop;
+   if (HIJ.BC1.DE1.D != 5) $stop;
+   if (HIJ.BC1.DE1.E != 5) $stop;
+   if (HIJ.BC1.DE1.FG1.F != 5) $stop;
+   if (HIJ.BC1.DE1.FG1.G != 10) $stop;
 
    $write("*-* All Finished *-*\n");
    $finish;
