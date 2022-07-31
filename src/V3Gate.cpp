@@ -312,7 +312,7 @@ private:
     // NODE STATE
     // Entire netlist:
     // AstVarScope::user1p      -> GateVarVertex* for usage var, 0=not set yet
-    // {statement}Node::user1p  -> GateLogicVertex* for this statement
+    // {logic}Node::user1       -> bool: Some signals were optimized, hence needs constant folding
     // AstVarScope::user2       -> bool: Signal used in SenItem in *this* always statement
     // AstVar::user2            -> bool: Warned about SYNCASYNCNET
     // AstNodeVarRef::user2     -> bool: ConcatOffset visited
@@ -328,6 +328,8 @@ private:
     bool m_activeReducible = true;  // Is activation block reducible?
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
     bool m_inSlow = false;  // Inside a slow structure
+    std::vector<AstNode*> m_optimized;  // Logic blocks optimized
+
     VDouble0 m_statSigs;  // Statistic tracking
     VDouble0 m_statRefs;  // Statistic tracking
     VDouble0 m_statDedupLogic;  // Statistic tracking
@@ -378,16 +380,8 @@ private:
     void optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
         if (debug() >= 5) consumerp->dumpTree(cout, "    elimUsePre: ");
         const bool replaced = eliminate(consumerp, varscp, substp, nullptr);
-        if (!replaced) return;
-
-        if (debug() >= 9) consumerp->dumpTree(cout, "    elimUseCns: ");
-        // Caution: Can't let V3Const change our handle to consumerp, such as by
-        // optimizing away this assignment, etc.
-        consumerp = V3Const::constifyEdit(consumerp);
-        if (debug() >= 5) consumerp->dumpTree(cout, "    elimUseDne: ");
-        // Some previous input edges may have disappeared, perhaps all of them.
-        // If we remove the edges we can further optimize
-        // See e.g t_var_overzero.v.
+        if (replaced && !consumerp->user1()) m_optimized.push_back(consumerp);
+        consumerp->user1(2);  // Added to m_optimized and needs folding
     }
 
     void optimizeSignals(bool allowMultiIn);
@@ -417,6 +411,17 @@ private:
         optimizeSignals(false);
         // Then propagate more complicated equations
         optimizeSignals(true);
+
+        // Constant fold optimized logic
+        for (AstNode* const logicp : m_optimized) {
+            // Ignore if already simplified
+            if (logicp->user1() != 2) continue;
+            AstNode* const foldedp = V3Const::constifyEdit(logicp);
+            // Caution: Can't let V3Const change our handle to consumerp, such as by
+            // optimizing away this assignment, etc.
+            UASSERT_OBJ(foldedp == logicp, foldedp, "should not remove node");
+        }
+
         // Remove redundant logic
         if (v3Global.opt.fDedupe()) {
             dedupe();
@@ -577,8 +582,15 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
             = static_cast<GateLogicVertex*>(vvertexp->inBeginp()->fromp());
         if (!logicVertexp->reducible()) continue;
 
-        // Can we eliminate?
+        // Constant fold driving logic if itself has been optimized, but not yet folded
         AstNode* const logicp = logicVertexp->nodep();
+        if (logicp->user1() == 2) {
+            logicp->user1(1);  // Added to m_optimized but already folded
+            AstNode* const foldedp = V3Const::constifyEdit(logicp);
+            UASSERT_OBJ(foldedp == logicp, foldedp, "Should not remove whole logic");
+        }
+
+        // Can we eliminate?
         const GateOkVisitor okVisitor{logicp, vvertexp->isClock(), false};
 
         // Was it ok?
