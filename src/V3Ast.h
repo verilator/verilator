@@ -2040,7 +2040,12 @@ template <> inline bool AstNode::mayBeUnder<AstNodeAssign>(const AstNode* nodep)
     return !VN_IS(nodep, NodeMath);
 }
 template <> inline bool AstNode::mayBeUnder<AstVarScope>(const AstNode* nodep) {
-    return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
+    if (VN_IS(nodep, VarScope)) return false;  // Should not nest
+    if (VN_IS(nodep, Var)) return false;
+    if (VN_IS(nodep, Active)) return false;
+    if (VN_IS(nodep, NodeStmt)) return false;
+    if (VN_IS(nodep, NodeMath)) return false;
+    return true;
 }
 template <> inline bool AstNode::mayBeUnder<AstExecGraph>(const AstNode* nodep) {
     if (VN_IS(nodep, ExecGraph)) return false;  // Should not nest

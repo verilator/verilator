@@ -34,8 +34,9 @@
 
 #include <algorithm>
 #include <list>
-#include <map>
 #include <unordered_set>
+
+class GateDedupeVarVisitor;
 
 using GateVarRefList = std::list<AstNodeVarRef*>;
 
@@ -298,6 +299,12 @@ public:
 };
 
 //######################################################################
+//  Replace refs to 'varscp' with 'substp' in 'consumerp'
+
+static bool eliminate(AstNode* consumerp, AstVarScope* varscp, AstNode* substp,
+                      GateDedupeVarVisitor* varVisp);
+
+//######################################################################
 // Gate class functions
 
 class GateVisitor final : public GateBaseVisitor {
@@ -368,9 +375,23 @@ private:
         return vertexp;
     }
 
+    void optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
+        if (debug() >= 5) consumerp->dumpTree(cout, "    elimUsePre: ");
+        const bool replaced = eliminate(consumerp, varscp, substp, nullptr);
+        if (!replaced) return;
+
+        if (debug() >= 9) consumerp->dumpTree(cout, "    elimUseCns: ");
+        // Caution: Can't let V3Const change our handle to consumerp, such as by
+        // optimizing away this assignment, etc.
+        consumerp = V3Const::constifyEdit(consumerp);
+        if (debug() >= 5) consumerp->dumpTree(cout, "    elimUseDne: ");
+        // Some previous input edges may have disappeared, perhaps all of them.
+        // If we remove the edges we can further optimize
+        // See e.g t_var_overzero.v.
+    }
+
     void optimizeSignals(bool allowMultiIn);
     bool elimLogicOkOutputs(GateLogicVertex* consumeVertexp, const GateOkVisitor& okVisitor);
-    void optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp);
     void warnSignals();
     void consumedMark();
     void consumedMarkRecurse(GateEitherVertex* vertexp);
@@ -818,83 +839,6 @@ void GateVisitor::warnSignals() {
 }
 
 //######################################################################
-// Push constant into expressions and reevaluate
-
-class GateDedupeVarVisitor;
-
-class GateElimVisitor final : public GateBaseVisitor {
-private:
-    // NODE STATE
-    // STATE
-    const AstVarScope* const m_elimVarScp;  // Variable being eliminated
-    AstNode* const m_replaceTreep;  // What to replace the variable with
-    bool m_didReplace = false;  // Did we do any replacements
-    GateDedupeVarVisitor* const m_varVisp;  // Callback to keep hash up to date
-
-    // METHODS
-    void hashReplace(AstNode* oldp, AstNode* newp);
-
-    // VISITORS
-    virtual void visit(AstNodeVarRef* nodep) override {
-        if (nodep->varScopep() == m_elimVarScp) {
-            // Substitute in the new tree
-            // It's possible we substitute into something that will be reduced more later,
-            // however, as we never delete the top Always/initial statement, all should be well.
-            m_didReplace = true;
-            UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
-                        "Can't replace lvalue assignments with const var");
-            AstNode* const substp = m_replaceTreep->cloneTree(false);
-            UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->same(substp)),
-                        // Prevent an infinite loop...
-                        substp, "Replacing node with itself; perhaps circular logic?");
-            // Which fileline() to use?
-            // If replacing with logic, an error/warning is likely to want to point to the logic
-            // IE what we're replacing with.
-            // However a VARREF should point to the original as it's otherwise confusing
-            // to throw warnings that point to a PIN rather than where the pin us used.
-            if (VN_IS(substp, VarRef)) substp->fileline(nodep->fileline());
-            // Make the substp an rvalue like nodep. This facilitates the hashing in dedupe.
-            if (AstNodeVarRef* const varrefp = VN_CAST(substp, NodeVarRef))
-                varrefp->access(VAccess::READ);
-            hashReplace(nodep, substp);
-            nodep->replaceWith(substp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        }
-    }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    virtual ~GateElimVisitor() override = default;
-    GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep,
-                    GateDedupeVarVisitor* varVisp)
-        : m_elimVarScp{varscp}
-        , m_replaceTreep{replaceTreep}
-        , m_varVisp{varVisp} {
-        UINFO(9, "     elimvisitor " << nodep << endl);
-        UINFO(9, "     elim varscp " << varscp << endl);
-        UINFO(9, "     elim repce  " << replaceTreep << endl);
-        iterate(nodep);
-    }
-    bool didReplace() const { return m_didReplace; }
-};
-
-void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
-    if (debug() >= 5) consumerp->dumpTree(cout, "    elimUsePre: ");
-    const GateElimVisitor elimVisitor{consumerp, varscp, substp, nullptr};
-    if (elimVisitor.didReplace()) {
-        if (debug() >= 9) consumerp->dumpTree(cout, "    elimUseCns: ");
-        // Caution: Can't let V3Const change our handle to consumerp, such as by
-        // optimizing away this assignment, etc.
-        consumerp = V3Const::constifyEdit(consumerp);
-        if (debug() >= 5) consumerp->dumpTree(cout, "    elimUseDne: ");
-        // Some previous input edges may have disappeared, perhaps all of them.
-        // If we remove the edges we can further optimize
-        // See e.g t_var_overzero.v.
-    }
-}
-
-//######################################################################
 // Auxiliary hash class for GateDedupeVarVisitor
 
 class GateDedupeHash final : public V3DupFinderUserSame {
@@ -1113,9 +1057,47 @@ public:
 
 //######################################################################
 
-void GateElimVisitor::hashReplace(AstNode* oldp, AstNode* newp) {
-    UINFO(9, "hashReplace " << (void*)oldp << " -> " << (void*)newp << endl);
-    if (m_varVisp) m_varVisp->hashReplace(oldp, newp);
+static bool eliminate(AstNode* consumerp, AstVarScope* varscp, AstNode* substp,
+                      GateDedupeVarVisitor* varVisp) {
+    UINFO(9, "     Eliminating     inside: " << consumerp << endl);
+    UINFO(9, "     Eliminating  varscopep: " << varscp << endl);
+    UINFO(9, "     Eliminating substitute: " << substp << endl);
+
+    bool didReplace = false;  // Did we do any replacements
+    consumerp->foreach<AstNodeVarRef>([=, &didReplace](AstNodeVarRef* nodep) {
+        if (nodep->varScopep() != varscp) return;
+
+            // Substitute in the new tree
+#ifdef VL_DEBUG  // Can be hot code, so expensive
+        UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
+                    "Can't replace lvalue assignments with const var");
+        UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->same(substp)),
+                    // Prevent an infinite loop...
+                    substp, "Replacing node with itself; perhaps circular logic?");
+#endif
+        // It's possible we substitute into something that will be reduced more later,
+        // however, as we never delete the top Always/initial statement, all should be well.
+        didReplace = true;
+
+        // The replacement
+        AstNode* const newp = substp->cloneTree(false);
+        // Which fileline() to use? If replacing with logic, an error/warning is likely to want
+        // to point to the logic IE what we're replacing with. However, a VARREF should point
+        // to the original as it's otherwise confusing to throw warnings that point to a PIN
+        // rather than where the pin us used.
+        if (VN_IS(newp, VarRef)) newp->fileline(nodep->fileline());
+        // Make the newp an rvalue like nodep. This facilitates the hashing in dedupe.
+        if (AstNodeVarRef* const varrefp = VN_CAST(newp, NodeVarRef)) {
+            varrefp->access(VAccess::READ);
+        }
+        // Update hash?
+        if (varVisp) varVisp->hashReplace(nodep, newp);
+        // Replace the node
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    });
+
+    return didReplace;
 }
 
 //######################################################################
@@ -1170,8 +1152,7 @@ private:
                         if (lvertexp == consumeVertexp) {
                             UINFO(9, "skipping as self-recirculates\n");
                         } else {
-                            const GateElimVisitor elimVisitor(consumerp, vvertexp->varScp(),
-                                                              dupVarRefp, &m_varVisitor);
+                            eliminate(consumerp, vvertexp->varScp(), dupVarRefp, &m_varVisitor);
                         }
                         outedgep = outedgep->relinkFromp(dupVvertexp);
                     }
@@ -1571,12 +1552,13 @@ void GateVisitor::decomposeClkVectors() {
 }
 
 //######################################################################
-// Convert VARSCOPE(ASSIGN(default, VARREF)) to just VARSCOPE(default)
+// Gate class functions
 
-class GateDeassignVisitor final : public GateBaseVisitor {
-private:
-    // VISITORS
-    virtual void visit(AstVarScope* nodep) override {
+void V3Gate::gateAll(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { const GateVisitor visitor{nodep}; }  // Destruct before checking
+
+    nodep->foreach<AstVarScope>([](AstVarScope* nodep) {
         if (AstNodeAssign* const assp = VN_CAST(nodep->valuep(), NodeAssign)) {
             UINFO(5, " Removeassign " << assp << endl);
             AstNode* const valuep = assp->rhsp();
@@ -1584,26 +1566,7 @@ private:
             assp->replaceWith(valuep);
             VL_DO_DANGLING(assp->deleteTree(), assp);
         }
-    }
-    // Speedups
-    virtual void visit(AstVar*) override {}  // Accelerate
-    virtual void visit(AstActive*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    });
 
-public:
-    // CONSTRUCTORS
-    explicit GateDeassignVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~GateDeassignVisitor() override = default;
-};
-
-//######################################################################
-// Gate class functions
-
-void V3Gate::gateAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
-    {
-        const GateVisitor visitor{nodep};
-        GateDeassignVisitor{nodep};
-    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("gate", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
