@@ -558,140 +558,95 @@ public:
 
 void GateVisitor::optimizeSignals(bool allowMultiIn) {
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
-            if (vvertexp->inEmpty()) {
-                vvertexp->clearReducibleAndDedupable("inEmpty");  // Can't deal with no sources
-                if (!vvertexp->isTop()  // Ok if top inputs are driverless
-                    && !vvertexp->varScp()->varp()->valuep()
-                    && !vvertexp->varScp()->varp()->isSigPublic()) {
-                    UINFO(4, "No drivers " << vvertexp->varScp() << endl);
-                    if (false) {
-                        // If we warned here after constant propagation, what the user considered
-                        // reasonable logic may have disappeared.  Issuing a warning would
-                        // thus be confusing.  V3Undriven now handles this.
-                        vvertexp->varScp()->varp()->v3warn(
-                            UNDRIVEN, "Signal has no drivers: '"
-                                          << vvertexp->scopep()->prettyName() << "."
-                                          << vvertexp->varScp()->varp()->prettyName() << "'");
-                    }
-                }
-            } else if (!vvertexp->inSize1()) {
-                // Can't deal with more than one src
-                vvertexp->clearReducibleAndDedupable("size!1");
+        GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp);
+
+        // Consider "inlining" variables
+        if (!vvertexp) continue;
+
+        if (vvertexp->inEmpty()) {  // Can't deal with no sources
+            vvertexp->clearReducibleAndDedupable("inEmpty");
+        } else if (!vvertexp->inSize1()) {  // Can't deal with more than one src
+            vvertexp->clearReducibleAndDedupable("size!1");
+        }
+
+        // Reduce it?
+        if (!vvertexp->reducible()) continue;
+
+        // Grab the driving logic
+        GateLogicVertex* const logicVertexp
+            = static_cast<GateLogicVertex*>(vvertexp->inBeginp()->fromp());
+        if (!logicVertexp->reducible()) continue;
+
+        // Can we eliminate?
+        AstNode* const logicp = logicVertexp->nodep();
+        const GateOkVisitor okVisitor{logicp, vvertexp->isClock(), false};
+
+        // Was it ok?
+        if (!okVisitor.isSimple()) continue;
+
+        // Does it read multiple source variables?
+        if (okVisitor.rhsVarRefs().size() > 1) {
+            if (!allowMultiIn) continue;
+            // Do it if not used, or used only once, ignoring traces
+            int n = 0;
+            for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+                const GateLogicVertex* const consumeVertexp
+                    = static_cast<GateLogicVertex*>(edgep->top());
+                // Ignore tracing or other slow path junk, or if the destination is not used
+                if (!consumeVertexp->slow() && consumeVertexp->outBeginp()) n += edgep->weight();
+                if (n > 1) break;
             }
-            // Reduce it?
-            if (!vvertexp->reducible()) {
-                UINFO(8, "SigNotRed " << vvertexp->name() << endl);
+
+            if (n > 1) continue;
+        }
+
+        // Process it
+        AstNode* const substp = okVisitor.substTree();
+        if (debug() >= 5) logicp->dumpTree(cout, "    elimVar:  ");
+        if (debug() >= 5) substp->dumpTree(cout, "      subst:  ");
+        ++m_statSigs;
+        bool removedAllUsages = true;
+        for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;) {
+            GateLogicVertex* const consumeVertexp = static_cast<GateLogicVertex*>(edgep->top());
+            AstNode* const consumerp = consumeVertexp->nodep();
+            if (!elimLogicOkOutputs(consumeVertexp, okVisitor /*ref*/)) {
+                // Cannot optimize this replacement
+                removedAllUsages = false;
+                edgep = edgep->outNextp();
             } else {
-                UINFO(8, "Sig " << vvertexp->name() << endl);
-                GateLogicVertex* const logicVertexp
-                    = dynamic_cast<GateLogicVertex*>(vvertexp->inBeginp()->fromp());
-                UINFO(8, "  From " << logicVertexp->name() << endl);
-                AstNode* logicp = logicVertexp->nodep();
-                if (logicVertexp->reducible()) {
-                    // Can we eliminate?
-                    const GateOkVisitor okVisitor{logicp, vvertexp->isClock(), false};
-                    const bool multiInputs = okVisitor.rhsVarRefs().size() > 1;
-                    // Was it ok?
-                    bool doit = okVisitor.isSimple();
-                    if (doit && multiInputs) {
-                        if (!allowMultiIn) doit = false;
-                        // Doit if one input, or not used, or used only once, ignoring traces
-                        int n = 0;
-                        for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;
-                             edgep = edgep->outNextp()) {
-                            const GateLogicVertex* const consumeVertexp
-                                = dynamic_cast<GateLogicVertex*>(edgep->top());
-                            if (!consumeVertexp->slow()) {  // Not tracing or other slow path junk
-                                if (edgep->top()->outBeginp()) {  // Destination is itself used
-                                    n += edgep->weight();
-                                }
-                            }
-                            if (n > 1) {
-                                doit = false;
-                                break;
-                            }
-                        }
-                    }
-                    // Process it
-                    if (!doit) {
-                        if (allowMultiIn && (debug() >= 9)) {
-                            UINFO(9, "Not ok simp" << okVisitor.isSimple() << " mi" << multiInputs
-                                                   << " ob" << vvertexp->outBeginp() << " on"
-                                                   << (vvertexp->outBeginp()
-                                                           ? vvertexp->outBeginp()->outNextp()
-                                                           : nullptr)
-                                                   << " " << vvertexp->name() << endl);
-                            for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;
-                                 edgep = edgep->outNextp()) {
-                                const GateLogicVertex* const consumeVertexp
-                                    = dynamic_cast<GateLogicVertex*>(edgep->top());
-                                UINFO(9, "    edge " << edgep << " to: " << consumeVertexp->nodep()
-                                                     << endl);
-                            }
-                            for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep;
-                                 edgep = edgep->inNextp()) {
-                                const GateLogicVertex* const consumeVertexp
-                                    = dynamic_cast<GateLogicVertex*>(edgep->fromp());
-                                UINFO(9, "    edge " << edgep << " from: "
-                                                     << consumeVertexp->nodep() << endl);
-                            }
-                        }
-                    } else {
-                        AstNode* const substp = okVisitor.substTree();
-                        if (debug() >= 5) logicp->dumpTree(cout, "    elimVar:  ");
-                        if (debug() >= 5) substp->dumpTree(cout, "      subst:  ");
-                        ++m_statSigs;
-                        bool removedAllUsages = true;
-                        for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;) {
-                            GateLogicVertex* const consumeVertexp
-                                = dynamic_cast<GateLogicVertex*>(edgep->top());
-                            AstNode* const consumerp = consumeVertexp->nodep();
-                            if (!elimLogicOkOutputs(consumeVertexp, okVisitor /*ref*/)) {
-                                // Cannot optimize this replacement
-                                removedAllUsages = false;
-                                edgep = edgep->outNextp();
-                            } else {
-                                optimizeElimVar(vvertexp->varScp(), substp, consumerp);
-                                // If the new replacement referred to a signal,
-                                // Correct the graph to point to this new generating variable
-                                const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
-                                for (GateVarRefList::const_iterator it = rhsVarRefs.begin();
-                                     it != rhsVarRefs.end(); ++it) {
-                                    AstVarScope* const newvarscp = (*it)->varScopep();
-                                    UINFO(9, "         Point-to-new vertex " << newvarscp << endl);
-                                    GateVarVertex* const varvertexp = makeVarVertex(newvarscp);
-                                    new V3GraphEdge(&m_graph, varvertexp, consumeVertexp, 1);
-                                    // Propagate clock attribute onto generating node
-                                    varvertexp->propagateAttrClocksFrom(vvertexp);
-                                }
-                                // Remove the edge
-                                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-                                ++m_statRefs;
-                                edgep = vvertexp->outBeginp();
-                            }
-                        }
-                        if (removedAllUsages) {
-                            // Remove input links
-                            while (V3GraphEdge* const edgep = vvertexp->inBeginp()) {
-                                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-                            }
-                            // Clone tree so we remember it for tracing, and keep the pointer
-                            // to the "ALWAYS" part of the tree as part of this statement
-                            // That way if a later signal optimization that
-                            // retained a pointer to the always can
-                            // optimize it further
-                            logicp->unlinkFrBack();
-                            vvertexp->varScp()->valuep(logicp);
-                            logicp = nullptr;
-                            // Mark the vertex so we don't mark it as being
-                            // unconsumed in the next step
-                            vvertexp->user(true);
-                            logicVertexp->user(true);
-                        }
-                    }
+                optimizeElimVar(vvertexp->varScp(), substp, consumerp);
+                // If the new replacement referred to a signal,
+                // Correct the graph to point to this new generating variable
+                const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
+                for (AstNodeVarRef* const refp : rhsVarRefs) {
+                    AstVarScope* const newvarscp = refp->varScopep();
+                    GateVarVertex* const varvertexp = makeVarVertex(newvarscp);
+                    new V3GraphEdge(&m_graph, varvertexp, consumeVertexp, 1);
+                    // Propagate clock attribute onto generating node
+                    varvertexp->propagateAttrClocksFrom(vvertexp);
                 }
+                // Remove the edge
+                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
+                ++m_statRefs;
+                edgep = vvertexp->outBeginp();
             }
+        }
+
+        if (removedAllUsages) {
+            // Remove input links
+            while (V3GraphEdge* const edgep = vvertexp->inBeginp()) {
+                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
+            }
+            // Clone tree so we remember it for tracing, and keep the pointer
+            // to the "ALWAYS" part of the tree as part of this statement
+            // That way if a later signal optimization that
+            // retained a pointer to the always can
+            // optimize it further
+            VL_DO_DANGLING(vvertexp->varScp()->valuep(logicp->unlinkFrBack()), logicp);
+            // Mark the vertex so we don't mark it as being
+            // unconsumed in the next step
+            vvertexp->user(true);
+            logicVertexp->user(true);
         }
     }
 }
