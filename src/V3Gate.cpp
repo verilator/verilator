@@ -27,6 +27,7 @@
 #include "V3Global.h"
 #include "V3Gate.h"
 #include "V3Ast.h"
+#include "V3AstUserAllocator.h"
 #include "V3Graph.h"
 #include "V3Const.h"
 #include "V3Stats.h"
@@ -34,6 +35,7 @@
 
 #include <algorithm>
 #include <list>
+#include <unordered_map>
 #include <unordered_set>
 
 class GateDedupeVarVisitor;
@@ -298,26 +300,30 @@ public:
     const GateVarRefList& rhsVarRefs() const { return m_rhsVarRefs; }
 };
 
-//######################################################################
-//  Replace refs to 'varscp' with 'substp' in 'consumerp'
+// ######################################################################
+//   Replace refs to 'varscp' with 'substp' in 'consumerp'
 
-static bool eliminate(AstNode* consumerp, AstVarScope* varscp, AstNode* substp,
+static void eliminate(AstNode* logicp,
+                      const std::unordered_map<AstVarScope*, AstNode*>& substitutions,
                       GateDedupeVarVisitor* varVisp);
 
-//######################################################################
-// Gate class functions
+// ######################################################################
+//  Gate class functions
 
 class GateVisitor final : public GateBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
     // AstVarScope::user1p      -> GateVarVertex* for usage var, 0=not set yet
-    // {logic}Node::user1       -> bool: Some signals were optimized, hence needs constant folding
+    // {logic}Node::user1       -> map of substitutions, via m_substitutions
     // AstVarScope::user2       -> bool: Signal used in SenItem in *this* always statement
     // AstVar::user2            -> bool: Warned about SYNCASYNCNET
     // AstNodeVarRef::user2     -> bool: ConcatOffset visited
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+
+    // Variable substitutions to apply to a given logic block
+    AstUser1Allocator<AstNode, std::unordered_map<AstVarScope*, AstNode*>> m_substitutions;
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
@@ -379,9 +385,20 @@ private:
 
     void optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
         if (debug() >= 5) consumerp->dumpTree(cout, "    elimUsePre: ");
-        const bool replaced = eliminate(consumerp, varscp, substp, nullptr);
-        if (replaced && !consumerp->user1()) m_optimized.push_back(consumerp);
-        consumerp->user1(2);  // Added to m_optimized and needs folding
+        if (!m_substitutions.tryGet(consumerp)) m_optimized.push_back(consumerp);
+        m_substitutions(consumerp).emplace(varscp, substp->cloneTree(false));
+    }
+
+    void commitElimVar(AstNode* logicp) {
+        if (auto* const substitutionsp = m_substitutions.tryGet(logicp)) {
+            if (!substitutionsp->empty()) {
+                eliminate(logicp, *substitutionsp, nullptr);
+                AstNode* const foldedp = V3Const::constifyEdit(logicp);
+                UASSERT_OBJ(foldedp == logicp, foldedp, "Should not remove whole logic");
+                for (const auto& pair : *substitutionsp) pair.second->deleteTree();
+                substitutionsp->clear();
+            }
+        }
     }
 
     void optimizeSignals(bool allowMultiIn);
@@ -411,17 +428,8 @@ private:
         optimizeSignals(false);
         // Then propagate more complicated equations
         optimizeSignals(true);
-
-        // Constant fold optimized logic
-        for (AstNode* const logicp : m_optimized) {
-            // Ignore if already simplified
-            if (logicp->user1() != 2) continue;
-            AstNode* const foldedp = V3Const::constifyEdit(logicp);
-            // Caution: Can't let V3Const change our handle to consumerp, such as by
-            // optimizing away this assignment, etc.
-            UASSERT_OBJ(foldedp == logicp, foldedp, "should not remove node");
-        }
-
+        // Commit substitutions on the optimized logic
+        for (AstNode* const logicp : m_optimized) commitElimVar(logicp);
         // Remove redundant logic
         if (v3Global.opt.fDedupe()) {
             dedupe();
@@ -581,14 +589,10 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
         GateLogicVertex* const logicVertexp
             = static_cast<GateLogicVertex*>(vvertexp->inBeginp()->fromp());
         if (!logicVertexp->reducible()) continue;
-
-        // Constant fold driving logic if itself has been optimized, but not yet folded
         AstNode* const logicp = logicVertexp->nodep();
-        if (logicp->user1() == 2) {
-            logicp->user1(1);  // Added to m_optimized but already folded
-            AstNode* const foldedp = V3Const::constifyEdit(logicp);
-            UASSERT_OBJ(foldedp == logicp, foldedp, "Should not remove whole logic");
-        }
+
+        // Commit pendingg optimizations to driving logic, as we will re-analyse
+        commitElimVar(logicp);
 
         // Can we eliminate?
         const GateOkVisitor okVisitor{logicp, vvertexp->isClock(), false};
@@ -1022,30 +1026,25 @@ public:
     void hashReplace(AstNode* oldp, AstNode* newp) { m_ghash.hashReplace(oldp, newp); }
 };
 
-//######################################################################
+// ######################################################################
 
-static bool eliminate(AstNode* consumerp, AstVarScope* varscp, AstNode* substp,
+static void eliminate(AstNode* logicp,
+                      const std::unordered_map<AstVarScope*, AstNode*>& substitutions,
                       GateDedupeVarVisitor* varVisp) {
-    UINFO(9, "     Eliminating     inside: " << consumerp << endl);
-    UINFO(9, "     Eliminating  varscopep: " << varscp << endl);
-    UINFO(9, "     Eliminating substitute: " << substp << endl);
 
-    bool didReplace = false;  // Did we do any replacements
-    consumerp->foreach<AstNodeVarRef>([=, &didReplace](AstNodeVarRef* nodep) {
-        if (nodep->varScopep() != varscp) return;
+    const std::function<void(AstNodeVarRef*)> visit
+        = [&substitutions, &visit, varVisp](AstNodeVarRef* nodep) -> void {
+        // See if this variable has a substitution
+        const auto& it = substitutions.find(nodep->varScopep());
+        if (it == substitutions.end()) return;
+        AstNode* const substp = it->second;
 
-            // Substitute in the new tree
-#ifdef VL_DEBUG  // Can be hot code, so expensive
+        // Substitute in the new tree
         UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                     "Can't replace lvalue assignments with const var");
         UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->same(substp)),
                     // Prevent an infinite loop...
                     substp, "Replacing node with itself; perhaps circular logic?");
-#endif
-        // It's possible we substitute into something that will be reduced more later,
-        // however, as we never delete the top Always/initial statement, all should be well.
-        didReplace = true;
-
         // The replacement
         AstNode* const newp = substp->cloneTree(false);
         // Which fileline() to use? If replacing with logic, an error/warning is likely to want
@@ -1062,13 +1061,15 @@ static bool eliminate(AstNode* consumerp, AstVarScope* varscp, AstNode* substp,
         // Replace the node
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    });
+        // Recursively substitute the new tree
+        newp->foreach<AstNodeVarRef>(visit);
+    };
 
-    return didReplace;
+    logicp->foreach<AstNodeVarRef>(visit);
 }
 
-//######################################################################
-// Recurse through the graph, looking for duplicate expressions on the rhs of an assign
+// ######################################################################
+//  Recurse through the graph, looking for duplicate expressions on the rhs of an assign
 
 class GateDedupeGraphVisitor final : public GateGraphBaseVisitor {
 private:
@@ -1119,7 +1120,8 @@ private:
                         if (lvertexp == consumeVertexp) {
                             UINFO(9, "skipping as self-recirculates\n");
                         } else {
-                            eliminate(consumerp, vvertexp->varScp(), dupVarRefp, &m_varVisitor);
+                            eliminate(consumerp, {std::make_pair(vvertexp->varScp(), dupVarRefp)},
+                                      &m_varVisitor);
                         }
                         outedgep = outedgep->relinkFromp(dupVvertexp);
                     }
