@@ -243,8 +243,6 @@ private:
             constp->user2(1);
             freeList.push_back(constp);
         }
-        constp->num().isDouble(nodep->isDouble());
-        constp->num().isString(nodep->isString());
         return constp;
     }
 
