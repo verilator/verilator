@@ -151,14 +151,14 @@ class ForceConvertVisitor final : public VNVisitor {
     // referenced AstVarScope with the given function.
     void transformWritenVarScopes(AstNode* nodep, std::function<AstVarScope*(AstVarScope*)> f) {
         UASSERT_OBJ(nodep->backp(), nodep, "Must have backp, otherwise will be lost if replaced");
-        nodep->foreach<AstNodeVarRef>([this, &f](AstNodeVarRef* refp) {
+        nodep->foreach<AstNodeVarRef>([&f](AstNodeVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
             // TODO: this is not strictly speaking safe for some complicated lvalues, eg.:
             //       'force foo[a(cnt)] = 1;', where 'cnt' is an out parameter, but it will
             //       do for now...
             refp->replaceWith(
                 new AstVarRef{refp->fileline(), f(refp->varScopep()), VAccess::WRITE});
-            pushDeletep(refp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
         });
     }
 
@@ -238,7 +238,7 @@ class ForceConvertVisitor final : public VNVisitor {
             flp->warnOff(V3ErrorCode::BLKANDNBLK, true);
             AstVarRef* const newpRefp = new AstVarRef{flp, newVscp, VAccess::WRITE};
             refp->replaceWith(newpRefp);
-            pushDeletep(refp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
         });
         // Replace write refs on RHS
         resetRdp->rhsp()->foreach<AstNodeVarRef>([this](AstNodeVarRef* refp) {
@@ -249,7 +249,7 @@ class ForceConvertVisitor final : public VNVisitor {
             AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), newVscp, VAccess::READ};
             newpRefp->user2(1);  // Don't replace this read ref with the read signal
             refp->replaceWith(newpRefp);
-            pushDeletep(refp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
         });
 
         resetEnp->addNext(resetRdp);
