@@ -47,7 +47,7 @@ AstCFunc* order(
     const string& tag,  //
     bool parallel,  //
     bool slow,  //
-    ExternalDomainsProvider externalDomains
+    const ExternalDomainsProvider& externalDomains
     = [](const AstVarScope*, std::vector<AstSenTree*>&) {});
 
 };  // namespace V3Order

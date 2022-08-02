@@ -951,7 +951,8 @@ class OrderProcess final : VNDeleter {
     // CONSTRUCTOR
     OrderProcess(AstNetlist* netlistp, OrderGraph& graph,
                  const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
-                 const string& tag, bool slow, V3Order::ExternalDomainsProvider externalDomains)
+                 const string& tag, bool slow,
+                 const V3Order::ExternalDomainsProvider& externalDomains)
         : m_graph{graph}
         , m_trigToSen{trigToSen}
         , m_externalDomains{externalDomains}
@@ -970,7 +971,7 @@ public:
     main(AstNetlist* netlistp, OrderGraph& graph,
          const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
          const string& tag, bool parallel, bool slow,
-         V3Order::ExternalDomainsProvider externalDomains) {
+         const V3Order::ExternalDomainsProvider& externalDomains) {
         OrderProcess visitor{netlistp, graph, trigToSen, tag, slow, externalDomains};
         visitor.process(parallel);
         return std::move(visitor.m_result);
@@ -1518,7 +1519,7 @@ AstCFunc* order(AstNetlist* netlistp,  //
                 const string& tag,  //
                 bool parallel,  //
                 bool slow,  //
-                ExternalDomainsProvider externalDomains) {
+                const ExternalDomainsProvider& externalDomains) {
     // Order the code
     const std::unique_ptr<OrderGraph> graph
         = OrderBuildVisitor::process(netlistp, logic, trigToSen);
