@@ -32,6 +32,7 @@
 #include "V3Expand.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+#include "V3Const.h"
 
 #include <algorithm>
 
@@ -160,6 +161,7 @@ private:
                            new AstShiftL{fl, llowp,
                                          new AstConst{fl, static_cast<uint32_t>(loffset)},
                                          VL_EDATASIZE}}};
+            newp = V3Const::constifyEditCpp(newp);
         } else {
             newp = llowp;
         }
@@ -520,8 +522,9 @@ private:
                             cleanmask.setMask(VL_BITBIT_E(destp->widthMin()));
                             newp = new AstAnd{lfl, newp, new AstConst{lfl, cleanmask}};
                         }
-
-                        addWordAssign(nodep, w, destp, new AstOr{lfl, oldvalp, newp});
+                        AstNode* const orp
+                            = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, newp});
+                        addWordAssign(nodep, w, destp, orp);
                     }
                 }
                 VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
@@ -541,7 +544,8 @@ private:
                 AstNode* const shifted = new AstShiftL{
                     lfl, rhsp, new AstConst{lfl, static_cast<uint32_t>(lsb)}, destp->width()};
                 AstNode* const cleaned = new AstAnd{lfl, shifted, new AstConst{lfl, cleanmask}};
-                AstNode* const newp = new AstAssign{nfl, destp, new AstOr{lfl, oldvalp, cleaned}};
+                AstNode* const orp = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, cleaned});
+                AstNode* newp = new AstAssign{nfl, destp, orp};
                 insertBefore(nodep, newp);
             }
             return true;

@@ -39,6 +39,9 @@ public:
     static void constifyCpp(AstNetlist* nodep);
     // Only the current node and lower
     // Return new node that may have replaced nodep
+    static AstNode* constifyEditCpp(AstNode* nodep);
+    // Only the current node and lower
+    // Return new node that may have replaced nodep
     static AstNode* constifyEdit(AstNode* nodep);
     // Only the current node and lower, with special SenTree optimization
     // Return new node that may have replaced nodep
