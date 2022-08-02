@@ -39,7 +39,7 @@ public:
     static void constifyCpp(AstNetlist* nodep);
     // Only the current node and lower
     // Return new node that may have replaced nodep
-    static AstNode* constifyCppNode(AstNode* nodep);
+    static AstNode* constifyEditCpp(AstNode* nodep);
     // Only the current node and lower
     // Return new node that may have replaced nodep
     static AstNode* constifyEdit(AstNode* nodep);

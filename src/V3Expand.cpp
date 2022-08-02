@@ -161,7 +161,7 @@ private:
                            new AstShiftL{fl, llowp,
                                          new AstConst{fl, static_cast<uint32_t>(loffset)},
                                          VL_EDATASIZE}}};
-            newp = V3Const::constifyCppNode(newp);
+            newp = V3Const::constifyEditCpp(newp);
         } else {
             newp = llowp;
         }
@@ -523,7 +523,7 @@ private:
                             newp = new AstAnd{lfl, newp, new AstConst{lfl, cleanmask}};
                         }
                         AstNode* const orp
-                            = V3Const::constifyCppNode(new AstOr{lfl, oldvalp, newp});
+                            = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, newp});
                         addWordAssign(nodep, w, destp, orp);
                     }
                 }
@@ -544,7 +544,7 @@ private:
                 AstNode* const shifted = new AstShiftL{
                     lfl, rhsp, new AstConst{lfl, static_cast<uint32_t>(lsb)}, destp->width()};
                 AstNode* const cleaned = new AstAnd{lfl, shifted, new AstConst{lfl, cleanmask}};
-                AstNode* const orp = V3Const::constifyCppNode(new AstOr{lfl, oldvalp, cleaned});
+                AstNode* const orp = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, cleaned});
                 AstNode* newp = new AstAssign{nfl, destp, orp};
                 insertBefore(nodep, newp);
             }
