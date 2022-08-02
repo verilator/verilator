@@ -1293,3 +1293,8 @@ void VNDeleter::doDeletes() {
     for (AstNode* const nodep : m_deleteps) nodep->deleteTree();
     m_deleteps.clear();
 }
+
+//######################################################################
+// VNVisitor
+
+#include "V3Ast__gen_visitor_defns.h"  // From ./astgen

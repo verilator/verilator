@@ -1297,10 +1297,8 @@ public:
     /// Return edited nodep; see comments in V3Ast.cpp
     AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
 
-#include "V3Ast__gen_visitor.h"  // From ./astgen
-    // Things like:
-    //  virtual void visit(AstBreak* nodep) { visit((AstNodeStmt*)(nodep)); }
-    //  virtual void visit(AstNodeStmt* nodep) { visit((AstNode*)(nodep)); }
+    virtual void visit(AstNode* nodep) = 0;
+#include "V3Ast__gen_visitor_decls.h"  // From ./astgen
 };
 
 //######################################################################
