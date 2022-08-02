@@ -334,7 +334,7 @@ clang-tidy: $(CLANGTIDY_DEP)
 %.cpp.tidy: %.cpp
 	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- $(CLANGTIDY_DEFS) $(CPPCHECK_INC) | 2>&1 tee $@
 %.h.tidy: %.h
-	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- $(CLANGTIDY_DEFS) $(CPPCHECK_INC) | 2>&1 tee $@
+	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- $(CLANGTIDY_DEFS) $(CPPCHECK_INC) -x c++-header | 2>&1 tee $@
 
 analyzer-src:
 	-rm -rf src/obj_dbg
