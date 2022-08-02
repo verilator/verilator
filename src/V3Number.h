@@ -252,6 +252,10 @@ public:
         opCleanThis();
         m_fileline = nump->fileline();
     }
+    V3Number(AstNode* nodep, double value) {
+        init(nodep, 64);
+        setDouble(value);
+    }
 
 private:
     void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
