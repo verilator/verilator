@@ -926,6 +926,8 @@ template <class T_Value, std::size_t T_Depth> struct VlUnpacked final {
     // *this != that, which might be used for change detection/trigger computation, but avoid
     // operator overloading in VlUnpacked for safety in other contexts.
     inline bool neq(const VlUnpacked<T_Value, T_Depth>& that) const { return neq(*this, that); }
+    // Similar to 'neq' above, *this = that used for change detection
+    void assign(const VlUnpacked<T_Value, T_Depth>& that) { *this = that; }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {

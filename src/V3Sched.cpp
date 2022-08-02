@@ -274,6 +274,15 @@ class SenExprBuilder final {
 
     V3UniqueNames m_uniqueNames{"__Vtrigprev__expression"};  // For generating unique signal names
 
+    static bool isSupportedDType(AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        if (VN_IS(dtypep, BasicDType)) return true;
+        if (VN_IS(dtypep, PackArrayDType)) return true;
+        if (VN_IS(dtypep, UnpackArrayDType)) return isSupportedDType(dtypep->subDTypep());
+        if (VN_IS(dtypep, NodeUOrStructDType)) return true;  // All are packed at the moment
+        return false;
+    }
+
     // METHODS
     AstVarScope* getPrev(AstNode* currp) {
         FileLine* const flp = currp->fileline();
@@ -303,10 +312,25 @@ class SenExprBuilder final {
 
         AstVarScope* const prevp = it->second;
 
-        // Add update if it does not exist yet in this round
+        const auto wrPrev = [=]() { return new AstVarRef{flp, prevp, VAccess::WRITE}; };
+
+        // Add update if it does not exist yet
         if (m_hasUpdate.emplace(*currp).second) {
-            m_updates.push_back(
-                new AstAssign{flp, new AstVarRef{flp, prevp, VAccess::WRITE}, rdCurr()});
+            if (!isSupportedDType(currp->dtypep())) {
+                currp->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Cannot detect changes on expression of complex type"
+                              " (see combinational cycles reported by UNOPTFLAT)");
+                return prevp;
+            }
+
+            if (AstUnpackArrayDType* const dtypep = VN_CAST(currp->dtypep(), UnpackArrayDType)) {
+                AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
+                cmhp->dtypeSetVoid();
+                cmhp->statement(true);
+                m_updates.push_back(cmhp);
+            } else {
+                m_updates.push_back(new AstAssign{flp, wrPrev(), rdCurr()});
+            }
         }
 
         return prevp;
