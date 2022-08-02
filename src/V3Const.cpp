@@ -3680,7 +3680,7 @@ AstNode* V3Const::constifyEdit(AstNode* nodep) {
     return nodep;
 }
 
-AstNode* V3Const::constifyCppNode(AstNode* nodep) {
+AstNode* V3Const::constifyEditCpp(AstNode* nodep) {
     ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ false};
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
