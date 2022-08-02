@@ -317,9 +317,7 @@ public:
     // (use AstConst::isSigned())
     bool isDouble() const { return m_double; }
     // Only if have 64 bit value loaded, and want to indicate it's real
-    void isDouble(bool flag) { m_double = flag; }
     bool isString() const { return m_isString; }
-    void isString(bool flag) { m_isString = flag; }
     bool isNegative() const { return bitIs1(width() - 1); }
     bool isNull() const { return m_isNull; }
     bool isFourState() const;
