@@ -39,6 +39,7 @@ inline bool v3EpsilonEqual(double a, double b) {
 //============================================================================
 
 class AstNode;
+class AstNodeDType;
 class FileLine;
 
 // Holds a few entries of ValueAndX to avoid dynamic allocation in std::vector for less width of
@@ -256,6 +257,7 @@ public:
         init(nodep, 64);
         setDouble(value);
     }
+    V3Number(AstNode* nodep, const AstNodeDType* nodedtypep);
 
 private:
     void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
