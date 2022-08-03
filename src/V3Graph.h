@@ -57,9 +57,9 @@ public:
     inline GraphWay()
         : m_e{FORWARD} {}
     // cppcheck-suppress noExplicitConstructor
-    inline GraphWay(en _e)
+    inline constexpr GraphWay(en _e)
         : m_e{_e} {}
-    explicit inline GraphWay(int _e)
+    explicit inline constexpr GraphWay(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
@@ -67,9 +67,9 @@ public:
         return names[m_e];
     }
     // METHODS unique to this class
-    GraphWay invert() const { return m_e == FORWARD ? REVERSE : FORWARD; }
-    bool forward() const { return m_e == FORWARD; }
-    bool reverse() const { return m_e != FORWARD; }
+    constexpr GraphWay invert() const { return m_e == FORWARD ? REVERSE : FORWARD; }
+    constexpr bool forward() const { return m_e == FORWARD; }
+    constexpr bool reverse() const { return m_e != FORWARD; }
 };
 inline bool operator==(const GraphWay& lhs, const GraphWay& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const GraphWay& lhs, GraphWay::en rhs) { return lhs.m_e == rhs; }
