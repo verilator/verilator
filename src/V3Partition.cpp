@@ -195,12 +195,9 @@ public:
                 // longest !wayward edge. Schedule that to be resolved.
                 const uint32_t newPendingVal
                     = newInclusiveCp - m_accessp->critPathCost(relativep, m_way);
-                if (m_pending.has(relativep)) {
-                    if (newPendingVal > m_pending.at(relativep)) {
-                        m_pending.set(relativep, newPendingVal);
-                    }
-                } else {
-                    m_pending.set(relativep, newPendingVal);
+                const auto pair = m_pending.emplace(relativep, newPendingVal);
+                if (!pair.second && (newPendingVal > pair.first->second)) {
+                    m_pending.update(pair.first, newPendingVal);
                 }
             }
         }
@@ -225,8 +222,8 @@ public:
         // This generalizes to multiple seed nodes also.
         while (!m_pending.empty()) {
             const auto it = m_pending.rbegin();
-            V3GraphVertex* const updateMep = (*it).key();
-            const uint32_t cpGrowBy = (*it).value();
+            V3GraphVertex* const updateMep = it->first;
+            const uint32_t cpGrowBy = it->second;
             m_pending.erase(it);
 
             // For *updateMep, whose critPathCost was out-of-date with respect
@@ -396,8 +393,8 @@ public:
             LogicMTask* const updateVxp = static_cast<LogicMTask*>(vxp);
             LogicMTask* const lthrouvhVxp = static_cast<LogicMTask*>(throuvhVxp);
             EdgeSet& edges = updateVxp->m_edges[way.invert()];
-            const uint32_t edgeCp = edges.at(lthrouvhVxp);
-            if (cp > edgeCp) edges.set(lthrouvhVxp, cp);
+            const auto it = edges.find(lthrouvhVxp);
+            if (cp > it->second) edges.update(it, cp);
         }
         // Check that CP matches that of the longest edge wayward of vxp.
         void checkNewCpVersusEdges(V3GraphVertex* vxp, GraphWay way, uint32_t cp) const {
@@ -405,7 +402,7 @@ public:
             const EdgeSet& edges = mtaskp->m_edges[way.invert()];
             // This is mtaskp's relative with longest !wayward inclusive CP:
             const auto edgeIt = edges.rbegin();
-            const uint32_t edgeCp = (*edgeIt).value();
+            const uint32_t edgeCp = edgeIt->second;
             UASSERT_OBJ(edgeCp == cp, vxp, "CP doesn't match longest wayward edge");
         }
 
@@ -512,26 +509,21 @@ public:
     }
 
     void addRelative(GraphWay way, LogicMTask* relativep) {
-        EdgeSet& edges = m_edges[way];
-        UASSERT(!edges.has(relativep), "Adding existing edge");
         // value is !way cp to this edge
-        edges.set(relativep, relativep->stepCost() + relativep->critPathCost(way.invert()));
+        const uint32_t cp = relativep->stepCost() + relativep->critPathCost(way.invert());
+        VL_ATTR_UNUSED const bool exits = !m_edges[way].emplace(relativep, cp).second;
+#if VL_DEBUG
+        UASSERT(!exits, "Adding existing edge");
+#endif
     }
-    void removeRelative(GraphWay way, LogicMTask* relativep) {
-        EdgeSet& edges = m_edges[way];
-        edges.erase(relativep);
-    }
-    bool hasRelative(GraphWay way, LogicMTask* relativep) {
-        const EdgeSet& edges = m_edges[way];
-        return edges.has(relativep);
-    }
+    void removeRelative(GraphWay way, LogicMTask* relativep) { m_edges[way].erase(relativep); }
+    bool hasRelative(GraphWay way, LogicMTask* relativep) { return m_edges[way].has(relativep); }
     void checkRelativesCp(GraphWay way) const {
-        const EdgeSet& edges = m_edges[way];
-        for (const auto& edge : vlstd::reverse_view(edges)) {
-            const LogicMTask* const relativep = edge.key();
-            const uint32_t cachedCp = edge.value();
-            partCheckCachedScoreVsActual(cachedCp, relativep->critPathCost(way.invert())
-                                                       + relativep->stepCost());
+        for (const auto& edge : vlstd::reverse_view(m_edges[way])) {
+            const LogicMTask* const relativep = edge.first;
+            const uint32_t cachedCp = edge.second;
+            const uint32_t cp = relativep->critPathCost(way.invert()) + relativep->stepCost();
+            partCheckCachedScoreVsActual(cachedCp, cp);
         }
     }
 
@@ -557,11 +549,11 @@ public:
         const EdgeSet& edges = m_edges[way.invert()];
         uint32_t result = 0;
         for (const auto& edge : vlstd::reverse_view(edges)) {
-            if (edge.key() != withoutp->furtherp(way.invert())) {
+            if (edge.first != withoutp->furtherp(way.invert())) {
                 // Use the cached cost. It could be a small overestimate
                 // due to stepping. This is consistent with critPathCost()
                 // which also returns the cached cost.
-                result = edge.value();
+                result = edge.second;
                 break;
             }
         }
@@ -657,7 +649,7 @@ public:
             if (it == children.rend()) {
                 nextp = nullptr;
             } else {
-                nextp = (*it).key();
+                nextp = it->first;
             }
         }
 
@@ -1477,6 +1469,7 @@ private:
         return 0;
     }
 
+    VL_ATTR_NOINLINE
     static uint32_t siblingScore(const SiblingMC* sibsp) {
         const LogicMTask* const ap = sibsp->ap();
         const LogicMTask* const bp = sibsp->bp();
@@ -1487,6 +1480,7 @@ private:
         return mergedCpCostRev + mergedCpCostFwd + LogicMTask::stepCost(ap->cost() + bp->cost());
     }
 
+    VL_ATTR_NOINLINE
     static uint32_t edgeScore(const V3GraphEdge* edgep) {
         // Score this edge. Lower is better. The score is the new local CP
         // length if we merge these mtasks.  ("Local" means the longest
