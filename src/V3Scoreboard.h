@@ -34,298 +34,103 @@
 #include <set>
 #include <unordered_map>
 
-//######################################################################
-// SortByValueMap
+// ######################################################################
+//  SortByValueMap
 
-/// A generic key-value map, except it also supports iterating in
-/// value-sorted order.  Values need not be unique. Uses T_KeyCompare to
-/// break ties in the sort when values collide.
+// A generic key-value map, except iteration is in *value* sorted order. Values need not be unique.
+// Uses T_KeyCompare to break ties in the sort when values collide. Note: Only const iteration is
+// possible, as updating mapped values via iterators is not safe.
 
 template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key>>
 class SortByValueMap final {
-    // TYPES
-private:
-    using KeySet = std::set<T_Key, T_KeyCompare>;
-    using Val2Keys = std::map<T_Value, KeySet>;
+    // Current implementation is a std::set of key/value pairs, plus a std_unordered_map from keys
+    // to iterators into the set. This keeps most operations fairly cheap and also has the benefit
+    // of being able to re-use the std::set iterators.
 
+    // TYPES
+
+    using Pair = std::pair<T_Key, T_Value>;
+
+    struct PairCmp final {
+        bool operator()(const Pair& a, const Pair& b) const {
+            // First compare values
+            if (a.second != b.second) return a.second < b.second;
+            // Then compare keys
+            return T_KeyCompare{}(a.first, b.first);
+        }
+    };
+
+    using PairSet = std::set<Pair, PairCmp>;
+
+public:
+    using const_iterator = typename PairSet::const_iterator;
+    using const_reverse_iterator = typename PairSet::const_reverse_iterator;
+
+private:
     // MEMBERS
-    std::unordered_map<T_Key, T_Value> m_keys;  // Map each key to its value. Not sorted.
-    Val2Keys m_vals;  // Map each value to its keys. Sorted.
+    PairSet m_pairs;  // The contents of the map, stored directly as key-value pairs
+    std::unordered_map<T_Key, const_iterator> m_kiMap;  // Key to iterator map
+
+    VL_UNCOPYABLE(SortByValueMap);
 
 public:
     // CONSTRUCTORS
     SortByValueMap() = default;
 
-    class const_iterator VL_NOT_FINAL {
-        // TYPES
-    public:
-        using value_type = const_iterator;
-        using reference = const_iterator;  // See comment on operator*()
-        using pointer = void;
-        using difference_type = std::ptrdiff_t;
-        using iterator_category = std::bidirectional_iterator_tag;
+    // Only const iteration is possible
+    const_iterator begin() const { return m_pairs.begin(); }
+    const_iterator end() const { return m_pairs.end(); }
+    const_iterator cbegin() const { m_pairs.cbegin(); }
+    const_iterator cend() const { return m_pairs.cend(); }
+    const_reverse_iterator rbegin() const { return m_pairs.rbegin(); }
+    const_reverse_iterator rend() const { return m_pairs.rend(); }
+    const_reverse_iterator crbegin() const { return m_pairs.crbegin(); }
+    const_reverse_iterator crend() const { return m_pairs.crend(); }
 
-    protected:
-        friend class SortByValueMap;
-
-        // MEMBERS
-        typename KeySet::iterator m_keyIt;
-        typename Val2Keys::iterator m_valIt;
-        SortByValueMap* const m_sbvmp;
-        bool m_end = true;  // At the end()
-
-        // CONSTRUCTORS
-        explicit const_iterator(SortByValueMap* sbmvp)  // for end()
-            : m_sbvmp{sbmvp} {}
-        const_iterator(typename Val2Keys::iterator valIt, typename KeySet::iterator keyIt,
-                       SortByValueMap* sbvmp)
-            : m_keyIt{keyIt}
-            , m_valIt{valIt}
-            , m_sbvmp{sbvmp}
-            , m_end{false} {}
-
-        // METHODS
-        void advanceUntilValid() {
-            ++m_keyIt;
-            if (m_keyIt != m_valIt->second.end()) {  // Valid iterator, done.
-                return;
-            }
-            // Try the next value?
-            ++m_valIt;
-            if (m_valIt == m_sbvmp->m_vals.end()) {  // No more values
-                m_end = true;
-                return;
-            }
-            // Should find a value here, as every value bucket is supposed
-            // to have at least one key, even after keys get removed.
-            m_keyIt = m_valIt->second.begin();
-            UASSERT(m_keyIt != m_valIt->second.end(), "Algorithm should have key left");
-        }
-        void reverseUntilValid() {
-            if (m_end) {
-                UASSERT(!m_sbvmp->m_vals.empty(), "Reverse iterator causes underflow");
-                m_valIt = m_sbvmp->m_vals.end();
-                --m_valIt;
-
-                UASSERT(!m_valIt->second.empty(), "Reverse iterator causes underflow");
-                m_keyIt = m_valIt->second.end();
-                --m_keyIt;
-
-                m_end = false;
-                return;
-            }
-            if (m_keyIt != m_valIt->second.begin()) {
-                // Valid iterator, we're done.
-                --m_keyIt;
-                return;
-            }
-            // Try the previous value?
-            if (VL_UNCOVERABLE(m_valIt == m_sbvmp->m_vals.begin())) {
-                // No more values but it's not defined to decrement an
-                // iterator past the beginning.
-                v3fatalSrc("Decremented iterator past beginning");
-                return;  // LCOV_EXCL_LINE
-            }
-            --m_valIt;
-            // Should find a value here, as Every value bucket is supposed
-            // to have at least one key, even after keys get removed.
-            UASSERT(!m_valIt->second.empty(), "Value bucket should have key");
-            m_keyIt = m_valIt->second.end();
-            --m_keyIt;
-            UASSERT(m_keyIt != m_valIt->second.end(), "Value bucket should have key");
-        }
-
-    public:
-        const T_Key& key() const { return *m_keyIt; }
-        const T_Value& value() const { return m_valIt->first; }
-        const_iterator& operator++() {
-            advanceUntilValid();
-            return *this;
-        }
-        const_iterator& operator--() {
-            reverseUntilValid();
-            return *this;
-        }
-        bool operator==(const const_iterator& other) const {
-            // It's not legal to compare iterators from different
-            // sequences.  So check m_end before comparing m_valIt, and
-            // compare m_valIt's before comparing m_keyIt to ensure nothing
-            // here is undefined.
-            if (m_end || other.m_end) return m_end && other.m_end;
-            return ((m_valIt == other.m_valIt) && (m_keyIt == other.m_keyIt));
-        }
-        bool operator!=(const const_iterator& other) const { return (!this->operator==(other)); }
-
-        // WARNING: Cleverness.
-        //
-        // The "reference" returned by *it must remain valid after 'it'
-        // gets destroyed. The reverse_iterator relies on this for its
-        // operator*(), so it's not just a theoretical requirement, it's a
-        // real requirement.
-        //
-        // To make that work, define the "reference" type to be the
-        // iterator itself. So clients can do (*it).key() and
-        // (*it).value(). This is the clever part.
-        //
-        // That's mostly useful for a reverse iterator, where *rit returns
-        // the forward iterator pointing the to same element, so
-        // (*rit).key() and (*rit).value() work where rit.key() and
-        // rit.value() cannot.
-        //
-        // It would be nice to support it->key() and it->value(), however
-        // uncertain what would be an appropriate 'pointer' type define
-        // that makes this work safely through a reverse iterator. So this
-        // class does not provide an operator->().
-        //
-        // Q) Why not make our value_type be a pair<T_Key, T_Value> like a
-        //    normal map, and return a reference to that?  This could
-        //    return a reference to one of the pairs inside m_keys, that
-        //    would satisfy the constraint above.
-        //
-        // A) It would take a lookup to find that pair within m_keys. This
-        //    iterator is designed to minimize the number of hashtable and
-        //    tree lookups. Increment, decrement, key(), value(), erase()
-        //    by iterator, begin(), end() -- none of these require a
-        //    container lookup. That's true for reverse_iterators too.
-        reference operator*() const {
-            UASSERT(!m_end, "Dereferencing iterator that is at end()");
-            return *this;
-        }
-    };
-
-    class iterator final : public const_iterator {
-    public:
-        // TYPES
-        using value_type = iterator;
-        using reference = iterator;
-        // pointer, difference_type, and iterator_category inherit from
-        // const_iterator
-
-        // CONSTRUCTORS
-        explicit iterator(SortByValueMap* sbvmp)
-            : const_iterator{sbvmp} {}
-        iterator(typename Val2Keys::iterator valIt, typename KeySet::iterator keyIt,
-                 SortByValueMap* sbvmp)
-            : const_iterator{valIt, keyIt, sbvmp} {}
-
-        // METHODS
-        iterator& operator++() {
-            this->advanceUntilValid();
-            return *this;
-        }
-        iterator& operator--() {
-            this->reverseUntilValid();
-            return *this;
-        }
-        reference operator*() const {
-            UASSERT(!this->m_end, "Dereferencing iterator that is at end()");
-            return *this;
-        }
-    };
-
-    using reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-    // METHODS
-private:
-    void removeKeyFromOldVal(const T_Key& k, const T_Value& oldVal) {
-        // The value of 'k' is about to change, or, 'k' is about to be
-        // removed from the map.
-        // Clear the m_vals mapping for k.
-        KeySet& keysAtOldVal = m_vals[oldVal];
-        const size_t erased = keysAtOldVal.erase(k);
-        UASSERT(erased == 1, "removeKeyFromOldVal() removal key not found");
-        if (keysAtOldVal.empty()) {
-            // Don't keep empty sets in the value map.
-            m_vals.erase(oldVal);
-        }
+    const_iterator find(const T_Key& key) const {
+        const auto kiIt = m_kiMap.find(key);
+        if (kiIt == m_kiMap.end()) return cend();
+        return kiIt->second;
     }
-    void removeKeyFromOldVal(iterator it) {
-        it.m_valIt->second.erase(it.m_keyIt);
-        if (it.m_valIt->second.empty()) m_vals.erase(it.m_valIt);
-    }
-
-public:
-    iterator begin() {
-        const auto valIt = m_vals.begin();
-        if (valIt == m_vals.end()) return end();
-        const auto keyIt = valIt->second.begin();
-        return iterator(valIt, keyIt, this);
-    }
-    const_iterator begin() const {
-        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
-        const auto valIt = mutp->m_vals.begin();
-        if (valIt == mutp->m_vals.end()) return end();
-        const auto keyIt = valIt->second.begin();
-        return const_iterator(valIt, keyIt, mutp);
-    }
-    iterator end() { return iterator(this); }
-    const_iterator end() const {
-        // Safe to cast away const; the const_iterator will still enforce
-        // it. Same for the const begin() below.
-        return const_iterator(const_cast<SortByValueMap*>(this));
-    }
-    reverse_iterator rbegin() { return reverse_iterator(end()); }
-    reverse_iterator rend() { return reverse_iterator(begin()); }
-    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
-    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
-
-    iterator find(const T_Key& k) {
-        const auto kvit = m_keys.find(k);
-        if (kvit == m_keys.end()) return end();
-
-        const auto valIt = m_vals.find(kvit->second);
-        const auto keyIt = valIt->second.find(k);
-        return iterator(valIt, keyIt, this);
-    }
-    const_iterator find(const T_Key& k) const {
-        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
-        const auto kvit = mutp->m_keys.find(k);
-        if (kvit == mutp->m_keys.end()) return end();
-
-        const auto valIt = mutp->m_vals.find(kvit->second);
-        const auto keyIt = valIt->second.find(k);
-        return const_iterator(valIt, keyIt, mutp);
-    }
-    void set(const T_Key& k, const T_Value& v) {
-        const auto kvit = m_keys.find(k);
-        if (kvit != m_keys.end()) {
-            if (kvit->second == v) {
-                return;  // LCOV_EXCL_LINE // Same value already present; stop.
-            }
-            // Must remove element from m_vals[oldValue]
-            removeKeyFromOldVal(k, kvit->second);
-        }
-        m_keys[k] = v;
-        m_vals[v].insert(k);
-    }
-    size_t erase(const T_Key& k) {
-        const auto kvit = m_keys.find(k);
-        if (kvit == m_keys.end()) return 0;
-        removeKeyFromOldVal(k, kvit->second);
-        m_keys.erase(kvit);
+    size_t erase(const T_Key& key) {
+        const auto kiIt = m_kiMap.find(key);
+        if (kiIt == m_kiMap.end()) return 0;
+        m_pairs.erase(kiIt->second);
+        m_kiMap.erase(kiIt);
         return 1;
     }
-    void erase(const iterator& it) {
-        m_keys.erase(it.key());
-        removeKeyFromOldVal(it);
+    void erase(const_iterator it) {
+        m_kiMap.erase(it->first);
+        m_pairs.erase(it);
     }
-    void erase(const reverse_iterator& it) {
-        erase(*it);  // Dereferencing returns a copy of the forward iterator
+    void erase(const_reverse_iterator rit) {
+        m_kiMap.erase(rit->first);
+        m_pairs.erase(std::next(rit).base());
     }
-    bool has(const T_Key& k) const { return (m_keys.find(k) != m_keys.end()); }
-    bool empty() const { return m_keys.empty(); }
-    // Look up a value. Returns a reference for efficiency. Note this must
-    // be a const reference, otherwise the client could corrupt the sorted
-    // order of m_byValue by reaching through and changing the value.
-    const T_Value& at(const T_Key& k) const {
-        const auto kvit = m_keys.find(k);
-        UASSERT(kvit != m_keys.end(), "at() lookup key not found");
-        return kvit->second;
+    bool has(const T_Key& key) const { return m_kiMap.count(key); }
+    bool empty() const { return m_pairs.empty(); }
+    // Returns const reference.
+    const T_Value& at(const T_Key& key) const { return m_kiMap.at(key)->second; }
+    // Note this returns const_iterator
+    template <typename... Args>  //
+    std::pair<const_iterator, bool> emplace(const T_Key& key, Args&&... args) {
+        const auto kiEmp = m_kiMap.emplace(key, end());
+        if (kiEmp.second) {
+            const auto result = m_pairs.emplace(key, std::forward<Args>(args)...);
+#if VL_DEBUG
+            UASSERT(result.second, "Should not be in set yet");
+#endif
+            kiEmp.first->second = result.first;
+            return result;
+        }
+        return {kiEmp.first->second, false};
     }
-
-private:
-    VL_UNCOPYABLE(SortByValueMap);
+    // Invalidates iterators
+    void update(const_iterator it, T_Value value) {
+        const auto kiIt = m_kiMap.find(it->first);
+        m_pairs.erase(it);
+        kiIt->second = m_pairs.emplace(kiIt->first, value).first;
+    }
 };
 
 //######################################################################
@@ -333,7 +138,7 @@ private:
 /// V3Scoreboard takes a set of Elem*'s, each having some score.
 /// Scores are assigned by a user-supplied scoring function.
 ///
-/// At any time, the V3Scoreboard can return the elem with the "best" score
+/// At any time, the V3Scoreboard can return th515e elem with the "best" score
 /// among those elements whose scores are known.
 ///
 /// The best score is the _lowest_ score. This makes sense in contexts
@@ -418,9 +223,9 @@ public:
     // reflected in the result of bestp(). Otherwise, bestp() only
     // considers elements that aren't pending rescore.
     const T_Elem* bestp() {
-        const auto result = m_sorted.begin();
-        if (VL_UNLIKELY(result == m_sorted.end())) return nullptr;
-        return (*result).key();
+        const auto it = m_sorted.begin();
+        if (VL_UNLIKELY(it == m_sorted.end())) return nullptr;
+        return it->first;
     }
 
     // Tell the scoreboard that this element's score may have changed.
@@ -444,20 +249,18 @@ public:
     bool needsRescore() { return !m_unknown.empty(); }
     // False if elp's score is known to V3Scoreboard,
     // else true if elp's score is unknown until the next rescore().
-    bool needsRescore(const T_Elem* elp) { return (m_unknown.find(elp) != m_unknown.end()); }
+    bool needsRescore(const T_Elem* elp) { return m_unknown.count(elp); }
     // Retrieve the last known score for an element.
-    T_Score cachedScore(const T_Elem* elp) {
-        const auto result = m_sorted.find(elp);
-        UASSERT(result != m_sorted.end(), "V3Scoreboard::cachedScore() failed to find element");
-        return (*result).value();
-    }
+    T_Score cachedScore(const T_Elem* elp) { return m_sorted.at(elp); }
     // For each element whose score is unknown to V3Scoreboard,
     // call the client's scoring function to get a new score,
     // and sort all elements by their current score.
     void rescore() {
         for (const T_Elem* elp : m_unknown) {
-            const T_Score sortScore = m_scoreFnp(elp);
-            m_sorted.set(elp, sortScore);
+            VL_ATTR_UNUSED const bool exists = !m_sorted.emplace(elp, m_scoreFnp(elp)).second;
+#if VL_DEBUG
+            UASSERT(!exists, "Should not be in both m_unknown and m_sorted");
+#endif
         }
         m_unknown.clear();
     }

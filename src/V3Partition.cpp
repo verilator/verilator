@@ -195,12 +195,9 @@ public:
                 // longest !wayward edge. Schedule that to be resolved.
                 const uint32_t newPendingVal
                     = newInclusiveCp - m_accessp->critPathCost(relativep, m_way);
-                if (m_pending.has(relativep)) {
-                    if (newPendingVal > m_pending.at(relativep)) {
-                        m_pending.set(relativep, newPendingVal);
-                    }
-                } else {
-                    m_pending.set(relativep, newPendingVal);
+                const auto pair = m_pending.emplace(relativep, newPendingVal);
+                if (!pair.second && (newPendingVal > pair.first->second)) {
+                    m_pending.update(pair.first, newPendingVal);
                 }
             }
         }
@@ -225,8 +222,8 @@ public:
         // This generalizes to multiple seed nodes also.
         while (!m_pending.empty()) {
             const auto it = m_pending.rbegin();
-            V3GraphVertex* const updateMep = (*it).key();
-            const uint32_t cpGrowBy = (*it).value();
+            V3GraphVertex* const updateMep = it->first;
+            const uint32_t cpGrowBy = it->second;
             m_pending.erase(it);
 
             // For *updateMep, whose critPathCost was out-of-date with respect
@@ -375,17 +372,17 @@ public:
         ~CpCostAccessor() = default;
         // Return cost of this node
         uint32_t cost(const V3GraphVertex* vxp) const {
-            const LogicMTask* const mtaskp = dynamic_cast<const LogicMTask*>(vxp);
+            const LogicMTask* const mtaskp = static_cast<const LogicMTask*>(vxp);
             return mtaskp->stepCost();
         }
         // Return stored CP to this node
         uint32_t critPathCost(const V3GraphVertex* vxp, GraphWay way) const {
-            const LogicMTask* const mtaskp = dynamic_cast<const LogicMTask*>(vxp);
+            const LogicMTask* const mtaskp = static_cast<const LogicMTask*>(vxp);
             return mtaskp->critPathCost(way);
         }
         // Store a new CP to this node
         void setCritPathCost(V3GraphVertex* vxp, GraphWay way, uint32_t cost) const {
-            LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(vxp);
+            LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
             mtaskp->setCritPathCost(way, cost);
         }
         // Notify vxp that the wayward CP at the throughp-->vxp edge
@@ -393,19 +390,19 @@ public:
         // This is our cue to update vxp's m_edges[!way][throughp].
         void notifyEdgeCp(V3GraphVertex* vxp, GraphWay way, V3GraphVertex* throuvhVxp,
                           uint32_t cp) const {
-            LogicMTask* const updateVxp = dynamic_cast<LogicMTask*>(vxp);
-            LogicMTask* const lthrouvhVxp = dynamic_cast<LogicMTask*>(throuvhVxp);
+            LogicMTask* const updateVxp = static_cast<LogicMTask*>(vxp);
+            LogicMTask* const lthrouvhVxp = static_cast<LogicMTask*>(throuvhVxp);
             EdgeSet& edges = updateVxp->m_edges[way.invert()];
-            const uint32_t edgeCp = edges.at(lthrouvhVxp);
-            if (cp > edgeCp) edges.set(lthrouvhVxp, cp);
+            const auto it = edges.find(lthrouvhVxp);
+            if (cp > it->second) edges.update(it, cp);
         }
         // Check that CP matches that of the longest edge wayward of vxp.
         void checkNewCpVersusEdges(V3GraphVertex* vxp, GraphWay way, uint32_t cp) const {
-            LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(vxp);
+            LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
             const EdgeSet& edges = mtaskp->m_edges[way.invert()];
             // This is mtaskp's relative with longest !wayward inclusive CP:
             const auto edgeIt = edges.rbegin();
-            const uint32_t edgeCp = (*edgeIt).value();
+            const uint32_t edgeCp = edgeIt->second;
             UASSERT_OBJ(edgeCp == cp, vxp, "CP doesn't match longest wayward edge");
         }
 
@@ -512,26 +509,21 @@ public:
     }
 
     void addRelative(GraphWay way, LogicMTask* relativep) {
-        EdgeSet& edges = m_edges[way];
-        UASSERT(!edges.has(relativep), "Adding existing edge");
         // value is !way cp to this edge
-        edges.set(relativep, relativep->stepCost() + relativep->critPathCost(way.invert()));
+        const uint32_t cp = relativep->stepCost() + relativep->critPathCost(way.invert());
+        VL_ATTR_UNUSED const bool exits = !m_edges[way].emplace(relativep, cp).second;
+#if VL_DEBUG
+        UASSERT(!exits, "Adding existing edge");
+#endif
     }
-    void removeRelative(GraphWay way, LogicMTask* relativep) {
-        EdgeSet& edges = m_edges[way];
-        edges.erase(relativep);
-    }
-    bool hasRelative(GraphWay way, LogicMTask* relativep) {
-        const EdgeSet& edges = m_edges[way];
-        return edges.has(relativep);
-    }
+    void removeRelative(GraphWay way, LogicMTask* relativep) { m_edges[way].erase(relativep); }
+    bool hasRelative(GraphWay way, LogicMTask* relativep) { return m_edges[way].has(relativep); }
     void checkRelativesCp(GraphWay way) const {
-        const EdgeSet& edges = m_edges[way];
-        for (const auto& edge : vlstd::reverse_view(edges)) {
-            const LogicMTask* const relativep = edge.key();
-            const uint32_t cachedCp = edge.value();
-            partCheckCachedScoreVsActual(cachedCp, relativep->critPathCost(way.invert())
-                                                       + relativep->stepCost());
+        for (const auto& edge : vlstd::reverse_view(m_edges[way])) {
+            const LogicMTask* const relativep = edge.first;
+            const uint32_t cachedCp = edge.second;
+            const uint32_t cp = relativep->critPathCost(way.invert()) + relativep->stepCost();
+            partCheckCachedScoreVsActual(cachedCp, cp);
         }
     }
 
@@ -557,11 +549,11 @@ public:
         const EdgeSet& edges = m_edges[way.invert()];
         uint32_t result = 0;
         for (const auto& edge : vlstd::reverse_view(edges)) {
-            if (edge.key() != withoutp->furtherp(way.invert())) {
+            if (edge.first != withoutp->furtherp(way.invert())) {
                 // Use the cached cost. It could be a small overestimate
                 // due to stepping. This is consistent with critPathCost()
                 // which also returns the cached cost.
-                result = edge.value();
+                result = edge.second;
                 break;
             }
         }
@@ -603,7 +595,7 @@ private:
         for (const V3GraphEdge* followp = fromp->outBeginp(); followp;
              followp = followp->outNextp()) {
             if (followp == excludedEdgep) continue;
-            LogicMTask* const nextp = dynamic_cast<LogicMTask*>(followp->top());
+            LogicMTask* const nextp = static_cast<LogicMTask*>(followp->top());
             if (pathExistsFromInternal(nextp, top, nullptr, generation)) return true;
         }
         return false;
@@ -634,7 +626,7 @@ public:
         const LogicMTask* startp = nullptr;
         for (const V3GraphVertex* vxp = graphp->verticesBeginp(); vxp;
              vxp = vxp->verticesNextp()) {
-            const LogicMTask* const mtaskp = dynamic_cast<const LogicMTask*>(vxp);
+            const LogicMTask* const mtaskp = static_cast<const LogicMTask*>(vxp);
             if (!startp) {
                 startp = mtaskp;
                 continue;
@@ -657,7 +649,7 @@ public:
             if (it == children.rend()) {
                 nextp = nullptr;
             } else {
-                nextp = (*it).key();
+                nextp = it->first;
             }
         }
 
@@ -805,10 +797,10 @@ public:
     }
     // METHODS
     LogicMTask* furtherMTaskp(GraphWay way) const {
-        return dynamic_cast<LogicMTask*>(this->furtherp(way));
+        return static_cast<LogicMTask*>(this->furtherp(way));
     }
-    LogicMTask* fromMTaskp() const { return dynamic_cast<LogicMTask*>(fromp()); }
-    LogicMTask* toMTaskp() const { return dynamic_cast<LogicMTask*>(top()); }
+    LogicMTask* fromMTaskp() const { return static_cast<LogicMTask*>(fromp()); }
+    LogicMTask* toMTaskp() const { return static_cast<LogicMTask*>(top()); }
     bool mergeWouldCreateCycle() const {
         return LogicMTask::pathExistsFrom(fromMTaskp(), toMTaskp(), this);
     }
@@ -962,7 +954,7 @@ static void partInitHalfCriticalPaths(GraphWay way, V3Graph* mtasksp, bool check
     GraphStreamUnordered order(mtasksp, way);
     const GraphWay rev = way.invert();
     for (const V3GraphVertex* vertexp; (vertexp = order.nextp());) {
-        const LogicMTask* const mtaskcp = dynamic_cast<const LogicMTask*>(vertexp);
+        const LogicMTask* const mtaskcp = static_cast<const LogicMTask*>(vertexp);
         LogicMTask* const mtaskp = const_cast<LogicMTask*>(mtaskcp);
         uint32_t cpCost = 0;
 #if VL_DEBUG
@@ -977,7 +969,7 @@ static void partInitHalfCriticalPaths(GraphWay way, V3Graph* mtasksp, bool check
                         "Should be no redundant edges in mtasks graph");
             relatives.insert(edgep->furtherp(rev));
 #endif
-            const LogicMTask* const relativep = dynamic_cast<LogicMTask*>(edgep->furtherp(rev));
+            const LogicMTask* const relativep = static_cast<LogicMTask*>(edgep->furtherp(rev));
             cpCost = std::max(cpCost, (relativep->critPathCost(way)
                                        + static_cast<uint32_t>(relativep->stepCost())));
         }
@@ -1010,7 +1002,7 @@ static void partCheckCriticalPaths(V3Graph* mtasksp) {
     partInitHalfCriticalPaths(GraphWay::FORWARD, mtasksp, true);
     partInitHalfCriticalPaths(GraphWay::REVERSE, mtasksp, true);
     for (V3GraphVertex* vxp = mtasksp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        const LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(vxp);
+        const LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
         mtaskp->checkRelativesCp(GraphWay::FORWARD);
         mtaskp->checkRelativesCp(GraphWay::REVERSE);
     }
@@ -1326,8 +1318,8 @@ private:
         MTaskEdge* mergeEdgep = mergeCanp->toMTaskEdge();
         const SiblingMC* mergeSibsp = nullptr;
         if (mergeEdgep) {
-            top = dynamic_cast<LogicMTask*>(mergeEdgep->top());
-            fromp = dynamic_cast<LogicMTask*>(mergeEdgep->fromp());
+            top = static_cast<LogicMTask*>(mergeEdgep->top());
+            fromp = static_cast<LogicMTask*>(mergeEdgep->fromp());
         } else {
             mergeSibsp = mergeCanp->toSiblingMC();
             UASSERT(mergeSibsp, "Failed to cast mergeCanp to either MTaskEdge or SiblingMC");
@@ -1437,14 +1429,14 @@ private:
         siblingPairFromRelatives(GraphWay::FORWARD, recipientp, true);
         unsigned edges = 0;
         for (V3GraphEdge* edgep = recipientp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            LogicMTask* const postreqp = dynamic_cast<LogicMTask*>(edgep->top());
+            LogicMTask* const postreqp = static_cast<LogicMTask*>(edgep->top());
             siblingPairFromRelatives(GraphWay::REVERSE, postreqp, false);
             ++edges;
             if (edges > PART_SIBLING_EDGE_LIMIT) break;
         }
         edges = 0;
         for (V3GraphEdge* edgep = recipientp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            LogicMTask* const prereqp = dynamic_cast<LogicMTask*>(edgep->fromp());
+            LogicMTask* const prereqp = static_cast<LogicMTask*>(edgep->fromp());
             siblingPairFromRelatives(GraphWay::FORWARD, prereqp, false);
             ++edges;
             if (edges > PART_SIBLING_EDGE_LIMIT) break;
@@ -1477,6 +1469,7 @@ private:
         return 0;
     }
 
+    VL_ATTR_NOINLINE
     static uint32_t siblingScore(const SiblingMC* sibsp) {
         const LogicMTask* const ap = sibsp->ap();
         const LogicMTask* const bp = sibsp->bp();
@@ -1487,12 +1480,13 @@ private:
         return mergedCpCostRev + mergedCpCostFwd + LogicMTask::stepCost(ap->cost() + bp->cost());
     }
 
+    VL_ATTR_NOINLINE
     static uint32_t edgeScore(const V3GraphEdge* edgep) {
         // Score this edge. Lower is better. The score is the new local CP
         // length if we merge these mtasks.  ("Local" means the longest
         // critical path running through the merged node.)
-        const LogicMTask* const top = dynamic_cast<LogicMTask*>(edgep->top());
-        const LogicMTask* const fromp = dynamic_cast<LogicMTask*>(edgep->fromp());
+        const LogicMTask* const top = static_cast<LogicMTask*>(edgep->top());
+        const LogicMTask* const fromp = static_cast<LogicMTask*>(edgep->fromp());
         const uint32_t mergedCpCostFwd
             = std::max(fromp->critPathCost(GraphWay::FORWARD),
                        top->critPathCostWithout(GraphWay::FORWARD, edgep));
@@ -1534,7 +1528,7 @@ private:
         std::vector<LogicMTask*> shortestPrereqs;
 
         for (V3GraphEdge* edgep = mtaskp->beginp(way); edgep; edgep = edgep->nextp(way)) {
-            LogicMTask* const prereqp = dynamic_cast<LogicMTask*>(edgep->furtherp(way));
+            LogicMTask* const prereqp = static_cast<LogicMTask*>(edgep->furtherp(way));
             shortestPrereqs.push_back(prereqp);
             // Prevent nodes with huge numbers of edges from massively
             // slowing down the partitioner:
@@ -1930,7 +1924,7 @@ public:
         OvvSet ovvSetSystemC(ovvOrder);
 
         for (V3GraphVertex* vxp = m_mtasksp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(vxp);
+            LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
             // Should be only one MTaskMoveVertex in each mtask at this
             // stage, but whatever, write it as a loop:
             for (LogicMTask::VxList::const_iterator it = mtaskp->vertexListp()->begin();
@@ -2040,7 +2034,7 @@ public:
             TasksByRank tasksByRank;
             for (V3GraphVertex* vxp = m_mtasksp->verticesBeginp(); vxp;
                  vxp = vxp->verticesNextp()) {
-                LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(vxp);
+                LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
                 if (hasDpiHazard(mtaskp)) tasksByRank[vxp->rank()].insert(mtaskp);
             }
             mergeSameRankTasks(&tasksByRank);
@@ -2519,7 +2513,7 @@ void V3Partition::hashGraphDebug(const V3Graph* graphp, const char* debugName) {
 void V3Partition::setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp) {
     // Look at each mtask
     for (V3GraphVertex* itp = mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(itp);
+        LogicMTask* const mtaskp = static_cast<LogicMTask*>(itp);
         const LogicMTask::VxList* vertexListp = mtaskp->vertexListp();
 
         // For each logic vertex in this mtask, create an mtask-to-mtask
@@ -2667,7 +2661,7 @@ void V3Partition::go(V3Graph* mtasksp) {
         using SortedMTaskSet = std::set<LogicMTask*, LogicMTask::CmpLogicMTask>;
         SortedMTaskSet sorted;
         for (V3GraphVertex* itp = mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(itp);
+            LogicMTask* const mtaskp = static_cast<LogicMTask*>(itp);
             sorted.insert(mtaskp);
         }
         for (auto it = sorted.begin(); it != sorted.end(); ++it) {
@@ -2683,7 +2677,7 @@ void V3Partition::go(V3Graph* mtasksp) {
 
     // Set color to indicate an mtaskId on every underlying MTaskMoveVertex.
     for (V3GraphVertex* itp = mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        const LogicMTask* const mtaskp = dynamic_cast<LogicMTask*>(itp);
+        const LogicMTask* const mtaskp = static_cast<LogicMTask*>(itp);
         for (LogicMTask::VxList::const_iterator it = mtaskp->vertexListp()->begin();
              it != mtaskp->vertexListp()->end(); ++it) {
             MTaskMoveVertex* const mvertexp = *it;
