@@ -40,6 +40,7 @@
 #include "V3Depth.h"
 #include "V3DepthBlock.h"
 #include "V3Descope.h"
+#include "V3DfgOptimizer.h"
 #include "V3EmitC.h"
 #include "V3EmitCMain.h"
 #include "V3EmitCMake.h"
@@ -235,6 +236,16 @@ static void process() {
         v3Global.constRemoveXs(true);
     }
 
+    if (v3Global.opt.fDfgPreInline() || v3Global.opt.fDfgPostInline()) {
+        // If doing DFG optimization, extract some additional candidates
+        V3DfgOptimizer::extract(v3Global.rootp());
+    }
+
+    if (v3Global.opt.fDfgPreInline()) {
+        // Pre inline DFG optimization
+        V3DfgOptimizer::optimize(v3Global.rootp(), " pre inline");
+    }
+
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Module inlining
         // Cannot remove dead variables after this, as alias information for final
@@ -243,6 +254,11 @@ static void process() {
             V3Inline::inlineAll(v3Global.rootp());
             V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules
         }
+    }
+
+    if (v3Global.opt.fDfgPostInline()) {
+        // Post inline DFG optimization
+        V3DfgOptimizer::optimize(v3Global.rootp(), "post inline");
     }
 
     // --PRE-FLAT OPTIMIZATIONS------------------

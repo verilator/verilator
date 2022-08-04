@@ -14,7 +14,7 @@ top_filename("t/t_inst_tree.v");
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
 compile(
-    v_flags2 => ["t/$Self->{name}.vlt",
+    v_flags2 => ["-fno-dfg-post-inline", "t/$Self->{name}.vlt",
                  $Self->wno_unopthreads_for_few_cores()]
     );
 

@@ -16,7 +16,7 @@ compile(
     # However we no longer gate optimize this
     # Can't use expect_filename here as unstable output
     expect =>
-'%Warning-UNOPTFLAT: t/t_order_wireloop.v:\d+:\d+: Signal unoptimizable: Circular combinational logic: \'t.foo\'
+'%Warning-UNOPTFLAT: t/t_order_wireloop.v:\d+:\d+: Signal unoptimizable: Circular combinational logic: \'bar\'
 ',
     );
 

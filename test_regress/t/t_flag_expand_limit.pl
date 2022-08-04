@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    verilator_flags2 => ['--expand-limit 1 --stats'],
+    verilator_flags2 => ['--expand-limit 1 --stats -fno-dfg'],
     );
 
 file_grep($Self->{stats}, qr/Optimizations, expand limited\s+(\d+)/i, 4);

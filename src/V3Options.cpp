@@ -1123,6 +1123,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
     DECL_OPTION("-fconst-bit-op-tree", FOnOff, &m_fConstBitOpTree);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
+    DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) {
+        m_fDfgPreInline = flag;
+        m_fDfgPostInline = flag;
+    });
+    DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
+    DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
+        m_fDfgPeepholeDisabled.erase(optp);
+    });
+    DECL_OPTION("-fno-dfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
+        m_fDfgPeepholeDisabled.emplace(optp);
+    });
+    DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
+    DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-fgate", FOnOff, &m_fGate);
     DECL_OPTION("-finline", FOnOff, &m_fInline);
@@ -1854,6 +1867,8 @@ void V3Options::optimize(int level) {
     m_fConst = flag;
     m_fConstBitOpTree = flag;
     m_fDedupe = flag;
+    m_fDfgPreInline = flag;
+    m_fDfgPostInline = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;

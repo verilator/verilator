@@ -214,6 +214,7 @@ private:
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
     std::map<const string, string> m_parameters;  // Parameters
     std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
+    V3StringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
 
     bool m_preprocOnly = false;     // main switch: -E
     bool m_makePhony = false;       // main switch: -MP
@@ -350,6 +351,9 @@ private:
     bool m_fConst;       // main switch: -fno-const: constant folding
     bool m_fConstBitOpTree;  // main switch: -fno-const-bit-op-tree constant bit op tree
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
+    bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
+    bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
+    bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
     bool m_fInline;      // main switch: -fno-inline: module inlining
@@ -592,6 +596,12 @@ public:
     bool fConst() const { return m_fConst; }
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
     bool fDedupe() const { return m_fDedupe; }
+    bool fDfgPeephole() const { return m_fDfgPeephole; }
+    bool fDfgPreInline() const { return m_fDfgPreInline; }
+    bool fDfgPostInline() const { return m_fDfgPostInline; }
+    bool fDfgPeepholeEnabled(const std::string& name) const {
+        return !m_fDfgPeepholeDisabled.count(name);
+    }
     bool fExpand() const { return m_fExpand; }
     bool fGate() const { return m_fGate; }
     bool fInline() const { return m_fInline; }

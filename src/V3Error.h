@@ -458,6 +458,7 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 #define VL_DEFINE_DEBUG_FUNCTIONS \
     VL_DEFINE_DEBUG(); /* Define 'int debug()' */ \
     VL_DEFINE_DUMP(); /* Define 'int dump()' */ \
+    VL_DEFINE_DUMP(Dfg); /* Define 'int dumpDfg()' */ \
     VL_DEFINE_DUMP(Graph); /* Define 'int dumpGraph()' */ \
     VL_DEFINE_DUMP(Tree); /* Define 'int dumpTree()' */ \
     static_assert(true, "")
