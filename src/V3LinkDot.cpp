@@ -1987,6 +1987,17 @@ private:
         }
     }
 
+    bool isParamedClassRef(const AstNode* nodep) {
+        if (const auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
+            if (classRefp->paramsp()) return true;
+
+            const auto* classp = classRefp->classOrPackageNodep();
+            while (const auto* typedefp = VN_CAST(classp, Typedef)) classp = typedefp->subDTypep();
+            return VN_IS(classp, ClassRefDType) && VN_AS(classp, ClassRefDType)->paramsp();
+        }
+        return false;
+    }
+
     // VISITs
     virtual void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
@@ -2171,10 +2182,16 @@ private:
                 // if (!start) { nodep->lhsp()->v3error("Package reference may not be embedded in
                 // dotted reference"); m_ds.m_dotErr=true; }
                 m_ds.m_dotPos = DP_PACKAGE;
+                iterateAndNextNull(nodep->lhsp());
             } else {
                 m_ds.m_dotPos = DP_SCOPE;
                 iterateAndNextNull(nodep->lhsp());
                 // if (debug() >= 9) nodep->dumpTree("-dot-lho: ");
+            }
+            if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
+                // Dots of paramed classes will be linked after deparametrization
+                m_ds.m_dotPos = DP_NONE;
+                return;
             }
             if (m_ds.m_unresolved
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
