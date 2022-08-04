@@ -852,6 +852,7 @@ class ParamVisitor final : public VNVisitor {
     string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::deque<AstCell*> m_cellps;  // Cells left to process (in current module)
+    std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
 
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
@@ -910,6 +911,7 @@ class ParamVisitor final : public VNVisitor {
                 }
             }
             m_cellps.clear();
+            if (workQueue.empty()) std::swap(workQueue, m_workQueue);
         } while (!workQueue.empty());
 
         m_iterateModule = false;
@@ -945,7 +947,7 @@ class ParamVisitor final : public VNVisitor {
 
         if (m_iterateModule) {  // Iterating body
             UINFO(4, " MOD-under-MOD.  " << nodep << endl);
-            iterateChildren(nodep);
+            m_workQueue.emplace(nodep->level(), nodep);  // Delay until current module is done
             return;
         }
 

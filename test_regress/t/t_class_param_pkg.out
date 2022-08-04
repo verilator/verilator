@@ -15,10 +15,6 @@
                                                : ... In instance t
    22 |       localparam PMINUS1 = P - 1;   
       |                  ^~~~~~~
-%Error-UNSUPPORTED: t/t_class_param_pkg.v:21:20: Unsupported: parameterized classes
-                                               : ... In instance t
-   21 |       Cls#(PMINUS1 + 1) c1;
-      |                    ^
 %Error-UNSUPPORTED: t/t_class_param_pkg.v:25:26: Unsupported: class parameters
                                                : ... In instance t
    25 |    class Cls #(parameter PBASE = 12);
@@ -27,4 +23,8 @@
                                                : ... In instance t
    36 |    typedef Pkg::Cls#(8) Cls8_t;
       |                      ^
+%Error-UNSUPPORTED: t/t_class_param_pkg.v:21:20: Unsupported: parameterized classes
+                                               : ... In instance t
+   21 |       Cls#(PMINUS1 + 1) c1;
+      |                    ^
 %Error: Exiting due to
