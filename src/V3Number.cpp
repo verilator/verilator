@@ -235,7 +235,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                     const V3Number ten(this, width() + 4, 10);
                     const V3Number addend(this, width(), (*cp - '0'));
                     product.opMul(*this, ten);
-                    this->opAdd(product, addend);
+                    opAdd(product, addend);
                     if (product.bitsValue(width(), 4)) {  // Overflowed
                         static int warned = 0;
                         v3error("Too many digits for "
@@ -685,7 +685,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     }
     case 's': {
         // Spec says always drop leading zeros, this isn't quite right, we space pad.
-        int bit = this->width() - 1;
+        int bit = width() - 1;
         bool start = true;
         while ((bit % 8) != 7) bit++;
         for (; bit >= 0; bit -= 8) {
@@ -706,7 +706,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     case 'd': {  // Unsigned decimal
         const bool issigned = (code == '~');
         if (fmtsize == "") {
-            const double mantissabits = this->width() - (issigned ? 1 : 0);
+            const double mantissabits = width() - (issigned ? 1 : 0);
             // To get the number of digits required, we want to compute
             // log10(2**mantissabits) and round it up. To be able to handle
             // a very wide mantissa, we use log2(2**mantissabits)/log2(10),
@@ -930,7 +930,7 @@ string V3Number::toString() const {
     UASSERT(!isFourState(), "toString with 4-state " << *this);
     // Spec says always drop leading zeros, this isn't quite right, we space pad.
     if (isString()) return m_data.str();
-    int bit = this->width() - 1;
+    int bit = width() - 1;
     bool start = true;
     while ((bit % 8) != 7) bit++;
     string str;
@@ -1041,10 +1041,10 @@ bool V3Number::isAnyZ() const {
 }
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
-    for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs1(bit) && rhs.bitIs0(bit)) return true;
-        if (rhs.bitIs1(bit) && this->bitIs0(bit)) return false;
-        if (this->bitIsXZ(bit)) return true;
+    for (int bit = 0; bit < std::max(width(), rhs.width()); bit++) {
+        if (bitIs1(bit) && rhs.bitIs0(bit)) return true;
+        if (rhs.bitIs1(bit) && bitIs0(bit)) return false;
+        if (bitIsXZ(bit)) return true;
         if (rhs.bitIsXZ(bit)) return false;
     }
     return false;
@@ -1075,7 +1075,7 @@ int V3Number::widthMin() const {
 
 uint32_t V3Number::countBits(const V3Number& ctrl) const {
     int n = 0;
-    for (int bit = 0; bit < this->width(); ++bit) {
+    for (int bit = 0; bit < width(); ++bit) {
         switch (ctrl.bitIs(0)) {
         case '0':
             if (bitIs0(bit)) ++n;
@@ -1106,14 +1106,14 @@ uint32_t V3Number::countBits(const V3Number& ctrl1, const V3Number& ctrl2,
 
 uint32_t V3Number::countOnes() const {
     int n = 0;
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (bitIs1(bit)) n++;
     }
     return n;
 }
 
 uint32_t V3Number::mostSetBitP1() const {
-    for (int bit = this->width() - 1; bit >= 0; bit--) {
+    for (int bit = width() - 1; bit >= 0; bit--) {
         if (bitIs1(bit)) return bit + 1;
     }
     return 0;
@@ -1125,7 +1125,7 @@ V3Number& V3Number::opBitsNonX(const V3Number& lhs) {  // 0/1->1, X/Z->0
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (lhs.bitIs0(bit) || lhs.bitIs1(bit)) setBit(bit, 1);
     }
     return *this;
@@ -1135,7 +1135,7 @@ V3Number& V3Number::opBitsOne(const V3Number& lhs) {  // 1->1, 0/X/Z->0
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (lhs.bitIs1(bit)) setBit(bit, 1);
     }
     return *this;
@@ -1145,7 +1145,7 @@ V3Number& V3Number::opBitsXZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (lhs.bitIsXZ(bit)) setBit(bit, 1);
     }
     return *this;
@@ -1155,7 +1155,7 @@ V3Number& V3Number::opBitsZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (lhs.bitIsZ(bit)) setBit(bit, 1);
     }
     return *this;
@@ -1165,7 +1165,7 @@ V3Number& V3Number::opBitsNonZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (!lhs.bitIsZ(bit)) setBit(bit, 1);
     }
     return *this;
@@ -1297,7 +1297,7 @@ V3Number& V3Number::opNot(const V3Number& lhs) {
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     // op i, L(lhs) bit return
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (lhs.bitIs0(bit)) {
             setBit(bit, 1);
         } else if (lhs.bitIsXZ(bit)) {
@@ -1312,7 +1312,7 @@ V3Number& V3Number::opAnd(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     // i op j, max(L(lhs),L(rhs)) bit return, careful need to X/Z extend.
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (lhs.bitIs1(bit) && rhs.bitIs1(bit)) {
             setBit(bit, 1);
         } else if (lhs.bitIs0(bit) || rhs.bitIs0(bit)) {  // 0
@@ -1328,7 +1328,7 @@ V3Number& V3Number::opOr(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     // i op j, max(L(lhs),L(rhs)) bit return, careful need to X/Z extend.
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (lhs.bitIs1(bit) || rhs.bitIs1(bit)) {
             setBit(bit, 1);
         } else if (lhs.bitIs0(bit) && rhs.bitIs0(bit)) {
@@ -1345,7 +1345,7 @@ V3Number& V3Number::opXor(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (lhs.bitIs1(bit) && rhs.bitIs0(bit)) {
             setBit(bit, 1);
         } else if (lhs.bitIs0(bit) && rhs.bitIs1(bit)) {
@@ -1624,7 +1624,7 @@ bool V3Number::isCaseEq(const V3Number& rhs) const {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     if (isString()) return toString() == rhs.toString();
     if (isDouble()) return toDouble() == rhs.toDouble();
-    if (this->width() != rhs.width()) return false;
+    if (width() != rhs.width()) return false;
     for (int i = 0; i < words(); ++i) {
         if (!(m_data.num()[i] == rhs.m_data.num()[i])) return false;
     }
@@ -1759,7 +1759,7 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
     }
     const uint32_t rhsval = rhs.toUInt();
     if (rhsval < static_cast<uint32_t>(lhs.width())) {
-        for (int bit = 0; bit < this->width(); bit++) setBit(bit, lhs.bitIs(bit + rhsval));
+        for (int bit = 0; bit < width(); bit++) setBit(bit, lhs.bitIs(bit + rhsval));
     }
     return *this;
 }
@@ -1773,7 +1773,7 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
     for (int bit = 32; bit < rhs.width(); bit++) {
-        for (int sbit = 0; sbit < this->width(); sbit++) {
+        for (int sbit = 0; sbit < width(); sbit++) {
             setBit(sbit, lhs.bitIs(lbits - 1));  // 0/1/X/Z
         }
         if (rhs.bitIs1(lbits - 1)) setAllBits1();  // -1 else 0
@@ -1781,11 +1781,11 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
     }
     const uint32_t rhsval = rhs.toUInt();
     if (rhsval < static_cast<uint32_t>(lhs.width())) {
-        for (int bit = 0; bit < this->width(); bit++) {
+        for (int bit = 0; bit < width(); bit++) {
             setBit(bit, lhs.bitIsExtend(bit + rhsval, lbits));
         }
     } else {
-        for (int bit = 0; bit < this->width(); bit++) {
+        for (int bit = 0; bit < width(); bit++) {
             setBit(bit, lhs.bitIs(lbits - 1));  // 0/1/X/Z
         }
     }
@@ -1802,7 +1802,7 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
         if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
     }
     const uint32_t rhsval = rhs.toUInt();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (bit >= static_cast<int>(rhsval)) setBit(bit, lhs.bitIs(bit - rhsval));
     }
     return *this;
@@ -1830,7 +1830,7 @@ V3Number& V3Number::opAdd(const V3Number& lhs, const V3Number& rhs) {
     setZero();
     // Addem
     int carry = 0;
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         const int sum = ((lhs.bitIs1(bit) ? 1 : 0) + (rhs.bitIs1(bit) ? 1 : 0) + carry);
         if (sum & 1) setBit(bit, 1);
         carry = (sum >= 2);
@@ -1863,7 +1863,7 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
                 const uint64_t rwordval = static_cast<uint64_t>(rhs.m_data.num()[rword].m_value);
                 if (rwordval == 0) continue;
                 uint64_t mul = lwordval * rwordval;
-                for (int qword = lword + rword; qword < this->words(); qword++) {
+                for (int qword = lword + rword; qword < words(); qword++) {
                     mul += static_cast<uint64_t>(m_data.num()[qword].m_value);
                     m_data.num()[qword].m_value = (mul & 0xffffffffULL);
                     mul = (mul >> 32ULL) & 0xffffffffULL;
@@ -2058,11 +2058,11 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         }
         t = un[j + vw] - k;
         un[j + vw] = t;
-        this->m_data.num()[j].m_value = qhat;  // Save quotient digit
+        m_data.num()[j].m_value = qhat;  // Save quotient digit
 
         if (t < 0) {
             // Over subtracted; correct by adding back
-            this->m_data.num()[j].m_value--;
+            m_data.num()[j].m_value--;
             k = 0;
             for (int i = 0; i < vw; i++) {
                 t = static_cast<uint64_t>(un[i + j]) + static_cast<uint64_t>(vn[i]) + k;
@@ -2128,7 +2128,7 @@ V3Number& V3Number::opPow(const V3Number& lhs, const V3Number& rhs, bool lsign, 
         if (rhs.bitIs1(bit)) {  // out *= power
             V3Number lastOut(&lhs, width());
             lastOut.opAssign(*this);
-            this->opMul(lastOut, power);
+            opMul(lastOut, power);
             // UINFO(0, "pow "<<lhs<<" "<<rhs<<" b"<<bit<<" pow="<<power<<" now="<<*this<<endl);
         }
     }
@@ -2148,7 +2148,7 @@ V3Number& V3Number::opBufIf1(const V3Number& ens, const V3Number& if1s) {
     NUM_ASSERT_OP_ARGS2(ens, if1s);
     NUM_ASSERT_LOGIC_ARGS2(ens, if1s);
     setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (ens.bitIs1(bit)) {
             setBit(bit, if1s.bitIs(bit));
         } else {
@@ -2250,7 +2250,7 @@ V3Number& V3Number::opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval)
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
     int ibit = lsbval;
-    for (int bit = 0; bit < this->width(); bit++) {
+    for (int bit = 0; bit < width(); bit++) {
         if (ibit >= 0 && ibit < lhs.width() && ibit <= static_cast<int>(msbval)) {
             setBit(bit, lhs.bitIs(ibit));
         } else {
@@ -2346,9 +2346,7 @@ V3Number& V3Number::opRealToBits(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
     // Conveniently our internal format is identical so we can copy bits...
-    if (lhs.width() != 64 || this->width() != 64) {
-        v3fatalSrc("Real operation on wrong sized number");
-    }
+    if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
     m_data.setLogic();
     opAssign(lhs);
     return *this;
@@ -2356,9 +2354,7 @@ V3Number& V3Number::opRealToBits(const V3Number& lhs) {
 V3Number& V3Number::opBitsToRealD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     // Conveniently our internal format is identical so we can copy bits...
-    if (lhs.width() != 64 || this->width() != 64) {
-        v3fatalSrc("Real operation on wrong sized number");
-    }
+    if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
     m_data.setDouble();
     opAssign(lhs);
     return *this;
