@@ -19,8 +19,8 @@
 
 #include "V3Error.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 class V3Waiver final {
     // TYPES

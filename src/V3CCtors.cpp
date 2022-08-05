@@ -27,9 +27,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3EmitCBase.h"
 #include "V3CCtors.h"
+
+#include "V3EmitCBase.h"
+#include "V3Global.h"
 
 #include <algorithm>
 #include <list>

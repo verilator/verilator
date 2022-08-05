@@ -27,7 +27,8 @@
 #include <utility>
 #include <vector>
 
-template <class T_Node, class T_Data, int T_UserN> class AstUserAllocatorBase VL_NOT_FINAL {
+template <class T_Node, class T_Data, int T_UserN>
+class AstUserAllocatorBase VL_NOT_FINAL {
     static_assert(1 <= T_UserN && T_UserN <= 5, "Wrong user pointer number");
     static_assert(std::is_base_of<AstNode, T_Node>::value, "T_Node must be an AstNode type");
 
@@ -91,7 +92,7 @@ protected:
 
 public:
     // Get a reference to the user data. If does not exist, construct it with given arguments.
-    template <typename... Args>  //
+    template <typename... Args>
     T_Data& operator()(T_Node* nodep, Args&&... args) {
         T_Data* userp = getUserp(nodep);
         if (!userp) {

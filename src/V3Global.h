@@ -48,7 +48,8 @@ class V3HierBlockPlan;
 
 // Object used by VL_RESTORER.  This object must be an auto variable, not
 // allocated on the heap or otherwise.
-template <typename T> class VRestorer {
+template <typename T>
+class VRestorer final {
     T& m_ref;  // Reference to object we're saving and restoring
     const T m_saved;  // Value saved, for later restore
 

@@ -8,9 +8,10 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-#include <cstdlib>
-#include <cstdio>
 #include <verilated.h>
+
+#include <cstdio>
+#include <cstdlib>
 #include VM_PREFIX_INCLUDE
 
 unsigned int main_time = 0;

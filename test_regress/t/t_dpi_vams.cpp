@@ -7,6 +7,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
+
 #include "Vt_dpi_vams.h"
 
 //======================================================================

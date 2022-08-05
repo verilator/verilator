@@ -21,9 +21,9 @@
 #include "verilatedos.h"
 
 #include "VlcOptions.h"
-#include "VlcTest.h"
 #include "VlcPoint.h"
 #include "VlcSource.h"
+#include "VlcTest.h"
 
 //######################################################################
 // VlcTop - Top level options container

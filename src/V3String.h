@@ -33,7 +33,8 @@
 //######################################################################
 // Global string-related functions
 
-template <class T> std::string cvtToStr(const T& t) {
+template <class T>
+std::string cvtToStr(const T& t) {
     std::ostringstream os;
     os << t;
     return os.str();

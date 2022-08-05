@@ -11,13 +11,12 @@
 //
 //*************************************************************************
 
-#include <iostream>
-#include <iomanip>
-
-#include "svdpi.h"
-
 #include "Vt_dpi_accessors.h"
 #include "Vt_dpi_accessors__Dpi.h"
+#include "svdpi.h"
+
+#include <iomanip>
+#include <iostream>
 
 using std::cout;
 using std::dec;

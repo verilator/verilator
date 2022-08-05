@@ -6,12 +6,13 @@
 // any use, without warranty, 2010 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-#include <iostream>
-
 #include <verilated.h>
 #include <verilated_save.h>
+
+#include <iostream>
 #include VM_PREFIX_INCLUDE
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
 //======================================================================

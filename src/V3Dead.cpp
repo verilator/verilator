@@ -36,9 +36,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Dead.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 
 #include <map>
 #include <vector>

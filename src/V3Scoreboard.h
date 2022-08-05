@@ -112,7 +112,7 @@ public:
     // Returns const reference.
     const T_Value& at(const T_Key& key) const { return m_kiMap.at(key)->second; }
     // Note this returns const_iterator
-    template <typename... Args>  //
+    template <typename... Args>
     std::pair<const_iterator, bool> emplace(const T_Key& key, Args&&... args) {
         const auto kiEmp = m_kiMap.emplace(key, end());
         if (kiEmp.second) {

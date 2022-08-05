@@ -118,12 +118,18 @@ public:
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
-template <> void VerilatedFst::Super::dump(uint64_t time);
-template <> void VerilatedFst::Super::set_time_unit(const char* unitp);
-template <> void VerilatedFst::Super::set_time_unit(const std::string& unit);
-template <> void VerilatedFst::Super::set_time_resolution(const char* unitp);
-template <> void VerilatedFst::Super::set_time_resolution(const std::string& unit);
-template <> void VerilatedFst::Super::dumpvars(int level, const std::string& hier);
+template <>
+void VerilatedFst::Super::dump(uint64_t time);
+template <>
+void VerilatedFst::Super::set_time_unit(const char* unitp);
+template <>
+void VerilatedFst::Super::set_time_unit(const std::string& unit);
+template <>
+void VerilatedFst::Super::set_time_resolution(const char* unitp);
+template <>
+void VerilatedFst::Super::set_time_resolution(const std::string& unit);
+template <>
+void VerilatedFst::Super::dumpvars(int level, const std::string& hier);
 #endif
 
 //=============================================================================

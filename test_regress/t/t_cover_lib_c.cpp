@@ -9,14 +9,16 @@
 //
 //*************************************************************************
 
+#include "verilated_cov.h"
+
+#include "svdpi.h"
+
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include "svdpi.h"
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
-
-#include "verilated_cov.h"
 
 #include VM_PREFIX_INCLUDE
 

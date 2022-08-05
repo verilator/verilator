@@ -26,6 +26,7 @@
 #define VERILATOR_VERILATED_COV_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"
 
 #include <iostream>
@@ -88,7 +89,8 @@ class VerilatedCovImp;
 //=============================================================================
 // Convert VL_COVER_INSERT value arguments to strings, is \internal
 
-template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
+template <class T>
+std::string vlCovCvtToStr(const T& t) VL_PURE {
     std::ostringstream os;
     os << t;
     return os.str();

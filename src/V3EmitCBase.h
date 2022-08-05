@@ -20,12 +20,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3File.h"
 #include "V3Ast.h"
+#include "V3File.h"
+#include "V3Global.h"
 
-#include <cstdarg>
 #include <cmath>
+#include <cstdarg>
 
 //######################################################################
 // Set user4p in all CFunc and Var to point to the containing AstNodeModule

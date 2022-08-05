@@ -22,13 +22,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
+#include "V3TraceDecl.h"
+
 #include "verilated_trace_defs.h"  // For VLT_TRACE_SCOPE_*
 
-#include "V3Global.h"
 #include "V3Config.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3Stats.h"
-#include "V3TraceDecl.h"
 
 #include <algorithm>
 #include <functional>

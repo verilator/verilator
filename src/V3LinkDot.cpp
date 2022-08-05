@@ -64,12 +64,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3LinkDot.h"
-#include "V3SymTable.h"
-#include "V3Graph.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
+#include "V3Graph.h"
 #include "V3String.h"
+#include "V3SymTable.h"
 
 #include <algorithm>
 #include <map>

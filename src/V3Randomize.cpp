@@ -27,8 +27,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Ast.h"
 #include "V3Randomize.h"
+
+#include "V3Ast.h"
 
 //######################################################################
 // Visitor that marks classes needing a randomize() method

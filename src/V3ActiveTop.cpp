@@ -26,11 +26,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3ActiveTop.h"
+
 #include "V3Ast.h"
-#include "V3SenTree.h"
 #include "V3Const.h"
+#include "V3Global.h"
+#include "V3SenTree.h"
 
 //######################################################################
 // Active class functions

@@ -38,15 +38,16 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Trace.h"
-#include "V3EmitCBase.h"
-#include "V3Graph.h"
+
 #include "V3DupFinder.h"
+#include "V3EmitCBase.h"
+#include "V3Global.h"
+#include "V3Graph.h"
 #include "V3Stats.h"
 
-#include <map>
 #include <limits>
+#include <map>
 #include <set>
 
 //######################################################################

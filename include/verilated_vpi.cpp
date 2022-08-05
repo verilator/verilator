@@ -26,8 +26,9 @@
 
 #define VERILATOR_VERILATED_VPI_CPP_
 
-#include "verilated.h"
 #include "verilated_vpi.h"
+
+#include "verilated.h"
 #include "verilated_imp.h"
 
 #include <list>

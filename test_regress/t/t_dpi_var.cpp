@@ -11,9 +11,9 @@
 
 #include VM_PREFIX_INCLUDE
 #include "verilated.h"
-#include "svdpi.h"
-
 #include "verilated_syms.h"
+
+#include "svdpi.h"
 
 //======================================================================
 

@@ -25,6 +25,7 @@
 #define VERILATOR_VERILATED_VPI_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"
 #include "verilated_syms.h"
 

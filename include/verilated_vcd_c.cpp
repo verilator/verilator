@@ -65,7 +65,8 @@ constexpr unsigned VL_TRACE_SUFFIX_ENTRY_SIZE = 8;  // Size of a suffix entry
 //=============================================================================
 // Utility functions: TODO: put these in a common place and share them.
 
-template <size_t N> static size_t roundUpToMultipleOf(size_t value) {
+template <size_t N>
+static size_t roundUpToMultipleOf(size_t value) {
     static_assert((N & (N - 1)) == 0, "'N' must be a power of 2");
     size_t mask = N - 1;
     return (value + mask) & ~mask;

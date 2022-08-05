@@ -91,7 +91,8 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
-template <class, class> class VerilatedTrace;
+template <class, class>
+class VerilatedTrace;
 class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
@@ -283,7 +284,8 @@ public:
 
 private:
     // The following are for use by Verilator internals only
-    template <class, class> friend class VerilatedTrace;
+    template <class, class>
+    friend class VerilatedTrace;
     // Run-time trace configuration requested by this model
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 };

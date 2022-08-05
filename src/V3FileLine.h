@@ -23,12 +23,12 @@
 #include "V3Error.h"
 #include "V3LangCode.h"
 
-#include <sstream>
 #include <bitset>
+#include <deque>
 #include <map>
 #include <memory>
 #include <set>
-#include <deque>
+#include <sstream>
 
 //######################################################################
 

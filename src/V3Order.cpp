@@ -79,6 +79,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Order.h"
+
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3Const.h"
@@ -88,14 +90,12 @@
 #include "V3Graph.h"
 #include "V3GraphStream.h"
 #include "V3List.h"
+#include "V3OrderGraph.h"
 #include "V3Partition.h"
 #include "V3PartitionGraph.h"
 #include "V3SenTree.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
-
-#include "V3Order.h"
-#include "V3OrderGraph.h"
 
 #include <algorithm>
 #include <deque>
@@ -103,9 +103,9 @@
 #include <map>
 #include <memory>
 #include <sstream>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 //######################################################################
 // Utilities
@@ -824,7 +824,8 @@ inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs)
 //######################################################################
 // ProcessMoveBuildGraph
 
-template <class T_MoveVertex> class ProcessMoveBuildGraph {
+template <class T_MoveVertex>
+class ProcessMoveBuildGraph final {
     // ProcessMoveBuildGraph takes as input the fine-grained graph of
     // OrderLogicVertex, OrderVarVertex, etc; this is 'm_graph' in
     // OrderVisitor. It produces a slightly coarsened graph to drive the

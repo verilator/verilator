@@ -3,9 +3,11 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-#include <cstdlib>
 #include <verilated.h>
+
 #include "Vt_mem_slot.h"
+
+#include <cstdlib>
 
 double sc_time_stamp() { return 0; }
 

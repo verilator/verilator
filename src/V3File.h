@@ -23,12 +23,12 @@
 #include "V3Error.h"
 
 #include <array>
-#include <stack>
-#include <set>
-#include <list>
-#include <vector>
 #include <fstream>
+#include <list>
 #include <memory>
+#include <set>
+#include <stack>
+#include <vector>
 
 //============================================================================
 // V3File: Create streams, recording dependency information

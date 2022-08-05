@@ -47,20 +47,21 @@
 
 #define VERILATOR_VERILATED_CPP_
 
-#include "verilatedos.h"
-#include "verilated_imp.h"
-
 #include "verilated_config.h"
+#include "verilatedos.h"
+
+#include "verilated_imp.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
-#include <sstream>
-#include <sys/stat.h>  // mkdir
-#include <list>
 #include <limits>
+#include <list>
+#include <sstream>
 #include <utility>
+
+#include <sys/stat.h>  // mkdir
 
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)

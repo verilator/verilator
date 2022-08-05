@@ -17,11 +17,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3Os.h"
 #include "V3EmitCMake.h"
+
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3HierBlock.h"
+#include "V3Os.h"
 
 #include <memory>
 
@@ -36,7 +37,8 @@ class CMakeEmitter final {
     // STATIC FUNCTIONS
 
     // Concatenate all strings in 'strs' with ' ' between them.
-    template <typename List> static string cmake_list(const List& strs) {
+    template <typename List>
+    static string cmake_list(const List& strs) {
         string s;
         if (strs.begin() != strs.end()) {
             s.append("\"");

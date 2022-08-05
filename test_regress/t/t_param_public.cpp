@@ -7,8 +7,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#include "Vt_param_public.h"
 
+#include "Vt_param_public.h"
 #include "Vt_param_public_p.h"
 #include "Vt_param_public_t.h"
 

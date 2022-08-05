@@ -20,11 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Broken.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
-#include "V3Number.h"
 #include "V3Global.h"
-#include "V3Broken.h"
+#include "V3Number.h"
+
+#include "V3Ast__gen_classes.h"  // From ./astgen
 
 #include <cmath>
 #include <functional>
@@ -34,8 +36,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include "V3Ast__gen_classes.h"  // From ./astgen
 // Things like:
 //   class V3AstNode;
 
@@ -1133,7 +1133,7 @@ public:
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() = default;
     // Casters
-    template <class T>  //
+    template <class T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const {
         return reinterpret_cast<T>(m_u.up);
     }
@@ -1857,10 +1857,12 @@ private:
 
     // For internal use only.
     // Note: specializations for particular node types are provided by 'astgen'
-    template <typename T> inline static bool privateTypeTest(const AstNode* nodep);
+    template <typename T>
+    inline static bool privateTypeTest(const AstNode* nodep);
 
     // For internal use only.
-    template <typename TargetType, typename DeclType> constexpr static bool uselessCast() {
+    template <typename TargetType, typename DeclType>
+    constexpr static bool uselessCast() {
         using NonRef = typename std::remove_reference<DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
@@ -1868,7 +1870,8 @@ private:
     }
 
     // For internal use only.
-    template <typename TargetType, typename DeclType> constexpr static bool impossibleCast() {
+    template <typename TargetType, typename DeclType>
+    constexpr static bool impossibleCast() {
         using NonRef = typename std::remove_reference<DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
@@ -1877,20 +1880,23 @@ private:
 
 public:
     // For use via the VN_IS macro only
-    template <typename T, typename E> inline static bool privateIs(const AstNode* nodep) {
+    template <typename T, typename E>
+    inline static bool privateIs(const AstNode* nodep) {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_IS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_IS, node cannot be this type.");
         return nodep && privateTypeTest<T>(nodep);
     }
 
     // For use via the VN_CAST macro only
-    template <typename T, typename E> inline static T* privateCast(AstNode* nodep) {
+    template <typename T, typename E>
+    inline static T* privateCast(AstNode* nodep) {
         static_assert(!uselessCast<T, E>(),
                       "Unnecessary VN_CAST, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_CAST, node cannot be this type.");
         return nodep && privateTypeTest<T>(nodep) ? reinterpret_cast<T*>(nodep) : nullptr;
     }
-    template <typename T, typename E> inline static const T* privateCast(const AstNode* nodep) {
+    template <typename T, typename E>
+    inline static const T* privateCast(const AstNode* nodep) {
         static_assert(!uselessCast<T, E>(),
                       "Unnecessary VN_CAST, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_CAST, node cannot be this type.");
@@ -1898,7 +1904,8 @@ public:
     }
 
     // For use via the VN_AS macro only
-    template <typename T, typename E> inline static T* privateAs(AstNode* nodep) {
+    template <typename T, typename E>
+    inline static T* privateAs(AstNode* nodep) {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
@@ -1906,7 +1913,8 @@ public:
                                                                               << "'");
         return reinterpret_cast<T*>(nodep);
     }
-    template <typename T, typename E> inline static const T* privateAs(const AstNode* nodep) {
+    template <typename T, typename E>
+    inline static const T* privateAs(const AstNode* nodep) {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
@@ -1918,7 +1926,8 @@ public:
     // Predicate that returns true if the given 'nodep' might have a descendant of type 'T_Node'.
     // This is conservative and is used to speed up traversals.
     // Note: specializations for particular node types are provided below
-    template <typename T_Node> static bool mayBeUnder(const AstNode* nodep) {
+    template <typename T_Node>
+    static bool mayBeUnder(const AstNode* nodep) {
         static_assert(!std::is_const<T_Node>::value,
                       "Type parameter 'T_Node' should not be const qualified");
         static_assert(std::is_base_of<AstNode, T_Node>::value,
@@ -1929,7 +1938,8 @@ public:
     // Predicate that is true for node subtypes 'T_Node' that do not have any children
     // This is conservative and is used to speed up traversals.
     // Note: specializations for particular node types are provided below
-    template <typename T_Node> static constexpr bool isLeaf() {
+    template <typename T_Node>
+    static constexpr bool isLeaf() {
         static_assert(!std::is_const<T_Node>::value,
                       "Type parameter 'T_Node' should not be const qualified");
         static_assert(std::is_base_of<AstNode, T_Node>::value,
@@ -1951,7 +1961,8 @@ private:
     inline static bool predicateImpl(ConstCorrectAstNode<T_Arg>* nodep,
                                      const std::function<bool(T_Arg*)>& p);
 
-    template <typename T_Node> constexpr static bool checkTypeParameter() {
+    template <typename T_Node>
+    constexpr static bool checkTypeParameter() {
         static_assert(!std::is_const<T_Node>::value,
                       "Type parameter 'T_Node' should not be const qualified");
         static_assert(std::is_base_of<AstNode, T_Node>::value,
@@ -1966,25 +1977,29 @@ public:
     // handle a single (or a few) node types, as it's easier to write, but more importantly, the
     // dispatch to the operation function in 'foreach' should be completely predictable by branch
     // target caches in modern CPUs, while it is basically unpredictable for VNVisitor.
-    template <typename T_Node> void foreach (std::function<void(T_Node*)> f) {
+    template <typename T_Node>
+    void foreach (std::function<void(T_Node*)> f) {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         foreachImpl<T_Node>(this, f, /* visitNext: */ false);
     }
 
     // Same as above, but for 'const' nodes
-    template <typename T_Node> void foreach (std::function<void(const T_Node*)> f) const {
+    template <typename T_Node>
+    void foreach (std::function<void(const T_Node*)> f) const {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         foreachImpl<const T_Node>(this, f, /* visitNext: */ false);
     }
 
     // Same as 'foreach' but also follows 'this->nextp()'
-    template <typename T_Node> void foreachAndNext(std::function<void(T_Node*)> f) {
+    template <typename T_Node>
+    void foreachAndNext(std::function<void(T_Node*)> f) {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         foreachImpl<T_Node>(this, f, /* visitNext: */ true);
     }
 
     // Same as 'foreach' but also follows 'this->nextp()'
-    template <typename T_Node> void foreachAndNext(std::function<void(const T_Node*)> f) const {
+    template <typename T_Node>
+    void foreachAndNext(std::function<void(const T_Node*)> f) const {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         foreachImpl<const T_Node>(this, f, /* visitNext: */ true);
     }
@@ -1993,13 +2008,15 @@ public:
     // 'T_Node' that satisfies the predicate 'p'. Returns false if no node of type 'T_Node' is
     // present. Traversal is performed in some arbitrary order and is terminated as soon as the
     // result can be determined.
-    template <typename T_Node> bool exists(std::function<bool(T_Node*)> p) {
+    template <typename T_Node>
+    bool exists(std::function<bool(T_Node*)> p) {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         return predicateImpl<T_Node, /* Default: */ false>(this, p);
     }
 
     // Same as above, but for 'const' nodes
-    template <typename T_Node> void exists(std::function<bool(const T_Node*)> p) const {
+    template <typename T_Node>
+    void exists(std::function<bool(const T_Node*)> p) const {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         return predicateImpl<const T_Node, /* Default: */ false>(this, p);
     }
@@ -2008,13 +2025,15 @@ public:
     // 'T_Node' satisfy the predicate 'p'. Returns true if no node of type 'T_Node' is
     // present. Traversal is performed in some arbitrary order and is terminated as soon as the
     // result can be determined.
-    template <typename T_Node> bool forall(std::function<bool(T_Node*)> p) {
+    template <typename T_Node>
+    bool forall(std::function<bool(T_Node*)> p) {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         return predicateImpl<T_Node, /* Default: */ true>(this, p);
     }
 
     // Same as above, but for 'const' nodes
-    template <typename T_Node> void forall(std::function<bool(const T_Node*)> p) const {
+    template <typename T_Node>
+    void forall(std::function<bool(const T_Node*)> p) const {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         return predicateImpl<const T_Node, /* Default: */ true>(this, p);
     }
@@ -2031,13 +2050,16 @@ public:
 #include "V3Ast__gen_impl.h"  // From ./astgen
 
 // Specializations of AstNode::mayBeUnder
-template <> inline bool AstNode::mayBeUnder<AstCell>(const AstNode* nodep) {
+template <>
+inline bool AstNode::mayBeUnder<AstCell>(const AstNode* nodep) {
     return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
 }
-template <> inline bool AstNode::mayBeUnder<AstNodeAssign>(const AstNode* nodep) {
+template <>
+inline bool AstNode::mayBeUnder<AstNodeAssign>(const AstNode* nodep) {
     return !VN_IS(nodep, NodeMath);
 }
-template <> inline bool AstNode::mayBeUnder<AstVarScope>(const AstNode* nodep) {
+template <>
+inline bool AstNode::mayBeUnder<AstVarScope>(const AstNode* nodep) {
     if (VN_IS(nodep, VarScope)) return false;  // Should not nest
     if (VN_IS(nodep, Var)) return false;
     if (VN_IS(nodep, Active)) return false;
@@ -2045,16 +2067,26 @@ template <> inline bool AstNode::mayBeUnder<AstVarScope>(const AstNode* nodep) {
     if (VN_IS(nodep, NodeMath)) return false;
     return true;
 }
-template <> inline bool AstNode::mayBeUnder<AstExecGraph>(const AstNode* nodep) {
+template <>
+inline bool AstNode::mayBeUnder<AstExecGraph>(const AstNode* nodep) {
     if (VN_IS(nodep, ExecGraph)) return false;  // Should not nest
     if (VN_IS(nodep, NodeStmt)) return false;  // Should be directly under CFunc
     return true;
 }
 
 // Specializations of AstNode::isLeaf
-template <> constexpr bool AstNode::isLeaf<AstNodeVarRef>() { return true; }
-template <> constexpr bool AstNode::isLeaf<AstVarRef>() { return true; }
-template <> constexpr bool AstNode::isLeaf<AstVarXRef>() { return true; }
+template <>
+constexpr bool AstNode::isLeaf<AstNodeVarRef>() {
+    return true;
+}
+template <>
+constexpr bool AstNode::isLeaf<AstVarRef>() {
+    return true;
+}
+template <>
+constexpr bool AstNode::isLeaf<AstVarXRef>() {
+    return true;
+}
 
 // foreach implementation
 template <typename T_Arg>
@@ -2238,7 +2270,7 @@ inline void VNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 //######################################################################
 
 // VNRef is std::reference_wrapper that can only hold AstNode subtypes
-template <typename T_Node>  //
+template <typename T_Node>
 class VNRef final : public std::reference_wrapper<T_Node> {
     static_assert(std::is_base_of<AstNode, T_Node>::value,
                   "Type parameter 'T_Node' must be a subtype of AstNode");
@@ -2264,13 +2296,13 @@ static_assert(sizeof(VNRef<AstNode>) == sizeof(std::reference_wrapper<AstNode>),
 size_t V3HasherUncachedHash(const AstNode&);
 
 // Specialization of std::hash for VNRef
-template <typename T_Node>  //
+template <typename T_Node>
 struct std::hash<VNRef<T_Node>> final {
     size_t operator()(VNRef<T_Node> r) const { return V3HasherUncachedHash(r); }
 };
 
 // Specialization of std::equal_to for VNRef
-template <typename T_Node>  //
+template <typename T_Node>
 struct std::equal_to<VNRef<T_Node>> final {
     size_t operator()(VNRef<T_Node> ra, VNRef<T_Node> rb) const {
         return ra.get().sameTree(&(rb.get()));

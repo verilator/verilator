@@ -17,9 +17,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3File.h"
 #include "V3Graph.h"
+
+#include "V3File.h"
+#include "V3Global.h"
 
 #include <map>
 #include <memory>
