@@ -7,6 +7,30 @@
                                                : ... In instance t
    45 |    Pkg::Wrap #(.P(16)) w16;
       |                 ^
+%Error-UNSUPPORTED: t/t_class_param_pkg.v:51:21: Unsupported: parameterized classes
+                                               : ... In instance t
+   51 |       if (Pkg::Cls#()::PBASE != 12) $stop;
+      |                     ^
+%Error-UNSUPPORTED: t/t_class_param_pkg.v:52:21: Unsupported: parameterized classes
+                                               : ... In instance t
+   52 |       if (Pkg::Cls#(4)::PBASE != 4) $stop;
+      |                     ^
+%Error-UNSUPPORTED: t/t_class_param_pkg.v:55:21: Unsupported: parameterized classes
+                                               : ... In instance t
+   55 |       if (Pkg::Cls#()::E_PBASE != 12) $stop;
+      |                     ^
+%Error-UNSUPPORTED: t/t_class_param_pkg.v:56:21: Unsupported: parameterized classes
+                                               : ... In instance t
+   56 |       if (Pkg::Cls#(4)::E_PBASE != 4) $stop;
+      |                     ^
+%Error-UNSUPPORTED: t/t_class_param_pkg.v:63:21: Unsupported: parameterized classes
+                                               : ... In instance t
+   63 |       if (Pkg::Cls#()::get_p() != 12) $stop;
+      |                     ^
+%Error-UNSUPPORTED: t/t_class_param_pkg.v:64:21: Unsupported: parameterized classes
+                                               : ... In instance t
+   64 |       if (Pkg::Cls#(4)::get_p() != 4) $stop;
+      |                     ^
 %Error-UNSUPPORTED: t/t_class_param_pkg.v:14:27: Unsupported: class parameters
                                                : ... In instance t
    14 |    class Wrap #(parameter P = 13);

@@ -7,6 +7,30 @@
                                            : ... In instance t
    42 |    Wrap #(.P(16)) w16;
       |            ^
+%Error-UNSUPPORTED: t/t_class_param.v:48:16: Unsupported: parameterized classes
+                                           : ... In instance t
+   48 |       if (Cls#()::PBASE != 12) $stop;
+      |                ^
+%Error-UNSUPPORTED: t/t_class_param.v:49:16: Unsupported: parameterized classes
+                                           : ... In instance t
+   49 |       if (Cls#(4)::PBASE != 4) $stop;
+      |                ^
+%Error-UNSUPPORTED: t/t_class_param.v:52:16: Unsupported: parameterized classes
+                                           : ... In instance t
+   52 |       if (Cls#()::E_PBASE != 12) $stop;
+      |                ^
+%Error-UNSUPPORTED: t/t_class_param.v:53:16: Unsupported: parameterized classes
+                                           : ... In instance t
+   53 |       if (Cls#(4)::E_PBASE != 4) $stop;
+      |                ^
+%Error-UNSUPPORTED: t/t_class_param.v:60:16: Unsupported: parameterized classes
+                                           : ... In instance t
+   60 |       if (Cls#()::get_p() != 12) $stop;
+      |                ^
+%Error-UNSUPPORTED: t/t_class_param.v:61:16: Unsupported: parameterized classes
+                                           : ... In instance t
+   61 |       if (Cls#(4)::get_p() != 4) $stop;
+      |                ^
 %Error-UNSUPPORTED: t/t_class_param.v:13:24: Unsupported: class parameters
                                            : ... In instance t
    13 | class Wrap #(parameter P = 13);

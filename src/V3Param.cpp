@@ -974,6 +974,14 @@ class ParamVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    virtual void visit(AstClassOrPackageRef* nodep) override {
+        if (nodep->paramsp()) {
+            nodep->paramsp()->v3warn(E_UNSUPPORTED, "Unsupported: parameterized classes");
+            pushDeletep(nodep->paramsp()->unlinkFrBackWithNext());
+        }
+        iterateChildren(nodep);
+    }
+
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) override {
         if (nodep->user5SetOnce()) return;  // Process once

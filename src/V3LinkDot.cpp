@@ -2533,13 +2533,23 @@ private:
         if (start) m_ds = lastStates;
     }
     virtual void visit(AstClassOrPackageRef* nodep) override {
-        UINFO(9, "   linkClassOrPackageRef " << m_ds.ascii() << "  n=" << nodep << endl);
-        if (m_ds.m_dotPos == DP_PACKAGE) {
-            // Already under dot, so this is {ClassOrPackage} Dot {ClassOrPackage}
-            // m_ds.m_dotText communicates the cell prefix between stages
-            m_ds.m_dotPos = DP_PACKAGE;
+        // Class: Recurse inside or cleanup not founds
+        // checkNoDot not appropriate, can be under a dot
+        AstNode::user5ClearTree();
+        UASSERT_OBJ(m_statep->forPrimary() || nodep->classOrPackagep(), nodep,
+                    "ClassRef has unlinked class");
+        UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
+                    "class reference parameter not removed by V3Param");
+        VL_RESTORER(m_ds);
+        VL_RESTORER(m_pinSymp);
+        {
+            // ClassRef's have pins, so track
+            if (nodep->classOrPackagep())
+                m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
+            m_ds.init(m_curSymp);
+            UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
+            iterateChildren(nodep);
         }
-        // TODO we don't iterate pins yet, as class parameters are not supported
     }
 
     virtual void visit(AstVarRef* nodep) override {
