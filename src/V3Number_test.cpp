@@ -18,7 +18,7 @@
 #define V3NUMBER_ASCII_BINARY
 #define V3ERROR_NO_GLOBAL_
 
-#include <config_build.h>
+#include "config_build.h"
 #include "verilatedos.h"
 
 #include "V3Error.cpp"

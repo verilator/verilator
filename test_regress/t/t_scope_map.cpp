@@ -9,10 +9,11 @@
 #include <verilated.h>
 #include <verilated_syms.h>
 #include <verilated_vcd_c.h>
-#include <map>
-#include <string>
 
 #include "Vt_scope_map.h"
+
+#include <map>
+#include <string>
 
 const unsigned long long dt_2 = 3;
 

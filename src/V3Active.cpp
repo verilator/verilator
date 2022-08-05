@@ -29,10 +29,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Active.h"
+
 #include "V3Ast.h"
 #include "V3Const.h"
+#include "V3Global.h"
 #include "V3Graph.h"
 
 #include <unordered_map>
@@ -240,14 +241,16 @@ private:
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // Specialized below for the special sensitivity classes
-    template <typename SenItemKind> AstActive*& getSpecialActive();
+    template <typename SenItemKind>
+    AstActive*& getSpecialActive();
 
 public:
     // METHODS
     AstScope* scopep() { return m_scopep; }
 
     // Return an AstActive sensitive to the given special sensitivity class
-    template <typename SenItemKind> AstActive* getSpecialActive(FileLine* fl) {
+    template <typename SenItemKind>
+    AstActive* getSpecialActive(FileLine* fl) {
         AstActive*& cachep = getSpecialActive<SenItemKind>();
         if (!cachep) {
             AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
@@ -281,10 +284,22 @@ public:
     void main(AstScope* nodep) { iterate(nodep); }
 };
 
-template <> AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Static>() { return m_sActivep; }
-template <> AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Initial>() { return m_iActivep; }
-template <> AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Final>() { return m_fActivep; }
-template <> AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Combo>() { return m_cActivep; }
+template <>
+AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Static>() {
+    return m_sActivep;
+}
+template <>
+AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Initial>() {
+    return m_iActivep;
+}
+template <>
+AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Final>() {
+    return m_fActivep;
+}
+template <>
+AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Combo>() {
+    return m_cActivep;
+}
 
 //######################################################################
 // Latch checking visitor
@@ -417,7 +432,8 @@ private:
     bool m_canBeComb = false;  // Whether current clocked process can be turned into a comb process
 
     // METHODS
-    template <typename T> void moveUnderSpecial(AstNode* nodep) {
+    template <typename T>
+    void moveUnderSpecial(AstNode* nodep) {
         AstActive* const wantactivep = m_namer.getSpecialActive<T>(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);

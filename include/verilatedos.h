@@ -534,7 +534,8 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 
 namespace vlstd {
 
-template <typename T> struct reverse_wrapper {
+template <typename T>
+struct reverse_wrapper {
     const T& m_v;
 
     explicit reverse_wrapper(const T& a_v)
@@ -544,10 +545,16 @@ template <typename T> struct reverse_wrapper {
 };
 
 // C++20's std::ranges::reverse_view
-template <typename T> reverse_wrapper<T> reverse_view(const T& v) { return reverse_wrapper<T>(v); }
+template <typename T>
+reverse_wrapper<T> reverse_view(const T& v) {
+    return reverse_wrapper<T>(v);
+}
 
 // C++17's std::as_const
-template <class T> T const& as_const(T& v) { return v; }
+template <class T>
+T const& as_const(T& v) {
+    return v;
+}
 };  // namespace vlstd
 
 //=========================================================================

@@ -9,18 +9,18 @@
 //
 //*************************************************************************
 
-#include "Vt_vpi_time_cb.h"
 #include "verilated.h"
+#include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
+
+#include "Vt_vpi_time_cb.h"
+#include "Vt_vpi_time_cb__Dpi.h"
 #include "svdpi.h"
 
-#include "Vt_vpi_time_cb__Dpi.h"
-
-#include "verilated_vpi.h"
-#include "verilated_vcd_c.h"
-
-#include "TestCheck.h"
-
 #include <iostream>
+
+// These require the above. Comment prevents clang-format moving them
+#include "TestCheck.h"
 
 //======================================================================
 

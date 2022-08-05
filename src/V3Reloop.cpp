@@ -32,10 +32,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Reloop.h"
-#include "V3Stats.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
+#include "V3Stats.h"
 
 #include <algorithm>
 

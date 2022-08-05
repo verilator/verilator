@@ -38,11 +38,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Sched.h"
+
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
 #include "V3Order.h"
-#include "V3Sched.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 

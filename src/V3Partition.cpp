@@ -17,14 +17,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3EmitCBase.h"
+#include "V3Partition.h"
+
 #include "V3Config.h"
-#include "V3Os.h"
+#include "V3EmitCBase.h"
 #include "V3File.h"
 #include "V3GraphAlg.h"
 #include "V3GraphStream.h"
 #include "V3InstrCount.h"
-#include "V3Partition.h"
+#include "V3Os.h"
 #include "V3PartitionGraph.h"
 #include "V3Scoreboard.h"
 #include "V3Stats.h"
@@ -160,7 +161,8 @@ static void partCheckCachedScoreVsActual(uint32_t cached, uint32_t actual) {
 //  * Client calls PartPropagateCp::go(). Internally, this iteratively
 //    propagates the new CPs wayward through the graph.
 //
-template <class T_CostAccessor> class PartPropagateCp : GraphAlg<> {
+template <class T_CostAccessor>
+class PartPropagateCp final : GraphAlg<> {
 private:
     // MEMBERS
     const GraphWay m_way;  // CPs oriented in this direction: either FORWARD

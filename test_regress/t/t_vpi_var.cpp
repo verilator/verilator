@@ -15,25 +15,26 @@
 
 #else
 
-#include "Vt_vpi_var.h"
 #include "verilated.h"
-#include "svdpi.h"
-
-#include "Vt_vpi_var__Dpi.h"
-
-#include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
+
+#include "Vt_vpi_var.h"
+#include "Vt_vpi_var__Dpi.h"
+#include "svdpi.h"
 
 #endif
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
+int errors = 0;
 // __FILE__ is too long
 #define FILENM "t_vpi_var.cpp"
 

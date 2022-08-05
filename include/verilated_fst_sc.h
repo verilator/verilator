@@ -23,8 +23,9 @@
 #define _VERILATED_FST_SC_H_ 1
 
 #include "verilatedos.h"
-#include "verilated_sc.h"
+
 #include "verilated_fst_c.h"
+#include "verilated_sc.h"
 
 #include <string>
 

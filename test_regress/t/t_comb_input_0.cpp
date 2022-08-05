@@ -9,11 +9,12 @@
 //
 //*************************************************************************
 
-#include <memory>
-
 #include "verilated.h"
+
 #include "Vt_comb_input_0.h"
 #include "Vt_comb_input_0__Syms.h"
+
+#include <memory>
 
 int main(int argc, char** argv, char** env) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};

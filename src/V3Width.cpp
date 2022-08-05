@@ -66,10 +66,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Width.h"
-#include "V3Number.h"
+
 #include "V3Const.h"
+#include "V3Global.h"
+#include "V3Number.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"

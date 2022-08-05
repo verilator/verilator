@@ -72,18 +72,19 @@
 //       Used for b) and c).
 //       This options is repeated for all instantiating hierarchical blocks.
 
-#include <memory>
-#include <sstream>
-#include <utility>
-#include <vector>
+#include "V3HierBlock.h"
 
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3File.h"
-#include "V3HierBlock.h"
 #include "V3Os.h"
-#include "V3String.h"
 #include "V3Stats.h"
+#include "V3String.h"
+
+#include <memory>
+#include <sstream>
+#include <utility>
+#include <vector>
 
 static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
     return v3Global.opt.makeDir() + "/" + prefix

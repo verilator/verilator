@@ -26,17 +26,18 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3LinkCells.h"
-#include "V3SymTable.h"
-#include "V3Parse.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 #include "V3Graph.h"
+#include "V3Parse.h"
+#include "V3SymTable.h"
 
 #include <algorithm>
 #include <map>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 //######################################################################
 // Graph subclasses

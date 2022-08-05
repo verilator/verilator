@@ -17,6 +17,7 @@
 //=============================================================================
 
 #include "verilatedos.h"
+
 #include "verilated_profiler.h"
 
 #if VL_THREADED
@@ -60,7 +61,8 @@ uint16_t VlExecutionRecord::getcpu() {
 //=============================================================================
 // VlExecutionProfiler implementation
 
-template <size_t N> static size_t roundUptoMultipleOf(size_t value) {
+template <size_t N>
+static size_t roundUptoMultipleOf(size_t value) {
     static_assert((N & (N - 1)) == 0, "'N' must be a power of 2");
     size_t mask = N - 1;
     return (value + mask) & ~mask;

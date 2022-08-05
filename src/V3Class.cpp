@@ -23,9 +23,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Class.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 
 //######################################################################
 

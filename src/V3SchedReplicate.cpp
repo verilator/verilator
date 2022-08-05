@@ -39,8 +39,8 @@
 
 #include "V3Ast.h"
 #include "V3Error.h"
-#include "V3Sched.h"
 #include "V3Graph.h"
+#include "V3Sched.h"
 
 #include <vector>
 

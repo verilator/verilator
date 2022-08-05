@@ -30,9 +30,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Clock.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 #include "V3Sched.h"
 
 #include <algorithm>

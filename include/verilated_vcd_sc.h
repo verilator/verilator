@@ -23,6 +23,7 @@
 #define VERILATOR_VERILATED_VCD_SC_H_
 
 #include "verilatedos.h"
+
 #include "verilated_sc.h"
 #include "verilated_vcd_c.h"
 

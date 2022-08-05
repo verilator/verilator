@@ -47,16 +47,17 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Param.h"
+
 #include "V3Ast.h"
 #include "V3Case.h"
 #include "V3Const.h"
+#include "V3Global.h"
+#include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
-#include "V3Width.h"
 #include "V3Unroll.h"
-#include "V3Hasher.h"
+#include "V3Width.h"
 
 #include <cctype>
 #include <deque>

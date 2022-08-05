@@ -26,11 +26,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3Const.h"
 #include "V3Task.h"
+
 #include "V3Ast.h"
+#include "V3Const.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
 

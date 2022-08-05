@@ -6,9 +6,11 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 
-#include <memory>
 #include "verilated.h"
+
 #include "Vt_gantt_two.h"
+
+#include <memory>
 
 int main(int argc, char** argv, char** env) {
     srand48(5);

@@ -75,7 +75,8 @@ const bool VERBOSE_MESSAGE = false;
         abort(); \
     } while (0)
 
-template <typename T> bool compare(const T& act, const T& exp) {
+template <typename T>
+bool compare(const T& act, const T& exp) {
     if (exp == act) {
         if (VERBOSE_MESSAGE) std::cout << "OK Exp:" << exp << " actual:" << act << std::endl;
         return true;
@@ -115,15 +116,21 @@ bool compare(const svBitVecVal* v0, sv_longint_unsigned_t val, int bitwidth) {
     return true;
 }
 
-template <typename T> bool check_0d(T v) { return compare<T>(v, 42); }
-template <typename T> bool check_1d(const T* v) {
+template <typename T>
+bool check_0d(T v) {
+    return compare<T>(v, 42);
+}
+template <typename T>
+bool check_1d(const T* v) {
     return compare<T>(v[0], 43) && compare<T>(v[1], 44);
 }
-template <typename T> bool check_2d(const T* v) {
+template <typename T>
+bool check_2d(const T* v) {
     return compare<T>(v[0 * 2 + 1], 45) && compare<T>(v[1 * 2 + 1], 46)
            && compare<T>(v[2 * 2 + 1], 47);
 }
-template <typename T> bool check_3d(const T* v) {
+template <typename T>
+bool check_3d(const T* v) {
     return compare<T>(v[(0 * 3 + 0) * 2 + 0], 48) && compare<T>(v[(1 * 3 + 0) * 2 + 0], 49)
            && compare<T>(v[(2 * 3 + 0) * 2 + 0], 50) && compare<T>(v[(3 * 3 + 0) * 2 + 0], 51);
 }
@@ -181,7 +188,8 @@ bool check_3d(const char** v) {
            && compare<std::string>(v[(3 * 3 + 0) * 2 + 0], "51");
 }
 
-template <typename T> void set_values(T (&v)[4][3][2]) {
+template <typename T>
+void set_values(T (&v)[4][3][2]) {
     for (int i = 0; i < 4; ++i)
         for (int j = 0; j < 3; ++j)
             for (int k = 0; k < 2; ++k) v[i][j][k] = 0;
@@ -215,7 +223,8 @@ void set_uint(svBitVecVal* v0, sv_longint_unsigned_t val, int bitwidth) {
     }
 }
 
-template <size_t N> void set_values(svLogicVecVal (&v)[4][3][2][N], int bitwidth) {
+template <size_t N>
+void set_values(svLogicVecVal (&v)[4][3][2][N], int bitwidth) {
     for (int i = 0; i < 4; ++i)
         for (int j = 0; j < 3; ++j)
             for (int k = 0; k < 2; ++k) set_uint(v[i][j][k], 0, bitwidth);
@@ -234,7 +243,8 @@ template <size_t N> void set_values(svLogicVecVal (&v)[4][3][2][N], int bitwidth
     set_uint(v[3][0][0], 51, bitwidth);
 }
 
-template <size_t N> void set_values(svBitVecVal (&v)[4][3][2][N], int bitwidth) {
+template <size_t N>
+void set_values(svBitVecVal (&v)[4][3][2][N], int bitwidth) {
     for (int i = 0; i < 4; ++i)
         for (int j = 0; j < 3; ++j)
             for (int k = 0; k < 2; ++k) set_uint(v[i][j][k], 0, bitwidth);

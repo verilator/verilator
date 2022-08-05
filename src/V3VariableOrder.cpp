@@ -23,11 +23,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3VariableOrder.h"
+
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3TSP.h"
 
 #include <algorithm>

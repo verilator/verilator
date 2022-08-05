@@ -17,9 +17,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Config.h"
+
 #include "V3Global.h"
 #include "V3String.h"
-#include "V3Config.h"
 
 #include <map>
 #include <set>
@@ -33,7 +34,8 @@
 // as wildcards and are accessed by a resolved name. It rebuilds a name lookup
 // cache of resolved entities. Entities stored in this container need an update
 // function that takes a reference of this type to join multiple entities into one.
-template <typename T> class V3ConfigWildcardResolver {
+template <typename T>
+class V3ConfigWildcardResolver final {
     using Map = std::map<const std::string, T>;
 
     Map m_mapWildcard;  // Wildcard strings to entities

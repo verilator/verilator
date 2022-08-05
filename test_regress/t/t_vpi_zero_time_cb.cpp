@@ -15,23 +15,24 @@
 
 #else
 
-#include "Vt_vpi_zero_time_cb.h"
 #include "verilated.h"
-#include "svdpi.h"
-#include <dlfcn.h>
-
-#include "Vt_vpi_zero_time_cb__Dpi.h"
-
-#include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
+
+#include "Vt_vpi_zero_time_cb.h"
+#include "Vt_vpi_zero_time_cb__Dpi.h"
+#include "svdpi.h"
+
+#include <dlfcn.h>
 
 #endif
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"

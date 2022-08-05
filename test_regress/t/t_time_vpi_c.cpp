@@ -9,9 +9,12 @@
 //
 //*************************************************************************
 
-#include <cstdio>
 #include "svdpi.h"
 #include "vpi_user.h"
+
+#include <cstdio>
+
+// These require the above. Comment prevents clang-format moving them
 #include "TestVpi.h"
 
 //======================================================================

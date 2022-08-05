@@ -4,10 +4,11 @@
 // any use, without warranty, 2021 by Geza Lore.
 // SPDX-License-Identifier: CC0-1.0
 
-#include <memory>
-
 #include "verilatedos.h"
+
 #include "verilated.h"
+
+#include <memory>
 #if VM_TRACE
 #include "verilated_vcd_c.h"
 #endif

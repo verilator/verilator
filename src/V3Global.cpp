@@ -18,6 +18,7 @@
 #include "verilatedos.h"
 
 #include "V3Global.h"
+
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3HierBlock.h"

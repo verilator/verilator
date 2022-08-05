@@ -22,8 +22,10 @@
 //=============================================================================
 
 #include "verilatedos.h"
-#include "verilated.h"
+
 #include "verilated_cov.h"
+
+#include "verilated.h"
 #include "verilated_cov_key.h"
 
 #include <deque>
@@ -69,7 +71,8 @@ public:  // But only local to this file
 // This isn't in the header file for auto-magic conversion because it
 // inlines to too much code and makes compilation too slow.
 
-template <class T> class VerilatedCoverItemSpec final : public VerilatedCovImpItem {
+template <class T>
+class VerilatedCoverItemSpec final : public VerilatedCovImpItem {
 private:
     // MEMBERS
     T* m_countp;  // Count value

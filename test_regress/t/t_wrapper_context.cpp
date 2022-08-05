@@ -6,11 +6,13 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 
+#include <verilated.h>
+#include <verilated_cov.h>
+
 #include <iostream>
 #include <thread>
 
-#include <verilated.h>
-#include <verilated_cov.h>
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
 #include VM_PREFIX_INCLUDE

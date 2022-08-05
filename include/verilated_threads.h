@@ -24,6 +24,7 @@
 #define VERILATOR_VERILATED_THREADS_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
 #ifndef VL_THREADED
@@ -169,7 +170,7 @@ public:
     ~VlWorkerThread();
 
     // METHODS
-    template <bool SpinWait>  //
+    template <bool SpinWait>
     inline void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Spin for a while, waiting for new data
         if VL_CONSTEXPR_CXX17 (SpinWait) {

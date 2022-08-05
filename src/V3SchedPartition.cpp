@@ -38,11 +38,11 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3EmitV.h"
 #include "V3Error.h"
 #include "V3Global.h"
-#include "V3Sched.h"
 #include "V3Graph.h"
-#include "V3EmitV.h"
+#include "V3Sched.h"
 
 #include <tuple>
 #include <unordered_map>

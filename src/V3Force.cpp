@@ -40,11 +40,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
-#include "V3Global.h"
 #include "V3Force.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3Error.h"
+#include "V3Global.h"
 
 //######################################################################
 // Convert force/release statements and signals marked 'forceable'

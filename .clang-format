@@ -17,7 +17,7 @@ AllowShortLoopsOnASingleLine: true
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: false
+AlwaysBreakTemplateDeclarations: true
 BinPackArguments: true
 BinPackParameters: true
 BraceWrapping:
@@ -59,15 +59,27 @@ ForEachMacros:
   - foreach
   - Q_FOREACH
   - BOOST_FOREACH
-IncludeBlocks:   Preserve
+
+# Include grouping/sorting
+SortIncludes:    true
+IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
-    Priority:        2
-  - Regex:           '^(<|"(gtest|gmock|isl|json)/)'
-    Priority:        3
-  - Regex:           '.*'
-    Priority:        1
-IncludeIsMainRegex: '(Test)?$'
+  - Regex:           '"(config_build|verilated_config|verilatedos)\.h"'
+    Priority:        -1 # Sepecials before main header
+  - Regex:           '(<|")verilated.*'
+    Priority:        1 # Runtime headers
+  - Regex:           '"V3.*__gen.*\.h"'
+    Priority:        3 # Generated internal headers separately
+  - Regex:           '"V3.*"'
+    Priority:        2 # Internal header
+  - Regex:           '".*"'
+    Priority:        4 # Other non-system headers
+  - Regex:           '<[[:alnum:]_.]+>'
+    Priority:        5 # Simple system headers next
+  - Regex:           '<.*>'
+    Priority:        6 # Other system headers next
+IncludeIsMainRegex: '$'
+
 IndentCaseLabels: false
 IndentPPDirectives: None
 IndentWidth:     4
@@ -91,7 +103,6 @@ PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 60
 PointerAlignment: Left
 ReflowComments:  true
-SortIncludes:    false
 SortUsingDeclarations: true
 SpaceAfterCStyleCast: false
 SpaceAfterTemplateKeyword: true

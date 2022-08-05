@@ -9,11 +9,11 @@
 //
 //*************************************************************************
 
+#include "svdpi.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
-#include "svdpi.h"
 
 // clang-format off
 #if defined(VERILATOR)  // Verilator

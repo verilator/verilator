@@ -39,11 +39,11 @@
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3Global.h"
-#include "V3SenTree.h"
+#include "V3Graph.h"
 #include "V3Sched.h"
+#include "V3SenTree.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
-#include "V3Graph.h"
 
 #include <tuple>
 #include <unordered_map>

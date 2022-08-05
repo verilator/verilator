@@ -23,6 +23,7 @@
 #define VERILATOR_VERILATED_PROFILER_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"
 
 #include <array>
@@ -192,7 +193,8 @@ public:
 //=============================================================================
 // VlPgoProfiler is for collecting profiling data for PGO
 
-template <std::size_t T_Entries> class VlPgoProfiler final {
+template <std::size_t T_Entries>
+class VlPgoProfiler final {
     // TYPES
     struct Record final {
         const std::string m_name;  // Hashed name of mtask/etc

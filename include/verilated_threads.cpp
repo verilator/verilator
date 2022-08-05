@@ -22,6 +22,7 @@
 //=============================================================================
 
 #include "verilatedos.h"
+
 #include "verilated_threads.h"
 
 #include <cstdio>

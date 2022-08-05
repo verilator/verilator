@@ -9,9 +9,10 @@
 //
 //*************************************************************************
 
-#include <cstdio>
 #include "svdpi.h"
 #include "vpi_user.h"
+
+#include <cstdio>
 //#include "verilated.h"
 
 #include "Vt_vpi_release_dup_bad__Dpi.h"
