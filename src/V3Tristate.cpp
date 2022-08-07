@@ -385,7 +385,15 @@ class TristateVisitor final : public TristateBaseVisitor {
         return newp;
     }
     AstNode* getEnp(AstNode* nodep) {
-        if (!nodep->user1p()) {
+        if (nodep->user1p()) {
+            if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                if (refp->varp()->isIO()) {
+                    // When reading a tri-state port, we can always use the value
+                    // because such port will have resolution logic in upper module.
+                    return newAllZerosOrOnes(nodep, true);
+                }
+            }
+        } else {
             // There's no select being built yet, so add what will become a
             // constant output enable driver of all 1's
             nodep->user1p(newAllZerosOrOnes(nodep, true));
