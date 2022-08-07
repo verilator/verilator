@@ -209,6 +209,12 @@ struct VlWide final {
     // Default copy assignment operators are used.
     operator WDataOutP() { return &m_storage[0]; }  // This also allows []
     operator WDataInP() const { return &m_storage[0]; }  // This also allows []
+    bool operator!=(const VlWide<T_Words>& that) const {
+        for (size_t i = 0; i < T_Words; ++i) {
+            if (m_storage[i] != that.m_storage[i]) return true;
+        }
+        return false;
+    }
 
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
@@ -974,7 +980,7 @@ struct VlUnpacked final {
 private:
     template <typename T_Val, std::size_t T_Dep>
     static bool neq(const VlUnpacked<T_Val, T_Dep>& a, const VlUnpacked<T_Val, T_Dep>& b) {
-        for (int i = 0; i < T_Dep; ++i) {
+        for (size_t i = 0; i < T_Dep; ++i) {
             // Recursive 'neq', in case T_Val is also a VlUnpacked<_, _>
             if (neq(a.m_storage[i], b.m_storage[i])) return true;
         }
