@@ -208,6 +208,7 @@ private:
     // TYPES
     using TableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
     using PatVecMap = std::map<int, AstPatMember*>;
+    using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state
@@ -3559,11 +3560,9 @@ private:
         // which member each AstPatMember corresponds to before we can
         // determine the dtypep for that PatMember's value, and then
         // width the initial value appropriately.
-        using PatMap = std::map<const AstMemberDType*, AstPatMember*>;  // Store member: value
-        using DTypeMap
-            = std::map<const std::string, AstPatMember*>;  // Store data_type: default_value
-        PatMap patmap;
-        DTypeMap dtypemap;
+        using PatMap = std::map<const AstMemberDType*, AstPatMember*>;
+        PatMap patmap;  // Store member: value
+        DTypeMap dtypemap;  // Store data_type: default_value
         {
             const AstMemberDType* memp = vdtypep->membersp();
             AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember);
@@ -3629,7 +3628,7 @@ private:
             AstPatMember* patp = nullptr;
             if (it == patmap.end()) {
                 // default or deafult_type assignment
-                if (AstNodeUOrStructDType* memp_nested_vdtypep
+                if (AstNodeUOrStructDType* const memp_nested_vdtypep
                     = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
                     newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp, newp,
                                                               nodep, dtypemap);
@@ -3652,14 +3651,13 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
 
-    AstNode*
-    nestedvalueConcat_patternUOrStruct(AstNodeUOrStructDType* memp_vdtypep, AstPatMember* defaultp,
-                                       AstNode* newp, AstPattern* nodep,
-                                       std::map<const std::string, AstPatMember*> dtypemap) {
+    AstNode* nestedvalueConcat_patternUOrStruct(AstNodeUOrStructDType* memp_vdtypep,
+                                                AstPatMember* defaultp, AstNode* newp,
+                                                AstPattern* nodep, DTypeMap dtypemap) {
         AstPatMember* patp = nullptr;
         for (AstMemberDType* memp_nested = memp_vdtypep->membersp(); memp_nested;
              memp_nested = VN_AS(memp_nested->nextp(), MemberDType)) {
-            if (AstNodeUOrStructDType* memp_multinested_vdtypep
+            if (AstNodeUOrStructDType* const memp_multinested_vdtypep
                 = VN_CAST(memp_nested->virtRefDTypep(), NodeUOrStructDType)) {
                 newp = nestedvalueConcat_patternUOrStruct(memp_multinested_vdtypep, defaultp, newp,
                                                           nodep, dtypemap);
@@ -3672,10 +3670,10 @@ private:
         return newp;
     }
 
-    AstPatMember*
-    Defaultpatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp, AstPatMember* patp,
-                                 AstNodeUOrStructDType* memp_vdtypep, AstPatMember* defaultp,
-                                 std::map<const std::string, AstPatMember*> dtypemap) {
+    AstPatMember* Defaultpatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp,
+                                               AstPatMember* patp,
+                                               AstNodeUOrStructDType* memp_vdtypep,
+                                               AstPatMember* defaultp, DTypeMap dtypemap) {
         const string memp_DType = memp->virtRefDTypep()->prettyDTypeName();
         const auto it = dtypemap.find(memp_DType);
         if (it != dtypemap.end()) {
@@ -3687,8 +3685,8 @@ private:
         } else {
             if (!VN_IS(memp_vdtypep, UnionDType)) {
                 nodep->v3error("Assignment pattern missed initializing elements: "
-                               << memp->virtRefDTypep()->prettyDTypeName() << " "
-                               << memp->prettyName());
+                               << memp->virtRefDTypep()->prettyDTypeNameQ() << " "
+                               << memp->prettyNameQ());
             }
         }
         return patp;
@@ -3702,7 +3700,7 @@ private:
             if (!newp) {
                 newp = valuep;
             } else {
-                AstConcat* const concatp = new AstConcat(patp->fileline(), newp, valuep);
+                AstConcat* const concatp = new AstConcat{patp->fileline(), newp, valuep};
                 newp = concatp;
                 newp->dtypeSetLogicSized(concatp->lhsp()->width() + concatp->rhsp()->width(),
                                          nodep->dtypep()->numeric());
