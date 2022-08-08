@@ -696,9 +696,9 @@ class ParamProcessor final {
         }
     }
 
-    void cellInterfaceCleanup(AstCell* nodep, AstNodeModule* srcModp, string& longnamer,
+    void cellInterfaceCleanup(AstPin* pinsp, AstNodeModule* srcModp, string& longnamer,
                               bool& any_overridesr, IfaceRefRefs& ifaceRefRefs) {
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = pinsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             const AstVar* const modvarp = pinp->modVarp();
             if (modvarp->isIfaceRef()) {
                 AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
@@ -758,8 +758,62 @@ class ParamProcessor final {
         }
     }
 
+    bool nodeDeparamCommon(AstNode* nodep, AstNodeModule*& srcModp, AstPin* paramsp, AstPin* pinsp,
+                           bool any_overrides) {
+        // Make sure constification worked
+        // Must be a separate loop, as constant conversion may have changed some pointers.
+        // if (debug()) nodep->dumpTree(cout, "-cel2: ");
+        string longname = srcModp->name() + "_";
+        if (debug() > 8 && paramsp) paramsp->dumpTreeAndNext(cout, "-cellparams: ");
+
+        if (srcModp->hierBlock()) {
+            longname = parameterizedHierBlockName(srcModp, paramsp);
+            any_overrides = longname != srcModp->name();
+        } else {
+            for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                cellPinCleanup(nodep, pinp, srcModp, longname /*ref*/, any_overrides /*ref*/);
+            }
+        }
+        IfaceRefRefs ifaceRefRefs;
+        cellInterfaceCleanup(pinsp, srcModp, longname /*ref*/, any_overrides /*ref*/,
+                             ifaceRefRefs /*ref*/);
+
+        if (!any_overrides) {
+            UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
+        } else if (AstNodeModule* const paramedModp
+                   = m_hierBlocks.findByParams(srcModp->name(), paramsp, m_modp)) {
+            paramedModp->dead(false);
+            // We need to relink the pins to the new module
+            relinkPinsByName(pinsp, paramedModp);
+            srcModp = paramedModp;
+        } else {
+            const string newname
+                = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
+            const ModInfo* const modInfop
+                = moduleFindOrClone(srcModp, nodep, paramsp, newname, ifaceRefRefs);
+            // We need to relink the pins to the new module
+            relinkPinsByName(pinsp, modInfop->m_modp);
+            UINFO(8, "     Done with " << modInfop->m_modp << endl);
+            srcModp = modInfop->m_modp;
+        }
+
+        // Delete the parameters from the cell; they're not relevant any longer.
+        if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
+        return any_overrides;
+    }
+
+    void cellDeparam(AstCell* nodep, AstNodeModule*& srcModp) {
+        // Must always clone __Vrcm (recursive modules)
+        if (nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nodep->pinsp(), nodep->recursive())) {
+            nodep->modp(srcModp);
+            nodep->modName(srcModp->name());
+        }
+        nodep->recursive(false);
+    }
+
 public:
-    void cellDeparam(AstCell* nodep, AstNodeModule* modp, const string& someInstanceName) {
+    void nodeDeparam(AstNode* nodep, AstNodeModule*& srcModp, AstNodeModule* modp,
+                     const string& someInstanceName) {
         m_modp = modp;
         // Cell: Check for parameters in the instantiation.
         // We always run this, even if no parameters, as need to look for interfaces,
@@ -769,57 +823,14 @@ public:
         if (debug() >= 10) nodep->dumpTree(cout, "-cell: ");
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
-        AstNodeModule* const srcModp = nodep->modp();
         srcModp->someInstanceName(someInstanceName + "." + nodep->name());
 
-        // Make sure constification worked
-        // Must be a separate loop, as constant conversion may have changed some pointers.
-        // if (debug()) nodep->dumpTree(cout, "-cel2: ");
-        string longname = srcModp->name() + "_";
-        bool any_overrides = false;
-        // Must always clone __Vrcm (recursive modules)
-        if (nodep->recursive()) any_overrides = true;
-        if (debug() > 8 && nodep->paramsp())
-            nodep->paramsp()->dumpTreeAndNext(cout, "-cellparams: ");
-
-        if (srcModp->hierBlock()) {
-            longname = parameterizedHierBlockName(srcModp, nodep->paramsp());
-            any_overrides = longname != srcModp->name();
+        if (auto* cellp = VN_CAST(nodep, Cell)) {
+            cellDeparam(cellp, srcModp);
         } else {
-            for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                cellPinCleanup(nodep, pinp, srcModp, longname /*ref*/, any_overrides /*ref*/);
-            }
-        }
-        IfaceRefRefs ifaceRefRefs;
-        cellInterfaceCleanup(nodep, srcModp, longname /*ref*/, any_overrides /*ref*/,
-                             ifaceRefRefs /*ref*/);
-
-        if (!any_overrides) {
-            UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
-        } else if (AstNodeModule* const paramedModp
-                   = m_hierBlocks.findByParams(srcModp->name(), nodep->paramsp(), m_modp)) {
-            nodep->modp(paramedModp);
-            nodep->modName(paramedModp->name());
-            paramedModp->dead(false);
-            // We need to relink the pins to the new module
-            relinkPinsByName(nodep->pinsp(), paramedModp);
-        } else {
-            const string newname
-                = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
-            const ModInfo* const modInfop
-                = moduleFindOrClone(srcModp, nodep, nodep->paramsp(), newname, ifaceRefRefs);
-            // Have child use this module instead.
-            nodep->modp(modInfop->m_modp);
-            nodep->modName(newname);
-            // We need to relink the pins to the new module
-            relinkPinsByName(nodep->pinsp(), modInfop->m_modp);
-            UINFO(8, "     Done with " << modInfop->m_modp << endl);
+            nodep->v3fatalSrc("Expected module parametrization");
         }
 
-        nodep->recursive(false);
-
-        // Delete the parameters from the cell; they're not relevant any longer.
-        if (nodep->paramsp()) nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
         UINFO(8, "     Done with " << nodep << endl);
         // if (debug() >= 10)
         // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param-out.tree"));
@@ -851,7 +862,7 @@ class ParamVisitor final : public VNVisitor {
     bool m_iterateModule = false;  // Iterating module body
     string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
-    std::deque<AstCell*> m_cellps;  // Cells left to process (in current module)
+    std::deque<AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
 
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
@@ -886,8 +897,14 @@ class ParamVisitor final : public VNVisitor {
             // Process interface cells, then non-interface cells, which may reference an interface
             // cell.
             for (bool doInterface : {true, false}) {
-                for (AstCell* const cellp : m_cellps) {
-                    if (doInterface != VN_IS(cellp->modp(), Iface)) continue;
+                for (AstNode* const cellp : m_cellps) {
+                    AstNodeModule* srcModp = nullptr;
+                    if (const auto* modCellp = VN_CAST(cellp, Cell)) {
+                        srcModp = modCellp->modp();
+                    } else {
+                        cellp->v3fatalSrc("Expected module parametrization");
+                    }
+                    if (doInterface != VN_IS(srcModp, Iface)) continue;
 
                     // Visit parameters in the instantiation.
                     iterateChildren(cellp);
@@ -901,13 +918,13 @@ class ParamVisitor final : public VNVisitor {
                     }
 
                     // Apply parameter specialization
-                    m_processor.cellDeparam(cellp, modp, someInstanceName);
+                    m_processor.nodeDeparam(cellp, srcModp /* ref */, modp, someInstanceName);
 
                     // Add the (now potentially specialized) child module to the work queue
-                    workQueue.emplace(cellp->modp()->level(), cellp->modp());
+                    workQueue.emplace(srcModp->level(), srcModp);
 
                     // Add to the hierarchy registry
-                    m_parentps[cellp->modp()].insert(modp);
+                    m_parentps[srcModp].insert(modp);
                 }
             }
             m_cellps.clear();
