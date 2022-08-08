@@ -811,6 +811,16 @@ class ParamProcessor final {
         nodep->recursive(false);
     }
 
+    void classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule*& srcModp) {
+        if (nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false))
+            nodep->classOrPackagep(srcModp);
+    }
+
+    void classRefDeparam(AstClassRefDType* nodep, AstNodeModule*& srcModp) {
+        if (nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false))
+            nodep->classp(VN_AS(srcModp, Class));
+    }
+
 public:
     void nodeDeparam(AstNode* nodep, AstNodeModule*& srcModp, AstNodeModule* modp,
                      const string& someInstanceName) {
@@ -827,6 +837,10 @@ public:
 
         if (auto* cellp = VN_CAST(nodep, Cell)) {
             cellDeparam(cellp, srcModp);
+        } else if (auto* classRefp = VN_CAST(nodep, ClassRefDType)) {
+            classRefDeparam(classRefp, srcModp);
+        } else if (auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
+            classRefDeparam(classRefp, srcModp);
         } else {
             nodep->v3fatalSrc("Expected module parametrization");
         }
@@ -901,6 +915,10 @@ class ParamVisitor final : public VNVisitor {
                     AstNodeModule* srcModp = nullptr;
                     if (const auto* modCellp = VN_CAST(cellp, Cell)) {
                         srcModp = modCellp->modp();
+                    } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
+                        srcModp = classRefp->classOrPackagep();
+                    } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
+                        srcModp = classRefp->classp();
                     } else {
                         cellp->v3fatalSrc("Expected module parametrization");
                     }
@@ -951,17 +969,6 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
         if (nodep->dead()) return;  // Marked by LinkDot (and above)
 
-        // Warn on unsupported parametrised class
-        if (VN_IS(nodep, Class)) {
-            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-                    if (varp->isParam()) {
-                        varp->v3warn(E_UNSUPPORTED, "Unsupported: class parameters");
-                    }
-                }
-            }
-        }
-
         if (m_iterateModule) {  // Iterating body
             UINFO(4, " MOD-under-MOD.  " << nodep << endl);
             m_workQueue.emplace(nodep->level(), nodep);  // Delay until current module is done
@@ -984,19 +991,15 @@ class ParamVisitor final : public VNVisitor {
     }
 
     virtual void visit(AstClassRefDType* nodep) override {
-        if (nodep->paramsp()) {
-            nodep->paramsp()->v3warn(E_UNSUPPORTED, "Unsupported: parameterized classes");
-            pushDeletep(nodep->paramsp()->unlinkFrBackWithNext());
-        }
-        iterateChildren(nodep);
+        string* const genHierNamep = new string(m_generateHierName);
+        nodep->user5p(genHierNamep);
+        m_cellps.push_back(nodep);
     }
 
     virtual void visit(AstClassOrPackageRef* nodep) override {
-        if (nodep->paramsp()) {
-            nodep->paramsp()->v3warn(E_UNSUPPORTED, "Unsupported: parameterized classes");
-            pushDeletep(nodep->paramsp()->unlinkFrBackWithNext());
-        }
-        iterateChildren(nodep);
+        string* const genHierNamep = new string(m_generateHierName);
+        nodep->user5p(genHierNamep);
+        m_cellps.push_back(nodep);
     }
 
     // Make sure all parameters are constantified

@@ -2437,6 +2437,10 @@ private:
         // though causes problems with t_class_forward.v, so for now avoided
         // userIterateChildren(nodep->classp(), nullptr);
     }
+    virtual void visit(AstClassOrPackageRef* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        userIterateChildren(nodep, nullptr);
+    }
     virtual void visit(AstClassExtends* nodep) override {
         if (nodep->didWidthAndSet()) return;
         if (VN_IS(nodep->childDTypep(), ClassRefDType)) {
