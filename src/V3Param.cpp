@@ -190,7 +190,7 @@ public:
             if (pinValuep->isDouble()) {
                 var = pinValuep->num().toDouble();
             } else {  // Cast from integer to real
-                V3Number varNum(pinValuep, 0.0);
+                V3Number varNum{pinValuep, 0.0};
                 varNum.opIToRD(pinValuep->num());
                 var = varNum.toDouble();
             }
@@ -199,7 +199,7 @@ public:
             // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the
             // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
             // to hierOptParamp width.
-            V3Number varNum(pinValuep, hierOptParamp->num().width());
+            V3Number varNum{pinValuep, hierOptParamp->num().width()};
             if (pinValuep->isDouble()) {  // Need to cast to int
                 // Parameter is actually an integral type, but passed value is floating point.
                 // Conversion from real to integer uses rounding in V3Width.cpp
