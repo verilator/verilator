@@ -559,10 +559,10 @@ class ParamProcessor final {
         // end up with the same level, which we will need to fix up at the end, as we do not know
         // up front how recursive modules are expanded, and a later expansion might re-use an
         // earlier expansion (see t_recursive_module_bug_2).
-        AstNodeModule* insertp = srcModp;
-        while (insertp->nextp()
+        AstNode* insertp = srcModp;
+        while (VN_IS(insertp->nextp(), NodeModule)
                && VN_AS(insertp->nextp(), NodeModule)->level() <= newmodp->level()) {
-            insertp = VN_AS(insertp->nextp(), NodeModule);
+            insertp = insertp->nextp();
         }
         insertp->addNextHere(newmodp);
 
