@@ -1089,7 +1089,7 @@ private:
 
         if (orLIsRedundant && orRIsRedundant) {
             nodep->replaceWith(
-                new AstConst(nodep->fileline(), AstConst::DtypedValue(), nodep->dtypep(), 0));
+                new AstConst(nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return true;
         } else if (orLIsRedundant) {

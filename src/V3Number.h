@@ -39,6 +39,7 @@ inline bool v3EpsilonEqual(double a, double b) {
 //============================================================================
 
 class AstNode;
+class AstNodeDType;
 class FileLine;
 
 // Holds a few entries of ValueAndX to avoid dynamic allocation in std::vector for less width of
@@ -252,6 +253,11 @@ public:
         opCleanThis();
         m_fileline = nump->fileline();
     }
+    V3Number(AstNode* nodep, double value) {
+        init(nodep, 64);
+        setDouble(value);
+    }
+    V3Number(AstNode* nodep, const AstNodeDType* nodedtypep);
 
 private:
     void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
@@ -311,9 +317,7 @@ public:
     // (use AstConst::isSigned())
     bool isDouble() const { return m_double; }
     // Only if have 64 bit value loaded, and want to indicate it's real
-    void isDouble(bool flag) { m_double = flag; }
     bool isString() const { return m_isString; }
-    void isString(bool flag) { m_isString = flag; }
     bool isNegative() const { return bitIs1(width() - 1); }
     bool isNull() const { return m_isNull; }
     bool isFourState() const;
