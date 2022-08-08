@@ -1,0 +1,5 @@
+%Error-PKGNODECL: t/t_package_alone_bad.v:7:8: Package/class 'pkg' not found, and needs to be predeclared (IEEE 1800-2017 26.3)
+    7 | export pkg::something;
+      |        ^~~
+                  ... For error description see https://verilator.org/warn/PKGNODECL?v=latest
+%Error: Exiting due to

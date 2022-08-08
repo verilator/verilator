@@ -168,7 +168,7 @@ public:
                     "Export package not found");
         symCurrentp()->exportFromPackage(&m_syms, symp, id_or_star);
     }
-    void exportStarStar(AstNode* packagep) {
+    void exportStarStar() {
         // Export *::* from remote packages
         symCurrentp()->exportStarStar(&m_syms);
     }

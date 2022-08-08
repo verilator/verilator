@@ -1171,7 +1171,7 @@ package_import_itemObj<strp>:   // IEEE: part of package_import_item
 
 package_export_declaration<nodep>: // IEEE: package_export_declaration
                 yEXPORT '*' yP_COLONCOLON '*' ';'
-                        { $$ = new AstPackageExportStarStar{$<fl>2}; SYMP->exportStarStar($<scp>1); }
+                        { $$ = new AstPackageExportStarStar{$<fl>2}; SYMP->exportStarStar(); }
         |       yEXPORT package_export_itemList ';'     { $$ = $2; }
         ;
 
@@ -1182,8 +1182,8 @@ package_export_itemList<nodep>:
 
 package_export_item<nodep>:     // ==IEEE: package_export_item
                 idCC yP_COLONCOLON package_import_itemObj
-                        { $$ = new AstPackageExport($<fl>3, VN_CAST($<scp>1, Package), *$3);
-                          SYMP->exportItem($<scp>1,*$3); }
+                        { $$ = new AstPackageExport{$<fl>3, VN_CAST($<scp>1, Package), *$3};
+                          if ($<scp>1) SYMP->exportItem($<scp>1, *$3); }
         ;
 
 //**********************************************************************

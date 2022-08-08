@@ -18,6 +18,7 @@ Verilator 4.225 devel
 * Fix table misoptimizing away display (#3488). [Stefan Post]
 * Fix wrong bit op tree optimization (#3509). [Nathan Graybeal]
 * Fix incorrect tristate logic (#3399) [shareefj, Vighnesh Iyer]
+* Fix segfault exporting non-existant package (#3535).
 
 
 Verilator 4.224 2022-06-19
