@@ -21,6 +21,17 @@ class Wrap #(parameter P = 13);
    localparam PMINUS1 = P - 1;  // Checking works when last
 endclass
 
+class Wrap2 #(parameter P = 35);
+   function int get_p;
+      return c1.get_p();
+   endfunction
+   function new;
+      c1 = new;
+   endfunction
+   Wrap#(PMINUS1 + 1) c1;
+   localparam PMINUS1 = P - 1;  // Checking works when last
+endclass
+
 class Cls #(parameter PBASE = 12);
    bit [PBASE-1:0] member;
    function bit [PBASE-1:0] get_member;
@@ -32,6 +43,9 @@ class Cls #(parameter PBASE = 12);
    typedef enum { E_PBASE = PBASE } enum_t;
 endclass
 
+class Subcls #(parameter P0 = 6) extends Cls #(P0);
+endclass
+
 typedef Cls#(8) Cls8_t;
 
 module t (/*AUTOARG*/);
@@ -40,11 +54,18 @@ module t (/*AUTOARG*/);
    Cls #(.PBASE(4)) c4;
    Cls8_t c8;
    Wrap #(.P(16)) w16;
+   Wrap2 #(.P(32)) w32;
+   Subcls #(.P0(36)) w36;
+   // Wrap2 #(Wrap#(19)::PBASE * 2) w38;  // currently unsupported
+   Wrap2 #(.P(38)) w38;
    initial begin
       c12 = new;
       c4 = new;
       c8 = new;
       w16 = new;
+      w32 = new;
+      w36 = new;
+      w38 = new;
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
       if (Cls8_t::PBASE != 8) $stop;
@@ -65,6 +86,9 @@ module t (/*AUTOARG*/);
       if (c4.get_p() != 4) $stop;
       if (c8.get_p() != 8) $stop;
       if (w16.get_p() != 16) $stop;
+      if (w32.get_p() != 32) $stop;
+      if (w36.get_p() != 36) $stop;
+      if (w38.get_p() != 38) $stop;
 
       // verilator lint_off WIDTH
       c12.member = 32'haaaaaaaa;
