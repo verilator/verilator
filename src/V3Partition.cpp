@@ -1540,8 +1540,8 @@ private:
         if (shortestPrereqs.size() <= 1) return;
 
         const auto cmp = [way](const LogicMTask* ap, const LogicMTask* bp) {
-            const uint32_t aCp = ap->critPathCost(way) + ap->stepCost();
-            const uint32_t bCp = bp->critPathCost(way) + bp->stepCost();
+            const uint32_t aCp = ap->critPathCost(way) + ap->cost();
+            const uint32_t bCp = bp->critPathCost(way) + bp->cost();
             if (aCp != bCp) return aCp < bCp;
             return ap->id() < bp->id();
         };
