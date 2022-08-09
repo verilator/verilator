@@ -876,7 +876,7 @@ class ParamVisitor final : public VNVisitor {
     bool m_iterateModule = false;  // Iterating module body
     string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
-    std::deque<AstNode*> m_cellps;  // Cells left to process (in current module)
+    std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
 
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
@@ -910,42 +910,39 @@ class ParamVisitor final : public VNVisitor {
 
             // Process interface cells, then non-interface cells, which may reference an interface
             // cell.
-            for (bool doInterface : {true, false}) {
-                for (AstNode* const cellp : m_cellps) {
-                    AstNodeModule* srcModp = nullptr;
-                    if (const auto* modCellp = VN_CAST(cellp, Cell)) {
-                        srcModp = modCellp->modp();
-                    } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
-                        srcModp = classRefp->classOrPackagep();
-                    } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
-                        srcModp = classRefp->classp();
-                    } else {
-                        cellp->v3fatalSrc("Expected module parametrization");
-                    }
-                    if (doInterface != VN_IS(srcModp, Iface)) continue;
+            while (!m_cellps.empty()) {
+                const auto itm = m_cellps.cbegin();
+                AstNode* const cellp = itm->second;
+                m_cellps.erase(itm);
 
-                    // Visit parameters in the instantiation.
-                    iterateChildren(cellp);
-
-                    // Update path
-                    string someInstanceName(modp->someInstanceName());
-                    if (const string* const genHierNamep = cellp->user5u().to<string*>()) {
-                        someInstanceName += *genHierNamep;
-                        cellp->user5p(nullptr);
-                        VL_DO_DANGLING(delete genHierNamep, genHierNamep);
-                    }
-
-                    // Apply parameter specialization
-                    m_processor.nodeDeparam(cellp, srcModp /* ref */, modp, someInstanceName);
-
-                    // Add the (now potentially specialized) child module to the work queue
-                    workQueue.emplace(srcModp->level(), srcModp);
-
-                    // Add to the hierarchy registry
-                    m_parentps[srcModp].insert(modp);
+                AstNodeModule* srcModp = nullptr;
+                if (const auto* modCellp = VN_CAST(cellp, Cell)) {
+                    srcModp = modCellp->modp();
+                } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
+                    srcModp = classRefp->classOrPackagep();
+                } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
+                    srcModp = classRefp->classp();
+                } else {
+                    cellp->v3fatalSrc("Expected module parametrization");
                 }
+
+                // Update path
+                string someInstanceName(modp->someInstanceName());
+                if (const string* const genHierNamep = cellp->user5u().to<string*>()) {
+                    someInstanceName += *genHierNamep;
+                    cellp->user5p(nullptr);
+                    VL_DO_DANGLING(delete genHierNamep, genHierNamep);
+                }
+
+                // Apply parameter specialization
+                m_processor.nodeDeparam(cellp, srcModp /* ref */, modp, someInstanceName);
+
+                // Add the (now potentially specialized) child module to the work queue
+                workQueue.emplace(srcModp->level(), srcModp);
+
+                // Add to the hierarchy registry
+                m_parentps[srcModp].insert(modp);
             }
-            m_cellps.clear();
             if (workQueue.empty()) std::swap(workQueue, m_workQueue);
         } while (!workQueue.empty());
 
@@ -987,19 +984,25 @@ class ParamVisitor final : public VNVisitor {
         // Must do ifaces first, so push to list and do in proper order
         string* const genHierNamep = new string(m_generateHierName);
         nodep->user5p(genHierNamep);
-        m_cellps.push_back(nodep);
+        // Visit parameters in the instantiation.
+        iterateChildren(nodep);
+        m_cellps.emplace(!VN_IS(nodep->modp(), Iface), nodep);
     }
 
     virtual void visit(AstClassRefDType* nodep) override {
         string* const genHierNamep = new string(m_generateHierName);
         nodep->user5p(genHierNamep);
-        m_cellps.push_back(nodep);
+        // Visit parameters in the instantiation.
+        iterateChildren(nodep);
+        m_cellps.emplace(true, nodep);
     }
 
     virtual void visit(AstClassOrPackageRef* nodep) override {
         string* const genHierNamep = new string(m_generateHierName);
         nodep->user5p(genHierNamep);
-        m_cellps.push_back(nodep);
+        // Visit parameters in the instantiation.
+        iterateChildren(nodep);
+        m_cellps.emplace(true, nodep);
     }
 
     // Make sure all parameters are constantified
