@@ -804,7 +804,8 @@ class ParamProcessor final {
 
     void cellDeparam(AstCell* nodep, AstNodeModule*& srcModp) {
         // Must always clone __Vrcm (recursive modules)
-        if (nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nodep->pinsp(), nodep->recursive())) {
+        if (nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nodep->pinsp(),
+                              nodep->recursive())) {
             nodep->modp(srcModp);
             nodep->modName(srcModp->name());
         }
