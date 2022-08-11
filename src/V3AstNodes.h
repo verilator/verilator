@@ -1198,6 +1198,49 @@ public:
     virtual bool isCompound() const override { return true; }  // But not relevant
 };
 
+class AstVirtIfaceDType final : public AstNodeDType {
+    // A virtual interface, which can take interface references as values
+private:
+    FileLine* m_modportFileline;  // Where modport token was
+    string m_ifaceName;  // Interface name
+    string m_modportName;  // "" = no modport
+    AstIface* m_ifacep = nullptr;  // Pointer to interface
+    AstModport* m_modportp = nullptr;  // nullptr = unlinked or no modport
+public:
+    AstVirtIfaceDType(FileLine* fl, FileLine* modportFl, const string& ifaceName,
+                      const string& modport, AstNode* paramsp)
+        : ASTGEN_SUPER_VirtIfaceDType(fl)
+        , m_modportFileline{modportFl}
+        , m_ifaceName{ifaceName}
+        , m_modportName{modport} {
+        addNOp4p(paramsp);
+    }
+    ASTNODE_NODE_FUNCS(VirtIfaceDType)
+    // METHODS
+    virtual const char* broken() const override;
+    virtual void dump(std::ostream& str = std::cout) const override;
+    virtual void dumpSmall(std::ostream& str) const override;
+    virtual void cloneRelink() override;
+    virtual AstBasicDType* basicp() const override { return nullptr; }
+    virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    virtual bool similarDType(AstNodeDType* samep) const override { return this == samep; }
+    virtual int widthAlignBytes() const override { return 1; }
+    virtual int widthTotalBytes() const override { return 1; }
+    FileLine* modportFileline() const { return m_modportFileline; }
+    string ifaceName() const { return m_ifaceName; }
+    void ifaceName(const string& name) { m_ifaceName = name; }
+    string modportName() const { return m_modportName; }
+    AstIface* ifacep() const { return m_ifacep; }
+    void ifacep(AstIface* nodep) { m_ifacep = nodep; }
+    AstModport* modportp() const { return m_modportp; }
+    void modportp(AstModport* modportp) { m_modportp = modportp; }
+    bool isModport() { return !m_modportName.empty(); }
+    virtual bool isCompound() const override { return true; }  // But not relevant
+    AstPin* paramsp() const { return VN_AS(op4p(), Pin); }
+};
+
 class AstQueueDType final : public AstNodeDType {
     // Queue array data type, ie "[ $ ]"
     // Children: DTYPE (moved to refDTypep() in V3Width)

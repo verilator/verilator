@@ -931,6 +931,10 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
         }
     }
+    virtual void visit(AstVirtIfaceDType* nodep) override {
+        // Need to iterate the interface
+        if (nodep->ifacep()) iterate(nodep->ifacep());
+    }
     virtual void visit(AstDefParam* nodep) override {
         nodep->user1p(m_curSymp);
         iterateChildren(nodep);
@@ -2073,6 +2077,21 @@ private:
             iterateChildren(nodep);
         }
     }
+    virtual void visit(AstVirtIfaceDType* nodep) override {
+        // Cell: Recurse inside or cleanup not founds
+        checkNoDot(nodep);
+        AstNode::user5ClearTree();
+        UASSERT_OBJ(nodep->ifacep(), nodep, "VirtIface has unlinked interface");
+        UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
+                    "virtual interface parameter not removed by V3Param");
+        VL_RESTORER(m_pinSymp);
+        {
+            // VirtIface's have pins, so track
+            m_pinSymp = m_statep->getNodeSym(nodep->ifacep());
+            UINFO(4, "(Backto) Link VirtIfaceDType: " << nodep << endl);
+            iterateChildren(nodep);
+        }
+    }
     virtual void visit(AstPin* nodep) override {
         // Pin: Link to submodule's port
         checkNoDot(nodep);
@@ -2315,7 +2334,7 @@ private:
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
                     // Upper AstDot visitor will handle it from here
-                } else if (VN_IS(foundp->nodep(), Cell) && allowVar && m_cellp) {
+                } else if (VN_IS(foundp->nodep(), Cell) && allowVar) {
                     AstCell* const cellp = VN_AS(foundp->nodep(), Cell);
                     if (VN_IS(cellp->modp(), Iface)) {
                         // Interfaces can be referenced like a variable for interconnect

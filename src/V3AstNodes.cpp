@@ -81,6 +81,17 @@ string AstNodeVarRef::selfPointerProtect(bool useSelfForThis) const {
     return VIdProtect::protectWordsIf(sp, protect());
 }
 
+const char* AstVirtIfaceDType::broken() const {
+    BROKEN_RTN(m_ifacep && !m_ifacep->brokeExists());
+    BROKEN_RTN(m_modportp && !m_modportp->brokeExists());
+    return nullptr;
+}
+
+void AstVirtIfaceDType::cloneRelink() {
+    if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
+    if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep();
+}
+
 void AstAddrOfCFunc::cloneRelink() {
     if (m_funcp && m_funcp->clonep()) m_funcp = m_funcp->clonep();
 }
@@ -1403,6 +1414,21 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
 void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "iface";
+}
+void AstVirtIfaceDType::dump(std::ostream& str) const {
+    this->AstNodeDType::dump(str);
+    if (ifaceName() != "") str << " if=" << ifaceName();
+    if (modportName() != "") str << " mp=" << modportName();
+    if (ifacep()) {
+        str << " -> ";
+        ifacep()->dump(str);
+    } else {
+        str << " -> UNLINKED";
+    }
+}
+void AstVirtIfaceDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "viface:" << (ifacep() ? ifacep()->name() : ifaceName());
 }
 void AstInitArray::dump(std::ostream& str) const {
     this->AstNode::dump(str);

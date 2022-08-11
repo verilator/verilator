@@ -246,6 +246,30 @@ private:
         // Note cannot do modport resolution here; modports are allowed underneath generates
     }
 
+    virtual void visit(AstVirtIfaceDType* nodep) override {
+        // Cell: Resolve its filename.  If necessary, parse it.
+        UINFO(4, "Link VirtIface: " << nodep << endl);
+        // Use findIdUpward instead of findIdFlat; it doesn't matter for now
+        // but we might support modules-under-modules someday.
+        AstNodeModule* const modp = resolveModule(nodep, nodep->ifaceName());
+        if (modp) {
+            if (VN_IS(modp, Iface)) {
+                // Track module depths, so can sort list from parent down to children
+                new V3GraphEdge(&m_graph, vertex(m_modp), vertex(modp), 1, false);
+                nodep->ifacep(VN_AS(modp, Iface));
+            } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
+            } else {
+                nodep->v3error("Non-interface used as an interface: " << nodep->prettyNameQ());
+            }
+        }
+        iterateChildren(nodep);
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            pinp->param(true);
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
+        }
+        // Note cannot do modport resolution here; modports are allowed underneath generates
+    }
+
     virtual void visit(AstPackageImport* nodep) override {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
