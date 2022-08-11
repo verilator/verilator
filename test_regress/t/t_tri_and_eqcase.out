@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_tri_and_eqcase.v:9:28: Unsupported tristate construct: AND in function getEnExprBasedOnOriginalp
+    9 |    logic b = 1'z === (clk1 & clk2);
+      |                            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Internal Error: t/t_tri_and_eqcase.v:9:18: ../V3Ast.cpp:#: Null item passed to setOp2p
+    9 |    logic b = 1'z === (clk1 & clk2);
+      |                  ^~~
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.
