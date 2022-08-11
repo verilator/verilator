@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_tri_and_eqcase.v:9:28: Unsupported tristate construct: AND
+    9 |    logic b = 1'z === (clk1 & clk2);
+      |                            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
