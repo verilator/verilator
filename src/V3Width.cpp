@@ -3664,7 +3664,8 @@ private:
              memp_nested = VN_AS(memp_nested->nextp(), MemberDType)) {
             if (AstNodeUOrStructDType* const memp_multinested_vdtypep
                 = VN_CAST(memp_nested->virtRefDTypep(), NodeUOrStructDType)) {
-                // When unpacked struct/union is supported this if will need some additional conditions
+                // When unpacked struct/union is supported this if will need some additional
+                // conditions
                 newp = nestedvalueConcat_patternUOrStruct(memp_multinested_vdtypep, defaultp, newp,
                                                           nodep, dtypemap);
             } else {
