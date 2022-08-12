@@ -3090,9 +3090,8 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name());
             newp->dtypeFrom(adtypep->subDTypep());
-            // because queue methods pop_front() or pop_back() can be void cast,
-            // they use a special check if they need the c++ ";" added (done by
-            // newp->makeStatement())
+            // Because queue methods pop_front() or pop_back() can be void cast,
+            // they use makeStatement to check if they need the c++ ";" added.
             if (nodep->isStandaloneBodyStmt()) newp->makeStatement();
         } else if (nodep->name() == "push_back" || nodep->name() == "push_front") {
             methodOkArguments(nodep, 1, 1);

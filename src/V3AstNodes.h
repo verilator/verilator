@@ -3586,8 +3586,8 @@ public:
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     // Special accessors
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
-    virtual bool isFirstInMyListOfStatements(AstNode* n) const override {
-        return (n && n == bodysp());
+    bool isFirstInMyListOfStatements(AstNode* n) const override {
+        return n == bodysp();
     }
 };
 
@@ -4012,8 +4012,8 @@ public:
     void condsp(AstNode* nodep) { setOp1p(nodep); }
     void addBodysp(AstNode* newp) { addOp2p(newp); }
     bool isDefault() const { return condsp() == nullptr; }
-    virtual bool isFirstInMyListOfStatements(AstNode* n) const override {
-        return (n && n == bodysp());
+    bool isFirstInMyListOfStatements(AstNode* n) const override {
+        return n == bodysp();
     }
 };
 
@@ -4700,8 +4700,8 @@ public:
     virtual bool isGateOptimizable() const override { return false; }
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
-    virtual bool isFirstInMyListOfStatements(AstNode* n) const override {
-        return (n && n == bodysp());
+    bool isFirstInMyListOfStatements(AstNode* n) const override {
+        return n == bodysp();
     }
 };
 
@@ -4720,8 +4720,8 @@ public:
     }  // Not relevant - converted to FOR
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
-    virtual bool isFirstInMyListOfStatements(AstNode* n) const override {
-        return (n && n == bodysp());
+    bool isFirstInMyListOfStatements(AstNode* n) const override {
+        return n == bodysp();
     }
 };
 
@@ -4734,8 +4734,8 @@ public:
     }
     ASTNODE_NODE_FUNCS(Wait)
     AstNode* bodysp() const { return op3p(); }  // op3 = body of loop
-    virtual bool isFirstInMyListOfStatements(AstNode* n) const override {
-        return (n && n == bodysp());
+    bool isFirstInMyListOfStatements(AstNode* n) const override {
+        return n == bodysp();
     }
 };
 
@@ -4763,8 +4763,8 @@ public:
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp) override;
     // Stop statement searchback here
     virtual void addNextStmt(AstNode* newp, AstNode* belowp) override;
-    virtual bool isFirstInMyListOfStatements(AstNode* n) const override {
-        return (n && n == bodysp());
+    bool isFirstInMyListOfStatements(AstNode* n) const override {
+        return n == bodysp();
     }
 };
 
