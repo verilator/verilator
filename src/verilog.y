@@ -3532,8 +3532,6 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         //                      // id/*member*/ is part of constExpr below
         //UNSUP constExpr                               { $$ = $1; }
         //                      // IEEE: assignment_pattern_key
-        //UNSUP simple_type                             { $1->v3error("Unsupported: '{} with data type as key"); $$ = $1; }
-        //                      // simple_type reference looks like constExpr
         //                      // Verilator:
         //                      //   The above expressions cause problems because "foo" may be
         //                      //   a constant identifier (if array) or a reference to the
