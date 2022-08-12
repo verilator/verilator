@@ -1514,7 +1514,7 @@ public:
     virtual bool isFirstInMyListOfStatements(AstNode* n) const { return false; }
     // isStandaloneBodyStmt == Do we need a ; on generated cpp for this node?
     bool isStandaloneBodyStmt() {
-        return (!firstAbovep() // we're 2nd or later in the list, so yes need ;
+        return (!firstAbovep()  // we're 2nd or later in the list, so yes need ;
 
                 // If we're first in the list, check what backp() thinks of us:
                 || (backp() && backp()->isFirstInMyListOfStatements(this)));
@@ -2576,9 +2576,7 @@ public:
     AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
     bool unnamed() const { return m_unnamed; }
-    bool isFirstInMyListOfStatements(AstNode* nodep) const override {
-        return nodep == stmtsp();
-    }
+    bool isFirstInMyListOfStatements(AstNode* nodep) const override { return nodep == stmtsp(); }
 };
 
 class AstNodePreSel VL_NOT_FINAL : public AstNode {
@@ -3253,9 +3251,7 @@ public:
     bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
-    bool isFirstInMyListOfStatements(AstNode* n) const override {
-        return n == stmtsp();
-    }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 
 class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeStmt {
