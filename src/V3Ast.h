@@ -1509,6 +1509,16 @@ public:
     AstNode* firstAbovep() const {  // Returns nullptr when second or later in list
         return ((backp() && backp()->nextp() != this) ? backp() : nullptr);
     }
+    // isFirstInMyListOfStatements(n) -- implemented by child classes:
+    // AstNodeBlock, AstCaseItem, AstNodeIf, AstNodeFTask, and possibly others.
+    virtual bool isFirstInMyListOfStatements(AstNode* n) const { return false; }
+    // isStandaloneBodyStmt == Do we need a ; on generated cpp for this node?
+    bool isStandaloneBodyStmt() {
+        return (!firstAbovep()  // we're 2nd or later in the list, so yes need ;
+
+                // If we're first in the list, check what backp() thinks of us:
+                || (backp() && backp()->isFirstInMyListOfStatements(this)));
+    }
     uint8_t brokenState() const { return m_brokenState; }
     void brokenState(uint8_t value) { m_brokenState = value; }
 
@@ -2566,6 +2576,7 @@ public:
     AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
     bool unnamed() const { return m_unnamed; }
+    bool isFirstInMyListOfStatements(AstNode* nodep) const override { return nodep == stmtsp(); }
 };
 
 class AstNodePreSel VL_NOT_FINAL : public AstNode {
@@ -2711,6 +2722,9 @@ public:
     VBranchPred branchPred() const { return m_branchPred; }
     void isBoundsCheck(bool flag) { m_isBoundsCheck = flag; }
     bool isBoundsCheck() const { return m_isBoundsCheck; }
+    bool isFirstInMyListOfStatements(AstNode* n) const override {
+        return n == ifsp() || n == elsesp();
+    }
 };
 
 class AstNodeCase VL_NOT_FINAL : public AstNodeStmt {
@@ -3237,6 +3251,7 @@ public:
     bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 
 class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeStmt {
