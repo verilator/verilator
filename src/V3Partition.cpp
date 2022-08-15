@@ -161,7 +161,7 @@ static void partCheckCachedScoreVsActual(uint32_t cached, uint32_t actual) {
 //  * Client calls PartPropagateCp::go(). Internally, this iteratively
 //    propagates the new CPs wayward through the graph.
 //
-template <class T_CostAccessor>
+template <class T_CostAccessor, class T_VtxCmp = std::less<V3GraphVertex*>>
 class PartPropagateCp final : GraphAlg<> {
 private:
     // MEMBERS
@@ -171,7 +171,7 @@ private:
     T_CostAccessor* const m_accessp;  // Access cost and CPs on V3GraphVertex's.
     //                        // confirm we only process each vertex once.
     const bool m_slowAsserts;  // Enable nontrivial asserts
-    SortByValueMap<V3GraphVertex*, uint32_t> m_pending;  // Pending rescores
+    SortByValueMap<V3GraphVertex*, uint32_t, T_VtxCmp> m_pending;  // Pending rescores
 
 public:
     // CONSTRUCTORS
@@ -360,6 +360,10 @@ public:
     struct CmpLogicMTask {
         bool operator()(const LogicMTask* ap, const LogicMTask* bp) const {
             return ap->id() < bp->id();
+        }
+        bool operator()(const V3GraphVertex* ap, const V3GraphVertex* bp) const {
+            return operator()(static_cast<const LogicMTask*>(ap),
+                              static_cast<const LogicMTask*>(bp));
         }
     };
 
@@ -1380,10 +1384,10 @@ private:
                                 << donorNewCpFwd.propagateCp << endl);
 
         LogicMTask::CpCostAccessor cpAccess;
-        PartPropagateCp<LogicMTask::CpCostAccessor> forwardPropagator(m_mtasksp, GraphWay::FORWARD,
-                                                                      &cpAccess, m_slowAsserts);
-        PartPropagateCp<LogicMTask::CpCostAccessor> reversePropagator(m_mtasksp, GraphWay::REVERSE,
-                                                                      &cpAccess, m_slowAsserts);
+        PartPropagateCp<LogicMTask::CpCostAccessor, LogicMTask::CmpLogicMTask> forwardPropagator(
+            m_mtasksp, GraphWay::FORWARD, &cpAccess, m_slowAsserts);
+        PartPropagateCp<LogicMTask::CpCostAccessor, LogicMTask::CmpLogicMTask> reversePropagator(
+            m_mtasksp, GraphWay::REVERSE, &cpAccess, m_slowAsserts);
 
         recipientp->setCritPathCost(GraphWay::FORWARD, recipientNewCpFwd.cp);
         if (recipientNewCpFwd.propagate) {
