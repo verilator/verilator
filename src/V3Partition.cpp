@@ -742,6 +742,7 @@ public:
 
     bool removedFromSb() const { return (m_id & REMOVED_MASK) != 0; }
     void removedFromSb(bool /*removed*/) { m_id |= REMOVED_MASK; }
+    void clearRemovedFromSb() { m_id &= ~REMOVED_MASK; }
     bool operator<(const MergeCandidate& other) const { return m_id < other.m_id; }
 };
 
@@ -1014,13 +1015,6 @@ static void partCheckCriticalPaths(V3Graph* mtasksp) {
     }
 }
 
-// Advance to nextp(way) and delete edge
-static V3GraphEdge* partBlastEdgep(GraphWay way, V3GraphEdge* edgep) {
-    V3GraphEdge* const nextp = edgep->nextp(way);
-    VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-    return nextp;
-}
-
 // Merge edges from a LogicMtask.
 //
 // This code removes 'hasRelative' edges. When this occurs, mark it in need
@@ -1054,31 +1048,48 @@ static V3GraphEdge* partBlastEdgep(GraphWay way, V3GraphEdge* edgep) {
 //
 // Another way of stating this: this code ensures that scores of
 // non-transitive edges only ever increase.
-static void partMergeEdgesFrom(V3Graph* mtasksp, LogicMTask* recipientp, LogicMTask* donorp,
-                               V3Scoreboard<MergeCandidate, uint32_t>* sbp) {
+static void partRedirectEdgesFrom(LogicMTask* recipientp, LogicMTask* donorp,
+                                  V3Scoreboard<MergeCandidate, uint32_t>* sbp) {
     for (const auto& way : {GraphWay::FORWARD, GraphWay::REVERSE}) {
-        for (V3GraphEdge* edgep = donorp->beginp(way); edgep; edgep = partBlastEdgep(way, edgep)) {
-            const MTaskEdge* const tedgep = MTaskEdge::cast(edgep);
-            if (sbp && !tedgep->removedFromSb()) sbp->removeElem(tedgep);
-            // Existing edge; mark it in need of a rescore
-            if (recipientp->hasRelative(way, tedgep->furtherMTaskp(way))) {
+        for (V3GraphEdge *edgep = donorp->beginp(way), *nextp; edgep; edgep = nextp) {
+            nextp = edgep->nextp(way);
+            MTaskEdge* const tedgep = MTaskEdge::cast(edgep);
+            LogicMTask* const relativep = tedgep->furtherMTaskp(way);
+            if (recipientp->hasRelative(way, relativep)) {
+                // An edge already exists between recipient and relative of donor.
+                // Mark it in need of a rescore
                 if (sbp) {
-                    const MTaskEdge* const existMTaskEdgep = MTaskEdge::cast(
-                        recipientp->findConnectingEdgep(way, tedgep->furtherMTaskp(way)));
+                    if (!tedgep->removedFromSb()) sbp->removeElem(tedgep);
+                    const MTaskEdge* const existMTaskEdgep
+                        = MTaskEdge::cast(recipientp->findConnectingEdgep(way, relativep));
                     UASSERT(existMTaskEdgep, "findConnectingEdge didn't find edge");
                     if (!existMTaskEdgep->removedFromSb()) {
                         sbp->hintScoreChanged(existMTaskEdgep);
                     }
                 }
+                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             } else {
-                // No existing edge into *this, make one.
-                const MTaskEdge* newEdgep;
+                // No existing edge between recipient and relative of donor.
+                // Redirect the edge from donor<->relative to recipient<->relative.
                 if (way == GraphWay::REVERSE) {
-                    newEdgep = new MTaskEdge(mtasksp, tedgep->fromMTaskp(), recipientp, 1);
+                    tedgep->relinkTop(recipientp);
+                    relativep->removeRelative(GraphWay::FORWARD, donorp);
+                    relativep->addRelative(GraphWay::FORWARD, recipientp);
+                    recipientp->addRelative(GraphWay::REVERSE, relativep);
                 } else {
-                    newEdgep = new MTaskEdge(mtasksp, recipientp, tedgep->toMTaskp(), 1);
+                    tedgep->relinkFromp(recipientp);
+                    relativep->removeRelative(GraphWay::REVERSE, donorp);
+                    relativep->addRelative(GraphWay::REVERSE, recipientp);
+                    recipientp->addRelative(GraphWay::FORWARD, relativep);
                 }
-                if (sbp) sbp->addElem(newEdgep);
+                if (sbp) {
+                    if (tedgep->removedFromSb()) {
+                        tedgep->clearRemovedFromSb();
+                        sbp->addElem(tedgep);
+                    } else {
+                        sbp->hintScoreChanged(tedgep);
+                    }
+                }
             }
         }
     }
@@ -1334,7 +1345,7 @@ private:
         }
 
         // Merge the smaller mtask into the larger mtask.  If one of them
-        // is much larger, this will save time in partMergeEdgesFrom().
+        // is much larger, this will save time in partRedirectEdgesFrom().
         // Assume the more costly mtask has more edges.
         //
         // [TODO: now that we have edge maps, we could count the edges
@@ -1414,8 +1425,8 @@ private:
         // to a bounded number.
         removeSiblingMCsWith(recipientp);
 
-        // Merge all edges
-        partMergeEdgesFrom(m_mtasksp, recipientp, donorp, &m_sb);
+        // Redirect all edges
+        partRedirectEdgesFrom(recipientp, donorp, &m_sb);
 
         // Delete the donorp mtask from the graph
         VL_DO_CLEAR(donorp->unlinkDelete(m_mtasksp), donorp = nullptr);
@@ -1855,7 +1866,7 @@ private:
              ++rankIt) {
             // Find the largest node at this rank, merge into it.  (If we
             // happen to find a huge node, this saves time in
-            // partMergeEdgesFrom() versus merging into an arbitrary node.)
+            // partRedirectEdgesFrom() versus merging into an arbitrary node.)
             LogicMTask* mergedp = nullptr;
             for (LogicMTaskSet::iterator it = rankIt->second.begin(); it != rankIt->second.end();
                  ++it) {
@@ -1883,8 +1894,8 @@ private:
                 }
                 // Move all vertices from donorp to mergedp
                 mergedp->moveAllVerticesFrom(donorp);
-                // Move edges from donorp to recipientp
-                partMergeEdgesFrom(m_mtasksp, mergedp, donorp, nullptr);
+                // Redirect edges from donorp to recipientp
+                partRedirectEdgesFrom(mergedp, donorp, nullptr);
                 // Remove donorp from the graph
                 VL_DO_DANGLING(donorp->unlinkDelete(m_mtasksp), donorp);
                 ++m_mergesDone;

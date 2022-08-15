@@ -320,6 +320,7 @@ public:
     }
     void unlinkDelete();
     V3GraphEdge* relinkFromp(V3GraphVertex* newFromp);
+    V3GraphEdge* relinkTop(V3GraphVertex* newTop);
     // ACCESSORS
     int weight() const { return m_weight; }
     void weight(int weight) { m_weight = weight; }
