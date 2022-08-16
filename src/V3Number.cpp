@@ -44,7 +44,7 @@ constexpr int MAX_SPRINTF_DOUBLE_SIZE
             "Number operation called with same source and dest")
 
 #define NUM_ASSERT_LOGIC_ARGS1(arg1) \
-    UASSERT(((arg1).dataType() == V3NumberDataType::LOGIC), \
+    UASSERT(((arg1).dataType() == V3NumberData::V3NumberDataType::LOGIC), \
             "Number operation called with non-logic (double or string) argument: '" << (arg1) \
                                                                                     << '"')
 #define NUM_ASSERT_LOGIC_ARGS2(arg1, arg2) \

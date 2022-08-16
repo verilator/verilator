@@ -45,9 +45,7 @@ class AstNode;
 class AstNodeDType;
 class FileLine;
 
-// Holds a few entries of ValueAndX (32 four-state bits) in-place and uses heap-allocated buffer
-// when more is needed.
-class V3NumberFourStateArray final {
+class V3NumberData final {
 public:
     // TYPES
     struct ValueAndX final {
@@ -60,100 +58,38 @@ public:
         }
     };
 
-    struct ValueAndXArrayDeleter {
-        // Using free() because the array uses realloc() for allocations.
-        void operator()(ValueAndX* ptr) const { std::free(ptr); }
+    enum class V3NumberDataType : uint8_t {
+        UNINITIALIZED = 0,
+        STRING = 1,
+        DOUBLE = 2,
+        LOGIC = 3,
     };
-    using ValueAndXArrayPtr = std::unique_ptr<ValueAndX[], ValueAndXArrayDeleter>;
-
-    // MEMBERS
-    // Hold at least 64 bits without dynamic allocation. In most cases it will be 96 bits
-    // (std::string usually has 32 bytes).
-    static constexpr size_t m_inlinedSize
-        = std::max<size_t>(2, (sizeof(string) - sizeof(ValueAndXArrayPtr)) / sizeof(ValueAndX));
-    ValueAndX m_inlined[m_inlinedSize];  // Holds the beginning m_inlinedSize words
-    ValueAndXArrayPtr m_dynamic;  // Holds m_inlinedSize-th word and later
-
-public:
-    // CONSTRUCTORS
-    V3NumberFourStateArray() {
-        for (size_t i = 0; i < m_inlinedSize; ++i) m_inlined[i] = {0, 0};
-    }
-
-    V3NumberFourStateArray(const V3NumberFourStateArray&) = delete;
-    V3NumberFourStateArray& operator=(const V3NumberFourStateArray&) = delete;
-
-    V3NumberFourStateArray(size_t wordsCount, const V3NumberFourStateArray& other) {
-        resize(wordsCount);
-        for (size_t i = 0; i < (wordsCount > m_inlinedSize ? wordsCount : m_inlinedSize); ++i)
-            (*this)[i] = other[i];
-    }
-
-    V3NumberFourStateArray& copyFrom(size_t wordsCount, const V3NumberFourStateArray& other) {
-        resize(wordsCount);
-        for (size_t i = 0; i < (wordsCount > m_inlinedSize ? wordsCount : m_inlinedSize); ++i)
-            (*this)[i] = other[i];
-        return *this;
-    }
-
-    V3NumberFourStateArray(V3NumberFourStateArray&& other)
-        : m_dynamic(std::move(other.m_dynamic)) {
-        for (size_t i = 0; i < m_inlinedSize; ++i) m_inlined[i] = other[i];
-    }
-
-    V3NumberFourStateArray& operator=(V3NumberFourStateArray&& other) {
-        for (size_t i = 0; i < m_inlinedSize; ++i) m_inlined[i] = other[i];
-        m_dynamic = std::move(other.m_dynamic);
-        return *this;
-    }
-
-    ~V3NumberFourStateArray() = default;
-
-    // METHODS
-    void resize(size_t wordsCount) {
-        if (wordsCount <= m_inlinedSize) {
-            m_dynamic.reset(nullptr);
-        } else {
-            const std::size_t dynamicWordsCount = wordsCount - m_inlinedSize;
-            ValueAndX* const oldPtr = m_dynamic.release();
-            // (Re)allocation with realloc allows for:
-            // - Increasing the buffer size without data loss when current size is not explicitly
-            //   known.
-            // - A chance of buffer resizing without moving it.
-            void* const ptr = std::realloc(oldPtr, sizeof(ValueAndX) * dynamicWordsCount);
-            m_dynamic.reset(reinterpret_cast<ValueAndX*>(ptr));
+    inline friend std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) {
+        switch (rhs) {
+        case V3NumberDataType::UNINITIALIZED: return os << "UNINITIALIZED";
+        case V3NumberDataType::STRING: return os << "STRING";
+        case V3NumberDataType::DOUBLE: return os << "DOUBLE";
+        case V3NumberDataType::LOGIC: return os << "LOGIC";
         }
+        return os;
     }
 
-    ValueAndX& operator[](size_t idx) {
-        return idx >= m_inlinedSize ? m_dynamic[idx - m_inlinedSize] : m_inlined[idx];
-    }
-    const ValueAndX& operator[](size_t idx) const {
-        return const_cast<V3NumberFourStateArray&>(*this)[idx];
-    }
-};
+private:
+    // CONSTANTS
+    // At least 2 words (64 fourstate bits). 4 words (128 fourstate bits) in most cases,
+    // i.e. when std::string has 32 bytes.
+    static constexpr std::size_t INLINE_WORDS
+        = vlstd::max(2ul, sizeof(std::string) / sizeof(ValueAndX),
+                     sizeof(std::vector<ValueAndX>) / sizeof(ValueAndX));
+    // When m_width > MAX_INLINE_WIDTH number is stored in m_dynamicNumber.
+    // Otherwise number is stored in m_inlineNumber.
+    static constexpr std::size_t MAX_INLINE_WIDTH = INLINE_WORDS * sizeof(ValueAndX) / 2 * 8;
 
-enum class V3NumberDataType : uint8_t {
-    UNINITIALIZED = 0,
-    STRING = 1,
-    DOUBLE = 2,
-    LOGIC = 3,
-};
-inline std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) {
-    switch (rhs) {
-    case V3NumberDataType::UNINITIALIZED: return os << "UNINITIALIZED";
-    case V3NumberDataType::STRING: return os << "STRING";
-    case V3NumberDataType::DOUBLE: return os << "DOUBLE";
-    case V3NumberDataType::LOGIC: return os << "LOGIC";
-    }
-    return os;
-}
-
-class V3NumberData final {
     // MEMBERS
     union {
         uint8_t m_uninitializedMemberDoNotUse;  // Dummy member to avoid automatic initialization.
-        V3NumberFourStateArray m_number;
+        std::array<ValueAndX, INLINE_WORDS> m_inlineNumber;
+        std::vector<ValueAndX> m_dynamicNumber;
         std::string m_string;
     };
 
@@ -178,8 +114,8 @@ public:
         , m_autoExtend{false} {}
 
     ~V3NumberData() {
-        if (isNumber())
-            destroyNumber();
+        if (isDynamicNumber())
+            destroyDynamicNumber();
         else if (isString())
             destroyString();
     }
@@ -192,34 +128,31 @@ public:
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
         , m_autoExtend{other.m_autoExtend} {
-        switch (other.m_type) {
-        case V3NumberDataType::STRING: initString(other.m_string); break;
-        case V3NumberDataType::DOUBLE:  // FALLTHRU
-        case V3NumberDataType::LOGIC:
-            initNumber(bitsToWords(other.m_width), other.m_number);
-            break;
-        case V3NumberDataType::UNINITIALIZED: break;
+        if (other.isInlineNumber()) {
+            initInlineNumber(other.m_inlineNumber);
+        } else if (other.isDynamicNumber()) {
+            initDynamicNumber(other.m_dynamicNumber);
+        } else if (other.isString()) {
+            initString(other.m_string);
         }
     }
 
     V3NumberData& operator=(const V3NumberData& other) {
-        switch (other.m_type) {
-        case V3NumberDataType::STRING: reinitWithOrAssignString(other.m_string); break;
-        case V3NumberDataType::DOUBLE:  // FALLTHRU
-        case V3NumberDataType::LOGIC:
-            if (isNumber()) {
-                m_number.copyFrom(bitsToWords(other.m_width), other.m_number);
-            } else {
-                if (isString()) destroyString();
-                initNumber(bitsToWords(other.m_width), other.m_number);
-            }
-            break;
-        case V3NumberDataType::UNINITIALIZED:
-            if (isNumber())
-                destroyNumber();
+        if (other.isInlineNumber()) {
+            if (isDynamicNumber())
+                destroyDynamicNumber();
             else if (isString())
                 destroyString();
-            break;
+            initInlineNumber(other.m_inlineNumber);
+        } else if (other.isDynamicNumber()) {
+            reinitWithOrAssignDynamicNumber(other.m_dynamicNumber);
+        } else if (other.isString()) {
+            reinitWithOrAssignString(other.m_string);
+        } else {
+            if (isDynamicNumber())
+                destroyDynamicNumber();
+            else if (isString())
+                destroyString();
         }
         m_width = other.m_width;
         m_type = other.m_type;
@@ -239,33 +172,32 @@ public:
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
         , m_autoExtend{other.m_autoExtend} {
-        switch (other.m_type) {
-        case V3NumberDataType::STRING: initString(std::move(other.m_string)); break;
-        case V3NumberDataType::DOUBLE:  // FALLTHRU
-        case V3NumberDataType::LOGIC: initNumber(std::move(other.m_number)); break;
-        case V3NumberDataType::UNINITIALIZED: break;
+        if (other.isInlineNumber()) {
+            initInlineNumber(other.m_inlineNumber);
+        } else if (other.isDynamicNumber()) {
+            initDynamicNumber(std::move(other.m_dynamicNumber));
+        } else if (other.isString()) {
+            initString(std::move(other.m_string));
         }
         other.m_type = V3NumberDataType::UNINITIALIZED;
     }
 
     V3NumberData& operator=(V3NumberData&& other) {
-        switch (other.m_type) {
-        case V3NumberDataType::STRING: reinitWithOrAssignString(std::move(other.m_string)); break;
-        case V3NumberDataType::DOUBLE:  // FALLTHRU
-        case V3NumberDataType::LOGIC:
-            if (isNumber()) {
-                m_number = std::move(other.m_number);
-            } else {
-                if (isString()) destroyString();
-                initNumber(std::move(other.m_number));
-            }
-            break;
-        case V3NumberDataType::UNINITIALIZED:
-            if (isNumber())
-                destroyNumber();
+        if (other.isInlineNumber()) {
+            if (isDynamicNumber())
+                destroyDynamicNumber();
             else if (isString())
                 destroyString();
-            break;
+            initInlineNumber(other.m_inlineNumber);
+        } else if (other.isDynamicNumber()) {
+            reinitWithOrAssignDynamicNumber(std::move(other.m_dynamicNumber));
+        } else if (other.isString()) {
+            reinitWithOrAssignString(std::move(other.m_string));
+        } else {
+            if (isDynamicNumber())
+                destroyDynamicNumber();
+            else if (isString())
+                destroyString();
         }
         m_width = other.m_width;
         m_type = other.m_type;
@@ -279,13 +211,13 @@ public:
     }
 
     // ACCESSORS
-    inline V3NumberFourStateArray& num() {
+    inline ValueAndX* num() {
         UASSERT(isNumber(), "`num` member accessed when data type is " << m_type);
-        return m_number;
+        return isInlineNumber() ? m_inlineNumber.data() : m_dynamicNumber.data();
     }
-    inline const V3NumberFourStateArray& num() const {
+    inline const ValueAndX* num() const {
         UASSERT(isNumber(), "`num` member accessed when data type is " << m_type);
-        return m_number;
+        return isInlineNumber() ? m_inlineNumber.data() : m_dynamicNumber.data();
     }
     inline std::string& str() {
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
@@ -302,8 +234,25 @@ public:
     // METHODS
     void resize(int bitsCount) {
         if (m_width == bitsCount) return;
-        if (isNumber() && bitsToWords(m_width) != bitsToWords(bitsCount)) {
-            m_number.resize(bitsToWords(bitsCount));
+        if (bitsToWords(m_width) == bitsToWords(bitsCount)) {
+            m_width = bitsCount;
+            return;
+        }
+        if (isDynamicNumber()) {
+            if (bitsCount > MAX_INLINE_WIDTH) {
+                m_dynamicNumber.resize(bitsToWords(bitsCount));
+            } else {
+                const auto dynamicBits = std::move(m_dynamicNumber);
+                destroyDynamicNumber();
+                initInlineNumber();
+                std::memcpy(m_inlineNumber.data(), dynamicBits.data(), sizeof(m_inlineNumber));
+            }
+        } else if (isInlineNumber()) {
+            if (bitsCount > MAX_INLINE_WIDTH) {
+                const auto bits = m_inlineNumber;
+                initDynamicNumber(bitsToWords(bitsCount));
+                std::memcpy(m_dynamicNumber.data(), bits.data(), sizeof(bits));
+            }
         }
         m_width = bitsCount;
     }
@@ -311,7 +260,7 @@ public:
     void setString() {
         // If there has been a string already it is kept intact.
         if (isString()) return;
-        if (isNumber()) destroyNumber();
+        if (isDynamicNumber()) destroyDynamicNumber();
         initString();
         m_type = V3NumberDataType::STRING;
     }
@@ -325,19 +274,26 @@ public:
     }
 
     void setDouble() {
-        if (isString()) destroyString();
-        if (!isNumber()) initNumber();
+        if (isString())
+            destroyString();
+        else if (isDynamicNumber())
+            destroyDynamicNumber();
+
+        if (!isInlineNumber()) initInlineNumber();
         m_type = V3NumberDataType::DOUBLE;
         resize(64);
-        // If there has been a number (logic or double) already its lower 64 bits are kept intact.
     }
 
     void setLogic() {
         if (isString()) destroyString();
-        if (!isNumber()) initNumber();
+        if (!isNumber()) {
+            if (m_width <= MAX_INLINE_WIDTH)
+                initInlineNumber();
+            else
+                initDynamicNumber(bitsToWords(m_width));
+        }
         m_type = V3NumberDataType::LOGIC;
         resize(m_width);
-        // If there has been a number (logic or double) already its bits are kept intact.
     }
 
 private:
@@ -346,35 +302,57 @@ private:
     inline bool isNumber() const {
         return m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC;
     }
+    inline bool isInlineNumber() const {
+        return (m_width <= MAX_INLINE_WIDTH)
+               && (m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC);
+    }
+    inline bool isDynamicNumber() const {
+        return (m_width > MAX_INLINE_WIDTH) && (m_type == V3NumberDataType::LOGIC);
+    }
     inline bool isString() const { return m_type == V3NumberDataType::STRING; }
 
     template <typename... Args>
-    inline void initNumber(Args&&... args) {
-        new (&m_number) V3NumberFourStateArray(std::forward<Args>(args)...);
+    inline void initInlineNumber(Args&&... args) {
+        new (&m_inlineNumber) std::array<ValueAndX, INLINE_WORDS>(std::forward<Args>(args)...);
+    }
+    template <typename... Args>
+    inline void initDynamicNumber(Args&&... args) {
+        new (&m_dynamicNumber) std::vector<ValueAndX>(std::forward<Args>(args)...);
     }
     template <typename... Args>
     inline void initString(Args&&... args) {
         new (&m_string) std::string(std::forward<Args>(args)...);
     }
 
-    inline void destroyNumber() { m_number.~V3NumberFourStateArray(); }
+    inline void destroyDynamicNumber() { m_dynamicNumber.~vector(); }
     inline void destroyString() { m_string.~string(); }
 
+    template <typename T>
+    inline void reinitWithOrAssignDynamicNumber(T&& s) {
+        if (isDynamicNumber()) {
+            m_dynamicNumber = std::forward<T>(s);
+            return;
+        }
+        if (isString()) destroyString();
+        initDynamicNumber(std::forward<T>(s));
+    }
     template <typename T>
     inline void reinitWithOrAssignString(T&& s) {
         if (isString()) {
             m_string = std::forward<T>(s);
             return;
         }
-        if (isNumber()) destroyNumber();
+        if (isDynamicNumber()) destroyDynamicNumber();
         initString(std::forward<T>(s));
     }
 };
 
 class V3Number final {
     // TYPES
-    using ValueAndX = V3NumberFourStateArray::ValueAndX;
+    using ValueAndX = V3NumberData::ValueAndX;
+    using V3NumberDataType = V3NumberData::V3NumberDataType;
 
+    // MEMBERS
     V3NumberData m_data;
     AstNode* m_nodep;  // Parent node
     FileLine* m_fileline;
