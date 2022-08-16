@@ -3977,8 +3977,10 @@ private:
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
                 if (condp->dtypep() != subDTypep) {
-                    if (condp->dtypep()->isDouble()) {
+                    if (condp->dtypep()->isDouble() || subDTypep->isDouble()) {
                         subDTypep = nodep->findDoubleDType();
+                    } else if (condp->dtypep()->isString() || subDTypep->isString()) {
+                        subDTypep = nodep->findStringDType();
                     } else {
                         const int width = std::max(subDTypep->width(), condp->width());
                         const int mwidth = std::max(subDTypep->widthMin(), condp->widthMin());
