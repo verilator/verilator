@@ -962,6 +962,16 @@ class ParamVisitor final : public VNVisitor {
         if (modp->level() <= maxParentLevel) modp->level(maxParentLevel + 1);
     }
 
+    // A generic visitor for cells and class refs
+    void visitCellOrClassRef(AstNode* nodep, bool isIface) {
+        // Must do ifaces first, so push to list and do in proper order
+        string* const genHierNamep = new string{m_generateHierName};
+        nodep->user5p(genHierNamep);
+        // Visit parameters in the instantiation.
+        iterateChildren(nodep);
+        m_cellps.emplace(!isIface, nodep);
+    }
+
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
@@ -982,29 +992,10 @@ class ParamVisitor final : public VNVisitor {
     }
 
     virtual void visit(AstCell* nodep) override {
-        // Must do ifaces first, so push to list and do in proper order
-        string* const genHierNamep = new string(m_generateHierName);
-        nodep->user5p(genHierNamep);
-        // Visit parameters in the instantiation.
-        iterateChildren(nodep);
-        m_cellps.emplace(!VN_IS(nodep->modp(), Iface), nodep);
+        visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
-
-    virtual void visit(AstClassRefDType* nodep) override {
-        string* const genHierNamep = new string(m_generateHierName);
-        nodep->user5p(genHierNamep);
-        // Visit parameters in the instantiation.
-        iterateChildren(nodep);
-        m_cellps.emplace(true, nodep);
-    }
-
-    virtual void visit(AstClassOrPackageRef* nodep) override {
-        string* const genHierNamep = new string(m_generateHierName);
-        nodep->user5p(genHierNamep);
-        // Visit parameters in the instantiation.
-        iterateChildren(nodep);
-        m_cellps.emplace(true, nodep);
-    }
+    virtual void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
+    virtual void visit(AstClassOrPackageRef* nodep) override { visitCellOrClassRef(nodep, false); }
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) override {
