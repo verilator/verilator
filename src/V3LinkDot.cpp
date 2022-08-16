@@ -1990,7 +1990,6 @@ private:
     bool isParamedClassRef(const AstNode* nodep) {
         if (const auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
             if (classRefp->paramsp()) return true;
-
             const auto* classp = classRefp->classOrPackageNodep();
             while (const auto* typedefp = VN_CAST(classp, Typedef)) classp = typedefp->subDTypep();
             return VN_IS(classp, ClassRefDType) && VN_AS(classp, ClassRefDType)->paramsp();
@@ -2544,8 +2543,9 @@ private:
         VL_RESTORER(m_pinSymp);
         {
             // ClassRef's have pins, so track
-            if (nodep->classOrPackagep())
+            if (nodep->classOrPackagep()) {
                 m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
+            }
             m_ds.init(m_curSymp);
             UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
             iterateChildren(nodep);
