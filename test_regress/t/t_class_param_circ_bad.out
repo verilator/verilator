@@ -1,0 +1,5 @@
+%Error: t/t_class_param_circ_bad.v:14:4: Exceeded maximum --module-recursion-depth of 100
+                                       : ... In instance t
+   14 |    ClsA #(PARAM+1) a;
+      |    ^~~~
+%Error: Internal Error: ../V3Param.cpp:#: should find just-made module

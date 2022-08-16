@@ -43,9 +43,6 @@ class Cls #(parameter PBASE = 12);
    typedef enum { E_PBASE = PBASE } enum_t;
 endclass
 
-class Subcls #(parameter P0 = 6) extends Cls #(P0);
-endclass
-
 typedef Cls#(8) Cls8_t;
 
 module t (/*AUTOARG*/);
@@ -55,7 +52,6 @@ module t (/*AUTOARG*/);
    Cls8_t c8;
    Wrap #(.P(16)) w16;
    Wrap2 #(.P(32)) w32;
-   Subcls #(.P0(36)) w36;
    // Wrap2 #(Wrap#(19)::PBASE * 2) w38;  // currently unsupported
    Wrap2 #(.P(38)) w38;
    initial begin
@@ -64,7 +60,6 @@ module t (/*AUTOARG*/);
       c8 = new;
       w16 = new;
       w32 = new;
-      w36 = new;
       w38 = new;
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
@@ -87,7 +82,6 @@ module t (/*AUTOARG*/);
       if (c8.get_p() != 8) $stop;
       if (w16.get_p() != 16) $stop;
       if (w32.get_p() != 32) $stop;
-      if (w36.get_p() != 36) $stop;
       if (w38.get_p() != 38) $stop;
 
       // verilator lint_off WIDTH
