@@ -71,14 +71,12 @@ public:
 
 class ClockVisitor final : public VNVisitor {
 private:
-    AstCFunc* m_evalp = nullptr;
-
     // STATE
-    AstNodeModule* m_modp = nullptr;  // Last module
+    AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstScope* m_scopep = nullptr;  // Current scope
     AstSenTree* m_lastSenp = nullptr;  // Last sensitivity match, so we can detect duplicates.
     AstIf* m_lastIfp = nullptr;  // Last sensitivity if active to add more under
-    bool m_inSampled = false;
+    bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -96,20 +94,18 @@ private:
         if (vscp->user1p()) return static_cast<AstVarScope*>(vscp->user1p());
         const AstVar* const varp = vscp->varp();
         const string newvarname
-            = (string("__Vsampled__") + vscp->scopep()->nameDotless() + "__" + varp->name());
-        AstVar* const newvarp
-            = new AstVar(vscp->fileline(), VVarType::MODULETEMP, newvarname, varp->dtypep());
+            = string("__Vsampled__") + vscp->scopep()->nameDotless() + "__" + varp->name();
+        FileLine* const flp = vscp->fileline();
+        AstVar* const newvarp = new AstVar{flp, VVarType::MODULETEMP, newvarname, varp->dtypep()};
         newvarp->noReset(true);  // Reset by below assign
-        m_modp->addStmtp(newvarp);
-        AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
+        m_scopep->modp()->addStmtp(newvarp);
+        AstVarScope* const newvscp = new AstVarScope{flp, m_scopep, newvarp};
         vscp->user1p(newvscp);
         m_scopep->addVarp(newvscp);
-        // At top, assign them
-        AstAssign* const finalp = new AstAssign(
-            vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
-            new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
+        // At the top of _eval, assign them
+        AstAssign* const finalp = new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE},
+                                                new AstVarRef{flp, vscp, VAccess::READ}};
         m_evalp->addInitsp(finalp);
-        //
         UINFO(4, "New Sampled: " << newvscp << endl);
         return newvscp;
     }
@@ -177,14 +173,7 @@ private:
         clearLastSen();
     }
 
-    // Sampling
-    virtual void visit(AstNodeModule* nodep) override {
-        VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildren(nodep);
-        }
-    }
+    // Create sampled values
     virtual void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         {
@@ -206,7 +195,7 @@ private:
         if (m_inSampled && !nodep->user1SetOnce()) {
             AstVarScope* const varscp = nodep->varScopep();
             AstVarScope* const lastscp = createSampledVar(varscp);
-            AstNode* const newp = new AstVarRef(nodep->fileline(), lastscp, VAccess::READ);
+            AstNode* const newp = new AstVarRef{nodep->fileline(), lastscp, VAccess::READ};
             newp->user1SetOnce();  // Don't sample this one
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
