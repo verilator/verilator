@@ -144,212 +144,6 @@ static void partCheckCachedScoreVsActual(uint32_t cached, uint32_t actual) {
 }
 
 //######################################################################
-// PartPropagateCp
-
-// Propagate increasing critical path (CP) costs through a graph.
-//
-// Usage:
-//  * Client increases the cost and/or CP at a node or small set of nodes
-//    (often a pair in practice, eg. edge contraction.)
-//  * Client instances a PartPropagateCp object
-//  * Client calls PartPropagateCp::cpHasIncreased() one or more times.
-//    Each call indicates that the inclusive CP of some "seed" vertex
-//    has increased to a given value.
-//    * NOTE: PartPropagateCp will neither read nor modify the cost
-//      or CPs at the seed vertices, it only accesses and modifies
-//      vertices wayward from the seeds.
-//  * Client calls PartPropagateCp::go(). Internally, this iteratively
-//    propagates the new CPs wayward through the graph.
-//
-template <class T_CostAccessor, class T_VtxCmp = std::less<V3GraphVertex*>>
-class PartPropagateCp final : GraphAlg<> {
-private:
-    // MEMBERS
-    const GraphWay m_way;  // CPs oriented in this direction: either FORWARD
-    //               // from graph-start to current node, or REVERSE
-    //               // from graph-end to current node.
-    T_CostAccessor* const m_accessp;  // Access cost and CPs on V3GraphVertex's.
-    //                        // confirm we only process each vertex once.
-    const bool m_slowAsserts;  // Enable nontrivial asserts
-    SortByValueMap<V3GraphVertex*, uint32_t, T_VtxCmp> m_pending;  // Pending rescores
-
-public:
-    // CONSTRUCTORS
-    PartPropagateCp(V3Graph* graphp, GraphWay way, T_CostAccessor* accessp, bool slowAsserts,
-                    V3EdgeFuncP edgeFuncp = &V3GraphEdge::followAlwaysTrue)
-        : GraphAlg<>{graphp, edgeFuncp}
-        , m_way{way}
-        , m_accessp{accessp}
-        , m_slowAsserts{slowAsserts} {}
-
-    // METHODS
-    void cpHasIncreased(V3GraphVertex* vxp, uint32_t newInclusiveCp) {
-        // For *vxp, whose CP-inclusive has just increased to
-        // newInclusiveCp, iterate to all wayward nodes, update the edges
-        // of each, and add each to m_pending if its overall CP has grown.
-        for (V3GraphEdge* edgep = vxp->beginp(m_way); edgep; edgep = edgep->nextp(m_way)) {
-            if (!m_edgeFuncp(edgep)) continue;
-            V3GraphVertex* const relativep = edgep->furtherp(m_way);
-            m_accessp->notifyEdgeCp(relativep, m_way, vxp, newInclusiveCp);
-
-            if (m_accessp->critPathCost(relativep, m_way) < newInclusiveCp) {
-                // relativep's critPathCost() is out of step with its
-                // longest !wayward edge. Schedule that to be resolved.
-                const uint32_t newPendingVal
-                    = newInclusiveCp - m_accessp->critPathCost(relativep, m_way);
-                const auto pair = m_pending.emplace(relativep, newPendingVal);
-                if (!pair.second && (newPendingVal > pair.first->second)) {
-                    m_pending.update(pair.first, newPendingVal);
-                }
-            }
-        }
-    }
-
-    void go() {
-        // m_pending maps each pending vertex to the amount that it wayward
-        // CP will grow.
-        //
-        // We can iterate over the pending set in reverse order, always
-        // choosing the nodes with the largest pending CP-growth.
-        //
-        // The intuition is: if the original seed node had its CP grow by
-        // 50, the most any wayward node can possibly grow is also 50.  So
-        // for anything pending to grow by 50, we know we can process it
-        // once and we won't have to grow its CP again on the current pass.
-        // After we're done with all the grow-by-50s, nothing else will
-        // grow by 50 again on the current pass, and we can process the
-        // grow-by-49s and we know we'll only have to process each one
-        // once.  And so on.
-        //
-        // This generalizes to multiple seed nodes also.
-        while (!m_pending.empty()) {
-            const auto it = m_pending.rbegin();
-            V3GraphVertex* const updateMep = it->first;
-            const uint32_t cpGrowBy = it->second;
-            m_pending.erase(it);
-
-            // For *updateMep, whose critPathCost was out-of-date with respect
-            // to its edges, update the critPathCost.
-            const uint32_t startCp = m_accessp->critPathCost(updateMep, m_way);
-            const uint32_t newCp = startCp + cpGrowBy;
-            if (m_slowAsserts) m_accessp->checkNewCpVersusEdges(updateMep, m_way, newCp);
-
-            m_accessp->setCritPathCost(updateMep, m_way, newCp);
-            cpHasIncreased(updateMep, newCp + m_accessp->cost(updateMep));
-        }
-    }
-
-private:
-    VL_DEBUG_FUNC;
-    VL_UNCOPYABLE(PartPropagateCp);
-};
-
-class PartPropagateCpSelfTest final {
-private:
-    // MEMBERS
-    V3Graph m_graph;  // A graph
-    V3GraphVertex* m_vx[50];  // All vertices within the graph
-    using CpMap = std::unordered_map<V3GraphVertex*, uint32_t>;
-    CpMap m_cp;  // Vertex-to-CP map
-    CpMap m_seen;  // Set of vertices we've seen
-
-    // CONSTRUCTORS
-    PartPropagateCpSelfTest() = default;
-    ~PartPropagateCpSelfTest() = default;
-
-    // METHODS
-protected:
-    friend class PartPropagateCp<PartPropagateCpSelfTest>;
-    void notifyEdgeCp(V3GraphVertex* /*vxp*/, GraphWay way, V3GraphVertex* throughp,
-                      uint32_t cp) const {
-        const uint32_t throughCost = critPathCost(throughp, way);
-        UASSERT_SELFTEST(uint32_t, cp, (1 + throughCost));
-    }
-
-private:
-    void checkNewCpVersusEdges(V3GraphVertex* vxp, GraphWay way, uint32_t cp) const {
-        // Don't need to check this in the self test; it supports an assert
-        // that runs in production code.
-    }
-    void setCritPathCost(V3GraphVertex* vxp, GraphWay /*way*/, uint32_t cost) {
-        m_cp[vxp] = cost;
-        // Confirm that we only set each node's CP once.  That's an
-        // important property of PartPropagateCp which allows it to be far
-        // faster than a recursive algorithm on some graphs.
-        const auto it = m_seen.find(vxp);
-        UASSERT_OBJ(it == m_seen.end(), vxp, "Set CP on node twice");
-        m_seen[vxp] = cost;
-    }
-    uint32_t critPathCost(V3GraphVertex* vxp, GraphWay /*way*/) const {
-        const auto it = m_cp.find(vxp);
-        if (it != m_cp.end()) return it->second;
-        return 0;
-    }
-    static uint32_t cost(const V3GraphVertex*) { return 1; }
-    void partInitCriticalPaths(bool checkOnly) {
-        // Set up the FORWARD cp's only.  This test only looks in one
-        // direction, it assumes REVERSE is symmetrical and would be
-        // redundant to test.
-        GraphStreamUnordered order(&m_graph);
-        while (const V3GraphVertex* const cvxp = order.nextp()) {
-            V3GraphVertex* const vxp = const_cast<V3GraphVertex*>(cvxp);
-            uint32_t cpCost = 0;
-            for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                V3GraphVertex* const parentp = edgep->fromp();
-                cpCost = std::max(cpCost, critPathCost(parentp, GraphWay::FORWARD) + 1);
-            }
-            if (checkOnly) {
-                UASSERT_SELFTEST(uint32_t, cpCost, critPathCost(vxp, GraphWay::FORWARD));
-            } else {
-                setCritPathCost(vxp, GraphWay::FORWARD, cpCost);
-            }
-        }
-    }
-    void go() {
-        // Generate a pseudo-random graph
-        std::array<uint64_t, 2> rngState
-            = {{0x12345678ULL, 0x9abcdef0ULL}};  // GCC 3.8.0 wants {{}}
-        // Create 50 vertices
-        for (auto& i : m_vx) i = new V3GraphVertex(&m_graph);
-        // Create 250 edges at random. Edges must go from
-        // lower-to-higher index vertices, so we get a DAG.
-        for (unsigned i = 0; i < 250; ++i) {
-            const unsigned idx1 = V3Os::rand64(rngState) % 50;
-            const unsigned idx2 = V3Os::rand64(rngState) % 50;
-            if (idx1 > idx2) {
-                new V3GraphEdge(&m_graph, m_vx[idx2], m_vx[idx1], 1);
-            } else if (idx2 > idx1) {
-                new V3GraphEdge(&m_graph, m_vx[idx1], m_vx[idx2], 1);
-            }
-        }
-
-        partInitCriticalPaths(false);
-
-        // This SelfTest class is also the T_CostAccessor
-        PartPropagateCp<PartPropagateCpSelfTest> prop(&m_graph, GraphWay::FORWARD, this, true);
-
-        // Seed the propagator with every input node;
-        // This should result in the complete graph getting all CP's assigned.
-        for (const auto& i : m_vx) {
-            if (!i->inBeginp()) prop.cpHasIncreased(i, 1 /* inclusive CP starts at 1 */);
-        }
-
-        // Run the propagator.
-        //  * The setCritPathCost() routine checks that each node's CP changes
-        //    at most once.
-        //  * The notifyEdgeCp routine is also self checking.
-        m_seen.clear();
-        prop.go();
-
-        // Finally, confirm that the entire graph appears to have correct CPs.
-        partInitCriticalPaths(true);
-    }
-
-public:
-    static void selfTest() { PartPropagateCpSelfTest().go(); }
-};
-
-//######################################################################
 // LogicMTask
 
 class LogicMTask final : public AbstractLogicMTask {
@@ -360,10 +154,6 @@ public:
     struct CmpLogicMTask {
         bool operator()(const LogicMTask* ap, const LogicMTask* bp) const {
             return ap->id() < bp->id();
-        }
-        bool operator()(const V3GraphVertex* ap, const V3GraphVertex* bp) const {
-            return operator()(static_cast<const LogicMTask*>(ap),
-                              static_cast<const LogicMTask*>(bp));
         }
     };
 
@@ -857,8 +647,8 @@ bool MergeCandidate::mergeWouldCreateCycle() const {
                          : static_cast<const MTaskEdge*>(this)->mergeWouldCreateCycle();
 }
 
-//######################################################################
-// Vertex utility classes
+// ######################################################################
+//  Vertex utility classes
 
 class OrderByPtrId final {
     PartPtrIdMap m_ids;
@@ -1014,6 +804,175 @@ static void partCheckCriticalPaths(V3Graph* mtasksp) {
         mtaskp->checkRelativesCp(GraphWay::REVERSE);
     }
 }
+
+// ######################################################################
+//  PartPropagateCp
+
+// Propagate increasing critical path (CP) costs through a graph.
+//
+// Usage:
+//  * Client increases the cost and/or CP at a node or small set of nodes
+//    (often a pair in practice, eg. edge contraction.)
+//  * Client instances a PartPropagateCp object
+//  * Client calls PartPropagateCp::cpHasIncreased() one or more times.
+//    Each call indicates that the inclusive CP of some "seed" vertex
+//    has increased to a given value.
+//    * NOTE: PartPropagateCp will neither read nor modify the cost
+//      or CPs at the seed vertices, it only accesses and modifies
+//      vertices wayward from the seeds.
+//  * Client calls PartPropagateCp::go(). Internally, this iteratively
+//    propagates the new CPs wayward through the graph.
+//
+
+class PartPropagateCp final : GraphAlg<> {
+private:
+    // MEMBERS
+    const GraphWay m_way;  // CPs oriented in this direction: either FORWARD
+    //               // from graph-start to current node, or REVERSE
+    //               // from graph-end to current node.
+    LogicMTask::CpCostAccessor m_access;  // Access cost and CPs on V3GraphVertex's.
+    //                        // confirm we only process each vertex once.
+    const bool m_slowAsserts;  // Enable nontrivial asserts
+    // Pending rescores
+    SortByValueMap<LogicMTask*, uint32_t, LogicMTask::CmpLogicMTask> m_pending;
+
+    std::set<LogicMTask*> m_seen;  // Used only with slow asserts to check mtasks visited only once
+
+public:
+    // CONSTRUCTORS
+    PartPropagateCp(V3Graph* graphp, GraphWay way, bool slowAsserts,
+                    V3EdgeFuncP edgeFuncp = &V3GraphEdge::followAlwaysTrue)
+        : GraphAlg<>{graphp, edgeFuncp}
+        , m_way{way}
+        , m_slowAsserts{slowAsserts} {}
+
+    // METHODS
+    void cpHasIncreased(V3GraphVertex* vxp, uint32_t newInclusiveCp) {
+        // For *vxp, whose CP-inclusive has just increased to
+        // newInclusiveCp, iterate to all wayward nodes, update the edges
+        // of each, and add each to m_pending if its overall CP has grown.
+        for (V3GraphEdge* edgep = vxp->beginp(m_way); edgep; edgep = edgep->nextp(m_way)) {
+            if (!m_edgeFuncp(edgep)) continue;
+            LogicMTask* const relativep = static_cast<LogicMTask*>(edgep->furtherp(m_way));
+            m_access.notifyEdgeCp(relativep, m_way, vxp, newInclusiveCp);
+
+            if (m_access.critPathCost(relativep, m_way) < newInclusiveCp) {
+                // relativep's critPathCost() is out of step with its
+                // longest !wayward edge. Schedule that to be resolved.
+                const uint32_t newPendingVal
+                    = newInclusiveCp - m_access.critPathCost(relativep, m_way);
+                const auto pair = m_pending.emplace(relativep, newPendingVal);
+                if (!pair.second && (newPendingVal > pair.first->second)) {
+                    m_pending.update(pair.first, newPendingVal);
+                }
+            }
+        }
+    }
+
+    void go() {
+        // m_pending maps each pending vertex to the amount that it wayward
+        // CP will grow.
+        //
+        // We can iterate over the pending set in reverse order, always
+        // choosing the nodes with the largest pending CP-growth.
+        //
+        // The intuition is: if the original seed node had its CP grow by
+        // 50, the most any wayward node can possibly grow is also 50.  So
+        // for anything pending to grow by 50, we know we can process it
+        // once and we won't have to grow its CP again on the current pass.
+        // After we're done with all the grow-by-50s, nothing else will
+        // grow by 50 again on the current pass, and we can process the
+        // grow-by-49s and we know we'll only have to process each one
+        // once.  And so on.
+        //
+        // This generalizes to multiple seed nodes also.
+        while (!m_pending.empty()) {
+            const auto it = m_pending.rbegin();
+            LogicMTask* const updateMep = it->first;
+            const uint32_t cpGrowBy = it->second;
+            m_pending.erase(it);
+
+            // For *updateMep, whose critPathCost was out-of-date with respect
+            // to its edges, update the critPathCost.
+            const uint32_t startCp = m_access.critPathCost(updateMep, m_way);
+            const uint32_t newCp = startCp + cpGrowBy;
+            if (VL_UNLIKELY(m_slowAsserts)) {
+                m_access.checkNewCpVersusEdges(updateMep, m_way, newCp);
+                // Confirm that we only set each node's CP once.  That's an
+                // important property of PartPropagateCp which allows it to be far
+                // faster than a recursive algorithm on some graphs.
+                const bool first = m_seen.insert(updateMep).second;
+                UASSERT_OBJ(first, updateMep, "Set CP on node twice");
+            }
+            m_access.setCritPathCost(updateMep, m_way, newCp);
+            cpHasIncreased(updateMep, newCp + m_access.cost(updateMep));
+        }
+    }
+
+private:
+    VL_DEBUG_FUNC;
+    VL_UNCOPYABLE(PartPropagateCp);
+};
+
+class PartPropagateCpSelfTest final {
+private:
+    // MEMBERS
+    V3Graph m_graph;  // A graph
+    LogicMTask* m_vx[50];  // All vertices within the graph
+
+    // CONSTRUCTORS
+    PartPropagateCpSelfTest() = default;
+    ~PartPropagateCpSelfTest() = default;
+
+    void go() {
+        // Generate a pseudo-random graph
+        std::array<uint64_t, 2> rngState
+            = {{0x12345678ULL, 0x9abcdef0ULL}};  // GCC 3.8.0 wants {{}}
+        // Create 50 vertices
+        for (auto& i : m_vx) {
+            i = new LogicMTask{&m_graph, nullptr};
+            i->setCost(1);
+        }
+        // Create 250 edges at random. Edges must go from
+        // lower-to-higher index vertices, so we get a DAG.
+        for (unsigned i = 0; i < 250; ++i) {
+            const unsigned idx1 = V3Os::rand64(rngState) % 50;
+            const unsigned idx2 = V3Os::rand64(rngState) % 50;
+            if (idx1 > idx2) {
+                if (!m_vx[idx2]->hasRelative(GraphWay::FORWARD, m_vx[idx1])) {
+                    new MTaskEdge{&m_graph, m_vx[idx2], m_vx[idx1], 1};
+                }
+            } else if (idx2 > idx1) {
+                if (!m_vx[idx1]->hasRelative(GraphWay::FORWARD, m_vx[idx2])) {
+                    new MTaskEdge{&m_graph, m_vx[idx1], m_vx[idx2], 1};
+                }
+            }
+        }
+
+        partInitCriticalPaths(&m_graph);
+
+        // This SelfTest class is also the T_CostAccessor
+        PartPropagateCp prop(&m_graph, GraphWay::FORWARD, true);
+
+        // Seed the propagator with every input node;
+        // This should result in the complete graph getting all CP's assigned.
+        for (const auto& i : m_vx) {
+            if (!i->inBeginp()) prop.cpHasIncreased(i, 1 /* inclusive CP starts at 1 */);
+        }
+
+        // Run the propagator.
+        //  * The setCritPathCost() routine checks that each node's CP changes
+        //    at most once.
+        //  * The notifyEdgeCp routine is also self checking.
+        prop.go();
+
+        // Finally, confirm that the entire graph appears to have correct CPs.
+        partCheckCriticalPaths(&m_graph);
+    }
+
+public:
+    static void selfTest() { PartPropagateCpSelfTest().go(); }
+};
 
 // Merge edges from a LogicMtask.
 //
@@ -1394,11 +1353,8 @@ private:
                                 << (donorNewCpFwd.propagate ? " true " : " false ")
                                 << donorNewCpFwd.propagateCp << endl);
 
-        LogicMTask::CpCostAccessor cpAccess;
-        PartPropagateCp<LogicMTask::CpCostAccessor, LogicMTask::CmpLogicMTask> forwardPropagator(
-            m_mtasksp, GraphWay::FORWARD, &cpAccess, m_slowAsserts);
-        PartPropagateCp<LogicMTask::CpCostAccessor, LogicMTask::CmpLogicMTask> reversePropagator(
-            m_mtasksp, GraphWay::REVERSE, &cpAccess, m_slowAsserts);
+        PartPropagateCp forwardPropagator(m_mtasksp, GraphWay::FORWARD, m_slowAsserts);
+        PartPropagateCp reversePropagator(m_mtasksp, GraphWay::REVERSE, m_slowAsserts);
 
         recipientp->setCritPathCost(GraphWay::FORWARD, recipientNewCpFwd.cp);
         if (recipientNewCpFwd.propagate) {
