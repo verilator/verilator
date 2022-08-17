@@ -338,7 +338,9 @@ private:
             ticks = VN_AS(nodep->ticksp(), Const)->toUInt();
         }
         UASSERT_OBJ(ticks >= 1, nodep, "0 tick should have been checked in V3Width");
-        AstNode* inp = nodep->exprp()->unlinkFrBack();
+        AstNode* const exprp = nodep->exprp()->unlinkFrBack();
+        AstNode* inp = new AstSampled(nodep->fileline(), exprp);
+        inp->dtypeFrom(exprp);
         AstVar* invarp = nullptr;
         AstSenTree* const sentreep = nodep->sentreep();
         sentreep->unlinkFrBack();
