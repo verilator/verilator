@@ -361,10 +361,6 @@ private:
         }
         nodep->replaceWith(inp);
     }
-    virtual void visit(AstSampled* nodep) override {
-        nodep->replaceWith(nodep->exprp()->unlinkFrBack());
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
 
     //========== Statements
     virtual void visit(AstDisplay* nodep) override {
