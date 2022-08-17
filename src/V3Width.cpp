@@ -2445,7 +2445,7 @@ private:
         // We can only reach this from constify called during V3Param (so before linkDotParam)
         // ... #(Cls#(...)::...) ...
         //                ^^~~~ this is our DOT
-        nodep->v3warn(E_UNSUPPORTED, "dotted expressions in parameters"
+        nodep->v3warn(E_UNSUPPORTED, "dotted expressions in parameters\n"
                                          << nodep->warnMore() << "... Suggest use a typedef");
     }
     virtual void visit(AstClassExtends* nodep) override {

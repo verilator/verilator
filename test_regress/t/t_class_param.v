@@ -52,15 +52,12 @@ module t (/*AUTOARG*/);
    Cls8_t c8;
    Wrap #(.P(16)) w16;
    Wrap2 #(.P(32)) w32;
-   // Wrap2 #(Wrap#(19)::PBASE * 2) w38;  // currently unsupported
-   Wrap2 #(.P(38)) w38;
    initial begin
       c12 = new;
       c4 = new;
       c8 = new;
       w16 = new;
       w32 = new;
-      w38 = new;
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
       if (Cls8_t::PBASE != 8) $stop;
@@ -82,7 +79,6 @@ module t (/*AUTOARG*/);
       if (c8.get_p() != 8) $stop;
       if (w16.get_p() != 16) $stop;
       if (w32.get_p() != 32) $stop;
-      if (w38.get_p() != 38) $stop;
 
       // verilator lint_off WIDTH
       c12.member = 32'haaaaaaaa;
