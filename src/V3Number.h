@@ -93,7 +93,7 @@ private:
     };
 
     int m_width = 0;  // Width (in bits) as specified/calculated
-    V3NumberDataType m_type : 2;
+    V3NumberDataType m_type;
 
 public:
     bool m_sized : 1;  // True if the user specified the width, else we track it.
