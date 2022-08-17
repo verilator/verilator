@@ -758,43 +758,43 @@ class ParamProcessor final {
         }
     }
 
-    bool nodeDeparamCommon(AstNode* nodep, AstNodeModule*& srcModp, AstPin* paramsp, AstPin* pinsp,
-                           bool any_overrides) {
+    bool nodeDeparamCommon(AstNode* nodep, AstNodeModule*& srcModpr, AstPin* paramsp,
+                           AstPin* pinsp, bool any_overrides) {
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
         // if (debug()) nodep->dumpTree(cout, "-cel2: ");
-        string longname = srcModp->name() + "_";
+        string longname = srcModpr->name() + "_";
         if (debug() > 8 && paramsp) paramsp->dumpTreeAndNext(cout, "-cellparams: ");
 
-        if (srcModp->hierBlock()) {
-            longname = parameterizedHierBlockName(srcModp, paramsp);
-            any_overrides = longname != srcModp->name();
+        if (srcModpr->hierBlock()) {
+            longname = parameterizedHierBlockName(srcModpr, paramsp);
+            any_overrides = longname != srcModpr->name();
         } else {
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                cellPinCleanup(nodep, pinp, srcModp, longname /*ref*/, any_overrides /*ref*/);
+                cellPinCleanup(nodep, pinp, srcModpr, longname /*ref*/, any_overrides /*ref*/);
             }
         }
         IfaceRefRefs ifaceRefRefs;
-        cellInterfaceCleanup(pinsp, srcModp, longname /*ref*/, any_overrides /*ref*/,
+        cellInterfaceCleanup(pinsp, srcModpr, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
         } else if (AstNodeModule* const paramedModp
-                   = m_hierBlocks.findByParams(srcModp->name(), paramsp, m_modp)) {
+                   = m_hierBlocks.findByParams(srcModpr->name(), paramsp, m_modp)) {
             paramedModp->dead(false);
             // We need to relink the pins to the new module
             relinkPinsByName(pinsp, paramedModp);
-            srcModp = paramedModp;
+            srcModpr = paramedModp;
         } else {
             const string newname
-                = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
+                = srcModpr->hierBlock() ? longname : moduleCalcName(srcModpr, longname);
             const ModInfo* const modInfop
-                = moduleFindOrClone(srcModp, nodep, paramsp, newname, ifaceRefRefs);
+                = moduleFindOrClone(srcModpr, nodep, paramsp, newname, ifaceRefRefs);
             // We need to relink the pins to the new module
             relinkPinsByName(pinsp, modInfop->m_modp);
             UINFO(8, "     Done with " << modInfop->m_modp << endl);
-            srcModp = modInfop->m_modp;
+            srcModpr = modInfop->m_modp;
         }
 
         // Delete the parameters from the cell; they're not relevant any longer.
@@ -802,28 +802,28 @@ class ParamProcessor final {
         return any_overrides;
     }
 
-    void cellDeparam(AstCell* nodep, AstNodeModule*& srcModp) {
+    void cellDeparam(AstCell* nodep, AstNodeModule*& srcModpr) {
         // Must always clone __Vrcm (recursive modules)
-        if (nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nodep->pinsp(),
+        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nodep->pinsp(),
                               nodep->recursive())) {
-            nodep->modp(srcModp);
-            nodep->modName(srcModp->name());
+            nodep->modp(srcModpr);
+            nodep->modName(srcModpr->name());
         }
         nodep->recursive(false);
     }
 
-    void classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule*& srcModp) {
-        if (nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false))
-            nodep->classOrPackagep(srcModp);
+    void classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule*& srcModpr) {
+        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false))
+            nodep->classOrPackagep(srcModpr);
     }
 
-    void classRefDeparam(AstClassRefDType* nodep, AstNodeModule*& srcModp) {
-        if (nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false))
-            nodep->classp(VN_AS(srcModp, Class));
+    void classRefDeparam(AstClassRefDType* nodep, AstNodeModule*& srcModpr) {
+        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false))
+            nodep->classp(VN_AS(srcModpr, Class));
     }
 
 public:
-    void nodeDeparam(AstNode* nodep, AstNodeModule*& srcModp, AstNodeModule* modp,
+    void nodeDeparam(AstNode* nodep, AstNodeModule*& srcModpr, AstNodeModule* modp,
                      const string& someInstanceName) {
         m_modp = modp;
         // Cell: Check for parameters in the instantiation.
@@ -834,14 +834,14 @@ public:
         if (debug() >= 10) nodep->dumpTree(cout, "-cell: ");
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
-        srcModp->someInstanceName(someInstanceName + "." + nodep->name());
+        srcModpr->someInstanceName(someInstanceName + "." + nodep->name());
 
         if (auto* cellp = VN_CAST(nodep, Cell)) {
-            cellDeparam(cellp, srcModp);
+            cellDeparam(cellp, srcModpr);
         } else if (auto* classRefp = VN_CAST(nodep, ClassRefDType)) {
-            classRefDeparam(classRefp, srcModp);
+            classRefDeparam(classRefp, srcModpr);
         } else if (auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
-            classRefDeparam(classRefp, srcModp);
+            classRefDeparam(classRefp, srcModpr);
         } else {
             nodep->v3fatalSrc("Expected module parametrization");
         }
