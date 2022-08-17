@@ -66,6 +66,11 @@ private:
             nodep->fmtp()->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
     }
+    AstSampled* newSampledExpr(AstNode* nodep) {
+        const auto sampledp = new AstSampled(nodep->fileline(), nodep);
+        sampledp->dtypeFrom(nodep);
+        return sampledp;
+    }
     AstVarRef* newMonitorNumVarRefp(AstNode* nodep, VAccess access) {
         if (!m_monitorNumVarp) {
             m_monitorNumVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorNum",
@@ -124,7 +129,7 @@ private:
     void newPslAssertion(AstNodeCoverOrAssert* nodep, AstNode* failsp) {
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
-        AstNode* const propp = nodep->propp()->unlinkFrBackWithNext();
+        AstNode* propp = nodep->propp()->unlinkFrBackWithNext();
         AstSenTree* const sentreep = nodep->sentreep();
         const string& message = nodep->name();
         AstNode* passsp = nodep->passsp();
@@ -162,6 +167,7 @@ private:
                 ++m_statAsImm;
             } else {
                 ++m_statAsNotImm;
+                propp = newSampledExpr(propp);
             }
             const bool force = VN_IS(nodep, AssertIntrinsic);
             if (passsp) passsp = newIfAssertOn(passsp, force);
