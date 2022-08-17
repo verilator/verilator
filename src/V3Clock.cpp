@@ -71,9 +71,14 @@ public:
 
 class ClockVisitor final : public VNVisitor {
 private:
+    AstCFunc* m_evalp = nullptr;
+
     // STATE
+    AstNodeModule* m_modp = nullptr;  // Last module
+    AstScope* m_scopep = nullptr;  // Current scope
     AstSenTree* m_lastSenp = nullptr;  // Last sensitivity match, so we can detect duplicates.
     AstIf* m_lastIfp = nullptr;  // Last sensitivity if active to add more under
+    bool m_inSampled = false;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -86,6 +91,27 @@ private:
             senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
         }
         return senEqnp;
+    }
+    AstVarScope* createSampledVar(AstVarScope* vscp) {
+        if (vscp->user1p()) return static_cast<AstVarScope*>(vscp->user1p());
+        const AstVar* const varp = vscp->varp();
+        const string newvarname
+            = (string("__Vsampled__") + vscp->scopep()->nameDotless() + "__" + varp->name());
+        AstVar* const newvarp
+            = new AstVar(vscp->fileline(), VVarType::MODULETEMP, newvarname, varp->dtypep());
+        newvarp->noReset(true);  // Reset by below assign
+        m_modp->addStmtp(newvarp);
+        AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
+        vscp->user1p(newvscp);
+        m_scopep->addVarp(newvscp);
+        // At top, assign them
+        AstAssign* const finalp = new AstAssign(
+            vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
+            new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
+        m_evalp->addInitsp(finalp);
+        //
+        UINFO(4, "New Sampled: " << newvscp << endl);
+        return newvscp;
     }
     AstIf* makeActiveIf(AstSenTree* sensesp) {
         AstNode* const senEqnp = createSenseEquation(sensesp->sensesp());
@@ -151,12 +177,51 @@ private:
         clearLastSen();
     }
 
+    // Sampling
+    virtual void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+    }
+    virtual void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
+        {
+            m_scopep = nodep;
+            iterateChildren(nodep);
+        }
+    }
+    virtual void visit(AstSampled* nodep) override {
+        VL_RESTORER(m_inSampled);
+        {
+            m_inSampled = true;
+            iterateChildren(nodep);
+            nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
+    virtual void visit(AstVarRef* nodep) override {
+        iterateChildren(nodep);
+        if (m_inSampled && !nodep->user1SetOnce()) {
+            AstVarScope* const varscp = nodep->varScopep();
+            AstVarScope* const lastscp = createSampledVar(varscp);
+            AstNode* const newp = new AstVarRef(nodep->fileline(), lastscp, VAccess::READ);
+            newp->user1SetOnce();  // Don't sample this one
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
+
     //--------------------
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit ClockVisitor(AstNetlist* netlistp) { iterate(netlistp); }
+    explicit ClockVisitor(AstNetlist* netlistp) {
+        m_evalp = netlistp->evalp();
+        iterate(netlistp);
+    }
     virtual ~ClockVisitor() override = default;
 };
 
