@@ -126,6 +126,7 @@ public:
     // ACCESSORS
     // Set size in megabytes after which new file should be created
     void rolloverMB(uint64_t rolloverMB) { m_rolloverMB = rolloverMB; }
+    uint64_t getWroteBytes() { return m_wroteBytes; }
 
     // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
@@ -302,6 +303,8 @@ public:
     void set_time_resolution(const std::string& unit) VL_MT_SAFE {
         m_sptrace.set_time_resolution(unit);
     }
+    uint64_t get_wrote_bytes() { return m_sptrace.getWroteBytes(); }
+
     // Set variables to dump, using $dumpvars format
     // If level = 0, dump everything and hier is then ignored
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE {
