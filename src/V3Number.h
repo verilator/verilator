@@ -60,16 +60,16 @@ public:
 
     enum class V3NumberDataType : uint8_t {
         UNINITIALIZED = 0,
-        STRING = 1,
+        LOGIC = 1,
         DOUBLE = 2,
-        LOGIC = 3,
+        STRING = 3,
     };
     inline friend std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) {
         switch (rhs) {
         case V3NumberDataType::UNINITIALIZED: return os << "UNINITIALIZED";
-        case V3NumberDataType::STRING: return os << "STRING";
-        case V3NumberDataType::DOUBLE: return os << "DOUBLE";
         case V3NumberDataType::LOGIC: return os << "LOGIC";
+        case V3NumberDataType::DOUBLE: return os << "DOUBLE";
+        case V3NumberDataType::STRING: return os << "STRING";
         }
         return os;
     }
@@ -87,7 +87,6 @@ private:
 
     // MEMBERS
     union {
-        uint8_t m_uninitializedMemberDoNotUse;  // Dummy member to avoid automatic initialization.
         std::array<ValueAndX, INLINE_WORDS> m_inlineNumber;
         std::vector<ValueAndX> m_dynamicNumber;
         std::string m_string;
