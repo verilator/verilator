@@ -937,7 +937,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             iterateChildren(nodep);
             UINFO(9, dbgState() << nodep << endl);
             // Constification always moves const to LHS
-            const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
+            AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
             AstVarRef* const varrefp = VN_CAST(nodep->rhsp(), VarRef);  // Input variable
             if (constp && constp->user1p() && varrefp) {
                 // 3'b1z0 -> ((3'b101 == in__en) && (3'b100 == in))
@@ -955,6 +955,21 @@ class TristateVisitor final : public TristateBaseVisitor {
                                     // Keep the caseeq if there are X's present
                                     new AstEqCase(fl, new AstConst(fl, oneIfEnOne), varrefp));
                 if (neq) newp = new AstLogNot(fl, newp);
+                UINFO(9, "       newceq " << newp << endl);
+                if (debug() >= 9) nodep->dumpTree(cout, "-caseeq-old: ");
+                if (debug() >= 9) newp->dumpTree(cout, "-caseeq-new: ");
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else if (constp && nodep->rhsp()->user1p()) {
+                FileLine* const fl = nodep->fileline();
+                constp->unlinkFrBack();
+                AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
+                AstNode* newp = new AstLogAnd{
+                    fl, new AstEq{fl, newAllZerosOrOnes(constp, false), rhsp->user1p()},
+                    // Keep the caseeq if there are X's present
+                    new AstEqCase{fl, constp, rhsp}};
+                if (neq) newp = new AstLogNot{fl, newp};
+                rhsp->user1p(nullptr);
                 UINFO(9, "       newceq " << newp << endl);
                 if (debug() >= 9) nodep->dumpTree(cout, "-caseeq-old: ");
                 if (debug() >= 9) newp->dumpTree(cout, "-caseeq-new: ");
