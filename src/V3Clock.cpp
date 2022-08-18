@@ -193,6 +193,9 @@ private:
     virtual void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
         if (m_inSampled && !nodep->user1SetOnce()) {
+            if (!nodep->access().isReadOnly()) {
+                nodep->v3error("Assigning to variable inside a sampled expression");
+            }
             AstVarScope* const varscp = nodep->varScopep();
             AstVarScope* const lastscp = createSampledVar(varscp);
             AstNode* const newp = new AstVarRef{nodep->fileline(), lastscp, VAccess::READ};
