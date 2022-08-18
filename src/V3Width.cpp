@@ -5050,7 +5050,22 @@ private:
         m_procedurep = nullptr;
     }
     virtual void visit(AstSenItem* nodep) override {
-        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        UASSERT_OBJ(nodep->isClocked(), nodep, "Invalid edge");
+        // Optimize concat/replicate senitems; this has to be done here at the latest, otherwise we
+        // emit WIDTHCONCAT if there are unsized constants
+        if (VN_IS(nodep->sensp(), Concat) || VN_IS(nodep->sensp(), Replicate)) {
+            auto* const concatOrReplp = VN_CAST(nodep->sensp(), NodeBiop);
+            auto* const rhsp = concatOrReplp->rhsp()->unlinkFrBack();
+            if (nodep->edgeType() == VEdgeType::ET_CHANGED) {
+                // If it's ET_CHANGED, split concatenations into multiple senitems
+                auto* const lhsp = concatOrReplp->lhsp()->unlinkFrBack();
+                nodep->addNextHere(new AstSenItem{lhsp->fileline(), nodep->edgeType(), lhsp});
+            }  // Else only use the RHS
+            nodep->replaceWith(new AstSenItem{rhsp->fileline(), nodep->edgeType(), rhsp});
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else {
+            userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        }
     }
     virtual void visit(AstWith* nodep) override {
         // Should otherwise be underneath a method call

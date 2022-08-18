@@ -3027,15 +3027,8 @@ event_expression<senItemp>:     // IEEE: event_expression - split over several
 
 senitem<senItemp>:              // IEEE: part of event_expression, non-'OR' ',' terms
                 senitemEdge                             { $$ = $1; }
-        |       senitemVar                              { $$ = $1; }
-        |       '(' senitem ')'                         { $$ = $2; }
-        //UNSUP expr                                    { UNSUP }
-        |       '{' event_expression '}'                { $$ = $2; }
-        |       senitem yP_ANDAND senitem               { $$ = new AstSenItem($2, AstSenItem::Illegal()); }
+        |       expr                                    { $$ = new AstSenItem{$<fl>1, VEdgeType::ET_CHANGED, $1}; }
         //UNSUP expr yIFF expr                          { UNSUP }
-        // Since expr is unsupported we allow and ignore constants (removed in V3Const)
-        |       yaINTNUM                                { $$ = nullptr; }
-        |       yaFLOATNUM                              { $$ = nullptr; }
         ;
 
 senitemVar<senItemp>:
@@ -3043,19 +3036,11 @@ senitemVar<senItemp>:
         ;
 
 senitemEdge<senItemp>:          // IEEE: part of event_expression
-        //UNSUP                 // Below are all removed
-                yPOSEDGE idClassSel                     { $$ = new AstSenItem($1, VEdgeType::ET_POSEDGE, $2); }
-        |       yNEGEDGE idClassSel                     { $$ = new AstSenItem($1, VEdgeType::ET_NEGEDGE, $2); }
-        |       yEDGE idClassSel                        { $$ = new AstSenItem($1, VEdgeType::ET_BOTHEDGE, $2); }
-        |       yPOSEDGE '(' idClassSel ')'             { $$ = new AstSenItem($1, VEdgeType::ET_POSEDGE, $3); }
-        |       yNEGEDGE '(' idClassSel ')'             { $$ = new AstSenItem($1, VEdgeType::ET_NEGEDGE, $3); }
-        |       yEDGE '(' idClassSel ')'                { $$ = new AstSenItem($1, VEdgeType::ET_BOTHEDGE, $3); }
-        //UNSUP                 // Above are all removed, replace with:
-        //UNSUP yPOSEDGE expr                           { UNSUP }
+                yPOSEDGE expr                     { $$ = new AstSenItem{$1, VEdgeType::ET_POSEDGE, $2}; }
+        |       yNEGEDGE expr                     { $$ = new AstSenItem{$1, VEdgeType::ET_NEGEDGE, $2}; }
+        |       yEDGE expr                        { $$ = new AstSenItem{$1, VEdgeType::ET_BOTHEDGE, $2}; }
         //UNSUP yPOSEDGE expr yIFF expr                 { UNSUP }
-        //UNSUP yNEGEDGE expr                           { UNSUP }
         //UNSUP yNEGEDGE expr yIFF expr                 { UNSUP }
-        //UNSUP yEDGE expr                              { UNSUP }
         //UNSUP yEDGE expr yIFF expr                    { UNSUP }
         ;
 

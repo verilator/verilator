@@ -145,42 +145,6 @@ private:
             nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
         }
     }
-
-    virtual void visit(AstSenItem* nodep) override {
-        // Remove bit selects, and bark if it's not a simple variable
-        iterateChildren(nodep);
-        if (!nodep->isClocked()) {
-            // Old V1995 sensitivity list; we'll probably mostly ignore
-            bool did = true;
-            while (did) {
-                did = false;
-                if (AstNodeSel* const selp = VN_CAST(nodep->sensp(), NodeSel)) {
-                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
-                    selp->replaceWith(fromp);
-                    VL_DO_DANGLING(selp->deleteTree(), selp);
-                    did = true;
-                }
-                // NodeSel doesn't include AstSel....
-                if (AstSel* const selp = VN_CAST(nodep->sensp(), Sel)) {
-                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
-                    selp->replaceWith(fromp);
-                    VL_DO_DANGLING(selp->deleteTree(), selp);
-                    did = true;
-                }
-                if (AstNodePreSel* const selp = VN_CAST(nodep->sensp(), NodePreSel)) {
-                    AstNode* const fromp = selp->fromp()->unlinkFrBack();
-                    selp->replaceWith(fromp);
-                    VL_DO_DANGLING(selp->deleteTree(), selp);
-                    did = true;
-                }
-            }
-        }
-        if (nodep->isIllegal()) {
-            if (debug()) nodep->dumpTree(cout, "-tree: ");
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Complex statement in sensitivity list");
-        }
-    }
-
     virtual void visit(AstNodePreSel* nodep) override {
         if (!nodep->attrp()) {
             iterateChildren(nodep);
