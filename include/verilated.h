@@ -91,7 +91,8 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
-template <class, class> class VerilatedTrace;
+template <class, class>
+class VerilatedTrace;
 class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
@@ -283,7 +284,8 @@ public:
 
 private:
     // The following are for use by Verilator internals only
-    template <class, class> friend class VerilatedTrace;
+    template <class, class>
+    friend class VerilatedTrace;
     // Run-time trace configuration requested by this model
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 };
@@ -558,7 +560,8 @@ public:
     /// releases - contact the authors before production use.
     void scopesDump() const VL_MT_SAFE;
 
-public:  // But for internal use only
+    // METHODS - public but for internal use only
+
     // Internal: access to implementation class
     VerilatedContextImp* impp() { return reinterpret_cast<VerilatedContextImp*>(this); }
     const VerilatedContextImp* impp() const {
@@ -884,7 +887,6 @@ public:
     }
 #endif
 
-public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
     // Returns pointer to thread-local static data (overwritten on next call)

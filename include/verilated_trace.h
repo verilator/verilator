@@ -43,15 +43,18 @@
 // clang-format on
 
 class VlThreadPool;
-template <class T_Buffer> class VerilatedTraceBuffer;
-template <class T_Buffer> class VerilatedTraceOffloadBuffer;
+template <class T_Buffer>
+class VerilatedTraceBuffer;
+template <class T_Buffer>
+class VerilatedTraceOffloadBuffer;
 
 #ifdef VL_THREADED
 //=============================================================================
 // Offloaded tracing
 
 // A simple synchronized first in first out queue
-template <class T> class VerilatedThreadQueue final {  // LCOV_EXCL_LINE  // lcov bug
+template <class T>
+class VerilatedThreadQueue final {  // LCOV_EXCL_LINE  // lcov bug
 private:
     mutable VerilatedMutex m_mutex;  // Protects m_queue
     std::condition_variable_any m_cv;
@@ -137,7 +140,8 @@ public:
 
 // T_Trace is the format specific subclass of VerilatedTrace.
 // T_Buffer is the format specific base class of VerilatedTraceBuffer.
-template <class T_Trace, class T_Buffer> class VerilatedTrace VL_NOT_FINAL {
+template <class T_Trace, class T_Buffer>
+class VerilatedTrace VL_NOT_FINAL {
 public:
     using Buffer = VerilatedTraceBuffer<T_Buffer>;
     using OffloadBuffer = VerilatedTraceOffloadBuffer<T_Buffer>;
@@ -384,7 +388,7 @@ public:
 
 // T_Buffer is the format specific base class of VerilatedTraceBuffer.
 // The format-specific hot-path methods use duck-typing via T_Buffer for performance.
-template <class T_Buffer>  //
+template <class T_Buffer>
 class VerilatedTraceBuffer VL_NOT_FINAL : public T_Buffer {
 protected:
     // Type of the owner trace file
@@ -401,7 +405,7 @@ protected:
     EData* const m_sigs_enabledp;  // Bit vector of enabled codes (nullptr = all on)
 
     explicit VerilatedTraceBuffer(Trace& owner);
-    virtual ~VerilatedTraceBuffer() = default;
+    ~VerilatedTraceBuffer() override = default;
 
 public:
     //=========================================================================
@@ -477,7 +481,7 @@ public:
 
 // T_Buffer is the format specific base class of VerilatedTraceBuffer.
 // The format-specific hot-path methods use duck-typing via T_Buffer for performance.
-template <class T_Buffer>  //
+template <class T_Buffer>
 class VerilatedTraceOffloadBuffer final : public VerilatedTraceBuffer<T_Buffer> {
     using typename VerilatedTraceBuffer<T_Buffer>::Trace;
 
@@ -487,7 +491,7 @@ class VerilatedTraceOffloadBuffer final : public VerilatedTraceBuffer<T_Buffer> 
     uint32_t* const m_offloadBufferEndp;  // End of offload buffer
 
     explicit VerilatedTraceOffloadBuffer(Trace& owner);
-    virtual ~VerilatedTraceOffloadBuffer() = default;
+    ~VerilatedTraceOffloadBuffer() override = default;
 
 public:
     //=========================================================================

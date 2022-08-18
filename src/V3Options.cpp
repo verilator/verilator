@@ -17,13 +17,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3Ast.h"
-#include "V3Os.h"
 #include "V3Options.h"
-#include "V3OptionParser.h"
+
+#include "V3Ast.h"
 #include "V3Error.h"
 #include "V3File.h"
+#include "V3Global.h"
+#include "V3OptionParser.h"
+#include "V3Os.h"
 #include "V3PreShell.h"
 #include "V3String.h"
 
@@ -339,7 +340,7 @@ bool V3Options::hasParameter(const string& name) {
 }
 
 string V3Options::parameter(const string& name) {
-    const string value = m_parameters.find(name)->second;
+    string value = m_parameters.find(name)->second;
     m_parameters.erase(m_parameters.find(name));
     return value;
 }
@@ -477,7 +478,7 @@ string V3Options::fileExists(const string& filename) {
         return "";  // Not found
     }
     // Check if it is a directory, ignore if so
-    const string filenameOut = V3Os::filenameFromDirBase(dir, basename);
+    string filenameOut = V3Os::filenameFromDirBase(dir, basename);
     if (!fileStatNormal(filenameOut)) return "";  // Directory
     return filenameOut;
 }
@@ -518,11 +519,11 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // using the incdir and libext's.
     // Return "" if not found.
     for (const string& dir : m_impp->m_incDirUsers) {
-        const string exists = filePathCheckOneDir(modname, dir);
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirFallbacks) {
-        const string exists = filePathCheckOneDir(modname, dir);
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
 
@@ -1010,11 +1011,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (!strcmp(valp, "clang")) {
             m_compLimitBlocks = 80;  // limit unknown
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
-            m_compLimitParens = 80;  // limit unknown
+            m_compLimitParens = 240;  // controlled by -fbracket-depth, which defaults to 256
         } else if (!strcmp(valp, "gcc")) {
             m_compLimitBlocks = 0;  // Bug free
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
-            m_compLimitParens = 0;  // Bug free
+            m_compLimitParens = 240;  // Unlimited, but generate same code as for clang
         } else if (!strcmp(valp, "msvc")) {
             m_compLimitBlocks = 80;  // 128, but allow some room
             m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs

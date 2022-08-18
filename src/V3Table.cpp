@@ -24,11 +24,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Table.h"
+
+#include "V3Ast.h"
+#include "V3Global.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
-#include "V3Ast.h"
 
 #include <cmath>
 #include <vector>

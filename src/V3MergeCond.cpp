@@ -75,13 +75,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3MergeCond.h"
-#include "V3Stats.h"
+
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
-#include "V3Hasher.h"
 #include "V3DupFinder.h"
+#include "V3Global.h"
+#include "V3Hasher.h"
+#include "V3Stats.h"
 
 #include <queue>
 #include <set>
@@ -414,7 +415,7 @@ public:
     // Given an AstNode list (held via AstNode::nextp()), move conditional statements as close
     // together as possible
     static AstNode* optimize(AstNode* nodep, const StmtPropertiesAllocator& stmtProperties) {
-        CodeMotionOptimizeVisitor{nodep, stmtProperties};
+        { CodeMotionOptimizeVisitor{nodep, stmtProperties}; }
         // It is possible for the head of the list to be moved later such that it is no longer
         // in head position. If so, rewind the list and return the new head.
         while (nodep->backp()->nextp() == nodep) nodep = nodep->backp();
@@ -790,6 +791,8 @@ private:
     // otherwise end the current merge. Return ture if added, false if ended merge.
     bool addIfHelpfulElseEndMerge(AstNodeStmt* nodep) {
         UASSERT_OBJ(m_mgFirstp, nodep, "List must be open");
+        if (!checkOrMakeMergeable(nodep)) return false;
+        if (!m_mgFirstp) return false;  // If 'checkOrMakeMergeable' closed the list
         if (m_mgNextp == nodep) {
             if (isSimplifiableNode(nodep)) {
                 if (addToList(nodep, nullptr)) return true;

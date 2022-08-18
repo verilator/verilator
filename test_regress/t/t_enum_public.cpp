@@ -7,8 +7,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#include "Vt_enum_public.h"
 
+#include "Vt_enum_public.h"
 #include "Vt_enum_public_p3.h"
 #include "Vt_enum_public_p62.h"
 

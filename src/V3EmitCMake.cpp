@@ -17,11 +17,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3Os.h"
 #include "V3EmitCMake.h"
+
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3HierBlock.h"
+#include "V3Os.h"
 
 #include <memory>
 
@@ -36,7 +37,8 @@ class CMakeEmitter final {
     // STATIC FUNCTIONS
 
     // Concatenate all strings in 'strs' with ' ' between them.
-    template <typename List> static string cmake_list(const List& strs) {
+    template <typename List>
+    static string cmake_list(const List& strs) {
         string s;
         if (strs.begin() != strs.end()) {
             s.append("\"");
@@ -208,19 +210,15 @@ class CMakeEmitter final {
                 *of << "target_link_libraries(${TOP_TARGET_NAME}  PRIVATE " << prefix << ")\n";
                 if (!children.empty()) {
                     *of << "target_link_libraries(" << prefix << " INTERFACE";
-                    for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
-                         child != children.end(); ++child) {
-                        *of << " " << (*child)->hierPrefix();
-                    }
+                    for (const auto& childr : children) { *of << " " << (childr)->hierPrefix(); }
                     *of << ")\n";
                 }
                 *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "
                     << hblockp->modp()->name() << " DIRECTORY "
                     << deslash(v3Global.opt.makeDir() + "/" + prefix) << " SOURCES ";
-                for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
-                     child != children.end(); ++child) {
+                for (const auto& childr : children) {
                     *of << " "
-                        << deslash(v3Global.opt.makeDir() + "/" + (*child)->hierWrapper(true));
+                        << deslash(v3Global.opt.makeDir() + "/" + childr->hierWrapper(true));
                 }
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();

@@ -47,16 +47,17 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Param.h"
+
 #include "V3Ast.h"
 #include "V3Case.h"
 #include "V3Const.h"
+#include "V3Global.h"
+#include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
-#include "V3Width.h"
 #include "V3Unroll.h"
-#include "V3Hasher.h"
+#include "V3Width.h"
 
 #include <cctype>
 #include <deque>
@@ -185,19 +186,21 @@ public:
             return pinValuep->num().toString() == hierOptParamp->num().toString();
         }
 
-        // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the previous
-        // run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted to
-        // hierOptParamp width.
-        V3Number varNum(pinValuep, hierOptParamp->num().width());
         if (hierOptParamp->isDouble()) {
-            varNum.isDouble(true);
+            double var;
             if (pinValuep->isDouble()) {
-                varNum.opAssign(pinValuep->num());
+                var = pinValuep->num().toDouble();
             } else {  // Cast from integer to real
+                V3Number varNum{pinValuep, 0.0};
                 varNum.opIToRD(pinValuep->num());
+                var = varNum.toDouble();
             }
-            return v3EpsilonEqual(varNum.toDouble(), hierOptParamp->num().toDouble());
+            return v3EpsilonEqual(var, hierOptParamp->num().toDouble());
         } else {  // Now integer type is assumed
+            // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the
+            // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
+            // to hierOptParamp width.
+            V3Number varNum{pinValuep, hierOptParamp->num().width()};
             if (pinValuep->isDouble()) {  // Need to cast to int
                 // Parameter is actually an integral type, but passed value is floating point.
                 // Conversion from real to integer uses rounding in V3Width.cpp
@@ -289,7 +292,7 @@ class ParamProcessor final {
             }
         }
     }
-    string paramSmallName(AstNodeModule* modp, AstNode* varp) {
+    static string paramSmallName(AstNodeModule* modp, AstNode* varp) {
         if (varp->user4() <= 1) makeSmallNames(modp);
         int index = varp->user4() / 256;
         const char ch = varp->user4() & 255;

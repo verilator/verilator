@@ -35,10 +35,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
 #include "V3Ast.h"
-#include "V3Width.h"
+#include "V3Error.h"
 #include "V3Task.h"
+#include "V3Width.h"
 
 #include <deque>
 #include <sstream>
@@ -183,7 +183,7 @@ public:
             }
             m_whyNotOptimizable = why;
             std::ostringstream stack;
-            for (auto& callstack : vlstd::reverse_view(m_callStack)) {
+            for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
                 AstFuncRef* const funcp = callstack->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from "
                       << funcp->prettyName() << "() with parameters:";
@@ -193,9 +193,10 @@ public:
                     AstVar* const portp = conIt->first;
                     AstNode* const pinp = conIt->second->exprp();
                     AstNodeDType* const dtypep = pinp->dtypep();
-                    if (AstConst* const valp = fetchConstNull(pinp))
+                    if (AstConst* const valp = fetchConstNull(pinp)) {
                         stack << "\n           " << portp->prettyName() << " = "
                               << prettyNumber(&valp->num(), dtypep);
+                    }
                 }
             }
             m_whyNotOptimizable += stack.str();
@@ -238,13 +239,11 @@ private:
         }
         if (allocNewConst) {
             // Need to allocate new constant
-            constp = new AstConst{nodep->fileline(), AstConst::DtypedValue{}, nodep->dtypep(), 0};
+            constp = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
             // Mark as in use, add to free list for later reuse
             constp->user2(1);
             freeList.push_back(constp);
         }
-        constp->num().isDouble(nodep->isDouble());
-        constp->num().isString(nodep->isString());
         return constp;
     }
 
@@ -380,7 +379,7 @@ private:
         UASSERT_OBJ(vscp, nodep, "Not linked");
         return vscp;
     }
-    int unrollCount() {
+    int unrollCount() const {
         return m_params ? v3Global.opt.unrollCount() * 16 : v3Global.opt.unrollCount();
     }
     bool jumpingOver(AstNode* nodep) {

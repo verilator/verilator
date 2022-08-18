@@ -9,17 +9,17 @@
 //
 //*************************************************************************
 
-#include "Vt_vpi_unimpl.h"
 #include "verilated.h"
-#include "svdpi.h"
-
-#include "Vt_vpi_unimpl__Dpi.h"
-
 #include "verilated_vcd_c.h"
+
+#include "Vt_vpi_unimpl.h"
+#include "Vt_vpi_unimpl__Dpi.h"
+#include "svdpi.h"
 // No verilated_vpi.h, make sure can link without it
 
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestVpi.h"
 
 // __FILE__ is too long

@@ -20,9 +20,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3CoverageJoin.h"
+
 #include "V3DupFinder.h"
+#include "V3Global.h"
 #include "V3Stats.h"
 
 #include <vector>

@@ -322,7 +322,10 @@ cppcheck: $(CPPCHECK_DEP)
 	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DVL_THREADED=1 $(CPPCHECK_INC) $<
 
 CLANGTIDY = clang-tidy
-CLANGTIDY_FLAGS = -config='' -checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables'
+CLANGTIDY_FLAGS = -config='' \
+	-header-filter='.*' \
+	-checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
+
 CLANGTIDY_DEP = $(subst .h,.h.tidy,$(CPPCHECK_H)) \
 	$(subst .cpp,.cpp.tidy,$(CPPCHECK_CPP))
 CLANGTIDY_DEFS = -DVL_DEBUG=1 -DVL_THREADED=1 -DVL_CPPCHECK=1
@@ -331,7 +334,7 @@ clang-tidy: $(CLANGTIDY_DEP)
 %.cpp.tidy: %.cpp
 	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- $(CLANGTIDY_DEFS) $(CPPCHECK_INC) | 2>&1 tee $@
 %.h.tidy: %.h
-	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- $(CLANGTIDY_DEFS) $(CPPCHECK_INC) | 2>&1 tee $@
+	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- $(CLANGTIDY_DEFS) $(CPPCHECK_INC) -x c++-header | 2>&1 tee $@
 
 analyzer-src:
 	-rm -rf src/obj_dbg

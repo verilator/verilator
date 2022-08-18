@@ -1171,7 +1171,7 @@ package_import_itemObj<strp>:   // IEEE: part of package_import_item
 
 package_export_declaration<nodep>: // IEEE: package_export_declaration
                 yEXPORT '*' yP_COLONCOLON '*' ';'
-                        { $$ = new AstPackageExportStarStar{$<fl>2}; SYMP->exportStarStar($<scp>1); }
+                        { $$ = new AstPackageExportStarStar{$<fl>2}; SYMP->exportStarStar(); }
         |       yEXPORT package_export_itemList ';'     { $$ = $2; }
         ;
 
@@ -1182,8 +1182,8 @@ package_export_itemList<nodep>:
 
 package_export_item<nodep>:     // ==IEEE: package_export_item
                 idCC yP_COLONCOLON package_import_itemObj
-                        { $$ = new AstPackageExport($<fl>3, VN_CAST($<scp>1, Package), *$3);
-                          SYMP->exportItem($<scp>1,*$3); }
+                        { $$ = new AstPackageExport{$<fl>3, VN_CAST($<scp>1, Package), *$3};
+                          if ($<scp>1) SYMP->exportItem($<scp>1, *$3); }
         ;
 
 //**********************************************************************
@@ -3532,8 +3532,6 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         //                      // id/*member*/ is part of constExpr below
         //UNSUP constExpr                               { $$ = $1; }
         //                      // IEEE: assignment_pattern_key
-        //UNSUP simple_type                             { $1->v3error("Unsupported: '{} with data type as key"); $$ = $1; }
-        //                      // simple_type reference looks like constExpr
         //                      // Verilator:
         //                      //   The above expressions cause problems because "foo" may be
         //                      //   a constant identifier (if array) or a reference to the
@@ -3544,6 +3542,7 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         |       yaFLOATNUM                              { $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
         |       id                                      { $$ = new AstText($<fl>1,*$1); }
         |       strAsInt                                { $$ = $1; }
+        |       simple_type                             { $$ = $1; }
         ;
 
 assignment_pattern<patternp>:   // ==IEEE: assignment_pattern

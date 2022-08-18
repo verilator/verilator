@@ -64,12 +64,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3LinkDot.h"
-#include "V3SymTable.h"
-#include "V3Graph.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
+#include "V3Graph.h"
 #include "V3String.h"
+#include "V3SymTable.h"
 
 #include <algorithm>
 #include <map>
@@ -1902,7 +1903,7 @@ private:
     static int debug() { return LinkDotState::debug(); }
 
     // METHODS - Variables
-    void createImplicitVar(VSymEnt* lookupSymp, AstVarRef* nodep, AstNodeModule* modp,
+    void createImplicitVar(VSymEnt* /*lookupSymp*/, AstVarRef* nodep, AstNodeModule* modp,
                            VSymEnt* moduleSymp, bool noWarn) {
         // Create implicit after warning
         if (!nodep->varp()) {

@@ -23,8 +23,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
 #include "V3Ast.h"
+#include "V3Error.h"
 #include "V3Hasher.h"
 
 #include <map>
@@ -44,7 +44,7 @@ class V3DupFinder final : private std::multimap<V3Hash, AstNode*> {
     using Super = std::multimap<V3Hash, AstNode*>;
 
     // MEMBERS
-    const V3Hasher* const m_hasherp;  // Pointer to owned hasher
+    const V3Hasher* const m_hasherp = nullptr;  // Pointer to owned hasher
     const V3Hasher& m_hasher;  // Reference to hasher
 
 public:
@@ -52,9 +52,8 @@ public:
     V3DupFinder()
         : m_hasherp{new V3Hasher}
         , m_hasher{*m_hasherp} {}
-    V3DupFinder(const V3Hasher& hasher)
-        : m_hasherp{nullptr}
-        , m_hasher{hasher} {}
+    explicit V3DupFinder(const V3Hasher& hasher)
+        : m_hasher{hasher} {}
     ~V3DupFinder() {
         if (m_hasherp) delete m_hasherp;
     }

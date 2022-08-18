@@ -24,8 +24,10 @@
 #define VERILATOR_VERILATED_SAVE_CPP_
 
 #include "verilatedos.h"
-#include "verilated.h"
+
 #include "verilated_save.h"
+
+#include "verilated.h"
 #include "verilated_imp.h"
 
 #include <cerrno>

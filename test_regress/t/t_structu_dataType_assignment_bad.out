@@ -1,0 +1,5 @@
+%Error: t/t_structu_dataType_assignment_bad.v:19:26: Assignment pattern key not supported/understood: CONST '?32?sh1'
+                                                   : ... In instance top
+   19 |   DEF_struct DEF_bad = '{1: 5, default: 10};
+      |                          ^
+%Error: Exiting due to

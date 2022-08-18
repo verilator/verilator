@@ -1,4 +1,4 @@
-%Error: t/t_array_list_bad.v:38:25: Assignment pattern missed initializing elements: MEMBERDTYPE 't3'
+%Error: t/t_array_list_bad.v:38:25: Assignment pattern missed initializing elements: 'logic' 't3'
                                   : ... In instance t
    38 |             test_out <= '{'0, '0};  
       |                         ^~

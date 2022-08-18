@@ -9,11 +9,12 @@
 //
 //*************************************************************************
 
+#include "svdpi.h"
+
 #include <cinttypes>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include "svdpi.h"
 
 //======================================================================
 

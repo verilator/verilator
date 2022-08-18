@@ -24,6 +24,7 @@
 #define VERILATOR_VERILATED_THREADS_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
 #ifndef VL_THREADED
@@ -136,13 +137,10 @@ class VlWorkerThread final {
 private:
     // TYPES
     struct ExecRec {
-        VlExecFnp m_fnp;  // Function to execute
-        VlSelfP m_selfp;  // Symbol table to execute
-        bool m_evenCycle;  // Even/odd for flag alternation
-        ExecRec()
-            : m_fnp{nullptr}
-            , m_selfp{nullptr}
-            , m_evenCycle{false} {}
+        VlExecFnp m_fnp = nullptr;  // Function to execute
+        VlSelfP m_selfp = nullptr;  // Symbol table to execute
+        bool m_evenCycle = false;  // Even/odd for flag alternation
+        ExecRec() = default;
         ExecRec(VlExecFnp fnp, VlSelfP selfp, bool evenCycle)
             : m_fnp{fnp}
             , m_selfp{selfp}
@@ -172,7 +170,7 @@ public:
     ~VlWorkerThread();
 
     // METHODS
-    template <bool SpinWait>  //
+    template <bool SpinWait>
     inline void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Spin for a while, waiting for new data
         if VL_CONSTEXPR_CXX17 (SpinWait) {
@@ -222,7 +220,7 @@ public:
     // pool will create these threads and make them available to execute tasks
     // via this->workerp(index)->addTask(...)
     VlThreadPool(VerilatedContext* contextp, unsigned nThreads);
-    virtual ~VlThreadPool();
+    ~VlThreadPool() override;
 
     // METHODS
     inline int numThreads() const { return m_workers.size(); }

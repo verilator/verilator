@@ -48,7 +48,7 @@ private:
     //=========================================================================
     // FST specific internals
 
-    void* m_fst;
+    void* m_fst = nullptr;
     std::map<uint32_t, fstHandle> m_code2symbol;
     std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;
@@ -67,18 +67,18 @@ protected:
     // Implementation of VerilatedTrace interface
 
     // Called when the trace moves forward to a new time point
-    virtual void emitTimeChange(uint64_t timeui) override;
+    void emitTimeChange(uint64_t timeui) override;
 
     // Hooks called from VerilatedTrace
-    virtual bool preFullDump() override { return isOpen(); }
-    virtual bool preChangeDump() override { return isOpen(); }
+    bool preFullDump() override { return isOpen(); }
+    bool preChangeDump() override { return isOpen(); }
 
     // Trace buffer management
-    virtual Buffer* getTraceBuffer() override;
-    virtual void commitTraceBuffer(Buffer*) override;
+    Buffer* getTraceBuffer() override;
+    void commitTraceBuffer(Buffer*) override;
 
     // Configure sub-class
-    virtual void configure(const VerilatedTraceConfig&) override;
+    void configure(const VerilatedTraceConfig&) override;
 
 public:
     //=========================================================================
@@ -118,12 +118,18 @@ public:
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
-template <> void VerilatedFst::Super::dump(uint64_t time);
-template <> void VerilatedFst::Super::set_time_unit(const char* unitp);
-template <> void VerilatedFst::Super::set_time_unit(const std::string& unit);
-template <> void VerilatedFst::Super::set_time_resolution(const char* unitp);
-template <> void VerilatedFst::Super::set_time_resolution(const std::string& unit);
-template <> void VerilatedFst::Super::dumpvars(int level, const std::string& hier);
+template <>
+void VerilatedFst::Super::dump(uint64_t time);
+template <>
+void VerilatedFst::Super::set_time_unit(const char* unitp);
+template <>
+void VerilatedFst::Super::set_time_unit(const std::string& unit);
+template <>
+void VerilatedFst::Super::set_time_resolution(const char* unitp);
+template <>
+void VerilatedFst::Super::set_time_resolution(const std::string& unit);
+template <>
+void VerilatedFst::Super::dumpvars(int level, const std::string& hier);
 #endif
 
 //=============================================================================

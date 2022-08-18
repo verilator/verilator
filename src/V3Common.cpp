@@ -24,9 +24,10 @@
 #include "verilatedos.h"
 
 #include "V3Common.h"
+
 #include "V3Ast.h"
-#include "V3Global.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 
 //######################################################################
 // Common component builders

@@ -27,9 +27,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Premit.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
@@ -378,7 +379,7 @@ public:
         : m_tempNames{"__Vtemp"} {
         iterate(nodep);
     }
-    virtual ~PremitVisitor() {
+    ~PremitVisitor() override {
         V3Stats::addStat("Optimizations, Prelim extracted value to ConstPool",
                          m_extractedToConstPool);
     }

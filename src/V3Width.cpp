@@ -66,10 +66,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Width.h"
-#include "V3Number.h"
+
 #include "V3Const.h"
+#include "V3Global.h"
+#include "V3Number.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
@@ -208,6 +209,7 @@ private:
     // TYPES
     using TableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
     using PatVecMap = std::map<int, AstPatMember*>;
+    using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state
@@ -674,10 +676,11 @@ private:
             AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
             if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)
                 || VN_IS(vdtypep, UnpackArrayDType)) {
-                if (times != 1)
+                if (times != 1) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-1 replication to form "
                                                      << vdtypep->prettyDTypeNameQ()
                                                      << " data type");
+                }
                 // Don't iterate lhsp as SELF, the potential Concat below needs
                 // the adtypep passed down to recognize the QueueDType
                 userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, BOTH).p());
@@ -1125,9 +1128,10 @@ private:
     }
     virtual void visit(AstEmptyQueue* nodep) override {
         nodep->dtypeSetEmptyQueue();
-        if (!VN_IS(nodep->backp(), Assign))
+        if (!VN_IS(nodep->backp(), Assign)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported/Illegal: empty queue ('{}') in this context");
+        }
     }
     virtual void visit(AstFell* nodep) override {
         if (m_vup->prelim()) {
@@ -1248,10 +1252,7 @@ private:
         }
     }
     virtual void visit(AstCLog2* nodep) override {
-        if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-            nodep->dtypeSetSigned32();
-        }
+        if (m_vup->prelim()) { iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH); }
     }
     virtual void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
@@ -3101,7 +3102,9 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name());
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            // Because queue methods pop_front() or pop_back() can be void cast,
+            // they use makeStatement to check if they need the c++ ";" added.
+            if (nodep->isStandaloneBodyStmt()) newp->makeStatement();
         } else if (nodep->name() == "push_back" || nodep->name() == "push_front") {
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -3574,49 +3577,63 @@ private:
         // determine the dtypep for that PatMember's value, and then
         // width the initial value appropriately.
         using PatMap = std::map<const AstMemberDType*, AstPatMember*>;
-        PatMap patmap;
+        PatMap patmap;  // Store member: value
+        DTypeMap dtypemap;  // Store data_type: default_value
         {
             const AstMemberDType* memp = vdtypep->membersp();
             AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember);
-            for (; memp || patp;) {
+            while (patp) {
                 do {
-                    if (patp) {
-                        if (patp->keyp()) {
-                            if (const AstText* textp = VN_CAST(patp->keyp(), Text)) {
-                                memp = vdtypep->findMember(textp->text());
-                                if (!memp) {
-                                    patp->keyp()->v3error("Assignment pattern key '"
-                                                          << textp->text()
-                                                          << "' not found as member");
-                                    break;
-                                }
+                    if (patp->keyp()) {
+                        // '{member:value} or '{data_type: default_value}
+                        if (const AstText* textp = VN_CAST(patp->keyp(), Text)) {
+                            // member: value
+                            memp = vdtypep->findMember(textp->text());
+                            if (!memp) {
+                                patp->keyp()->v3error("Assignment pattern key '"
+                                                      << textp->text() << "' not found as member");
+                                break;
                             } else {
-                                patp->keyp()->v3error(
-                                    "Assignment pattern key not supported/understood: "
-                                    << patp->keyp()->prettyTypeName());
+                                const std::pair<PatMap::iterator, bool> ret
+                                    = patmap.emplace(memp, patp);
+                                if (!ret.second) {
+                                    patp->v3error("Assignment pattern contains duplicate entry: "
+                                                  << VN_AS(patp->keyp(), Text)->text());
+                                }
+                                memp = VN_AS(memp->nextp(), MemberDType);
                             }
+                        } else if (const AstNodeDType* nodedtypep
+                                   = VN_CAST(patp->keyp(), NodeDType)) {
+                            // data_type: default_value
+                            const string dtype = nodedtypep->dtypep()->prettyDTypeName();
+                            auto it = dtypemap.find(dtype);
+                            if (it == dtypemap.end()) {
+                                dtypemap.emplace(dtype, patp);
+                            } else {
+                                // Override stored default_value
+                                it->second = patp->cloneTree(false);
+                            }
+                        } else {
+                            // Undefined pattern
+                            patp->keyp()->v3error(
+                                "Assignment pattern key not supported/understood: "
+                                << patp->keyp()->prettyTypeName());
                         }
-                    }
-                    if (memp && !patp) {
-                        // Missing init elements, warn below
-                        memp = nullptr;
-                        patp = nullptr;
-                        break;
-                    } else if (!memp && patp) {
-                        patp->v3error("Assignment pattern contains too many elements");
-                        memp = nullptr;
-                        patp = nullptr;
-                        break;
                     } else {
-                        const std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
-                        if (!ret.second) {
-                            patp->v3error("Assignment pattern contains duplicate entry: "
-                                          << VN_AS(patp->keyp(), Text)->text());
+                        // constant expr
+                        if (memp) {
+                            const std::pair<PatMap::iterator, bool> ret
+                                = patmap.emplace(memp, patp);
+                            if (!ret.second) {
+                                patp->v3error("Assignment pattern contains duplicate entry: "
+                                              << VN_AS(patp->keyp(), Text)->text());
+                            }
+                            memp = VN_AS(memp->nextp(), MemberDType);
                         }
                     }
                 } while (false);
+
                 // Next
-                if (memp) memp = VN_AS(memp->nextp(), MemberDType);
                 if (patp) patp = VN_AS(patp->nextp(), PatMember);
             }
         }
@@ -3624,35 +3641,23 @@ private:
         for (AstMemberDType* memp = vdtypep->membersp(); memp;
              memp = VN_AS(memp->nextp(), MemberDType)) {
             const auto it = patmap.find(memp);
-            AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             if (it == patmap.end()) {
-                if (defaultp) {
-                    newpatp = defaultp->cloneTree(false);
-                    patp = newpatp;
+                // default or deafult_type assignment
+                if (AstNodeUOrStructDType* const memp_nested_vdtypep
+                    = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
+                    newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp, newp,
+                                                              nodep, dtypemap);
                 } else {
-                    if (!VN_IS(vdtypep, UnionDType)) {
-                        nodep->v3error("Assignment pattern missed initializing elements: "
-                                       << memp->prettyTypeName());
-                    }
+                    patp = Defaultpatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
+                                                        dtypemap);
+                    newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
                 }
             } else {
+                // member assignment
                 patp = it->second;
+                newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
             }
-            if (patp) {
-                // Determine initial values
-                patp->dtypep(memp);
-                AstNode* const valuep = patternMemberValueIterate(patp);
-                if (!newp) {
-                    newp = valuep;
-                } else {
-                    AstConcat* const concatp = new AstConcat(patp->fileline(), newp, valuep);
-                    newp = concatp;
-                    newp->dtypeSetLogicSized(concatp->lhsp()->width() + concatp->rhsp()->width(),
-                                             nodep->dtypep()->numeric());
-                }
-            }
-            if (newpatp) VL_DO_DANGLING(pushDeletep(newpatp), newpatp);
         }
         if (newp) {
             nodep->replaceWith(newp);
@@ -3661,6 +3666,67 @@ private:
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
+
+    AstNode* nestedvalueConcat_patternUOrStruct(AstNodeUOrStructDType* memp_vdtypep,
+                                                AstPatMember* defaultp, AstNode* newp,
+                                                AstPattern* nodep, DTypeMap dtypemap) {
+        AstPatMember* patp = nullptr;
+        for (AstMemberDType* memp_nested = memp_vdtypep->membersp(); memp_nested;
+             memp_nested = VN_AS(memp_nested->nextp(), MemberDType)) {
+            if (AstNodeUOrStructDType* const memp_multinested_vdtypep
+                = VN_CAST(memp_nested->virtRefDTypep(), NodeUOrStructDType)) {
+                // When unpacked struct/union is supported this if will need some additional
+                // conditions
+                newp = nestedvalueConcat_patternUOrStruct(memp_multinested_vdtypep, defaultp, newp,
+                                                          nodep, dtypemap);
+            } else {
+                patp = Defaultpatp_patternUOrStruct(nodep, memp_nested, patp, memp_vdtypep,
+                                                    defaultp, dtypemap);
+                newp = valueConcat_patternUOrStruct(patp, newp, memp_nested, nodep);
+            }
+        }
+        return newp;
+    }
+
+    AstPatMember* Defaultpatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp,
+                                               AstPatMember* patp,
+                                               AstNodeUOrStructDType* memp_vdtypep,
+                                               AstPatMember* defaultp, DTypeMap dtypemap) {
+        const string memp_DType = memp->virtRefDTypep()->prettyDTypeName();
+        const auto it = dtypemap.find(memp_DType);
+        if (it != dtypemap.end()) {
+            // default_value for data_type
+            patp = it->second->cloneTree(false);
+        } else if (defaultp) {
+            // default_value for any unmatched member yet
+            patp = defaultp->cloneTree(false);
+        } else {
+            if (!VN_IS(memp_vdtypep, UnionDType)) {
+                nodep->v3error("Assignment pattern missed initializing elements: "
+                               << memp->virtRefDTypep()->prettyDTypeNameQ() << " "
+                               << memp->prettyNameQ());
+            }
+        }
+        return patp;
+    }
+
+    AstNode* valueConcat_patternUOrStruct(AstPatMember* patp, AstNode* newp, AstMemberDType* memp,
+                                          AstPattern* nodep) {
+        if (patp) {
+            patp->dtypep(memp);
+            AstNode* const valuep = patternMemberValueIterate(patp);
+            if (!newp) {
+                newp = valuep;
+            } else {
+                AstConcat* const concatp = new AstConcat{patp->fileline(), newp, valuep};
+                newp = concatp;
+                newp->dtypeSetLogicSized(concatp->lhsp()->width() + concatp->rhsp()->width(),
+                                         nodep->dtypep()->numeric());
+            }
+        }
+        return newp;
+    }
+
     void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
         const VNumRange range = arrayDtp->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
@@ -3922,8 +3988,10 @@ private:
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
                 if (condp->dtypep() != subDTypep) {
-                    if (condp->dtypep()->isDouble()) {
+                    if (condp->dtypep()->isDouble() || subDTypep->isDouble()) {
                         subDTypep = nodep->findDoubleDType();
+                    } else if (condp->dtypep()->isString() || subDTypep->isString()) {
+                        subDTypep = nodep->findStringDType();
                     } else {
                         const int width = std::max(subDTypep->width(), condp->width());
                         const int mwidth = std::max(subDTypep->widthMin(), condp->widthMin());
@@ -4029,6 +4097,7 @@ private:
                     argsp->v3error("Illegal to foreach loop on basic '" + fromDtp->prettyTypeName()
                                    + "'");
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                    VL_DO_DANGLING(bodyPointp->deleteTree(), bodyPointp);
                     return;
                 }
                 if (varp) {
@@ -4581,9 +4650,11 @@ private:
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
-            if (auto* const patternp = VN_CAST(nodep->exprp(), Pattern))
-                if (const auto* modVarp = nodep->modVarp())
+            if (auto* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
+                if (const auto* modVarp = nodep->modVarp()) {
                     patternp->childDTypep(modVarp->childDTypep()->cloneTree(false));
+                }
+            }
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {

@@ -167,7 +167,7 @@ void V3Error::vlAbortOrExit() {
 }
 
 void V3Error::vlAbort() {
-    VL_GCOV_FLUSH();
+    VL_GCOV_DUMP();
     std::abort();
 }
 

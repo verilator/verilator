@@ -23,6 +23,7 @@
 #define VERILATOR_VERILATED_VCD_SC_H_
 
 #include "verilatedos.h"
+
 #include "verilated_sc.h"
 #include "verilated_vcd_c.h"
 
@@ -54,7 +55,7 @@ public:
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
     }
     /// Destruct, flush, and close the dump
-    virtual ~VerilatedVcdSc() { close(); }
+    virtual ~VerilatedVcdSc() /*override*/ { close(); }
 
     // METHODS - for SC kernel
     // Called by SystemC simulate()
@@ -63,6 +64,7 @@ public:
     }
 
     // Override VerilatedVcdC. Must be called after starting simulation.
+    // cppcheck-suppress missingOverride  // GCC won't accept override
     virtual void open(const char* filename) /*override*/ VL_MT_SAFE;
 
 private:
@@ -98,9 +100,6 @@ private:
     DECL_TRACE_METHOD_B( unsigned short )
     DECL_TRACE_METHOD_B( unsigned int )
     DECL_TRACE_METHOD_B( unsigned long )
-#ifdef SYSTEMC_64BIT_PATCHES
-    DECL_TRACE_METHOD_B( unsigned long long)
-#endif
     DECL_TRACE_METHOD_B( char )
     DECL_TRACE_METHOD_B( short )
     DECL_TRACE_METHOD_B( int )

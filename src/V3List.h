@@ -24,10 +24,13 @@
 
 //============================================================================
 
-template <class T> class V3List;
-template <class T> class V3ListEnt;
+template <class T>
+class V3List;
+template <class T>
+class V3ListEnt;
 
-template <class T> class V3List {
+template <class T>
+class V3List final {
     // List container for linked list of elements of type *T  (T is a pointer type)
 private:
     // MEMBERS
@@ -50,7 +53,8 @@ public:
 
 //============================================================================
 
-template <class T> class V3ListEnt {
+template <class T>
+class V3ListEnt final {
     // List entry for linked list of elements of type *T  (T is a pointer type)
 private:
     // MEMBERS

@@ -17,9 +17,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3LanguageWords.h"
 #include "V3PartitionGraph.h"
 
@@ -774,7 +774,7 @@ void EmitCSyms::emitSymImp() {
                 puts(protectIf(aboveScopep->nameDotless(), aboveScopep->protect()));
             }
             puts(".");
-            puts(protName.substr(protName.rfind(".") + 1));
+            puts(protName.substr(protName.rfind('.') + 1));
             puts(" = &");
             puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
             ++m_numStmts;

@@ -25,9 +25,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Broken.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 
 // This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
 #include "V3AstConstOnly.h"
@@ -48,7 +49,7 @@ static class BrokenCntGlobal {
     uint8_t m_count = MIN_VALUE;
 
 public:
-    uint8_t get() {
+    uint8_t get() const {
         UASSERT(MIN_VALUE <= m_count && m_count <= MAX_VALUE, "Invalid generation number");
         return m_count;
     }

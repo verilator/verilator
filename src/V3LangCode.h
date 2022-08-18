@@ -20,9 +20,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include <vector>
 #include <map>
 #include <set>
+#include <vector>
 
 //######################################################################
 //! Class for the different languages supported.

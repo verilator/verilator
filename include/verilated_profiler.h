@@ -23,6 +23,7 @@
 #define VERILATOR_VERILATED_PROFILER_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"
 
 #include <array>
@@ -165,14 +166,14 @@ class VlExecutionProfiler final : public VerilatedVirtualBase {
 public:
     // CONSTRUCTOR
     explicit VlExecutionProfiler(VerilatedContext& context);
-    virtual ~VlExecutionProfiler() = default;
+    ~VlExecutionProfiler() override = default;
 
     // METHODS
 
     // Is profiling enabled
     inline bool enabled() const { return m_enabled; }
     // Append a trace record to the trace buffer of the current thread
-    inline VlExecutionRecord& addRecord() {
+    static inline VlExecutionRecord& addRecord() {
         t_trace.emplace_back();
         return t_trace.back();
     }
@@ -192,7 +193,8 @@ public:
 //=============================================================================
 // VlPgoProfiler is for collecting profiling data for PGO
 
-template <std::size_t T_Entries> class VlPgoProfiler final {
+template <std::size_t T_Entries>
+class VlPgoProfiler final {
     // TYPES
     struct Record final {
         const std::string m_name;  // Hashed name of mtask/etc

@@ -8,6 +8,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+use File::Basename;
+
 scenarios(dist => 1);
 
 # See also t_flag_version.pl
@@ -16,27 +18,25 @@ sub check {
     my $interpreter = shift;
     my $prog = shift;
 
+    my $logfile = "$Self->{obj_dir}/t_help__" . basename($prog) . ".log";
+
     run(fails => 0,
         cmd => [$interpreter, $prog, "--help"],
-        logfile => "$Self->{obj_dir}/t_help.log",
+        logfile => $logfile,
         tee => 0,
         verilator_run => 1,
         );
 
-    file_grep("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
+    file_grep($logfile, qr/(DISTRIBUTION|usage:)/i);
 }
 
-foreach my $prog (
-    "../bin/verilator",
-    "../bin/verilator_coverage",
-    "../bin/verilator_difftree",
-    "../bin/verilator_gantt",
-    "../bin/verilator_profcfunc",
-    ) {
-    check("perl", $prog);
-}
+check("perl", "../bin/verilator");
+check("perl", "../bin/verilator_coverage");
 
 check("python3", "../bin/verilator_ccache_report");
+check("python3", "../bin/verilator_difftree");
+check("python3", "../bin/verilator_gantt");
+check("python3", "../bin/verilator_profcfunc");
 
 ok(1);
 1;

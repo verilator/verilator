@@ -9,21 +9,22 @@
 //
 //*************************************************************************
 
-#include "Vt_vpi_cb_iter.h"
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include <cstdlib>
+#include "Vt_vpi_cb_iter.h"
+#include "vpi_user.h"
+
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <vector>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
-
-#include "vpi_user.h"
 
 int errors = 0;
 

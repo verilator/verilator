@@ -60,12 +60,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Tristate.h"
+
 #include "V3Ast.h"
-#include "V3Stats.h"
-#include "V3Inst.h"
+#include "V3Global.h"
 #include "V3Graph.h"
+#include "V3Inst.h"
+#include "V3Stats.h"
 
 #include <algorithm>
 #include <map>
@@ -360,7 +361,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     VDouble0 m_statTriSigs;  // stat tracking
 
     // METHODS
-    string dbgState() {
+    string dbgState() const {
         string o = (m_graphing ? " gr " : " ng ");
         if (m_alhs) o += "alhs ";
         return o;
@@ -384,7 +385,15 @@ class TristateVisitor final : public TristateBaseVisitor {
         return newp;
     }
     AstNode* getEnp(AstNode* nodep) {
-        if (!nodep->user1p()) {
+        if (nodep->user1p()) {
+            if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                if (refp->varp()->isIO()) {
+                    // When reading a tri-state port, we can always use the value
+                    // because such port will have resolution logic in upper module.
+                    return newAllZerosOrOnes(nodep, true);
+                }
+            }
+        } else {
             // There's no select being built yet, so add what will become a
             // constant output enable driver of all 1's
             nodep->user1p(newAllZerosOrOnes(nodep, true));
@@ -607,7 +616,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (!outvarp) {
             // This is the final pre-forced resolution of the tristate, so we apply
             // the pull direction to any undriven pins.
-            V3Number pull(invarp, lhsp->width());
             const AstPull* const pullp = static_cast<AstPull*>(lhsp->user3p());
             bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
             undrivenp
@@ -989,12 +997,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (!dropop[2]) iterateAndNextNull(nodep->fhsp());
         } else {
             AstNode* nonXp = nullptr;
-            if (!dropop[0])
+            if (!dropop[0]) {
                 nonXp = nodep->rhsp();
-            else if (!dropop[1])
+            } else if (!dropop[1]) {
                 nonXp = nodep->thsp();
-            else if (!dropop[2])
+            } else if (!dropop[2]) {
                 nonXp = nodep->fhsp();
+            }
             // Replace 'z with non-Z
             if (dropop[0] || dropop[1] || dropop[2]) {
                 // Unsupported: A $countones('0) should compare with the enables, but we don't

@@ -17,12 +17,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3PreShell.h"
-#include "V3PreProc.h"
+
 #include "V3File.h"
-#include "V3Parse.h"
+#include "V3Global.h"
 #include "V3Os.h"
+#include "V3Parse.h"
+#include "V3PreProc.h"
 
 #include <algorithm>
 #include <iostream>

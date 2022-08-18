@@ -21,8 +21,8 @@
 #include "V3EmitCConstInit.h"
 #include "V3File.h"
 #include "V3Global.h"
-#include "V3String.h"
 #include "V3Stats.h"
+#include "V3String.h"
 
 #include <algorithm>
 #include <cinttypes>

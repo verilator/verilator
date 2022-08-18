@@ -12,18 +12,18 @@
 #ifdef IS_VPI
 
 #include "vpi_user.h"
+
 #include <cstdlib>
 
 #else
 
-#include "Vt_vpi_module.h"
 #include "verilated.h"
-#include "svdpi.h"
-
-#include "Vt_vpi_module__Dpi.h"
-
-#include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
+
+#include "Vt_vpi_module.h"
+#include "Vt_vpi_module__Dpi.h"
+#include "svdpi.h"
 
 #endif
 
@@ -31,6 +31,7 @@
 #include <cstring>
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
 

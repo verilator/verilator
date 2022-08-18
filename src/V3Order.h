@@ -26,7 +26,7 @@ class AstNetlist;
 
 class V3Order final {
 public:
-    static void orderAll(AstNetlist* nodep);
+    static void orderAll(AstNetlist* netlistp);
 };
 
 #endif  // Guard

@@ -15,8 +15,9 @@
 
 #include "verilatedos.h"
 
-#include "V3File.h"
 #include "V3Waiver.h"
+
+#include "V3File.h"
 
 #include <memory>
 #include <sstream>

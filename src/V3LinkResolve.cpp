@@ -27,10 +27,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3LinkResolve.h"
+
+#include "V3Ast.h"
 #include "V3Global.h"
 #include "V3String.h"
-#include "V3LinkResolve.h"
-#include "V3Ast.h"
 
 #include <algorithm>
 #include <map>
@@ -404,7 +405,7 @@ private:
         return newFormat;
     }
 
-    static void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
+    static void expectDescriptor(AstNode* /*nodep*/, AstNodeVarRef* filep) {
         // This might fail on complex expressions like arrays
         // We use attrFileDescr() only for lint suppression, so that's ok
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);

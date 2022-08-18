@@ -82,7 +82,8 @@ static std::string doubleToTimescale(double value) {
 //=========================================================================
 // Buffer management
 
-template <> uint32_t* VerilatedTrace<VL_SUB_T, VL_BUF_T>::getOffloadBuffer() {
+template <>
+uint32_t* VerilatedTrace<VL_SUB_T, VL_BUF_T>::getOffloadBuffer() {
     uint32_t* bufferp;
     // Some jitter is expected, so some number of alternative offlaod buffers are
     // required, but don't allocate more than 8 buffers.
@@ -101,7 +102,8 @@ template <> uint32_t* VerilatedTrace<VL_SUB_T, VL_BUF_T>::getOffloadBuffer() {
     return bufferp;
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::waitForOffloadBuffer(const uint32_t* buffp) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::waitForOffloadBuffer(const uint32_t* buffp) {
     // Slow path code only called on flush/shutdown, so use a simple algorithm.
     // Collect buffers from worker and stash them until we get the one we want.
     std::deque<uint32_t*> stash;
@@ -116,7 +118,8 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::waitForOffloadBuffer(const 
 //=========================================================================
 // Worker thread
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
     bool shutdown = false;
 
     do {
@@ -231,7 +234,8 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
     } while (VL_LIKELY(!shutdown));
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::shutdownOffloadWorker() {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::shutdownOffloadWorker() {
     // If the worker thread is not running, done..
     if (!m_workerThread) return;
 
@@ -251,7 +255,8 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::shutdownOffloadWorker() {
 //=============================================================================
 // Life cycle
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::closeBase() {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::closeBase() {
 #ifdef VL_THREADED
     if (offload()) {
         shutdownOffloadWorker();
@@ -263,7 +268,8 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::closeBase() {
 #endif
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::flushBase() {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::flushBase() {
 #ifdef VL_THREADED
     if (offload()) {
         // Hand an empty buffer to the worker thread
@@ -280,12 +286,14 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::flushBase() {
 //=============================================================================
 // Callbacks to run on global events
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush(void* selfp) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush(void* selfp) {
     // This calls 'flush' on the derived class (which must then get any mutex)
     reinterpret_cast<VL_SUB_T*>(selfp)->flush();
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
     // This calls 'close' on the derived class (which must then get any mutex)
     reinterpret_cast<VL_SUB_T*>(selfp)->close();
 }
@@ -293,12 +301,14 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
 //=============================================================================
 // VerilatedTrace
 
-template <> VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace() {
+template <>
+VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace() {
     set_time_unit(Verilated::threadContextp()->timeunitString());
     set_time_resolution(Verilated::threadContextp()->timeprecisionString());
 }
 
-template <> VerilatedTrace<VL_SUB_T, VL_BUF_T>::~VerilatedTrace() {
+template <>
+VerilatedTrace<VL_SUB_T, VL_BUF_T>::~VerilatedTrace() {
     if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = nullptr);
     if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
     Verilated::removeFlushCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush, this);
@@ -309,7 +319,8 @@ template <> VerilatedTrace<VL_SUB_T, VL_BUF_T>::~VerilatedTrace() {
 //=========================================================================
 // Internals available to format specific implementations
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     // Note: It is possible to re-open a trace file (VCD in particular),
     // so we must reset the next code here, but it must have the same number
     // of codes on re-open
@@ -419,14 +430,16 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const char* nam
 //=========================================================================
 // Internals available to format specific implementations
 
-template <> std::string VerilatedTrace<VL_SUB_T, VL_BUF_T>::timeResStr() const {
+template <>
+std::string VerilatedTrace<VL_SUB_T, VL_BUF_T>::timeResStr() const {
     return doubleToTimescale(m_timeRes);
 }
 
 //=========================================================================
 // External interface to client code
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_unit(const char* unitp) VL_MT_SAFE {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_unit(const char* unitp) VL_MT_SAFE {
     m_timeUnit = timescaleToDouble(unitp);
 }
 template <>
@@ -456,7 +469,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
 }
 
 #ifdef VL_THREADED
-template <>  //
+template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap, bool) {
     ParallelWorkerData* const wdp = reinterpret_cast<ParallelWorkerData*>(datap);
     // Run the task
@@ -467,7 +480,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap, bool) {
     if (wdp->m_waiting) wdp->m_cv.notify_one();
 }
 
-template <> VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWorkerData::wait() {
+template <>
+VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWorkerData::wait() {
     // Spin for a while, waiting for the buffer to become ready
     for (int i = 0; i < VL_LOCK_SPINS; ++i) {
         if (VL_LIKELY(m_ready.load(std::memory_order_relaxed))) return;
@@ -723,11 +737,13 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* user
     addCallbackRecord(m_cleanupCbs, CallbackRecord{cb, userp});
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::pushNamePrefix(const std::string& prefix) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::pushNamePrefix(const std::string& prefix) {
     m_namePrefixStack.push_back(m_namePrefixStack.back() + prefix);
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::popNamePrefix(unsigned count) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::popNamePrefix(unsigned count) {
     while (count--) m_namePrefixStack.pop_back();
     assert(!m_namePrefixStack.empty());
 }
@@ -825,7 +841,7 @@ static inline void cvtQDataToStr(char* dstp, QData value) {
 //=========================================================================
 // VerilatedTraceBuffer
 
-template <>  //
+template <>
 VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner)
     : VL_BUF_T{owner}
     , m_sigs_oldvalp{owner.m_sigs_oldvalp}
@@ -836,7 +852,7 @@ VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner)
 // that this file must be included in the format specific implementation, so
 // the emit* functions can be inlined for performance.
 
-template <>  //
+template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullBit(uint32_t* oldp, CData newval) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
@@ -884,7 +900,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t* oldp, const WData* newv
     emitWData(code, newvalp, bits);
 }
 
-template <>  //
+template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *reinterpret_cast<double*>(oldp) = newval;
@@ -897,7 +913,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
 //=========================================================================
 // VerilatedTraceOffloadBuffer
 
-template <>  //
+template <>
 VerilatedTraceOffloadBuffer<VL_BUF_T>::VerilatedTraceOffloadBuffer(VL_SUB_T& owner)
     : VerilatedTraceBuffer<VL_BUF_T>{owner}
     , m_offloadBufferWritep{owner.m_offloadBufferWritep}

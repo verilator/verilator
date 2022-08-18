@@ -9,20 +9,21 @@
 //
 //*************************************************************************
 
-#include "Vt_vpi_cbs_called.h"
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include <cstdlib>
+#include "Vt_vpi_cbs_called.h"
+#include "vpi_user.h"
+
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <vector>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
-
-#include "vpi_user.h"
 
 const std::vector<int> cbs_to_test{cbReadWriteSynch,    cbReadOnlySynch,   cbNextSimTime,
                                    cbStartOfSimulation, cbEndOfSimulation, cbValueChange};

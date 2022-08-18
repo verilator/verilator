@@ -25,11 +25,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Localize.h"
-#include "V3Stats.h"
+
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
+#include "V3Global.h"
+#include "V3Stats.h"
 
 #include <vector>
 
@@ -69,7 +70,7 @@ private:
                 && m_accessors(nodep).size() == 1);  // .. a block temp used in a single CFunc
     }
 
-    bool existsNonLeaf(const std::unordered_set<AstCFunc*>& funcps) {
+    static bool existsNonLeaf(const std::unordered_set<AstCFunc*>& funcps) {
         for (const AstCFunc* const funcp : funcps) {
             if (funcp->user1()) return true;
         }

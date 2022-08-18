@@ -27,8 +27,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Ast.h"
 #include "V3Randomize.h"
+
+#include "V3Ast.h"
 
 //######################################################################
 // Visitor that marks classes needing a randomize() method
@@ -75,7 +76,7 @@ private:
         }
     }
     void markAllDerived() {
-        for (auto p : m_baseToDerivedMap) {
+        for (const auto& p : m_baseToDerivedMap) {
             if (p.first->user1()) markDerived(p.first);
         }
     }

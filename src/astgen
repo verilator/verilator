@@ -507,15 +507,21 @@ def write_classes(filename):
             fh.write("\n")
 
 
-def write_visitor(filename):
+def write_visitor_decls(filename):
     with open_file(filename) as fh:
         for typen in sorted(Classes.keys()):
-            if typen == "Node":
-                fh.write("    virtual void visit(Ast" + typen + "*) = 0;\n")
-            else:
+            if typen != "Node":
+                fh.write("virtual void visit(Ast" + typen + "*);\n")
+
+
+def write_visitor_defns(filename):
+    with open_file(filename) as fh:
+        for typen in sorted(Classes.keys()):
+            if typen != "Node":
                 base = Classes[typen]
-                fh.write("    virtual void visit(Ast" + typen +
-                         "* nodep) { visit((Ast" + base + "*)(nodep)); }\n")
+                fh.write("void VNVisitor::visit(Ast" + typen +
+                         "* nodep) { visit(static_cast<Ast" + base +
+                         "*>(nodep)); }\n")
 
 
 def write_impl(filename):
@@ -692,7 +698,8 @@ for filename in source_files:
 if Args.classes:
     write_report("V3Ast__gen_report.txt")
     write_classes("V3Ast__gen_classes.h")
-    write_visitor("V3Ast__gen_visitor.h")
+    write_visitor_decls("V3Ast__gen_visitor_decls.h")
+    write_visitor_defns("V3Ast__gen_visitor_defns.h")
     write_impl("V3Ast__gen_impl.h")
     write_types("V3Ast__gen_types.h")
     write_yystype("V3Ast__gen_yystype.h")

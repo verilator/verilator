@@ -17,11 +17,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3EmitMk.h"
+
+#include "V3EmitCBase.h"
 #include "V3Global.h"
 #include "V3HierBlock.h"
 #include "V3Os.h"
-#include "V3EmitMk.h"
-#include "V3EmitCBase.h"
 
 //######################################################################
 // Emit statements and math operators

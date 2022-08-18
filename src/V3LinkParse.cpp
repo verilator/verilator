@@ -21,10 +21,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3LinkParse.h"
+
 #include "V3Ast.h"
 #include "V3Config.h"
+#include "V3Global.h"
 
 #include <algorithm>
 #include <map>
@@ -445,7 +446,7 @@ private:
                                      selp->rhsp()->unlinkFrBackWithNext()};
             selp->replaceWith(newp);
             VL_DO_DANGLING(selp->deleteTree(), selp);
-        } else if (AstSelLoopVars* const selp = VN_CAST(bracketp, SelLoopVars)) {
+        } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
             nodep->v3error(

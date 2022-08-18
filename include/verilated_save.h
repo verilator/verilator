@@ -23,6 +23,7 @@
 #define VERILATOR_VERILATED_SAVE_C_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"
 
 #include <string>
@@ -77,7 +78,7 @@ public:
     virtual void flush() VL_MT_UNSAFE_ONE {}
     /// Write data to stream
     VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
-        const uint8_t* __restrict dp = (const uint8_t* __restrict)datap;
+        const uint8_t* __restrict dp = static_cast<const uint8_t* __restrict>(datap);
         while (size) {
             bufferCheck();
             size_t blk = size;
@@ -194,16 +195,16 @@ public:
     /// Construct new object
     VerilatedSave() = default;
     /// Flush, close and destruct
-    virtual ~VerilatedSave() override { close(); }
+    ~VerilatedSave() override { close(); }
     // METHODS
     /// Open the file; call isOpen() to see if errors
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;
     /// Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     /// Flush and close the file
-    virtual void close() override VL_MT_UNSAFE_ONE;
+    void close() override VL_MT_UNSAFE_ONE;
     /// Flush data to file
-    virtual void flush() override VL_MT_UNSAFE_ONE;
+    void flush() override VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================
@@ -221,7 +222,7 @@ public:
     /// Construct new object
     VerilatedRestore() = default;
     /// Flush, close and destruct
-    virtual ~VerilatedRestore() override { close(); }
+    ~VerilatedRestore() override { close(); }
 
     // METHODS
     /// Open the file; call isOpen() to see if errors
@@ -229,9 +230,9 @@ public:
     /// Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     /// Close the file
-    virtual void close() override VL_MT_UNSAFE_ONE;
-    virtual void flush() override VL_MT_UNSAFE_ONE {}
-    virtual void fill() override VL_MT_UNSAFE_ONE;
+    void close() override VL_MT_UNSAFE_ONE;
+    void flush() override VL_MT_UNSAFE_ONE {}
+    void fill() override VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================
@@ -287,7 +288,8 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& r
     uint32_t len = 0;
     os >> len;
     rhs.resize(len);
-    return os.read((void*)rhs.data(), len);
+    // C cast is required below
+    return os.read((void*)(rhs.data()), len);
 }
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp);
 VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhsp);

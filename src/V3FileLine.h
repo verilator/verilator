@@ -23,12 +23,12 @@
 #include "V3Error.h"
 #include "V3LangCode.h"
 
-#include <sstream>
 #include <bitset>
+#include <deque>
 #include <map>
 #include <memory>
 #include <set>
-#include <deque>
+#include <sstream>
 
 //######################################################################
 
@@ -162,7 +162,7 @@ public:
         m_firstColumn = firstColumn;
         m_lastColumn = lastColumn;
     }
-    void language(V3LangCode lang) { singleton().numberToLang(filenameno(), lang); }
+    void language(V3LangCode lang) const { singleton().numberToLang(filenameno(), lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void parent(FileLine* fileline) { m_parent = fileline; }
     void lineDirective(const char* textp, int& enterExitRef);
@@ -213,7 +213,7 @@ public:
     void warnStyleOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOn = from.m_warnOn; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
-    bool lastWarnWaived() { return m_waive; }
+    bool lastWarnWaived() const { return m_waive; }
 
     // Specific flag ACCESSORS/METHODS
     bool celldefineOn() const { return m_warnOn.test(V3ErrorCode::I_CELLDEFINE); }
@@ -247,7 +247,7 @@ public:
 
     // OPERATORS
     void v3errorEnd(std::ostringstream& str, const string& extra = "");
-    void v3errorEndFatal(std::ostringstream& str);
+    void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN;
     /// When building an error, prefix for printing continuation lines
     /// e.g. information referring to the same FileLine as before
     string warnMore() const;

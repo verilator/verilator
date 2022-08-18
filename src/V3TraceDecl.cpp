@@ -22,13 +22,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
+#include "V3TraceDecl.h"
+
 #include "verilated_trace_defs.h"  // For VLT_TRACE_SCOPE_*
 
-#include "V3Global.h"
 #include "V3Config.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3Stats.h"
-#include "V3TraceDecl.h"
 
 #include <algorithm>
 #include <functional>
@@ -112,7 +114,7 @@ private:
         AstVarScope* m_vscp;  // AstVarScope being traced (non const to allow copy during sorting)
         std::string m_path;  // Path to enclosing module in hierarchy
         std::string m_name;  // Name of signal
-        Signal(AstVarScope* vscp)
+        explicit Signal(AstVarScope* vscp)
             : m_vscp{vscp} {
             // Compute path in hierarchy and signal name
             const string& vcdName = AstNode::vcdName(vscp->varp()->name());
@@ -192,7 +194,9 @@ private:
         m_subFuncSize += stmtp->nodeCount();
     }
 
-    std::string getScopeChar(VltTraceScope sct) { return std::string(1, (char)(0x80 + sct)); }
+    std::string getScopeChar(VltTraceScope sct) {
+        return std::string(1, static_cast<char>(0x80 + sct));
+    }
 
     std::string addAboveInterface(const std::string& scopeName) {
         std::string out;
@@ -312,13 +316,13 @@ private:
                 const string intfScopeName = irpName.substr(0, scopeLen);
                 if (scopeName != intfScopeName) continue;
 
-                string scopeName = AstNode::vcdName(irp->name());
-                if (scopeName.substr(0, 4) == "TOP ") scopeName.erase(0, 4);
+                string iscopeName = AstNode::vcdName(irp->name());
+                if (iscopeName.substr(0, 4) == "TOP ") iscopeName.erase(0, 4);
                 // Note this insert doesn't know what above is interfaces.
                 // Perhaps all scopes should be changed to include the VLT_TRACE_SCOPE characters.
                 // Instead we fix up when printing m_scopeSubFuncps
-                scopeName += getScopeChar(VLT_TRACE_SCOPE_INTERFACE) + ' ';
-                m_scopeSubFuncps.emplace(scopeName, m_subFuncps);
+                iscopeName += getScopeChar(VLT_TRACE_SCOPE_INTERFACE) + ' ';
+                m_scopeSubFuncps.emplace(iscopeName, m_subFuncps);
 
                 VL_DO_DANGLING(irp->unlinkFrBack(), irp);
             }
