@@ -126,7 +126,7 @@ public:
     // ACCESSORS
     // Set size in megabytes after which new file should be created
     void rolloverMB(uint64_t rolloverMB) { m_rolloverMB = rolloverMB; }
-    uint64_t getWroteBytes() { return m_wroteBytes; }
+    uint64_t wroteBytes() const { return m_wroteBytes; }
 
     // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
