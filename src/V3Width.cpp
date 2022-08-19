@@ -2389,6 +2389,14 @@ private:
         nodep->widthForce(1, 1);  // Not really relevant
         UINFO(4, "dtWidthed " << nodep << endl);
     }
+    virtual void visit(AstVirtIfaceDType* nodep) override {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        UINFO(5, "   VIRTIFACE " << nodep << endl);
+        userIterateChildren(nodep, m_vup);
+        nodep->dtypep(nodep);
+        nodep->widthForce(1, 1);  // Not really relevant
+        UINFO(4, "dtWidthed " << nodep << endl);
+    }
     virtual void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "   NODECLASS " << nodep << endl);
@@ -5847,9 +5855,9 @@ private:
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
             // Must be near top of these checks as underp->dtypep() will look normal
-            underp->v3error(ucfirst(nodep->prettyOperatorName())
-                            << " expected non-datatype " << side << " but '" << underp->name()
-                            << "' is a datatype.");
+            nodep->v3error(ucfirst(nodep->prettyOperatorName())
+                           << " expected non-datatype " << side << " but '" << underp->name()
+                           << "' is a datatype.");
         } else if (expDTypep == underp->dtypep()) {  // Perfect
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
@@ -5897,11 +5905,11 @@ private:
                 // Note the check uses the expected size, not the child's subDTypep as we want the
                 // child node's width to end up correct for the assignment (etc)
                 widthCheckSized(nodep, side, underp, expDTypep, extendRule, warnOn);
-            } else if (!VN_IS(expDTypep, IfaceRefDType)
+            } else if (!VN_IS(expDTypep, IfaceRefDType) && !VN_IS(expDTypep, VirtIfaceDType)
                        && VN_IS(underp->dtypep(), IfaceRefDType)) {
-                underp->v3error(ucfirst(nodep->prettyOperatorName())
-                                << " expected non-interface on " << side << " but '"
-                                << underp->name() << "' is an interface.");
+                nodep->v3error(ucfirst(nodep->prettyOperatorName())
+                               << " expected non-interface on " << side << " but '"
+                               << underp->name() << "' is an interface.");
             } else {
                 // Hope it just works out (perhaps a cast will deal with it)
                 underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());

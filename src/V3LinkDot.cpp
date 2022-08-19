@@ -2087,8 +2087,8 @@ private:
         VL_RESTORER(m_pinSymp);
         {
             // VirtIface's have pins, so track
-            m_pinSymp = m_statep->getNodeSym(nodep->ifacep());
             UINFO(4, "(Backto) Link VirtIfaceDType: " << nodep << endl);
+            m_pinSymp = m_statep->getNodeSym(nodep->ifacep());
             iterateChildren(nodep);
         }
     }
