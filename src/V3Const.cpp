@@ -2717,9 +2717,7 @@ private:
             }
             UINFO(8, "senItem(NOT...) " << nodep << " " << invert << endl);
             if (invert) nodep->edgeType(nodep->edgeType().invert());
-            AstNodeVarRef* const senvarp = VN_AS(lastSensp->unlinkFrBack(), NodeVarRef);
-            UASSERT_OBJ(senvarp, sensp, "Non-varref sensitivity variable");
-            sensp->replaceWith(senvarp);
+            sensp->replaceWith(lastSensp->unlinkFrBack());
             VL_DO_DANGLING(sensp->deleteTree(), sensp);
         }
     }

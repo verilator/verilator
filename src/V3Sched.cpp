@@ -268,13 +268,19 @@ class SenExprBuilder final {
     AstCFunc* const m_initp;  // The initialization function
     AstScope* const m_scopeTopp;  // Top level scope
 
-    std::vector<AstNodeStmt*> m_updates;  // Update assignments
+    std::vector<AstVar*> m_locals;  // Trigger eval local variables
+    std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
+    std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
 
     std::unordered_map<VNRef<AstNode>, AstVarScope*> m_prev;  // The 'previous value' signals
-    std::unordered_set<VNRef<AstNode>> m_hasUpdate;  // Whether the given sen expression already
-                                                     // has an update statement in m_updates
+    std::unordered_map<VNRef<AstNode>, AstVarScope*> m_curr;  // The 'current value' signals
+    std::unordered_set<VNRef<AstNode>> m_hasPreUpdate;  // Whether the given sen expression already
+                                                        // has an update statement in m_preUpdates
+    std::unordered_set<VNRef<AstNode>> m_hasPostUpdate;  // Likewis for m_postUpdates
 
-    V3UniqueNames m_uniqueNames{"__Vtrigprev__expression"};  // For generating unique signal names
+    V3UniqueNames m_currNames{"__Vtrigcurr__expression"};  // For generating unique current value
+                                                           // signal names
+    V3UniqueNames m_prevNames{"__Vtrigprev__expression"};  // Likewise for previous values
 
     static bool isSupportedDType(AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
@@ -285,29 +291,62 @@ class SenExprBuilder final {
         return false;
     }
 
+    static bool isSimpleExpr(const AstNode* const exprp) {
+        return exprp->forall<AstNode>([](const AstNode* const nodep) {
+            return VN_IS(nodep, Const) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, Sel)
+                   || VN_IS(nodep, NodeSel) || VN_IS(nodep, MemberSel)
+                   || VN_IS(nodep, CMethodHard);
+        });
+    }
+
     // METHODS
-    AstVarScope* getPrev(AstNode* currp) {
-        FileLine* const flp = currp->fileline();
-        const auto rdCurr = [=]() { return currp->cloneTree(false); };
+    AstNode* getCurr(AstNode* exprp) {
+        // For simple expressions like varrefs or selects, just use them directly
+        if (isSimpleExpr(exprp)) return exprp->cloneTree(false);
+
+        // Create the 'current value' variable
+        FileLine* const flp = exprp->fileline();
+        auto result = m_curr.emplace(*exprp, nullptr);
+        if (result.second) {
+            AstVar* const varp
+                = new AstVar{flp, VVarType::BLOCKTEMP, m_currNames.get(exprp), exprp->dtypep()};
+            varp->funcLocal(true);
+            m_locals.push_back(varp);
+            AstVarScope* vscp = new AstVarScope{flp, m_scopeTopp, varp};
+            m_scopeTopp->addVarp(vscp);
+            result.first->second = vscp;
+        }
+        AstVarScope* const currp = result.first->second;
+
+        // Add pre update if it does not exist yet in this round
+        if (m_hasPreUpdate.emplace(*currp).second) {
+            m_preUpdates.push_back(new AstAssign{flp, new AstVarRef{flp, currp, VAccess::WRITE},
+                                                 exprp->cloneTree(false)});
+        }
+        return new AstVarRef{flp, currp, VAccess::READ};
+    }
+    AstVarScope* getPrev(AstNode* exprp) {
+        FileLine* const flp = exprp->fileline();
+        const auto rdCurr = [=]() { return getCurr(exprp); };
 
         // Create the 'previous value' variable
-        auto it = m_prev.find(*currp);
+        auto it = m_prev.find(*exprp);
         if (it == m_prev.end()) {
             // For readability, use the scoped signal name if the trigger is a simple AstVarRef
             string name;
-            if (AstVarRef* const refp = VN_CAST(currp, VarRef)) {
+            if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
                 AstVarScope* vscp = refp->varScopep();
                 name = "__Vtrigrprev__" + vscp->scopep()->nameDotless() + "__"
                        + vscp->varp()->name();
             } else {
-                name = m_uniqueNames.get(currp);
+                name = m_prevNames.get(exprp);
             }
 
-            AstVarScope* const prevp = m_scopeTopp->createTemp(name, currp->dtypep());
-            it = m_prev.emplace(*currp, prevp).first;
+            AstVarScope* const prevp = m_scopeTopp->createTemp(name, exprp->dtypep());
+            it = m_prev.emplace(*exprp, prevp).first;
 
             // Add the initializer init
-            AstNode* const initp = rdCurr();
+            AstNode* const initp = exprp->cloneTree(false);
             m_initp->addStmtsp(
                 new AstAssign{flp, new AstVarRef{flp, prevp, VAccess::WRITE}, initp});
         }
@@ -316,22 +355,22 @@ class SenExprBuilder final {
 
         const auto wrPrev = [=]() { return new AstVarRef{flp, prevp, VAccess::WRITE}; };
 
-        // Add update if it does not exist yet
-        if (m_hasUpdate.emplace(*currp).second) {
-            if (!isSupportedDType(currp->dtypep())) {
-                currp->v3warn(E_UNSUPPORTED,
+        // Add post update if it does not exist yet
+        if (m_hasPostUpdate.emplace(*exprp).second) {
+            if (!isSupportedDType(exprp->dtypep())) {
+                exprp->v3warn(E_UNSUPPORTED,
                               "Unsupported: Cannot detect changes on expression of complex type"
                               " (see combinational cycles reported by UNOPTFLAT)");
                 return prevp;
             }
 
-            if (AstUnpackArrayDType* const dtypep = VN_CAST(currp->dtypep(), UnpackArrayDType)) {
+            if (AstUnpackArrayDType* const dtypep = VN_CAST(exprp->dtypep(), UnpackArrayDType)) {
                 AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
                 cmhp->dtypeSetVoid();
                 cmhp->statement(true);
-                m_updates.push_back(cmhp);
+                m_postUpdates.push_back(cmhp);
             } else {
-                m_updates.push_back(new AstAssign{flp, wrPrev(), rdCurr()});
+                m_postUpdates.push_back(new AstAssign{flp, wrPrev(), rdCurr()});
             }
         }
 
@@ -342,7 +381,7 @@ class SenExprBuilder final {
         FileLine* const flp = senItemp->fileline();
         AstNode* const senp = senItemp->sensp();
 
-        const auto currp = [=]() { return senp->cloneTree(false); };
+        const auto currp = [=]() { return getCurr(senp); };
         const auto prevp = [=]() { return new AstVarRef{flp, getPrev(senp), VAccess::READ}; };
         const auto lsb = [=](AstNodeMath* opp) { return new AstSel{flp, opp, 0, 1}; };
 
@@ -371,7 +410,7 @@ class SenExprBuilder final {
                 AstCMethodHard* const callp = new AstCMethodHard{flp, currp(), "isFired"};
                 callp->dtypeSetBit();
                 AstIf* const ifp = new AstIf{flp, callp};
-                m_updates.push_back(ifp);
+                m_postUpdates.push_back(ifp);
 
                 // Clear 'fired' state when done
                 AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
@@ -417,9 +456,16 @@ public:
         return {resultp, firedAtInitialization};
     }
 
-    std::vector<AstNodeStmt*> getAndClearUpdates() {
-        m_hasUpdate.clear();
-        return std::move(m_updates);
+    std::vector<AstVar*> getAndClearLocals() { return std::move(m_locals); }
+
+    std::vector<AstNodeStmt*> getAndClearPreUpdates() {
+        m_hasPreUpdate.clear();
+        return std::move(m_preUpdates);
+    }
+
+    std::vector<AstNodeStmt*> getAndClearPostUpdates() {
+        m_hasPostUpdate.clear();
+        return std::move(m_postUpdates);
     }
 
     // CONSTRUCTOR
@@ -606,7 +652,25 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
         ++triggerNumber;
     }
     // Add the update statements
-    for (AstNodeStmt* const nodep : senExprBuilder.getAndClearUpdates()) funcp->addStmtsp(nodep);
+    for (AstNodeStmt* const nodep : senExprBuilder.getAndClearPostUpdates()) {
+        funcp->addStmtsp(nodep);
+    }
+    const auto& preUpdates = senExprBuilder.getAndClearPreUpdates();
+    if (!preUpdates.empty()) {
+        for (AstNodeStmt* const nodep : vlstd::reverse_view(preUpdates)) {
+            UASSERT_OBJ(funcp->stmtsp(), funcp,
+                        "No statements in trigger eval function, but there are pre updates");
+            funcp->stmtsp()->addHereThisAsNext(nodep);
+        }
+    }
+    const auto& locals = senExprBuilder.getAndClearLocals();
+    if (!locals.empty()) {
+        UASSERT_OBJ(funcp->stmtsp(), funcp,
+                    "No statements in trigger eval function, but there are locals");
+        for (AstVar* const nodep : vlstd::reverse_view(locals)) {
+            funcp->stmtsp()->addHereThisAsNext(nodep);
+        }
+    }
 
     // Add the initialization statements
     if (initialTrigsp) {

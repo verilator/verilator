@@ -360,6 +360,7 @@ private:
     AstScope* m_scopep = nullptr;  // Current scope
     InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
+    bool m_inSensesp = false;  // Are we under a senitem?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
 
@@ -1369,6 +1370,11 @@ private:
         m_scopep = nullptr;
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
+        if (m_inSensesp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: function calls in sensitivity lists");
+            nodep->taskp(nullptr);  // So V3Broken doesn't complain
+            return;
+        }
         // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
@@ -1520,6 +1526,12 @@ private:
         m_insStmtp = nodep;
         iterateChildren(nodep);
         m_insStmtp = nullptr;  // Next thing should be new statement
+    }
+    virtual void visit(AstSenItem* nodep) override {
+        UASSERT_OBJ(!m_inSensesp, nodep, "Senitem under senitem?");
+        VL_RESTORER(m_inSensesp);
+        m_inSensesp = true;
+        iterateChildren(nodep);
     }
     //--------------------
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
