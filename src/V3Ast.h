@@ -2026,7 +2026,7 @@ public:
 
     // Same as above, but for 'const' nodes
     template <typename T_Node>
-    void exists(std::function<bool(const T_Node*)> p) const {
+    bool exists(std::function<bool(const T_Node*)> p) const {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         return predicateImpl<const T_Node, /* Default: */ false>(this, p);
     }
