@@ -47,6 +47,16 @@ int main() {
             }
         }
     }
+    tb->SEL = tb->A = tb->B = 0;
+
+    for (int i = 0; i < 256; ++i) {
+        tb->clk = 0;
+        tb->eval();
+        tb->clk = 1;
+        tb->eval();
+        if (tb->done) break;
+        if (i + 1 == 256) pass = false;
+    }
 
     if (pass) {
         VL_PRINTF("*-* All Finished *-*\n");

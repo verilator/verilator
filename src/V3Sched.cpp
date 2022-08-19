@@ -93,8 +93,9 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
 AstAssign* setVar(AstVarScope* vscp, uint32_t val) {
     FileLine* const flp = vscp->fileline();
     AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::WRITE};
-    AstConst* const zerop = new AstConst{flp, AstConst::DtypedValue{}, vscp->dtypep(), val};
-    return new AstAssign{flp, refp, zerop};
+    AstConst* const valp = new AstConst{flp, AstConst::DTyped{}, vscp->dtypep()};
+    valp->num().setLong(val);
+    return new AstAssign{flp, refp, valp};
 };
 
 void remapSensitivities(LogicByScope& lbs,
@@ -686,8 +687,8 @@ std::pair<AstVarScope*, AstNode*> makeEvalLoop(AstNetlist* netlistp, const strin
             {
                 const uint32_t limit = v3Global.opt.convergeLimit();
                 AstVarRef* const refp = new AstVarRef{flp, counterp, VAccess::READ};
-                AstConst* const constp
-                    = new AstConst{flp, AstConst::DtypedValue{}, counterp->dtypep(), limit};
+                AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
+                constp->num().setLong(limit);
                 AstNodeMath* const condp = new AstGt{flp, refp, constp};
                 AstIf* const failp = new AstIf{flp, condp};
                 ifp->addIfsp(failp);
@@ -708,8 +709,8 @@ std::pair<AstVarScope*, AstNode*> makeEvalLoop(AstNetlist* netlistp, const strin
             {
                 AstVarRef* const wrefp = new AstVarRef{flp, counterp, VAccess::WRITE};
                 AstVarRef* const rrefp = new AstVarRef{flp, counterp, VAccess::READ};
-                AstConst* const onep
-                    = new AstConst{flp, AstConst::DtypedValue{}, counterp->dtypep(), 1};
+                AstConst* const onep = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
+                onep->num().setLong(1);
                 ifp->addIfsp(new AstAssign{flp, wrefp, new AstAdd{flp, rrefp, onep}});
             }
 

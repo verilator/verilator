@@ -77,10 +77,11 @@ public:
         , m_num(this, width, value) {
         initWithNumber();
     }
-    class DtypedValue {};  // for creator type-overload selection
-    AstConst(FileLine* fl, DtypedValue, AstNodeDType* nodedtypep, uint32_t value)
+    class DTyped {};  // for creator type-overload selection
+    // Zero/empty constant with a type matching nodetypep
+    AstConst(FileLine* fl, DTyped, const AstNodeDType* nodedtypep)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, nodedtypep->width(), value, nodedtypep->widthSized()) {
+        , m_num(this, nodedtypep) {
         initWithNumber();
     }
     class StringToParse {};  // for creator type-overload selection
@@ -3592,6 +3593,7 @@ public:
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     // Special accessors
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 
 class AstAssign final : public AstNodeAssign {
@@ -4018,6 +4020,7 @@ public:
     void condsp(AstNode* nodep) { setOp1p(nodep); }
     void addBodysp(AstNode* newp) { addOp2p(newp); }
     bool isDefault() const { return condsp() == nullptr; }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 
 class AstSFormatF final : public AstNode {
@@ -4703,6 +4706,7 @@ public:
     virtual bool isGateOptimizable() const override { return false; }
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 
 class AstRepeat final : public AstNodeStmt {
@@ -4720,6 +4724,7 @@ public:
     }  // Not relevant - converted to FOR
     virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 
 class AstWait final : public AstNodeStmt {
@@ -4731,6 +4736,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(Wait)
     AstNode* bodysp() const { return op3p(); }  // op3 = body of loop
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 
 class AstWhile final : public AstNodeStmt {
@@ -4757,6 +4763,7 @@ public:
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp) override;
     // Stop statement searchback here
     virtual void addNextStmt(AstNode* newp, AstNode* belowp) override;
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 
 class AstBreak final : public AstNodeStmt {

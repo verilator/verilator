@@ -110,6 +110,18 @@ V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
     opCleanThis(true);
 }
 
+V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
+    if (nodedtypep->isString()) {
+        init(nodep, 0);
+        setString("");
+    } else if (nodedtypep->isDouble()) {
+        init(nodep, 64);
+        setDouble(0.0);
+    } else {
+        init(nodep, nodedtypep->width(), nodedtypep->widthSized());
+    }
+}
+
 void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl) {
     init(nodep, 0);
     m_fileline = fl;

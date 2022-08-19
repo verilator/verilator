@@ -239,13 +239,11 @@ private:
         }
         if (allocNewConst) {
             // Need to allocate new constant
-            constp = new AstConst{nodep->fileline(), AstConst::DtypedValue{}, nodep->dtypep(), 0};
+            constp = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
             // Mark as in use, add to free list for later reuse
             constp->user2(1);
             freeList.push_back(constp);
         }
-        constp->num().isDouble(nodep->isDouble());
-        constp->num().isString(nodep->isString());
         return constp;
     }
 

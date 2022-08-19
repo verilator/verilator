@@ -504,6 +504,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->lhsp(), nodep->rhsp(),
                           nodep->thsp());
     }
+    virtual void visit(AstMemberSel* nodep) override {
+        iterate(nodep->fromp());
+        puts(".");
+        puts(nodep->prettyName());
+    }
     virtual void visit(AstAttrOf* nodep) override {
         putfs(nodep, "$_ATTROF(");
         iterateAndNextConstNull(nodep->fromp());
