@@ -2043,7 +2043,7 @@ public:
 
     // Same as above, but for 'const' nodes
     template <typename T_Node>
-    void forall(std::function<bool(const T_Node*)> p) const {
+    bool forall(std::function<bool(const T_Node*)> p) const {
         static_assert(checkTypeParameter<T_Node>(), "Invalid type parameter 'T_Node'");
         return predicateImpl<const T_Node, /* Default: */ true>(this, p);
     }
