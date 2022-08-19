@@ -14,6 +14,7 @@ module t (/*AUTOARG*/
 
    Test1 t1(clk, a, b);
    Test2 t2(clk, a, b);
+   Test3 t3(clk);
 
    initial begin
       a = 0;
@@ -41,7 +42,6 @@ module Test1(
    input [3:0] a, b;
 
    assert property (@(posedge clk) $sampled(a == b) == ($sampled(a) == $sampled(b)));
-
 endmodule
 
 module Test2(
@@ -51,6 +51,18 @@ module Test2(
    input clk;
    input [3:0] a, b;
 
-   assert property (@(posedge clk) $sampled($time) == $time);
+   assert property (@(posedge clk) eq(a, b));
 
+   function [0:0] eq([3:0] x, y);
+      return x == y;
+   endfunction
+endmodule
+
+module Test3(
+   clk
+   );
+
+   input clk;
+
+   assert property (@(posedge clk) $sampled($time) == $time);
 endmodule

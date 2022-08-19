@@ -45,6 +45,7 @@ private:
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
     VDouble0 m_statAsFull;  // Statistic tracking
+    bool m_inSampled = false;
 
     // METHODS
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message) {
@@ -67,7 +68,7 @@ private:
         }
     }
     AstSampled* newSampledExpr(AstNode* nodep) {
-        const auto sampledp = new AstSampled(nodep->fileline(), nodep);
+        const auto sampledp = new AstSampled{nodep->fileline(), nodep};
         sampledp->dtypeFrom(nodep);
         return sampledp;
     }
@@ -167,7 +168,6 @@ private:
                 ++m_statAsImm;
             } else {
                 ++m_statAsNotImm;
-                propp = newSampledExpr(propp);
             }
             const bool force = VN_IS(nodep, AssertIntrinsic);
             if (passsp) passsp = newIfAssertOn(passsp, force);
@@ -339,8 +339,7 @@ private:
         }
         UASSERT_OBJ(ticks >= 1, nodep, "0 tick should have been checked in V3Width");
         AstNode* const exprp = nodep->exprp()->unlinkFrBack();
-        AstNode* inp = new AstSampled(nodep->fileline(), exprp);
-        inp->dtypeFrom(exprp);
+        AstNode* inp = newSampledExpr(exprp);
         AstVar* invarp = nullptr;
         AstSenTree* const sentreep = nodep->sentreep();
         sentreep->unlinkFrBack();
@@ -360,6 +359,39 @@ private:
             inp = new AstVarRef(nodep->fileline(), invarp, VAccess::READ);
         }
         nodep->replaceWith(inp);
+    }
+
+    //========== Move $sampled down to read-only variables
+    virtual void visit(AstSampled* nodep) override {
+        if (nodep->user1()) return;
+        VL_RESTORER(m_inSampled);
+        {
+            m_inSampled = true;
+            iterateChildren(nodep);
+        }
+        nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    virtual void visit(AstVarRef* nodep) override {
+        iterateChildren(nodep);
+        if (!m_inSampled) return;
+        if (!nodep->access().isReadOnly()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment to variable inside sampled expression");
+        } else {
+            VNRelinker relinkHandle;
+            nodep->unlinkFrBack(&relinkHandle);
+            AstSampled* const newp = newSampledExpr(nodep);
+            relinkHandle.relink(newp);
+            newp->user1(1);
+        }
+    }
+    // Don't sample sensitivities
+    virtual void visit(AstSenItem* nodep) override {
+        VL_RESTORER(m_inSampled);
+        {
+            m_inSampled = false;
+            iterateChildren(nodep);
+        }
     }
 
     //========== Statements

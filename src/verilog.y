@@ -5319,10 +5319,10 @@ concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
 concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statement
         //                      // IEEE: assert_property_statement
         //UNSUP remove below:
-                yASSERT yPROPERTY '(' property_spec ')' elseStmtBlock   { $$ = new AstAssert($1, $4, nullptr, $6, false); }
+                yASSERT yPROPERTY '(' property_spec ')' elseStmtBlock   { $$ = new AstAssert($1, new AstSampled($1, $4), nullptr, $6, false); }
         //UNSUP yASSERT yPROPERTY '(' property_spec ')' action_block    { }
         //                      // IEEE: assume_property_statement
-        |       yASSUME yPROPERTY '(' property_spec ')' elseStmtBlock   { $$ = new AstAssert($1, $4, nullptr, $6, false); }
+        |       yASSUME yPROPERTY '(' property_spec ')' elseStmtBlock   { $$ = new AstAssert($1, new AstSampled($1, $4), nullptr, $6, false); }
         //UNSUP yASSUME yPROPERTY '(' property_spec ')' action_block    { }
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock        { $$ = new AstCover($1, $4, $6, false); }

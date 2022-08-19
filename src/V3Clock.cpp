@@ -173,7 +173,7 @@ private:
         clearLastSen();
     }
 
-    // Create sampled values
+    //========== Create sampled values
     virtual void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         {
@@ -193,9 +193,7 @@ private:
     virtual void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
         if (m_inSampled && !nodep->user1SetOnce()) {
-            if (!nodep->access().isReadOnly()) {
-                nodep->v3error("Assigning to variable inside a sampled expression");
-            }
+            UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "Should have failed in V3Access");
             AstVarScope* const varscp = nodep->varScopep();
             AstVarScope* const lastscp = createSampledVar(varscp);
             AstNode* const newp = new AstVarRef{nodep->fileline(), lastscp, VAccess::READ};
