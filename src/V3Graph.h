@@ -67,7 +67,7 @@ public:
         return names[m_e];
     }
     // METHODS unique to this class
-    constexpr GraphWay invert() const { return GraphWay{m_e ^ 1}; }
+    constexpr GraphWay invert() const { return m_e == FORWARD ? REVERSE : FORWARD; }
     constexpr bool forward() const { return m_e == FORWARD; }
     constexpr bool reverse() const { return m_e != FORWARD; }
 };

@@ -1,6 +1,13 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Scoreboard for mtask coarsening
+// DESCRIPTION: Verilator: Scoreboards for thread partitioner
+//
+// Provides scoreboard classes:
+//
+//  * SortByValueMap
+//  * V3Scoreboard
+//
+// See details below
 //
 // Code available from: https://verilator.org
 //
@@ -21,122 +28,248 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
-#include "V3PairingHeap.h"
 
-//===============================================================================================
-// V3Scoreboard is essentially a heap that can be hinted that some elements have changed keys, at
-// which points those elements will be deferred as 'unknown' until the next 'rescore' call. We
-// largely reuse the implementation of the slightly more generic PairingHeap, but we do rely on the
-// internal structure of the PairingHeap so changing that class requires changing this.
-//
-// For efficiency, the elements themselves must be the heap nodes, by deriving them from
-// V3Scoreboard<T_Elem, T_Key>::Node. This also means a single element can only be associated with
-// a single scoreboard.
+#include <functional>
+#include <map>
+#include <set>
+#include <unordered_map>
 
-template <typename T_Elem, typename T_Key>
-class V3Scoreboard final {
+// ######################################################################
+//  SortByValueMap
+
+// A generic key-value map, except iteration is in *value* sorted order. Values need not be unique.
+// Uses T_KeyCompare to break ties in the sort when values collide. Note: Only const iteration is
+// possible, as updating mapped values via iterators is not safe.
+
+template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key>>
+class SortByValueMap final {
+    // Current implementation is a std::set of key/value pairs, plus a std_unordered_map from keys
+    // to iterators into the set. This keeps most operations fairly cheap and also has the benefit
+    // of being able to re-use the std::set iterators.
+
     // TYPES
-    using Heap = PairingHeap<T_Key>;
+
+    using Pair = std::pair<T_Key, T_Value>;
+
+    struct PairCmp final {
+        bool operator()(const Pair& a, const Pair& b) const {
+            // First compare values
+            if (a.second != b.second) return a.second < b.second;
+            // Then compare keys
+            return T_KeyCompare{}(a.first, b.first);
+        }
+    };
+
+    using PairSet = std::set<Pair, PairCmp>;
 
 public:
-    using Node = typename Heap::Node;
+    using const_iterator = typename PairSet::const_iterator;
+    using const_reverse_iterator = typename PairSet::const_reverse_iterator;
 
 private:
-    using Link = typename Heap::Link;
-
-    // Note: T_Elem is incomplete here, so we cannot assert 'std::is_base_of<Node, T_Elem>::value'
-
     // MEMBERS
-    Heap m_known;  // The heap of entries with known scores
-    Link m_unknown;  // List of entries with unknown scores
+    PairSet m_pairs;  // The contents of the map, stored directly as key-value pairs
+    std::unordered_map<T_Key, const_iterator> m_kiMap;  // Key to iterator map
+
+    VL_UNCOPYABLE(SortByValueMap);
 
 public:
     // CONSTRUCTORS
-    explicit V3Scoreboard() = default;
-    ~V3Scoreboard() = default;
+    SortByValueMap() = default;
 
-private:
-    VL_UNCOPYABLE(V3Scoreboard);
+    // Only const iteration is possible
+    const_iterator begin() const { return m_pairs.begin(); }
+    const_iterator end() const { return m_pairs.end(); }
+    const_iterator cbegin() const { m_pairs.cbegin(); }
+    const_iterator cend() const { return m_pairs.cend(); }
+    const_reverse_iterator rbegin() const { return m_pairs.rbegin(); }
+    const_reverse_iterator rend() const { return m_pairs.rend(); }
+    const_reverse_iterator crbegin() const { return m_pairs.crbegin(); }
+    const_reverse_iterator crend() const { return m_pairs.crend(); }
 
-    // METHODSs
-    void addUnknown(T_Elem* nodep) {
-        // Just prepend it to the list of unknown entries
-        nodep->m_next.link(m_unknown.unlink());
-        m_unknown.linkNonNull(nodep);
-        // We mark nodes on the unknown list by making their child pointer point to themselves
-        nodep->m_kids.m_ptr = nodep;
+    const_iterator find(const T_Key& key) const {
+        const auto kiIt = m_kiMap.find(key);
+        if (kiIt == m_kiMap.end()) return cend();
+        return kiIt->second;
     }
-
-public:
-    // Returns true if the element is present in the scoreboard, false otherwise. Every other
-    // method that takes a T_Elem* (except for 'add') has undefined behavior if the element is not
-    // in this scoreboard. Furthermore, this method is only valid if the element can only possibly
-    // be in this scoreboard. That is: if the element might be in another scoreboard, the behaviour
-    // of this method is undefined.
-    static bool contains(const T_Elem* nodep) { return nodep->m_ownerpp; }
-
-    // Add an element to the scoreboard. This will not be returned before the next 'rescore' call.
-    void add(T_Elem* nodep) {
+    size_t erase(const T_Key& key) {
+        const auto kiIt = m_kiMap.find(key);
+        if (kiIt == m_kiMap.end()) return 0;
+        m_pairs.erase(kiIt->second);
+        m_kiMap.erase(kiIt);
+        return 1;
+    }
+    void erase(const_iterator it) {
+        m_kiMap.erase(it->first);
+        m_pairs.erase(it);
+    }
+    void erase(const_reverse_iterator rit) {
+        m_kiMap.erase(rit->first);
+        m_pairs.erase(std::next(rit).base());
+    }
+    bool has(const T_Key& key) const { return m_kiMap.count(key); }
+    bool empty() const { return m_pairs.empty(); }
+    // Returns const reference.
+    const T_Value& at(const T_Key& key) const { return m_kiMap.at(key)->second; }
+    // Note this returns const_iterator
+    template <typename... Args>
+    std::pair<const_iterator, bool> emplace(const T_Key& key, Args&&... args) {
+        const auto kiEmp = m_kiMap.emplace(key, end());
+        if (kiEmp.second) {
+            const auto result = m_pairs.emplace(key, std::forward<Args>(args)...);
 #if VL_DEBUG
-        UASSERT(!contains(nodep), "Adding element to scoreboard that was already in a scoreboard");
+            UASSERT(result.second, "Should not be in set yet");
 #endif
-        addUnknown(nodep);
-    }
-
-    // Remove element from scoreboard.
-    void remove(T_Elem* nodep) {
-        if (nodep->m_kids.m_ptr == nodep) {
-            // Node is on the unknown list, replace with next
-            nodep->replaceWith(nodep->m_next.unlink());
-            return;
+            kiEmp.first->second = result.first;
+            return result;
         }
-        // Node is in the known heap, remove it
-        m_known.remove(nodep);
+        return {kiEmp.first->second, false};
     }
-
-    // Get the known element with the highest score (as we are using a max-heap), or nullptr if
-    // there are no elements with known entries. This does not automatically 'rescore'. The client
-    // must call 'rescore' appropriately to ensure all elements in the scoreboard are reflected in
-    // the result of this method.
-    T_Elem* best() const { return T_Elem::heapNodeToElem(m_known.max()); }
-
-    // Tell the scoreboard that this element's score may have changed. At the time of this call,
-    // the element's score becomes 'unknown' to the scoreboard. Unknown elements will not be
-    // returned by 'best until the next call to 'rescore'.
-    void hintScoreChanged(T_Elem* nodep) {
-        // If it's already in the unknown list, then nothing to do
-        if (nodep->m_kids.m_ptr == nodep) return;
-        // Otherwise it was in the heap, remove it
-        m_known.remove(nodep);
-        // Prepend it to the unknown list
-        addUnknown(nodep);
-    }
-
-    // True if we have elements with unknown score
-    bool needsRescore() const { return m_unknown; }
-
-    // True if the element's score is unknown, false otherwise.
-    static bool needsRescore(const T_Elem* nodep) { return nodep->m_kids.m_ptr == nodep; }
-
-    // For each element whose score is unknown, recompute the score and add to the known heap
-    void rescore() {
-        // Rescore and insert all unknown elements
-        for (Node *nodep = m_unknown.unlink(), *nextp; nodep; nodep = nextp) {
-            // Pick up next
-            nextp = nodep->m_next.ptr();
-            // Reset pointers
-            nodep->m_next.m_ptr = nullptr;
-            nodep->m_kids.m_ptr = nullptr;
-            nodep->m_ownerpp = nullptr;
-            // Re-compute the score of the element
-            T_Elem::heapNodeToElem(nodep)->rescore();
-            // re-insert into the heap
-            m_known.insert(nodep);
-        }
+    // Invalidates iterators
+    void update(const_iterator it, T_Value value) {
+        const auto kiIt = m_kiMap.find(it->first);
+        m_pairs.erase(it);
+        kiIt->second = m_pairs.emplace(kiIt->first, value).first;
     }
 };
 
-// ######################################################################
+//######################################################################
+
+/// V3Scoreboard takes a set of Elem*'s, each having some score.
+/// Scores are assigned by a user-supplied scoring function.
+///
+/// At any time, the V3Scoreboard can return th515e elem with the "best" score
+/// among those elements whose scores are known.
+///
+/// The best score is the _lowest_ score. This makes sense in contexts
+/// where scores represent costs.
+///
+/// The Scoreboard supports mutating element scores efficiently. The client
+/// must hint to the V3Scoreboard when an element's score may have
+/// changed. When it receives this hint, the V3Scoreboard will move the
+/// element into the set of elements whose scores are unknown. Later the
+/// client can tell V3Scoreboard to re-sort the list, which it does
+/// incrementally, by re-scoring all elements whose scores are unknown, and
+/// then moving these back into the score-sorted map. This is efficient
+/// when the subset of elements whose scores change is much smaller than
+/// the full set size.
+
+template <typename T_Elem, typename T_Score, class T_ElemCompare = std::less<T_Elem>>
+class V3Scoreboard final {
+private:
+    // TYPES
+    class CmpElems final {
+    public:
+        bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {
+            const T_ElemCompare cmp;
+            return cmp.operator()(*ap, *bp);
+        }
+    };
+    using SortedMap = SortByValueMap<const T_Elem*, T_Score, CmpElems>;
+    using UserScoreFnp = T_Score (*)(const T_Elem*);
+
+    // MEMBERS
+    // Below uses set<> not an unordered_set<>. unordered_set::clear() and
+    // construction results in a 491KB clear operation to zero all the
+    // buckets. Since the set size is generally small, and we iterate the
+    // set members, set is better performant.
+    std::set<const T_Elem*> m_unknown;  // Elements with unknown scores
+    SortedMap m_sorted;  // Set of elements with known scores
+    const UserScoreFnp m_scoreFnp;  // Scoring function
+    const bool m_slowAsserts;  // Do some asserts that require extra lookups
+
+public:
+    // CONSTRUCTORS
+    explicit V3Scoreboard(UserScoreFnp scoreFnp, bool slowAsserts)
+        : m_scoreFnp{scoreFnp}
+        , m_slowAsserts{slowAsserts} {}
+    ~V3Scoreboard() = default;
+
+    // METHODS
+
+    // Add an element to the scoreboard.
+    // Element begins in needs-rescore state; it won't be returned by
+    // bestp() until after the next rescore().
+    void addElem(const T_Elem* elp) {
+        if (m_slowAsserts) {
+            UASSERT(!contains(elp), "Adding element to scoreboard that was already in scoreboard");
+        }
+        m_unknown.insert(elp);
+    }
+
+    // Remove elp from scoreboard.
+    void removeElem(const T_Elem* elp) {
+        if (0 == m_sorted.erase(elp)) {
+            UASSERT(m_unknown.erase(elp),
+                    "Could not find requested elem to remove from scoreboard");
+        }
+    }
+
+    // Returns true if elp is present in the scoreboard, false otherwise.
+    //
+    // Note: every other V3Scoreboard routine that takes an T_Elem* has
+    // undefined behavior if the element is not in the scoreboard.
+    bool contains(const T_Elem* elp) const {
+        if (m_unknown.find(elp) != m_unknown.end()) return true;
+        return (m_sorted.find(elp) != m_sorted.end());
+    }
+
+    // Get the best element, with the lowest score (lower is better), among
+    // elements whose scores are known. Returns nullptr if no elements with
+    // known scores exist.
+    //
+    // Note: This does not automatically rescore. Client must call
+    // rescore() periodically to ensure all elems in the scoreboard are
+    // reflected in the result of bestp(). Otherwise, bestp() only
+    // considers elements that aren't pending rescore.
+    const T_Elem* bestp() {
+        const auto it = m_sorted.begin();
+        if (VL_UNLIKELY(it == m_sorted.end())) return nullptr;
+        return it->first;
+    }
+
+    // Tell the scoreboard that this element's score may have changed.
+    //
+    // At the time of this call, the element's score becomes "unknown"
+    // to the V3Scoreboard. Unknown elements won't be returned by bestp().
+    // The element's score will remain unknown until the next rescore().
+    //
+    // The client MUST call this for each element whose score has changed.
+    //
+    // The client MAY call this for elements whose score has not changed.
+    // Doing so incurs some compute cost (to re-sort the element back to
+    // its original location) and still makes it ineligible to be returned
+    // by bestp() until the next rescore().
+    void hintScoreChanged(const T_Elem* elp) {
+        m_unknown.insert(elp);
+        m_sorted.erase(elp);
+    }
+
+    // True if any element's score is unknown to V3Scoreboard.
+    bool needsRescore() { return !m_unknown.empty(); }
+    // False if elp's score is known to V3Scoreboard,
+    // else true if elp's score is unknown until the next rescore().
+    bool needsRescore(const T_Elem* elp) { return m_unknown.count(elp); }
+    // Retrieve the last known score for an element.
+    T_Score cachedScore(const T_Elem* elp) { return m_sorted.at(elp); }
+    // For each element whose score is unknown to V3Scoreboard,
+    // call the client's scoring function to get a new score,
+    // and sort all elements by their current score.
+    void rescore() {
+        for (const T_Elem* elp : m_unknown) {
+            VL_ATTR_UNUSED const bool exists = !m_sorted.emplace(elp, m_scoreFnp(elp)).second;
+#if VL_DEBUG
+            UASSERT(!exists, "Should not be in both m_unknown and m_sorted");
+#endif
+        }
+        m_unknown.clear();
+    }
+
+private:
+    VL_UNCOPYABLE(V3Scoreboard);
+};
+
+//######################################################################
 
 namespace V3ScoreboardBase {
 void selfTest();

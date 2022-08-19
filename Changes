@@ -20,7 +20,6 @@ Verilator 4.225 devel
 * Fix incorrect tristate logic (#3399) [shareefj, Vighnesh Iyer]
 * Fix segfault exporting non-existant package (#3535).
 * Fix case statement comparing string literal (#3544). [Gustav Svensk]
-* Improve Verilation speed with --threads on large designs. [Geza Lore]
 
 
 Verilator 4.224 2022-06-19

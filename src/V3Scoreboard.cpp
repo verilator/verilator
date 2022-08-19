@@ -19,42 +19,26 @@
 
 #include "V3Scoreboard.h"
 
-class ScoreboardTestElem;
-
-struct Key {
-    // Node: Structure layout chosen to minimize padding in PairingHeao<*>::Node
-    uint64_t m_id;  // Unique ID part of edge score
-    uint32_t m_score;  // Score part of ID
-    bool operator<(const Key& other) const {
-        // First by Score then by ID, but notice that we want minimums using a max-heap, so reverse
-        return m_score > other.m_score || (m_score == other.m_score && m_id > other.m_id);
-    }
-};
-
-using Scoreboard = V3Scoreboard<ScoreboardTestElem, Key>;
-
-class ScoreboardTestElem final : public Scoreboard::Node {
+class ScoreboardTestElem final {
 public:
-    uint32_t m_newScore;
+    // MEMBERS
+    uint32_t m_score;
+    uint32_t m_id;
     // CONSTRUCTORS
     explicit ScoreboardTestElem(uint32_t score)
-        : m_newScore{score} {
-        m_key.m_score = m_newScore;
+        : m_score{score} {
         static uint32_t s_serial = 0;
-        m_key.m_id = ++s_serial;
+        m_id = ++s_serial;
     }
     ScoreboardTestElem() = default;
+    // METHODS
+    static uint32_t scoreFn(const ScoreboardTestElem* elp) { return elp->m_score; }
 
-    uint64_t id() const { return m_key.m_id; }
-    void rescore() { m_key.m_score = m_newScore; }
-    uint32_t score() const { return m_key.m_score; }
-    static ScoreboardTestElem* heapNodeToElem(Scoreboard::Node* nodep) {
-        return static_cast<ScoreboardTestElem*>(nodep);
-    }
+    bool operator<(const ScoreboardTestElem& other) const { return m_id < other.m_id; }
 };
 
 void V3ScoreboardBase::selfTest() {
-    Scoreboard sb;
+    V3Scoreboard<ScoreboardTestElem, uint32_t> sb(ScoreboardTestElem::scoreFn, true);
 
     UASSERT(!sb.needsRescore(), "SelfTest: Empty sb should not need rescore.");
 
@@ -62,13 +46,13 @@ void V3ScoreboardBase::selfTest() {
     ScoreboardTestElem e2(20);
     ScoreboardTestElem e3(30);
 
-    sb.add(&e1);
-    sb.add(&e2);
-    sb.add(&e3);
+    sb.addElem(&e1);
+    sb.addElem(&e2);
+    sb.addElem(&e3);
 
     UASSERT(sb.needsRescore(), "SelfTest: Newly filled sb should need a rescore.");
     UASSERT(sb.needsRescore(&e1), "SelfTest: Individual newly-added element should need rescore");
-    UASSERT(nullptr == sb.best(),
+    UASSERT(nullptr == sb.bestp(),
             "SelfTest: Newly filled sb should have nothing eligible for Bestp()");
 
     sb.rescore();
@@ -76,22 +60,24 @@ void V3ScoreboardBase::selfTest() {
     UASSERT(!sb.needsRescore(), "SelfTest: Newly rescored sb should not need rescore");
     UASSERT(!sb.needsRescore(&e1),
             "SelfTest: Newly rescored sb should not need an element rescored");
-    UASSERT(&e1 == sb.best(), "SelfTest: Should return element with lowest (best) score");
+    UASSERT(e2.m_score == sb.cachedScore(&e2),
+            "SelfTest: Cached score should match current score");
+    UASSERT(&e1 == sb.bestp(), "SelfTest: Should return element with lowest (best) score");
 
     // Change one element's score
     sb.hintScoreChanged(&e2);
-    e2.m_newScore = 21;
+    e2.m_score = 21;
     UASSERT(sb.needsRescore(&e2), "SelfTest: Should need rescore on elem after hintScoreChanged");
 
     // Remove an element
     UASSERT(sb.contains(&e1), "SelfTest: e1 should be there");
-    sb.remove(&e1);
+    sb.removeElem(&e1);
     UASSERT(!sb.contains(&e1), "SelfTest: e1 should be gone");
     UASSERT(sb.contains(&e2), "SelfTest: e2 should be there, despite needing rescore");
 
     // Now e3 should be our best-scoring element, even though
     // e2 has a better score, since e2 is pending rescore.
-    UASSERT(&e3 == sb.best(), "SelfTest: Expect e3 as best element with known score.");
+    UASSERT(&e3 == sb.bestp(), "SelfTest: Expect e3 as best element with known score.");
     sb.rescore();
-    UASSERT(&e2 == sb.best(), "SelfTest: Expect e2 as best element again after Rescore");
+    UASSERT(&e2 == sb.bestp(), "SelfTest: Expect e2 as best element again after Rescore");
 }
