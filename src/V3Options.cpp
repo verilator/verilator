@@ -1091,8 +1091,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
     });
     DECL_OPTION("-flatten", OnOff, &m_flatten);
-    DECL_OPTION("-future0", CbVal, [this, fl, &optdir](const char* valp) { addFuture0(valp); });
-    DECL_OPTION("-future1", CbVal, [this, fl, &optdir](const char* valp) { addFuture1(valp); });
+    DECL_OPTION("-future0", CbVal, [this](const char* valp) { addFuture0(valp); });
+    DECL_OPTION("-future1", CbVal, [this](const char* valp) { addFuture1(valp); });
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
