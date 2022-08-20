@@ -182,6 +182,14 @@ V3GraphEdge* V3GraphEdge::relinkFromp(V3GraphVertex* newFromp) {
     return oldNxt;
 }
 
+V3GraphEdge* V3GraphEdge::relinkTop(V3GraphVertex* newTop) {
+    V3GraphEdge* oldNxt = inNextp();
+    m_ins.unlink(m_top->m_ins, this);
+    m_top = newTop;
+    inPushBack();
+    return oldNxt;
+}
+
 void V3GraphEdge::unlinkDelete() {
     // Unlink from side
     m_outs.unlink(m_fromp->m_outs, this);

@@ -24,6 +24,7 @@ Verilator 4.225 devel
 
 **Minor:**
 
+* Add --future0 and --future1 options.
 * Fix incorrect bit op tree optimization (#3470). [algrobman]
 * Fix empty string arguments to display (#3484). [Grulfen]
 * Fix table misoptimizing away display (#3488). [Stefan Post]
