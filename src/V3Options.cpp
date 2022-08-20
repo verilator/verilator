@@ -359,8 +359,16 @@ void V3Options::addCFlags(const string& filename) { m_cFlags.push_back(filename)
 void V3Options::addLdLibs(const string& filename) { m_ldLibs.push_back(filename); }
 void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(filename); }
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
+void V3Options::addFuture0(const string& flag) { m_future0s.insert(flag); }
+void V3Options::addFuture1(const string& flag) { m_future1s.insert(flag); }
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
+}
+bool V3Options::isFuture0(const string& flag) const {
+    return m_future0s.find(flag) != m_future0s.end();
+}
+bool V3Options::isFuture1(const string& flag) const {
+    return m_future1s.find(flag) != m_future1s.end();
 }
 bool V3Options::isLibraryFile(const string& filename) const {
     return m_libraryFiles.find(filename) != m_libraryFiles.end();
@@ -1083,6 +1091,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
     });
     DECL_OPTION("-flatten", OnOff, &m_flatten);
+    DECL_OPTION("-future0", CbVal, [this, fl, &optdir](const char* valp) { addFuture0(valp); });
+    DECL_OPTION("-future1", CbVal, [this, fl, &optdir](const char* valp) { addFuture1(valp); });
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
@@ -1512,8 +1522,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 ++i;
             }
         } else if (argv[i][0] == '-' || argv[i][0] == '+') {
+            const char* argvNoDashp = (argv[i][1] == '-') ? (argv[i] + 2) : (argv[i] + 1);
             if (const int consumed = parser.parse(i, argc, argv)) {
                 i += consumed;
+            } else if (isFuture0(argvNoDashp)) {
+                ++i;
+            } else if (isFuture1(argvNoDashp)) {
+                i += 2;
             } else {
                 fl->v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
                 ++i;  // LCOV_EXCL_LINE

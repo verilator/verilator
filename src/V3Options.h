@@ -199,6 +199,8 @@ private:
     V3StringList m_ldLibs;      // argument: user LDFLAGS
     V3StringList m_makeFlags;   // argument: user MAKEFLAGS
     V3StringSet m_futures;      // argument: -Wfuture- list
+    V3StringSet m_future0s;     // argument: -future list
+    V3StringSet m_future1s;     // argument: -future1 list
     V3StringSet m_libraryFiles; // argument: Verilog -v files
     V3StringSet m_clockers;     // argument: Verilog -clk signals
     V3StringSet m_noClockers;   // argument: Verilog -noclk signals
@@ -371,6 +373,8 @@ private:
     void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus);
     void addFuture(const string& flag);
+    void addFuture0(const string& flag);
+    void addFuture1(const string& flag);
     void addIncDirUser(const string& incdir);  // User requested
     void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise
     void addParameter(const string& paramline, bool allowPlus);
@@ -572,6 +576,8 @@ public:
     void checkParameters();
 
     bool isFuture(const string& flag) const;
+    bool isFuture0(const string& flag) const;
+    bool isFuture1(const string& flag) const;
     bool isLibraryFile(const string& filename) const;
     bool isClocker(const string& signame) const;
     bool isNoClocker(const string& signame) const;

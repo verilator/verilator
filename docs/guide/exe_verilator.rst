@@ -491,6 +491,30 @@ Summary:
    are typically used only when recommended by a maintainer to help debug
    or work around an issue.
 
+.. option:: -future0 <option>
+
+   Rarely needed.  Suppress an unknown Verilator option for an option that
+   takes no additional arguments.  This is used to allow scripts written
+   with pragmas for a later version of Verilator to run under a older
+   version.  e.g. :code:`-future0 option --option` would on older versions
+   that do not understand :code:`--option` or :code:`+option` suppress what
+   would otherwise be an invalid option error, and on newer versions that
+   implement :code:`--option`, :code:`-future0 option --option` would have
+   the :code:`-future0 option` ignored and the :code:`--option` would
+   function appropriately.
+
+.. option:: -future1 <option>
+
+   Rarely needed.  Suppress an unknown Verilator option for an option that
+   takes an additional argument.  This is used to allow scripts written
+   with pragmas for a later version of Verilator to run under a older
+   version.  e.g. :code:`-future1 option --option arg` would on older
+   versions that do not understand :code:`--option arg` or :code:`+option
+   arg` suppress what would otherwise be an invalid option error, and on
+   newer versions that implement :code:`--option arg`, :code:`-future1
+   option --option arg` would have the :code:`-future1 option` ignored and
+   the :code:`--option arg` would function appropriately.
+
 .. option:: -G<name>=<value>
 
    Overwrites the given parameter of the toplevel module. The value is
