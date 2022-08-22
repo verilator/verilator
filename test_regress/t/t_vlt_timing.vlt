@@ -1,0 +1,11 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2022 by Antmicro Ltd.
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+timing_on --file "t/t_timing_off.v" --lines 23
+timing_off -file "t/t_timing_off.v" -lines 26-34
+timing_on -file "t/t_timing_off.v" -lines 35-38

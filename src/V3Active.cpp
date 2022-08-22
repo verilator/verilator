@@ -373,9 +373,11 @@ private:
         }
 
         // Convert to blocking assignment
-        nodep->replaceWith(new AstAssign{nodep->fileline(),  //
-                                         nodep->lhsp()->unlinkFrBack(),  //
-                                         nodep->rhsp()->unlinkFrBack()});
+        nodep->replaceWith(new AstAssign{
+            nodep->fileline(),  //
+            nodep->lhsp()->unlinkFrBack(),  //
+            nodep->rhsp()->unlinkFrBack(),  //
+            nodep->timingControlp() ? nodep->timingControlp()->unlinkFrBack() : nullptr});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
@@ -473,8 +475,9 @@ private:
         }
 
         AstActive* const wantactivep
-            = m_clockedProcess ? m_namer.getActive(nodep->fileline(), oldsensesp)
-                               : m_namer.getSpecialActive<AstSenItem::Combo>(nodep->fileline());
+            = !m_clockedProcess ? m_namer.getSpecialActive<AstSenItem::Combo>(nodep->fileline())
+              : oldsensesp      ? m_namer.getActive(nodep->fileline(), oldsensesp)
+                                : m_namer.getSpecialActive<AstSenItem::Initial>(nodep->fileline());
 
         // Delete sensitivity list
         if (oldsensesp) VL_DO_DANGLING(oldsensesp->deleteTree(), oldsensesp);
@@ -495,6 +498,12 @@ private:
         }
     }
 
+    void visitSenItems(AstNode* nodep) {
+        if (v3Global.opt.timing().isSetTrue()) {
+            nodep->foreach<AstSenItem>([this](AstSenItem* senItemp) { visit(senItemp); });
+        }
+    }
+
     // VISITORS
     virtual void visit(AstScope* nodep) override {
         m_namer.main(nodep);  // Clear last scope's names, and collect this scope's existing names
@@ -509,6 +518,7 @@ private:
     }
     virtual void visit(AstInitial* nodep) override {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
+        visitSenItems(nodep);
         moveUnderSpecial<AstSenItem::Initial>(nodep);
     }
     virtual void visit(AstFinal* nodep) override {
@@ -529,6 +539,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
+        visitSenItems(nodep);
         visitAlways(nodep, nodep->sensesp(), nodep->keyword());
     }
     virtual void visit(AstAlwaysPostponed* nodep) override {
@@ -540,16 +551,18 @@ private:
     virtual void visit(AstAlwaysPublic* nodep) override {
         visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
+    virtual void visit(AstCFunc* nodep) override { visitSenItems(nodep); }
 
     virtual void visit(AstSenItem* nodep) override {
-        UASSERT_OBJ(!m_walkingBody, nodep, "Should not reach here when walking body");
+        UASSERT_OBJ(!m_walkingBody, nodep,
+                    "Should not reach here when walking body without --timing");
         if (!nodep->sensp()) return;  // Ignore sequential items (e.g.: initial, comb, etc.)
 
         m_clockedProcess = true;
         if (nodep->edgeType() != VEdgeType::ET_CHANGED) m_allChanged = false;
 
-        if (nodep->varrefp()) {
-            if (const AstBasicDType* const basicp = nodep->varrefp()->dtypep()->basicp()) {
+        if (const auto* const dtypep = nodep->sensp()->dtypep()) {
+            if (const auto* const basicp = dtypep->basicp()) {
                 if (basicp->isEvent()) nodep->edgeType(VEdgeType::ET_EVENT);
             }
         }
@@ -573,6 +586,7 @@ private:
     }
     virtual void visit(AstAssignDly* nodep) override {
         m_canBeComb = false;
+        if (nodep->isTimingControl()) m_clockedProcess = true;
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstFireEvent* nodep) override {
@@ -587,13 +601,27 @@ private:
         m_canBeComb = false;
         iterateChildrenConst(nodep);
     }
+    virtual void visit(AstFork* nodep) override {
+        if (nodep->isTimingControl()) {
+            m_canBeComb = false;
+            m_clockedProcess = true;
+        }
+        // Do not iterate children, technically not part of this process
+    }
 
     //--------------------
     virtual void visit(AstVar*) override {}  // Accelerate
     virtual void visit(AstVarScope*) override {}  // Accelerate
     virtual void visit(AstNode* nodep) override {
-        if (m_walkingBody && !m_canBeComb) return;  // Accelerate
+        if (!v3Global.opt.timing().isSetTrue() && m_walkingBody && !m_canBeComb) {
+            return;  // Accelerate
+        }
         if (!nodep->isPure()) m_canBeComb = false;
+        if (nodep->isTimingControl()) {
+            m_canBeComb = false;
+            m_clockedProcess = true;
+            return;
+        }
         iterateChildren(nodep);
     }
 

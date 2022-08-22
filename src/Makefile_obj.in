@@ -181,6 +181,7 @@ RAW_OBJS = \
 	V3DepthBlock.o \
 	V3Descope.o \
 	V3DupFinder.o \
+	V3Timing.o \
 	V3EmitCBase.o \
 	V3EmitCConstPool.o \
 	V3EmitCFunc.o \
@@ -241,6 +242,7 @@ RAW_OBJS = \
 	V3SchedAcyclic.o \
 	V3SchedPartition.o \
 	V3SchedReplicate.o \
+	V3SchedTiming.o \
 	V3Scope.o \
 	V3Scoreboard.o \
 	V3Slice.o \

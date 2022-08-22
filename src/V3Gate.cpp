@@ -247,6 +247,8 @@ private:
         m_substTreep = nodep->rhsp();
         if (!VN_IS(nodep->lhsp(), NodeVarRef)) {
             clearSimple("ASSIGN(non-VARREF)");
+        } else if (nodep->isTimingControl()) {
+            clearSimple("Timing control");
         } else {
             iterateChildren(nodep);
         }
@@ -343,6 +345,13 @@ private:
     VDouble0 m_statAssignMerged;  // Statistic tracking
 
     // METHODS
+    void checkTimingControl(AstNode* nodep) {
+        if (nodep->isTimingControl() && m_logicVertexp) {
+            m_logicVertexp->clearReducibleAndDedupable("TimingControl");
+            m_logicVertexp->setConsumed("TimingControl");
+        }
+    }
+
     void iterateNewStmt(AstNode* nodep, const char* nonReducibleReason,
                         const char* consumeReason) {
         if (m_scopep) {
@@ -357,6 +366,7 @@ private:
             }
             if (consumeReason) m_logicVertexp->setConsumed(consumeReason);
             if (VN_IS(nodep, SenItem)) m_logicVertexp->setConsumed("senItem");
+            checkTimingControl(nodep);
             iterateChildren(nodep);
             m_logicVertexp = nullptr;
         }
@@ -555,6 +565,7 @@ private:
     virtual void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         if (nodep->isOutputter() && m_logicVertexp) m_logicVertexp->setConsumed("outputter");
+        checkTimingControl(nodep);
     }
 
 public:

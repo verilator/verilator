@@ -114,6 +114,7 @@ class EmitCModel final : public EmitCFunc {
                 }
             }
         }
+        if (optSystemC() && v3Global.usesTiming()) puts("sc_event trigger_eval;\n");
 
         // Cells instantiated by the top level (for access to /* verilator public */)
         puts("\n// CELLS\n"
@@ -162,7 +163,12 @@ class EmitCModel final : public EmitCFunc {
         if (!optSystemC()) {
             puts("/// Evaluate the model.  Application must call when inputs change.\n");
         }
-        puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
+        if (optSystemC() && v3Global.usesTiming()) {
+            puts("void eval();\n");
+            puts("void eval_sens();\n");
+        } else {
+            puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
+        }
         if (!optSystemC()) {
             puts("/// Evaluate when calling multiple units/models per time step.\n");
         }
@@ -183,6 +189,11 @@ class EmitCModel final : public EmitCFunc {
         }
         ofp()->putsPrivate(false);  // public:
         puts("void final();\n");
+
+        puts("/// Are there scheduled events to handle?\n");
+        puts("bool eventsPending();\n");
+        puts("/// Returns time at next time slot. Aborts if !eventsPending()\n");
+        puts("uint64_t nextTimeSlot();\n");
 
         if (v3Global.opt.trace()) {
             puts("/// Trace signals in the model; called by application code\n");
@@ -278,6 +289,7 @@ class EmitCModel final : public EmitCFunc {
             // Create sensitivity list for when to evaluate the model.
             putsDecoration("// Sensitivities on all clocks and combinational inputs\n");
             puts("SC_METHOD(eval);\n");
+            if (v3Global.usesTiming()) puts("SC_METHOD(eval_sens);\n");
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isNonOutput() && (varp->isScSensitive() || varp->isUsedClock())) {
@@ -343,6 +355,24 @@ class EmitCModel final : public EmitCFunc {
         puts("void " + topModNameProtected + "__" + protect("_eval_settle") + selfDecl + ";\n");
         puts("void " + topModNameProtected + "__" + protect("_eval") + selfDecl + ";\n");
 
+        if (optSystemC() && v3Global.usesTiming()) {
+            // ::eval
+            puts("\nvoid " + topClassName() + "::eval() {\n");
+            puts("eval_step();\n");
+            puts("if (eventsPending()) {\n");
+            puts("sc_time dt = sc_time::from_value(nextTimeSlot() - contextp()->time());\n");
+            puts("next_trigger(dt, trigger_eval);\n");
+            puts("} else {\n");
+            puts("next_trigger(trigger_eval);\n");
+            puts("}\n");
+            puts("}\n");
+
+            // ::eval_sens
+            puts("\nvoid " + topClassName() + "::eval_sens() {\n");
+            puts("trigger_eval.notify();\n");
+            puts("}\n");
+        }
+
         // ::eval_step
         puts("\nvoid " + topClassName() + "::eval_step() {\n");
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate " + topClassName()
@@ -406,6 +436,24 @@ class EmitCModel final : public EmitCFunc {
             puts("if (VL_UNLIKELY(vlSymsp->__Vm_dumping)) vlSymsp->_traceDump();\n");
             puts("#endif  // VM_TRACE\n");
             puts("}\n");
+        }
+
+        if (v3Global.usesTiming()) {
+            putSectionDelimiter("Events and timing");
+            if (auto* const delaySchedp = v3Global.rootp()->delaySchedulerp()) {
+                puts("bool " + topClassName() + "::eventsPending() { return !vlSymsp->TOP.");
+                puts(delaySchedp->nameProtect());
+                puts(".empty(); }\n\n");
+                puts("uint64_t " + topClassName() + "::nextTimeSlot() { return vlSymsp->TOP.");
+                puts(delaySchedp->nameProtect());
+                puts(".nextTimeSlot(); }\n");
+            } else {
+                puts("bool " + topClassName() + "::eventsPending() { return false; }\n\n");
+                puts("uint64_t " + topClassName() + "::nextTimeSlot() {\n");
+                puts("VL_FATAL_MT(__FILE__, __LINE__, \"\", \"%Error: No delays in the "
+                     "design\");\n");
+                puts("return 0;\n}\n");
+            }
         }
 
         putSectionDelimiter("Utilities");

@@ -684,6 +684,16 @@ Summary:
    If the design is not to be completely Verilated see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
 
+.. option:: --main
+
+   Generates a simple main C++ file. Without :vlopt:`--timing`, you need to
+   modify this file to provide some stimuli to the design. However, this option
+   is especially useful with :vlopt:`--timing` and delay-generated clocks, as
+   then the main file provides a timing-enabled eval loop and requires no
+   modification by the user. :vlopt:`--build` can then be used to build the
+   simulation, allowing you to use Verilator without directly invoking
+   the C++ toolchain.
+
 .. option:: --make <build-tool>
 
    Generates a script for the specified build tool.
@@ -1163,6 +1173,16 @@ Summary:
    "sc_set_time_resolution()", or the C++ code instantiating the Verilated
    module.  As "1fs" is the finest time precision it may be desirable to
    always use a precision of "1fs".
+
+.. option:: --timing
+
+.. option:: --no-timing
+
+   Enables/disables support for timing constructs such as delays, event
+   controls (unless it's at the top of a process), wait statements, and joins.
+   When disabled, timing control constructs are ignored the same way as they
+   were in earlier versions of Verilator. Enabling this feature requires a C++
+   compiler with coroutine support (GCC 10, Clang 5, or newer).
 
 .. option:: --top <topname>
 
@@ -1746,6 +1766,19 @@ The grammar of configuration commands is as follows:
    recommended by Verilator itself, see :option:`UNOPTFLAT`.
 
    Same as :option:`/*verilator&32;split_var*/` metacomment.
+
+.. option:: timing_on  [-file "<filename>" [-lines <line> [ - <line>]]]
+
+.. option:: timing_off [-file "<filename>" [-lines <line> [ - <line>]]]
+
+   Enables/disables timing constructs for the specified file and lines.
+   When disabled, all timing control constructs in the specified source
+   code locations are ignored the same way as with the
+   :option:`--no-timing`, and code:`fork`/:code:`join*` blocks are
+   converted into :code:`begin`/:code:`end` blocks.
+
+   Same as :option:`/*verilator&32;timing_on*/`,
+   :option:`/*verilator&32;timing_off*/` metacomments.
 
 .. option:: tracing_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 

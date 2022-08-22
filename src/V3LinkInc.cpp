@@ -149,6 +149,25 @@ private:
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
+    virtual void visit(AstDelay* nodep) override {
+        m_insStmtp = nodep;
+        iterateAndNextNull(nodep->lhsp());
+        m_insStmtp = nullptr;
+        iterateAndNextNull(nodep->stmtsp());
+        m_insStmtp = nullptr;
+    }
+    virtual void visit(AstEventControl* nodep) override {
+        m_insStmtp = nullptr;
+        iterateAndNextNull(nodep->stmtsp());
+        m_insStmtp = nullptr;
+    }
+    virtual void visit(AstWait* nodep) override {
+        m_insStmtp = nodep;
+        iterateAndNextNull(nodep->condp());
+        m_insStmtp = nullptr;
+        iterateAndNextNull(nodep->bodysp());
+        m_insStmtp = nullptr;
+    }
     virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);

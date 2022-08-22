@@ -607,8 +607,20 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetTrue()) {
+                userIterate(nodep->lhsp(), WidthVP{nullptr, BOTH}.p());
+                iterateNull(nodep->stmtsp());
+                return;
+            } else if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(STMTDLY, "Ignoring delay on this statement due to --no-timing");
+            } else {
+                nodep->v3warn(
+                    E_NEEDTIMINGOPT,
+                    "Use --timing or --no-timing to specify how delays should be handled");
+            }
+        }
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
-        nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     virtual void visit(AstFork* nodep) override {
@@ -618,19 +630,27 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
-        if (v3Global.opt.bboxUnsup()
+        if (!nodep->fileline()->timingOn()
             // With no statements, begin is identical
             || !nodep->stmtsp()
-            // With one statement, a begin block does as good as a fork/join or join_any
-            || (!nodep->stmtsp()->nextp() && !nodep->joinType().joinNone())) {
+            || (!v3Global.opt.timing().isSetTrue()  // If no --timing
+                && (v3Global.opt.bboxUnsup()
+                    // With one statement and no timing, a begin block does as good as a
+                    // fork/join or join_any
+                    || (!nodep->stmtsp()->nextp() && !nodep->joinType().joinNone())))) {
             AstNode* stmtsp = nullptr;
             if (nodep->stmtsp()) stmtsp = nodep->stmtsp()->unlinkFrBack();
             AstBegin* const newp = new AstBegin{nodep->fileline(), nodep->name(), stmtsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (v3Global.opt.timing().isSetTrue()) {
+            iterateChildren(nodep);
+        } else if (v3Global.opt.timing().isSetFalse()) {
+            nodep->v3warn(E_NOTIMING, "Fork statements require --timing");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: fork statements");
-            // TBD might support only normal join, if so complain about other join flavors
+            nodep->v3warn(E_NEEDTIMINGOPT,
+                          "Use --timing or --no-timing to specify how forks should be handled");
         }
     }
     virtual void visit(AstDisableFork* nodep) override {
@@ -1358,10 +1378,28 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstEventControl* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: event control statement in this location\n"
-                                         << nodep->warnMore()
-                                         << "... Suggest have one event control statement "
-                                         << "per procedure, at the top of the procedure");
+        if (VN_IS(m_ftaskp, Func)) {
+            nodep->v3error("Event controls are not legal in functions. Suggest use a task "
+                           "(IEEE 1800-2017 13.4.4)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetTrue()) {
+                iterateChildren(nodep);
+                return;
+            } else if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(E_NOTIMING,
+                              "Event control statement in this location requires --timing\n"
+                                  << nodep->warnMore()
+                                  << "... With --no-timing, suggest have one event control "
+                                  << "statement per procedure, at the top of the procedure");
+            } else {
+                nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
+                                               "event controls should be handled");
+            }
+        }
+        if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstAttrOf* nodep) override {
@@ -4236,10 +4274,26 @@ private:
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
         }
-        if (nodep->timingControlp()) {
-            nodep->timingControlp()->v3warn(
-                ASSIGNDLY, "Unsupported: Ignoring timing control on this assignment.");
-            nodep->timingControlp()->unlinkFrBackWithNext()->deleteTree();
+        if (auto* const controlp = nodep->timingControlp()) {
+            if (VN_IS(m_ftaskp, Func)) {
+                controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
+                                  "(IEEE 1800-2017 13.4.4)");
+                VL_DO_DANGLING(controlp->unlinkFrBackWithNext()->deleteTree(), controlp);
+            } else if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) {
+                iterateNull(controlp);
+            } else {
+                if (nodep->fileline()->timingOn()) {
+                    if (v3Global.opt.timing().isSetFalse()) {
+                        controlp->v3warn(ASSIGNDLY, "Ignoring timing control on this "
+                                                    "assignment/primitive due to --no-timing");
+                    } else {
+                        controlp->v3warn(E_NEEDTIMINGOPT,
+                                         "Use --timing or --no-timing to specify how "
+                                         "timing controls should be handled");
+                    }
+                }
+                VL_DO_DANGLING(controlp->unlinkFrBackWithNext()->deleteTree(), controlp);
+            }
         }
         if (VN_IS(nodep->rhsp(), EmptyQueue)) {
             UINFO(9, "= {} -> .delete(): " << nodep);
@@ -5066,6 +5120,35 @@ private:
         } else {
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         }
+    }
+    virtual void visit(AstWait* nodep) override {
+        if (VN_IS(m_ftaskp, Func)) {
+            nodep->v3error("Wait statements are not legal in functions. Suggest use a task "
+                           "(IEEE 1800-2017 13.4.4)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetTrue()) {
+                userIterate(nodep->condp(), WidthVP(SELF, PRELIM).p());
+                iterateNull(nodep->bodysp());
+                return;
+            } else if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(E_NOTIMING, "Wait statements require --timing");
+            } else {
+                nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how wait "
+                                               "statements should be handled");
+            }
+        }
+        // If we ignore timing:
+        // Statements we'll just execute immediately; equivalent to if they followed this
+        if (AstNode* const bodysp = nodep->bodysp()) {
+            bodysp->unlinkFrBackWithNext();
+            nodep->replaceWith(bodysp);
+        } else {
+            nodep->unlinkFrBack();
+        }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstWith* nodep) override {
         // Should otherwise be underneath a method call

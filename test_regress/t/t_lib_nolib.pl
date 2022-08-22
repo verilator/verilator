@@ -21,7 +21,7 @@ top_filename("t/t_lib_prot.v");
 
 # Tests the same code as t_lib_prot.pl but without --protect-lib
 compile(
-    verilator_flags2 => ["t/t_lib_prot_secret.v"],
+    verilator_flags2 => ["t/t_lib_prot_secret.v", '--no-timing'],
     xsim_flags2 => ["t/t_lib_prot_secret.v"],
     );
 

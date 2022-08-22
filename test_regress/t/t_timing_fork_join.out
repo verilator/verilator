@@ -1,0 +1,25 @@
+[0] fork..join process 4
+[2] fork..join process 3
+[4] fork..join process 2
+[8] fork..join process 1
+[16] fork in fork starts
+[16] fork..join process 8
+[20] fork..join process 7
+[24] fork..join process 6
+[32] fork..join process 5
+[32] fork..join in fork ends
+[64] main process
+fork..join_any process 2
+back in main process
+fork..join_any process 1
+fork..join_any process 1
+back in main process
+fork..join_any process 2
+in main process
+fork..join_none process 1
+fork..join_none process 2
+fork..join_none process 3
+fork..join_none process 2 again
+fork..join_none process 1 again
+fork..join_none process 3 again
+*-* All Finished *-*

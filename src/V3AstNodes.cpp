@@ -711,6 +711,12 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
             info.m_type = "VlMTaskVertex";
         } else if (bdtypep->isTriggerVec()) {
             info.m_type = "VlTriggerVec<" + cvtToStr(dtypep->width()) + ">";
+        } else if (bdtypep->isDelayScheduler()) {
+            info.m_type = "VlDelayScheduler";
+        } else if (bdtypep->isTriggerScheduler()) {
+            info.m_type = "VlTriggerScheduler";
+        } else if (bdtypep->isForkSync()) {
+            info.m_type = "VlForkSync";
         } else if (bdtypep->isEvent()) {
             info.m_type = "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -1296,7 +1302,10 @@ void AstNode::dump(std::ostream& str) const {
     }
 }
 
-void AstNodeProcedure::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeProcedure::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isSuspendable()) str << " [SUSP]";
+}
 
 void AstAlways::dump(std::ostream& str) const {
     this->AstNodeProcedure::dump(str);
@@ -1954,8 +1963,34 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isConstructor()) str << " [CTOR]";
     if (isDestructor()) str << " [DTOR]";
     if (isVirtual()) str << " [VIRT]";
+    if (isCoroutine()) str << " [CORO]";
+}
+void AstCAwait::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (sensesp()) {
+        str << " => ";
+        sensesp()->dump(str);
+    }
 }
 void AstCUse::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << useType() << "]";
+}
+
+AstAlways* AstAssignW::convertToAlways() {
+    AstNode* const lhs1p = lhsp()->unlinkFrBack();
+    AstNode* const rhs1p = rhsp()->unlinkFrBack();
+    AstNode* const controlp = timingControlp() ? timingControlp()->unlinkFrBack() : nullptr;
+    FileLine* const flp = fileline();
+    AstNode* bodysp = new AstAssign{flp, lhs1p, rhs1p, controlp};
+    if (controlp) {
+        // If there's a timing control, put the assignment in a fork..join_none. This process won't
+        // get marked as suspendable and thus will be scheduled normally
+        auto* forkp = new AstFork{flp, "", bodysp};
+        forkp->joinType(VJoinType::JOIN_NONE);
+        bodysp = forkp;
+    }
+    AstAlways* const newp = new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, bodysp};
+    replaceWith(newp);  // User expected to then deleteTree();
+    return newp;
 }

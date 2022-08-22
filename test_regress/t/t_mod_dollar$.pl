@@ -14,7 +14,7 @@ scenarios(vlt => 1);
 # prefix properly using post-escaped identifiers
 run(cmd => ["../bin/verilator",
             "--cc",
-            "--Mdir obj_vlt/t_mod_dollar",
+            "--Mdir " . $Self->{obj_dir} . "/t_mod_dollar",
             "--exe --build --main",
             't/t_mod_dollar$.v',
     ],

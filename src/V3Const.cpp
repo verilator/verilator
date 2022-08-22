@@ -2853,6 +2853,7 @@ private:
     // Zero elimination
     virtual void visit(AstNodeAssign* nodep) override {
         iterateChildren(nodep);
+        if (nodep->timingControlp()) m_hasJumpDelay = true;
         if (m_doNConst && replaceNodeAssign(nodep)) return;
     }
     virtual void visit(AstAssignAlias* nodep) override {
@@ -3164,10 +3165,6 @@ private:
     //-----
     // Jump elimination
 
-    virtual void visit(AstDelay* nodep) override {
-        iterateChildren(nodep);
-        m_hasJumpDelay = true;
-    }
     virtual void visit(AstJumpGo* nodep) override {
         iterateChildren(nodep);
         // Jump to label where label immediately follows label is not useful
@@ -3563,6 +3560,7 @@ private:
                                << nodep->prettyTypeName() << " to constant.");
             }
         } else {
+            if (nodep->isTimingControl()) m_hasJumpDelay = true;
             // Calculate the width of this operation
             if (m_params && !nodep->width()) nodep = V3Width::widthParamsEdit(nodep);
             iterateChildren(nodep);

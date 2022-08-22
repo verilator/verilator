@@ -505,6 +505,22 @@ or "`ifdef`"'s may break other tools.
    Verilator) text that should be passed through to the XML output as a tag,
    for use by downstream applications.
 
+.. option:: /*verilator&32;timing_off*/
+
+   Ignore all timing constructs after this metacomment. All timing controls
+   behave as if they were not there (the same way as with
+   :option:`--no-timing`), and :code:`fork`/:code:`join*` blocks are
+   converted into :code:`begin`/:code:`end` blocks.
+
+   Same as :option:`timing_off` configuration file option.
+
+.. option:: /*verilator&32;timing_on*/
+
+   Re-enable all timing constructs after this metacomment (only applicable
+   after :option:`timing_off`).
+
+   Same as :option:`timing_on` configuration file option.
+
 .. option:: /*verilator&32;trace_init_task*/
 
    Attached to a DPI import to indicate that function should be called when

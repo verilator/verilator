@@ -1,0 +1,616 @@
+-V{t#,#}- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.
+-V{t#,#}+    Vt_timing_debug2___024root___ctor_var_reset
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Initial
+-V{t#,#}+    Vt_timing_debug2___024root___eval_static
+-V{t#,#}+    Vt_timing_debug2___024root___eval_initial
+-V{t#,#}+    Vt_timing_debug2___024root___eval_initial__TOP__0
+[0] fork..join process 4
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__1
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__2
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__3
+-V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:13-V{t0,14}+    Vt_timing_debug2___024root___eval_initial__TOP__1
+-V{t#,#}+    Vt_timing_debug2___024root___eval_settle
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 2: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 8: Process waiting at t/t_timing_fork_join.v:16
+-V{t#,#}             Awaiting time 4: Process waiting at t/t_timing_fork_join.v:17
+-V{t#,#}             Awaiting time 16: Process waiting at t/t_timing_fork_join.v:19
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:79
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:79
+[2] fork..join process 3
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:17 finished-V{t0,48}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 4: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 8: Process waiting at t/t_timing_fork_join.v:16
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:17
+-V{t#,#}             Awaiting time 16: Process waiting at t/t_timing_fork_join.v:19
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:19
+[4] fork..join process 2
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:16 finished-V{t0,75}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 8: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 16: Process waiting at t/t_timing_fork_join.v:16
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:17
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:17
+[8] fork..join process 1
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:15 finished-V{t0,101}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 16: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:16
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:16
+[16] fork in fork starts
+[16] fork..join process 8
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__1
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__2
+-V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:21-V{t0,129}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 20: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 24: Process waiting at t/t_timing_fork_join.v:22
+-V{t#,#}             Awaiting time 32: Process waiting at t/t_timing_fork_join.v:23
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:24
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:24
+[20] fork..join process 7
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:24 finished-V{t0,156}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 24: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:22
+-V{t#,#}             Awaiting time 32: Process waiting at t/t_timing_fork_join.v:23
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:23
+[24] fork..join process 6
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:23 finished-V{t0,182}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 32: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:22
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:22
+[32] fork..join process 5
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:22 finished-V{t0,207}             Resuming: Process waiting at (null):0
+[32] fork..join in fork ends
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:19 finished-V{t0,209}             Resuming: Process waiting at (null):0
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 64: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:30
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:30
+[64] main process
+fork..join_any process 2
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
+-V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:33
+back in main process
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}         Committing processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:33
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 65: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:40
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:40
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:33
+-V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:33
+fork..join_any process 1
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         No ready processes waiting for @([event] t.e1)
+-V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 66: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:41
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:41
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__1
+-V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:44
+-V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:41-V{t0,308}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}         Committing processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:44
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 68: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:42
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:42
+fork..join_any process 1
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:42 finished-V{t0,335}             Resuming: Process waiting at (null):0
+back in main process
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 69: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:50
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:50
+-V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:51
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:44
+-V{t#,#}         Uncommitted processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:51
+-V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:44
+fork..join_any process 2
+-V{t#,#}             Process forked at t/t_timing_fork_join.v:43 finished-V{t0,374}         Committing processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:51
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:51
+-V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:51
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__1
+-V{t#,#}         Suspending process waiting for @([event] t.e2) at t/t_timing_fork_join.v:62
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__2
+-V{t#,#}         Suspending process waiting for @([event] t.e3) at t/t_timing_fork_join.v:68
+in main process
+-V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:75
+-V{t#,#}         Committing processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:75
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}         Committing processes waiting for @([event] t.e2):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:62
+-V{t#,#}         Committing processes waiting for @([event] t.e3):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:68
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 70: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:56
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:56
+fork..join_none process 1
+-V{t#,#}         Suspending process waiting for @([event] t.e2) at t/t_timing_fork_join.v:58
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 2 is active: @([event] t.e2)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e2):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:62
+-V{t#,#}         Uncommitted processes waiting for @([event] t.e2):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:58
+-V{t#,#}         Resuming processes waiting for @([event] t.e2)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:62
+fork..join_none process 2
+-V{t#,#}         Committing processes waiting for @([event] t.e2):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:58
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 71: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:63
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:63
+-V{t#,#}         Suspending process waiting for @([event] t.e3) at t/t_timing_fork_join.v:64
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 3 is active: @([event] t.e3)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e3):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:68
+-V{t#,#}         Uncommitted processes waiting for @([event] t.e3):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:64
+-V{t#,#}         Resuming processes waiting for @([event] t.e3)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:68
+fork..join_none process 3
+-V{t#,#}         Committing processes waiting for @([event] t.e3):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:64
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 72: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:69
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:69
+-V{t#,#}         Suspending process waiting for @([event] t.e3) at t/t_timing_fork_join.v:70
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 3 is active: @([event] t.e3)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e3):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:64
+-V{t#,#}         Uncommitted processes waiting for @([event] t.e3):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:70
+-V{t#,#}         Resuming processes waiting for @([event] t.e3)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:64
+fork..join_none process 2 again
+-V{t#,#}         Committing processes waiting for @([event] t.e3):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:70
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 73: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:65
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:65
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 2 is active: @([event] t.e2)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e2):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:58
+-V{t#,#}         Resuming processes waiting for @([event] t.e2)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:58
+fork..join_none process 1 again
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
+-V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+ Eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 0 is active: @([true] __VdlySched.awaitingCurrentTime())
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Delayed processes:
+-V{t#,#}             Awaiting time 74: Process waiting at t/t_timing_fork_join.v:15
+-V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:59
+-V{t#,#}         Resuming delayed processes
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:59
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 3 is active: @([event] t.e3)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e3):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:70
+-V{t#,#}         Resuming processes waiting for @([event] t.e3)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:70
+fork..join_none process 3 again
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         Ready processes waiting for @([event] t.e1):
+-V{t#,#}           - Process waiting at t/t_timing_fork_join.v:75
+-V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:75
+*-* All Finished *-*
+-V{t#,#}+    Vt_timing_debug2___024root___eval_act
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
+-V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
+-V{t#,#}         No triggers active
+-V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug2___024root___eval_final

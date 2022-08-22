@@ -80,7 +80,12 @@ private:
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
         puts(/**/ "// Advance time\n");
-        puts(/**/ "contextp->timeInc(1);\n");
+        if (v3Global.rootp()->delaySchedulerp()) {
+            puts("if (!topp->eventsPending()) break;\n");
+            puts("contextp->time(topp->nextTimeSlot());\n");
+        } else {
+            puts("contextp->timeInc(1);\n");
+        }
 
         puts("}\n");
         puts("\n");

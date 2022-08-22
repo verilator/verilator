@@ -254,6 +254,10 @@ class EmitCImp final : EmitCFunc {
                         puts("(");
                         putsQuoted(varp->nameProtect());
                         puts(")\n");
+                    } else if (dtypep->isDelayScheduler()) {
+                        puts(", ");
+                        puts(varp->nameProtect());
+                        puts("{*symsp->_vm_contextp__}\n");
                     }
                 }
             }

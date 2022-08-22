@@ -271,6 +271,7 @@ private:
     bool m_threadsCoarsen = true;   // main switch: --threads-coarsen
     bool m_threadsDpiPure = true;   // main switch: --threads-dpi all/pure
     bool m_threadsDpiUnpure = false;  // main switch: --threads-dpi all
+    VOptionBool m_timing;           // main switch: --timing
     bool m_trace = false;           // main switch: --trace
     bool m_traceCoverage = false;   // main switch: --trace-coverage
     bool m_traceParams = true;      // main switch: --trace-params
@@ -456,6 +457,7 @@ public:
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
     bool threadsCoarsen() const { return m_threadsCoarsen; }
+    VOptionBool timing() const { return m_timing; }
     bool trace() const { return m_trace; }
     bool traceCoverage() const { return m_traceCoverage; }
     bool traceParams() const { return m_traceParams; }
@@ -647,6 +649,7 @@ public:
     static string getenvVERILATOR_ROOT();
     static bool systemCSystemWide();
     static bool systemCFound();  // SystemC installed, or environment points to it
+    static bool coroutineSupport();  // Compiler supports coroutines
 
     // METHODS (file utilities using these options)
     string fileExists(const string& filename);

@@ -222,6 +222,8 @@ public:
     void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE, flag); }
     bool tracingOn() const { return m_warnOn.test(V3ErrorCode::I_TRACING); }
     void tracingOn(bool flag) { warnOn(V3ErrorCode::I_TRACING, flag); }
+    bool timingOn() const { return m_warnOn.test(V3ErrorCode::I_TIMING); }
+    void timingOn(bool flag) { warnOn(V3ErrorCode::I_TIMING, flag); }
 
     // METHODS - Global
     // <command-line> and <built-in> match what GCC outputs

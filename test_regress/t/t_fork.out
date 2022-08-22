@@ -1,6 +1,6 @@
-%Error-UNSUPPORTED: t/t_fork.v:10:14: Unsupported: fork statements
-                                    : ... In instance t
+%Error-NOTIMING: t/t_fork.v:10:14: Fork statements require --timing
+                                 : ... In instance t
    10 |       fork : fblk
       |              ^~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
 %Error: Exiting due to

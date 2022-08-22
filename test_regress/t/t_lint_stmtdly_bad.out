@@ -1,4 +1,4 @@
-%Warning-STMTDLY: t/t_lint_stmtdly_bad.v:10:8: Unsupported: Ignoring delay on this delayed statement.
+%Warning-STMTDLY: t/t_lint_stmtdly_bad.v:10:8: Ignoring delay on this statement due to --no-timing
                                              : ... In instance t
    10 |       #100 $finish;   
       |        ^~~

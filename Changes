@@ -17,6 +17,8 @@ Verilator 5.001 devel
 * Fully support the Active and NBA scheduling regions as defined by the
   SystemVerilog standard (IEEE 1800-2017 chapter 4). This means all generated
   clocks are now simulated correctly (#3278, #3384). [Geza Lore, Shunyao CAD]
+* Support timing controls (delays, event controls in any location, wait
+  statements) and forks. See docs for details. [Krzysztof Bieganski, Antmicro Ltd]
 
 
 Verilator 4.225 devel
