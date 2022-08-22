@@ -531,6 +531,13 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_STRINGIFY2(x) #x
 
 //=========================================================================
+// Offset of field in type
+
+// Address zero can cause compiler problems
+#define VL_OFFSETOF(type, field) \
+    (reinterpret_cast<size_t>(&(reinterpret_cast<type*>(0x10000000)->field)) - 0x10000000)
+
+//=========================================================================
 // Conversions
 
 namespace vlstd {
