@@ -279,15 +279,11 @@ private:
         // VarRef needs to point to VarScope
         // Make sure variable has made user1p.
         UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
-        if (nodep->varp()->isIfaceRef()) {
-            nodep->varScopep(nullptr);
-        } else {
-            // We may have not made the variable yet, and we can't make it now as
-            // the var's referenced package etc might not be created yet.
-            // So push to a list and post-correct.
-            // No check here for nodep->classOrPackagep(), will check when walk list.
-            m_varRefScopes.emplace(nodep, m_scopep);
-        }
+        // We may have not made the variable yet, and we can't make it now as
+        // the var's referenced package etc might not be created yet.
+        // So push to a list and post-correct.
+        // No check here for nodep->classOrPackagep(), will check when walk list.
+        m_varRefScopes.emplace(nodep, m_scopep);
     }
     virtual void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()

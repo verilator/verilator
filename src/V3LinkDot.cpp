@@ -2352,7 +2352,7 @@ private:
                         m_ds.m_dotPos = DP_SCOPE;
                         UINFO(9, " cell -> iface varref " << foundp->nodep() << endl);
                         AstNode* const newp
-                            = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, VAccess::READ);
+                            = new AstVarRef(nodep->fileline(), ifaceRefVarp, VAccess::READ);
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     } else if (VN_IS(cellp->modp(), NotFoundModule)) {
