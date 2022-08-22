@@ -27,6 +27,8 @@ CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
+# Compiler flags that enable coroutine support
+CFG_CXXFLAGS_COROUTINES = @CFG_CXXFLAGS_COROUTINES@
 # Linker libraries for multithreading
 CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 
@@ -139,6 +141,12 @@ ifneq ($(VM_THREADS),0)
   CPPFLAGS += -DVL_THREADED
   VK_C11=1
   VK_LIBS_THREADED=1
+ endif
+endif
+
+ifneq ($(VM_TIMING),0)
+ ifneq ($(VM_TIMING),)
+  CPPFLAGS += $(CFG_CXXFLAGS_COROUTINES)
  endif
 endif
 

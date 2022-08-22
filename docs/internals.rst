@@ -504,6 +504,189 @@ the top level `_eval` function, which on the high level has the form:
   }
 
 
+Timing
+------
+
+Timing support in Verilator utilizes C++ coroutines, which is a new feature in
+C++20. The basic idea is to represent processes and tasks that await a certain
+event or simulation time as coroutines. These coroutines get suspended at the
+await, and resumed whenever the triggering event occurs, or at the expected
+simulation time.
+
+There are several runtime classes used for managing such coroutines defined in
+``verilated_timing.h`` and ``verilated_timing.cpp``.
+
+``VlCoroutineHandle``
+^^^^^^^^^^^^^^^^^^^^^
+
+A thin wrapper around an ``std::coroutine_handle<>``. It forces move semantics,
+destroys the coroutine if it remains suspended at the end of the design's
+lifetime, and prevents multiple ``resume`` calls in the case of
+``fork..join_any``.
+
+``VlCoroutine``
+^^^^^^^^^^^^^^^
+
+Return value of all coroutines. Together with the promise type contained
+within, it allows for chaining coroutines – resuming coroutines from up the
+call stack. The calling coroutine's handle is saved in the promise object as a
+continuation, that is, the coroutine that must be resumed after the promise's
+coroutine finishes. This is necessary as C++ coroutines are stackless, meaning
+each one is suspended independently of others in the call graph.
+
+``VlDelayScheduler``
+^^^^^^^^^^^^^^^^^^^^
+
+This class manages processes suspended by delays. There is one instance of this
+class per design. Coroutines ``co_await`` this object's ``delay`` function.
+Internally, they are stored in a heap structure sorted by simulation time in
+ascending order. When ``resume`` is called on the delay scheduler, all
+coroutines awaiting the current simulation time are resumed. The current
+simulation time is retrieved from a ``VerilatedContext`` object.
+
+``VlTriggerScheduler``
+^^^^^^^^^^^^^^^^^^^^^^
+
+This class manages processes that await events (triggers). There is one such
+object per each trigger awaited by coroutines. Coroutines ``co_await`` this
+object's ``trigger`` function. They are stored in two stages – `uncommitted`
+and `ready`. First, they land in the `uncommitted` stage, and cannot be
+resumed. The ``resume`` function resumes all coroutines from the `ready` stage
+and moves `uncommitted` coroutines into `ready`. The ``commit`` function only
+moves `uncommitted` coroutines into `ready`.
+
+This split is done to avoid self-triggering and triggering coroutines multiple
+times. See the `Scheduling with timing` section for details on how this is
+used.
+
+``VlForkSync``
+^^^^^^^^^^^^^^
+
+Used for synchronizing ``fork..join`` and ``fork..join_any``. Forking
+coroutines ``co_await`` its ``join`` function, and forked ones call ``done``
+when they're finished. Once the required number of coroutines (set using
+``setCounter``) finish execution, the forking coroutine is resumed.
+
+Awaitable utilities
+^^^^^^^^^^^^^^^^^^^
+
+There are also two small utility awaitable types:
+
+* ``VlNow`` is an awaitable that suspends and immediately resumes coroutines.
+  It is used for forcing a coroutine to be moved onto the heap. See the `Forks`
+  section for more detail.
+* ``VlForever`` is used for blocking a coroutine forever. See the `Timing pass`
+  section for more detail.
+
+Timing pass
+^^^^^^^^^^^
+
+The visitor in ``V3Timing.cpp`` transforms each timing control into a ``co_await``.
+
+* event controls are turned into ``co_await`` on a trigger scheduler's
+  ``trigger`` method. The awaited trigger scheduler is the one corresponding to
+  the sentree referenced by the event control. This sentree is also referenced
+  by the ``AstCAwait`` node, to be used later by the static scheduling code.
+* delays are turned into ``co_await`` on a delay scheduler's ``delay`` method.
+  The created ``AstCAwait`` nodes also reference a special sentree related to
+  delays, to be used later by the static scheduling code.
+* ``join`` and ``join_any`` are turned into ``co_await`` on a ``VlForkSync``'s
+  ``join`` method. Each forked process gets a ``VlForkSync::done`` call at the
+  end.
+
+Assignments with intra-assignment timing controls are simplified into
+assignments after those timing controls, with the LHS and RHS values evaluated
+before them and stored in temporary variables.
+
+``wait`` statements are transformed into while loops that check the condition
+and then await changes in variables used in the condition. If the condition is
+always false, the ``wait`` statement is replaced by a ``co_await`` on a
+``VlForever``. This is done instead of a return in case the ``wait`` is deep in
+a call stack (otherwise the coroutine's caller would continue execution).
+
+Each sub-statement of a ``fork`` is put in an ``AstBegin`` node for easier
+grouping. In a later step, each of these gets transformed into a new, separate
+function. See the `Forks` section for more detail.
+
+Processes that use awaits are marked as suspendable. Later, during ``V3Sched``,
+they are transformed into coroutines. Functions that use awaits get the return
+type of ``VlCoroutine``. This immediately makes them coroutines. Note that if a
+process calls a function that is a coroutine, the call gets wrapped in an
+await, which means the process itself will be marked as suspendable. A virtual
+function is a coroutine if any of its overriding or overridden functions are
+coroutines. The visitor keeps a dependency graph of functions and processes to
+handle such cases.
+
+Scheduling with timing
+^^^^^^^^^^^^^^^^^^^^^^
+
+Timing features in Verilator are built on top of the static scheduler. Triggers
+are used for determining which delay or trigger schedulers should resume. A
+special trigger is used for the delay scheduler. This trigger is set if there
+are any coroutines awaiting the current simulation time
+(``VlDelayScheduler::awaitingCurrentTime()``).
+
+All triggers used by a suspendable process are mapped to variables written in
+that process. When ordering code using ``V3Order``, these triggers are provided
+as external domains of these variables. This ensures that the necessary
+combinational logic is triggered after a coroutine resumption.
+
+There are two functions for managing timing logic called by ``_eval()``:
+
+* ``_timing_commit()``, which commits all coroutines whose triggers were not set
+  in the current iteration,
+* ``_timing_resume()``, which calls `resume()` on all trigger and delay
+  schedulers whose triggers were set in the current iteration.
+
+Thanks to this separation, a coroutine awaiting a trigger cannot be suspended
+and resumed in the same iteration, and it cannot be resumed before it suspends.
+
+All coroutines are committed and resumed in the 'act' eval loop. With timing
+features enabled, the ``_eval()`` function takes this form:
+
+::
+  void _eval() {
+    while (true) {
+      _eval__triggers__ico();
+      if (!ico_triggers.any()) break;
+      _eval_ico();
+    }
+
+    while (true) {
+      while (true) {
+        _eval__triggers__act();
+
+        // Commit all non-triggered coroutines
+        _timing_commit();
+
+        if (!act_triggers.any()) break;
+        latch_act_triggers_for_nba();
+
+        // Resume all triggered coroutines
+        _timing_resume();
+
+        _eval_act();
+      }
+      if (!nba_triggers.any()) break;
+      _eval_nba();
+    }
+  }
+
+Forks
+^^^^^
+
+After the scheduling step, forks sub-statements are transformed into separate
+functions, and these functions are called in place of the sub-statements. These
+calls must be without ``co_await``, so that suspension of a forked process
+doesn't suspend the forking process.
+
+In forked processes, references to local variables are only allowed in
+``fork..join``, as this is the only case that ensures the lifetime of these
+locals is at least as long as the execution of the forked processes. This is
+where ``VlNow`` is used, to ensure the locals are moved to the heap before they
+are passed by reference to the forked processes.
+
+
 Multithreaded Mode
 ------------------
 

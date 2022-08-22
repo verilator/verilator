@@ -715,6 +715,14 @@ bool V3Options::systemCFound() {
             || (!getenvSYSTEMC_INCLUDE().empty() && !getenvSYSTEMC_LIBDIR().empty()));
 }
 
+bool V3Options::coroutineSupport() {
+#ifdef HAVE_COROUTINES
+    return true;
+#else
+    return false;
+#endif
+}
+
 //######################################################################
 // V3 Options notification methods
 
@@ -1370,6 +1378,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             m_timeOverridePrec = prec;
         }
     });
+    DECL_OPTION("-timing", OnOff, &m_timing);
     DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-top", Set, &m_topModule);
     DECL_OPTION("-trace", OnOff, &m_trace);
@@ -1748,6 +1757,7 @@ void V3Options::showVersion(bool verbose) {
     cout << endl;
     cout << "Features (based on environment or compiled-in support):\n";
     cout << "    SystemC found      = " << cvtToStr(systemCFound()) << endl;
+    cout << "    Coroutine support  = " << cvtToStr(coroutineSupport()) << endl;
 }
 
 //======================================================================

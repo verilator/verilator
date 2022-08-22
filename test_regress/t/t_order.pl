@@ -10,7 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+$Self->{main_time_multiplier} = 1e-8 / 1e-9;
+
 compile(
+    verilator_flags2 => ["--timescale 10ns/1ns --no-timing"],
     );
 
 execute(

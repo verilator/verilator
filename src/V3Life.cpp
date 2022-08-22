@@ -306,6 +306,12 @@ private:
         }
     }
     virtual void visit(AstNodeAssign* nodep) override {
+        if (nodep->isTimingControl()) {
+            // V3Life doesn't understand time sense - don't optimize
+            setNoopt();
+            iterateChildren(nodep);
+            return;
+        }
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
         const uint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
@@ -326,7 +332,12 @@ private:
         }
     }
     virtual void visit(AstAssignDly* nodep) override {
-        // Don't treat as normal assign; V3Life doesn't understand time sense
+        // V3Life doesn't understand time sense
+        if (nodep->isTimingControl()) {
+            // Don't optimize
+            setNoopt();
+        }
+        // Don't treat as normal assign
         iterateChildren(nodep);
     }
 
@@ -433,7 +444,13 @@ private:
     }
 
     virtual void visit(AstVar*) override {}  // Don't want varrefs under it
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override {
+        if (nodep->isTimingControl()) {
+            // V3Life doesn't understand time sense - don't optimize
+            setNoopt();
+        }
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS

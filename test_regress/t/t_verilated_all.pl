@@ -18,6 +18,7 @@ compile(
                          "--coverage-toggle --coverage-line --coverage-user",
                          "--trace --vpi ",
                          "--trace-threads 1",
+                         $Self->have_coroutines ? "--timing" : "--no-timing -Wno-STMTDLY",
                          "--prof-exec", "--prof-pgo",
                          "$root/include/verilated_save.cpp"],
     threads => 2
@@ -56,6 +57,7 @@ foreach my $file (sort keys %hit) {
         && $file !~ /_sc/
         && $file !~ /_fst/
         && $file !~ /_heavy/
+        && ($file !~ /_timing/ || $Self->have_coroutines)
         && ($file !~ /_thread/)) {
         error("Include file not covered by t_verilated_all test: ", $file);
     }

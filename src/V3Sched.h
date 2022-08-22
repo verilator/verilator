@@ -23,6 +23,7 @@
 #include "V3Ast.h"
 
 #include <functional>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -112,6 +113,41 @@ struct LogicReplicas final {
     LogicReplicas(LogicReplicas&&) = default;
     LogicReplicas& operator=(LogicReplicas&&) = default;
 };
+
+// Everything needed for combining timing with static scheduling.
+class TimingKit final {
+    AstCFunc* m_resumeFuncp = nullptr;  // Global timing resume function
+    AstCFunc* m_commitFuncp = nullptr;  // Global timing commit function
+
+    // Additional var sensitivities for V3Order
+    std::map<const AstVarScope*, std::set<AstSenTree*>> m_externalDomains;
+
+public:
+    LogicByScope m_lbs;  // Actives that resume timing schedulers
+
+    // Remaps external domains using the specified trigger map
+    std::map<const AstVarScope*, std::vector<AstSenTree*>>
+    remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const;
+    // Creates a timing resume call (if needed, else returns null)
+    AstCCall* createResume(AstNetlist* const netlistp);
+    // Creates a timing commit call (if needed, else returns null)
+    AstCCall* createCommit(AstNetlist* const netlistp);
+
+    TimingKit() = default;
+    TimingKit(LogicByScope&& lbs,
+              std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains)
+        : m_externalDomains{externalDomains}
+        , m_lbs{lbs} {}
+    VL_UNCOPYABLE(TimingKit);
+    TimingKit(TimingKit&&) = default;
+    TimingKit& operator=(TimingKit&&) = default;
+};
+
+// Creates the timing kit and marks variables written by suspendables
+TimingKit prepareTiming(AstNetlist* const netlistp);
+
+// Transforms fork sub-statements into separate functions
+void transformForks(AstNetlist* const netlistp);
 
 // Top level entry point to scheduling
 void schedule(AstNetlist*);

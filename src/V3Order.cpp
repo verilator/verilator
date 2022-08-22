@@ -1276,17 +1276,24 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
 
     // Process procedures per statement (unless profCFuncs), so we can split CFuncs within
     // procedures. Everything else is handled in one go
+    bool suspendable = false;
+    bool slow = m_slow;
     if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
+        suspendable = procp->isSuspendable();
+        if (suspendable) slow = slow && !VN_IS(procp, Always);
         nodep = procp->bodysp();
         pushDeletep(procp);
     }
+
+    // Put suspendable processes into individual functions on their own
+    if (suspendable) newFuncpr = nullptr;
 
     // When profCFuncs, create a new function for all logic block
     if (v3Global.opt.profCFuncs()) newFuncpr = nullptr;
 
     while (nodep) {
         // Split the CFunc if too large (but not when profCFuncs)
-        if (!v3Global.opt.profCFuncs()
+        if (!suspendable && !v3Global.opt.profCFuncs()
             && (v3Global.opt.outputSplitCFuncs()
                 && v3Global.opt.outputSplitCFuncs() < newStmtsr)) {
             // Put every statement into a unique function to ease profiling or reduce function
@@ -1295,10 +1302,11 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
         }
         if (!newFuncpr && domainp != m_deleteDomainp) {
             const string name = cfuncName(modp, domainp, scopep, nodep);
-            newFuncpr = new AstCFunc(nodep->fileline(), name, scopep);
+            newFuncpr
+                = new AstCFunc{nodep->fileline(), name, scopep, suspendable ? "VlCoroutine" : ""};
             newFuncpr->isStatic(false);
             newFuncpr->isLoose(true);
-            newFuncpr->slow(m_slow);
+            newFuncpr->slow(slow);
             newStmtsr = 0;
             scopep->addActivep(newFuncpr);
             // Create top call to it
@@ -1328,6 +1336,8 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
 
         nodep = nextp;
     }
+    // Put suspendable processes into individual functions on their own
+    if (suspendable) newFuncpr = nullptr;
 
     return activep;
 }

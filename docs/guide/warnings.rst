@@ -112,6 +112,8 @@ List Of Warnings
    simulators, however at one point this was a common style so disabled by
    default as a code style warning.
 
+   This warning is issued only if Verilator is run with :vlopt:`--no-timing`.
+
 
 .. option:: ASSIGNIN
 
@@ -503,9 +505,10 @@ List Of Warnings
    constructs (e.g. always_ff and always_latch).
 
    Another way DIDNOTCONVERGE may occur is if # delays are used to generate
-   clocks.  Verilator ignores the delays and gives an :option:`ASSIGNDLY`
-   or :option:`STMTDLY` warning.  If these were suppressed, due to the
-   absence of the delay, the code may now oscillate.
+   clocks if Verilator is run with :vlopt:`--no-timing`. In this mode,
+   Verilator ignores the delays and gives an :option:`ASSIGNDLY` or
+   :option:`STMTDLY` warning.  If these were suppressed, due to the absence of
+   the delay, the code may now oscillate.
 
    Finally, rare, more difficult cases can be debugged like a C++ program;
    either enter :command:`gdb` and use its tracing facilities, or edit the
@@ -700,9 +703,9 @@ List Of Warnings
    Warns that a while or for statement has a condition that is always true.
    and thus results in an infinite loop if the statement ever executes.
 
-   This might be unintended behavior if the loop body contains statements
-   that in other simulators would make time pass, which Verilator is
-   ignoring due to e.g. ``STMTDLY`` warnings being disabled.
+   This might be unintended behavior if Verilator is run with
+   :vlopt:`--no-timing` and the loop body contains statements that would make
+   time pass otherwise.
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly (i.e. hang due to the infinite loop).
@@ -761,6 +764,16 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly.
+
+
+.. option:: MINTYPMAX
+
+   .. code-block:: sv
+
+         #(3:5:8) clk = ~clk;
+
+   Warns that minimum, typical, and maximum delay expressions are currently
+   unsupported. Only the typical delay value is used by Verilator.
 
 
 .. option:: MODDUP
@@ -833,6 +846,13 @@ List Of Warnings
    input.
 
 
+.. option:: NEEDTIMINGOPT
+
+    Error when a timing-related construct, such as an event control or delay,
+    has been encountered, without specifying how Verilator should handle it
+    (neither :vlopt:`--timing` nor :vlopt:`--no-timing` option was provided).
+
+
 .. option:: NOLATCH
 
    .. TODO better example
@@ -843,6 +863,13 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly.
+
+
+.. option:: NOTIMING
+
+   Error when a timing-related construct that requires :vlopt:`--timing` has
+   been encountered. Issued only if Verilator is run with the
+   :vlopt:`--no-timing` option.
 
 
 .. option:: NULLPORT
@@ -1082,6 +1109,16 @@ List Of Warnings
    "Duplicate macro arguments with name".
 
 
+.. option:: RISEFALLDLY
+
+   .. code-block:: sv
+
+         and #(1,2,3) AND (out, a, b);
+
+   Warns that rising, falling, and turn-off delays are currently unsupported.
+   The first (rising) delay is used for all cases.
+
+
 .. option:: SELRANGE
 
    Warns that a selection index will go out of bounds.
@@ -1181,11 +1218,11 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_STMTDLY_msg.rst
 
-   This is a warning because Verilator does not support delayed statements.
-   It will ignore all such delays.  In many cases ignoring a delay might be
-   harmless, but if the delayed statement is, as in this example, used to
-   cause some important action at a later time, it might be an important
-   difference.
+   This warning is issued only if Verilator is run with :vlopt:`--no-timing`.
+   All delays on statements are ignored in this mode.  In many cases ignoring a
+   delay might be harmless, but if the delayed statement is, as in this
+   example, used to cause some important action at a later time, it might be an
+   important difference.
 
    Some possible workarounds:
 
@@ -1194,6 +1231,8 @@ List Of Warnings
 
    * Convert the statement into a FSM, or other statement that tests
      against $time.
+
+   * Run Verilator with :vlopt:`--timing`.
 
 
 .. option:: SYMRSVDWORD
@@ -1576,6 +1615,16 @@ List Of Warnings
    To resolve, rename the variable to a unique name.
 
 
+.. option:: WAITCONST
+
+   .. code-block:: sv
+
+         wait(0);  // Blocks forever
+
+   Warns that a `wait` statement awaits a constant condition, which means it
+   either blocks forever or never blocks.
+
+
 .. option:: WIDTH
 
    Warns that based on width rules of Verilog:
@@ -1643,6 +1692,14 @@ List Of Warnings
    The correct fix is to either size the 1 (:code:`32'h1`), or add the
    width to the parameter definition (:code:`parameter [31:0]`), or add the
    width to the parameter usage (:code:`{PAR[31:0], PAR[31:0]}`).
+
+
+.. option:: ZERODLY
+
+   Warns that `#0` delays do not schedule the process to be resumed in the
+   Inactive region. Such processes do get resumed in the same time slot
+   somewhere in the Active region. Issued only if Verilator is run with the
+   :vlopt:`--timing` option.
 
 
 Historical Warnings

@@ -1004,6 +1004,9 @@ public:
     bool isDouble() const { return keyword().isDouble(); }
     bool isEvent() const { return keyword() == VBasicDTypeKwd::EVENT; }
     bool isTriggerVec() const { return keyword() == VBasicDTypeKwd::TRIGGERVEC; }
+    bool isForkSync() const { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
+    bool isDelayScheduler() const { return keyword() == VBasicDTypeKwd::DELAY_SCHEDULER; }
+    bool isTriggerScheduler() const { return keyword() == VBasicDTypeKwd::TRIGGER_SCHEDULER; }
     bool isOpaque() const { return keyword().isOpaque(); }
     bool isString() const { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
@@ -1930,6 +1933,7 @@ public:
         return op1p();
     }  // op1 = Extracting what (nullptr=TBD during parsing)
     AstNode* lsbp() const { return op2p(); }  // op2 = Msb selection expression
+    void lsbp(AstNode* const lsbp) { setOp2p(lsbp); }
     AstNode* widthp() const { return op3p(); }  // op3 = Width
     int widthConst() const { return VN_AS(widthp(), Const)->toSInt(); }
     int lsbConst() const { return VN_AS(lsbp(), Const)->toSInt(); }
@@ -2108,6 +2112,7 @@ private:
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     bool m_isForceable : 1;  // May be forced/released externally from user C code
     bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
+    bool m_isWrittenBySuspendable : 1;  // This variable can be written by a suspendable process
 
     void init() {
         m_ansi = false;
@@ -2148,6 +2153,7 @@ private:
         m_isLatched = false;
         m_isForceable = false;
         m_isWrittenByDpi = false;
+        m_isWrittenBySuspendable = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2315,6 +2321,8 @@ public:
     void setForceable() { m_isForceable = true; }
     bool isWrittenByDpi() const { return m_isWrittenByDpi; }
     void setWrittenByDpi() { m_isWrittenByDpi = true; }
+    bool isWrittenBySuspendable() const { return m_isWrittenBySuspendable; }
+    void setWrittenBySuspendable() { m_isWrittenBySuspendable = true; }
     // METHODS
     virtual void name(const string& name) override { m_name = name; }
     virtual void tag(const string& text) override { m_tag = text; }
@@ -3468,6 +3476,7 @@ public:
     }
     // op1 = Expression sensitized, if any
     AstNode* sensp() const { return op1p(); }
+    void sensp(AstNode* const nodep) { setOp1p(nodep); }
     AstNodeVarRef* varrefp() const { return VN_CAST(op1p(), NodeVarRef); }
     //
     bool isClocked() const { return edgeType().clockedStmt(); }
@@ -3604,7 +3613,8 @@ public:
     }
     ASTNODE_NODE_FUNCS(Assign)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssign(this->fileline(), lhsp, rhsp);
+        AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
+        return new AstAssign(this->fileline(), lhsp, rhsp, controlp);
     }
     virtual bool brokeLhsMustBeLvalue() const override { return true; }
 };
@@ -3628,7 +3638,8 @@ public:
         : ASTGEN_SUPER_AssignDly(fl, lhsp, rhsp, timingControlp) {}
     ASTNODE_NODE_FUNCS(AssignDly)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssignDly(this->fileline(), lhsp, rhsp);
+        AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
+        return new AstAssignDly(this->fileline(), lhsp, rhsp, controlp);
     }
     virtual bool isGateOptimizable() const override { return false; }
     virtual string verilogKwd() const override { return "<="; }
@@ -3638,21 +3649,15 @@ public:
 class AstAssignW final : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
 public:
-    AstAssignW(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp) {}
+    AstAssignW(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp, timingControlp) {}
     ASTNODE_NODE_FUNCS(AssignW)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssignW(this->fileline(), lhsp, rhsp);
+        AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
+        return new AstAssignW(this->fileline(), lhsp, rhsp, controlp);
     }
     virtual bool brokeLhsMustBeLvalue() const override { return true; }
-    AstAlways* convertToAlways() {
-        AstNode* const lhs1p = lhsp()->unlinkFrBack();
-        AstNode* const rhs1p = rhsp()->unlinkFrBack();
-        AstAlways* const newp = new AstAlways(fileline(), VAlwaysKwd::ALWAYS, nullptr,
-                                              new AstAssign(fileline(), lhs1p, rhs1p));
-        replaceWith(newp);  // User expected to then deleteTree();
-        return newp;
-    }
+    AstAlways* convertToAlways();
 };
 
 class AstAssignVarScope final : public AstNodeAssign {
@@ -3722,7 +3727,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(FireEvent);
     AstNode* operandp() const { return op1p(); }
-    bool isDeleyed() const { return m_delayed; }
+    bool isDelayed() const { return m_delayed; }
 };
 
 class AstAssignPre final : public AstNodeAssign {
@@ -3943,6 +3948,7 @@ public:
         setNOp2p(stmtsp);
     }
     ASTNODE_NODE_FUNCS(Delay)
+    virtual bool isTimingControl() const override { return true; }
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
     //
     AstNode* lhsp() const { return op1p(); }  // op1 = delay value
@@ -4735,8 +4741,10 @@ public:
         addNOp3p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Wait)
-    AstNode* bodysp() const { return op3p(); }  // op3 = body of loop
+    AstNode* condp() const { return op2p(); }  // op2 = condition
+    AstNode* bodysp() const { return op3p(); }  // op3 = statements after wait
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
+    virtual bool isTimingControl() const override { return true; }
 };
 
 class AstWhile final : public AstNodeStmt {
@@ -5110,6 +5118,7 @@ public:
     AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
         : ASTGEN_SUPER_Fork(fl, name, stmtsp) {}
     ASTNODE_NODE_FUNCS(Fork)
+    virtual bool isTimingControl() const override { return !joinType().joinNone(); }
     virtual void dump(std::ostream& str) const override;
     VJoinType joinType() const { return m_joinType; }
     void joinType(const VJoinType& flag) { m_joinType = flag; }
@@ -5391,21 +5400,20 @@ public:
 
 class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
+    // Children: sentree, stmtlist
 public:
     AstEventControl(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
         : ASTGEN_SUPER_EventControl(fl) {
         setNOp1p(sensesp);
-        setNOp2p(stmtsp);
+        addNOp2p(stmtsp);
     }
     ASTNODE_NODE_FUNCS(EventControl)
     virtual string verilogKwd() const override { return "@(%l) %r"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return false; }
+    virtual bool isTimingControl() const override { return true; }
     virtual int instrCount() const override { return 0; }
     AstSenTree* sensesp() const { return VN_AS(op1p(), SenTree); }
     AstNode* stmtsp() const { return op2p(); }
+    void stmtsp(AstNode* stmtsp) { setNOp2p(stmtsp); }
 };
 
 class AstTimeFormat final : public AstNodeStmt {
@@ -9109,6 +9117,7 @@ public:
     AstScope* scopep() const { return m_scopep; }
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     string rtnTypeVoid() const { return ((m_rtnType == "") ? "void" : m_rtnType); }
+    void rtnType(const string& rtnType) { m_rtnType = rtnType; }
     bool dontCombine() const { return m_dontCombine || isTrace() || entryPoint(); }
     void dontCombine(bool flag) { m_dontCombine = flag; }
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
@@ -9153,6 +9162,7 @@ public:
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
     void dpiTraceInit(bool flag) { m_dpiTraceInit = flag; }
     bool dpiTraceInit() const { return m_dpiTraceInit; }
+    bool isCoroutine() const { return m_rtnType == "VlCoroutine"; }
     //
     // If adding node accessors, see below emptyBody
     AstNode* argsp() const { return op1p(); }
@@ -9321,6 +9331,32 @@ public:
     VUseType useType() const { return m_useType; }
 };
 
+class AstCAwait final : public AstNodeStmt {
+    // Emit C++'s co_await statement
+    // Children: expression
+    AstSenTree* m_sensesp;  // Sentree related to this await
+public:
+    AstCAwait(FileLine* fl, AstNode* exprsp, AstSenTree* sensesp = nullptr)
+        : ASTGEN_SUPER_CAwait(fl)
+        , m_sensesp{sensesp} {
+        setNOp1p(exprsp);
+    }
+    ASTNODE_NODE_FUNCS(CAwait)
+    virtual bool isTimingControl() const override { return true; }
+    virtual const char* broken() const override {
+        BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists());
+        return nullptr;
+    }
+    virtual void cloneRelink() override {
+        if (m_sensesp && m_sensesp->clonep()) m_sensesp = m_sensesp->clonep();
+    }
+    virtual void dump(std::ostream& str) const override;
+    AstNode* exprp() const { return op1p(); }  // op1 = awaited expression
+    void exprp(AstNode* const nodep) { setNOp1p(nodep); }
+    AstSenTree* sensesp() const { return m_sensesp; }
+    void clearSensesp() { m_sensesp = nullptr; }
+};
+
 class AstMTaskBody final : public AstNode {
     // Hold statements for each MTask
 private:
@@ -9475,6 +9511,7 @@ private:
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstCFunc* m_evalNbap = nullptr;  // The '_eval__nba' function
     AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
+    AstVar* m_delaySchedulerp = nullptr;  // The delay scheduler variable
     AstTopScope* m_topScopep = nullptr;  // The singleton AstTopScope under the top module
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
@@ -9492,6 +9529,7 @@ public:
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
         BROKEN_RTN(m_dpiExportTriggerp && !m_dpiExportTriggerp->brokeExists());
         BROKEN_RTN(m_topScopep && !m_topScopep->brokeExists());
+        BROKEN_RTN(m_delaySchedulerp && !m_delaySchedulerp->brokeExists());
         return nullptr;
     }
     virtual void cloneRelink() override { V3ERROR_NA; }
@@ -9528,6 +9566,8 @@ public:
     void evalNbap(AstCFunc* funcp) { m_evalNbap = funcp; }
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
+    AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
+    void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
     AstTopScope* topScopep() const { return m_topScopep; }
     void createTopScope(AstScope* scopep) {
         UASSERT(scopep, "Must not be nullptr");

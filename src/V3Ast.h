@@ -450,6 +450,9 @@ public:
         CHARPTR,
         MTASKSTATE,
         TRIGGERVEC,
+        DELAY_SCHEDULER,
+        TRIGGER_SCHEDULER,
+        FORK_SYNC,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -460,21 +463,57 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[]
-            = {"%E-unk",       "bit",          "byte",   "chandle",         "event",
-               "int",          "integer",      "logic",  "longint",         "real",
-               "shortint",     "time",         "string", "VerilatedScope*", "char*",
-               "VlMTaskState", "VlTriggerVec", "IData",  "QData",           "LOGIC_IMPLICIT",
-               " MAX"};
+        static const char* const names[] = {"%E-unk",
+                                            "bit",
+                                            "byte",
+                                            "chandle",
+                                            "event",
+                                            "int",
+                                            "integer",
+                                            "logic",
+                                            "longint",
+                                            "real",
+                                            "shortint",
+                                            "time",
+                                            "string",
+                                            "VerilatedScope*",
+                                            "char*",
+                                            "VlMTaskState",
+                                            "VlTriggerVec",
+                                            "VlDelayScheduler",
+                                            "VlTriggerScheduler",
+                                            "VlFork",
+                                            "IData",
+                                            "QData",
+                                            "LOGIC_IMPLICIT",
+                                            " MAX"};
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[]
-            = {"%E-unk",        "svBit",         "char",        "void*",     "char",
-               "int",           "%E-integer",    "svLogic",     "long long", "double",
-               "short",         "%E-time",       "const char*", "dpiScope",  "const char*",
-               "%E-mtaskstate", "%E-triggervec", "IData",       "QData",     "%E-logic-implct",
-               " MAX"};
+        static const char* const names[] = {"%E-unk",
+                                            "svBit",
+                                            "char",
+                                            "void*",
+                                            "char",
+                                            "int",
+                                            "%E-integer",
+                                            "svLogic",
+                                            "long long",
+                                            "double",
+                                            "short",
+                                            "%E-time",
+                                            "const char*",
+                                            "dpiScope",
+                                            "const char*",
+                                            "%E-mtaskstate",
+                                            "%E-triggervec",
+                                            "%E-dly-sched",
+                                            "%E-trig-sched",
+                                            "%E-fork",
+                                            "IData",
+                                            "QData",
+                                            "%E-logic-implct",
+                                            " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -508,6 +547,9 @@ public:
         case CHARPTR: return 0;  // opaque
         case MTASKSTATE: return 0;  // opaque
         case TRIGGERVEC: return 0;  // opaque
+        case DELAY_SCHEDULER: return 0;  // opaque
+        case TRIGGER_SCHEDULER: return 0;  // opaque
+        case FORK_SYNC: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -544,7 +586,8 @@ public:
     }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
-                || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DOUBLE);
+                || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DELAY_SCHEDULER
+                || m_e == TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == DOUBLE);
     }
     bool isDouble() const { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
@@ -1825,17 +1868,19 @@ public:
     // Changes control flow, disable some optimizations
     virtual bool isBrancher() const { return false; }
     // Else a AstTime etc that can't be pushed out
-    virtual bool isGateOptimizable() const { return true; }
+    virtual bool isGateOptimizable() const { return !isTimingControl(); }
     // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
     // Else creates output or exits, etc, not unconsumed
     virtual bool isOutputter() const { return false; }
     // Else a AstTime etc which output can't be predicted from input
-    virtual bool isPredictOptimizable() const { return true; }
+    virtual bool isPredictOptimizable() const { return !isTimingControl(); }
     // Else a $display, etc, that must be ordered with other displays
     virtual bool isPure() const { return true; }
     // Else a AstTime etc that can't be substituted out
     virtual bool isSubstOptimizable() const { return true; }
+    // An event control, delay, wait, etc.
+    virtual bool isTimingControl() const { return false; }
     // isUnlikely handles $stop or similar statement which means an above IF
     // statement is unlikely to be taken
     virtual bool isUnlikely() const { return false; }
@@ -2628,6 +2673,8 @@ public:
 
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
+    bool m_suspendable = false;  // Is suspendable by a Delay, EventControl, etc.
+
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* bodysp)
         : AstNode{t, fl} {
@@ -2641,6 +2688,8 @@ public:
     AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
+    bool isSuspendable() const { return m_suspendable; }
+    void setSuspendable() { m_suspendable = true; }
 };
 
 class AstNodeStmt VL_NOT_FINAL : public AstNode {
@@ -2670,7 +2719,7 @@ protected:
         : AstNodeStmt{t, fl} {
         setOp1p(rhsp);
         setOp2p(lhsp);
-        addNOp3p(timingControlp);
+        setNOp3p(timingControlp);
         dtypeFrom(lhsp);
     }
 
@@ -2683,7 +2732,7 @@ public:
     AstNode* lhsp() const { return op2p(); }  // op2 = Assign to
     // op3 = Timing controls (delays, event controls)
     AstNode* timingControlp() const { return op3p(); }
-    void addTimingControlp(AstNode* const np) { addNOp3p(np); }
+    void timingControlp(AstNode* const np) { setNOp3p(np); }
     void rhsp(AstNode* np) { setOp1p(np); }
     void lhsp(AstNode* np) { setOp2p(np); }
     virtual bool hasDType() const override { return true; }
@@ -2691,6 +2740,7 @@ public:
     virtual int instrCount() const override { return widthInstrs(); }
     virtual bool same(const AstNode*) const override { return true; }
     virtual string verilogKwd() const override { return "="; }
+    virtual bool isTimingControl() const override { return timingControlp(); }
     virtual bool brokeLhsMustBeLvalue() const = 0;
 };
 

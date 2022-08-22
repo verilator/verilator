@@ -90,6 +90,12 @@ define_property(TARGET
 )
 
 define_property(TARGET
+  PROPERTY VERILATOR_TIMING
+  BRIEF_DOCS "Verilator timing enabled"
+  FULL_DOCS "Verilator timing enabled"
+)
+
+define_property(TARGET
   PROPERTY VERILATOR_COVERAGE
   BRIEF_DOCS "Verilator coverage enabled"
   FULL_DOCS "Verilator coverage enabled"
@@ -337,6 +343,11 @@ function(verilate TARGET)
   endif()
 
   target_compile_features(${TARGET} PRIVATE cxx_std_11)
+
+  if (${VERILATE_PREFIX}_TIMING)
+    check_cxx_compiler_flag(-fcoroutines-ts COROUTINES_TS_FLAG)
+    target_compile_options(${TARGET} PRIVATE $<IF:$<BOOL:${COROUTINES_TS_FLAG}>,-fcoroutines-ts,-fcoroutines>)
+  endif()
 endfunction()
 
 function(_verilator_find_systemc)

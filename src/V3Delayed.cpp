@@ -71,6 +71,8 @@ private:
     //  AstVarScope::user1p()   -> AstVarScope*.  Points to temp var created.
     //  AstVarScope::user2p()   -> AstActive*.  Points to activity block of signal
     //                                       (valid when AstVarScope::user1p is valid)
+    //  AstVarScope::user3p()   -> AstAlwaysPost*.  Post block for this variable used for
+    //                                              AssignDlys in suspendable processes
     //  AstVarScope::user4p()   -> AstAlwaysPost*.  Post block for this variable
     //  AstVarScope::user5p()   -> AstVarRef*. Last blocking or non-blocking reference
     //  AstVar::user2()         -> bool.  Set true if already made warning
@@ -92,6 +94,8 @@ private:
     AstActive* m_activep = nullptr;  // Current activate
     const AstCFunc* m_cfuncp = nullptr;  // Current public C Function
     AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
+    AstNodeProcedure* m_procp = nullptr;  // Current process
+    std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
     bool m_inInitial = false;  // True in static initializers and initial blocks
@@ -203,7 +207,7 @@ private:
         }
     }
 
-    AstNode* createDlyArray(AstAssignDly* nodep, AstNode* lhsp) {
+    AstNode* createDlyOnSet(AstAssignDly* nodep, AstNode* lhsp) {
         // Create delayed assignment
         // See top of this file for transformation
         // Return the new LHS for the assignment, Null = unlink
@@ -211,17 +215,24 @@ private:
         AstNode* newlhsp = nullptr;  // nullptr = unlink old assign
         const AstSel* bitselp = nullptr;
         AstArraySel* arrayselp = nullptr;
+        AstVarRef* varrefp = nullptr;
         if (VN_IS(lhsp, Sel)) {
             bitselp = VN_AS(lhsp, Sel);
-            arrayselp = VN_AS(bitselp->fromp(), ArraySel);
-        } else {
+            arrayselp = VN_CAST(bitselp->fromp(), ArraySel);
+            if (!arrayselp) varrefp = VN_AS(bitselp->fromp(), VarRef);
+        } else if (VN_IS(lhsp, ArraySel)) {
             arrayselp = VN_AS(lhsp, ArraySel);
+        } else {
+            varrefp = VN_AS(lhsp, VarRef);
         }
-        UASSERT_OBJ(arrayselp, nodep, "No arraysel under bitsel?");
-        UASSERT_OBJ(!VN_IS(arrayselp->dtypep()->skipRefp(), UnpackArrayDType), nodep,
-                    "ArraySel with unpacked arrays should have been removed in V3Slice");
-        UINFO(4, "AssignDlyArray: " << nodep << endl);
-        //
+        if (arrayselp) {
+            UASSERT_OBJ(!VN_IS(arrayselp->dtypep()->skipRefp(), UnpackArrayDType), nodep,
+                        "ArraySel with unpacked arrays should have been removed in V3Slice");
+            UINFO(4, "AssignDlyArray: " << nodep << endl);
+        } else {
+            UASSERT_OBJ(varrefp, nodep, "No arraysel nor varref");
+            UINFO(4, "AssignDlyOnSet: " << nodep << endl);
+        }
         //=== Dimensions: __Vdlyvdim__
         std::deque<AstNode*> dimvalp;  // Assignment value for each dimension of assignment
         AstNode* dimselp = arrayselp;
@@ -229,7 +240,7 @@ private:
             AstNode* const valp = VN_AS(dimselp, ArraySel)->bitp()->unlinkFrBack();
             dimvalp.push_front(valp);
         }
-        AstVarRef* const varrefp = VN_AS(dimselp, VarRef);
+        if (dimselp) varrefp = VN_AS(dimselp, VarRef);
         UASSERT_OBJ(varrefp, nodep, "No var underneath arraysels");
         UASSERT_OBJ(varrefp->varScopep(), varrefp, "Var didn't get varscoped in V3Scope.cpp");
         varrefp->unlinkFrBack();
@@ -292,7 +303,7 @@ private:
         AstVarScope* setvscp;
         AstAssignPre* setinitp = nullptr;
 
-        if (nodep->user3p()) {
+        if (!m_procp->isSuspendable() && nodep->user3p()) {
             // Simplistic optimization.  If the previous statement in same scope was also a =>,
             // then we told this nodep->user3 we can use its Vdlyvset rather than making a new one.
             // This is good for code like:
@@ -303,9 +314,12 @@ private:
             const string setvarname
                 = (string("__Vdlyvset__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, nullptr);
-            setinitp = new AstAssignPre(nodep->fileline(),
-                                        new AstVarRef(nodep->fileline(), setvscp, VAccess::WRITE),
-                                        new AstConst(nodep->fileline(), 0));
+            if (!m_procp->isSuspendable()) {
+                // Suspendables reset __Vdlyvset__ in the AstAlwaysPost
+                setinitp = new AstAssignPre{
+                    nodep->fileline(), new AstVarRef{nodep->fileline(), setvscp, VAccess::WRITE},
+                    new AstConst{nodep->fileline(), 0}};
+            }
             AstAssign* const setassignp = new AstAssign(
                 nodep->fileline(), new AstVarRef(nodep->fileline(), setvscp, VAccess::WRITE),
                 new AstConst(nodep->fileline(), AstConst::BitTrue()));
@@ -331,19 +345,36 @@ private:
         // Build "IF (changeit) ...
         UINFO(9, "   For " << setvscp << endl);
         UINFO(9, "     & " << varrefp << endl);
-        AstAlwaysPost* finalp = VN_AS(varrefp->varScopep()->user4p(), AlwaysPost);
-        if (finalp) {
-            AstActive* const oldactivep = VN_AS(finalp->user2p(), Active);
-            checkActivePost(varrefp, oldactivep);
-            if (setinitp) oldactivep->addStmtsp(setinitp);
-        } else {  // first time we've dealt with this memory
-            finalp = new AstAlwaysPost(nodep->fileline(), nullptr /*sens*/, nullptr /*body*/);
-            UINFO(9, "     Created " << finalp << endl);
-            AstActive* const newactp = createActive(varrefp);
-            newactp->addStmtsp(finalp);
-            varrefp->varScopep()->user4p(finalp);
-            finalp->user2p(newactp);
-            if (setinitp) newactp->addStmtsp(setinitp);
+        AstAlwaysPost* finalp = nullptr;
+        if (m_procp->isSuspendable()) {
+            finalp = VN_AS(varrefp->varScopep()->user3p(), AlwaysPost);
+            if (!finalp) {
+                FileLine* const flp = nodep->fileline();
+                finalp = new AstAlwaysPost{flp, nullptr, nullptr};
+                UINFO(9, "     Created " << finalp << endl);
+                if (!m_procp->user3p()) {
+                    AstActive* const newactp = createActive(varrefp);
+                    m_procp->user3p(newactp);
+                    varrefp->varScopep()->user3p(finalp);
+                }
+                AstActive* const actp = VN_AS(m_procp->user3p(), Active);
+                actp->addStmtsp(finalp);
+            }
+        } else {
+            finalp = VN_AS(varrefp->varScopep()->user4p(), AlwaysPost);
+            if (finalp) {
+                AstActive* const oldactivep = VN_AS(finalp->user2p(), Active);
+                checkActivePost(varrefp, oldactivep);
+                if (setinitp) oldactivep->addStmtsp(setinitp);
+            } else {  // first time we've dealt with this memory
+                finalp = new AstAlwaysPost{nodep->fileline(), nullptr /*sens*/, nullptr /*body*/};
+                UINFO(9, "     Created " << finalp << endl);
+                AstActive* const newactp = createActive(varrefp);
+                newactp->addStmtsp(finalp);
+                varrefp->varScopep()->user4p(finalp);
+                finalp->user2p(newactp);
+                if (setinitp) newactp->addStmtsp(setinitp);
+            }
         }
         AstIf* postLogicp;
         if (finalp->user3p() == setvscp) {
@@ -361,6 +392,11 @@ private:
             finalp->user4p(postLogicp);  // and the associated IF, as we may be able to reuse it
         }
         postLogicp->addIfsp(new AstAssign(nodep->fileline(), selectsp, valreadp));
+        if (m_procp->isSuspendable()) {
+            FileLine* const flp = nodep->fileline();
+            postLogicp->addIfsp(new AstAssign{flp, new AstVarRef{flp, setvscp, VAccess::WRITE},
+                                              new AstConst{flp, 0}});
+        }
         return newlhsp;
     }
 
@@ -393,10 +429,38 @@ private:
             iterateChildren(nodep);
         }
     }
+    virtual void visit(AstNodeProcedure* nodep) override {
+        m_procp = nodep;
+        m_timingDomains.clear();
+        iterateChildren(nodep);
+        m_procp = nullptr;
+        if (m_timingDomains.empty()) return;
+        if (auto* const actp = VN_AS(nodep->user3p(), Active)) {
+            // Merge all timing domains (and possibly the active's domain) to create a sentree for
+            // the post logic
+            // TODO: allow multiple sentrees per active, so we don't have to merge them and create
+            // a new trigger
+            auto* clockedDomain
+                = actp->sensesp()->hasClocked() ? actp->sensesp()->cloneTree(false) : nullptr;
+            for (auto* const domainp : m_timingDomains) {
+                if (!clockedDomain) {
+                    clockedDomain = domainp->cloneTree(false);
+                } else {
+                    clockedDomain->addSensesp(domainp->sensesp()->cloneTree(true));
+                    clockedDomain->multi(true);  // Comment that it was made from multiple domains
+                }
+            }
+            // We cannot constify the sentree using V3Const as user1-5 is already taken up by
+            // V3Delayed
+            actp->sensesp(clockedDomain);
+            actp->sensesStorep(clockedDomain);
+        }
+    }
+    virtual void visit(AstCAwait* nodep) override { m_timingDomains.insert(nodep->sensesp()); }
     virtual void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
         FileLine* const flp = nodep->fileline();
-        if (nodep->isDeleyed()) {
+        if (nodep->isDelayed()) {
             AstVarRef* const vrefp = VN_AS(nodep->operandp(), VarRef);
             vrefp->unlinkFrBack();
             const string newvarname = (string("__Vdly__") + vrefp->varp()->shortName());
@@ -442,12 +506,14 @@ private:
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Delayed assignment inside public function/task");
         }
-        if (VN_IS(nodep->lhsp(), ArraySel)
-            || (VN_IS(nodep->lhsp(), Sel)
-                && VN_IS(VN_AS(nodep->lhsp(), Sel)->fromp(), ArraySel))) {
-            AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
-            AstNode* const newlhsp = createDlyArray(nodep, lhsp);
-            if (m_inLoop) {
+        UASSERT_OBJ(m_procp, nodep, "Delayed assignment not under process");
+        const bool isArray = VN_IS(nodep->lhsp(), ArraySel)
+                             || (VN_IS(nodep->lhsp(), Sel)
+                                 && VN_IS(VN_AS(nodep->lhsp(), Sel)->fromp(), ArraySel));
+        if (m_procp->isSuspendable() || isArray) {
+            AstNode* const lhsp = nodep->lhsp();
+            AstNode* const newlhsp = createDlyOnSet(nodep, lhsp);
+            if (m_inLoop && isArray) {
                 nodep->v3warn(BLKLOOPINIT, "Unsupported: Delayed assignment to array inside for "
                                            "loops (non-delayed is ok - see docs)");
             }
@@ -456,11 +522,12 @@ private:
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: event arrays");
             }
             if (newlhsp) {
+                if (nodep->lhsp()) nodep->lhsp()->unlinkFrBack();
                 nodep->lhsp(newlhsp);
             } else {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             }
-            VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+            if (!lhsp->backp()) VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
         } else {
             iterateChildren(nodep);
         }

@@ -593,9 +593,7 @@ private:
                              << nodep->warnMore() << "... Suggest use a normal 'always'");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (alwaysp && !alwaysp->sensesp()) {
-            // Verilator is still ony supporting SenTrees under an always,
-            // so allow the parser to handle everything and shim to
-            // historical AST here
+            // If the event control is at the top, move the sentree to the always
             if (AstSenTree* const sensesp = nodep->sensesp()) {
                 sensesp->unlinkFrBackWithNext();
                 alwaysp->sensesp(sensesp);

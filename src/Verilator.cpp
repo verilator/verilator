@@ -89,6 +89,7 @@
 #include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
+#include "V3Timing.h"
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
@@ -361,6 +362,14 @@ static void process() {
 
         // Reorder assignments in pipelined blocks
         if (v3Global.opt.fReorder()) V3Split::splitReorderAll(v3Global.rootp());
+
+        if (v3Global.opt.timing().isSetTrue()) {
+            // Convert AST for timing if requested
+            // Needs to be after V3Gate, as that step modifies sentrees
+            // Needs to be before V3Delayed, as delayed assignments are handled differently in
+            // suspendable processes
+            V3Timing::timingAll(v3Global.rootp());
+        }
 
         // Create delayed assignments
         // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step

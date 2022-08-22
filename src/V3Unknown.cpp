@@ -57,6 +57,7 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     AstAssignW* m_assignwp = nullptr;  // Current assignment
     AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
+    AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
     bool m_constXCvt = false;  // Convert X's
     bool m_allowXUnique = true;  // Allow unique assignments
     VDouble0 m_statUnkVars;  // Statistic tracking
@@ -123,12 +124,14 @@ private:
             m_modp->addStmtp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
             prep->replaceWith(new AstVarRef(fl, varp, VAccess::WRITE));
+            if (m_timingControlp) m_timingControlp->unlinkFrBack();
             AstIf* const newp = new AstIf(
                 fl, condp,
-                (needDly ? static_cast<AstNode*>(
-                     new AstAssignDly(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))
-                         : static_cast<AstNode*>(
-                             new AstAssign(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))));
+                (needDly
+                     ? static_cast<AstNode*>(new AstAssignDly{
+                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
+                     : static_cast<AstNode*>(new AstAssign{
+                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})));
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
             if (debug() >= 9) newp->dumpTree(cout, "     _new: ");
@@ -155,16 +158,27 @@ private:
     }
     virtual void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_assigndlyp);
+        VL_RESTORER(m_timingControlp);
         {
             m_assigndlyp = nodep;
+            m_timingControlp = nodep->timingControlp();
             VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         }
     }
     virtual void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_assignwp);
+        VL_RESTORER(m_timingControlp);
         {
             m_assignwp = nodep;
+            m_timingControlp = nodep->timingControlp();
             VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
+        }
+    }
+    virtual void visit(AstNodeAssign* nodep) override {
+        VL_RESTORER(m_timingControlp);
+        {
+            m_timingControlp = nodep->timingControlp();
+            iterateChildren(nodep);
         }
     }
     virtual void visit(AstCaseItem* nodep) override {

@@ -51,12 +51,15 @@ public:
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
         I_LINT,         // All lint messages
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
+        I_TIMING,       // Enable timing from /*verilator timing_on/off*/
         // Error codes:
         E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
         E_ENCAPSULATED, // Error: local/protected violation
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
+        E_NEEDTIMINGOPT,  // Error: --timing/--no-timing option not specified
+        E_NOTIMING,     // Timing control encountered with --no-timing
         //
         // Warning codes:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
@@ -83,6 +86,8 @@ public:
         DEFPARAM,       // Style: Defparam
         DECLFILENAME,   // Declaration doesn't match filename
         DEPRECATED,     // Feature will be deprecated
+        RISEFALLDLY,    // Unsupported: rise/fall/turn-off delays
+        MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         ENDLABEL,       // End lable name mismatch
         EOFNEWLINE,     // End-of-file missing newline
         GENCLK,         // Generated Clock. Historical, never issued.
@@ -135,8 +140,10 @@ public:
         USERINFO,       // Elaboration time $info
         USERWARN,       // Elaboration time $warning
         VARHIDDEN,      // Hiding variable
+        WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
+        ZERODLY,        // #0 delay
         _ENUM_MAX
         // ***Add new elements below also***
     };
@@ -157,16 +164,16 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
+            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE", " I_TIMING",
             // Errors
-            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
+            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
-            "DEFPARAM", "DECLFILENAME", "DEPRECATED",
+            "DEFPARAM", "DECLFILENAME", "DEPRECATED", "RISEFALLDLY", "MINTYPMAXDLY",
             "ENDLABEL", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
@@ -180,7 +187,7 @@ public:
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSED",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "ZERODLY",
             " MAX"
         };
         // clang-format on
@@ -197,7 +204,8 @@ public:
     bool pretendError() const {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK || m_e == BLKLOOPINIT
                 || m_e == CONTASSREG || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
-                || m_e == PROCASSWIRE);  // Says IEEE
+                || m_e == PROCASSWIRE  // Says IEEE
+                || m_e == ZERODLY);
     }
     // Warnings to mention manual
     bool mentionManual() const {

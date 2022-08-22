@@ -133,6 +133,10 @@ public:
     void clearTriggered() { m_triggered = false; }
 };
 
+inline std::string VL_TO_STRING(const VlEvent& e) {
+    return std::string("triggered=") + (e.isTriggered() ? "true" : "false");
+}
+
 //===================================================================
 // Shuffle RNG
 

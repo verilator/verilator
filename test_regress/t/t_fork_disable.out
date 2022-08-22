@@ -1,12 +1,8 @@
-%Error-UNSUPPORTED: t/t_fork_disable.v:12:7: Unsupported: fork statements
-                                           : ... In instance t
-   12 |       fork
-      |       ^~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_fork_disable.v:16:7: Unsupported: disable fork statements
                                            : ... In instance t
    16 |       disable fork;
       |       ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_fork_disable.v:17:7: Unsupported: wait fork statements
                                            : ... In instance t
    17 |       wait fork;

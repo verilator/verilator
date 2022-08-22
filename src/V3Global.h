@@ -106,6 +106,7 @@ class V3Global final {
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
+    bool m_usesTiming = false;  // Design uses timing constructs
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
     bool m_hasSCTextSections = false;  // Has `systemc_* sections that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
@@ -148,6 +149,8 @@ public:
     void dpi(bool flag) { m_dpi = flag; }
     bool hasEvents() const { return m_hasEvents; }
     void setHasEvents() { m_hasEvents = true; }
+    bool usesTiming() const { return m_usesTiming; }
+    void setUsesTiming() { m_usesTiming = true; }
     bool hasForceableSignals() const { return m_hasForceableSignals; }
     void setHasForceableSignals() { m_hasForceableSignals = true; }
     bool hasSCTextSections() const { return m_hasSCTextSections; }

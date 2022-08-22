@@ -42,6 +42,7 @@ private:
     const AstNode* const m_startNodep;  // Start node of count
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_inCFunc = false;  // Inside AstCFunc
+    bool m_ignoreRemaining = false;  // Ignore remaining statements in the block
     const bool m_assertNoDups;  // Check for duplicates
     const std::ostream* const m_osp;  // Dump file
 
@@ -81,7 +82,12 @@ public:
     uint32_t instrCount() const { return m_instrCount; }
 
 private:
+    void reset() {
+        m_instrCount = 0;
+        m_ignoreRemaining = false;
+    }
     uint32_t startVisitBase(AstNode* nodep) {
+        UASSERT_OBJ(!m_ignoreRemaining, nodep, "Should not reach here if ignoring");
         if (m_assertNoDups && !m_inCFunc) {
             // Ensure we don't count the same node twice
             //
@@ -110,7 +116,7 @@ private:
     void endVisitBase(uint32_t savedCount, AstNode* nodep) {
         UINFO(8, "cost " << std::setw(6) << std::left << m_instrCount << "  " << nodep << endl);
         markCost(nodep);
-        m_instrCount += savedCount;
+        if (!m_ignoreRemaining) m_instrCount += savedCount;
     }
     void markCost(AstNode* nodep) {
         if (m_osp) nodep->user4(m_instrCount + 1);  // Else don't mark to avoid writeback
@@ -118,6 +124,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeSel* nodep) override {
+        if (m_ignoreRemaining) return;
         // This covers both AstArraySel and AstWordSel
         //
         // If some vector is a bazillion dwords long, and we're selecting 1
@@ -129,6 +136,7 @@ private:
         iterateAndNextNull(nodep->bitp());
     }
     virtual void visit(AstSel* nodep) override {
+        if (m_ignoreRemaining) return;
         // Similar to AstNodeSel above, a small select into a large vector
         // is not expensive. Count the cost of the AstSel itself (scales with
         // its width) and the cost of the lsbp() and widthp() nodes, but not
@@ -144,6 +152,7 @@ private:
         nodep->v3fatalSrc("AstMemberSel unhandled");
     }
     virtual void visit(AstConcat* nodep) override {
+        if (m_ignoreRemaining) return;
         // Nop.
         //
         // Ignore concat. The problem with counting concat is that when we
@@ -164,22 +173,24 @@ private:
         markCost(nodep);
     }
     virtual void visit(AstNodeIf* nodep) override {
+        if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
         iterateAndNextNull(nodep->condp());
         const uint32_t savedCount = m_instrCount;
 
         UINFO(8, "ifsp:\n");
-        m_instrCount = 0;
+        reset();
         iterateAndNextNull(nodep->ifsp());
         uint32_t ifCount = m_instrCount;
         if (nodep->branchPred().unlikely()) ifCount = 0;
 
         UINFO(8, "elsesp:\n");
-        m_instrCount = 0;
+        reset();
         iterateAndNextNull(nodep->elsesp());
         uint32_t elseCount = m_instrCount;
         if (nodep->branchPred().likely()) elseCount = 0;
 
+        reset();
         if (ifCount >= elseCount) {
             m_instrCount = savedCount + ifCount;
             if (nodep->elsesp()) nodep->elsesp()->user4(0);  // Don't dump it
@@ -189,6 +200,7 @@ private:
         }
     }
     virtual void visit(AstNodeCond* nodep) override {
+        if (m_ignoreRemaining) return;
         // Just like if/else above, the ternary operator only evaluates
         // one of the two expressions, so only count the max.
         const VisitBase vb{this, nodep};
@@ -196,15 +208,16 @@ private:
         const uint32_t savedCount = m_instrCount;
 
         UINFO(8, "?\n");
-        m_instrCount = 0;
+        reset();
         iterateAndNextNull(nodep->expr1p());
         const uint32_t ifCount = m_instrCount;
 
         UINFO(8, ":\n");
-        m_instrCount = 0;
+        reset();
         iterateAndNextNull(nodep->expr2p());
         const uint32_t elseCount = m_instrCount;
 
+        reset();
         if (ifCount < elseCount) {
             m_instrCount = savedCount + elseCount;
             if (nodep->expr1p()) nodep->expr1p()->user4(0);  // Don't dump it
@@ -212,6 +225,25 @@ private:
             m_instrCount = savedCount + ifCount;
             if (nodep->expr2p()) nodep->expr2p()->user4(0);  // Don't dump it
         }
+    }
+    virtual void visit(AstCAwait* nodep) override {
+        if (m_ignoreRemaining) return;
+        iterateChildren(nodep);
+        // Anything past a co_await is irrelevant
+        m_ignoreRemaining = true;
+    }
+    virtual void visit(AstFork* nodep) override {
+        if (m_ignoreRemaining) return;
+        const VisitBase vb{this, nodep};
+        uint32_t totalCount = m_instrCount;
+        // Sum counts in each statement until the first await
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            reset();
+            iterate(stmtp);
+            totalCount += m_instrCount;
+        }
+        m_instrCount = totalCount;
+        m_ignoreRemaining = false;
     }
     virtual void visit(AstActive* nodep) override {
         // You'd think that the OrderLogicVertex's would be disjoint trees
@@ -230,6 +262,7 @@ private:
         UASSERT_OBJ(nodep == m_startNodep, nodep, "Multiple actives, or not start node");
     }
     virtual void visit(AstNodeCCall* nodep) override {
+        if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
         iterateChildren(nodep);
         m_tracingCall = true;
@@ -241,6 +274,7 @@ private:
         // from the root
         UASSERT_OBJ(m_tracingCall || nodep == m_startNodep, nodep,
                     "AstCFunc not under AstCCall, or not start node");
+        UASSERT_OBJ(!m_ignoreRemaining, nodep, "Should not be ignoring at the start of a CFunc");
         m_tracingCall = false;
         VL_RESTORER(m_inCFunc);
         {
@@ -248,8 +282,10 @@ private:
             const VisitBase vb{this, nodep};
             iterateChildren(nodep);
         }
+        m_ignoreRemaining = false;
     }
     virtual void visit(AstNode* nodep) override {
+        if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
         iterateChildren(nodep);
     }

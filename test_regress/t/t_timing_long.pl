@@ -54,9 +54,22 @@ top_filename("$Self->{obj_dir}/t_timing_long.v");
 
 gen($Self->{top_filename});
 
+if ($Self->have_coroutines) {
+    compile(
+        verilator_flags2 => ["--exe --build --main --timing"],
+        verilator_make_cmake => 0,
+        verilator_make_gmake => 0,
+        make_main => 0,
+        make_top => 1,
+        );
+
+    execute(
+        check_finished => 1,
+        );
+}
+
 compile(
-    # verilator_flags2 => ["--exe --build --main --timing"],  # Unsupported
-    verilator_flags2 => ["--exe --build --main -Wno-STMTDLY"],
+    verilator_flags2 => ["--exe --build --main --no-timing -Wno-STMTDLY"],
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
     make_main => 0,

@@ -13,7 +13,7 @@ scenarios(linter => 1);
 top_filename("t/t_gate_basic.v");
 
 lint(
-    verilator_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME -Wno-UNUSED"],
+    verilator_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME -Wno-UNUSED --timing"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

@@ -47,7 +47,6 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
-#include <unordered_map>
 #include <unordered_set>
 
 namespace V3Sched {
@@ -202,30 +201,45 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
 // Simple ordering in source order
 
 void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
+    // Create new subfunc for scope
+    const auto createNewSubFuncp = [&](AstScope* const scopep) {
+        const string subName{funcp->name() + "__" + scopep->nameDotless()};
+        AstCFunc* const subFuncp = new AstCFunc{scopep->fileline(), subName, scopep};
+        subFuncp->isLoose(true);
+        subFuncp->isConst(false);
+        subFuncp->declPrivate(true);
+        subFuncp->slow(funcp->slow());
+        scopep->addActivep(subFuncp);
+        // Call it from the top function
+        funcp->addStmtsp(new AstCCall{scopep->fileline(), subFuncp});
+        return subFuncp;
+    };
     const VNUser1InUse user1InUse;  // AstScope -> AstCFunc: the sub-function for the scope
+    const VNUser2InUse user2InUse;  // AstScope -> int: sub-function counter used for names
     for (const auto& pair : lbs) {
         AstScope* const scopep = pair.first;
         AstActive* const activep = pair.second;
-        if (!scopep->user1p()) {
-            // Create a sub-function per scope so we can V3Combine them later
-            const string subName{funcp->name() + "__" + scopep->nameDotless()};
-            AstCFunc* const subFuncp = new AstCFunc{scopep->fileline(), subName, scopep};
-            subFuncp->isLoose(true);
-            subFuncp->isConst(false);
-            subFuncp->declPrivate(true);
-            subFuncp->slow(funcp->slow());
-            scopep->addActivep(subFuncp);
-            scopep->user1p(subFuncp);
-            // Call it from the top function
-            funcp->addStmtsp(new AstCCall{scopep->fileline(), subFuncp});
-        }
-        AstCFunc* const subFuncp = VN_AS(scopep->user1p(), CFunc);
+        // Create a sub-function per scope so we can V3Combine them later
+        if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
         // Add statements to sub-function
         for (AstNode *logicp = activep->stmtsp(), *nextp; logicp; logicp = nextp) {
+            auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
             nextp = logicp->nextp();
             if (AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure)) {
-                if (AstNode* const bodyp = procp->bodysp()) {
+                if (AstNode* bodyp = procp->bodysp()) {
                     bodyp->unlinkFrBackWithNext();
+                    // If the process is suspendable, we need a separate function (a coroutine)
+                    if (procp->isSuspendable()) {
+                        subFuncp = createNewSubFuncp(scopep);
+                        subFuncp->name(subFuncp->name() + "__" + cvtToStr(scopep->user2Inc()));
+                        subFuncp->rtnType("VlCoroutine");
+                        if (VN_IS(procp, Always)) {
+                            subFuncp->slow(false);
+                            FileLine* const flp = procp->fileline();
+                            bodyp
+                                = new AstWhile{flp, new AstConst{flp, AstConst::BitTrue{}}, bodyp};
+                        }
+                    }
                     subFuncp->addStmtsp(bodyp);
                 }
             } else {
@@ -432,6 +446,8 @@ class SenExprBuilder final {
             callp->dtypeSetBit();
             return {callp, false};
         }
+        case VEdgeType::ET_TRUE:  //
+            return {currp(), false};
         default:  // LCOV_EXCL_START
             senItemp->v3fatalSrc("Unknown edge type");
             return {nullptr, false};
@@ -937,7 +953,8 @@ void createEval(AstNetlist* netlistp,  //
                 AstVarScope* preTrigsp,  //
                 AstVarScope* nbaTrigsp,  //
                 AstCFunc* actFuncp,  //
-                AstCFunc* nbaFuncp  //
+                AstCFunc* nbaFuncp,  //
+                TimingKit& timingKit  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
@@ -967,7 +984,10 @@ void createEval(AstNetlist* netlistp,  //
         = makeEvalLoop(
               netlistp, "act", "Active", actTrig.m_vscp, actTrig.m_dumpp,
               [&]() {  // Trigger
-                  return new AstCCall{flp, actTrig.m_funcp};
+                  auto* const resultp = new AstCCall{flp, actTrig.m_funcp};
+                  // Commit trigger awaits from the previous iteration
+                  resultp->addNextNull(timingKit.createCommit(netlistp));
+                  return resultp;
               },
               [&]() {  // Body
                   AstNode* resultp = nullptr;
@@ -993,6 +1013,9 @@ void createEval(AstNetlist* netlistp,  //
                       callp->dtypeSetVoid();
                       resultp = AstNode::addNext(resultp, callp);
                   }
+
+                  // Resume triggered timing schedulers
+                  resultp = AstNode::addNextNull(resultp, timingKit.createResume(netlistp));
 
                   // Invoke body function
                   return AstNode::addNext(resultp, new AstCCall{flp, actFuncp});
@@ -1038,6 +1061,9 @@ void schedule(AstNetlist* netlistp) {
         lbs.foreachLogic([&](AstNode* nodep) { size += nodep->nodeCount(); });
         V3Stats::addStat("Scheduling, " + name, size);
     };
+
+    // Step 0. Prepare timing-related logic and external domains
+    auto timingKit = prepareTiming(netlistp);
 
     // Step 1. Gather and classify all logic in the design
     LogicClasses logicClasses = gatherLogicClasses(netlistp);
@@ -1113,7 +1139,8 @@ void schedule(AstNetlist* netlistp) {
 
     const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_pre,  //
                                                &logicRegions.m_act,  //
-                                               &logicRegions.m_nba});
+                                               &logicRegions.m_nba,  //
+                                               &timingKit.m_lbs});
     const TriggerKit& actTrig
         = createTriggers(netlistp, senExprBuilder, senTreeps, "act", extraTriggers);
 
@@ -1163,6 +1190,8 @@ void schedule(AstNetlist* netlistp) {
     remapSensitivities(logicRegions.m_pre, preTrigMap);
     remapSensitivities(logicRegions.m_act, actTrigMap);
     remapSensitivities(logicReplicas.m_act, actTrigMap);
+    remapSensitivities(timingKit.m_lbs, actTrigMap);
+    const auto& actTimingDomains = timingKit.remapDomains(actTrigMap);
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
     std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSenAct;
@@ -1175,7 +1204,9 @@ void schedule(AstNetlist* netlistp) {
 
     AstCFunc* const actFuncp = V3Order::order(
         netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
-        "act", false, false, [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+        "act", false, false, [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+            auto it = actTimingDomains.find(vscp);
+            if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
         });
     splitCheck(actFuncp);
@@ -1186,6 +1217,7 @@ void schedule(AstNetlist* netlistp) {
     // Remap sensitivities of the input logic to the triggers
     remapSensitivities(logicRegions.m_nba, nbaTrigMap);
     remapSensitivities(logicReplicas.m_nba, nbaTrigMap);
+    const auto& nbaTimingDomains = timingKit.remapDomains(nbaTrigMap);
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
     std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSenNba;
@@ -1196,7 +1228,9 @@ void schedule(AstNetlist* netlistp) {
 
     AstCFunc* const nbaFuncp = V3Order::order(
         netlistp, {&logicRegions.m_nba, &logicReplicas.m_nba}, trigToSenNba, "nba",
-        v3Global.opt.mtasks(), false, [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+        v3Global.opt.mtasks(), false, [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+            auto it = nbaTimingDomains.find(vscp);
+            if (it != nbaTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredNba);
         });
     splitCheck(nbaFuncp);
@@ -1204,7 +1238,10 @@ void schedule(AstNetlist* netlistp) {
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-nba");
 
     // Step 11: Bolt it all together to create the '_eval' function
-    createEval(netlistp, icoLoopp, actTrig, preTrigVscp, nbaTrigVscp, actFuncp, nbaFuncp);
+    createEval(netlistp, icoLoopp, actTrig, preTrigVscp, nbaTrigVscp, actFuncp, nbaFuncp,
+               timingKit);
+
+    transformForks(netlistp);
 
     splitCheck(initp);
 

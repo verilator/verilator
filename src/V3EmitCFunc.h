@@ -413,6 +413,11 @@ public:
         puts(funcp->nameProtect());
         emitCCallArgs(nodep, "");
     }
+    virtual void visit(AstCAwait* nodep) override {
+        puts("co_await ");
+        iterate(nodep->exprp());
+        if (nodep->isStatement()) puts(";\n");
+    }
     virtual void visit(AstCNew* nodep) override {
         bool comma = false;
         puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");

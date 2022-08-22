@@ -40,11 +40,22 @@
 #define BBUNSUP(fl, msg) (fl)->v3warn(E_UNSUPPORTED, msg)
 #define GATEUNSUP(fl, tok) \
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
-#define PRIMDLYUNSUP(nodep) \
-    { \
-        if (nodep) { \
-            nodep->v3warn(ASSIGNDLY, "Unsupported: Ignoring delay on this primitive."); \
-            nodep->deleteTree(); \
+#define RISEFALLDLYUNSUP(nodep) \
+    if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) { \
+        nodep->v3warn(RISEFALLDLY, \
+                      "Unsupported: rising/falling/turn-off delays. Using the first delay"); \
+    }
+#define MINTYPMAXDLYUNSUP(nodep) \
+    if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) { \
+        nodep->v3warn( \
+            MINTYPMAXDLY, \
+            "Unsupported: minimum/typical/maximum delay expressions. Using the typical delay"); \
+    }
+#define PUT_DLYS_IN_ASSIGNS(delayp, assignsp) \
+    if (delayp) { \
+        for (auto* nodep = assignsp; nodep; nodep = nodep->nextp()) { \
+            auto* const assignp = VN_AS(nodep, NodeAssign); \
+            assignp->timingControlp(nodep == assignsp ? delayp : delayp->cloneTree(false)); \
         } \
     }
 
@@ -393,6 +404,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_SC_BV                  "sc_bv"
 %token<fl>              yVLT_SFORMAT                "sformat"
 %token<fl>              yVLT_SPLIT_VAR              "split_var"
+%token<fl>              yVLT_TIMING_OFF             "timing_off"
+%token<fl>              yVLT_TIMING_ON              "timing_on"
 %token<fl>              yVLT_TRACING_OFF            "tracing_off"
 %token<fl>              yVLT_TRACING_ON             "tracing_on"
 
@@ -1742,13 +1755,13 @@ net_dataTypeE<nodeDTypep>:
         //                      // Otherwise #(...) can't be determined to be a delay or parameters
         //                      // Submit this as a footnote to the committee
                 var_data_type                           { $$ = $1; }
-        |       signingE rangeList delayE
+        |       signingE rangeList delay_controlE
                         { $$ = GRAMMARP->addRange(new AstBasicDType{$2->fileline(), LOGIC, $1},
                                                                     $2, true);
                           GRAMMARP->setNetDelay($3); }  // not implicit
         |       signing
                         { $$ = new AstBasicDType{$<fl>1, LOGIC, $1}; }  // not implicit
-        |       /*implicit*/ delayE
+        |       /*implicit*/ delay_controlE
                         { $$ = new AstBasicDType{CRELINE(), LOGIC};
                           GRAMMARP->setNetDelay($1); }  // not implicit
         ;
@@ -2428,14 +2441,10 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         ;
 
 continuous_assign<nodep>:       // IEEE: continuous_assign
-                yASSIGN strengthSpecE delayE assignList ';'
+                yASSIGN strengthSpecE delay_controlE assignList ';'
                 {
                     $$ = $4;
-                    if ($3)
-                        for (auto* nodep = $$; nodep; nodep = nodep->nextp()) {
-                            auto* const assignp = VN_AS(nodep, NodeAssign);
-                            assignp->addTimingControlp(nodep == $$ ? $3 : $3->cloneTree(false));
-                        }
+                    PUT_DLYS_IN_ASSIGNS($3, $$);
                 }
         ;
 
@@ -2678,27 +2687,22 @@ assignOne<nodep>:
         ;
 
 delay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
+                /* empty */             { $$ = nullptr; }
+        |        delay_control          { $$ = $1; }
+        |        event_control          { $$ = $1; }
+//UNSUP        |        yREPEAT '(' expr ')' event_control        { }
+        ;
+
+delay_controlE<nodep>:
                 /* empty */                             { $$ = nullptr; }
         |       delay_control                           { $$ = $1; }
-        |       event_control                           { $$ = $1; }
-//UNSUP |       yREPEAT '(' expr ')' event_control      { }
-        ;
-
-delayE<nodep>:
-                /* empty */                             { $$ = nullptr; }
-        |       delay                                   { $$ = $1; }
-        ;
-
-delay<nodep>:
-                delay_control
-                        { $$ = $1; }
         ;
 
 delay_control<nodep>:   //== IEEE: delay_control
                 '#' delay_value                         { $$ = $2; }
         |       '#' '(' minTypMax ')'                   { $$ = $3; }
-        |       '#' '(' minTypMax ',' minTypMax ')'                     { $$ = $3; DEL($5); }
-        |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'       { $$ = $3; DEL($5); DEL($7); }
+        |       '#' '(' minTypMax ',' minTypMax ')'                     { $$ = $3; RISEFALLDLYUNSUP($3); DEL($5); }
+        |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'       { $$ = $3; RISEFALLDLYUNSUP($3); DEL($5); DEL($7); }
         ;
 
 delay_value<nodep>:             // ==IEEE:delay_value
@@ -2715,7 +2719,7 @@ delayExpr<nodep>:
 
 minTypMax<nodep>:               // IEEE: mintypmax_expression and constant_mintypmax_expression
                 delayExpr                               { $$ = $1; }
-        |       delayExpr ':' delayExpr ':' delayExpr   { $$ = $3; DEL($1); DEL($5); }
+        |       delayExpr ':' delayExpr ':' delayExpr   { $$ = $3; MINTYPMAXDLYUNSUP($3); DEL($1); DEL($5); }
         ;
 
 netSigList<varp>:               // IEEE: list_of_port_identifiers
@@ -2729,8 +2733,9 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
         |       netId sigAttrListE '=' expr
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           auto* const assignp = new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4};
-                          if ($$->delayp()) assignp->addTimingControlp($$->delayp()->unlinkFrBack());  // IEEE 1800-2017 10.3.3
-                          $$->addNext(assignp); }        |       netId variable_dimensionList sigAttrListE
+                          if ($$->delayp()) assignp->timingControlp($$->delayp()->unlinkFrBack());  // IEEE 1800-2017 10.3.3
+                          $$->addNext(assignp); }
+        |       netId variable_dimensionList sigAttrListE
                         { $$ = VARDONEA($<fl>1,*$1, $2, $3); }
         ;
 
@@ -3270,8 +3275,14 @@ statement_item<nodep>:          // IEEE: statement_item
         //
         |       par_block                               { $$ = $1; }
         //                      // IEEE: procedural_timing_control_statement + procedural_timing_control
-        |       delay_control stmtBlock                 { $$ = new AstDelay{$1->fileline(), $1, $2}; }
-        |       event_control stmtBlock                 { $$ = new AstEventControl(FILELINE_OR_CRE($1), $1, $2); }
+        |       delay_control stmtBlock                 { AstNode* nextp = nullptr;
+                                                          if ($2 && $2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
+                                                          $$ = new AstDelay{$1->fileline(), $1, $2};
+                                                          $$->addNextNull(nextp); }
+        |       event_control stmtBlock                 { AstNode* nextp = nullptr;
+                                                          if ($2 && $2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
+                                                          $$ = new AstEventControl{FILELINE_OR_CRE($1), $1, $2};
+                                                          $$->addNextNull(nextp); }
         //UNSUP cycle_delay stmtBlock                   { UNSUP }
         //
         |       seq_block                               { $$ = $1; }
@@ -4704,33 +4715,33 @@ stream_expressionOrDataType<nodep>:     // IEEE: from streaming_concatenation
 // Gate declarations
 
 gateDecl<nodep>:
-                yBUF    delayE gateBufList ';'          { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yBUFIF0 delayE gateBufif0List ';'       { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yBUFIF1 delayE gateBufif1List ';'       { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yNOT    delayE gateNotList ';'          { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yNOTIF0 delayE gateNotif0List ';'       { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yNOTIF1 delayE gateNotif1List ';'       { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yAND  delayE gateAndList ';'            { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yNAND delayE gateNandList ';'           { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yOR   delayE gateOrList ';'             { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yNOR  delayE gateNorList ';'            { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yXOR  delayE gateXorList ';'            { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yXNOR delayE gateXnorList ';'           { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yPULLUP delayE gatePullupList ';'       { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yPULLDOWN delayE gatePulldownList ';'   { $$ = $3; PRIMDLYUNSUP($2); }
-        |       yNMOS delayE gateBufif1List ';'         { $$ = $3; PRIMDLYUNSUP($2); }  // ~=bufif1, as don't have strengths yet
-        |       yPMOS delayE gateBufif0List ';'         { $$ = $3; PRIMDLYUNSUP($2); }  // ~=bufif0, as don't have strengths yet
+                yBUF    delay_controlE gateBufList ';'          { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yBUFIF0 delay_controlE gateBufif0List ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yBUFIF1 delay_controlE gateBufif1List ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yNOT    delay_controlE gateNotList ';'          { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yNOTIF0 delay_controlE gateNotif0List ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yNOTIF1 delay_controlE gateNotif1List ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yAND  delay_controlE gateAndList ';'            { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yNAND delay_controlE gateNandList ';'           { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yOR   delay_controlE gateOrList ';'             { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yNOR  delay_controlE gateNorList ';'            { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yXOR  delay_controlE gateXorList ';'            { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yXNOR delay_controlE gateXnorList ';'           { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yPULLUP delay_controlE gatePullupList ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yPULLDOWN delay_controlE gatePulldownList ';'   { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yNMOS delay_controlE gateBufif1List ';'         { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }  // ~=bufif1, as don't have strengths yet
+        |       yPMOS delay_controlE gateBufif0List ';'         { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }  // ~=bufif0, as don't have strengths yet
         //
-        |       yTRAN delayE gateUnsupList ';'          { $$ = $3; GATEUNSUP($3,"tran"); } // Unsupported
-        |       yRCMOS delayE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"rcmos"); } // Unsupported
-        |       yCMOS delayE gateUnsupList ';'          { $$ = $3; GATEUNSUP($3,"cmos"); } // Unsupported
-        |       yRNMOS delayE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"rmos"); } // Unsupported
-        |       yRPMOS delayE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"pmos"); } // Unsupported
-        |       yRTRAN delayE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"rtran"); } // Unsupported
-        |       yRTRANIF0 delayE gateUnsupList ';'      { $$ = $3; GATEUNSUP($3,"rtranif0"); } // Unsupported
-        |       yRTRANIF1 delayE gateUnsupList ';'      { $$ = $3; GATEUNSUP($3,"rtranif1"); } // Unsupported
-        |       yTRANIF0 delayE gateUnsupList ';'       { $$ = $3; GATEUNSUP($3,"tranif0"); } // Unsupported
-        |       yTRANIF1 delayE gateUnsupList ';'       { $$ = $3; GATEUNSUP($3,"tranif1"); } // Unsupported
+        |       yTRAN delay_controlE gateUnsupList ';'          { $$ = $3; GATEUNSUP($3,"tran"); } // Unsupported
+        |       yRCMOS delay_controlE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"rcmos"); } // Unsupported
+        |       yCMOS delay_controlE gateUnsupList ';'          { $$ = $3; GATEUNSUP($3,"cmos"); } // Unsupported
+        |       yRNMOS delay_controlE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"rmos"); } // Unsupported
+        |       yRPMOS delay_controlE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"pmos"); } // Unsupported
+        |       yRTRAN delay_controlE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"rtran"); } // Unsupported
+        |       yRTRANIF0 delay_controlE gateUnsupList ';'      { $$ = $3; GATEUNSUP($3,"rtranif0"); } // Unsupported
+        |       yRTRANIF1 delay_controlE gateUnsupList ';'      { $$ = $3; GATEUNSUP($3,"rtranif1"); } // Unsupported
+        |       yTRANIF0 delay_controlE gateUnsupList ';'       { $$ = $3; GATEUNSUP($3,"tranif0"); } // Unsupported
+        |       yTRANIF1 delay_controlE gateUnsupList ';'       { $$ = $3; GATEUNSUP($3,"tranif1"); } // Unsupported
         ;
 
 gateBufList<nodep>:
@@ -6541,6 +6552,7 @@ vltItem:
 
 vltOffFront<errcodeen>:
                 yVLT_COVERAGE_OFF                       { $$ = V3ErrorCode::I_COVERAGE; }
+        |       yVLT_TIMING_OFF                         { $$ = V3ErrorCode::I_TIMING; }
         |       yVLT_TRACING_OFF                        { $$ = V3ErrorCode::I_TRACING; }
         |       yVLT_LINT_OFF                           { $$ = V3ErrorCode::I_LINT; }
         |       yVLT_LINT_OFF yVLT_D_RULE idAny
@@ -6550,6 +6562,7 @@ vltOffFront<errcodeen>:
 
 vltOnFront<errcodeen>:
                 yVLT_COVERAGE_ON                        { $$ = V3ErrorCode::I_COVERAGE; }
+        |       yVLT_TIMING_ON                          { $$ = V3ErrorCode::I_TIMING; }
         |       yVLT_TRACING_ON                         { $$ = V3ErrorCode::I_TRACING; }
         |       yVLT_LINT_ON                            { $$ = V3ErrorCode::I_LINT; }
         |       yVLT_LINT_ON yVLT_D_RULE idAny

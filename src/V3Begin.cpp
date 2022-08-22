@@ -68,6 +68,7 @@ private:
     string m_namedScope;  // Name of begin blocks above us
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
+    bool m_underFork = false;  // True if the current statement is directly under a fork
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -120,6 +121,12 @@ private:
     }
 
     // VISITORS
+    virtual void visit(AstFork* nodep) override {
+        VL_RESTORER(m_underFork);
+        m_underFork = true;
+        dotNames(nodep, "__FORK__");
+        nodep->name("");
+    }
     virtual void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         {
@@ -169,11 +176,19 @@ private:
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
         {
-            dotNames(nodep, "__BEGIN__");
-
+            {
+                VL_RESTORER(m_underFork);
+                m_underFork = false;
+                dotNames(nodep, "__BEGIN__");
+            }
             UASSERT_OBJ(!nodep->genforp(), nodep, "GENFORs should have been expanded earlier");
 
             // Cleanup
+            if (m_underFork) {
+                // If we're under a fork, keep this begin to group its statements together
+                nodep->name("");
+                return;
+            }
             AstNode* addsp = nullptr;
             if (AstNode* const stmtsp = nodep->stmtsp()) {
                 stmtsp->unlinkFrBackWithNext();
@@ -251,6 +266,8 @@ private:
     }
     // VISITORS - LINT CHECK
     virtual void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
+        VL_RESTORER(m_underFork);
+        m_underFork = false;
         // Check IFDEPTH warning - could be in other transform files if desire
         VL_RESTORER(m_ifDepth);
         if (m_ifDepth == -1 || v3Global.opt.ifDepth() < 1) {  // Turned off
@@ -264,7 +281,11 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override {
+        VL_RESTORER(m_underFork);
+        m_underFork = false;
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS

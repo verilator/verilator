@@ -1125,7 +1125,7 @@ sub compile {
         }
 
         if (!$param{fails} && $param{make_main}) {
-            $self->_make_main();
+            $self->_make_main($param{timing_loop});
         }
 
         if ($param{verilator_make_gmake}
@@ -1480,6 +1480,12 @@ sub have_sc {
     return 0;
 }
 
+sub have_coroutines {
+    my $self = (ref $_[0] ? shift : $Self);
+    return 1 if $self->verilator_version =~ /coroutine support *= *1/i;
+    return 0;
+}
+
 sub make_version {
     my $ver = `$ENV{MAKE} --version`;
     if ($ver =~ /make ([0-9]+\.[0-9]+)/i) {
@@ -1731,6 +1737,11 @@ sub _try_regex {
 
 sub _make_main {
     my $self = shift;
+    my $timing_loop = shift;
+
+    if ($timing_loop && $self->sc) {
+        $self->error("Cannot use timing loop and SystemC together!\n");
+    }
 
     if ($self->vhdl) {
         $self->_read_inputs_vhdl();
@@ -1859,33 +1870,61 @@ sub _make_main {
     }
     print $fh "        ${set}fastclk = false;\n" if $self->{inputs}{fastclk};
     print $fh "        ${set}clk = false;\n" if $self->{inputs}{clk};
-    _print_advance_time($self, $fh, 10);
+    if (!$timing_loop) {
+        _print_advance_time($self, $fh, 10);
+    }
     print $fh "    }\n";
 
     my $time = $self->sc ? "sc_time_stamp()" : "contextp->time()";
 
-    print $fh "    while ((${time} < sim_time * MAIN_TIME_MULTIPLIER)\n";
-    print $fh "           && !contextp->gotFinish()) {\n";
+    print $fh "    while (";
+    if (!$timing_loop || $self->{inputs}{clk}) {
+        print $fh "(${time} < sim_time * MAIN_TIME_MULTIPLIER) && ";
+    }
+    print $fh "!contextp->gotFinish()) {\n";
 
-    for (my $i = 0; $i < 5; $i++) {
-        my $action = 0;
-        if ($self->{inputs}{fastclk}) {
-            print $fh "        ${set}fastclk = !${set}fastclk;\n";
-            $action = 1;
+    if ($timing_loop) {
+        print $fh "        topp->eval();\n";
+        if ($self->{trace}) {
+            $fh->print("#if VM_TRACE\n");
+            $fh->print("        if (tfp) tfp->dump(contextp->time());\n");
+            $fh->print("#endif  // VM_TRACE\n");
         }
-        if ($i == 0 && $self->{inputs}{clk}) {
-            print $fh "        ${set}clk = !${set}clk;\n";
-            $action = 1;
+        if ($self->{inputs}{clk}) {
+            print $fh "        uint64_t cycles = contextp->time() / MAIN_TIME_MULTIPLIER;\n";
+            print $fh "        uint64_t new_time = (cycles + 1) * MAIN_TIME_MULTIPLIER;\n";
+            print $fh "        if (topp->eventsPending() &&\n";
+            print $fh "            topp->nextTimeSlot() / MAIN_TIME_MULTIPLIER <= cycles) {\n";
+            print $fh "            new_time = topp->nextTimeSlot();\n";
+            print $fh "        } else {\n";
+            print $fh "            ${set}clk = !${set}clk;\n";
+            print $fh "        }\n";
+            print $fh "        contextp->time(new_time);\n";
+        } else {
+            print $fh "        if (!topp->eventsPending()) break;\n";
+            print $fh "        contextp->time(topp->nextTimeSlot());\n";
         }
-        if ($self->{savable}) {
-            $fh->print("        if (save_time && ${time} == save_time) {\n");
-            $fh->print("            save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
-            $fh->print("            printf(\"Exiting after save_model\\n\");\n");
-            $fh->print("            topp.reset(nullptr);\n");
-            $fh->print("            return 0;\n");
-            $fh->print("        }\n");
+    } else {
+        for (my $i = 0; $i < 5; $i++) {
+            my $action = 0;
+            if ($self->{inputs}{fastclk}) {
+                print $fh "        ${set}fastclk = !${set}fastclk;\n";
+                $action = 1;
+            }
+            if ($i == 0 && $self->{inputs}{clk}) {
+                print $fh "        ${set}clk = !${set}clk;\n";
+                $action = 1;
+            }
+            if ($self->{savable}) {
+                $fh->print("        if (save_time && ${time} == save_time) {\n");
+                $fh->print("            save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
+                $fh->print("            printf(\"Exiting after save_model\\n\");\n");
+                $fh->print("            topp.reset(nullptr);\n");
+                $fh->print("            return 0;\n");
+                $fh->print("        }\n");
+            }
+            _print_advance_time($self, $fh, 1, $action);
         }
-        _print_advance_time($self, $fh, 1, $action);
     }
     if ($self->{benchmarksim}) {
         $fh->print("        if (VL_UNLIKELY(!warm)) {\n");
@@ -1941,7 +1980,7 @@ sub _print_advance_time {
     else { $set = "topp->"; }
 
     if ($self->sc) {
-        print $fh "        sc_start(${time}, $Self->{sc_time_resolution});\n";
+        print $fh "        sc_start(${time} * MAIN_TIME_MULTIPLIER, $Self->{sc_time_resolution});\n";
     } else {
         if ($action) {
             print $fh "        ${set}eval();\n";
