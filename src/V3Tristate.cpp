@@ -998,7 +998,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 constp->unlinkFrBack();
                 AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
                 AstNode* newp = new AstLogAnd{
-                    fl, new AstEq{fl, newAllZerosOrOnes(constp, false), rhsp->user1p()},
+                    fl, new AstEq{fl, newAllZerosOrOnes(constp, true), rhsp->user1p()},
                     // Keep the caseeq if there are X's present
                     new AstEqCase{fl, constp, rhsp}};
                 if (neq) newp = new AstLogNot{fl, newp};
