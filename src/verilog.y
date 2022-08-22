@@ -5531,6 +5531,7 @@ pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps j
         //UNSUP remove below
                 expr yP_ORMINUSGT pexpr                 { $$ = new AstLogOr($2, new AstLogNot($2, $1), $3); }
         |       expr yP_OREQGT pexpr                    { $$ = new AstImplication($2, $1, $3); }
+        |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot($1, $2); }
         |       expr                                    { $$ = $1; }
         //UNSUP remove above, use below:
         //
