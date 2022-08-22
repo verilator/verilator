@@ -376,8 +376,7 @@ private:
         iterateChildren(nodep);
         if (!m_inSampled) return;
         if (!nodep->access().isReadOnly()) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Assignment to variable inside sampled expression");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Write to variable in sampled expression");
         } else {
             VNRelinker relinkHandle;
             nodep->unlinkFrBack(&relinkHandle);
