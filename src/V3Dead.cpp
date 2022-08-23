@@ -197,6 +197,32 @@ private:
         }
         if (nodep->classp()) nodep->classp()->user1Inc();
     }
+    virtual void visit(AstIfaceRefDType* nodep) override {
+        iterateChildren(nodep);
+        checkDType(nodep);
+        checkAll(nodep);
+        if (nodep->cellp()) {
+            if (m_elimCells) {
+                nodep->cellp(nullptr);
+            } else {
+                nodep->cellp()->user1Inc();
+            }
+        }
+        if (nodep->cellp()) nodep->cellp()->user1Inc();
+    }
+    virtual void visit(AstVirtIfaceDType* nodep) override {
+        iterateChildren(nodep);
+        checkDType(nodep);
+        checkAll(nodep);
+        if (nodep->ifacep()) {
+            if (m_elimCells) {
+                nodep->ifacep(nullptr);
+            } else {
+                nodep->ifacep()->user1Inc();
+            }
+        }
+        if (nodep->ifacep()) nodep->ifacep()->user1Inc();
+    }
     virtual void visit(AstNodeDType* nodep) override {
         iterateChildren(nodep);
         checkDType(nodep);
