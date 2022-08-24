@@ -86,6 +86,7 @@
 #include "V3GraphStream.h"
 #include "V3List.h"
 #include "V3OrderGraph.h"
+#include "V3OrderMoveGraph.h"
 #include "V3Partition.h"
 #include "V3PartitionGraph.h"
 #include "V3Sched.h"
@@ -101,21 +102,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-
-//######################################################################
-// Functions for above graph classes
-
-void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
-    if (debug()) cout << "-Info-Loop: " << vertexp << "\n";
-    if (OrderLogicVertex* const vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
-        std::cerr << vvertexp->nodep()->fileline()->warnOther()
-                  << "     Example path: " << vvertexp->nodep()->typeName() << endl;
-    }
-    if (OrderVarVertex* const vvertexp = dynamic_cast<OrderVarVertex*>(vertexp)) {
-        std::cerr << vvertexp->vscp()->fileline()->warnOther()
-                  << "     Example path: " << vvertexp->vscp()->prettyName() << endl;
-    }
-}
 
 //######################################################################
 // Order information stored under each AstNode::user1p()...
@@ -138,7 +124,7 @@ private:
 
 public:
     // METHODS
-    OrderVarVertex* getVarVertex(V3Graph* graphp, AstVarScope* varscp, VarVertexType type) {
+    OrderVarVertex* getVarVertex(OrderGraph* graphp, AstVarScope* varscp, VarVertexType type) {
         const unsigned idx = static_cast<unsigned>(type);
         OrderVarVertex* vertexp = m_vertexps[idx];
         if (!vertexp) {
@@ -312,21 +298,7 @@ class OrderBuildVisitor final : public VNVisitor {
             }
         }
 
-        // Roles of vertices:
-        // VarVertexType::STD:  Data dependencies for combinational logic and delayed
-        //                      assignment updates (AssignPost).
-        // VarVertexType::POST: Ensures all sequential blocks reading a signal do so before
-        //                      any combinational or delayed assignments update that signal.
-        // VarVertexType::PORD: Ensures a _d = _q AssignPre is the first write of a _d,
-        //                      before any sequential blocks write to that _d.
-        // VarVertexType::PRE:  This is an optimization. Try to ensure that a _d = _q
-        //                      AssignPre is the last read of a _q, after all reads of that
-        //                      _q by sequential logic. Note: The model is still correct if we
-        //                      cannot satisfy this due to other constraints. If this ordering
-        //                      is possible, then combined with the PORD constraint we get
-        //                      that all writes to _d are after all reads of a _q, which then
-        //                      allows us to eliminate the _d completely and assign to the _q
-        //                      directly (this is what V3LifePost does).
+        // Note: See V3OrderGraph.h about the roles of the various vertex types
 
         // Variable is produced
         if (gen) {
@@ -338,9 +310,9 @@ class OrderBuildVisitor final : public VNVisitor {
                 OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
                 // Add edge from producing LogicVertex -> produced VarStdVertex
                 if (m_inPost) {
-                    new OrderPostCutEdge(m_graphp, m_logicVxp, varVxp);
+                    m_graphp->addSoftEdge(m_logicVxp, varVxp, WEIGHT_COMBO);
                 } else {
-                    new OrderEdge(m_graphp, m_logicVxp, varVxp, WEIGHT_NORMAL);
+                    m_graphp->addHardEdge(m_logicVxp, varVxp, WEIGHT_NORMAL);
                 }
 
                 // Add edge from produced VarPostVertex -> to producing LogicVertex
@@ -352,22 +324,22 @@ class OrderBuildVisitor final : public VNVisitor {
                 // ALWAYS do it:
                 //    There maybe a wire a=b; between the two blocks
                 OrderVarVertex* const postVxp = getVarVertex(varscp, VarVertexType::POST);
-                new OrderEdge(m_graphp, postVxp, m_logicVxp, WEIGHT_POST);
+                m_graphp->addHardEdge(postVxp, m_logicVxp, WEIGHT_POST);
             } else if (m_inPre) {  // AstAssignPre
                 // Add edge from producing LogicVertex -> produced VarPordVertex
                 OrderVarVertex* const ordVxp = getVarVertex(varscp, VarVertexType::PORD);
-                new OrderEdge(m_graphp, m_logicVxp, ordVxp, WEIGHT_NORMAL);
+                m_graphp->addHardEdge(m_logicVxp, ordVxp, WEIGHT_NORMAL);
                 // Add edge from producing LogicVertex -> produced VarStdVertex
                 OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
-                new OrderEdge(m_graphp, m_logicVxp, varVxp, WEIGHT_NORMAL);
+                m_graphp->addHardEdge(m_logicVxp, varVxp, WEIGHT_NORMAL);
             } else {
                 // Sequential (clocked) logic
                 // Add edge from produced VarPordVertex -> to producing LogicVertex
                 OrderVarVertex* const ordVxp = getVarVertex(varscp, VarVertexType::PORD);
-                new OrderEdge(m_graphp, ordVxp, m_logicVxp, WEIGHT_NORMAL);
+                m_graphp->addHardEdge(ordVxp, m_logicVxp, WEIGHT_NORMAL);
                 // Add edge from producing LogicVertex-> to produced VarStdVertex
                 OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
-                new OrderEdge(m_graphp, m_logicVxp, varVxp, WEIGHT_NORMAL);
+                m_graphp->addHardEdge(m_logicVxp, varVxp, WEIGHT_NORMAL);
             }
         }
 
@@ -382,7 +354,7 @@ class OrderBuildVisitor final : public VNVisitor {
                     // Ignore explicit sensitivities
                     OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
                     // Add edge from consumed VarStdVertex -> to consuming LogicVertex
-                    new OrderEdge(m_graphp, varVxp, m_logicVxp, WEIGHT_MEDIUM);
+                    m_graphp->addHardEdge(varVxp, m_logicVxp, WEIGHT_MEDIUM);
                 }
             } else if (m_inPre) {
                 // AstAssignPre logic
@@ -390,17 +362,17 @@ class OrderBuildVisitor final : public VNVisitor {
                 // This one is cutable (vs the producer) as there's only one such consumer,
                 // but may be many producers
                 OrderVarVertex* const preVxp = getVarVertex(varscp, VarVertexType::PRE);
-                new OrderPreCutEdge(m_graphp, preVxp, m_logicVxp);
+                m_graphp->addSoftEdge(preVxp, m_logicVxp, WEIGHT_PRE);
             } else {
                 // Sequential (clocked) logic
                 // Add edge from consuming LogicVertex -> to consumed VarPreVertex
                 // Generation of 'pre' because we want to indicate it should be before
                 // AstAssignPre
                 OrderVarVertex* const preVxp = getVarVertex(varscp, VarVertexType::PRE);
-                new OrderEdge(m_graphp, m_logicVxp, preVxp, WEIGHT_NORMAL);
+                m_graphp->addHardEdge(m_logicVxp, preVxp, WEIGHT_NORMAL);
                 // Add edge from consuming LogicVertex -> to consumed VarPostVertex
                 OrderVarVertex* const postVxp = getVarVertex(varscp, VarVertexType::POST);
-                new OrderEdge(m_graphp, m_logicVxp, postVxp, WEIGHT_POST);
+                m_graphp->addHardEdge(m_logicVxp, postVxp, WEIGHT_POST);
             }
         }
     }
@@ -742,7 +714,7 @@ private:
                 // Path from vertexp to a logic vertex; new edge.
                 // Note we use the last edge's weight, not some function of
                 // multiple edges
-                new OrderEdge(m_outGraphp, moveVxp, m_logic2move[toLVertexp], weight);
+                new V3GraphEdge(m_outGraphp, moveVxp, m_logic2move[toLVertexp], weight);
                 madeDeps = true;
             } else {
                 // This is an OrderVarVertex.
@@ -767,7 +739,7 @@ private:
 
                 // Create incoming edge, from previous logic that writes
                 // this var, to the Vertex representing the (var,domain)
-                new OrderEdge(m_outGraphp, moveVxp, m_var2move[key], weight);
+                new V3GraphEdge(m_outGraphp, moveVxp, m_var2move[key], weight);
                 madeDeps = true;
             }
         }
