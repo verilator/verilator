@@ -36,14 +36,14 @@
 // Special methods
 
 // We need these here, because the classes they point to aren't defined when we declare the class
-const char* AstIfaceRefDType::broken() const {
+const char* AstNodeIfaceRefDType::broken() const {
     BROKEN_RTN(m_ifacep && !m_ifacep->brokeExists());
     BROKEN_RTN(m_cellp && !m_cellp->brokeExists());
     BROKEN_RTN(m_modportp && !m_modportp->brokeExists());
     return nullptr;
 }
 
-AstIface* AstIfaceRefDType::ifaceViaCellp() const {
+AstIface* AstNodeIfaceRefDType::ifaceViaCellp() const {
     return ((m_cellp && m_cellp->modp()) ? VN_AS(m_cellp->modp(), Iface) : m_ifacep);
 }
 
@@ -82,14 +82,14 @@ string AstNodeVarRef::selfPointerProtect(bool useSelfForThis) const {
 }
 
 const char* AstVirtIfaceDType::broken() const {
-    BROKEN_RTN(m_ifacep && !m_ifacep->brokeExists());
-    BROKEN_RTN(m_modportp && !m_modportp->brokeExists());
+    BROKEN_RTN(ifacep() && !ifacep()->brokeExists());
+    BROKEN_RTN(modportp() && !modportp()->brokeExists());
     return nullptr;
 }
 
 void AstVirtIfaceDType::cloneRelink() {
-    if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
-    if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep();
+    if (ifacep() && ifacep()->clonep()) ifacep(ifacep()->clonep());
+    if (modportp() && modportp()->clonep()) modportp(modportp()->clonep());
 }
 
 void AstAddrOfCFunc::cloneRelink() {
@@ -1398,7 +1398,7 @@ void AstEnumItemRef::dump(std::ostream& str) const {
         str << "UNLINKED";
     }
 }
-void AstIfaceRefDType::dump(std::ostream& str) const {
+void AstNodeIfaceRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     if (cellName() != "") str << " cell=" << cellName();
     if (ifaceName() != "") str << " if=" << ifaceName();
@@ -1413,7 +1413,7 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
         str << " -> UNLINKED";
     }
 }
-void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
+void AstNodeIfaceRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "iface";
 }

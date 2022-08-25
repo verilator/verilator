@@ -197,7 +197,7 @@ private:
         }
         if (nodep->classp()) nodep->classp()->user1Inc();
     }
-    virtual void visit(AstIfaceRefDType* nodep) override {
+    virtual void visit(AstNodeIfaceRefDType* nodep) override {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
@@ -209,12 +209,7 @@ private:
             }
         }
         if (nodep->cellp()) nodep->cellp()->user1Inc();
-    }
-    virtual void visit(AstVirtIfaceDType* nodep) override {
-        iterateChildren(nodep);
-        checkDType(nodep);
-        checkAll(nodep);
-        if (nodep->ifacep()) {
+        else if (nodep->ifacep()) {
             if (m_elimCells) {
                 nodep->ifacep(nullptr);
             } else {

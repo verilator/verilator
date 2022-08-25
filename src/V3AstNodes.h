@@ -1144,76 +1144,25 @@ public:
     virtual bool isCompound() const override { return true; }
 };
 
-class AstIfaceRefDType final : public AstNodeDType {
+class AstIfaceRefDType final : public AstNodeIfaceRefDType {
     // Reference to an interface, either for a port, or inside parent cell
-private:
-    FileLine* m_modportFileline;  // Where modport token was
-    string m_cellName;  // "" = no cell, such as when connects to 'input' iface
-    string m_ifaceName;  // Interface name
-    string m_modportName;  // "" = no modport
-    AstIface* m_ifacep = nullptr;  // Pointer to interface; note cellp() should override
-    AstCell* m_cellp = nullptr;  // When exact parent cell known; not a guess
-    AstModport* m_modportp = nullptr;  // nullptr = unlinked or no modport
 public:
     AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName)
-        : ASTGEN_SUPER_IfaceRefDType(fl)
-        , m_modportFileline{nullptr}
-        , m_cellName{cellName}
-        , m_ifaceName{ifaceName}
-        , m_modportName{""} {}
+        : ASTGEN_SUPER_IfaceRefDType(fl, nullptr, ifaceName, "", cellName) {}
     AstIfaceRefDType(FileLine* fl, FileLine* modportFl, const string& cellName,
                      const string& ifaceName, const string& modport)
-        : ASTGEN_SUPER_IfaceRefDType(fl)
-        , m_modportFileline{modportFl}
-        , m_cellName{cellName}
-        , m_ifaceName{ifaceName}
-        , m_modportName{modport} {}
+        : ASTGEN_SUPER_IfaceRefDType(fl, modportFl, ifaceName, modport, cellName) {}
     ASTNODE_NODE_FUNCS(IfaceRefDType)
-    // METHODS
-    virtual const char* broken() const override;
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual void dumpSmall(std::ostream& str) const override;
-    virtual void cloneRelink() override;
-    virtual AstBasicDType* basicp() const override { return nullptr; }
-    virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
-    virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
-    virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
-    virtual bool similarDType(AstNodeDType* samep) const override { return this == samep; }
-    virtual int widthAlignBytes() const override { return 1; }
-    virtual int widthTotalBytes() const override { return 1; }
-    FileLine* modportFileline() const { return m_modportFileline; }
-    string cellName() const { return m_cellName; }
-    void cellName(const string& name) { m_cellName = name; }
-    string ifaceName() const { return m_ifaceName; }
-    void ifaceName(const string& name) { m_ifaceName = name; }
-    string modportName() const { return m_modportName; }
-    AstIface* ifaceViaCellp() const;  // Use cellp or ifacep
-    AstIface* ifacep() const { return m_ifacep; }
-    void ifacep(AstIface* nodep) { m_ifacep = nodep; }
-    AstCell* cellp() const { return m_cellp; }
-    void cellp(AstCell* nodep) { m_cellp = nodep; }
-    AstModport* modportp() const { return m_modportp; }
-    void modportp(AstModport* modportp) { m_modportp = modportp; }
-    bool isModport() { return !m_modportName.empty(); }
-    virtual bool isCompound() const override { return true; }  // But not relevant
 };
 
-class AstVirtIfaceDType final : public AstNodeDType {
+class AstVirtIfaceDType final : public AstNodeIfaceRefDType {
     // A virtual interface, which can take interface references as values
-private:
-    FileLine* m_modportFileline;  // Where modport token was
-    string m_ifaceName;  // Interface name
-    string m_modportName;  // "" = no modport
-    AstIface* m_ifacep = nullptr;  // Pointer to interface
-    AstModport* m_modportp = nullptr;  // nullptr = unlinked or no modport
 public:
     AstVirtIfaceDType(FileLine* fl, FileLine* modportFl, const string& ifaceName,
                       const string& modport, AstNode* paramsp)
-        : ASTGEN_SUPER_VirtIfaceDType(fl)
-        , m_modportFileline{modportFl}
-        , m_ifaceName{ifaceName}
-        , m_modportName{modport} {
+        : ASTGEN_SUPER_VirtIfaceDType(fl, modportFl, ifaceName, modport, "") {
         addNOp4p(paramsp);
+	;
     }
     ASTNODE_NODE_FUNCS(VirtIfaceDType)
     // METHODS
@@ -1221,23 +1170,6 @@ public:
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual void dumpSmall(std::ostream& str) const override;
     virtual void cloneRelink() override;
-    virtual AstBasicDType* basicp() const override { return nullptr; }
-    virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
-    virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
-    virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
-    virtual bool similarDType(AstNodeDType* samep) const override { return this == samep; }
-    virtual int widthAlignBytes() const override { return 1; }
-    virtual int widthTotalBytes() const override { return 1; }
-    FileLine* modportFileline() const { return m_modportFileline; }
-    string ifaceName() const { return m_ifaceName; }
-    void ifaceName(const string& name) { m_ifaceName = name; }
-    string modportName() const { return m_modportName; }
-    AstIface* ifacep() const { return m_ifacep; }
-    void ifacep(AstIface* nodep) { m_ifacep = nodep; }
-    AstModport* modportp() const { return m_modportp; }
-    void modportp(AstModport* modportp) { m_modportp = modportp; }
-    bool isModport() { return !m_modportName.empty(); }
-    virtual bool isCompound() const override { return true; }  // But not relevant
     AstPin* paramsp() const { return VN_AS(op4p(), Pin); }
 };
 
@@ -2370,7 +2302,7 @@ public:
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
-    bool isIfaceRef() const { return (varType() == VVarType::IFACEREF); }
+    bool isIfaceRef() const { return varType() == VVarType::IFACEREF || (varType() == VVarType::VAR && VN_IS(subDTypep(), VirtIfaceDType)); }
     bool isIfaceParent() const { return m_isIfaceParent; }
     bool isSignal() const { return varType().isSignal(); }
     bool isTemp() const { return varType().isTemp(); }

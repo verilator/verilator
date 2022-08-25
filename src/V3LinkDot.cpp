@@ -428,13 +428,13 @@ public:
         m_ifaceVarSyms.push_back(symp);
     }
     // Iface for a raw or arrayed iface
-    static AstIfaceRefDType* ifaceRefFromArray(AstNodeDType* nodep) {
-        AstIfaceRefDType* ifacerefp = VN_CAST(nodep, IfaceRefDType);
+    static AstNodeIfaceRefDType* ifaceRefFromArray(AstNodeDType* nodep) {
+        AstNodeIfaceRefDType* ifacerefp = VN_CAST(nodep, NodeIfaceRefDType);
         if (!ifacerefp) {
             if (const AstBracketArrayDType* const arrp = VN_CAST(nodep, BracketArrayDType)) {
-                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+                ifacerefp = VN_CAST(arrp->subDTypep(), NodeIfaceRefDType);
             } else if (const AstUnpackArrayDType* const arrp = VN_CAST(nodep, UnpackArrayDType)) {
-                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+                ifacerefp = VN_CAST(arrp->subDTypep(), NodeIfaceRefDType);
             }
         }
         return ifacerefp;
@@ -443,7 +443,7 @@ public:
         for (VSymEnt* varSymp : m_ifaceVarSyms) {
             const AstVar* const varp = varSymp ? VN_AS(varSymp->nodep(), Var) : nullptr;
             UINFO(9, "  insAllIface se" << cvtToHex(varSymp) << " " << varp << endl);
-            AstIfaceRefDType* const ifacerefp = ifaceRefFromArray(varp->subDTypep());
+            AstNodeIfaceRefDType* const ifacerefp = ifaceRefFromArray(varp->subDTypep());
             UASSERT_OBJ(ifacerefp, varp, "Non-ifacerefs on list!");
             if (!ifacerefp->ifaceViaCellp()) {
                 if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if
@@ -931,10 +931,6 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
         }
     }
-    virtual void visit(AstVirtIfaceDType* nodep) override {
-        // Need to iterate the interface
-        if (nodep->ifacep()) iterate(nodep->ifacep());
-    }
     virtual void visit(AstDefParam* nodep) override {
         nodep->user1p(m_curSymp);
         iterateChildren(nodep);
@@ -1166,7 +1162,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                                               nodep, m_classOrPackagep);
                     symp->exported(false);
                 }
-                AstIfaceRefDType* const ifacerefp
+                AstNodeIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(nodep->subDTypep());
                 if (ifacerefp) {
                     // Can't resolve until interfaces and modport names are
@@ -1617,7 +1613,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
             if (nodep->varp()->isIfaceRef() && nodep->varp()->isIfaceParent()) {
                 UINFO(9, "Iface parent ref var " << nodep->varp()->name() << " " << nodep << endl);
                 // Find the interface cell the var references
-                AstIfaceRefDType* const dtypep
+                AstNodeIfaceRefDType* const dtypep
                     = LinkDotState::ifaceRefFromArray(nodep->varp()->dtypep());
                 UASSERT_OBJ(dtypep, nodep, "Non AstIfaceRefDType on isIfaceRef() var");
                 UINFO(9, "Iface parent dtype " << dtypep << endl);
@@ -2315,8 +2311,10 @@ private:
             if (allowScope) {
                 foundp = m_statep->findDotted(nodep->fileline(), m_ds.m_dotSymp, nodep->name(),
                                               baddot, okSymp);  // Maybe nullptr
+                UINFO(9, "     found1" << endl);
             } else {
                 foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
+                UINFO(9, "     found2" << endl);
             }
             if (foundp) {
                 UINFO(9, "     found=se" << cvtToHex(foundp) << "  exp=" << expectWhat
@@ -2361,7 +2359,7 @@ private:
                     }
                 }
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
-                AstIfaceRefDType* const ifacerefp
+                AstNodeIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (ifacerefp) {
                     UASSERT_OBJ(ifacerefp->ifaceViaCellp(), ifacerefp, "Unlinked interface");
@@ -2595,8 +2593,10 @@ private:
             }
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp);  // Maybe nullptr
+            UINFO(8, "         DEBOOOOG0 " << dotSymp << " (" << (dotSymp ? dotSymp->nodep() : nullptr) << ")" << endl);
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* const foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
+                UINFO(8, "         DEBOOOOG1 " << foundp << " (" << (foundp ? foundp->nodep() : nullptr) << ")" << endl);
                 AstVar* const varp
                     = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
                 nodep->varp(varp);
@@ -2612,7 +2612,7 @@ private:
                 // AstVarXRef's even though they are in the same module detect
                 // this and convert to normal VarRefs
                 if (!m_statep->forPrearray() && !m_statep->forScopeCreation()) {
-                    if (VN_IS(nodep->dtypep(), IfaceRefDType)) {
+                    if (VN_IS(nodep->dtypep(), NodeIfaceRefDType)) {
                         AstVarRef* const newrefp
                             = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
                         nodep->replaceWith(newrefp);

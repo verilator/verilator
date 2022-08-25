@@ -3086,6 +3086,54 @@ public:
     ASTNODE_BASE_FUNCS(NodeStream)
 };
 
+class AstNodeIfaceRefDType VL_NOT_FINAL : public AstNodeDType {
+    // Reference to an interface, either for a port, inside parent cell, or virtual interface
+private:
+    FileLine* m_modportFileline;  // Where modport token was
+    string m_cellName;  // "" = no cell, such as when connects to 'input' iface
+    string m_ifaceName;  // Interface name
+    string m_modportName;  // "" = no modport
+    AstIface* m_ifacep = nullptr;  // Pointer to interface; note cellp() should override
+    AstCell* m_cellp = nullptr;  // When exact parent cell known; not a guess
+    AstModport* m_modportp = nullptr;  // nullptr = unlinked or no modport
+public:
+    AstNodeIfaceRefDType(VNType t, FileLine* fl, FileLine* modportFl, const string& ifaceName,
+                         const string& modport, const string& cellName)
+        : AstNodeDType{t, fl}
+        , m_modportFileline{modportFl}
+        , m_cellName{cellName}
+        , m_ifaceName{ifaceName}
+        , m_modportName{modport} {}
+    ASTNODE_BASE_FUNCS(NodeIfaceRefDType)
+    // METHODS
+    virtual const char* broken() const override;
+    virtual void dump(std::ostream& str = std::cout) const override;
+    virtual void dumpSmall(std::ostream& str) const override;
+    virtual void cloneRelink() override;
+    virtual AstBasicDType* basicp() const override { return nullptr; }
+    virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    virtual bool similarDType(AstNodeDType* samep) const override { return this == samep; }
+    virtual int widthAlignBytes() const override { return 1; }
+    virtual int widthTotalBytes() const override { return 1; }
+    FileLine* modportFileline() const { return m_modportFileline; }
+    string cellName() const { return m_cellName; }
+    void cellName(const string& name) { m_cellName = name; }
+    string ifaceName() const { return m_ifaceName; }
+    void ifaceName(const string& name) { m_ifaceName = name; }
+    string modportName() const { return m_modportName; }
+    AstIface* ifaceViaCellp() const;  // Use cellp or ifacep
+    AstIface* ifacep() const { return m_ifacep; }
+    void ifacep(AstIface* nodep) { m_ifacep = nodep; }
+    AstCell* cellp() const { return m_cellp; }
+    void cellp(AstCell* nodep) { m_cellp = nodep; }
+    AstModport* modportp() const { return m_modportp; }
+    void modportp(AstModport* modportp) { m_modportp = modportp; }
+    bool isModport() { return !m_modportName.empty(); }
+    virtual bool isCompound() const override { return true; }  // But not relevant
+};
+
 //######################################################################
 // Tasks/functions common handling
 

@@ -78,7 +78,7 @@ inline int AstNodeArrayDType::lo() const { return rangep()->loConst(); }
 inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
 inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right()}; }
 
-inline void AstIfaceRefDType::cloneRelink() {
+inline void AstNodeIfaceRefDType::cloneRelink() {
     if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep();
     if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
     if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep();

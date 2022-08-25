@@ -285,7 +285,7 @@ private:
                                                  nodep->valuep()->unlinkFrBack()));
             }
         }
-        if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+        if (nodep->isIfaceRef() && VN_IS(nodep->subDTypep(), IfaceRefDType) && !nodep->isIfaceParent()) {
             // Only AstIfaceRefDType's at this point correspond to ports;
             // haven't made additional ones for interconnect yet, so assert is simple
             // What breaks later is we don't have a Scope/Cell representing
