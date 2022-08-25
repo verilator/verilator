@@ -208,7 +208,8 @@ private:
                 nodep->cellp()->user1Inc();
             }
         }
-        if (nodep->cellp()) nodep->cellp()->user1Inc();
+        if (nodep->cellp())
+            nodep->cellp()->user1Inc();
         else if (nodep->ifacep()) {
             if (m_elimCells) {
                 nodep->ifacep(nullptr);

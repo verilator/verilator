@@ -1162,7 +1162,7 @@ public:
                       const string& modport, AstNode* paramsp)
         : ASTGEN_SUPER_VirtIfaceDType(fl, modportFl, ifaceName, modport, "") {
         addNOp4p(paramsp);
-	;
+        ;
     }
     ASTNODE_NODE_FUNCS(VirtIfaceDType)
     // METHODS
@@ -2302,7 +2302,10 @@ public:
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
-    bool isIfaceRef() const { return varType() == VVarType::IFACEREF || (varType() == VVarType::VAR && VN_IS(subDTypep(), VirtIfaceDType)); }
+    bool isIfaceRef() const {
+        return varType() == VVarType::IFACEREF
+               || (varType() == VVarType::VAR && VN_IS(subDTypep(), VirtIfaceDType));
+    }
     bool isIfaceParent() const { return m_isIfaceParent; }
     bool isSignal() const { return varType().isSignal(); }
     bool isTemp() const { return varType().isTemp(); }

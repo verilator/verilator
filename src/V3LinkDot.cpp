@@ -2593,10 +2593,14 @@ private:
             }
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp);  // Maybe nullptr
-            UINFO(8, "         DEBOOOOG0 " << dotSymp << " (" << (dotSymp ? dotSymp->nodep() : nullptr) << ")" << endl);
+            UINFO(8, "         DEBOOOOG0 " << dotSymp << " ("
+                                           << (dotSymp ? dotSymp->nodep() : nullptr) << ")"
+                                           << endl);
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* const foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
-                UINFO(8, "         DEBOOOOG1 " << foundp << " (" << (foundp ? foundp->nodep() : nullptr) << ")" << endl);
+                UINFO(8, "         DEBOOOOG1 " << foundp << " ("
+                                               << (foundp ? foundp->nodep() : nullptr) << ")"
+                                               << endl);
                 AstVar* const varp
                     = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
                 nodep->varp(varp);
