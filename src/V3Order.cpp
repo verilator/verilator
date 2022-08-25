@@ -542,10 +542,9 @@ inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs)
 
 template <class T_MoveVertex>
 class ProcessMoveBuildGraph final {
-    // ProcessMoveBuildGraph takes as input the fine-grained graph of
-    // OrderLogicVertex, OrderVarVertex, etc; this is 'm_graph' in
-    // OrderVisitor. It produces a slightly coarsened graph to drive the
-    // code scheduling.
+    // ProcessMoveBuildGraph takes as input the fine-grained bipartite OrderGraph of
+    // OrderLogicVertex and OrderVarVertex vertices. It produces a slightly coarsened graph to
+    // drive the code scheduling.
     //
     // * For the serial code scheduler, the new graph contains
     //   nodes of type OrderMoveVertex.
@@ -561,8 +560,7 @@ class ProcessMoveBuildGraph final {
     // AstSenTree::user1p()     -> AstSenTree:  Original AstSenTree for trigger
 
     // TYPES
-    using VxDomPair = std::pair<const V3GraphVertex*, const AstSenTree*>;
-    using Logic2Move = std::unordered_map<const OrderLogicVertex*, T_MoveVertex*>;
+    using DomainMap = std::map<const AstSenTree*, T_MoveVertex*>;
 
 public:
     class MoveVertexMaker VL_NOT_FINAL {
@@ -574,31 +572,28 @@ public:
                                           const OrderEitherVertex* varVertexp,
                                           const AstSenTree* domainp)
             = 0;
-        virtual void freeVertexp(T_MoveVertex* freeMep) = 0;
     };
 
 private:
     // MEMBERS
-    const V3Graph* m_graphp;  // Input graph of OrderLogicVertex's etc
+    const OrderGraph* const m_graphp;  // Input OrderGraph
+    V3Graph* const m_outGraphp;  // Output graph of T_MoveVertex vertices
     // Map from Trigger reference AstSenItem to the original AstSenTree
     const std::unordered_map<const AstSenItem*, const AstSenTree*>& m_trigToSen;
-    V3Graph* m_outGraphp;  // Output graph of T_MoveVertex's
     MoveVertexMaker* const m_vxMakerp;  // Factory class for T_MoveVertex's
-    Logic2Move m_logic2move;  // Map Logic to Vertex
-    // Maps an (original graph vertex, domain) pair to a T_MoveVertex
-    // Not std::unordered_map, because std::pair doesn't provide std::hash
-    std::map<VxDomPair, T_MoveVertex*> m_var2move;
+    // Storage for domain -> T_MoveVertex, maps held in OrderVarVertex::userp()
+    std::deque<DomainMap> m_domainMaps;
 
 public:
     // CONSTRUCTORS
     ProcessMoveBuildGraph(
-        const V3Graph* logicGraphp,  // Input graph of OrderLogicVertex etc.
-        const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
+        const OrderGraph* logicGraphp,  // Input graph of OrderLogicVertex etc.
         V3Graph* outGraphp,  // Output graph of T_MoveVertex's
+        const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
         MoveVertexMaker* vxMakerp)
         : m_graphp{logicGraphp}
-        , m_trigToSen{trigToSen}
         , m_outGraphp{outGraphp}
+        , m_trigToSen{trigToSen}
         , m_vxMakerp{vxMakerp} {}
     virtual ~ProcessMoveBuildGraph() = default;
 
@@ -616,22 +611,20 @@ public:
         //      already created that pair, in which case, we've already
         //      done the forward search, so stop.
 
-        // For each logic node, make a T_MoveVertex
+        // For each logic vertex, make a T_MoveVertex, for each variable vertex, allocate storage
         for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (OrderLogicVertex* const lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
-                T_MoveVertex* const moveVxp
-                    = m_vxMakerp->makeVertexp(lvertexp, nullptr, lvertexp->domainp());
-                if (moveVxp) {
-                    // Cross link so we can find it later
-                    m_logic2move[lvertexp] = moveVxp;
-                }
+            if (OrderLogicVertex* const lvtxp = dynamic_cast<OrderLogicVertex*>(itp)) {
+                lvtxp->userp(m_vxMakerp->makeVertexp(lvtxp, nullptr, lvtxp->domainp()));
+            } else {
+                // This is an OrderVarVertex
+                m_domainMaps.emplace_back();
+                itp->userp(&m_domainMaps.back());
             }
         }
         // Build edges between logic vertices
         for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (OrderLogicVertex* const lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
-                T_MoveVertex* const moveVxp = m_logic2move[lvertexp];
-                if (moveVxp) iterate(moveVxp, lvertexp, lvertexp->domainp());
+            if (OrderLogicVertex* const lvtxp = dynamic_cast<OrderLogicVertex*>(itp)) {
+                iterateLogicVertex(lvtxp);
             }
         }
     }
@@ -695,61 +688,62 @@ private:
         return fromSenItemp->edgeType().exclusiveEdge(toSenItemp->edgeType());
     }
 
-    // Return true if moveVxp has downstream dependencies
-    bool iterate(T_MoveVertex* moveVxp, const V3GraphVertex* origVxp, AstSenTree* domainp) {
-        bool madeDeps = false;
-        // Search forward from given original vertex, making new edges from
-        // moveVxp forward
-        for (V3GraphEdge* edgep = origVxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            if (edgep->weight() == 0) {  // Was cut
-                continue;
-            }
-            const int weight = edgep->weight();
-            if (const OrderLogicVertex* const toLVertexp
-                = dynamic_cast<const OrderLogicVertex*>(edgep->top())) {
+    void iterateLogicVertex(const OrderLogicVertex* lvtxp) {
+        AstSenTree* const domainp = lvtxp->domainp();
+        T_MoveVertex* const lMoveVtxp = static_cast<T_MoveVertex*>(lvtxp->userp());
+        // Search forward from lvtxp, making new edges from lMoveVtxp forward
+        for (V3GraphEdge* edgep = lvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            if (edgep->weight() == 0) continue;  // Was cut
 
-                // Do not construct dependencies across exclusive domains.
-                if (domainsExclusive(domainp, toLVertexp->domainp())) continue;
+            // OrderGraph is a bipartite graph, so we know it's an OrderVarVertex
+            const OrderVarVertex* const vvtxp = static_cast<const OrderVarVertex*>(edgep->top());
 
-                // Path from vertexp to a logic vertex; new edge.
-                // Note we use the last edge's weight, not some function of
-                // multiple edges
-                new V3GraphEdge(m_outGraphp, moveVxp, m_logic2move[toLVertexp], weight);
-                madeDeps = true;
-            } else {
-                // This is an OrderVarVertex.
-                const V3GraphVertex* nonLogicVxp = edgep->top();
-                const VxDomPair key(nonLogicVxp, domainp);
-                if (!m_var2move[key]) {
-                    const OrderVarVertex* const eithp
-                        = static_cast<const OrderVarVertex*>(nonLogicVxp);
-                    T_MoveVertex* const newMoveVxp
-                        = m_vxMakerp->makeVertexp(nullptr, eithp, domainp);
-                    m_var2move[key] = newMoveVxp;
+            // Look up T_MoveVertex for this domain on this variable
+            DomainMap& mapp = *static_cast<DomainMap*>(vvtxp->userp());
+            const auto pair = mapp.emplace(domainp, nullptr);
+            // Reference to the mapped T_MoveVertex
+            T_MoveVertex*& vMoveVtxp = pair.first->second;
 
-                    // Find downstream logics that depend on (var, domain)
-                    if (!iterate(newMoveVxp, edgep->top(), domainp)) {
-                        // No downstream dependencies, so remove this
-                        // intermediate vertex.
-                        m_var2move[key] = nullptr;
-                        m_vxMakerp->freeVertexp(newMoveVxp);
-                        continue;
-                    }
-                }
+            // On first encounter, visit downstream logic dependent on this (var, domain)
+            if (pair.second) vMoveVtxp = iterateVarVertex(vvtxp, domainp);
 
-                // Create incoming edge, from previous logic that writes
-                // this var, to the Vertex representing the (var,domain)
-                new V3GraphEdge(m_outGraphp, moveVxp, m_var2move[key], weight);
-                madeDeps = true;
-            }
+            // If no downstream dependents from this variable, then there is no need to add this
+            // variable as a dependent.
+            if (!vMoveVtxp) continue;
+
+            // Add this (variable, domain) as dependent of the logic that writes it.
+            new V3GraphEdge{m_outGraphp, lMoveVtxp, vMoveVtxp, 1};
         }
-        return madeDeps;
     }
+
+    // Return the T_MoveVertex for this (var, domain) pair, iff it has downstream dependencies,
+    // otherwise return nullptr.
+    T_MoveVertex* iterateVarVertex(const OrderVarVertex* vvtxp, AstSenTree* domainp) {
+        T_MoveVertex* vMoveVtxp = nullptr;
+        // Search forward from vvtxp, making new edges from vMoveVtxp forward
+        for (V3GraphEdge* edgep = vvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            if (edgep->weight() == 0) continue;  // Was cut
+
+            // OrderGraph is a bipartite graph, so we know it's an OrderLogicVertex
+            const OrderLogicVertex* const lvtxp
+                = static_cast<const OrderLogicVertex*>(edgep->top());
+
+            // Do not construct dependencies across exclusive domains.
+            if (domainsExclusive(domainp, lvtxp->domainp())) continue;
+
+            // there is a path from this vvtx to a logic vertex. Add the new edge.
+            if (!vMoveVtxp) vMoveVtxp = m_vxMakerp->makeVertexp(nullptr, vvtxp, domainp);
+            T_MoveVertex* const lMoveVxp = static_cast<T_MoveVertex*>(lvtxp->userp());
+            new V3GraphEdge{m_outGraphp, vMoveVtxp, lMoveVxp, 1};
+        }
+        return vMoveVtxp;
+    }
+
     VL_UNCOPYABLE(ProcessMoveBuildGraph);
 };
 
-//######################################################################
-// OrderMoveVertexMaker and related
+// ######################################################################
+//  OrderMoveVertexMaker and related
 
 class OrderMoveVertexMaker final : public ProcessMoveBuildGraph<OrderMoveVertex>::MoveVertexMaker {
     // MEMBERS
@@ -770,10 +764,6 @@ public:
         resultp->m_pomWaitingE.pushBack(*m_pomWaitingp, resultp);
         return resultp;
     }
-    virtual void freeVertexp(OrderMoveVertex* freeMep) override {
-        freeMep->m_pomWaitingE.unlink(*m_pomWaitingp, freeMep);
-        freeMep->unlinkDelete(m_pomGraphp);
-    }
 
 private:
     VL_UNCOPYABLE(OrderMoveVertexMaker);
@@ -790,9 +780,6 @@ public:
                                          const OrderEitherVertex* varVertexp,
                                          const AstSenTree* domainp) override {
         return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, domainp);
-    }
-    virtual void freeVertexp(MTaskMoveVertex* freeMep) override {
-        freeMep->unlinkDelete(m_pomGraphp);
     }
 
 private:
@@ -1109,7 +1096,7 @@ void OrderProcess::processMoveBuildGraph() {
     m_pomGraph.userClearVertices();
 
     OrderMoveVertexMaker createOrderMoveVertex(&m_pomGraph, &m_pomWaiting);
-    ProcessMoveBuildGraph<OrderMoveVertex> serialPMBG(&m_graph, m_trigToSen, &m_pomGraph,
+    ProcessMoveBuildGraph<OrderMoveVertex> serialPMBG(&m_graph, &m_pomGraph, m_trigToSen,
                                                       &createOrderMoveVertex);
     serialPMBG.build();
 }
@@ -1326,7 +1313,7 @@ void OrderProcess::processMTasks() {
     // This is quite similar to the 'm_pomGraph' of the serial code gen:
     V3Graph logicGraph;
     OrderMTaskMoveVertexMaker create_mtask_vertex(&logicGraph);
-    ProcessMoveBuildGraph<MTaskMoveVertex> mtask_pmbg(&m_graph, m_trigToSen, &logicGraph,
+    ProcessMoveBuildGraph<MTaskMoveVertex> mtask_pmbg(&m_graph, &logicGraph, m_trigToSen,
                                                       &create_mtask_vertex);
     mtask_pmbg.build();
 
