@@ -790,7 +790,7 @@ class OrderVerticesByDomainThenScope final {
     PartPtrIdMap m_ids;
 
 public:
-    virtual bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
+    bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
         const MTaskMoveVertex* const l_vxp = dynamic_cast<const MTaskMoveVertex*>(lhsp);
         const MTaskMoveVertex* const r_vxp = dynamic_cast<const MTaskMoveVertex*>(rhsp);
         uint64_t l_id = m_ids.findId(l_vxp->domainp());
@@ -803,14 +803,10 @@ public:
     }
 };
 
-class MTaskVxIdLessThan final {
-public:
-    MTaskVxIdLessThan() = default;
-    virtual ~MTaskVxIdLessThan() = default;
-
+struct MTaskVxIdLessThan final {
     // Sort vertex's, which must be AbstractMTask's, into a deterministic
     // order by comparing their serial IDs.
-    virtual bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
+    bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
         const AbstractMTask* const lmtaskp = dynamic_cast<const AbstractLogicMTask*>(lhsp);
         const AbstractMTask* const rmtaskp = dynamic_cast<const AbstractLogicMTask*>(rhsp);
         return lmtaskp->id() < rmtaskp->id();

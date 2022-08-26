@@ -394,11 +394,8 @@ private:
 
 // Sort AbstractMTask objects into deterministic order by calling id()
 // which is a unique and stable serial number.
-class MTaskIdLessThan final {
-public:
-    MTaskIdLessThan() = default;
-    virtual ~MTaskIdLessThan() = default;
-    virtual bool operator()(const AbstractMTask* lhsp, const AbstractMTask* rhsp) const {
+struct MTaskIdLessThan final {
+    bool operator()(const AbstractMTask* lhsp, const AbstractMTask* rhsp) const {
         return lhsp->id() < rhsp->id();
     }
 };
@@ -727,7 +724,7 @@ class OrderByPtrId final {
     PartPtrIdMap m_ids;
 
 public:
-    virtual bool operator()(const OrderVarStdVertex* lhsp, const OrderVarStdVertex* rhsp) const {
+    bool operator()(const OrderVarStdVertex* lhsp, const OrderVarStdVertex* rhsp) const {
         const uint64_t l_id = m_ids.findId(lhsp);
         const uint64_t r_id = m_ids.findId(rhsp);
         return l_id < r_id;
