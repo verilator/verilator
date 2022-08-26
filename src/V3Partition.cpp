@@ -1937,101 +1937,77 @@ private:
 class PartFixDataHazards final {
 private:
     // TYPES
-    using LogicMTaskSet = std::set<LogicMTask*, MTaskIdLessThan>;
-    using TasksByRank = std::map<uint32_t /*rank*/, LogicMTaskSet>;
+    using TasksByRank = std::map<uint32_t /*rank*/, std::set<LogicMTask*, MTaskIdLessThan>>;
     using OvvSet = std::set<const OrderVarStdVertex*, OrderByPtrId&>;
-    using Olv2MTaskMap = std::unordered_map<const OrderLogicVertex*, LogicMTask*>;
 
     // MEMBERS
     V3Graph* const m_mtasksp;  // Mtask graph
-    Olv2MTaskMap m_olv2mtask;  // Map OrderLogicVertex to LogicMTask who wraps it
-    unsigned m_mergesDone = 0;  // Number of MTasks merged. For stats only.
 public:
     // CONSTRUCTORs
     explicit PartFixDataHazards(V3Graph* mtasksp)
         : m_mtasksp{mtasksp} {}
     // METHODS
 private:
-    void findAdjacentTasks(OvvSet::iterator ovvIt, TasksByRank* tasksByRankp) {
+    void findAdjacentTasks(const OrderVarStdVertex* varVtxp, TasksByRank& tasksByRank) {
         // Find all writer tasks for this variable, group by rank.
-        for (V3GraphEdge* edgep = (*ovvIt)->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
-            if (!logicp) continue;
-            LogicMTask* const writerMtaskp = m_olv2mtask.at(logicp);
-            (*tasksByRankp)[writerMtaskp->rank()].insert(writerMtaskp);
+        for (V3GraphEdge* edgep = varVtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+            if (const auto* const logicVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp())) {
+                LogicMTask* const writerMtaskp = static_cast<LogicMTask*>(logicVtxp->userp());
+                tasksByRank[writerMtaskp->rank()].insert(writerMtaskp);
+            }
         }
         // Find all reader tasks for this variable, group by rank.
-        for (V3GraphEdge* edgep = (*ovvIt)->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
-            if (!logicp) continue;
-            LogicMTask* const readerMtaskp = m_olv2mtask.at(logicp);
-            (*tasksByRankp)[readerMtaskp->rank()].insert(readerMtaskp);
+        for (V3GraphEdge* edgep = varVtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            if (const auto* const logicVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp())) {
+                LogicMTask* const readerMtaskp = static_cast<LogicMTask*>(logicVtxp->userp());
+                tasksByRank[readerMtaskp->rank()].insert(readerMtaskp);
+            }
         }
     }
-    void mergeSameRankTasks(TasksByRank* tasksByRankp) {
-        LogicMTask* lastMergedp = nullptr;
-        for (TasksByRank::iterator rankIt = tasksByRankp->begin(); rankIt != tasksByRankp->end();
-             ++rankIt) {
+    void mergeSameRankTasks(const TasksByRank& tasksByRank) {
+        LogicMTask* lastRecipientp = nullptr;
+        for (const auto& pair : tasksByRank) {
             // Find the largest node at this rank, merge into it.  (If we
             // happen to find a huge node, this saves time in
             // partRedirectEdgesFrom() versus merging into an arbitrary node.)
-            LogicMTask* mergedp = nullptr;
-            for (LogicMTaskSet::iterator it = rankIt->second.begin(); it != rankIt->second.end();
-                 ++it) {
-                LogicMTask* const mtaskp = *it;
-                if (mergedp) {
-                    if (mergedp->cost() < mtaskp->cost()) mergedp = mtaskp;
-                } else {
-                    mergedp = mtaskp;
-                }
+            LogicMTask* recipientp = nullptr;
+            for (LogicMTask* const mtaskp : pair.second) {
+                if (!recipientp || (recipientp->cost() < mtaskp->cost())) recipientp = mtaskp;
             }
-            rankIt->second.erase(mergedp);
+            UASSERT_OBJ(!lastRecipientp || (lastRecipientp->rank() < recipientp->rank()),
+                        recipientp, "Merging must be on lower rank");
 
-            while (!rankIt->second.empty()) {
-                const auto begin = rankIt->second.cbegin();
-                LogicMTask* const donorp = *begin;
-                UASSERT_OBJ(donorp != mergedp, donorp, "Donor can't be merged edge");
-                rankIt->second.erase(begin);
-                // Merge donorp into mergedp.
-                // Fix up the map, so donor's OLVs map to mergedp
-                for (LogicMTask::VxList::const_iterator tmvit = donorp->vertexListp()->begin();
-                     tmvit != donorp->vertexListp()->end(); ++tmvit) {
-                    const MTaskMoveVertex* const tmvp = *tmvit;
-                    const OrderLogicVertex* const logicp = tmvp->logicp();
-                    if (logicp) m_olv2mtask[logicp] = mergedp;
+            for (LogicMTask* const donorp : pair.second) {
+                // Merge donor into recipient.
+                if (donorp == recipientp) continue;
+                // Fix up the map, so donor's OLVs map to recipientp
+                for (const MTaskMoveVertex* const tmvp : *(donorp->vertexListp())) {
+                    tmvp->logicp()->userp(recipientp);
                 }
-                // Move all vertices from donorp to mergedp
-                mergedp->moveAllVerticesFrom(donorp);
+                // Move all vertices from donorp to recipientp
+                recipientp->moveAllVerticesFrom(donorp);
                 // Redirect edges from donorp to recipientp, delete donorp
-                partRedirectEdgesFrom(m_mtasksp, mergedp, donorp, nullptr);
-                ++m_mergesDone;
+                partRedirectEdgesFrom(m_mtasksp, recipientp, donorp, nullptr);
             }
 
-            if (lastMergedp) {
-                UASSERT_OBJ(lastMergedp->rank() < mergedp->rank(), mergedp,
-                            "Merging must be on lower rank");
-                if (!lastMergedp->hasRelativeMTask(mergedp)) {
-                    new MTaskEdge(m_mtasksp, lastMergedp, mergedp, 1);
-                }
+            if (lastRecipientp && !lastRecipientp->hasRelativeMTask(recipientp)) {
+                new MTaskEdge{m_mtasksp, lastRecipientp, recipientp, 1};
             }
-            lastMergedp = mergedp;
+            lastRecipientp = recipientp;
         }
     }
     bool hasDpiHazard(LogicMTask* mtaskp) {
-        for (LogicMTask::VxList::const_iterator it = mtaskp->vertexListp()->begin();
-             it != mtaskp->vertexListp()->end(); ++it) {
-            if (!(*it)->logicp()) continue;
-            AstNode* const nodep = (*it)->logicp()->nodep();
-            // NOTE: We don't handle DPI exports. If testbench code calls a
-            // DPI-exported function at any time during eval() we may have
-            // a data hazard. (Likewise in non-threaded mode if an export
-            // messes with an ordered variable we're broken.)
+        for (const MTaskMoveVertex* const moveVtxp : *(mtaskp->vertexListp())) {
+            if (OrderLogicVertex* const lvtxp = moveVtxp->logicp()) {
+                // NOTE: We don't handle DPI exports. If testbench code calls a
+                // DPI-exported function at any time during eval() we may have
+                // a data hazard. (Likewise in non-threaded mode if an export
+                // messes with an ordered variable we're broken.)
 
-            // Find all calls to DPI-imported functions, we can put those
-            // into a serial order at least. That should solve the most
-            // likely DPI-related data hazards.
-            if (DpiImportCallVisitor(nodep).hasDpiHazard()) {  //
-                return true;
+                // Find all calls to DPI-imported functions, we can put those
+                // into a serial order at least. That should solve the most
+                // likely DPI-related data hazards.
+                if (DpiImportCallVisitor{lvtxp->nodep()}.hasDpiHazard()) return true;
             }
         }
         return false;
@@ -2039,36 +2015,40 @@ private:
 
 public:
     void go() {
-        uint64_t startUsecs = 0;
-        if (debug() >= 3) startUsecs = V3Os::timeUsecs();
-
         // Build an OLV->mtask map and a set of OVVs
         OrderByPtrId ovvOrder;
         OvvSet ovvSet(ovvOrder);
         // OVV's which wrap systemC vars will be handled slightly specially
         OvvSet ovvSetSystemC(ovvOrder);
 
+        // TODO: This loop is entirely redundant as we iterate every vertex of the graph
+        //       during ranking below anyway, so we could do all this work in the body of that
+        //       loop. However... the order in which OrderVarStdVertex are added to ovvSet can
+        //       have a significant impact on model performance (+/-15% was observed), and doing
+        //       it this way happens to be best on some benchmarks. Need to investigate and find
+        //       a better way that yields consistent performance.
         for (V3GraphVertex* vxp = m_mtasksp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
-            // Should be only one MTaskMoveVertex in each mtask at this
-            // stage, but whatever, write it as a loop:
-            for (LogicMTask::VxList::const_iterator it = mtaskp->vertexListp()->begin();
-                 it != mtaskp->vertexListp()->end(); ++it) {
-                const MTaskMoveVertex* const tmvp = *it;
-                if (const OrderLogicVertex* const logicp = tmvp->logicp()) {
-                    m_olv2mtask[logicp] = mtaskp;
-                    // Look at downstream vars.
-                    for (V3GraphEdge* edgep = logicp->outBeginp(); edgep;
-                         edgep = edgep->outNextp()) {
-                        // Only consider OrderVarStdVertex which reflects
-                        // an actual lvalue assignment; the others do not.
-                        const OrderVarStdVertex* const ovvp
-                            = dynamic_cast<OrderVarStdVertex*>(edgep->top());
-                        if (!ovvp) continue;
-                        if (ovvp->vscp()->varp()->isSc()) {
-                            ovvSetSystemC.insert(ovvp);
+
+            // Set up the OrderLogicVertex -> LogicMTask map
+            // Entry and exit MTasks have no MTaskMoveVertices under them, so move on
+            if (mtaskp->vertexListp()->empty()) continue;
+            // Otherwise there should be only one MTaskMoveVertex in each MTask at this stage
+            UASSERT_OBJ(mtaskp->vertexListp()->size() == 1, mtaskp, "Multiple MTaskMoveVertex");
+            const MTaskMoveVertex* const moveVtxp = mtaskp->vertexListp()->front();
+            if (OrderLogicVertex* const lvtxp = moveVtxp->logicp()) {
+                // Set up mapping back to the MTask from the OrderLogicVertex
+                lvtxp->userp(mtaskp);
+                // Look at downstream variables
+                for (V3GraphEdge *edgep = lvtxp->outBeginp(), *nextp; edgep; edgep = nextp) {
+                    nextp = edgep->outNextp();
+                    // Only consider OrderVarStdVertex which reflects
+                    // an actual lvalue assignment; the others do not.
+                    if (const auto* const vvtxp = dynamic_cast<OrderVarStdVertex*>(edgep->top())) {
+                        if (vvtxp->vscp()->varp()->isSc()) {
+                            ovvSetSystemC.insert(vvtxp);
                         } else {
-                            ovvSet.insert(ovvp);
+                            ovvSet.insert(vvtxp);
                         }
                     }
                 }
@@ -2082,13 +2062,14 @@ public:
         // one large design.)
         {
             GraphStreamUnordered serialize(m_mtasksp);
-            const V3GraphVertex* vertexp;
-            while ((vertexp = serialize.nextp())) {
+            while (LogicMTask* const mtaskp
+                   = const_cast<LogicMTask*>(static_cast<const LogicMTask*>(serialize.nextp()))) {
+                // Compute and assign rank
                 uint32_t rank = 0;
-                for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+                for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                     rank = std::max(edgep->fromp()->rank() + 1, rank);
                 }
-                const_cast<V3GraphVertex*>(vertexp)->rank(rank);
+                mtaskp->rank(rank);
             }
         }
 
@@ -2105,14 +2086,14 @@ public:
         // NOTE: we don't update the CP's stored in the LogicMTasks to
         // reflect the changes we make to the graph. That's OK, as we
         // haven't yet initialized CPs when we call this routine.
-        for (OvvSet::iterator ovvit = ovvSet.begin(); ovvit != ovvSet.end(); ++ovvit) {
+        for (const OrderVarStdVertex* const varVtxp : ovvSet) {
             // Build a set of mtasks, per rank, which access this var.
             // Within a rank, sort by MTaskID to avoid nondeterminism.
             TasksByRank tasksByRank;
 
             // Find all reader and writer tasks for this variable, add to
             // tasksByRank.
-            findAdjacentTasks(ovvit, &tasksByRank);
+            findAdjacentTasks(varVtxp, tasksByRank);
 
             // Merge all writer and reader tasks from same rank together.
             //
@@ -2129,7 +2110,7 @@ public:
             // and it seems to.  It also creates fairly few edges. We don't
             // want to create tons of edges here, doing so is not nice to
             // the main edge contraction pass.
-            mergeSameRankTasks(&tasksByRank);
+            mergeSameRankTasks(tasksByRank);
         }
 
         // Handle SystemC vars just a little differently. Instead of
@@ -2145,11 +2126,10 @@ public:
         // Hopefully we only have a few SC vars -- top level ports, probably.
         {
             TasksByRank tasksByRank;
-            for (OvvSet::iterator ovvit = ovvSetSystemC.begin(); ovvit != ovvSetSystemC.end();
-                 ++ovvit) {
-                findAdjacentTasks(ovvit, &tasksByRank);
+            for (const OrderVarStdVertex* const varVtxp : ovvSetSystemC) {
+                findAdjacentTasks(varVtxp, tasksByRank);
             }
-            mergeSameRankTasks(&tasksByRank);
+            mergeSameRankTasks(tasksByRank);
         }
 
         // Handle nodes containing DPI calls, we want to serialize those
@@ -2157,17 +2137,13 @@ public:
         // Same basic strategy as above to serialize access to SC vars.
         if (!v3Global.opt.threadsDpiPure() || !v3Global.opt.threadsDpiUnpure()) {
             TasksByRank tasksByRank;
-            for (V3GraphVertex* vxp = m_mtasksp->verticesBeginp(); vxp;
-                 vxp = vxp->verticesNextp()) {
-                LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
-                if (hasDpiHazard(mtaskp)) tasksByRank[vxp->rank()].insert(mtaskp);
+            for (V3GraphVertex *vtxp = m_mtasksp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+                nextp = vtxp->verticesNextp();
+                LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtxp);
+                if (hasDpiHazard(mtaskp)) tasksByRank[mtaskp->rank()].insert(mtaskp);
             }
-            mergeSameRankTasks(&tasksByRank);
+            mergeSameRankTasks(tasksByRank);
         }
-
-        UINFO(4, "PartFixDataHazards() merged " << m_mergesDone << " pairs of nodes in "
-                                                << (V3Os::timeUsecs() - startUsecs)
-                                                << " usecs.\n");
     }
 
 private:
