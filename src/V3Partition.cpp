@@ -1270,6 +1270,18 @@ public:
 
     // METHODS
     void go() {
+        if (m_slowAsserts) {
+            // Check there are no redundant edges
+            for (V3GraphVertex* itp = m_mtasksp->verticesBeginp(); itp;
+                 itp = itp->verticesNextp()) {
+                std::unordered_set<const V3GraphVertex*> neighbors;
+                for (V3GraphEdge* edgep = itp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+                    const bool first = neighbors.insert(edgep->top()).second;
+                    UASSERT_OBJ(first, itp, "Redundant edge found in input to PartContraction()");
+                }
+            }
+        }
+
         unsigned maxMTasks = v3Global.opt.threadsMaxMTasks();
         if (maxMTasks == 0) {  // Unspecified so estimate
             if (v3Global.opt.threads() > 1) {
@@ -1290,15 +1302,9 @@ public:
         //  - Incrementally recompute critical paths near the merged mtask.
 
         for (V3GraphVertex* itp = m_mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            itp->userp(nullptr);  // Reset user value. Used by PartPropagateCp.
-            std::unordered_set<const V3GraphVertex*> neighbors;
+            itp->userp(nullptr);  // Reset user value while we are here. Used by PartPropagateCp.
             for (V3GraphEdge* edgep = itp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 m_sb.add(static_cast<MTaskEdge*>(edgep));
-                if (m_slowAsserts) {
-                    UASSERT_OBJ(neighbors.find(edgep->top()) == neighbors.end(), itp,
-                                "Redundant edge found in input to PartContraction()");
-                }
-                neighbors.insert(edgep->top());
             }
             siblingPairFromRelatives<GraphWay::REVERSE, true>(itp);
             siblingPairFromRelatives<GraphWay::FORWARD, true>(itp);
