@@ -2379,6 +2379,7 @@ private:
             iterateChildren(nodep);
         }
     }
+    virtual void visit(AstClassOrPackageRef* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstPin* nodep) override { iterateChildren(nodep); }
 
     void replaceLogEq(AstLogEq* nodep) {

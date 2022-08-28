@@ -2438,6 +2438,17 @@ private:
         // though causes problems with t_class_forward.v, so for now avoided
         // userIterateChildren(nodep->classp(), nullptr);
     }
+    virtual void visit(AstClassOrPackageRef* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        userIterateChildren(nodep, nullptr);
+    }
+    virtual void visit(AstDot* nodep) override {
+        // We can only reach this from constify called during V3Param (so before linkDotParam)
+        // ... #(Cls#(...)::...) ...
+        //                ^^~~~ this is our DOT
+        nodep->v3warn(E_UNSUPPORTED, "dotted expressions in parameters\n"
+                                         << nodep->warnMore() << "... Suggest use a typedef");
+    }
     virtual void visit(AstClassExtends* nodep) override {
         if (nodep->didWidthAndSet()) return;
         if (VN_IS(nodep->childDTypep(), ClassRefDType)) {

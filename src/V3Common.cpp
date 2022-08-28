@@ -86,7 +86,7 @@ static void makeToStringMiddle(AstClass* nodep) {
             }
         }
     }
-    if (nodep->extendsp() && nodep->extendsp()->classp()->user1()) {
+    if (nodep->extendsp()) {
         string stmt = "out += ";
         if (!comma.empty()) stmt += "\", \"+ ";
         // comma = ", ";  // Nothing further so not needed
