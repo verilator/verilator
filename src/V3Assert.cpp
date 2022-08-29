@@ -130,7 +130,7 @@ private:
     void newPslAssertion(AstNodeCoverOrAssert* nodep, AstNode* failsp) {
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
-        AstNode* propp = nodep->propp()->unlinkFrBackWithNext();
+        AstNode* const propp = nodep->propp()->unlinkFrBackWithNext();
         AstSenTree* const sentreep = nodep->sentreep();
         const string& message = nodep->name();
         AstNode* passsp = nodep->passsp();
