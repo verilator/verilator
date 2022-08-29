@@ -139,12 +139,13 @@ class SliceVisitor final : public VNVisitor {
                 // Left and right could have different msb/lsbs/endianness, but #elements is common
                 // and all variables are realigned to start at zero
                 // Assign of a little endian'ed slice to a big endian one must reverse the elements
-                AstNode* newlistp = nullptr;
+                AstNodeAssign* newlistp = nullptr;
                 const int elements = arrayp->rangep()->elementsConst();
                 for (int offset = 0; offset < elements; ++offset) {
-                    AstNode* const newp = nodep->cloneType  // AstNodeAssign
-                                          (cloneAndSel(nodep->lhsp(), elements, offset),
-                                           cloneAndSel(nodep->rhsp(), elements, offset));
+                    AstNodeAssign* const newp
+                        = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
+                                                 cloneAndSel(nodep->rhsp(), elements, offset)),
+                                NodeAssign);
                     if (debug() >= 9) newp->dumpTree(cout, "-new ");
                     newlistp = AstNode::addNextNull(newlistp, newp);
                 }

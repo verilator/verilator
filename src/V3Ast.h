@@ -1760,8 +1760,26 @@ public:
     // METHODS - Tree modifications
     // Returns nodep, adds newp to end of nodep's list
     static AstNode* addNext(AstNode* nodep, AstNode* newp);
+    template <typename T_NodeResult, typename T_NodeNext>
+    static typename std::enable_if<std::is_base_of<T_NodeResult, T_NodeNext>::value,
+                                   T_NodeResult*>::type
+    addNext(T_NodeResult* nodep, T_NodeNext* newp) {
+        static_assert(std::is_base_of<AstNode, T_NodeResult>::value,
+                      "T_NodeResult must derive from AstNode.");
+        return reinterpret_cast<T_NodeResult*>(
+            addNext(static_cast<AstNode*>(nodep), static_cast<AstNode*>(newp)));
+    }
     // Returns nodep, adds newp (maybe nullptr) to end of nodep's list
     static AstNode* addNextNull(AstNode* nodep, AstNode* newp);
+    template <typename T_NodeResult, typename T_NodeNext>
+    static typename std::enable_if<std::is_base_of<T_NodeResult, T_NodeNext>::value,
+                                   T_NodeResult*>::type
+    addNextNull(T_NodeResult* nodep, T_NodeNext* newp) {
+        static_assert(std::is_base_of<AstNode, T_NodeResult>::value,
+                      "T_NodeResult must derive from AstNode.");
+        return reinterpret_cast<T_NodeResult*>(
+            addNextNull(static_cast<AstNode*>(nodep), static_cast<AstNode*>(newp)));
+    }
     inline AstNode* addNext(AstNode* newp) { return addNext(this, newp); }
     inline AstNode* addNextNull(AstNode* newp) { return addNextNull(this, newp); }
     void addNextHere(AstNode* newp);  // Insert newp at this->nextp

@@ -91,7 +91,7 @@ public:
     }
 
     // METHODS
-    AstNode* argWrapList(AstNode* nodep);
+    AstArg* argWrapList(AstNode* nodep);
     bool allTracingOn(FileLine* fl) {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
