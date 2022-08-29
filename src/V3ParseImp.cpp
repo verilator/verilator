@@ -398,8 +398,7 @@ void V3ParseImp::tokenPipeline() {
         const int nexttok = nexttokp->token;
         yylval = curValue;
         // Now potentially munge the current token
-        if (token == '('
-            && (nexttok == ygenSTRENGTH || nexttok == ySUPPLY0 || nexttok == ySUPPLY1)) {
+        if (token == '(' && isStrengthToken(nexttok)) {
             token = yP_PAR__STRENGTH;
         } else if (token == ':') {
             if (nexttok == yBEGIN) {
@@ -481,6 +480,12 @@ void V3ParseImp::tokenPipeline() {
     }
     yylval.token = token;
     // effectively returns yylval
+}
+
+bool V3ParseImp::isStrengthToken(int tok) {
+    return tok == ygenSTRENGTH || tok == ySUPPLY0 || tok == ySUPPLY1 || tok == ySTRONG0
+           || tok == ySTRONG1 || tok == yPULL0 || tok == yPULL1 || tok == yWEAK0 || tok == yWEAK1
+           || tok == yHIGHZ0 || tok == yHIGHZ1;
 }
 
 void V3ParseImp::tokenPipelineSym() {

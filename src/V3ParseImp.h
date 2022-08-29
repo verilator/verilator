@@ -121,6 +121,7 @@ struct V3ParseBisonYYSType {
         V3ErrorCode::en errcodeen;
         VAttrType::en attrtypeen;
         VLifetime::en lifetime;
+        VStrength::en strength;
 
 #include "V3Ast__gen_yystype.h"
     };
@@ -216,6 +217,7 @@ public:
     }
     int lexKwdLastState() const { return m_lexKwdLast; }
     static const char* tokenName(int tok);
+    static bool isStrengthToken(int tok);
 
     void ppPushText(const string& text) {
         m_ppBuffers.push_back(text);
