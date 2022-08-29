@@ -4754,77 +4754,29 @@ stream_expressionOrDataType<nodep>:     // IEEE: from streaming_concatenation
 
 gateDecl<nodep>:
                 yBUF    driveStrengthE delayE gateBufList ';'
-        {
-            $$ = $4;
-            STRENGTHUNSUP($2);
-            PRIMDLYUNSUP($3);
-        }
+                       { $$ = $4; STRENGTHUNSUP($2); PRIMDLYUNSUP($3); }
         |       yBUFIF0 driveStrengthE delayE gateBufif0List ';'
-        {
-            $$ = $4;
-            STRENGTHUNSUP($2);
-            PRIMDLYUNSUP($3);
-        }
+                       { $$ = $4; STRENGTHUNSUP($2); PRIMDLYUNSUP($3); }
         |       yBUFIF1 driveStrengthE delayE gateBufif1List ';'
-        {
-            $$ = $4;
-            STRENGTHUNSUP($2);
-            PRIMDLYUNSUP($3);
-        }
+                       { $$ = $4; STRENGTHUNSUP($2); PRIMDLYUNSUP($3); }
         |       yNOT    driveStrengthE delayE gateNotList ';'
-        {
-            $$ = $4;
-            PRIMDLYUNSUP($3);
-            APPLY_STRENGTH_TO_LIST($$, $2, AssignW);
-        }
+                       { $$ = $4; APPLY_STRENGTH_TO_LIST($$, $2, AssignW); PRIMDLYUNSUP($3); }
         |       yNOTIF0 driveStrengthE delayE gateNotif0List ';'
-        {
-            $$ = $4;
-            STRENGTHUNSUP($2);
-            PRIMDLYUNSUP($3);
-        }
+                       { $$ = $4; STRENGTHUNSUP($2); PRIMDLYUNSUP($3); }
         |       yNOTIF1 driveStrengthE delayE gateNotif1List ';'
-        {
-            $$ = $4;
-            STRENGTHUNSUP($2);
-            PRIMDLYUNSUP($3);
-        }
+                       { $$ = $4; STRENGTHUNSUP($2); PRIMDLYUNSUP($3); }
         |       yAND  driveStrengthE delayE gateAndList ';'
-        {
-            $$ = $4;
-            PRIMDLYUNSUP($3);
-            APPLY_STRENGTH_TO_LIST($$, $2, AssignW);
-        }
+                       { $$ = $4; APPLY_STRENGTH_TO_LIST($$, $2, AssignW); PRIMDLYUNSUP($3); }
         |       yNAND driveStrengthE delayE gateNandList ';'
-        {
-            $$ = $4;
-            PRIMDLYUNSUP($3);
-            APPLY_STRENGTH_TO_LIST($$, $2, AssignW);
-        }
+                       { $$ = $4; APPLY_STRENGTH_TO_LIST($$, $2, AssignW); PRIMDLYUNSUP($3); }
         |       yOR   driveStrengthE delayE gateOrList ';'
-        {
-            $$ = $4;
-            PRIMDLYUNSUP($3);
-            APPLY_STRENGTH_TO_LIST($$, $2, AssignW);
-        }
+                       { $$ = $4; APPLY_STRENGTH_TO_LIST($$, $2, AssignW); PRIMDLYUNSUP($3); }
         |       yNOR  driveStrengthE delayE gateNorList ';'
-        {
-            $$ = $4;
-            PRIMDLYUNSUP($3);
-            APPLY_STRENGTH_TO_LIST($$, $2, AssignW);
-        }
+                       { $$ = $4; APPLY_STRENGTH_TO_LIST($$, $2, AssignW); PRIMDLYUNSUP($3); }
         |       yXOR  driveStrengthE delayE gateXorList ';'
-        {
-            $$ = $4;
-            PRIMDLYUNSUP($3);
-            APPLY_STRENGTH_TO_LIST($$, $2, AssignW);
-        }
+                       { $$ = $4; APPLY_STRENGTH_TO_LIST($$, $2, AssignW); PRIMDLYUNSUP($3); }
         |       yXNOR driveStrengthE delayE gateXnorList ';'
-        {
-            $$ = $4;
-            PRIMDLYUNSUP($3);
-            APPLY_STRENGTH_TO_LIST($$, $2, AssignW);
-        }
+                       { $$ = $4; APPLY_STRENGTH_TO_LIST($$, $2, AssignW); PRIMDLYUNSUP($3); }
         |       yPULLUP delayE gatePullupList ';'       { $$ = $3; PRIMDLYUNSUP($2); }
         |       yPULLDOWN delayE gatePulldownList ';'   { $$ = $3; PRIMDLYUNSUP($2); }
         |       yNMOS delayE gateBufif1List ';'         { $$ = $3; PRIMDLYUNSUP($2); }  // ~=bufif1, as don't have strengths yet
@@ -4997,33 +4949,33 @@ gatePinExpr<nodep>:
         ;
 
 strength0<strength>:
-ySUPPLY0                                { $$ = VStrength::SUPPLY; }
-| ySTRONG0                                { $$ = VStrength::STRONG; }
-| yPULL0                                { $$ = VStrength::PULL; }
-| yWEAK0                                { $$ = VStrength::WEAK; }
-;
+                ySUPPLY0                                { $$ = VStrength::SUPPLY; }
+        |       ySTRONG0                                { $$ = VStrength::STRONG; }
+        |       yPULL0                                  { $$ = VStrength::PULL; }
+        |       yWEAK0                                  { $$ = VStrength::WEAK; }
+        ;
 
 strength1<strength>:
-ySUPPLY1                                { $$ = VStrength::SUPPLY; }
-| ySTRONG1                                { $$ = VStrength::STRONG; }
-| yPULL1                                { $$ = VStrength::PULL; }
-| yWEAK1                                { $$ = VStrength::WEAK; }
-;
+                ySUPPLY1                                { $$ = VStrength::SUPPLY; }
+        |       ySTRONG1                                { $$ = VStrength::STRONG; }
+        |       yPULL1                                  { $$ = VStrength::PULL; }
+        |       yWEAK1                                  { $$ = VStrength::WEAK; }
+        ;
 
 driveStrengthE<nodep>:
-/* empty */                             { $$ = nullptr; }
-|       driveStrength                            { $$ = $1; }
+/* empty */                                             { $$ = nullptr; }
+        |       driveStrength                           { $$ = $1; }
         ;
 
 
 driveStrength<nodep>:
-yP_PAR__STRENGTH strength0 ',' strength1 ')' { $$ = new AstStrengthSpec{$1, $2, $4}; }
-| yP_PAR__STRENGTH strength1 ',' strength0 ')' { $$ = new AstStrengthSpec{$1, $4, $2}; }
-| yP_PAR__STRENGTH strength0 ',' yHIGHZ1 ')' { $$ = new AstStrengthSpec{$1, $2, VStrength::HIGHZ}; }
-| yP_PAR__STRENGTH strength1 ',' yHIGHZ0 ')' { $$ = new AstStrengthSpec{$1, VStrength::HIGHZ, $2}; }
-| yP_PAR__STRENGTH yHIGHZ0 ',' strength1 ')' { $$ = new AstStrengthSpec{$1, VStrength::HIGHZ, $4}; }
-| yP_PAR__STRENGTH yHIGHZ1 ',' strength0 ')' { $$ = new AstStrengthSpec{$1, $4, VStrength::HIGHZ}; }
-;
+                yP_PAR__STRENGTH strength0 ',' strength1 ')' { $$ = new AstStrengthSpec{$1, $2, $4}; }
+        |       yP_PAR__STRENGTH strength1 ',' strength0 ')' { $$ = new AstStrengthSpec{$1, $4, $2}; }
+        |       yP_PAR__STRENGTH strength0 ',' yHIGHZ1 ')' { $$ = new AstStrengthSpec{$1, $2, VStrength::HIGHZ}; }
+        |       yP_PAR__STRENGTH strength1 ',' yHIGHZ0 ')' { $$ = new AstStrengthSpec{$1, VStrength::HIGHZ, $2}; }
+        |       yP_PAR__STRENGTH yHIGHZ0 ',' strength1 ')' { $$ = new AstStrengthSpec{$1, VStrength::HIGHZ, $4}; }
+        |       yP_PAR__STRENGTH yHIGHZ1 ',' strength0 ')' { $$ = new AstStrengthSpec{$1, $4, VStrength::HIGHZ}; }
+        ;
 
 //************************************************
 // Tables
