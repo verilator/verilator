@@ -374,15 +374,16 @@ private:
     }
     virtual void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
-        if (!m_inSampled) return;
-        if (!nodep->access().isReadOnly()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Write to variable in sampled expression");
-        } else {
-            VNRelinker relinkHandle;
-            nodep->unlinkFrBack(&relinkHandle);
-            AstSampled* const newp = newSampledExpr(nodep);
-            relinkHandle.relink(newp);
-            newp->user1(1);
+        if (m_inSampled) {
+            if (!nodep->access().isReadOnly()) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Write to variable in sampled expression");
+            } else {
+                VNRelinker relinkHandle;
+                nodep->unlinkFrBack(&relinkHandle);
+                AstSampled* const newp = newSampledExpr(nodep);
+                relinkHandle.relink(newp);
+                newp->user1(1);
+            }
         }
     }
     // Don't sample sensitivities
