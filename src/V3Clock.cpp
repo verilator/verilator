@@ -91,7 +91,7 @@ private:
         return senEqnp;
     }
     AstVarScope* createSampledVar(AstVarScope* vscp) {
-        if (vscp->user1p()) return static_cast<AstVarScope*>(vscp->user1p());
+        if (vscp->user1p()) return VN_AS(vscp->user1p(), VarScope);
         const AstVar* const varp = vscp->varp();
         const string newvarname
             = string("__Vsampled__") + vscp->scopep()->nameDotless() + "__" + varp->name();
