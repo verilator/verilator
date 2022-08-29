@@ -1744,14 +1744,18 @@ parameter_port_declarationTypeFrontE: // IEEE: parameter_port_declaration w/o as
         ;
 
 net_declaration<nodep>:         // IEEE: net_declaration - excluding implict
-                net_declarationFront netSigList ';'     { $$ = $2;
-    if (GRAMMARP->m_netStrengthp) delete GRAMMARP->m_netStrengthp; }
+                net_declarationFront netSigList ';'
+                        { $$ = $2;
+                          if (GRAMMARP->m_netStrengthp) {
+                              VL_DO_CLEAR(delete GRAMMARP->m_netStrengthp, GRAMMARP->m_netStrengthp = nullptr);
+                          }}
         ;
 
 net_declarationFront:           // IEEE: beginning of net_declaration
-                net_declRESET net_type driveStrengthE net_scalaredE net_dataTypeE { VARDTYPE_NDECL($5);
-                    GRAMMARP->setNetStrength(VN_CAST($3, StrengthSpec));
-                }
+                net_declRESET net_type driveStrengthE net_scalaredE net_dataTypeE
+                        { VARDTYPE_NDECL($5);
+                          GRAMMARP->setNetStrength(VN_CAST($3, StrengthSpec));
+                        }
         //UNSUP net_declRESET yINTERCONNECT signingE rangeListE { VARNET($2); VARDTYPE(x); }
         ;
 
