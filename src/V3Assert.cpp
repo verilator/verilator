@@ -45,7 +45,7 @@ private:
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
     VDouble0 m_statAsFull;  // Statistic tracking
-    bool m_inSampled = false;
+    bool m_inSampled = false; // True inside a sampled expression
 
     // METHODS
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message) {
