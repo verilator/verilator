@@ -91,7 +91,7 @@ public:
     }
 
     // METHODS
-    AstNode* argWrapList(AstNode* nodep);
+    AstArg* argWrapList(AstNode* nodep);
     bool allTracingOn(FileLine* fl) {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
@@ -5103,7 +5103,7 @@ idArrayedForeach<nodep>:        // IEEE: id + select (under foreach expression)
         |       idArrayed '[' expr ',' loop_variables ']'
                         { $3 = AstNode::addNextNull($3, $5); $$ = new AstSelLoopVars($2, $1, $3); }
         |       idArrayed '[' ',' loop_variables ']'
-                        { $4 = AstNode::addNextNull(new AstEmpty{$3}, $4); $$ = new AstSelLoopVars($2, $1, $4); }
+                        { $4 = AstNode::addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4); $$ = new AstSelLoopVars($2, $1, $4); }
         ;
 
 // VarRef without any dots or vectorizaion

@@ -23,7 +23,14 @@
 #endif
 
 //######################################################################
-// Inline ACCESSORS
+// Inline METHODS
+
+inline AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
+inline AstNode* AstNode::addNextNull(AstNode* newp) { return addNextNull(this, newp); }
+inline void AstNode::addPrev(AstNode* newp) {
+    replaceWith(newp);
+    newp->addNext(this);
+}
 
 inline int AstNode::width() const { return dtypep() ? dtypep()->width() : 0; }
 inline int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }

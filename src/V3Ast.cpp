@@ -213,7 +213,7 @@ string AstNode::prettyTypeName() const {
 // Insertion
 
 inline void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno,
-                                     bool next){
+                                     bool next) {
 #ifdef VL_DEBUG
 // Called on all major tree changers.
 // Only for use for those really nasty bugs relating to internals
@@ -234,7 +234,8 @@ inline void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, i
 #endif
 }
 
-AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
+template <>
+AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
     // Add to m_nextp, returns this
     UDEBUGONLY(UASSERT_OBJ(newp, nodep, "Null item passed to addNext"););
     debugTreeChange(nodep, "-addNextThs: ", __LINE__, false);
@@ -272,7 +273,8 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
     return nodep;
 }
 
-AstNode* AstNode::addNextNull(AstNode* nodep, AstNode* newp) {
+template <>
+AstNode* AstNode::addNextNull<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
     if (!newp) return nodep;
     return addNext(nodep, newp);
 }
