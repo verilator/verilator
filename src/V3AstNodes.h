@@ -292,7 +292,8 @@ public:
 
 class AstStrengthSpec final : public AstNode {
 private:
-    VStrength m_s0, m_s1;
+    VStrength m_s0;  // Drive 0 strength
+    VStrength m_s1;  // Drive 1 strength
 
 public:
     AstStrengthSpec(FileLine* fl, VStrength s0, VStrength s1)
