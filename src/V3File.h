@@ -173,6 +173,7 @@ public:
     // Add escaped characters to strings
     static string quoteNameControls(const string& namein, Language lang = LA_C);
     static bool tokenMatch(const char* cp, const char* cmp);
+    static bool tokenNotStart(const char* cp);  // Import/export meaning no endfunction
     static bool tokenStart(const char* cp);
     static bool tokenEnd(const char* cp);
 

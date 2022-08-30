@@ -654,6 +654,10 @@ bool V3OutFormatter::tokenEnd(const char* cp) {
             || tokenMatch(cp, "endtask"));
 }
 
+bool V3OutFormatter::tokenNotStart(const char* cp) {
+    return (tokenMatch(cp, "export") || tokenMatch(cp, "import"));
+}
+
 int V3OutFormatter::endLevels(const char* strg) {
     int levels = m_indentLevel;
     {
@@ -702,12 +706,14 @@ void V3OutFormatter::puts(const char* strg) {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
     }
+    bool notstart = false;
     bool wordstart = true;
     bool equalsForBracket = false;  // Looking for "= {"
     for (const char* cp = strg; *cp; ++cp) {
         putcNoTracking(*cp);
         if (isalpha(*cp)) {
-            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp)) indentInc();
+            if (wordstart && m_lang == LA_VERILOG && tokenNotStart(cp)) notstart = true;
+            if (wordstart && m_lang == LA_VERILOG && !notstart && tokenStart(cp)) indentInc();
             if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
         }
         switch (*cp) {
