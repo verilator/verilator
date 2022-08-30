@@ -5529,9 +5529,23 @@ property_spec<nodep>:                   // IEEE: property_spec
 pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps just add an "p" to expr.)
         //UNSUP: This rule has been super-specialized to what is supported now
         //UNSUP remove below
+        //
+        // This rule is divided between expr and complex_pexpr to avoid an ambiguity in SystemVerilog grammar.
+        // Both pexpr and expr can consist of parentheses, and so a pexpr "((expr))" can be reduced in two ways:
+        // 1. ((expr)) -> (pexpr) -> pexpr
+        // 2. ((expr)) -> (expr)  -> pexpr
+        // The division below forces YACC to always assume the parentheses reduce to expr, unless they enclose
+        // operators that can only appear in a pexpr.
+        //
+                complex_pexpr                           { $$ = $1; }
+        |       expr                                    { $$ = $1; }
+        ;
+
+complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
                 expr yP_ORMINUSGT pexpr                 { $$ = new AstLogOr($2, new AstLogNot($2, $1), $3); }
         |       expr yP_OREQGT pexpr                    { $$ = new AstImplication($2, $1, $3); }
-        |       expr                                    { $$ = $1; }
+        |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
+        |       '(' complex_pexpr ')'                   { $$ = $2; }
         //UNSUP remove above, use below:
         //
         //                      // IEEE: sequence_expr
