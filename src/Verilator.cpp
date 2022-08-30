@@ -90,6 +90,7 @@
 #include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
+#include "V3ThreadPool.h"
 #include "V3Timing.h"
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
@@ -599,6 +600,9 @@ static void verilate(const string& argString) {
     if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {  // LCOV_EXCL_START
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
     }  // LCOV_EXCL_STOP
+
+    // Adjust thread pool size
+    v3ThreadPool.resize(v3Global.opt.verilateJobs());
 
     // --FRONTEND------------------
 
