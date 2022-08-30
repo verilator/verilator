@@ -5540,10 +5540,11 @@ pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps j
                 complex_pexpr                           { $$ = $1; }
         |       expr                                    { $$ = $1; }
         ;
-complex_pexpr<nodep>:
+
+complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
                 expr yP_ORMINUSGT pexpr                 { $$ = new AstLogOr($2, new AstLogNot($2, $1), $3); }
         |       expr yP_OREQGT pexpr                    { $$ = new AstImplication($2, $1, $3); }
-        |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot($1, $2); }
+        |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
         |       '(' complex_pexpr ')'                   { $$ = $2; }
         //UNSUP remove above, use below:
         //
