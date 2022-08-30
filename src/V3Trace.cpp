@@ -83,7 +83,7 @@ public:
         if (activityAlways()) {
             return "*ALWAYS*";
         } else {
-            return (string(slow() ? "*SLOW* " : "")) + insertp()->name();
+            return std::string{slow() ? "*SLOW* " : ""} + insertp()->name();
         }
     }
     virtual string dotColor() const override { return slow() ? "yellowGreen" : "green"; }
