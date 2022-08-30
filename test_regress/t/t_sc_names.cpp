@@ -9,7 +9,7 @@
 VM_PREFIX* tb = nullptr;
 
 int sc_main(int argc, char* argv[]) {
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
     std::vector<sc_object*> ch = tb->get_child_objects();
     bool found = false;
 

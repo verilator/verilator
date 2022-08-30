@@ -9,7 +9,7 @@ VM_PREFIX* tb = nullptr;
 
 int main() {
     Verilated::debug(0);
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
     VL_PRINTF("*-* All Finished *-*\n");
     tb->final();
@@ -18,7 +18,7 @@ int main() {
 }
 
 int sc_main(int argc, char* argv[]) {
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
     VL_PRINTF("*-* All Finished *-*\n");
     tb->final();

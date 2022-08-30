@@ -1006,7 +1006,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                 m_classOrPackagep = VN_AS(m_curSymp->nodep(), Class);
             }
             // Create symbol table for the task's vars
-            const string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
+            const string name
+                = std::string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
             m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
             m_curSymp->fallbackp(upSymp);
             // Convert the func's range to the output variable
@@ -1988,6 +1989,16 @@ private:
         }
     }
 
+    bool isParamedClassRef(const AstNode* nodep) {
+        if (const auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
+            if (classRefp->paramsp()) return true;
+            const auto* classp = classRefp->classOrPackageNodep();
+            while (const auto* typedefp = VN_CAST(classp, Typedef)) classp = typedefp->subDTypep();
+            return VN_IS(classp, ClassRefDType) && VN_AS(classp, ClassRefDType)->paramsp();
+        }
+        return false;
+    }
+
     // VISITs
     virtual void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
@@ -2172,10 +2183,16 @@ private:
                 // if (!start) { nodep->lhsp()->v3error("Package reference may not be embedded in
                 // dotted reference"); m_ds.m_dotErr=true; }
                 m_ds.m_dotPos = DP_PACKAGE;
+                iterateAndNextNull(nodep->lhsp());
             } else {
                 m_ds.m_dotPos = DP_SCOPE;
                 iterateAndNextNull(nodep->lhsp());
                 // if (debug() >= 9) nodep->dumpTree("-dot-lho: ");
+            }
+            if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
+                // Dots of paramed classes will be linked after deparametrization
+                m_ds.m_dotPos = DP_NONE;
+                return;
             }
             if (m_ds.m_unresolved
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
@@ -2517,13 +2534,24 @@ private:
         if (start) m_ds = lastStates;
     }
     virtual void visit(AstClassOrPackageRef* nodep) override {
-        UINFO(9, "   linkClassOrPackageRef " << m_ds.ascii() << "  n=" << nodep << endl);
-        if (m_ds.m_dotPos == DP_PACKAGE) {
-            // Already under dot, so this is {ClassOrPackage} Dot {ClassOrPackage}
-            // m_ds.m_dotText communicates the cell prefix between stages
-            m_ds.m_dotPos = DP_PACKAGE;
+        // Class: Recurse inside or cleanup not founds
+        // checkNoDot not appropriate, can be under a dot
+        AstNode::user5ClearTree();
+        UASSERT_OBJ(m_statep->forPrimary() || nodep->classOrPackagep(), nodep,
+                    "ClassRef has unlinked class");
+        UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
+                    "class reference parameter not removed by V3Param");
+        VL_RESTORER(m_ds);
+        VL_RESTORER(m_pinSymp);
+        {
+            // ClassRef's have pins, so track
+            if (nodep->classOrPackagep()) {
+                m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
+            }
+            m_ds.init(m_curSymp);
+            UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
+            iterateChildren(nodep);
         }
-        // TODO we don't iterate pins yet, as class parameters are not supported
     }
 
     virtual void visit(AstVarRef* nodep) override {

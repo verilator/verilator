@@ -3244,8 +3244,7 @@ public:
     AstNodeModule* classOrPackagep() const {
         AstNode* foundp = m_classOrPackageNodep;
         while (auto* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
-        while (auto* const anodep = VN_CAST(foundp, ClassRefDType))
-            foundp = anodep->classOrPackagep();
+        if (auto* const anodep = VN_CAST(foundp, ClassRefDType)) foundp = anodep->classp();
         return VN_CAST(foundp, NodeModule);
     }
     AstPackage* packagep() const { return VN_CAST(classOrPackageNodep(), Package); }

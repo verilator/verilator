@@ -50,7 +50,7 @@ private:
     bool m_fileNewed;  // m_filep needs destruction
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
-    uint64_t m_rolloverMB = 0;  // MB of file size to rollover at
+    uint64_t m_rolloverSize = 0;  // File size to rollover at
     int m_modDepth = 0;  // Depth of module hierarchy
 
     char* m_wrBufp;  // Output buffer
@@ -124,8 +124,8 @@ public:
     ~VerilatedVcd();
 
     // ACCESSORS
-    // Set size in megabytes after which new file should be created
-    void rolloverMB(uint64_t rolloverMB) { m_rolloverMB = rolloverMB; }
+    // Set size in bytes after which new file should be created.
+    void rolloverSize(uint64_t size) { m_rolloverSize = size; }
 
     // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
@@ -271,8 +271,12 @@ public:
     /// The header is only in the first file created, this allows
     /// "cat" to be used to combine the header plus any number of data files.
     void openNext(bool incFilename = true) VL_MT_SAFE { m_sptrace.openNext(incFilename); }
-    /// Set size in megabytes after which new file should be created
-    void rolloverMB(size_t rolloverMB) VL_MT_SAFE { m_sptrace.rolloverMB(rolloverMB); }
+    /// Set size in bytes after which new file should be created
+    /// This will create a header file, followed by each separate file
+    /// which might be larger than the given size (due to chunking and
+    /// alignment to a start of a given time's dump).  Any file but the
+    /// first may be removed.  Cat files together to create viewable vcd.
+    void rolloverSize(size_t size) VL_MT_SAFE { m_sptrace.rolloverSize(size); }
     /// Close dump
     void close() VL_MT_SAFE { m_sptrace.close(); }
     /// Flush dump

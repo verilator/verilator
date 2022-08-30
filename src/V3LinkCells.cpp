@@ -471,9 +471,6 @@ private:
         }
     }
 
-    // Accelerate the recursion
-    // Must do statements to support Generates, math though...
-    virtual void visit(AstNodeMath*) override {}
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // METHODS

@@ -67,7 +67,7 @@ public:
 
     VSymEnt* findNewTable(AstNode* nodep) {
         if (!nodep->user4p()) {
-            VSymEnt* const symsp = new VSymEnt(&m_syms, nodep);
+            VSymEnt* const symsp = new VSymEnt{&m_syms, nodep};
             nodep->user4p(symsp);
         }
         return getTable(nodep);
@@ -87,7 +87,7 @@ public:
     void reinsert(AstNode* nodep, VSymEnt* parentp, string name) {
         if (!parentp) parentp = symCurrentp();
         if (name == "") {  // New name with space in name so can't collide with users
-            name = string(" anon") + nodep->type().ascii() + cvtToStr(++s_anonNum);
+            name = std::string{" anon"} + nodep->type().ascii() + cvtToStr(++s_anonNum);
         }
         parentp->reinsert(name, findNewTable(nodep));
     }

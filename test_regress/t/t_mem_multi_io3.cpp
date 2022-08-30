@@ -18,7 +18,7 @@ int main()
 #endif
 {
     Verilated::debug(0);
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
     tb->final();
     VL_DO_DANGLING(delete tb, tb);

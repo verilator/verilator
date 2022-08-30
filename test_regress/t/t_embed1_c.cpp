@@ -56,7 +56,7 @@ Vt_embed1_child* __get_modelp() {
         // Create the model
         const char* scopenamep = svGetNameFromScope(scope);
         if (!scopenamep) vl_fatal(__FILE__, __LINE__, __FILE__, "svGetNameFromScope failed");
-        __modelp = new Vt_embed1_child(scopenamep);
+        __modelp = new Vt_embed1_child{scopenamep};
         if (svPutUserData(scope, &T_Embed_Child_Unique, __modelp)) {
             vl_fatal(__FILE__, __LINE__, __FILE__, "svPutUserData failed");
         }

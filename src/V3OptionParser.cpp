@@ -140,7 +140,7 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
             if (const char* const nop
                 = VString::startsWith(optp, "-no") ? (optp + strlen("-no")) : nullptr) {
-                if (act.first == nop || act.first == (string{"-"} + nop)) {
+                if (act.first == nop || act.first == (std::string{"-"} + nop)) {
                     return act.second.get();
                 }
             }

@@ -690,7 +690,35 @@ void EmitCSyms::emitSymImp() {
         puts("_vm_pgoProfiler.write(\"" + topClassName()
              + "\", _vm_contextp__->profVltFilename());\n");
     }
-    puts("}\n\n");
+    puts("}\n");
+
+    if (v3Global.needTraceDumper()) {
+        if (!optSystemC()) {
+            puts("\nvoid " + symClassName() + "::_traceDump() {\n");
+            // Caller checked for __Vm_dumperp non-nullptr
+            puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+            puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
+            puts("}\n");
+        }
+
+        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
+        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
+        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
+        puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
+        puts("std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
+        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
+        puts("__Vm_dumping = true;\n");
+        puts("}\n");
+        puts("}\n");
+
+        puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
+        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("__Vm_dumping = false;\n");
+        puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
+        puts("}\n");
+    }
+    puts("\n");
 
     // Constructor
     puts(symClassName() + "::" + symClassName()
@@ -939,33 +967,6 @@ void EmitCSyms::emitSymImp() {
     }
 
     m_ofpBase->puts("}\n");
-
-    if (v3Global.needTraceDumper()) {
-        if (!optSystemC()) {
-            puts("\nvoid " + symClassName() + "::_traceDump() {\n");
-            // Caller checked for __Vm_dumperp non-nullptr
-            puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
-            puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
-            puts("}\n");
-        }
-
-        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
-        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
-        puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
-        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
-        puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
-        puts("std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
-        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
-        puts("__Vm_dumping = true;\n");
-        puts("}\n");
-        puts("}\n");
-
-        puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
-        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
-        puts("__Vm_dumping = false;\n");
-        puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
-        puts("}\n");
-    }
 
     closeSplit();
     m_ofp = nullptr;

@@ -120,13 +120,13 @@ void VerilatedVcd::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     // Set member variables
     m_filename = filename;  // "" is ok, as someone may overload open
 
-    openNextImp(m_rolloverMB != 0);
+    openNextImp(m_rolloverSize != 0);
     if (!isOpen()) return;
 
     dumpHeader();
 
     // When using rollover, the first chunk contains the header only.
-    if (m_rolloverMB) openNextImp(true);
+    if (m_rolloverSize) openNextImp(true);
 }
 
 void VerilatedVcd::openNext(bool incFilename) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -180,7 +180,7 @@ void VerilatedVcd::openNextImp(bool incFilename) {
 }
 
 bool VerilatedVcd::preChangeDump() {
-    if (VL_UNLIKELY(m_rolloverMB && m_wroteBytes > m_rolloverMB)) openNextImp(true);
+    if (VL_UNLIKELY(m_rolloverSize && m_wroteBytes > m_rolloverSize)) openNextImp(true);
     return isOpen();
 }
 

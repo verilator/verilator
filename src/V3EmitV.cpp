@@ -208,7 +208,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         putqs(nodep, "end\n");
     }
     virtual void visit(AstComment* nodep) override {
-        puts(string("// ") + nodep->name() + "\n");
+        puts(std::string{"// "} + nodep->name() + "\n");
         iterateChildrenConst(nodep);
     }
     virtual void visit(AstContinue*) override {
@@ -716,7 +716,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     virtual void visit(AstCell*) override {}  // Handled outside the Visit class
     // Default
     virtual void visit(AstNode* nodep) override {
-        puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
+        puts(std::string{"\n???? // "} + nodep->prettyTypeName() + "\n");
         iterateChildrenConst(nodep);
         // Not v3fatalSrc so we keep processing
         if (!m_suppressUnknown) {
@@ -749,8 +749,8 @@ class EmitVFileVisitor final : public EmitVBaseVisitor {
 
 public:
     EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText, bool suppressUnknown)
-        : EmitVBaseVisitor{suppressUnknown, nullptr} {
-        m_ofp = ofp;
+        : EmitVBaseVisitor{suppressUnknown, nullptr}
+        , m_ofp{ofp} {
         m_trackText = trackText;
         iterate(nodep);
     }
@@ -801,7 +801,7 @@ class EmitVPrefixedFormatter final : public V3OutFormatter {
                 m_os << " ";
                 m_os << m_prefix;
             }
-            m_column++;
+            ++m_column;
             m_os << chr;
         }
     }
@@ -887,6 +887,6 @@ void V3EmitV::emitvFiles() {
 
 void V3EmitV::debugEmitV(const string& filename) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    V3OutVFile of(filename);
+    V3OutVFile of{filename};
     { EmitVFileVisitor{v3Global.rootp(), &of, true, true}; }
 }

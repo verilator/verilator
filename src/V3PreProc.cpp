@@ -328,7 +328,7 @@ FileLine* V3PreProcImp::defFileline(const string& name) {
 void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
                           const string& params, bool cmdline) {
     UINFO(4, "DEFINE '" << name << "' as '" << value << "' params '" << params << "'" << endl);
-    if (!V3LanguageWords::isKeyword(string("`") + name).empty()) {
+    if (!V3LanguageWords::isKeyword(std::string{"`"} + name).empty()) {
         fl->v3error("Attempting to define built-in directive: '`" << name
                                                                   << "' (IEEE 1800-2017 22.5.1)");
     } else {
@@ -886,7 +886,7 @@ void V3PreProcImp::dumpDefines(std::ostream& os) {
 
 void V3PreProcImp::candidateDefines(VSpellCheck* spellerp) {
     for (DefinesMap::const_iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
-        spellerp->pushCandidate(string("`") + it->first);
+        spellerp->pushCandidate(std::string{"`"} + it->first);
     }
 }
 
@@ -1106,7 +1106,7 @@ int V3PreProcImp::getStateToken() {
                 // IE, `ifdef `MACRO(x): Substitute and come back here when state pops.
                 break;
             } else {
-                error(string("Expecting define name. Found: ") + tokenName(tok) + "\n");
+                error(std::string{"Expecting define name. Found: "} + tokenName(tok) + "\n");
                 goto next_tok;
             }
         }
@@ -1127,7 +1127,7 @@ int V3PreProcImp::getStateToken() {
                     goto next_tok;
                 }
             } else {
-                error(string("Expecting define formal arguments. Found: ") + tokenName(tok)
+                error(std::string{"Expecting define formal arguments. Found: "} + tokenName(tok)
                       + "\n");
                 goto next_tok;
             }
@@ -1164,7 +1164,8 @@ int V3PreProcImp::getStateToken() {
                     define(fileline(), m_lastSym, value, formals, false);
                 }
             } else {
-                const string msg = string("Bad define text, unexpected ") + tokenName(tok) + "\n";
+                const string msg
+                    = std::string{"Bad define text, unexpected "} + tokenName(tok) + "\n";
                 fatalSrc(msg);
             }
             statePop();
@@ -1182,7 +1183,7 @@ int V3PreProcImp::getStateToken() {
                     fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
                 }
                 const VDefineRef* const refp = &(m_defRefs.top());
-                error(string("Expecting ( to begin argument list for define reference `")
+                error(std::string{"Expecting ( to begin argument list for define reference `"}
                       + refp->name() + "\n");
                 statePop();
                 goto next_tok;
@@ -1259,7 +1260,8 @@ int V3PreProcImp::getStateToken() {
                 statePush(ps_STRIFY);
                 goto next_tok;
             } else {
-                error(string("Expecting ) or , to end argument list for define reference. Found: ")
+                error(std::string{
+                          "Expecting ) or , to end argument list for define reference. Found: "}
                       + tokenName(tok));
                 statePop();
                 goto next_tok;
@@ -1285,7 +1287,7 @@ int V3PreProcImp::getStateToken() {
                 break;
             } else {
                 statePop();
-                error(string("Expecting include filename. Found: ") + tokenName(tok) + "\n");
+                error(std::string{"Expecting include filename. Found: "} + tokenName(tok) + "\n");
                 goto next_tok;
             }
         }
@@ -1298,7 +1300,7 @@ int V3PreProcImp::getStateToken() {
                 statePop();
                 goto next_tok;
             } else {
-                error(string("Expecting `error string. Found: ") + tokenName(tok) + "\n");
+                error(std::string{"Expecting `error string. Found: "} + tokenName(tok) + "\n");
                 statePop();
                 goto next_tok;
             }
@@ -1343,7 +1345,7 @@ int V3PreProcImp::getStateToken() {
                 // multiline "..." without \ escapes.
                 // The spec is silent about this either way; simulators vary
                 std::replace(out.begin(), out.end(), '\n', ' ');
-                unputString(string("\"") + out + "\"");
+                unputString(std::string{"\""} + out + "\"");
                 statePop();
                 goto next_tok;
             } else if (tok == VP_EOF) {
@@ -1427,7 +1429,7 @@ int V3PreProcImp::getStateToken() {
                 } else {
                     // We want final text of `name, but that would cause
                     // recursion, so use a special character to get it through
-                    unputDefrefString(string("`\032") + name);
+                    unputDefrefString(std::string{"`\032"} + name);
                     goto next_tok;
                 }
             } else {
@@ -1517,7 +1519,7 @@ int V3PreProcImp::getStateToken() {
         case VP_DEFFORM:  // Handled by state=ps_DEFFORM;
         case VP_DEFVALUE:  // Handled by state=ps_DEFVALUE;
         default:  // LCOV_EXCL_LINE
-            fatalSrc(string("Internal error: Unexpected token ") + tokenName(tok) + "\n");
+            fatalSrc(std::string{"Internal error: Unexpected token "} + tokenName(tok) + "\n");
             break;  // LCOV_EXCL_LINE
         }
         return tok;

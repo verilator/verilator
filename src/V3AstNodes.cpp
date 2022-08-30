@@ -481,7 +481,7 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
         }
     } else {
         // Newer internal-compatible types
-        arg += dtypep()->cType((named ? name() : string{}), true, isRef);
+        arg += dtypep()->cType((named ? name() : std::string{}), true, isRef);
     }
     return arg;
 }
