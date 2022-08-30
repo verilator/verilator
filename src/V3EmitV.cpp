@@ -739,8 +739,8 @@ class EmitVFileVisitor final : public EmitVBaseVisitor {
 
 public:
     EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText, bool suppressUnknown)
-        : EmitVBaseVisitor{suppressUnknown, nullptr} {
-        m_ofp = ofp;
+        : EmitVBaseVisitor{suppressUnknown, nullptr}
+        , m_ofp{ofp} {
         m_trackText = trackText;
         iterate(nodep);
     }
@@ -791,7 +791,7 @@ class EmitVPrefixedFormatter final : public V3OutFormatter {
                 m_os << " ";
                 m_os << m_prefix;
             }
-            m_column++;
+            ++m_column;
             m_os << chr;
         }
     }
@@ -877,6 +877,6 @@ void V3EmitV::emitvFiles() {
 
 void V3EmitV::debugEmitV(const string& filename) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    V3OutVFile of(filename);
+    V3OutVFile of{filename};
     { EmitVFileVisitor{v3Global.rootp(), &of, true, true}; }
 }

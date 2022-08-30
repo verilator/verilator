@@ -658,7 +658,7 @@ int V3OutFormatter::endLevels(const char* strg) {
     int levels = m_indentLevel;
     {
         const char* cp = strg;
-        while (isspace(*cp)) cp++;
+        while (isspace(*cp)) ++cp;
         switch (*cp) {
         case '\n':  // Newlines.. No need for whitespace before it
             return 0;
@@ -668,12 +668,12 @@ int V3OutFormatter::endLevels(const char* strg) {
         {
             // label/public/private:  Deindent by 2 spaces
             const char* mp = cp;
-            for (; isalnum(*mp); mp++) {}
+            for (; isalnum(*mp); ++mp) {}
             if (mp[0] == ':' && mp[1] != ':') return (levels - m_blockIndent / 2);
         }
     }
     // We want "} else {" to be one level to the left of normal
-    for (const char* cp = strg; *cp; cp++) {
+    for (const char* cp = strg; *cp; ++cp) {
         switch (*cp) {
         case '}':
         case ')': levels -= m_blockIndent; break;
@@ -704,7 +704,7 @@ void V3OutFormatter::puts(const char* strg) {
     }
     bool wordstart = true;
     bool equalsForBracket = false;  // Looking for "= {"
-    for (const char* cp = strg; *cp; cp++) {
+    for (const char* cp = strg; *cp; ++cp) {
         putcNoTracking(*cp);
         if (isalpha(*cp)) {
             if (wordstart && m_lang == LA_VERILOG && tokenStart(cp)) indentInc();
@@ -712,7 +712,7 @@ void V3OutFormatter::puts(const char* strg) {
         }
         switch (*cp) {
         case '\n':
-            m_lineno++;
+            ++m_lineno;
             wordstart = true;
             if (cp[1] == '\0') {
                 // Add the indent later, may be a indentInc/indentDec
@@ -733,7 +733,7 @@ void V3OutFormatter::puts(const char* strg) {
             if (m_lang == LA_C || m_lang == LA_VERILOG) {
                 if (cp > strg && cp[-1] == '/' && !m_inStringLiteral) {
                     // Output ignoring contents to EOL
-                    cp++;
+                    ++cp;
                     while (*cp && cp[1] && cp[1] != '\n') putcNoTracking(*cp++);
                     if (*cp) putcNoTracking(*cp);
                 }
@@ -833,7 +833,7 @@ void V3OutFormatter::putcNoTracking(char chr) {
     }
     switch (chr) {
     case '\n':
-        m_lineno++;
+        ++m_lineno;
         m_column = 0;
         m_nobreak = true;
         break;
@@ -841,9 +841,9 @@ void V3OutFormatter::putcNoTracking(char chr) {
     case ' ':
     case '(':
     case '|':
-    case '&': m_column++; break;
+    case '&': ++m_column; break;
     default:
-        m_column++;
+        ++m_column;
         m_nobreak = false;
         break;
     }

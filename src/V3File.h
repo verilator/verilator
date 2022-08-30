@@ -156,9 +156,6 @@ public:
         puts(strg);
     }
     bool exceededWidth() const { return m_column > m_commaWidth; }
-    bool tokenMatch(const char* cp, const char* cmp);
-    bool tokenStart(const char* cp);
-    bool tokenEnd(const char* cp);
     void indentInc() { m_indentLevel += m_blockIndent; }
     void indentDec() {
         m_indentLevel -= m_blockIndent;
@@ -175,6 +172,9 @@ public:
     static string indentSpaces(int num);
     // Add escaped characters to strings
     static string quoteNameControls(const string& namein, Language lang = LA_C);
+    static bool tokenMatch(const char* cp, const char* cmp);
+    static bool tokenStart(const char* cp);
+    static bool tokenEnd(const char* cp);
 
     // CALLBACKS - MUST OVERRIDE
     virtual void putcOutput(char chr) = 0;
