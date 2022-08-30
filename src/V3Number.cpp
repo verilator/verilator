@@ -816,7 +816,7 @@ string V3Number::toDecimalS() const {
     if (isNegative()) {
         V3Number lhsNoSign = *this;
         lhsNoSign.opNegate(*this);
-        return string("-") + lhsNoSign.toDecimalU();
+        return std::string{"-"} + lhsNoSign.toDecimalU();
     } else {
         return toDecimalU();
     }

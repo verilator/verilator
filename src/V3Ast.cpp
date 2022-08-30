@@ -206,7 +206,7 @@ string AstNode::prettyName(const string& namein) {
 
 string AstNode::prettyTypeName() const {
     if (name() == "") return typeName();
-    return string(typeName()) + " '" + prettyName() + "'";
+    return std::string{typeName()} + " '" + prettyName() + "'";
 }
 
 //######################################################################

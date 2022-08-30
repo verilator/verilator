@@ -63,7 +63,7 @@ void V3ParseImp::yylexReadTok() {
 
 void V3ParseImp::lexNew() {
     if (m_lexerp) delete m_lexerp;  // Restart from clean slate.
-    m_lexerp = new V3Lexer();
+    m_lexerp = new V3Lexer;
     if (debugFlex() >= 9) m_lexerp->set_debug(~0);
 }
 

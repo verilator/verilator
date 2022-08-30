@@ -284,7 +284,7 @@ public:
 // Creation
 
 V3PreProc* V3PreProc::createPreProc(FileLine* fl) {
-    V3PreProcImp* preprocp = new V3PreProcImp();
+    V3PreProcImp* preprocp = new V3PreProcImp;
     preprocp->configure(fl);
     return preprocp;
 }

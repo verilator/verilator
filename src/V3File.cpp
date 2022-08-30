@@ -864,26 +864,26 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
         // Encode chars into XML string
         for (const char c : namein) {
             if (c == '"') {
-                out += string("&quot;");
+                out += std::string{"&quot;"};
             } else if (c == '\'') {
-                out += string("&apos;");
+                out += std::string{"&apos;"};
             } else if (c == '<') {
-                out += string("&lt;");
+                out += std::string{"&lt;"};
             } else if (c == '>') {
-                out += string("&gt;");
+                out += std::string{"&gt;"};
             } else if (c == '&') {
-                out += string("&amp;");
+                out += std::string{"&amp;"};
             } else if (isprint(c)) {
                 out += c;
             } else {
-                out += string("&#") + cvtToStr((unsigned int)(c & 0xff)) + ";";
+                out += std::string{"&#"} + cvtToStr((unsigned int)(c & 0xff)) + ";";
             }
         }
     } else {
         // Encode control chars into C style escapes
         for (const char c : namein) {
             if (c == '\\' || c == '"') {
-                out += string("\\") + c;
+                out += std::string{"\\"} + c;
             } else if (c == '\n') {
                 out += "\\n";
             } else if (c == '\r') {
@@ -894,8 +894,8 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += c;
             } else {
                 // This will also cover \a etc
-                const string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
-                                     + cvtToStr(c & 7);
+                const string octal = std::string{"\\"} + cvtToStr((c >> 6) & 3)
+                                     + cvtToStr((c >> 3) & 7) + cvtToStr(c & 7);
                 out += octal;
             }
         }
@@ -942,7 +942,8 @@ void V3OutFile::putsForceIncs() {
 void V3OutCFile::putsGuard() {
     UASSERT(!m_guard, "Already called putsGuard in emit file");
     m_guard = true;
-    string var = VString::upcase(string("VERILATED_") + V3Os::filenameNonDir(filename()) + "_");
+    string var
+        = VString::upcase(std::string{"VERILATED_"} + V3Os::filenameNonDir(filename()) + "_");
     for (char& c : var) {
         if (!isalnum(c)) c = '_';
     }

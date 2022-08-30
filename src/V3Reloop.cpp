@@ -71,7 +71,7 @@ private:
     static AstVar* findCreateVarTemp(FileLine* fl, AstCFunc* cfuncp) {
         AstVar* varp = VN_AS(cfuncp->user1p(), Var);
         if (!varp) {
-            const string newvarname = string("__Vilp");
+            const string newvarname{"__Vilp"};
             varp = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked{}, 32};
             UASSERT_OBJ(cfuncp, fl, "Assignment not under a function");
             cfuncp->addInitsp(varp);

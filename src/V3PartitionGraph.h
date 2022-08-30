@@ -83,9 +83,9 @@ public:
     uint64_t profilerId() const { return m_profilerId; }
     string cFuncName() const {
         // If this MTask maps to a C function, this should be the name
-        return string("__Vmtask") + "__" + cvtToStr(m_id);
+        return std::string{"__Vmtask"} + "__" + cvtToStr(m_id);
     }
-    virtual string name() const override { return string("mt") + cvtToStr(id()); }
+    virtual string name() const override { return std::string{"mt"} + cvtToStr(id()); }
     string hashName() const { return m_hashName; }
     void hashName(const string& name) { m_hashName = name; }
     void dump(std::ostream& str) const {

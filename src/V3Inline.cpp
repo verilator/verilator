@@ -425,11 +425,13 @@ private:
         // To keep correct visual order, must add before other Text's
         AstNode* afterp = nodep->scopeAttrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeAttrp(new AstText(nodep->fileline(), string("__DOT__") + m_cellp->name()));
+        nodep->scopeAttrp(
+            new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
         if (afterp) nodep->scopeAttrp(afterp);
         afterp = nodep->scopeEntrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeEntrp(new AstText(nodep->fileline(), string("__DOT__") + m_cellp->name()));
+        nodep->scopeEntrp(
+            new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
         if (afterp) nodep->scopeEntrp(afterp);
         iterateChildren(nodep);
     }

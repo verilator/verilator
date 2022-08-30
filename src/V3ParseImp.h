@@ -230,13 +230,13 @@ public:
     // These can be called by either parser or lexer, as not lex/parser-position aware
     string* newString(const string& text) {
         // Allocate a string, remembering it so we can reclaim storage at lex end
-        string* const strp = new string(text);
+        string* const strp = new std::string{text};
         m_stringps.push_back(strp);
         return strp;
     }
     string* newString(const char* text) {
         // Allocate a string, remembering it so we can reclaim storage at lex end
-        string* const strp = new string(text);
+        string* const strp = new std::string{text};
         m_stringps.push_back(strp);
         return strp;
     }

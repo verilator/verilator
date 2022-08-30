@@ -1083,7 +1083,7 @@ private:
                                 nodep, "Argument for $display like statement is not constant");
                             break;
                         }
-                        const string pformat = string("%") + pos[0];
+                        const string pformat = std::string{"%"} + pos[0];
                         result += constp->num().displayed(nodep, pformat);
                     } else {
                         switch (tolower(pos[0])) {

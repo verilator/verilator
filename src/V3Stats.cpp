@@ -251,7 +251,8 @@ public:
         for (int type = 0; type < VNType::_ENUM_END; type++) {
             const double count = double(m_statTypeCount.at(type));
             if (count != 0.0) {
-                V3Stats::addStat(m_stage, string("Node count, ") + VNType(type).ascii(), count);
+                V3Stats::addStat(m_stage, std::string{"Node count, "} + VNType{type}.ascii(),
+                                 count);
             }
         }
         for (int type = 0; type < VNType::_ENUM_END; type++) {
@@ -259,7 +260,7 @@ public:
                 const double count = double(m_statAbove[type][type2]);
                 if (count != 0.0) {
                     V3Stats::addStat(m_stage,
-                                     (string("Node pairs, ") + VNType(type).ascii() + "_"
+                                     (std::string{"Node pairs, "} + VNType{type}.ascii() + "_"
                                       + VNType(type2).ascii()),
                                      count);
                 }
@@ -269,8 +270,9 @@ public:
         for (int type = 0; type < VBranchPred::_ENUM_END; type++) {
             const double count = double(m_statPred[type]);
             if (count != 0.0) {
-                V3Stats::addStat(
-                    m_stage, (string("Branch prediction, ") + VBranchPred(type).ascii()), count);
+                V3Stats::addStat(m_stage,
+                                 (std::string{"Branch prediction, "} + VBranchPred{type}.ascii()),
+                                 count);
             }
         }
     }

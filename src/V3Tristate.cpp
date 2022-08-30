@@ -436,7 +436,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         const auto it = m_lhsmap.find(key);
         UINFO(9, "    mapInsertLhsVarRef " << nodep << endl);
         if (it == m_lhsmap.end()) {  // Not found
-            RefVec* const refsp = new RefVec();
+            RefVec* const refsp = new RefVec;
             refsp->push_back(nodep);
             m_lhsmap.emplace(key, refsp);
         } else {
