@@ -36,7 +36,7 @@ int main() {
     bool pass = true;
 
     Verilated::debug(0);
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
     // loop through every possibility and check the result
     for (tb->SEL = 0; tb->SEL < 2; tb->SEL++) {

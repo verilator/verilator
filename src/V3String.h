@@ -233,7 +233,7 @@ public:
         if (candidate.empty()) {
             return "";
         } else {
-            return string("... Suggested alternative: '") + candidate + "'";
+            return std::string{"... Suggested alternative: '"} + candidate + "'";
         }
     }
     static void selfTest();

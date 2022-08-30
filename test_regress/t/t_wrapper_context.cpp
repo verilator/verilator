@@ -84,7 +84,7 @@ void sim(VM_PREFIX* topp) {
     }
 
     std::string filename
-        = std::string(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage_") + topp->name() + ".dat";
+        = std::string{VL_STRINGIFY(TEST_OBJ_DIR) "/coverage_"} + topp->name() + ".dat";
     contextp->coveragep()->write(filename.c_str());
 }
 

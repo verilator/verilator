@@ -101,7 +101,7 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     p = vpi_get_str(vpiName, param_h);
     CHECK_RESULT_CSTR(p, name.c_str());
     p = vpi_get_str(vpiFullName, param_h);
-    CHECK_RESULT_CSTR(p, std::string("t." + name).c_str());
+    CHECK_RESULT_CSTR(p, std::string{"t." + name}.c_str());
     p = vpi_get_str(vpiType, param_h);
     CHECK_RESULT_CSTR(p, "vpiParameter");
     vpi_type = vpi_get(vpiLocalParam, param_h);
@@ -155,7 +155,7 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     p = vpi_get_str(vpiName, param_h);
     CHECK_RESULT_CSTR(p, name.c_str());
     p = vpi_get_str(vpiFullName, param_h);
-    CHECK_RESULT_CSTR(p, std::string("t." + name).c_str());
+    CHECK_RESULT_CSTR(p, std::string{"t." + name}.c_str());
     p = vpi_get_str(vpiType, param_h);
     CHECK_RESULT_CSTR(p, "vpiParameter");
     vpi_type = vpi_get(vpiLocalParam, param_h);

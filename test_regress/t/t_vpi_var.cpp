@@ -536,7 +536,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
                     CHECK_RESULT_CSTR(v.value.str, data[i].str.c_str());
                 } else {
                     data[i].type = v.format;
-                    data[i].str = std::string(v.value.str);
+                    data[i].str = std::string{v.value.str};
                 }
             }
 

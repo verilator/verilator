@@ -166,7 +166,7 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    return std::string("`line ") + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
+    return std::string{"`line "} + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
            + cvtToStr(enterExit) + "\n";
 }
 

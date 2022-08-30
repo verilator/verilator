@@ -1006,7 +1006,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                 m_classOrPackagep = VN_AS(m_curSymp->nodep(), Class);
             }
             // Create symbol table for the task's vars
-            const string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
+            const string name
+                = std::string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
             m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
             m_curSymp->fallbackp(upSymp);
             // Convert the func's range to the output variable

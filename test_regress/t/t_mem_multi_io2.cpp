@@ -25,7 +25,7 @@ int main()
 #endif
 {
     Verilated::debug(0);
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
 #ifdef SYSTEMC_VERSION
     sc_signal<uint32_t> i3;

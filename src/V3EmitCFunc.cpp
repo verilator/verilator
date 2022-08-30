@@ -455,9 +455,9 @@ void EmitCFunc::emitDereference(const string& pointer) {
 
 void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
     if (const AstConst* const constp = VN_CAST(nodep, Const)) {
-        putbs("std::string(");
+        putbs("std::string{");
         putsQuoted(constp->num().toString());
-        puts(")");
+        puts("}");
     } else {
         putbs("VL_CVT_PACK_STR_N");
         emitIQW(nodep);
@@ -486,9 +486,9 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
     if (nodep->num().isFourState()) {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
     } else if (nodep->num().isString()) {
-        putbs("std::string(");
+        putbs("std::string{");
         putsQuoted(nodep->num().toString());
-        puts(")");
+        puts("}");
     } else if (nodep->isWide()) {
         int upWidth = nodep->num().widthMin();
         int chunks = 0;

@@ -969,7 +969,7 @@ class ParamVisitor final : public VNVisitor {
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
-        string* const genHierNamep = new string{m_generateHierName};
+        string* const genHierNamep = new std::string{m_generateHierName};
         nodep->user5p(genHierNamep);
         // Visit parameters in the instantiation.
         iterateChildren(nodep);

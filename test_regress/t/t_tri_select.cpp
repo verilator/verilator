@@ -45,7 +45,7 @@ int main() {
     bool pass = true;
 
     Verilated::debug(0);
-    tb = new Vt_tri_select("tb");
+    tb = new Vt_tri_select{"tb"};
 
     // loop through every possibility and check the result
     for (tb->OE1 = 0; tb->OE1 < 2; tb->OE1++) {

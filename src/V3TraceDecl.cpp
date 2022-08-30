@@ -379,7 +379,7 @@ private:
                 addToSubFunc(new AstTracePushNamePrefix{flp, m_traName});
                 for (int i = nodep->lo(); i <= nodep->hi(); ++i) {
                     VL_RESTORER(m_traValuep);
-                    m_traName = string{"["} + cvtToStr(i) + string{"]"};
+                    m_traName = std::string{"["} + cvtToStr(i) + std::string{"]"};
                     m_traValuep = m_traValuep->cloneTree(false);
                     m_traValuep = new AstArraySel{flp, m_traValuep, i - nodep->lo()};
                     m_traValuep->dtypep(subtypep);
@@ -404,7 +404,7 @@ private:
                 addToSubFunc(new AstTracePushNamePrefix{flp, m_traName});
                 for (int i = nodep->lo(); i <= nodep->hi(); ++i) {
                     VL_RESTORER(m_traValuep);
-                    m_traName = string{"["} + cvtToStr(i) + string{"]"};
+                    m_traName = std::string{"["} + cvtToStr(i) + std::string{"]"};
                     const int lsb = (i - nodep->lo()) * subtypep->width();
                     m_traValuep = m_traValuep->cloneTree(false);
                     m_traValuep = new AstSel{flp, m_traValuep, lsb, subtypep->width()};

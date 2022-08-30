@@ -618,7 +618,7 @@ void V3PreLex::scanNewFile(FileLine* filelinep) {
 
 void V3PreLex::scanBytes(const string& str) {
     // Note buffers also appended in ::scanBytesBack
-    // Not "m_buffers.push_front(string{strp,len})" as we need a `define
+    // Not "m_buffers.push_front(std::string{strp,len})" as we need a `define
     // to take effect immediately, in the middle of the current buffer
     // Also we don't use scan_bytes that would set yy_fill_buffer
     // which would force Flex to bypass our YY_INPUT routine.

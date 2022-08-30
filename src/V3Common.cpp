@@ -51,7 +51,7 @@ static void makeToString(AstClass* nodep) {
     funcp->isStatic(false);
     funcp->protect(false);
     AstNode* const exprp
-        = new AstCMath{nodep->fileline(), R"(std::string("'{") + to_string_middle() + "}")", 0};
+        = new AstCMath{nodep->fileline(), R"(std::string{"'{"} + to_string_middle() + "}")", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtp(funcp);

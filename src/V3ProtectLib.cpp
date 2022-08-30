@@ -149,16 +149,17 @@ private:
         // Timescale
         if (v3Global.opt.hierChild() && v3Global.rootp()->timescaleSpecified()) {
             // Emit timescale for hierarhical verilation if input HDL specifies timespec
-            txtp->addText(fl, string("timeunit ") + modp->timeunit().ascii() + ";\n");
-            txtp->addText(fl, string("timeprecision ") + +v3Global.rootp()->timeprecision().ascii()
-                                  + ";\n");
+            txtp->addText(fl, std::string{"timeunit "} + modp->timeunit().ascii() + ";\n");
+            txtp->addText(fl, std::string{"timeprecision "}
+                                  + +v3Global.rootp()->timeprecision().ascii() + ";\n");
         } else {
             addComment(txtp, fl,
                        "Precision of submodule"
                        " (commented out to avoid requiring timescale on all modules)");
-            addComment(txtp, fl, string("timeunit ") + v3Global.rootp()->timeunit().ascii() + ";");
             addComment(txtp, fl,
-                       string("timeprecision ") + v3Global.rootp()->timeprecision().ascii()
+                       std::string{"timeunit "} + v3Global.rootp()->timeunit().ascii() + ";");
+            addComment(txtp, fl,
+                       std::string{"timeprecision "} + v3Global.rootp()->timeprecision().ascii()
                            + ";\n");
         }
 
