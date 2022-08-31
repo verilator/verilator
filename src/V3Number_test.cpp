@@ -109,7 +109,7 @@ void test(const string& lhss, const string& op, const string& rhss, const string
                  << "     = " << expnum << endl
                  << "    =? " << gotnum << endl);
 
-    V3Number ok(fl, 1);
+    V3Number ok{fl, 1};
     ok.opCaseEq(expnum, gotnum);
     if (ok.toUInt() != 1) v3fatalSrc("%Error:Test FAILED");
 
@@ -137,7 +137,7 @@ int main() {
     test("99'h7FFFFFFFFFFFFFFFFFFFFFFFF", "*", "99'h0000000000000000091338A80",
          "99'h7FFFFFFFFFFFFFFFF6ECC7580");
 
-    cout << "Test completed\n";
+    std::cout << "Test completed\n";
 }
 
 //###################################################################

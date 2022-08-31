@@ -104,10 +104,10 @@ protected:
             // from the V3LangCode to the various Lex BEGIN states. The language
             // of this source file is updated here, in case there have been any
             // intervening +<lang>ext+ options since it was first encountered.
-            FileLine* const modfileline = new FileLine(modfilename);
+            FileLine* const modfileline = new FileLine{modfilename};
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
-            V3Parse::ppPushText(
-                parsep, (string("`begin_keywords \"") + modfileline->language().ascii() + "\"\n"));
+            V3Parse::ppPushText(parsep, (std::string{"`begin_keywords \""}
+                                         + modfileline->language().ascii() + "\"\n"));
             // FileLine tracks and frees modfileline
         }
 

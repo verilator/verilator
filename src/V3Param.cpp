@@ -353,7 +353,7 @@ class ParamProcessor final {
             num = m_nextValue++;
             m_valueMap[hash] = std::make_pair(num, key);
         }
-        return string("z") + cvtToStr(num);
+        return std::string{"z"} + cvtToStr(num);
     }
     string moduleCalcName(const AstNodeModule* srcModp, const string& longname) {
         string newname = longname;

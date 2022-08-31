@@ -32,7 +32,7 @@
 
 void V3Global::boot() {
     UASSERT(!m_rootp, "call once");
-    m_rootp = new AstNetlist();
+    m_rootp = new AstNetlist;
 }
 
 void V3Global::clear() {

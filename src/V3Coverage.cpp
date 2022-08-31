@@ -279,7 +279,7 @@ private:
                 //      We'll do this, and make the if(...) coverinc later.
 
                 // Add signal to hold the old value
-                const string newvarname = string("__Vtogcov__") + nodep->shortName();
+                const string newvarname = std::string{"__Vtogcov__"} + nodep->shortName();
                 AstVar* const chgVarp
                     = new AstVar(nodep->fileline(), VVarType::MODULETEMP, newvarname, nodep);
                 chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
@@ -289,9 +289,9 @@ private:
                 // This is necessarily an O(n^2) expansion, which is why
                 // we limit coverage to signals with < 256 bits.
 
-                ToggleEnt newvec(string(""),
-                                 new AstVarRef(nodep->fileline(), nodep, VAccess::READ),
-                                 new AstVarRef(nodep->fileline(), chgVarp, VAccess::WRITE));
+                ToggleEnt newvec{std::string{""},
+                                 new AstVarRef{nodep->fileline(), nodep, VAccess::READ},
+                                 new AstVarRef{nodep->fileline(), chgVarp, VAccess::WRITE}};
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep, chgVarp);
                 newvec.cleanup();
             }
@@ -314,11 +314,12 @@ private:
                 for (int index_docs = bdtypep->lo(); index_docs < bdtypep->hi() + 1;
                      ++index_docs) {
                     const int index_code = index_docs - bdtypep->lo();
-                    ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
-                                     new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
-                                                index_code, 1),
-                                     new AstSel(varp->fileline(), above.m_chgRefp->cloneTree(true),
-                                                index_code, 1));
+                    ToggleEnt newent{above.m_comment + std::string{"["} + cvtToStr(index_docs)
+                                         + "]",
+                                     new AstSel{varp->fileline(), above.m_varRefp->cloneTree(true),
+                                                index_code, 1},
+                                     new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(true),
+                                                index_code, 1}};
                     toggleVarBottom(newent, varp);
                     newent.cleanup();
                 }
@@ -328,11 +329,11 @@ private:
         } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const int index_code = index_docs - adtypep->lo();
-                ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
-                                 new AstArraySel(varp->fileline(),
-                                                 above.m_varRefp->cloneTree(true), index_code),
-                                 new AstArraySel(varp->fileline(),
-                                                 above.m_chgRefp->cloneTree(true), index_code));
+                ToggleEnt newent{above.m_comment + std::string{"["} + cvtToStr(index_docs) + "]",
+                                 new AstArraySel{varp->fileline(),
+                                                 above.m_varRefp->cloneTree(true), index_code},
+                                 new AstArraySel{varp->fileline(),
+                                                 above.m_chgRefp->cloneTree(true), index_code}};
                 toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth + 1, newent, varp,
                                  chgVarp);
                 newent.cleanup();
@@ -341,11 +342,11 @@ private:
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
-                ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
-                                 new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
-                                            index_code * subtypep->width(), subtypep->width()),
-                                 new AstSel(varp->fileline(), above.m_chgRefp->cloneTree(true),
-                                            index_code * subtypep->width(), subtypep->width()));
+                ToggleEnt newent{above.m_comment + std::string{"["} + cvtToStr(index_docs) + "]",
+                                 new AstSel{varp->fileline(), above.m_varRefp->cloneTree(true),
+                                            index_code * subtypep->width(), subtypep->width()},
+                                 new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(true),
+                                            index_code * subtypep->width(), subtypep->width()}};
                 toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth + 1, newent, varp,
                                  chgVarp);
                 newent.cleanup();
@@ -356,11 +357,11 @@ private:
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                 const int index_code = itemp->lsb();
-                ToggleEnt newent(above.m_comment + string(".") + itemp->name(),
-                                 new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
-                                            index_code, subtypep->width()),
-                                 new AstSel(varp->fileline(), above.m_chgRefp->cloneTree(true),
-                                            index_code, subtypep->width()));
+                ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(),
+                                 new AstSel{varp->fileline(), above.m_varRefp->cloneTree(true),
+                                            index_code, subtypep->width()},
+                                 new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(true),
+                                            index_code, subtypep->width()}};
                 toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);
                 newent.cleanup();
             }
@@ -368,9 +369,9 @@ private:
             // Arbitrarily handle only the first member of the union
             if (const AstMemberDType* const itemp = adtypep->membersp()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
-                ToggleEnt newent(above.m_comment + string(".") + itemp->name(),
+                ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(),
                                  above.m_varRefp->cloneTree(true),
-                                 above.m_chgRefp->cloneTree(true));
+                                 above.m_chgRefp->cloneTree(true)};
                 toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);
                 newent.cleanup();
             }

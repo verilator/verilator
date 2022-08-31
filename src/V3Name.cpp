@@ -49,7 +49,7 @@ private:
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
             if (addPvt) {
-                const string newname = string("__PVT__") + nodep->name();
+                const string newname = std::string{"__PVT__"} + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
@@ -58,7 +58,7 @@ private:
                 if (rsvd != "") {
                     nodep->v3warn(SYMRSVDWORD,
                                   "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
-                    const string newname = string("__SYM__") + nodep->name();
+                    const string newname = std::string{"__SYM__"} + nodep->name();
                     nodep->name(newname);
                     nodep->editCountInc();
                 }

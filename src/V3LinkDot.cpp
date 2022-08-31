@@ -1696,7 +1696,8 @@ class LinkDotScopeVisitor final : public VNVisitor {
             }
             if (!symp) {
                 UINFO(9, "No symbol for interface alias rhs ("
-                             << string(refp ? "VARREF " : "VARXREF ") << scopename << ")" << endl);
+                             << std::string{refp ? "VARREF " : "VARXREF "} << scopename << ")"
+                             << endl);
             }
             UASSERT_OBJ(symp, nodep, "No symbol for interface alias rhs");
             UINFO(5, "       Found a linked scope RHS: " << scopename << "  se" << cvtToHex(symp)
