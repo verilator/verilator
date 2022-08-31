@@ -2611,33 +2611,72 @@ void V3Partition::hashGraphDebug(const V3Graph* graphp, const char* debugName) {
     UINFO(0, "Hash of shape (not contents) of " << debugName << " = " << cvtToStr(hash) << endl);
 }
 
-void V3Partition::setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp) {
-    // Look at each mtask
-    for (V3GraphVertex* itp = mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        LogicMTask* const mtaskp = static_cast<LogicMTask*>(itp);
-        const LogicMTask::VxList* vertexListp = mtaskp->vertexListp();
+uint32_t V3Partition::setupMTaskDeps(V3Graph* mtasksp) {
+    uint32_t totalGraphCost = 0;
 
-        // For each logic vertex in this mtask, create an mtask-to-mtask
-        // edge based on the logic-to-logic edge.
-        for (LogicMTask::VxList::const_iterator vit = vertexListp->begin();
-             vit != vertexListp->end(); ++vit) {
-            for (V3GraphEdge* outp = (*vit)->outBeginp(); outp; outp = outp->outNextp()) {
-                UASSERT(outp->weight() > 0, "Mtask not assigned weight");
-                const MTaskMoveVertex* const top = dynamic_cast<MTaskMoveVertex*>(outp->top());
-                UASSERT(top, "MoveVertex not associated to mtask");
-                const auto it = vlstd::as_const(vx2mtaskp)->find(top);
-                UASSERT(it != vx2mtaskp->end(), "MTask map can't find id");
-                LogicMTask* const otherMTaskp = it->second;
-                UASSERT(otherMTaskp, "nullptr other Mtask");
-                UASSERT_OBJ(otherMTaskp != mtaskp, mtaskp, "Would create a cycle edge");
+    // Artificial single entry point vertex in the MTask graph to allow sibling merges.
+    // This is required as otherwise disjoint sub-graphs could not be merged, but the
+    // coarsening algorithm assumes that the graph is connected.
+    LogicMTask* const entryMTask = new LogicMTask{mtasksp, nullptr};
 
-                // Don't create redundant edges.
-                if (mtaskp->hasRelativeMTask(otherMTaskp)) continue;
+    // The V3InstrCount within LogicMTask will set user5 on each AST
+    // node, to assert that we never count any node twice.
+    const VNUser5InUse user5inUse;
 
-                new MTaskEdge(mtasksp, mtaskp, otherMTaskp, 1);
-            }
+    // Create the LogicMTasks for each MTaskMoveVertex
+    for (V3GraphVertex *vtxp = m_fineDepsGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNextp();
+        MTaskMoveVertex* const mVtxp = static_cast<MTaskMoveVertex*>(vtxp);
+        LogicMTask* const mtaskp = new LogicMTask{mtasksp, mVtxp};
+        mVtxp->userp(mtaskp);
+        totalGraphCost += mtaskp->cost();
+    }
+
+    // Artificial single exit point vertex in the MTask graph to allow sibling merges.
+    // this enables merging MTasks with no downstream dependents if that is the ideal merge.
+    LogicMTask* const exitMTask = new LogicMTask{mtasksp, nullptr};
+
+    // Create the mtask->mtask dependency edges based on the dependencies between MTaskMoveVertex
+    // vertices.
+    for (V3GraphVertex *vtxp = mtasksp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNextp();
+        LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtxp);
+
+        // Entry and exit vertices handled separately
+        if (VL_UNLIKELY((mtaskp == entryMTask) || (mtaskp == exitMTask))) continue;
+
+        // At this point, there should only be one MTaskMoveVertex per LogicMTask
+        UASSERT_OBJ(mtaskp->vertexListp()->size() == 1, mtaskp, "Multiple MTaskMoveVertex");
+
+        MTaskMoveVertex* const mvtxp = mtaskp->vertexListp()->front();
+        for (V3GraphEdge* outp = mvtxp->outBeginp(); outp; outp = outp->outNextp()) {
+            UASSERT(outp->weight() > 0, "Dependency with 0 weight in Move graph");
+
+            // Grab the opposite end MTask.
+            LogicMTask* const otherp = static_cast<LogicMTask*>(outp->top()->userp());
+            UASSERT_OBJ(otherp != mtaskp, mtaskp, "Would create a cycle edge");
+
+            // Don't create redundant edges.
+            if (mtaskp->hasRelativeMTask(otherp)) continue;
+
+            // Add the MTask->MTask dependency edge
+            new MTaskEdge{mtasksp, mtaskp, otherp, 1};
         }
     }
+
+    // Create Dependencies to/from the entry/exit vertices.
+    for (V3GraphVertex *vtxp = mtasksp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNextp();
+        LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtxp);
+
+        if (VL_UNLIKELY((mtaskp == entryMTask) || (mtaskp == exitMTask))) continue;
+
+        // Add the entry/exit edges
+        if (mtaskp->inEmpty()) new MTaskEdge{mtasksp, entryMTask, mtaskp, 1};
+        if (mtaskp->outEmpty()) new MTaskEdge{mtasksp, mtaskp, exitMTask, 1};
+    }
+
+    return totalGraphCost;
 }
 
 void V3Partition::go(V3Graph* mtasksp) {
@@ -2648,44 +2687,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     // MTaskMoveVertex. Over time, we'll merge MTasks together and
     // eventually each MTask will wrap a large number of MTaskMoveVertices
     // (and the logic nodes therein.)
-    uint32_t totalGraphCost = 0;
-    {
-        // Artificial single entry point vertex in the MTask graph to allow sibling merges.
-        // This is required as otherwise disjoint sub-graphs could not be merged, but the
-        // coarsening algorithm assumes that the graph is connected.
-        LogicMTask* const entryMTask = new LogicMTask{mtasksp, nullptr};
-
-        // The V3InstrCount within LogicMTask will set user5 on each AST
-        // node, to assert that we never count any node twice.
-        const VNUser5InUse inUser5;
-        Vx2MTaskMap vx2mtask;
-        for (V3GraphVertex* vxp = m_fineDepsGraphp->verticesBeginp(); vxp;
-             vxp = vxp->verticesNextp()) {
-            MTaskMoveVertex* const mtmvVxp = dynamic_cast<MTaskMoveVertex*>(vxp);
-            UASSERT_OBJ(mtmvVxp, vxp, "Every vertex here should be an MTaskMoveVertex");
-
-            LogicMTask* const mtaskp = new LogicMTask(mtasksp, mtmvVxp);
-            vx2mtask[mtmvVxp] = mtaskp;
-
-            totalGraphCost += mtaskp->cost();
-        }
-
-        // Artificial single exit point vertex in the MTask graph to allow sibling merges.
-        // this enables merging MTasks with no downstream dependents if that is the ideal merge.
-        LogicMTask* const exitMTask = new LogicMTask{mtasksp, nullptr};
-
-        // Create the mtask->mtask dep edges based on vertex deps
-        setupMTaskDeps(mtasksp, &vx2mtask);
-
-        // Add the entry/exit edges
-        for (V3GraphVertex* vtxp = mtasksp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-            if (vtxp == entryMTask) continue;
-            if (vtxp == exitMTask) continue;
-            LogicMTask* const lmtp = static_cast<LogicMTask*>(vtxp);
-            if (vtxp->inEmpty()) new MTaskEdge{mtasksp, entryMTask, lmtp, 1};
-            if (vtxp->outEmpty()) new MTaskEdge{mtasksp, lmtp, exitMTask, 1};
-        }
-    }
+    const uint32_t totalGraphCost = setupMTaskDeps(mtasksp);
 
     V3Partition::debugMTaskGraphStats(mtasksp, "initial");
 
