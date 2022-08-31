@@ -14,6 +14,8 @@ Verilator 4.225 devel
 **Minor:**
 
 * Add --future0 and --future1 options.
+* Improve Verilation speed with --threads on large designs. [Geza Lore]
+* Rename trace rolloverSize() (#3570).
 * Fix incorrect bit op tree optimization (#3470). [algrobman]
 * Fix empty string arguments to display (#3484). [Grulfen]
 * Fix table misoptimizing away display (#3488). [Stefan Post]
@@ -21,9 +23,7 @@ Verilator 4.225 devel
 * Fix incorrect tristate logic (#3399) [shareefj, Vighnesh Iyer]
 * Fix segfault exporting non-existant package (#3535).
 * Fix case statement comparing string literal (#3544). [Gustav Svensk]
-* Fix --hierarchical with order-based pin connections (#3583). [Kelin9298]
-* Improve Verilation speed with --threads on large designs. [Geza Lore]
-* Rename trace rolloverSize() (#3570).
+* Fix --hierarchical with order-based pin connections (#3583) (#3585). [Kelin9298]
 
 
 Verilator 4.224 2022-06-19

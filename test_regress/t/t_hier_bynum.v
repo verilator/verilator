@@ -3,11 +3,11 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2022 by Wilson Snyder.
 
-module flop (
-             output reg q,
-             input wire d,
-             input wire clk
-             );
+module flop (q, d, clk);
+   // No AUTOARG; order of below is different from port order above
+   input wire clk;
+   output reg q;
+   input wire d;
 
    // verilator hier_block
 

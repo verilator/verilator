@@ -1500,6 +1500,10 @@ private:
                                                       refp, nullptr /*classOrPackagep*/);
             symp->exported(false);
             refp->pinNum(nodep->pinNum());
+            // Put the variable where the port is, so that variables stay
+            // in pin number sorted order. Otherwise hierarchical or XML
+            // may botch by-position instances.
+            nodep->addHereThisAsNext(refp->unlinkFrBack());
         }
         // Ports not needed any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
