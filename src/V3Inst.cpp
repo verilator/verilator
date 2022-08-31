@@ -24,10 +24,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Inst.h"
+
 #include "V3Ast.h"
 #include "V3Const.h"
+#include "V3Global.h"
 
 #include <algorithm>
 
@@ -442,7 +443,7 @@ private:
                 int expr_i = i;
                 if (const AstSliceSel* const slicep = VN_CAST(newp->exprp(), SliceSel)) {
                     varrefp = VN_AS(slicep->fromp(), VarRef);
-                    UASSERT(VN_IS(slicep->rhsp(), Const), "Slices should be constant");
+                    UASSERT_OBJ(VN_IS(slicep->rhsp(), Const), slicep, "Slices should be constant");
                     const int slice_index
                         = slicep->declRange().left() + in * slicep->declRange().leftToRightInc();
                     const auto* const exprArrp = VN_AS(varrefp->dtypep(), UnpackArrayDType);

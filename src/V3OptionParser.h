@@ -65,7 +65,8 @@ private:
 
     // METHODS
     ActionIfs* find(const char* optp);
-    template <class ACT, class ARG> ActionIfs& add(const string& opt, ARG arg);
+    template <class ACT, class ARG>
+    ActionIfs& add(const string& opt, ARG arg);
     static bool hasPrefixFNo(const char* strp);  // Returns true if strp starts with "-fno"
     static bool hasPrefixNo(const char* strp);  // Returns true if strp starts with "-no"
 

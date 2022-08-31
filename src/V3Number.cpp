@@ -17,9 +17,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Number.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -107,6 +108,18 @@ V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
         }
     }
     opCleanThis(true);
+}
+
+V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
+    if (nodedtypep->isString()) {
+        init(nodep, 0);
+        setString("");
+    } else if (nodedtypep->isDouble()) {
+        init(nodep, 64);
+        setDouble(0.0);
+    } else {
+        init(nodep, nodedtypep->width(), nodedtypep->widthSized());
+    }
 }
 
 void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl) {
@@ -803,7 +816,7 @@ string V3Number::toDecimalS() const {
     if (isNegative()) {
         V3Number lhsNoSign = *this;
         lhsNoSign.opNegate(*this);
-        return string("-") + lhsNoSign.toDecimalU();
+        return std::string{"-"} + lhsNoSign.toDecimalU();
     } else {
         return toDecimalU();
     }

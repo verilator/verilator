@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_class_param_nested_bad.v:51:23: dotted expressions in parameters
+                                                      : ... In instance t
+                                                      : ... Suggest use a typedef
+   51 |    Wrap2 #(Wrap#(19)::PBASE * 2) w38;
+      |                       ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Internal Error: t/t_class_param_nested_bad.v:51:29: ../V3Width.cpp:#: Node has no type
+                                                          : ... In instance t
+   51 |    Wrap2 #(Wrap#(19)::PBASE * 2) w38;
+      |                             ^

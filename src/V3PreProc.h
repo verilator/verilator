@@ -24,9 +24,9 @@
 #include "V3FileLine.h"
 #include "V3Global.h"
 
-#include <map>
-#include <list>
 #include <iostream>
+#include <list>
+#include <map>
 
 // Compatibility with Verilog-Perl's preprocessor
 #define fatalSrc(msg) v3fatalSrc(msg)

@@ -26,7 +26,7 @@
 
 #include "verilated_intrinsics.h"
 #include "verilated_trace.h"
-#ifdef VL_TRACE_PARALLEL
+#ifdef VL_THREADED
 # include "verilated_threads.h"
 # include <list>
 #endif
@@ -78,11 +78,12 @@ static std::string doubleToTimescale(double value) {
     return valuestr;  // Gets converted to string, so no ref to stack
 }
 
-#ifdef VL_TRACE_OFFLOAD
+#ifdef VL_THREADED
 //=========================================================================
 // Buffer management
 
-template <> uint32_t* VerilatedTrace<VL_SUB_T, VL_BUF_T>::getOffloadBuffer() {
+template <>
+uint32_t* VerilatedTrace<VL_SUB_T, VL_BUF_T>::getOffloadBuffer() {
     uint32_t* bufferp;
     // Some jitter is expected, so some number of alternative offlaod buffers are
     // required, but don't allocate more than 8 buffers.
@@ -101,7 +102,8 @@ template <> uint32_t* VerilatedTrace<VL_SUB_T, VL_BUF_T>::getOffloadBuffer() {
     return bufferp;
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::waitForOffloadBuffer(const uint32_t* buffp) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::waitForOffloadBuffer(const uint32_t* buffp) {
     // Slow path code only called on flush/shutdown, so use a simple algorithm.
     // Collect buffers from worker and stash them until we get the one we want.
     std::deque<uint32_t*> stash;
@@ -116,7 +118,8 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::waitForOffloadBuffer(const 
 //=========================================================================
 // Worker thread
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
     bool shutdown = false;
 
     do {
@@ -127,7 +130,7 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
 
         const uint32_t* readp = bufferp;
 
-        std::unique_ptr<VL_BUF_T> traceBufp;  // We own the passed tracebuffer
+        std::unique_ptr<Buffer> traceBufp;  // We own the passed tracebuffer
 
         while (true) {
             const uint32_t cmd = readp[0];
@@ -143,44 +146,44 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
                 // CHG_* commands
             case VerilatedTraceOffloadCommand::CHG_BIT_0:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_BIT_0 " << top);
-                traceBufp->chgBitImpl(oldp, 0);
+                traceBufp->chgBit(oldp, 0);
                 continue;
             case VerilatedTraceOffloadCommand::CHG_BIT_1:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_BIT_1 " << top);
-                traceBufp->chgBitImpl(oldp, 1);
+                traceBufp->chgBit(oldp, 1);
                 continue;
             case VerilatedTraceOffloadCommand::CHG_CDATA:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_CDATA " << top);
                 // Bits stored in bottom byte of command
-                traceBufp->chgCDataImpl(oldp, *readp, top);
+                traceBufp->chgCData(oldp, *readp, top);
                 readp += 1;
                 continue;
             case VerilatedTraceOffloadCommand::CHG_SDATA:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_SDATA " << top);
                 // Bits stored in bottom byte of command
-                traceBufp->chgSDataImpl(oldp, *readp, top);
+                traceBufp->chgSData(oldp, *readp, top);
                 readp += 1;
                 continue;
             case VerilatedTraceOffloadCommand::CHG_IDATA:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_IDATA " << top);
                 // Bits stored in bottom byte of command
-                traceBufp->chgIDataImpl(oldp, *readp, top);
+                traceBufp->chgIData(oldp, *readp, top);
                 readp += 1;
                 continue;
             case VerilatedTraceOffloadCommand::CHG_QDATA:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_QDATA " << top);
                 // Bits stored in bottom byte of command
-                traceBufp->chgQDataImpl(oldp, *reinterpret_cast<const QData*>(readp), top);
+                traceBufp->chgQData(oldp, *reinterpret_cast<const QData*>(readp), top);
                 readp += 2;
                 continue;
             case VerilatedTraceOffloadCommand::CHG_WDATA:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_WDATA " << top);
-                traceBufp->chgWDataImpl(oldp, readp, top);
+                traceBufp->chgWData(oldp, readp, top);
                 readp += VL_WORDS_I(top);
                 continue;
             case VerilatedTraceOffloadCommand::CHG_DOUBLE:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_DOUBLE " << top);
-                traceBufp->chgDoubleImpl(oldp, *reinterpret_cast<const double*>(readp));
+                traceBufp->chgDouble(oldp, *reinterpret_cast<const double*>(readp));
                 readp += 2;
                 continue;
 
@@ -196,7 +199,7 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
             case VerilatedTraceOffloadCommand::TRACE_BUFFER:
                 VL_TRACE_OFFLOAD_DEBUG("Command TRACE_BUFFER " << top);
                 readp -= 1;  // No code in this command, undo increment
-                traceBufp.reset(*reinterpret_cast<VL_BUF_T* const*>(readp));
+                traceBufp.reset(*reinterpret_cast<Buffer* const*>(readp));
                 readp += 2;
                 continue;
 
@@ -231,7 +234,8 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
     } while (VL_LIKELY(!shutdown));
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::shutdownOffloadWorker() {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::shutdownOffloadWorker() {
     // If the worker thread is not running, done..
     if (!m_workerThread) return;
 
@@ -251,37 +255,45 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::shutdownOffloadWorker() {
 //=============================================================================
 // Life cycle
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::closeBase() {
-#ifdef VL_TRACE_OFFLOAD
-    shutdownOffloadWorker();
-    while (m_numOffloadBuffers) {
-        delete[] m_offloadBuffersFromWorker.get();
-        --m_numOffloadBuffers;
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::closeBase() {
+#ifdef VL_THREADED
+    if (offload()) {
+        shutdownOffloadWorker();
+        while (m_numOffloadBuffers) {
+            delete[] m_offloadBuffersFromWorker.get();
+            --m_numOffloadBuffers;
+        }
     }
 #endif
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::flushBase() {
-#ifdef VL_TRACE_OFFLOAD
-    // Hand an empty buffer to the worker thread
-    uint32_t* const bufferp = getOffloadBuffer();
-    *bufferp = VerilatedTraceOffloadCommand::END;
-    m_offloadBuffersToWorker.put(bufferp);
-    // Wait for it to be returned. As the processing is in-order,
-    // this ensures all previous buffers have been processed.
-    waitForOffloadBuffer(bufferp);
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::flushBase() {
+#ifdef VL_THREADED
+    if (offload()) {
+        // Hand an empty buffer to the worker thread
+        uint32_t* const bufferp = getOffloadBuffer();
+        *bufferp = VerilatedTraceOffloadCommand::END;
+        m_offloadBuffersToWorker.put(bufferp);
+        // Wait for it to be returned. As the processing is in-order,
+        // this ensures all previous buffers have been processed.
+        waitForOffloadBuffer(bufferp);
+    }
 #endif
 }
 
 //=============================================================================
 // Callbacks to run on global events
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush(void* selfp) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush(void* selfp) {
     // This calls 'flush' on the derived class (which must then get any mutex)
     reinterpret_cast<VL_SUB_T*>(selfp)->flush();
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
     // This calls 'close' on the derived class (which must then get any mutex)
     reinterpret_cast<VL_SUB_T*>(selfp)->close();
 }
@@ -289,25 +301,26 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
 //=============================================================================
 // VerilatedTrace
 
-template <> VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace() {
+template <>
+VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace() {
     set_time_unit(Verilated::threadContextp()->timeunitString());
     set_time_resolution(Verilated::threadContextp()->timeprecisionString());
 }
 
-template <> VerilatedTrace<VL_SUB_T, VL_BUF_T>::~VerilatedTrace() {
+template <>
+VerilatedTrace<VL_SUB_T, VL_BUF_T>::~VerilatedTrace() {
     if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = nullptr);
     if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
     Verilated::removeFlushCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush, this);
     Verilated::removeExitCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit, this);
-#ifdef VL_TRACE_OFFLOAD
-    closeBase();
-#endif
+    if (offload()) closeBase();
 }
 
 //=========================================================================
 // Internals available to format specific implementations
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     // Note: It is possible to re-open a trace file (VCD in particular),
     // so we must reset the next code here, but it must have the same number
     // of codes on re-open
@@ -355,17 +368,19 @@ template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     Verilated::addFlushCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush, this);
     Verilated::addExitCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit, this);
 
-#ifdef VL_TRACE_OFFLOAD
-    // Compute offload buffer size. we need to be able to store a new value for
-    // each signal, which is 'nextCode()' entries after the init callbacks
-    // above have been run, plus up to 2 more words of metadata per signal,
-    // plus fixed overhead of 1 for a termination flag and 3 for a time stamp
-    // update.
-    m_offloadBufferSize = nextCode() + numSignals() * 2 + 4;
+#ifdef VL_THREADED
+    if (offload()) {
+        // Compute offload buffer size. we need to be able to store a new value for
+        // each signal, which is 'nextCode()' entries after the init callbacks
+        // above have been run, plus up to 2 more words of metadata per signal,
+        // plus fixed overhead of 1 for a termination flag and 3 for a time stamp
+        // update.
+        m_offloadBufferSize = nextCode() + numSignals() * 2 + 4;
 
-    // Start the worker thread
-    m_workerThread.reset(
-        new std::thread{&VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain, this});
+        // Start the worker thread
+        m_workerThread.reset(
+            new std::thread{&VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain, this});
+    }
 #endif
 }
 
@@ -415,14 +430,16 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const char* nam
 //=========================================================================
 // Internals available to format specific implementations
 
-template <> std::string VerilatedTrace<VL_SUB_T, VL_BUF_T>::timeResStr() const {
+template <>
+std::string VerilatedTrace<VL_SUB_T, VL_BUF_T>::timeResStr() const {
     return doubleToTimescale(m_timeRes);
 }
 
 //=========================================================================
 // External interface to client code
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_unit(const char* unitp) VL_MT_SAFE {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_unit(const char* unitp) VL_MT_SAFE {
     m_timeUnit = timescaleToDouble(unitp);
 }
 template <>
@@ -451,8 +468,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
     }
 }
 
-#ifdef VL_TRACE_PARALLEL
-template <>  //
+#ifdef VL_THREADED
+template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap, bool) {
     ParallelWorkerData* const wdp = reinterpret_cast<ParallelWorkerData*>(datap);
     // Run the task
@@ -463,7 +480,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap, bool) {
     if (wdp->m_waiting) wdp->m_cv.notify_one();
 }
 
-template <> VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWorkerData::wait() {
+template <>
+VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWorkerData::wait() {
     // Spin for a while, waiting for the buffer to become ready
     for (int i = 0; i < VL_LOCK_SPINS; ++i) {
         if (VL_LIKELY(m_ready.load(std::memory_order_relaxed))) return;
@@ -478,55 +496,69 @@ template <> VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWo
 #endif
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runParallelCallbacks(const ParallelCallbackMap& cbMap) {
-    for (VlThreadPool* threadPoolp : m_threadPoolps) {
-#ifdef VL_TRACE_PARALLEL
-        // If tracing in parallel, dispatch to the thread pool (if exists)
-        if (threadPoolp && threadPoolp->numThreads()) {
-            // List of work items for thread (std::list, as ParallelWorkerData is not movable)
-            std::list<ParallelWorkerData> workerData;
-            // We use the whole pool + the main thread
-            const unsigned threads = threadPoolp->numThreads() + 1;
-            // Main thread executes all jobs with index % threads == 0
-            std::vector<ParallelWorkerData*> mainThreadWorkerData;
-            // The tracing callbacks to execute on this thread-pool
-            const auto& cbVec = cbMap.at(threadPoolp);
-            // Enuque all the jobs
-            for (unsigned i = 0; i < cbVec.size(); ++i) {
-                const CallbackRecord& cbr = cbVec[i];
-                // Always get the trace buffer on the main thread
-                Buffer* const bufp = getTraceBuffer();
-                // Create new work item
-                workerData.emplace_back(cbr.m_dumpCb, cbr.m_userp, bufp);
-                // Grab the new work item
-                ParallelWorkerData* const itemp = &workerData.back();
-                // Enqueue task to thread pool, or main thread
-                if (unsigned rem = i % threads) {
-                    threadPoolp->workerp(rem - 1)->addTask(parallelWorkerTask, itemp, false);
-                } else {
-                    mainThreadWorkerData.push_back(itemp);
-                }
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<CallbackRecord>& cbVec) {
+#ifdef VL_THREADED
+    if (parallel()) {
+        // If tracing in parallel, dispatch to the thread pool
+        VlThreadPool* threadPoolp = static_cast<VlThreadPool*>(m_contextp->threadPoolp());
+        // List of work items for thread (std::list, as ParallelWorkerData is not movable)
+        std::list<ParallelWorkerData> workerData;
+        // We use the whole pool + the main thread
+        const unsigned threads = threadPoolp->numThreads() + 1;
+        // Main thread executes all jobs with index % threads == 0
+        std::vector<ParallelWorkerData*> mainThreadWorkerData;
+        // Enuque all the jobs
+        for (unsigned i = 0; i < cbVec.size(); ++i) {
+            const CallbackRecord& cbr = cbVec[i];
+            // Always get the trace buffer on the main thread
+            Buffer* const bufp = getTraceBuffer();
+            // Create new work item
+            workerData.emplace_back(cbr.m_dumpCb, cbr.m_userp, bufp);
+            // Grab the new work item
+            ParallelWorkerData* const itemp = &workerData.back();
+            // Enqueue task to thread pool, or main thread
+            if (unsigned rem = i % threads) {
+                threadPoolp->workerp(rem - 1)->addTask(parallelWorkerTask, itemp);
+            } else {
+                mainThreadWorkerData.push_back(itemp);
             }
-            // Execute main thead jobs
-            for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
-                parallelWorkerTask(itemp, false);
-            }
-            // Commit all trace buffers in order
-            for (ParallelWorkerData& item : workerData) {
-                // Wait until ready
-                item.wait();
-                // Commit the buffer
-                commitTraceBuffer(item.m_bufp);
-            }
-            continue;
         }
+        // Execute main thead jobs
+        for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
+            parallelWorkerTask(itemp, false);
+        }
+        // Commit all trace buffers in order
+        for (ParallelWorkerData& item : workerData) {
+            // Wait until ready
+            item.wait();
+            // Commit the buffer
+            commitTraceBuffer(item.m_bufp);
+        }
+
+        // Done
+        return;
+    }
 #endif
-        // Fall back on sequential execution
-        for (const CallbackRecord& cbr : cbMap.at(threadPoolp)) {
-            Buffer* const traceBufferp = getTraceBuffer();
-            cbr.m_dumpCb(cbr.m_userp, traceBufferp);
-            commitTraceBuffer(traceBufferp);
-        }
+    // Fall back on sequential execution
+    for (const CallbackRecord& cbr : cbVec) {
+        Buffer* const traceBufferp = getTraceBuffer();
+        cbr.m_dumpCb(cbr.m_userp, traceBufferp);
+        commitTraceBuffer(traceBufferp);
+    }
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runOffloadedCallbacks(
+    const std::vector<CallbackRecord>& cbVec) {
+    // Fall back on sequential execution
+    for (const CallbackRecord& cbr : cbVec) {
+#ifdef VL_THREADED
+        Buffer* traceBufferp = getTraceBuffer();
+        cbr.m_dumpOffloadCb(cbr.m_userp, static_cast<OffloadBuffer*>(traceBufferp));
+        commitTraceBuffer(traceBufferp);
+#else
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
+#endif
     }
 }
 
@@ -536,13 +568,14 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
     // This does get the mutex, but if multiple threads are trying to dump
     // chances are the data being dumped will have other problems
     const VerilatedLockGuard lock{m_mutex};
-    if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
+    if (VL_UNCOVERABLE(m_didSomeDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
         VL_PRINTF_MT("%%Warning: previous dump at t=%" PRIu64 ", requesting t=%" PRIu64
                      ", dump call ignored\n",
                      m_timeLastDump, timeui);
         return;
     }  // LCOV_EXCL_STOP
     m_timeLastDump = timeui;
+    m_didSomeDump = true;
 
     Verilated::quiesce();
 
@@ -553,35 +586,47 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
         if (!preChangeDump()) return;
     }
 
-#ifdef VL_TRACE_OFFLOAD
-    // Currently only incremental dumps run on the worker thread
     uint32_t* bufferp = nullptr;
-    if (VL_LIKELY(!m_fullDump)) {
-        // Get the offload buffer we are about to fill
-        bufferp = getOffloadBuffer();
-        m_offloadBufferWritep = bufferp;
-        m_offloadBufferEndp = bufferp + m_offloadBufferSize;
+    if (offload()) {
+#ifdef VL_THREADED
+        // Currently only incremental dumps run on the worker thread
+        if (VL_LIKELY(!m_fullDump)) {
+            // Get the offload buffer we are about to fill
+            bufferp = getOffloadBuffer();
+            m_offloadBufferWritep = bufferp;
+            m_offloadBufferEndp = bufferp + m_offloadBufferSize;
 
-        // Tell worker to update time point
-        m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::TIME_CHANGE;
-        *reinterpret_cast<uint64_t*>(m_offloadBufferWritep + 1) = timeui;
-        m_offloadBufferWritep += 3;
+            // Tell worker to update time point
+            m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::TIME_CHANGE;
+            *reinterpret_cast<uint64_t*>(m_offloadBufferWritep + 1) = timeui;
+            m_offloadBufferWritep += 3;
+        } else {
+            // Update time point
+            flushBase();
+            emitTimeChange(timeui);
+        }
+#else
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
+#endif
     } else {
         // Update time point
-        flushBase();
         emitTimeChange(timeui);
     }
-#else
-    // Update time point
-    emitTimeChange(timeui);
-#endif
 
     // Run the callbacks
     if (VL_UNLIKELY(m_fullDump)) {
         m_fullDump = false;  // No more need for next dump to be full
-        runParallelCallbacks(m_fullCbs);
+        if (offload()) {
+            runOffloadedCallbacks(m_fullOffloadCbs);
+        } else {
+            runCallbacks(m_fullCbs);
+        }
     } else {
-        runParallelCallbacks(m_chgCbs);
+        if (offload()) {
+            runOffloadedCallbacks(m_chgOffloadCbs);
+        } else {
+            runCallbacks(m_chgCbs);
+        }
     }
 
     for (uint32_t i = 0; i < m_cleanupCbs.size(); ++i) {
@@ -589,8 +634,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
         cbr.m_cleanupCb(cbr.m_userp, self());
     }
 
-#ifdef VL_TRACE_OFFLOAD
-    if (VL_LIKELY(bufferp)) {
+#ifdef VL_THREADED
+    if (offload() && VL_LIKELY(bufferp)) {
         // Mark end of the offload buffer we just filled
         *m_offloadBufferWritep++ = VerilatedTraceOffloadCommand::END;
 
@@ -607,58 +652,98 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
 // Non-hot path internal interface to Verilator generated code
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addThreadPool(VlThreadPool* threadPoolp)
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
-    for (VlThreadPool* const poolp : m_threadPoolps) {
-        if (poolp == threadPoolp) return;
+
+    const bool firstModel = m_models.empty();
+    const bool newModel = m_models.insert(modelp).second;
+    VerilatedContext* const contextp = modelp->contextp();
+
+    // Validate
+    if (!newModel) {  // LCOV_EXCL_START
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "The same model has already been added to this trace file");
     }
-    m_threadPoolps.push_back(threadPoolp);
+    if (VL_UNCOVERABLE(m_contextp && contextp != m_contextp)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "A trace file instance can only handle models from the same context");
+    }
+    if (VL_UNCOVERABLE(m_didSomeDump)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "Cannot add models to a trace file if 'dump' has already been called");
+    }  // LCOV_EXCL_STOP
+
+    // Keep hold of the context
+    m_contextp = contextp;
+
+    // Get the desired trace config from the model
+    const std::unique_ptr<VerilatedTraceConfig> configp = modelp->traceConfig();
+#ifndef VL_THREADED
+    if (configp->m_useOffloading) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Cannot use trace offloading without VL_THREADED");
+    }
+#endif
+
+    // Configure trace base class
+    if (!firstModel) {
+        if (m_offload != configp->m_useOffloading) {
+            VL_FATAL_MT(__FILE__, __LINE__, "",
+                        "Either all or no models using the same trace file must use offloading");
+        }
+    }
+    m_offload = configp->m_useOffloading;
+    // If at least one model requests parallel tracing, then use it
+    m_parallel |= configp->m_useParallel;
+
+    if (VL_UNCOVERABLE(m_parallel && m_offload)) {  // LCOV_EXCL_START
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Cannot use parallel tracing with offloading");
+    }  // LCOV_EXCL_STOP
+
+    // Configure format specific sub class
+    configure(*(configp.get()));
 }
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackRecord>& cbVec,
-                                                           CallbackRecord& cbRec)
+                                                           CallbackRecord&& cbRec)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
-    if (VL_UNCOVERABLE(timeLastDump() != 0)) {  // LCOV_EXCL_START
-        const std::string msg = (std::string{"Internal: "} + __FILE__ + "::" + __FUNCTION__
-                                 + " called with already open file");
-        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-    }  // LCOV_EXCL_STOP
     cbVec.push_back(cbRec);
 }
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp) VL_MT_SAFE {
-    CallbackRecord cbr{cb, userp};
-    addCallbackRecord(m_initCbs, cbr);
+    addCallbackRecord(m_initCbs, CallbackRecord{cb, userp});
 }
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, void* userp,
-                                                   VlThreadPool* threadPoolp) VL_MT_SAFE {
-    CallbackRecord cbr{cb, userp};
-    addThreadPool(threadPoolp);
-    addCallbackRecord(m_fullCbs[threadPoolp], cbr);
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
+    addCallbackRecord(m_fullCbs, CallbackRecord{cb, userp});
 }
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpCb_t cb, void* userp,
-                                                  VlThreadPool* threadPoolp) VL_MT_SAFE {
-    CallbackRecord cbr{cb, userp};
-    addThreadPool(threadPoolp);
-    addCallbackRecord(m_chgCbs[threadPoolp], cbr);
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE {
+    addCallbackRecord(m_fullOffloadCbs, CallbackRecord{cb, userp});
+}
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
+    addCallbackRecord(m_chgCbs, CallbackRecord{cb, userp});
+}
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE {
+    addCallbackRecord(m_chgOffloadCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE {
-    CallbackRecord cbr{cb, userp};
-    addCallbackRecord(m_cleanupCbs, cbr);
+    addCallbackRecord(m_cleanupCbs, CallbackRecord{cb, userp});
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::pushNamePrefix(const std::string& prefix) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::pushNamePrefix(const std::string& prefix) {
     m_namePrefixStack.push_back(m_namePrefixStack.back() + prefix);
 }
 
-template <> void VerilatedTrace<VL_SUB_T, VL_BUF_T>::popNamePrefix(unsigned count) {
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::popNamePrefix(unsigned count) {
     while (count--) m_namePrefixStack.pop_back();
     assert(!m_namePrefixStack.empty());
 }
@@ -756,83 +841,93 @@ static inline void cvtQDataToStr(char* dstp, QData value) {
 //=========================================================================
 // VerilatedTraceBuffer
 
-template <>  //
-VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>::VerilatedTraceBuffer(VL_SUB_T& owner)
-    : m_owner{owner} {
-#ifdef VL_TRACE_OFFLOAD
-    if (m_offloadBufferWritep) {
-        using This = VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>*;
-        // Tack on the buffer address
-        static_assert(2 * sizeof(uint32_t) >= sizeof(This),
-                      "This should be enough on all plafrorms");
-        *m_offloadBufferWritep++ = VerilatedTraceOffloadCommand::TRACE_BUFFER;
-        *reinterpret_cast<This*>(m_offloadBufferWritep) = this;
-        m_offloadBufferWritep += 2;
-    }
-#endif
-}
+template <>
+VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner)
+    : VL_BUF_T{owner}
+    , m_sigs_oldvalp{owner.m_sigs_oldvalp}
+    , m_sigs_enabledp{owner.m_sigs_enabledp} {}
 
 // These functions must write the new value back into the old value store,
 // and subsequently call the format specific emit* implementations. Note
 // that this file must be included in the format specific implementation, so
 // the emit* functions can be inlined for performance.
 
-template <>  //
-void VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>::fullBit(uint32_t* oldp, CData newval) {
+template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullBit(uint32_t* oldp, CData newval) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    self()->emitBit(code, newval);
+    emitBit(code, newval);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>::fullCData(uint32_t* oldp, CData newval, int bits) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullCData(uint32_t* oldp, CData newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    self()->emitCData(code, newval, bits);
+    emitCData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>::fullSData(uint32_t* oldp, SData newval, int bits) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullSData(uint32_t* oldp, SData newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    self()->emitSData(code, newval, bits);
+    emitSData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>::fullIData(uint32_t* oldp, IData newval, int bits) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullIData(uint32_t* oldp, IData newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    self()->emitIData(code, newval, bits);
+    emitIData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>::fullQData(uint32_t* oldp, QData newval, int bits) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullQData(uint32_t* oldp, QData newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *reinterpret_cast<QData*>(oldp) = newval;
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    self()->emitQData(code, newval, bits);
+    emitQData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>::fullWData(uint32_t* oldp, const WData* newvalp,
-                                                         int bits) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t* oldp, const WData* newvalp, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    self()->emitWData(code, newvalp, bits);
+    emitWData(code, newvalp, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_SUB_T, VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *reinterpret_cast<double*>(oldp) = newval;
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     // cppcheck-suppress invalidPointerCast
-    self()->emitDouble(code, newval);
+    emitDouble(code, newval);
 }
+
+#ifdef VL_THREADED
+//=========================================================================
+// VerilatedTraceOffloadBuffer
+
+template <>
+VerilatedTraceOffloadBuffer<VL_BUF_T>::VerilatedTraceOffloadBuffer(VL_SUB_T& owner)
+    : VerilatedTraceBuffer<VL_BUF_T>{owner}
+    , m_offloadBufferWritep{owner.m_offloadBufferWritep}
+    , m_offloadBufferEndp{owner.m_offloadBufferEndp} {
+    if (m_offloadBufferWritep) {
+        using This = VerilatedTraceBuffer<VL_BUF_T>*;
+        // Tack on the buffer address
+        static_assert(2 * sizeof(uint32_t) >= sizeof(This),
+                      "This should be enough on all plafrorms");
+        *m_offloadBufferWritep++ = VerilatedTraceOffloadCommand::TRACE_BUFFER;
+        *reinterpret_cast<This*>(m_offloadBufferWritep) = static_cast<This>(this);
+        m_offloadBufferWritep += 2;
+    }
+}
+#endif
 
 #endif  // VL_CPPCHECK

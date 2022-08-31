@@ -9,10 +9,9 @@
 //
 //*************************************************************************
 
+#include <Vt_const_bitoptree_bug3096.h>
 #include <cassert>
 #include <iostream>
-
-#include <Vt_const_bitoptree_bug3096.h>
 
 int main(int argc, char* argv[]) {
     Vt_const_bitoptree_bug3096* const tb = new Vt_const_bitoptree_bug3096;

@@ -18,8 +18,9 @@ scenarios(vlt_all => 1);
 top_filename("t/t_gen_alw.v");
 
 compile(
+    v_flags2 => ["--prof-exec"],
     # Checks below care about thread count, so use 2 (minimum reasonable)
-    v_flags2 => ["--prof-exec",  ($Self->{vltmt} ? "--threads 2" : "")]
+    threads => $Self->{vltmt} ? 2 : 0
     );
 
 execute(

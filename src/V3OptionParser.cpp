@@ -48,12 +48,16 @@ struct V3OptionParser::Impl {
     };
 
     // Actual action classes
-    template <typename T> class ActionSet;  // "-opt" for bool-ish, "-opt val" for int and string
-    template <typename BOOL> class ActionFOnOff;  // "-fopt" and "-fno-opt" for bool-ish
-    template <typename BOOL> class ActionOnOff;  // "-opt" and "-no-opt" for bool-ish
+    template <typename T>
+    class ActionSet;  // "-opt" for bool-ish, "-opt val" for int and string
+    template <typename BOOL>
+    class ActionFOnOff;  // "-fopt" and "-fno-opt" for bool-ish
+    template <typename BOOL>
+    class ActionOnOff;  // "-opt" and "-no-opt" for bool-ish
     class ActionCbCall;  // Callback without argument for "-opt"
     class ActionCbOnOff;  // Callback for "-opt" and "-no-opt"
-    template <class T> class ActionCbVal;  // Callback for "-opt val"
+    template <class T>
+    class ActionCbVal;  // Callback for "-opt val"
     class ActionCbPartialMatch;  // Callback "-O3" for "-O"
     class ActionCbPartialMatchVal;  // Callback "-debugi-V3Options 3" for "-debugi-"
 
@@ -67,7 +71,8 @@ struct V3OptionParser::Impl {
 // Action classes in V3OptionParser::Impl
 
 #define V3OPTION_PARSER_DEF_ACT_CLASS(className, type, body, enType) \
-    template <> class V3OptionParser::Impl::className<type> final : public ActionBase<enType> { \
+    template <> \
+    class V3OptionParser::Impl::className<type> final : public ActionBase<enType> { \
         type* const m_valp; /* Pointer to a option variable*/ \
 \
     public: \
@@ -135,7 +140,7 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
             if (const char* const nop
                 = VString::startsWith(optp, "-no") ? (optp + strlen("-no")) : nullptr) {
-                if (act.first == nop || act.first == (string{"-"} + nop)) {
+                if (act.first == nop || act.first == (std::string{"-"} + nop)) {
                     return act.second.get();
                 }
             }

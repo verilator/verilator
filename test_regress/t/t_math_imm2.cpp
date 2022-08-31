@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
+
 #include "Vt_math_imm2.h"
 
 double sc_time_stamp() { return 0; }

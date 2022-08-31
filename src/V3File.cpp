@@ -17,11 +17,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3File.h"
+
+#include "V3Ast.h"
+#include "V3Global.h"
 #include "V3Os.h"
 #include "V3String.h"
-#include "V3Ast.h"
 
 #include <cerrno>
 #include <cstdarg>
@@ -29,6 +30,7 @@
 #include <iomanip>
 #include <map>
 #include <memory>
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -489,8 +491,8 @@ private:
 #ifdef INFILTER_PIPE
         int fd_stdin[2];
         int fd_stdout[2];
-        static const int P_RD = 0;
-        static const int P_WR = 1;
+        constexpr int P_RD = 0;
+        constexpr int P_WR = 1;
 
         if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
             v3fatal("--pipe-filter: Can't pipe: " << strerror(errno));
@@ -623,17 +625,9 @@ V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language 
 //----------------------------------------------------------------------
 
 string V3OutFormatter::indentSpaces(int num) {
-    // Indent the specified number of spaces.  Use spaces.
-    static char str[MAXSPACE + 20];
-    char* cp = str;
-    if (num > MAXSPACE) num = MAXSPACE;
-    while (num > 0) {
-        *cp++ = ' ';
-        --num;
-    }
-    *cp++ = '\0';
-    string st{str};  // No const, move optimization
-    return st;
+    // Indent the specified number of spaces.
+    if (num <= 0) return std::string{};
+    return std::string(std::min<size_t>(num, MAXSPACE), ' ');
 }
 
 bool V3OutFormatter::tokenMatch(const char* cp, const char* cmp) {
@@ -660,11 +654,15 @@ bool V3OutFormatter::tokenEnd(const char* cp) {
             || tokenMatch(cp, "endtask"));
 }
 
+bool V3OutFormatter::tokenNotStart(const char* cp) {
+    return (tokenMatch(cp, "export") || tokenMatch(cp, "import"));
+}
+
 int V3OutFormatter::endLevels(const char* strg) {
     int levels = m_indentLevel;
     {
         const char* cp = strg;
-        while (isspace(*cp)) cp++;
+        while (isspace(*cp)) ++cp;
         switch (*cp) {
         case '\n':  // Newlines.. No need for whitespace before it
             return 0;
@@ -674,12 +672,12 @@ int V3OutFormatter::endLevels(const char* strg) {
         {
             // label/public/private:  Deindent by 2 spaces
             const char* mp = cp;
-            for (; isalnum(*mp); mp++) {}
+            for (; isalnum(*mp); ++mp) {}
             if (mp[0] == ':' && mp[1] != ':') return (levels - m_blockIndent / 2);
         }
     }
     // We want "} else {" to be one level to the left of normal
-    for (const char* cp = strg; *cp; cp++) {
+    for (const char* cp = strg; *cp; ++cp) {
         switch (*cp) {
         case '}':
         case ')': levels -= m_blockIndent; break;
@@ -708,17 +706,19 @@ void V3OutFormatter::puts(const char* strg) {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
     }
+    bool notstart = false;
     bool wordstart = true;
     bool equalsForBracket = false;  // Looking for "= {"
-    for (const char* cp = strg; *cp; cp++) {
+    for (const char* cp = strg; *cp; ++cp) {
         putcNoTracking(*cp);
         if (isalpha(*cp)) {
-            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp)) indentInc();
+            if (wordstart && m_lang == LA_VERILOG && tokenNotStart(cp)) notstart = true;
+            if (wordstart && m_lang == LA_VERILOG && !notstart && tokenStart(cp)) indentInc();
             if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
         }
         switch (*cp) {
         case '\n':
-            m_lineno++;
+            ++m_lineno;
             wordstart = true;
             if (cp[1] == '\0') {
                 // Add the indent later, may be a indentInc/indentDec
@@ -739,7 +739,7 @@ void V3OutFormatter::puts(const char* strg) {
             if (m_lang == LA_C || m_lang == LA_VERILOG) {
                 if (cp > strg && cp[-1] == '/' && !m_inStringLiteral) {
                     // Output ignoring contents to EOL
-                    cp++;
+                    ++cp;
                     while (*cp && cp[1] && cp[1] != '\n') putcNoTracking(*cp++);
                     if (*cp) putcNoTracking(*cp);
                 }
@@ -839,7 +839,7 @@ void V3OutFormatter::putcNoTracking(char chr) {
     }
     switch (chr) {
     case '\n':
-        m_lineno++;
+        ++m_lineno;
         m_column = 0;
         m_nobreak = true;
         break;
@@ -847,9 +847,9 @@ void V3OutFormatter::putcNoTracking(char chr) {
     case ' ':
     case '(':
     case '|':
-    case '&': m_column++; break;
+    case '&': ++m_column; break;
     default:
-        m_column++;
+        ++m_column;
         m_nobreak = false;
         break;
     }
@@ -864,26 +864,26 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
         // Encode chars into XML string
         for (const char c : namein) {
             if (c == '"') {
-                out += string("&quot;");
+                out += std::string{"&quot;"};
             } else if (c == '\'') {
-                out += string("&apos;");
+                out += std::string{"&apos;"};
             } else if (c == '<') {
-                out += string("&lt;");
+                out += std::string{"&lt;"};
             } else if (c == '>') {
-                out += string("&gt;");
+                out += std::string{"&gt;"};
             } else if (c == '&') {
-                out += string("&amp;");
+                out += std::string{"&amp;"};
             } else if (isprint(c)) {
                 out += c;
             } else {
-                out += string("&#") + cvtToStr((unsigned int)(c & 0xff)) + ";";
+                out += std::string{"&#"} + cvtToStr((unsigned int)(c & 0xff)) + ";";
             }
         }
     } else {
         // Encode control chars into C style escapes
         for (const char c : namein) {
             if (c == '\\' || c == '"') {
-                out += string("\\") + c;
+                out += std::string{"\\"} + c;
             } else if (c == '\n') {
                 out += "\\n";
             } else if (c == '\r') {
@@ -894,8 +894,8 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += c;
             } else {
                 // This will also cover \a etc
-                const string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
-                                     + cvtToStr(c & 7);
+                const string octal = std::string{"\\"} + cvtToStr((c >> 6) & 3)
+                                     + cvtToStr((c >> 3) & 7) + cvtToStr(c & 7);
                 out += octal;
             }
         }
@@ -920,13 +920,16 @@ void V3OutFormatter::printf(const char* fmt...) {
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
 V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
-    : V3OutFormatter{filename, lang} {
+    : V3OutFormatter{filename, lang}
+    , m_bufferp{new std::array<char, WRITE_BUFFER_SIZE_BYTES>{}} {
     if ((m_fp = V3File::new_fopen_w(filename)) == nullptr) {
         v3fatal("Cannot write " << filename);
     }
 }
 
 V3OutFile::~V3OutFile() {
+    writeBlock();
+
     if (m_fp) fclose(m_fp);
     m_fp = nullptr;
 }
@@ -939,7 +942,8 @@ void V3OutFile::putsForceIncs() {
 void V3OutCFile::putsGuard() {
     UASSERT(!m_guard, "Already called putsGuard in emit file");
     m_guard = true;
-    string var = VString::upcase(string("VERILATED_") + V3Os::filenameNonDir(filename()) + "_");
+    string var
+        = VString::upcase(std::string{"VERILATED_"} + V3Os::filenameNonDir(filename()) + "_");
     for (char& c : var) {
         if (!isalnum(c)) c = '_';
     }

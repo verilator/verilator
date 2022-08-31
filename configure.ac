@@ -5,14 +5,14 @@
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-#AC_INIT([Verilator],[#.### YYYY-MM-DD])
-#AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.224 2022-06-19],
-        [https://verilator.org],
-        [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
 # and commit using "devel release" or "Version bump" message
 # Then 'make maintainer-dist'
+#AC_INIT([Verilator],[#.### YYYY-MM-DD])
+#AC_INIT([Verilator],[#.### devel])
+AC_INIT([Verilator],[4.226 2022-08-31],
+        [https://verilator.org],
+        [verilator],[https://verilator.org])
 
 AC_CONFIG_HEADERS(src/config_build.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
@@ -355,7 +355,7 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
 case "$(which lsb_release 2>&1 > /dev/null && lsb_release -d)" in
-*Ubuntu*22.04*)
+*Arch*Linux* | *Ubuntu*22.04*)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
 ;;

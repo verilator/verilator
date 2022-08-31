@@ -11,13 +11,12 @@
 //
 //*************************************************************************
 
-#include <iostream>
-#include <iomanip>
-
-#include "svdpi.h"
-
 #include "Vt_dpi_accessors.h"
 #include "Vt_dpi_accessors__Dpi.h"
+#include "svdpi.h"
+
+#include <iomanip>
+#include <iostream>
 
 using std::cout;
 using std::dec;
@@ -26,11 +25,9 @@ using std::hex;
 using std::setfill;
 using std::setw;
 
-double sc_time_stamp() { return 0; }
-
 // Convenience function to check we didn't finish unexpectedly
-static void checkFinish(const char* msg) {
-    if (Verilated::gotFinish()) {
+static void checkFinish(VerilatedContext* contextp, const char* msg) {
+    if (contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "dut", msg);
         exit(1);
     }
@@ -61,7 +58,9 @@ static void checkResult(bool p, const char* msg_fail) {
 
 // Main function instantiates the model and steps through the test.
 int main() {
-    Vt_dpi_accessors* dut = new Vt_dpi_accessors("dut");
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    const std::unique_ptr<VM_PREFIX> dut{new VM_PREFIX{contextp.get(), "dut"}};
+
     svScope scope = svGetScopeFromName("dut.t");
     if (!scope) vl_fatal(__FILE__, __LINE__, "dut", "No svGetScopeFromName result");
     svSetScope(scope);
@@ -112,7 +111,7 @@ int main() {
     cout << "===============================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         a = (int)a_read();
         logReg(dut->clk, "read a", a, " (before clk)");
@@ -130,7 +129,7 @@ int main() {
                     "Test of scalar register reading failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can read a vector register.
 #ifdef TEST_VERBOSE
@@ -138,7 +137,7 @@ int main() {
     cout << "===============================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         b = (int)b_read();
         logRegHex(dut->clk, "read b", 8, b, " (before clk)");
@@ -153,7 +152,7 @@ int main() {
                     "Test of vector register reading failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Test we can read an array element
 #ifdef TEST_VERBOSE
@@ -162,7 +161,7 @@ int main() {
     cout << "=============================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         mem32 = (int)mem32_read();
         logRegHex(dut->clk, "read mem32", 8, mem32, " (before clk)");
@@ -177,7 +176,7 @@ int main() {
         checkResult(mem32 == 0x20, "Test of array element reading failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can read a scalar wire
 #ifdef TEST_VERBOSE
@@ -186,7 +185,7 @@ int main() {
     cout << "===========================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         a = (int)a_read();
         c = (int)c_read();
@@ -206,7 +205,7 @@ int main() {
         checkResult(c == (1 - a), "Test of scalar wire reading failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can read a vector wire
 #ifdef TEST_VERBOSE
@@ -215,7 +214,7 @@ int main() {
     cout << "===========================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         b = (int)b_read();
         d = (int)d_read();
@@ -236,7 +235,7 @@ int main() {
         checkResult(d == ((~b) & 0xff), "Test of vector wire reading failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can write a scalar register
 #ifdef TEST_VERBOSE
@@ -245,7 +244,7 @@ int main() {
     cout << "===============================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         a = 1 - (int)a_read();
         a_write(reinterpret_cast<const svBitVecVal*>(&a));
@@ -265,7 +264,7 @@ int main() {
                     "Test of scalar register writing failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can write a vector register
 #ifdef TEST_VERBOSE
@@ -274,7 +273,7 @@ int main() {
     cout << "===============================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         b = (int)b_read() - 1;
         b_write(reinterpret_cast<const svBitVecVal*>(&b));
@@ -294,7 +293,7 @@ int main() {
                     "Test of vector register writing failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Test we can write an array element
 #ifdef TEST_VERBOSE
@@ -303,7 +302,7 @@ int main() {
     cout << "=============================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         mem32 = (int)mem32_read() - 1;
         mem32_write(reinterpret_cast<const svBitVecVal*>(&mem32));
@@ -323,7 +322,7 @@ int main() {
         checkResult(mem32_after == mem32, "Test of array element writing failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can read a vector register slice
 #ifdef TEST_VERBOSE
@@ -332,7 +331,7 @@ int main() {
     cout << "=====================================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         b = (int)b_read();
         int b_slice = (int)b_slice_read();
@@ -350,7 +349,7 @@ int main() {
         checkResult(b_slice == (b & 0x0f), "Test of vector register slice reading failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Test we can read an array element slice
 #ifdef TEST_VERBOSE
@@ -359,7 +358,7 @@ int main() {
     cout << "===================================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         mem32 = (int)mem32_read();
         int mem32_slice = (int)mem32_slice_read();
@@ -379,7 +378,7 @@ int main() {
                     "Test of array element slice reading failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can read a vector wire slice
 #ifdef TEST_VERBOSE
@@ -388,7 +387,7 @@ int main() {
     cout << "=================================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         b = (int)b_read();
         d = (int)d_read();
@@ -410,7 +409,7 @@ int main() {
         checkResult(d_slice == ((d & 0x7e) >> 1), "Test of vector wire slice reading failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can write a vector register slice
 #ifdef TEST_VERBOSE
@@ -419,7 +418,7 @@ int main() {
     cout << "=====================================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
 
         b = (int)b_read();
@@ -449,7 +448,7 @@ int main() {
         logRegHex(dut->clk, "read  b [3:0]", 4, b_slice, " (after clk)");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Test we can write an array element slice
 #ifdef TEST_VERBOSE
@@ -458,7 +457,7 @@ int main() {
     cout << "===================================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
 
         mem32 = (int)mem32_read();
@@ -494,7 +493,7 @@ int main() {
                     "Test of array element slice writing failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Check we can read complex registers
 #ifdef TEST_VERBOSE
@@ -503,7 +502,7 @@ int main() {
     cout << "================================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
 
         b = (int)b_read();
@@ -540,9 +539,9 @@ int main() {
     cout << endl;
 #endif
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
 
         e = 0x05 | (i << 4);
@@ -574,7 +573,7 @@ int main() {
                     "Test of complex register reading l2 failed.");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Test we can write a complex register
 #ifdef TEST_VERBOSE
@@ -583,7 +582,7 @@ int main() {
     cout << "================================\n";
 #endif
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
 
         b = (int)b_read();
@@ -632,9 +631,9 @@ int main() {
     cout << endl;
 #endif
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
-    for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
+    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
 
         e = (int)e_read();
@@ -671,11 +670,10 @@ int main() {
         logRegHex(dut->clk, "read  l2", 8, l2, " (before clk)");
     }
 
-    checkFinish("t_dpi_accessors unexpected finish");
+    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
 
     // Tidy up
     dut->final();
-    VL_DO_DANGLING(delete dut, dut);
     cout << "*-* All Finished *-*\n";
 }
 

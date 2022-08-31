@@ -6,11 +6,13 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 
+#include <verilated.h>
+#include <verilated_cov.h>
+
 #include <iostream>
 #include <thread>
 
-#include <verilated.h>
-#include <verilated_cov.h>
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
 #include VM_PREFIX_INCLUDE
@@ -82,7 +84,7 @@ void sim(VM_PREFIX* topp) {
     }
 
     std::string filename
-        = std::string(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage_") + topp->name() + ".dat";
+        = std::string{VL_STRINGIFY(TEST_OBJ_DIR) "/coverage_"} + topp->name() + ".dat";
     contextp->coveragep()->write(filename.c_str());
 }
 
@@ -92,6 +94,8 @@ int main(int argc, char** argv, char** env) {
     std::unique_ptr<VerilatedContext> context1p{new VerilatedContext};
 
     // configuration
+    context0p->threads(1);
+    context1p->threads(1);
     context0p->fatalOnError(false);
     context1p->fatalOnError(false);
     context0p->traceEverOn(true);

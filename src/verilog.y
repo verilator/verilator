@@ -1171,7 +1171,7 @@ package_import_itemObj<strp>:   // IEEE: part of package_import_item
 
 package_export_declaration<nodep>: // IEEE: package_export_declaration
                 yEXPORT '*' yP_COLONCOLON '*' ';'
-                        { $$ = new AstPackageExportStarStar{$<fl>2}; SYMP->exportStarStar($<scp>1); }
+                        { $$ = new AstPackageExportStarStar{$<fl>2}; SYMP->exportStarStar(); }
         |       yEXPORT package_export_itemList ';'     { $$ = $2; }
         ;
 
@@ -1182,8 +1182,8 @@ package_export_itemList<nodep>:
 
 package_export_item<nodep>:     // ==IEEE: package_export_item
                 idCC yP_COLONCOLON package_import_itemObj
-                        { $$ = new AstPackageExport($<fl>3, VN_CAST($<scp>1, Package), *$3);
-                          SYMP->exportItem($<scp>1,*$3); }
+                        { $$ = new AstPackageExport{$<fl>3, VN_CAST($<scp>1, Package), *$3};
+                          if ($<scp>1) SYMP->exportItem($<scp>1, *$3); }
         ;
 
 //**********************************************************************
@@ -2074,10 +2074,8 @@ variable_dimension<nodeRangep>: // ==IEEE: variable_dimension
         //                      // IEEE: associative_dimension (if data_type)
         //                      // Can't tell which until see if expr is data type or not
         |       '[' exprOrDataType ']'                  { $$ = new AstBracketRange($1, $2); }
-        |       yP_BRASTAR ']'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: [*] wildcard associative arrays"); }
-        |       '[' '*' ']'
-                        { $$ = nullptr; BBUNSUP($2, "Unsupported: [*] wildcard associative arrays"); }
+        |       yP_BRASTAR ']'                          { $$ = new AstWildcardRange{$1}; }
+        |       '[' '*' ']'                             { $$ = new AstWildcardRange{$1}; }
         //                      // IEEE: queue_dimension
         //                      // '[' '$' ']' -- $ is part of expr, see '[' constExpr ']'
         //                      // '[' '$' ':' expr ']' -- anyrange:expr:$
@@ -3534,8 +3532,6 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         //                      // id/*member*/ is part of constExpr below
         //UNSUP constExpr                               { $$ = $1; }
         //                      // IEEE: assignment_pattern_key
-        //UNSUP simple_type                             { $1->v3error("Unsupported: '{} with data type as key"); $$ = $1; }
-        //                      // simple_type reference looks like constExpr
         //                      // Verilator:
         //                      //   The above expressions cause problems because "foo" may be
         //                      //   a constant identifier (if array) or a reference to the
@@ -3546,6 +3542,7 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         |       yaFLOATNUM                              { $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
         |       id                                      { $$ = new AstText($<fl>1,*$1); }
         |       strAsInt                                { $$ = $1; }
+        |       simple_type                             { $$ = $1; }
         ;
 
 assignment_pattern<patternp>:   // ==IEEE: assignment_pattern
@@ -3917,7 +3914,7 @@ system_f_call_or_t<nodep>:      // IEEE: part of system_tf_call (can be task or 
         |       yD_STABLE '(' expr ',' expr ')'         { $$ = $3; BBUNSUP($1, "Unsupported: $stable and clock arguments"); }
         |       yD_TAN '(' expr ')'                     { $$ = new AstTanD($1,$3); }
         |       yD_TANH '(' expr ')'                    { $$ = new AstTanhD($1,$3); }
-        |       yD_TESTPLUSARGS '(' str ')'             { $$ = new AstTestPlusArgs($1,*$3); }
+        |       yD_TESTPLUSARGS '(' expr ')'            { $$ = new AstTestPlusArgs($1, $3); }
         |       yD_TIME parenE                          { $$ = new AstTime($1, VTimescale(VTimescale::NONE)); }
         |       yD_TYPENAME '(' exprOrDataType ')'      { $$ = new AstAttrOf($1, VAttrType::TYPENAME, $3); }
         |       yD_UNGETC '(' expr ',' expr ')'         { $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
@@ -5532,9 +5529,23 @@ property_spec<nodep>:                   // IEEE: property_spec
 pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps just add an "p" to expr.)
         //UNSUP: This rule has been super-specialized to what is supported now
         //UNSUP remove below
+        //
+        // This rule is divided between expr and complex_pexpr to avoid an ambiguity in SystemVerilog grammar.
+        // Both pexpr and expr can consist of parentheses, and so a pexpr "((expr))" can be reduced in two ways:
+        // 1. ((expr)) -> (pexpr) -> pexpr
+        // 2. ((expr)) -> (expr)  -> pexpr
+        // The division below forces YACC to always assume the parentheses reduce to expr, unless they enclose
+        // operators that can only appear in a pexpr.
+        //
+                complex_pexpr                           { $$ = $1; }
+        |       expr                                    { $$ = $1; }
+        ;
+
+complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
                 expr yP_ORMINUSGT pexpr                 { $$ = new AstLogOr($2, new AstLogNot($2, $1), $3); }
         |       expr yP_OREQGT pexpr                    { $$ = new AstImplication($2, $1, $3); }
-        |       expr                                    { $$ = $1; }
+        |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
+        |       '(' complex_pexpr ')'                   { $$ = $2; }
         //UNSUP remove above, use below:
         //
         //                      // IEEE: sequence_expr

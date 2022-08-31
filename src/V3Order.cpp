@@ -79,6 +79,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Order.h"
+
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3Const.h"
@@ -88,14 +90,12 @@
 #include "V3Graph.h"
 #include "V3GraphStream.h"
 #include "V3List.h"
+#include "V3OrderGraph.h"
 #include "V3Partition.h"
 #include "V3PartitionGraph.h"
 #include "V3SenTree.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
-
-#include "V3Order.h"
-#include "V3OrderGraph.h"
 
 #include <algorithm>
 #include <deque>
@@ -103,9 +103,9 @@
 #include <map>
 #include <memory>
 #include <sstream>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 //######################################################################
 // Utilities
@@ -737,7 +737,7 @@ class OrderBuildVisitor final : public VNVisitor {
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
-    OrderBuildVisitor(AstNetlist* nodep) {
+    explicit OrderBuildVisitor(AstNetlist* nodep) {
         // Enable debugging (3 is default if global debug; we want acyc debugging)
         if (debug()) m_graphp->debug(5);
 
@@ -753,7 +753,7 @@ class OrderBuildVisitor final : public VNVisitor {
         // Build the rest of the graph
         iterate(nodep);
     }
-    virtual ~OrderBuildVisitor() = default;
+    ~OrderBuildVisitor() override = default;
 
 public:
     // Process the netlist and return the constructed ordering graph. It's 'process' because
@@ -824,7 +824,8 @@ inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs)
 //######################################################################
 // ProcessMoveBuildGraph
 
-template <class T_MoveVertex> class ProcessMoveBuildGraph {
+template <class T_MoveVertex>
+class ProcessMoveBuildGraph final {
     // ProcessMoveBuildGraph takes as input the fine-grained graph of
     // OrderLogicVertex, OrderVarVertex, etc; this is 'm_graph' in
     // OrderVisitor. It produces a slightly coarsened graph to drive the
@@ -1331,7 +1332,7 @@ class OrderProcess final : VNDeleter {
         pushDeletep(m_deleteDomainp);
     }
 
-    ~OrderProcess() {
+    ~OrderProcess() override {
         // Stats
         for (int type = 0; type < OrderVEdgeType::_ENUM_END; type++) {
             const double count = double(m_statCut[type]);
@@ -1601,11 +1602,19 @@ void OrderProcess::processDomainsIterate(OrderEitherVertex* vertexp) {
         // It should have already been copied into the settle domain.  Presumably it has
         // inputs which we never trigger, or nothing it's sensitive to, so we can rip it out.
         if (!domainp && vertexp->scopep()) domainp = m_deleteDomainp;
+        // However, anything that is public RW must be added to the combo domain since the
+        // user may change it at any time
+        if (domainp && vvertexp && vvertexp->varScp()->varp()->isSigUserRWPublic())
+            domainp = m_comboDomainp;
     }
     //
     vertexp->domainp(domainp);
     if (vertexp->domainp()) {
         UINFO(5, "      done d=" << cvtToHex(vertexp->domainp())
+                                 << (vertexp->domainp() == m_deleteDomainp ? " [DEL]" : "")
+                                 << (vertexp->domainp()->hasClocked() ? " [CLKD]" : "")
+                                 << (vertexp->domainp()->hasSettle() ? " [SETL]" : "")
+                                 << (vertexp->domainp()->hasInitial() ? " [INIT]" : "")
                                  << (vertexp->domainp()->hasCombo() ? " [COMB]" : "")
                                  << (vertexp->domainp()->isMulti() ? " [MULT]" : "") << " "
                                  << vertexp << endl);
@@ -2095,9 +2104,9 @@ void V3Order::orderAll(AstNetlist* netlistp) {
     // Build ordering graph
     std::unique_ptr<OrderGraph> orderGraph = OrderBuildVisitor::process(netlistp);
     // Order the netlist
-    OrderProcess::main(netlistp, *orderGraph.get());
+    OrderProcess::main(netlistp, *orderGraph);
     // Reset debug level
-    orderGraph.get()->debug(V3Error::debugDefault());
+    orderGraph->debug(V3Error::debugDefault());
     // Dump tree
     V3Global::dumpCheckGlobalTree("order", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

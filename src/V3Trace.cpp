@@ -38,15 +38,16 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Trace.h"
-#include "V3EmitCBase.h"
-#include "V3Graph.h"
+
 #include "V3DupFinder.h"
+#include "V3EmitCBase.h"
+#include "V3Global.h"
+#include "V3Graph.h"
 #include "V3Stats.h"
 
-#include <map>
 #include <limits>
+#include <map>
 #include <set>
 
 //######################################################################
@@ -82,7 +83,7 @@ public:
         if (activityAlways()) {
             return "*ALWAYS*";
         } else {
-            return (string(slow() ? "*SLOW* " : "")) + insertp()->name();
+            return std::string{slow() ? "*SLOW* " : ""} + insertp()->name();
         }
     }
     virtual string dotColor() const override { return slow() ? "yellowGreen" : "green"; }
@@ -498,7 +499,9 @@ private:
         };
         if (isTopFunc) {
             // Top functions
-            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase() + "::Buffer* bufp");
+            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase()
+                            + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer")
+                            + "* bufp");
             addInitStr(voidSelfAssign(m_topModp));
             addInitStr(symClassAssign());
             // Add global activity check to change dump functions
@@ -512,11 +515,13 @@ private:
                 m_regFuncp->addStmtsp(new AstText(flp, "tracep->addChgCb(", true));
             }
             m_regFuncp->addStmtsp(new AstAddrOfCFunc(flp, funcp));
-            const string threadPool{m_parallelism > 1 ? "vlSymsp->__Vm_threadPoolp" : "nullptr"};
-            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf, " + threadPool + ");\n", true));
+            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf", true));
+            m_regFuncp->addStmtsp(new AstText(flp, ");\n", true));
         } else {
             // Sub functions
-            funcp->argTypes(v3Global.opt.traceClassBase() + "::Buffer* bufp");
+            funcp->argTypes(v3Global.opt.traceClassBase()
+                            + "::" + +(v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer")
+                            + "* bufp");
             // Setup base references. Note in rare occasions we can end up with an empty trace
             // sub function, hence the VL_ATTR_UNUSED attributes.
             if (full) {

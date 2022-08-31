@@ -17,10 +17,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3EmitC.h"
 #include "V3Ast.h"
+#include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3Global.h"
 #include "V3String.h"
 #include "V3UniqueNames.h"
 
@@ -314,8 +314,8 @@ class EmitCImp final : EmitCFunc {
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
             // Need to move hier into scopes and back out if do this
-            // puts( "\"hier\",std::string(vlSymsp->name())+hierp,");
-            puts("\"hier\",std::string(name())+hierp,");
+            // puts( "\"hier\",std::string{vlSymsp->name()} + hierp,");
+            puts("\"hier\",std::string{name()} + hierp,");
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentp,");
             puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");

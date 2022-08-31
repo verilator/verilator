@@ -12,7 +12,7 @@ double sc_time_stamp() {
 }
 
 int main() {
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
     tb->eval();
     tb->eval();

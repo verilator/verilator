@@ -23,11 +23,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3VariableOrder.h"
+
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3TSP.h"
 
 #include <algorithm>
@@ -48,7 +49,7 @@ public:
         : m_mtaskIds(mtaskIds) {  // Cannot be {} or GCC 4.8 false warning
         m_serial = ++s_serialNext;  // Cannot be ()/{} or GCC 4.8 false warning
     }
-    virtual ~VarTspSorter() = default;
+    ~VarTspSorter() override = default;
     // METHODS
     virtual bool operator<(const TspStateBase& other) const override {
         return operator<(dynamic_cast<const VarTspSorter&>(other));
@@ -155,15 +156,16 @@ class VariableOrder final {
                 auto& attributes = m_attributes(varp);
                 // Stratum
                 const int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
-                attributes.stratum = (varp->isUsedClock() && varp->widthMin() == 1)   ? 0
-                                     : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType) ? 8
-                                     : (varp->basicp() && varp->basicp()->isOpaque()) ? 7
-                                     : (varp->isScBv() || varp->isScBigUint())        ? 6
-                                     : (sigbytes == 8)                                ? 5
-                                     : (sigbytes == 4)                                ? 4
-                                     : (sigbytes == 2)                                ? 2
-                                     : (sigbytes == 1)                                ? 1
-                                                                                      : 9;
+                attributes.stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO()) ? 0
+                                     : (varp->isUsedClock() && varp->widthMin() == 1)  ? 1
+                                     : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)  ? 9
+                                     : (varp->basicp() && varp->basicp()->isOpaque())  ? 8
+                                     : (varp->isScBv() || varp->isScBigUint())         ? 7
+                                     : (sigbytes == 8)                                 ? 6
+                                     : (sigbytes == 4)                                 ? 5
+                                     : (sigbytes == 2)                                 ? 3
+                                     : (sigbytes == 1)                                 ? 2
+                                                                                       : 10;
                 // Anonymous structure ok
                 attributes.anonOk = EmitCBaseVisitor::isAnonOk(varp);
             }

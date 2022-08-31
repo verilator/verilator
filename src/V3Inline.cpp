@@ -27,14 +27,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Inline.h"
+
+#include "V3Ast.h"
+#include "V3AstUserAllocator.h"
+#include "V3Global.h"
 #include "V3Inst.h"
 #include "V3Stats.h"
-#include "V3Ast.h"
 #include "V3String.h"
-
-#include "V3AstUserAllocator.h"
 
 #include <algorithm>
 #include <unordered_set>
@@ -425,11 +425,13 @@ private:
         // To keep correct visual order, must add before other Text's
         AstNode* afterp = nodep->scopeAttrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeAttrp(new AstText(nodep->fileline(), string("__DOT__") + m_cellp->name()));
+        nodep->scopeAttrp(
+            new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
         if (afterp) nodep->scopeAttrp(afterp);
         afterp = nodep->scopeEntrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeEntrp(new AstText(nodep->fileline(), string("__DOT__") + m_cellp->name()));
+        nodep->scopeEntrp(
+            new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
         if (afterp) nodep->scopeEntrp(afterp);
         iterateChildren(nodep);
     }

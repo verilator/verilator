@@ -24,11 +24,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Table.h"
+
+#include "V3Ast.h"
+#include "V3Global.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
-#include "V3Ast.h"
 
 #include <cmath>
 #include <vector>
@@ -92,8 +93,8 @@ public:
             = elemDType->isString()
                   ? elemDType
                   : v3Global.rootp()->findBitDType(width, width, VSigning::UNSIGNED);
-        AstUnpackArrayDType* const tableDTypep
-            = new AstUnpackArrayDType(m_fl, subDTypep, new AstRange(m_fl, size, 0));
+        AstUnpackArrayDType* const tableDTypep = new AstUnpackArrayDType{
+            m_fl, subDTypep, new AstRange{m_fl, static_cast<int>(size), 0}};
         v3Global.rootp()->typeTablep()->addTypesp(tableDTypep);
         // Create table initializer (with default value 0)
         AstConst* const defaultp = elemDType->isString()
@@ -106,7 +107,7 @@ public:
         UASSERT_OBJ(!m_varScopep, m_fl, "Table variable already created");
         // Default value is zero/empty string so don't add it
         if (value.isString() ? value.toString().empty() : value.isEqZero()) return;
-        m_initp->addIndexValuep(index, new AstConst(m_fl, value));
+        m_initp->addIndexValuep(index, new AstConst{m_fl, value});
     }
 
     AstVarScope* varScopep() {
@@ -225,6 +226,9 @@ private:
         if (!m_outWidthBytes || !m_inWidthBits) {
             chkvis.clearOptimizable(nodep, "Table has no outputs");
         }
+        if (chkvis.isOutputter()) {
+            chkvis.clearOptimizable(nodep, "Table creates display output");
+        }
         UINFO(4, "  Test: Opt=" << (chkvis.optimizable() ? "OK" : "NO") << ", Instrs="
                                 << chkvis.instrCount() << " Data=" << chkvis.dataCount()
                                 << " in width (bits)=" << m_inWidthBits << " out width (bytes)="
@@ -247,14 +251,14 @@ private:
 
         // We will need a table index variable, create it here.
         AstVar* const indexVarp
-            = new AstVar(fl, VVarType::BLOCKTEMP, "__Vtableidx" + cvtToStr(m_modTables),
-                         VFlagBitPacked(), m_inWidthBits);
+            = new AstVar{fl, VVarType::BLOCKTEMP, "__Vtableidx" + cvtToStr(m_modTables),
+                         VFlagBitPacked{}, static_cast<int>(m_inWidthBits)};
         m_modp->addStmtp(indexVarp);
-        AstVarScope* const indexVscp = new AstVarScope(indexVarp->fileline(), m_scopep, indexVarp);
+        AstVarScope* const indexVscp = new AstVarScope{indexVarp->fileline(), m_scopep, indexVarp};
         m_scopep->addVarp(indexVscp);
 
         // The 'output assigned' table builder
-        TableBuilder outputAssignedTableBuilder(fl);
+        TableBuilder outputAssignedTableBuilder{fl};
         outputAssignedTableBuilder.setTableSize(
             nodep->findBitDType(m_outVarps.size(), m_outVarps.size(), VSigning::UNSIGNED),
             VL_MASK_I(m_inWidthBits));
@@ -311,7 +315,7 @@ private:
                             << simvis.whyNotMessage());
 
             // Build output value tables and the assigned flags table
-            V3Number outputAssignedMask(nodep, m_outVarps.size(), 0);
+            V3Number outputAssignedMask{nodep, static_cast<int>(m_outVarps.size()), 0};
             for (TableOutputVar& tov : m_outVarps) {
                 if (V3Number* const outnump = simvis.fetchOutNumberNull(tov.varScopep())) {
                     UINFO(8, "   Output " << tov.name() << " = " << *outnump << endl);
@@ -333,21 +337,21 @@ private:
         // First var in inVars becomes the LSB of the concat
         AstNode* concatp = nullptr;
         for (AstVarScope* invscp : m_inVarps) {
-            AstVarRef* const refp = new AstVarRef(fl, invscp, VAccess::READ);
+            AstVarRef* const refp = new AstVarRef{fl, invscp, VAccess::READ};
             if (concatp) {
-                concatp = new AstConcat(fl, refp, concatp);
+                concatp = new AstConcat{fl, refp, concatp};
             } else {
                 concatp = refp;
             }
         }
 
-        return new AstAssign(fl, new AstVarRef(fl, indexVscp, VAccess::WRITE), concatp);
+        return new AstAssign{fl, new AstVarRef{fl, indexVscp, VAccess::WRITE}, concatp};
     }
 
     AstArraySel* select(FileLine* fl, AstVarScope* fromp, AstVarScope* indexp) {
-        AstVarRef* const fromRefp = new AstVarRef(fl, fromp, VAccess::READ);
-        AstVarRef* const indexRefp = new AstVarRef(fl, indexp, VAccess::READ);
-        return new AstArraySel(fl, fromRefp, indexRefp);
+        AstVarRef* const fromRefp = new AstVarRef{fl, fromp, VAccess::READ};
+        AstVarRef* const indexRefp = new AstVarRef{fl, indexp, VAccess::READ};
+        return new AstArraySel{fl, fromRefp, indexRefp};
     }
 
     void createOutputAssigns(AstNode* nodep, AstNode* stmtsp, AstVarScope* indexVscp,
@@ -362,12 +366,12 @@ private:
 
             // If this output is unassigned on some code paths, wrap the assignment in an If
             if (tov.mayBeUnassigned()) {
-                V3Number outputChgMask(nodep, m_outVarps.size(), 0);
+                V3Number outputChgMask{nodep, static_cast<int>(m_outVarps.size()), 0};
                 outputChgMask.setBit(tov.ord(), 1);
                 AstNode* const condp
-                    = new AstAnd(fl, select(fl, outputAssignedTableVscp, indexVscp),
-                                 new AstConst(fl, outputChgMask));
-                outsetp = new AstIf(fl, condp, outsetp);
+                    = new AstAnd{fl, select(fl, outputAssignedTableVscp, indexVscp),
+                                 new AstConst{fl, outputChgMask}};
+                outsetp = new AstIf{fl, condp, outsetp};
             }
 
             stmtsp->addNext(outsetp);

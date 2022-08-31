@@ -148,9 +148,9 @@ string V3Error::msgPrefix() {
     } else if (code == V3ErrorCode::EC_ERROR) {
         return "%Error: ";
     } else if (isError(code, supp)) {
-        return "%Error-" + string(code.ascii()) + ": ";
+        return "%Error-" + std::string{code.ascii()} + ": ";
     } else {
-        return "%Warning-" + string(code.ascii()) + ": ";
+        return "%Warning-" + std::string{code.ascii()} + ": ";
     }
 }
 
@@ -167,7 +167,7 @@ void V3Error::vlAbortOrExit() {
 }
 
 void V3Error::vlAbort() {
-    VL_GCOV_FLUSH();
+    VL_GCOV_DUMP();
     std::abort();
 }
 
@@ -176,7 +176,7 @@ void V3Error::vlAbort() {
 
 void V3Error::suppressThisWarning() {
 #ifndef V3ERROR_NO_GLOBAL_
-    V3Stats::addStatSum(string("Warnings, Suppressed ") + s_errorCode.ascii(), 1);
+    V3Stats::addStatSum(std::string{"Warnings, Suppressed "} + s_errorCode.ascii(), 1);
 #endif
     s_errorSuppressed = true;
 }

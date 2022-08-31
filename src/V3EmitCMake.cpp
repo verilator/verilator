@@ -17,11 +17,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3Os.h"
 #include "V3EmitCMake.h"
+
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3HierBlock.h"
+#include "V3Os.h"
 
 #include <memory>
 
@@ -36,7 +37,8 @@ class CMakeEmitter final {
     // STATIC FUNCTIONS
 
     // Concatenate all strings in 'strs' with ' ' between them.
-    template <typename List> static string cmake_list(const List& strs) {
+    template <typename List>
+    static string cmake_list(const List& strs) {
         string s;
         if (strs.begin() != strs.end()) {
             s.append("\"");
@@ -113,12 +115,6 @@ class CMakeEmitter final {
         cmake_set_raw(*of, name + "_COVERAGE", v3Global.opt.coverage() ? "1" : "0");
         *of << "# Threaded output mode?  0/1/N threads (from --threads)\n";
         cmake_set_raw(*of, name + "_THREADS", cvtToStr(v3Global.opt.threads()));
-        *of << "# Threaded tracing output mode?  0/1/N threads (from --threads/--trace-threads)\n";
-        cmake_set_raw(*of, name + "_TRACE_THREADS", cvtToStr(v3Global.opt.vmTraceThreads()));
-        cmake_set_raw(*of, name + "_TRACE_FST_WRITER_THREAD",
-                      v3Global.opt.traceThreads() && v3Global.opt.traceFormat().fst() ? "1" : "0");
-        *of << "# Struct output mode?  0/1 (from --trace-structs)\n";
-        cmake_set_raw(*of, name + "_TRACE_STRUCTS", cvtToStr(v3Global.opt.traceStructs()));
         *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
         cmake_set_raw(*of, name + "_TRACE_VCD",
                       (v3Global.opt.trace() && v3Global.opt.traceFormat().vcd()) ? "1" : "0");
@@ -173,7 +169,7 @@ class CMakeEmitter final {
                                     + ".cpp");
             }
         }
-        if (v3Global.opt.mtasks()) {
+        if (v3Global.opt.threads()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
         }
         if (v3Global.opt.usesProfiler()) {
@@ -214,19 +210,15 @@ class CMakeEmitter final {
                 *of << "target_link_libraries(${TOP_TARGET_NAME}  PRIVATE " << prefix << ")\n";
                 if (!children.empty()) {
                     *of << "target_link_libraries(" << prefix << " INTERFACE";
-                    for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
-                         child != children.end(); ++child) {
-                        *of << " " << (*child)->hierPrefix();
-                    }
+                    for (const auto& childr : children) { *of << " " << (childr)->hierPrefix(); }
                     *of << ")\n";
                 }
                 *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "
                     << hblockp->modp()->name() << " DIRECTORY "
                     << deslash(v3Global.opt.makeDir() + "/" + prefix) << " SOURCES ";
-                for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
-                     child != children.end(); ++child) {
+                for (const auto& childr : children) {
                     *of << " "
-                        << deslash(v3Global.opt.makeDir() + "/" + (*child)->hierWrapper(true));
+                        << deslash(v3Global.opt.makeDir() + "/" + childr->hierWrapper(true));
                 }
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();

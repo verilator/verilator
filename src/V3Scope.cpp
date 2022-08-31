@@ -24,9 +24,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Scope.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 
 #include <algorithm>
 #include <map>
@@ -290,7 +291,7 @@ private:
     }
     virtual void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
-        const string prefix = string("__DOT__") + m_scopep->name();
+        const string prefix = std::string{"__DOT__"} + m_scopep->name();
         // TOP and above will be the user's name().
         // Note 'TOP.' is stripped by scopePrettyName
         // To keep correct visual order, must add before other Text's

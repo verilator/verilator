@@ -23,14 +23,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3String.h"
 #include "V3Const.h"
+
 #include "V3Ast.h"
-#include "V3Width.h"
+#include "V3Global.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
+#include "V3String.h"
 #include "V3UniqueNames.h"
+#include "V3Width.h"
 
 #include <algorithm>
 #include <memory>
@@ -79,14 +80,50 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     // bool indicating if the term is clean (0/1 value, or if the top bits might be dirty)
     using ResultTerm = std::tuple<AstNode*, unsigned, bool>;
 
-    struct LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
+    class LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
+        // MEMBERS
         bool m_polarity = true;
-        int m_lsb = 0;
+        int m_lsb = 0;  // LSB of actually used bit of m_refp->varp()
+        int m_msb = 0;  // MSB of actually used bit of m_refp->varp()
         int m_wordIdx = -1;  // -1 means AstWordSel is not used.
         AstVarRef* m_refp = nullptr;
         const AstConst* m_constp = nullptr;
 
-        int width() const {
+    public:
+        // CONSTRUCTORS
+        LeafInfo() = default;
+        LeafInfo(const LeafInfo& other) = default;
+        explicit LeafInfo(int lsb)
+            : m_lsb{lsb} {}
+
+        // METHODS
+        void setLeaf(AstVarRef* refp) {
+            UASSERT(!m_refp && !m_constp, "Must be called just once");
+            m_refp = refp;
+            m_msb = refp->varp()->widthMin() - 1;
+        }
+        void setLeaf(const AstConst* constp) {
+            UASSERT(!m_refp && !m_constp, "Must be called just once");
+            m_constp = constp;
+            m_msb = constp->widthMin() - 1;
+        }
+        void updateBitRange(const AstCCast* castp) {
+            m_msb = std::min(m_msb, m_lsb + castp->width() - 1);
+        }
+        void updateBitRange(const AstShiftR* shiftp) {
+            m_lsb += VN_AS(shiftp->rhsp(), Const)->toUInt();
+        }
+        void wordIdx(int i) { m_wordIdx = i; }
+        void polarity(bool p) { m_polarity = p; }
+
+        AstVarRef* refp() const { return m_refp; }
+        const AstConst* constp() const { return m_constp; }
+        int wordIdx() const { return m_wordIdx; }
+        bool polarity() const { return m_polarity; }
+        int lsb() const { return m_lsb; }
+
+        int msb() const { return std::min(m_msb, varWidth() - 1); }
+        int varWidth() const {
             UASSERT(m_refp, "m_refp should be set");
             const int width = m_refp->varp()->widthMin();
             if (!m_refp->isWide()) {
@@ -289,7 +326,6 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             return ResultTerm{resultp, ops, clean};
         }
 
-    public:
         // CONSTRUCTORS
         VarInfo(ConstBitOpTreeVisitor* parent, AstVarRef* refp, int width)
             : m_parentp{parent}
@@ -339,32 +375,32 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         UINFO(9, "Increment to " << m_ops << " " << nodep << " called from line " << line << "\n");
     }
     VarInfo& getVarInfo(const LeafInfo& ref) {
-        UASSERT_OBJ(ref.m_refp, m_rootp, "null varref in And/Or/Xor optimization");
-        AstNode* nodep = ref.m_refp->varScopep();
-        if (!nodep) nodep = ref.m_refp->varp();  // Not scoped
+        UASSERT_OBJ(ref.refp(), m_rootp, "null varref in And/Or/Xor optimization");
+        AstNode* nodep = ref.refp()->varScopep();
+        if (!nodep) nodep = ref.refp()->varp();  // Not scoped
         int baseIdx = nodep->user4();
         if (baseIdx == 0) {  // Not set yet
             baseIdx = m_varInfos.size();
             const int numWords
-                = ref.m_refp->dtypep()->isWide() ? ref.m_refp->dtypep()->widthWords() : 1;
+                = ref.refp()->dtypep()->isWide() ? ref.refp()->dtypep()->widthWords() : 1;
             m_varInfos.resize(m_varInfos.size() + numWords);
             nodep->user4(baseIdx);
         }
-        const size_t idx = baseIdx + std::max(0, ref.m_wordIdx);
+        const size_t idx = baseIdx + std::max(0, ref.wordIdx());
         VarInfo* varInfop = m_varInfos[idx].get();
         if (!varInfop) {
-            varInfop = new VarInfo{this, ref.m_refp, ref.width()};
+            varInfop = new VarInfo{this, ref.refp(), ref.varWidth()};
             m_varInfos[idx].reset(varInfop);
         } else {
-            if (!varInfop->sameVarAs(ref.m_refp))
-                CONST_BITOP_SET_FAILED("different var (scope?)", ref.m_refp);
+            if (!varInfop->sameVarAs(ref.refp()))
+                CONST_BITOP_SET_FAILED("different var (scope?)", ref.refp());
         }
         return *varInfop;
     }
 
     // Traverse down to see AstConst or AstVarRef
     LeafInfo findLeaf(AstNode* nodep, bool expectConst) {
-        LeafInfo info;
+        LeafInfo info{m_lsb};
         {
             VL_RESTORER(m_leafp);
             m_leafp = &info;
@@ -373,9 +409,9 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
 
         bool ok = !m_failed;
         if (expectConst) {
-            ok &= !info.m_refp && info.m_constp;
+            ok &= !info.refp() && info.constp();
         } else {
-            ok &= info.m_refp && !info.m_constp;
+            ok &= info.refp() && !info.constp();
         }
         return ok ? info : LeafInfo{};
     }
@@ -384,7 +420,10 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     virtual void visit(AstNode* nodep) override {
         CONST_BITOP_SET_FAILED("Hit unexpected op", nodep);
     }
-    virtual void visit(AstCCast* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstCCast* nodep) override {
+        iterateChildren(nodep);
+        if (m_leafp) m_leafp->updateBitRange(nodep);
+    }
     virtual void visit(AstShiftR* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
@@ -392,12 +431,14 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         m_lsb += constp->toUInt();
         incrOps(nodep, __LINE__);
         iterate(nodep->lhsp());
+        m_leafp->updateBitRange(nodep);
         m_lsb -= constp->toUInt();
     }
     virtual void visit(AstNot* nodep) override {
         CONST_BITOP_RETURN_IF(nodep->widthMin() != 1, nodep);
         AstNode* lhsp = nodep->lhsp();
-        if (AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+        AstCCast* const castp = VN_CAST(lhsp, CCast);
+        if (castp) lhsp = castp->lhsp();
         CONST_BITOP_RETURN_IF(!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, Xor) && !VN_IS(lhsp, RedXor)
                                   && !VN_IS(lhsp, ShiftR),
                               lhsp);
@@ -406,68 +447,68 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Don't restore m_polarity for Xor as it counts parity of the entire tree
         if (!isXorTree()) m_polarity = !m_polarity;
+        if (m_leafp && castp) m_leafp->updateBitRange(castp);
     }
     virtual void visit(AstWordSel* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         AstConst* const constp = VN_CAST(nodep->bitp(), Const);
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
-        UASSERT_OBJ(m_leafp->m_wordIdx == -1, nodep, "Unexpected nested WordSel");
-        m_leafp->m_wordIdx = constp->toSInt();
+        UASSERT_OBJ(m_leafp->wordIdx() == -1, nodep, "Unexpected nested WordSel");
+        m_leafp->wordIdx(constp->toSInt());
         iterate(nodep->fromp());
     }
     virtual void visit(AstVarRef* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
-        UASSERT_OBJ(!m_leafp->m_refp, nodep, m_leafp->m_refp << " is already set");
-        m_leafp->m_refp = nodep;
-        m_leafp->m_polarity = m_polarity;
-        m_leafp->m_lsb = m_lsb;
+        m_leafp->setLeaf(nodep);
+        m_leafp->polarity(m_polarity);
     }
     virtual void visit(AstConst* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
-        UASSERT_OBJ(!m_leafp->m_constp, nodep, m_leafp->m_constp << " is already set");
-        m_leafp->m_constp = nodep;
-        m_leafp->m_lsb = m_lsb;
+        m_leafp->setLeaf(nodep);
     }
 
     virtual void visit(AstRedXor* nodep) override {
         Restorer restorer{*this};
         CONST_BITOP_RETURN_IF(!VN_IS(m_rootp, Xor), nodep);
         AstNode* lhsp = nodep->lhsp();
-        if (const AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
+        const AstCCast* const castp = VN_CAST(lhsp, CCast);
+        if (castp) lhsp = castp->lhsp();
         if (const AstAnd* const andp = VN_CAST(lhsp, And)) {  // '^(mask & leaf)'
             CONST_BITOP_RETURN_IF(!andp, lhsp);
 
             const LeafInfo& mask = findLeaf(andp->lhsp(), true);
-            CONST_BITOP_RETURN_IF(!mask.m_constp || mask.m_lsb != 0, andp->lhsp());
+            CONST_BITOP_RETURN_IF(!mask.constp() || mask.lsb() != 0, andp->lhsp());
 
-            const LeafInfo& ref = findLeaf(andp->rhsp(), false);
-            CONST_BITOP_RETURN_IF(!ref.m_refp, andp->rhsp());
+            LeafInfo ref = findLeaf(andp->rhsp(), false);
+            CONST_BITOP_RETURN_IF(!ref.refp(), andp->rhsp());
+            if (castp) ref.updateBitRange(castp);
 
             restorer.disableRestore();  // Now all subtree succeeded
 
-            const V3Number& maskNum = mask.m_constp->num();
+            const V3Number& maskNum = mask.constp()->num();
 
             incrOps(nodep, __LINE__);
             incrOps(andp, __LINE__);
 
             // Mark all bits checked in this reduction
-            const int maxBitIdx = std::min(ref.m_lsb + maskNum.width(), ref.width());
-            for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
-                const int maskIdx = bitIdx - ref.m_lsb;
+            const int maxBitIdx = std::min(ref.lsb() + maskNum.width(), ref.msb() + 1);
+            for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
+                const int maskIdx = bitIdx - ref.lsb();
                 if (maskNum.bitIs0(maskIdx)) continue;
                 // Set true, m_polarity takes care of the entire parity
                 m_bitPolarities.emplace_back(ref, true, bitIdx);
             }
         } else {  // '^leaf'
-            const LeafInfo& ref = findLeaf(lhsp, false);
-            CONST_BITOP_RETURN_IF(!ref.m_refp, lhsp);
+            LeafInfo ref = findLeaf(lhsp, false);
+            CONST_BITOP_RETURN_IF(!ref.refp(), lhsp);
+            if (castp) ref.updateBitRange(castp);
 
             restorer.disableRestore();  // Now all checks passed
 
             incrOps(nodep, __LINE__);
 
             // Mark all bits checked by this comparison
-            for (int bitIdx = ref.m_lsb; bitIdx < ref.width(); ++bitIdx) {
+            for (int bitIdx = ref.lsb(); bitIdx <= ref.msb(); ++bitIdx) {
                 m_bitPolarities.emplace_back(ref, true, bitIdx);
             }
         }
@@ -487,12 +528,12 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
 
             for (const bool right : {false, true}) {
                 Restorer restorer{*this};
-                LeafInfo leafInfo;
+                LeafInfo leafInfo{m_lsb};
                 m_leafp = &leafInfo;
                 AstNode* opp = right ? nodep->rhsp() : nodep->lhsp();
                 const bool origFailed = m_failed;
                 iterate(opp);
-                if (leafInfo.m_constp || m_failed) {
+                if (leafInfo.constp() || m_failed) {
                     // Revert changes in leaf
                     restorer.restoreNow();
                     // Reach past a cast then add to frozen nodes to be added to final reduction
@@ -502,14 +543,14 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     continue;
                 }
                 restorer.disableRestore();  // Now all checks passed
-                if (leafInfo.m_refp) {
+                if (leafInfo.refp()) {
                     // The conditional on the lsb being in range is necessary for some degenerate
                     // case, e.g.: (IData)((QData)wide[0] >> 32), or <1-bit-var> >> 1, which is
                     // just zero
-                    if (leafInfo.m_lsb < leafInfo.width()) {
-                        m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.m_polarity,
-                                                     leafInfo.m_lsb);
-                    } else if (isAndTree() && leafInfo.m_polarity) {
+                    if (leafInfo.lsb() <= leafInfo.msb()) {
+                        m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.polarity(),
+                                                     leafInfo.lsb());
+                    } else if (isAndTree() && leafInfo.polarity()) {
                         // If there is a constant 0 term in an And tree, we must include it. Fudge
                         // this by adding a bit with both polarities, which will simplify to zero
                         m_bitPolarities.emplace_back(leafInfo, true, 0);
@@ -525,46 +566,59 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             const AstConst* const constp = VN_CAST(lhsp, Const);
             CONST_BITOP_RETURN_IF(!constp, nodep->lhsp());
 
-            const bool maskFlip = isOrTree();
             const V3Number& compNum = constp->num();
+
+            auto setPolarities = [this, &compNum](const LeafInfo& ref, const V3Number* maskp) {
+                const bool maskFlip = isOrTree();
+                int constantWidth = compNum.width();
+                if (maskp) constantWidth = std::max(constantWidth, maskp->width());
+                const int maxBitIdx = std::max(ref.lsb() + constantWidth, ref.msb() + 1);
+                // Mark all bits checked by this comparison
+                for (int bitIdx = ref.lsb(); bitIdx < maxBitIdx; ++bitIdx) {
+                    const int maskIdx = bitIdx - ref.lsb();
+                    const bool mask0 = maskp && maskp->bitIs0(maskIdx);
+                    const bool outOfRange = bitIdx > ref.msb();
+                    if (mask0 || outOfRange) {  // RHS is 0
+                        if (compNum.bitIs1(maskIdx)) {
+                            // LHS is 1
+                            // And tree: 1 == 0 => always false, set v && !v
+                            // Or tree : 1 != 0 => always true, set v || !v
+                            m_bitPolarities.emplace_back(ref, true, 0);
+                            m_bitPolarities.emplace_back(ref, false, 0);
+                            break;
+                        } else {  // This bitIdx is irrelevant
+                            continue;
+                        }
+                    }
+                    const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
+                    m_bitPolarities.emplace_back(ref, polarity, bitIdx);
+                }
+            };
 
             if (const AstAnd* const andp = VN_CAST(nodep->rhsp(), And)) {  // comp == (mask & v)
                 const LeafInfo& mask = findLeaf(andp->lhsp(), true);
-                CONST_BITOP_RETURN_IF(!mask.m_constp || mask.m_lsb != 0, andp->lhsp());
+                CONST_BITOP_RETURN_IF(!mask.constp() || mask.lsb() != 0, andp->lhsp());
 
                 const LeafInfo& ref = findLeaf(andp->rhsp(), false);
-                CONST_BITOP_RETURN_IF(!ref.m_refp, andp->rhsp());
+                CONST_BITOP_RETURN_IF(!ref.refp(), andp->rhsp());
 
                 restorer.disableRestore();  // Now all checks passed
 
-                const V3Number& maskNum = mask.m_constp->num();
+                const V3Number& maskNum = mask.constp()->num();
 
                 incrOps(nodep, __LINE__);
                 incrOps(andp, __LINE__);
 
-                // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.m_lsb + maskNum.width(), ref.width());
-                for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
-                    const int maskIdx = bitIdx - ref.m_lsb;
-                    if (maskNum.bitIs0(maskIdx)) continue;
-                    const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
-                    m_bitPolarities.emplace_back(ref, polarity, bitIdx);
-                }
+                setPolarities(ref, &maskNum);
             } else {  // comp == v
                 const LeafInfo& ref = findLeaf(nodep->rhsp(), false);
-                CONST_BITOP_RETURN_IF(!ref.m_refp, nodep->rhsp());
+                CONST_BITOP_RETURN_IF(!ref.refp(), nodep->rhsp());
 
                 restorer.disableRestore();  // Now all checks passed
 
                 incrOps(nodep, __LINE__);
 
-                // Mark all bits checked by this comparison
-                const int maxBitIdx = std::min(ref.m_lsb + compNum.width(), ref.width());
-                for (int bitIdx = ref.m_lsb; bitIdx < maxBitIdx; ++bitIdx) {
-                    const int maskIdx = bitIdx - ref.m_lsb;
-                    const bool polarity = compNum.bitIs1(maskIdx) != maskFlip;
-                    m_bitPolarities.emplace_back(ref, polarity, bitIdx);
-                }
+                setPolarities(ref, nullptr);
             }
         } else {
             CONST_BITOP_SET_FAILED("Mixture of different ops cannot be optimized", nodep);
@@ -700,10 +754,11 @@ public:
         if (debug() >= 9) {  // LCOV_EXCL_START
             cout << "Bitop tree considered: " << endl;
             for (AstNode* const termp : termps) termp->dumpTree("Reduced term: ");
-            for (const std::pair<AstNode*, FrozenNodeInfo>& termp : visitor.m_frozenNodes)
+            for (const std::pair<AstNode*, FrozenNodeInfo>& termp : visitor.m_frozenNodes) {
                 termp.first->dumpTree("Frozen term with lsb " + std::to_string(termp.second.m_lsb)
                                       + " polarity " + std::to_string(termp.second.m_polarity)
                                       + ": ");
+            }
             cout << "Needs flipping: " << needsFlip << endl;
             cout << "Needs cleaning: " << needsCleaning << endl;
             cout << "Size: " << resultOps << " input size: " << visitor.m_ops << endl;
@@ -1034,7 +1089,7 @@ private:
 
         if (orLIsRedundant && orRIsRedundant) {
             nodep->replaceWith(
-                new AstConst(nodep->fileline(), AstConst::DtypedValue(), nodep->dtypep(), 0));
+                new AstConst(nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return true;
         } else if (orLIsRedundant) {
@@ -1710,6 +1765,7 @@ private:
         lp->rhsp(lrp);
         nodep->lhsp(llp);
         nodep->rhsp(rlp);
+        nodep->dtypep(llp->dtypep());  // dtype of Biop is before shift.
         VL_DO_DANGLING(rp->deleteTree(), rp);
         VL_DO_DANGLING(rrp->deleteTree(), rrp);
         // nodep->dumpTree(cout, "  repShiftSame_new: ");
@@ -2323,6 +2379,7 @@ private:
             iterateChildren(nodep);
         }
     }
+    virtual void visit(AstClassOrPackageRef* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstPin* nodep) override { iterateChildren(nodep); }
 
     void replaceLogEq(AstLogEq* nodep) {
@@ -3528,7 +3585,11 @@ public:
     }
     virtual ~ConstVisitor() override {
         if (m_doCpp) {
-            V3Stats::addStat("Optimizations, Const bit op reduction", m_statBitOpReduction);
+            if (m_globalPass) {
+                V3Stats::addStat("Optimizations, Const bit op reduction", m_statBitOpReduction);
+            } else {
+                V3Stats::addStatSum("Optimizations, Const bit op reduction", m_statBitOpReduction);
+            }
         }
     }
 
@@ -3617,6 +3678,12 @@ void V3Const::constifyCpp(AstNetlist* nodep) {
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
     ConstVisitor visitor{ConstVisitor::PROC_V_NOWARN, /* globalPass: */ false};
+    nodep = visitor.mainAcceptEdit(nodep);
+    return nodep;
+}
+
+AstNode* V3Const::constifyEditCpp(AstNode* nodep) {
+    ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ false};
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
 }

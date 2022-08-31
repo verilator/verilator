@@ -17,12 +17,12 @@ top_filename("t/t_hier_block.v");
 
 compile(
     v_flags2 => ['t/t_hier_block.cpp'],
-    verilator_flags2 => [($Self->{vltmt} ? ' --threads 6' : ''),
-                         '--hierarchical',
+    verilator_flags2 => ['--hierarchical',
                          '--Wno-TIMESCALEMOD',
                          '--trace-fst',
                          '--no-trace-underscore',  # To avoid handle mismatches
     ],
+    threads => $Self->{vltmt} ? 6 : 0
     );
 
 execute(

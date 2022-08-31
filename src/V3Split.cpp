@@ -80,17 +80,18 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Split.h"
-#include "V3Stats.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 #include "V3Graph.h"
+#include "V3Stats.h"
 
 #include <algorithm>
 #include <map>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 //######################################################################
 // Support classes

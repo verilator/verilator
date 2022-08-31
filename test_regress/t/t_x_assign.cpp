@@ -9,9 +9,9 @@
 //
 //*************************************************************************
 
-#include <iostream>
-
 #include "verilated.h"
+
+#include <iostream>
 #include VM_PREFIX_INCLUDE
 
 double sc_time_stamp() { return 0; }
@@ -31,7 +31,7 @@ double sc_time_stamp() { return 0; }
 // clang-format on
 
 int main(int argc, const char** argv) {
-    VM_PREFIX* top = new VM_PREFIX();
+    VM_PREFIX* top = new VM_PREFIX{};
 
 #if defined(T_X_ASSIGN_UNIQUE_0)
     Verilated::randReset(0);

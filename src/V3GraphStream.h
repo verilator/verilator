@@ -27,6 +27,7 @@
 #include <map>
 #include <set>
 #include <unordered_map>
+#include <vector>
 
 //######################################################################
 // GraphStream
@@ -39,7 +40,8 @@
 // not generally safe. If you want a raw pointer compare, see
 // GraphStreamUnordered below.
 
-template <class T_Compare> class GraphStream {
+template <class T_Compare>
+class GraphStream final {
 private:
     // TYPES
     class VxHolder final {
@@ -224,11 +226,82 @@ private:
     VL_UNCOPYABLE(GraphStream);
 };
 
-//######################################################################
+//=================================================================================================
+// GraphStreamUnordered is similar to GraphStream, but iterates un-ordered vertices (those that are
+// not ordered by dependencies) in an arbitrary order. Iteration order is still deterministic.
 
-// GraphStreamUnordered is GraphStream using a plain pointer compare to
-// break ties in the graph order. This WILL return nodes in
-// nondeterministic order.
-using GraphStreamUnordered = GraphStream<std::less<const V3GraphVertex*>>;
+class GraphStreamUnordered final {
+    // MEMBERS
+    const GraphWay m_way;  // Direction of traversal
+    size_t m_nextIndex = 0;  // Which index to return from m_nextVertices next
+    std::vector<const V3GraphVertex*> m_nextVertices;  // List of ready vertices returned next
+    std::vector<const V3GraphVertex*> m_readyVertices;  // List of other ready vertices
+
+public:
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(GraphStreamUnordered);
+    explicit GraphStreamUnordered(const V3Graph* graphp, GraphWay way = GraphWay::FORWARD)
+        : m_way{way} {
+        if (m_way == GraphWay::FORWARD) {
+            init<GraphWay::FORWARD>(graphp);
+        } else {
+            init<GraphWay::REVERSE>(graphp);
+        }
+    }
+    ~GraphStreamUnordered() = default;
+
+    // METHODS
+
+    // Each call to nextp() returns a unique vertex in the graph, in dependency order. Dependencies
+    // alone do not specify a total ordering. Un-ordered vertices are returned in an arbitrary but
+    // deterministic order.
+    const V3GraphVertex* nextp() {
+        if (VL_UNLIKELY(m_nextIndex == m_nextVertices.size())) {
+            if (VL_UNLIKELY(m_readyVertices.empty())) return nullptr;
+            m_nextIndex = 0;
+            // Use swap to avoid reallocation
+            m_nextVertices.swap(m_readyVertices);
+            m_readyVertices.clear();
+        }
+        const V3GraphVertex* const resultp = m_nextVertices[m_nextIndex++];
+        if (m_way == GraphWay::FORWARD) {
+            return unblock<GraphWay::FORWARD>(resultp);
+        } else {
+            return unblock<GraphWay::REVERSE>(resultp);
+        }
+    }
+
+private:
+    template <uint8_t T_Way>  //
+    VL_ATTR_NOINLINE void init(const V3Graph* graphp) {
+        constexpr GraphWay way{T_Way};
+        constexpr GraphWay inv = way.invert();
+        // Assign every vertex without an incoming edge to ready, others to waiting
+        for (V3GraphVertex *vertexp = graphp->verticesBeginp(), *nextp; vertexp; vertexp = nextp) {
+            nextp = vertexp->verticesNextp();
+            uint32_t nDeps = 0;
+            for (V3GraphEdge* edgep = vertexp->beginp(inv); edgep; edgep = edgep->nextp(inv)) {
+                ++nDeps;
+            }
+            vertexp->color(nDeps);  // Using color instead of user, as user might be used by client
+            if (VL_UNLIKELY(nDeps == 0)) m_nextVertices.push_back(vertexp);
+        }
+    }
+
+    template <uint8_t T_Way>  //
+    VL_ATTR_NOINLINE const V3GraphVertex* unblock(const V3GraphVertex* resultp) {
+        constexpr GraphWay way{T_Way};
+        for (V3GraphEdge *edgep = resultp->beginp(way), *nextp; edgep; edgep = nextp) {
+            nextp = edgep->nextp(way);
+            V3GraphVertex* const vertexp = edgep->furtherp(way);
+#if VL_DEBUG
+            UASSERT_OBJ(vertexp->color() != 0, vertexp, "Should not be on waiting list");
+#endif
+            vertexp->color(vertexp->color() - 1);
+            if (!vertexp->color()) m_readyVertices.push_back(vertexp);
+        }
+        return resultp;  // Returning input so we can tail call this method
+    }
+};
 
 #endif  // Guard

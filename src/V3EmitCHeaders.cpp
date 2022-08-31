@@ -17,9 +17,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
+#include "V3Global.h"
 
 #include <algorithm>
 #include <vector>
@@ -236,10 +236,11 @@ class EmitCHeader final : public EmitCConstInit {
     void emitAll(const AstNodeModule* modp) {
         // Include files required by this AstNodeModule
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            if (classp->extendsp())
+            if (classp->extendsp()) {
                 puts("#include \""
                      + prefixNameProtect(classp->extendsp()->classp()->classOrPackagep())
                      + ".h\"\n");
+            }
         }
         emitModCUse(modp, VUseType::INT_INCLUDE);
 
@@ -251,15 +252,15 @@ class EmitCHeader final : public EmitCConstInit {
         emitTextSection(modp, VNType::atScHdr);
 
         // Open class body {{{
+        puts("\nclass ");
+        puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            puts("class ");
-            puts(prefixNameProtect(modp));
             if (classp->extendsp()) {
                 puts(" : public ");
                 puts(prefixNameProtect(classp->extendsp()->classp()));
             }
         } else {
-            puts("VL_MODULE(" + prefixNameProtect(modp) + ")");
+            puts(" final : public VerilatedModule");
         }
         puts(" {\n");
         ofp()->resetPrivate();

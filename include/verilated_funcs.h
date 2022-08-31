@@ -146,7 +146,7 @@ extern IData VL_SYSTEM_IW(int lhswords, WDataInP const lhsp);
 extern IData VL_SYSTEM_IQ(QData lhs);
 inline IData VL_SYSTEM_II(IData lhs) VL_MT_SAFE { return VL_SYSTEM_IQ(lhs); }
 
-extern IData VL_TESTPLUSARGS_I(const char* formatp);
+extern IData VL_TESTPLUSARGS_I(const std::string& format);
 extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 
 //=========================================================================
@@ -256,25 +256,7 @@ extern void _vl_debug_print_w(int lbits, WDataInP const iwp);
 //=========================================================================
 // Pli macros
 
-extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
-
-// These are deprecated and used only to establish the default precision/units.
-// Use Verilator timescale-override for better control.
 // clang-format off
-#ifndef VL_TIME_PRECISION
-# ifdef VL_TIME_PRECISION_STR
-#  define VL_TIME_PRECISION VL_TIME_STR_CONVERT(VL_STRINGIFY(VL_TIME_PRECISION_STR))
-# else
-#  define VL_TIME_PRECISION (-12)  ///< Timescale default units if not in Verilog - picoseconds
-# endif
-#endif
-#ifndef VL_TIME_UNIT
-# ifdef VL_TIME_UNIT_STR
-#  define VL_TIME_UNIT VL_TIME_STR_CONVERT(VL_STRINGIFY(VL_TIME_PRECISION_STR))
-# else
-#  define VL_TIME_UNIT (-12)  ///< Timescale default units if not in Verilog - picoseconds
-# endif
-#endif
 
 #if defined(SYSTEMC_VERSION)
 /// Return current simulation time

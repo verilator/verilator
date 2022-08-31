@@ -14,13 +14,11 @@
 //
 //*************************************************************************
 
-#include "V3Global.h"
-#include "V3Ast.h"
-
 #include "V3Active.h"
 #include "V3ActiveTop.h"
 #include "V3Assert.h"
 #include "V3AssertPre.h"
+#include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
 #include "V3Broken.h"
@@ -54,6 +52,7 @@
 #include "V3Force.h"
 #include "V3Gate.h"
 #include "V3GenClk.h"
+#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3HierBlock.h"
 #include "V3Inline.h"
@@ -61,8 +60,8 @@
 #include "V3Life.h"
 #include "V3LifePost.h"
 #include "V3LinkDot.h"
-#include "V3LinkJump.h"
 #include "V3LinkInc.h"
+#include "V3LinkJump.h"
 #include "V3LinkLValue.h"
 #include "V3LinkLevel.h"
 #include "V3LinkParse.h"
@@ -703,7 +702,7 @@ static void execHierVerilation() {
 
 //######################################################################
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv, char** /*env*/) {
     // General initialization
     std::ios::sync_with_stdio();
 
@@ -716,7 +715,7 @@ int main(int argc, char** argv, char** env) {
 
     // Preprocessor
     // Before command parsing so we can handle -Ds on command line.
-    V3PreShell::boot(env);
+    V3PreShell::boot();
 
     // Command option parsing
     v3Global.opt.bin(argv[0]);

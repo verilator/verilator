@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vltmt => 1);
 
 compile(
-    v_flags2 => ["--threads 2"],
+    threads => 2,
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

@@ -22,6 +22,7 @@
 //=============================================================================
 
 #include "verilatedos.h"
+
 #include "verilated_vcd_sc.h"
 
 //======================================================================
@@ -30,7 +31,7 @@
 void VerilatedVcdSc::open(const char* filename) {
     if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {
         vl_fatal(__FILE__, __LINE__, "VerilatedVcdSc",
-                 ("%Error: VerilatedVcdSc::open(\"" + std::string(filename)
+                 ("%Error: VerilatedVcdSc::open(\"" + std::string{filename}
                   + "\") is called before sc_core::sc_start(). "
                     "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.")
                      .c_str());
@@ -63,9 +64,6 @@ void VerilatedVcdSc::trace(const unsigned int&, const std::string&, const char**
     DECL_TRACE_METHOD_B( unsigned short )
     DECL_TRACE_METHOD_B( unsigned int )
     DECL_TRACE_METHOD_B( unsigned long )
-#ifdef SYSTEMC_64BIT_PATCHES
-    DECL_TRACE_METHOD_B( unsigned long long)
-#endif
     DECL_TRACE_METHOD_B( char )
     DECL_TRACE_METHOD_B( short )
     DECL_TRACE_METHOD_B( int )

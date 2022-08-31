@@ -22,11 +22,8 @@
 //=============================================================================
 
 #include "verilatedos.h"
-#include "verilated_threads.h"
 
-#ifdef VL_PROFILER
-#include "verilated_profiler.h"
-#endif
+#include "verilated_threads.h"
 
 #include <cstdio>
 #include <memory>
@@ -51,68 +48,59 @@ VlMTaskVertex::VlMTaskVertex(uint32_t upstreamDepCount)
 //=============================================================================
 // VlWorkerThread
 
-VlWorkerThread::VlWorkerThread(uint32_t threadId, VerilatedContext* contextp,
-                               VlExecutionProfiler* profilerp)
+VlWorkerThread::VlWorkerThread(VerilatedContext* contextp)
     : m_ready_size{0}
-    , m_exiting{false}
-    , m_cthread{startWorker, this, threadId, profilerp}
-    , m_contextp{contextp} {}
+    , m_cthread{startWorker, this, contextp} {}
 
 VlWorkerThread::~VlWorkerThread() {
-    m_exiting.store(true, std::memory_order_release);
-    wakeUp();
+    shutdown();
     // The thread should exit; join it.
     m_cthread.join();
 }
 
+static void shutdownTask(void*, bool) {
+    // Deliberately empty, we use the address of this function as a magic number
+}
+
+void VlWorkerThread::shutdown() { addTask(shutdownTask, nullptr); }
+
+void VlWorkerThread::wait() {
+    // Enqueue a task that sets this flag. Execution is in-order so this ensures completion.
+    std::atomic<bool> flag{false};
+    addTask([](void* flagp, bool) { static_cast<std::atomic<bool>*>(flagp)->store(true); }, &flag);
+    // Spin wait
+    for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
+        if (flag.load()) return;
+        VL_CPU_RELAX();
+    }
+    // Yield wait
+    while (!flag.load()) std::this_thread::yield();
+}
+
 void VlWorkerThread::workerLoop() {
     ExecRec work;
-    work.m_fnp = nullptr;
+
+    // Wait for the first task without spinning, in case the thread is never actually used.
+    dequeWork</* SpinWait: */ false>(&work);
 
     while (true) {
-        if (VL_LIKELY(!work.m_fnp)) dequeWork(&work);
-
-        // Do this here, not above, to avoid a race with the destructor.
-        if (VL_UNLIKELY(m_exiting.load(std::memory_order_acquire))) break;
-
-        if (VL_LIKELY(work.m_fnp)) {
-            work.m_fnp(work.m_selfp, work.m_evenCycle);
-            work.m_fnp = nullptr;
-        }
+        if (VL_UNLIKELY(work.m_fnp == shutdownTask)) break;
+        work.m_fnp(work.m_selfp, work.m_evenCycle);
+        // Wait for next task with spinning.
+        dequeWork</* SpinWait: */ true>(&work);
     }
 }
 
-void VlWorkerThread::startWorker(VlWorkerThread* workerp, uint32_t threadId,
-                                 VlExecutionProfiler* profilerp) {
-    Verilated::threadContextp(workerp->m_contextp);
-#ifdef VL_PROFILER
-    // Note: setupThread is not defined without VL_PROFILER, hence the #ifdef. Still, we might
-    // not be profiling execution (e.g.: PGO only), so profilerp might still be nullptr.
-    if (profilerp) profilerp->setupThread(threadId);
-#endif
+void VlWorkerThread::startWorker(VlWorkerThread* workerp, VerilatedContext* contextp) {
+    Verilated::threadContextp(contextp);
     workerp->workerLoop();
 }
 
 //=============================================================================
 // VlThreadPool
 
-VlThreadPool::VlThreadPool(VerilatedContext* contextp, int nThreads,
-                           VlExecutionProfiler* profiler) {
-    // --threads N passes nThreads=N-1, as the "main" threads counts as 1
-    ++nThreads;
-    const unsigned cpus = std::thread::hardware_concurrency();
-    if (cpus < nThreads) {
-        static int warnedOnce = 0;
-        if (!warnedOnce++) {
-            VL_PRINTF_MT("%%Warning: System has %u CPUs but model Verilated with"
-                         " --threads %d; may run slow.\n",
-                         cpus, nThreads);
-        }
-    }
-    // Create worker threads
-    for (uint32_t threadId = 1; threadId < nThreads; ++threadId) {
-        m_workers.push_back(new VlWorkerThread{threadId, contextp, profiler});
-    }
+VlThreadPool::VlThreadPool(VerilatedContext* contextp, unsigned nThreads) {
+    for (unsigned i = 0; i < nThreads; ++i) m_workers.push_back(new VlWorkerThread{contextp});
 }
 
 VlThreadPool::~VlThreadPool() {

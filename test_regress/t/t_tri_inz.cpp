@@ -34,7 +34,7 @@ void check(int d, int en, int exp0, int exp1, int expx, int expz) {
 
 int main() {
     Verilated::debug(0);
-    tb = new Vt_tri_inz("tb");
+    tb = new Vt_tri_inz{"tb"};
     check(0, 1, 1, 0, 0, 0);
     check(1, 1, 0, 1, 0, 0);
     check(0, 0, 0, 0, 0, 1);

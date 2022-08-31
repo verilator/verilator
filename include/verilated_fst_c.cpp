@@ -28,7 +28,7 @@
 #include "verilated_fst_c.h"
 
 // GTKWave configuration
-#ifdef VL_TRACE_FST_WRITER_THREAD
+#ifdef VL_THREADED
 # define HAVE_LIBPTHREAD
 # define FST_WRITER_PARALLEL
 #endif
@@ -92,8 +92,7 @@ static_assert(static_cast<int>(FST_ST_VCD_PROGRAM) == static_cast<int>(VLT_TRACE
 //=============================================================================
 // VerilatedFst
 
-VerilatedFst::VerilatedFst(void* fst)
-    : m_fst{fst} {}
+VerilatedFst::VerilatedFst(void* /*fst*/) {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
@@ -106,9 +105,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
-#ifdef VL_TRACE_FST_WRITER_THREAD
-    fstWriterSetParallelMode(m_fst, 1);
-#endif
+    if (m_useFstWriterThread) fstWriterSetParallelMode(m_fst, 1);
     fullDump(true);  // First dump must be full for fst
 
     m_curScope.clear();
@@ -250,23 +247,36 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedFstBuffer* VerilatedFst::getTraceBuffer() { return new VerilatedFstBuffer{*this}; }
+VerilatedFst::Buffer* VerilatedFst::getTraceBuffer() {
+#ifdef VL_THREADED
+    if (offload()) return new OffloadBuffer{*this};
+#endif
+    return new Buffer{*this};
+}
 
-void VerilatedFst::commitTraceBuffer(VerilatedFstBuffer* bufp) {
-#ifdef VL_TRACE_OFFLOAD
-    if (bufp->m_offloadBufferWritep) {
-        m_offloadBufferWritep = bufp->m_offloadBufferWritep;
-        return;  // Buffer will be deleted by the offload thread
+void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
+#ifdef VL_THREADED
+    if (offload()) {
+        OffloadBuffer* const offloadBufferp = static_cast<OffloadBuffer*>(bufp);
+        if (offloadBufferp->m_offloadBufferWritep) {
+            m_offloadBufferWritep = offloadBufferp->m_offloadBufferWritep;
+            return;  // Buffer will be deleted by the offload thread
+        }
     }
 #endif
     delete bufp;
 }
 
 //=============================================================================
-// VerilatedFstBuffer implementation
+// Configure
 
-VerilatedFstBuffer::VerilatedFstBuffer(VerilatedFst& owner)
-    : VerilatedTraceBuffer<VerilatedFst, VerilatedFstBuffer>{owner} {}
+void VerilatedFst::configure(const VerilatedTraceConfig& config) {
+    // If at least one model requests the FST writer thread, then use it
+    m_useFstWriterThread |= config.m_useFstWriterThread;
+}
+
+//=============================================================================
+// VerilatedFstBuffer implementation
 
 //=============================================================================
 // Trace rendering primitives

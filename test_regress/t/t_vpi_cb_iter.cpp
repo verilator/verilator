@@ -9,21 +9,22 @@
 //
 //*************************************************************************
 
-#include "Vt_vpi_cb_iter.h"
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include <cstdlib>
+#include "Vt_vpi_cb_iter.h"
+#include "vpi_user.h"
+
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <vector>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
-
-#include "vpi_user.h"
 
 int errors = 0;
 
@@ -143,11 +144,15 @@ static void register_filler_cb() {
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    uint64_t sim_time = 100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    uint64_t sim_time = 100;
+    contextp->commandArgs(argc, argv);
+    contextp->debug(0);
+
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
     reregister_value_cb();
     TEST_CHECK_NZ(vh_value_cb);
@@ -158,7 +163,7 @@ int main(int argc, char** argv, char** env) {
     topp->eval();
     topp->clk = 0;
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
+    while (main_time < sim_time && !contextp->gotFinish()) {
         main_time += 1;
         if (verbose) VL_PRINTF("Sim Time %d got_error %d\n", main_time, errors);
         topp->clk = !topp->clk;
@@ -168,11 +173,10 @@ int main(int argc, char** argv, char** env) {
         if (errors) vl_stop(__FILE__, __LINE__, "TOP-cpp");
     }
 
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 
-    VL_DO_DANGLING(delete topp, topp);
     return errors ? 10 : 0;
 }

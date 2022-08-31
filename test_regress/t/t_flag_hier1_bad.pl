@@ -14,7 +14,7 @@ top_filename("t/t_hier_block.v");
 lint(
     fails => 1,
     verilator_flags2 => ['--hierarchical',
-                         '--hierarchical-child',
+                         '--hierarchical-child 1',
                          'modName',
                      ],
     expect_filename => $Self->{golden_filename},

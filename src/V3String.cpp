@@ -18,8 +18,8 @@
 #include "verilatedos.h"
 
 // Limited V3 headers here - this is a base class for Vlc etc
-#include "V3String.h"
 #include "V3Error.h"
+#include "V3String.h"
 
 #include <algorithm>
 

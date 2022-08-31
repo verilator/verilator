@@ -33,7 +33,8 @@
 //######################################################################
 // Global string-related functions
 
-template <class T> std::string cvtToStr(const T& t) {
+template <class T>
+std::string cvtToStr(const T& t) {
     std::ostringstream os;
     os << t;
     return os.str();
@@ -232,7 +233,7 @@ public:
         if (candidate.empty()) {
             return "";
         } else {
-            return string("... Suggested alternative: '") + candidate + "'";
+            return std::string{"... Suggested alternative: '"} + candidate + "'";
         }
     }
     static void selfTest();

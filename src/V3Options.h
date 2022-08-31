@@ -199,6 +199,8 @@ private:
     V3StringList m_ldLibs;      // argument: user LDFLAGS
     V3StringList m_makeFlags;   // argument: user MAKEFLAGS
     V3StringSet m_futures;      // argument: -Wfuture- list
+    V3StringSet m_future0s;     // argument: -future list
+    V3StringSet m_future1s;     // argument: -future1 list
     V3StringSet m_libraryFiles; // argument: Verilog -v files
     V3StringSet m_clockers;     // argument: Verilog -clk signals
     V3StringSet m_noClockers;   // argument: Verilog -noclk signals
@@ -241,7 +243,6 @@ private:
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
     bool m_hierarchical = false;    // main switch: --hierarchical
-    bool m_hierChild = false;       // main switch: --hierarchical-child
     bool m_ignc = false;            // main switch: --ignc
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
@@ -288,6 +289,7 @@ private:
     int         m_dumpTree = 0;     // main switch: --dump-tree
     int         m_expandLimit = 64;  // main switch: --expand-limit
     int         m_gateStmts = 100;    // main switch: --gate-stmts
+    int         m_hierChild = 0;      // main switch: --hierarchical-child
     int         m_ifDepth = 0;      // main switch: --if-depth
     int         m_inlineMult = 2000;   // main switch: --inline-mult
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
@@ -316,7 +318,7 @@ private:
 
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
-    int         m_compLimitParens = 0;  // compiler selection; number of nested parens
+    int         m_compLimitParens = 240;  // compiler selection; number of nested parens
 
     string      m_bin;          // main switch: --bin {binary}
     string      m_exeName;      // main switch: -o {name}
@@ -371,6 +373,8 @@ private:
     void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus);
     void addFuture(const string& flag);
+    void addFuture0(const string& flag);
+    void addFuture1(const string& flag);
     void addIncDirUser(const string& incdir);  // User requested
     void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise
     void addParameter(const string& paramline, bool allowPlus);
@@ -518,7 +522,10 @@ public:
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
     bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }
-    bool useTraceParallel() const { return trace() && traceFormat().vcd() && threads() > 1; }
+    bool useTraceParallel() const {
+        return trace() && traceFormat().vcd() && threads() && (threads() > 1 || hierChild() > 1);
+    }
+    bool useFstWriterThread() const { return traceThreads() && traceFormat().fst(); }
     unsigned vmTraceThreads() const {
         return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
     }
@@ -569,6 +576,8 @@ public:
     void checkParameters();
 
     bool isFuture(const string& flag) const;
+    bool isFuture0(const string& flag) const;
+    bool isFuture1(const string& flag) const;
     bool isLibraryFile(const string& filename) const;
     bool isClocker(const string& signame) const;
     bool isNoClocker(const string& signame) const;
@@ -605,7 +614,7 @@ public:
     }
 
     bool hierarchical() const { return m_hierarchical; }
-    bool hierChild() const { return m_hierChild; }
+    int hierChild() const { return m_hierChild; }
     bool hierTop() const { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
     // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top

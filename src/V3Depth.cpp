@@ -26,9 +26,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Depth.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -68,10 +69,7 @@ private:
         // Put assignment before the referencing statement
         AstAssign* const assp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, nodep};
-        VNRelinker linker2;
-        m_stmtp->unlinkFrBack(&linker2);
-        assp->addNext(m_stmtp);
-        linker2.relink(assp);
+        m_stmtp->addHereThisAsNext(assp);
     }
 
     // VISITORS

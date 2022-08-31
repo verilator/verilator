@@ -21,9 +21,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3LinkLValue.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 
 #include <map>
 
@@ -208,6 +209,13 @@ private:
             iterateAndNextNull(nodep->filenamep());
             iterateAndNextNull(nodep->lsbp());
             iterateAndNextNull(nodep->msbp());
+        }
+    }
+    virtual void visit(AstTestPlusArgs* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        {
+            m_setRefLvalue = VAccess::NOCHANGE;
+            iterateAndNextNull(nodep->searchp());
         }
     }
     virtual void visit(AstValuePlusArgs* nodep) override {

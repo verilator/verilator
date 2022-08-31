@@ -11,11 +11,12 @@
 
 #include VM_PREFIX_INCLUDE
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
 int errors = 0;
@@ -91,7 +92,7 @@ int main(int argc, char** argv, char** env) {
     TEST_CHECK_EQ(sizeof(vlsint32_t), 4);  // Intentional use of old typedef
     TEST_CHECK_EQ(sizeof(vlsint64_t), 8);  // Intentional use of old typedef
 
-    VM_PREFIX* topp = new VM_PREFIX();
+    VM_PREFIX* topp = new VM_PREFIX{};
 
     topp->eval();
     topp->clk = 0;

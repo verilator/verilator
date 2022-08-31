@@ -1,10 +1,9 @@
-%Error-UNSUPPORTED: t/t_class_param_nconst_bad.v:12:11: Unsupported: parameterized classes
-                                                      : ... In instance t
+%Error: t/t_class_param_nconst_bad.v:12:17: Expecting expression to be constant, but can't convert a RAND to constant.
+                                          : ... In instance t
+   12 |    Cls #(.PARAM($random)) c;   
+      |                 ^~~~~~~
+%Error: t/t_class_param_nconst_bad.v:12:11: Can't convert defparam value to constant: Param 'PARAM' of 'Cls'
+                                          : ... In instance t
    12 |    Cls #(.PARAM($random)) c;   
       |           ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_class_param_nconst_bad.v:7:23: Unsupported: class parameters
-                                                     : ... In instance t
-    7 | class Cls #(parameter PARAM = 12);
-      |                       ^~~~~
 %Error: Exiting due to

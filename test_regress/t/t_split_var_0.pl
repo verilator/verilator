@@ -14,8 +14,8 @@ scenarios(simulator => 1);
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # So use 6 threads here though it's not optimal in performace wise, but ok.
 compile(
-    verilator_flags2 => ['--stats' . ($Self->{vltmt} ? ' --threads 6' : ''),
-                         "$Self->{t_dir}/t_split_var_0.vlt"],
+    verilator_flags2 => ['--stats', "$Self->{t_dir}/t_split_var_0.vlt"],
+    threads => $Self->{vltmt} ? 6 : 0
     );
 
 execute(

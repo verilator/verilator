@@ -81,6 +81,7 @@
 #endif
 // clang-format on
 
+class VerilatedContext;
 class VerilatedContextImp;
 class VerilatedContextImpData;
 class VerilatedCovContext;
@@ -90,6 +91,9 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+template <class, class>
+class VerilatedTrace;
+class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
@@ -253,6 +257,40 @@ public:
 };
 
 //=========================================================================
+/// Base class of a Verilator generated (Verilated) model.
+///
+/// VerilatedModel is a base class of the user facing primary class generated
+/// by Verilator.
+
+class VerilatedModel VL_NOT_FINAL {
+    VL_UNCOPYABLE(VerilatedModel);
+
+    VerilatedContext& m_context;  // The VerilatedContext this model is instantiated under
+
+protected:
+    explicit VerilatedModel(VerilatedContext& context);
+    virtual ~VerilatedModel() = default;
+
+public:
+    /// Returns the VerilatedContext this model is instantiated under
+    /// Used to get to e.g. simulation time via contextp()->time()
+    inline VerilatedContext* contextp() const { return &m_context; }
+    /// Returns the hierarchical name of this module instance.
+    virtual const char* hierName() const = 0;
+    /// Returns the name of this model (the name of the generated model class).
+    virtual const char* modelName() const = 0;
+    /// Returns the thread level parallelism, this model was Verilated with. Always 1 or higher.
+    virtual unsigned threads() const = 0;
+
+private:
+    // The following are for use by Verilator internals only
+    template <class, class>
+    friend class VerilatedTrace;
+    // Run-time trace configuration requested by this model
+    virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
+};
+
+//=========================================================================
 /// Base class for all Verilated module classes.
 
 class VerilatedModule VL_NOT_FINAL {
@@ -265,10 +303,6 @@ public:
     ~VerilatedModule();
     const char* name() const { return m_namep; }  ///< Return name of module
 };
-
-/// Declare a module, ala SC_MODULE
-#define VL_MODULE(modname) class modname VL_NOT_FINAL : public VerilatedModule
-// Not class final in VL_MODULE, as users might be abstracting our models (--hierarchical)
 
 //=========================================================================
 // Functions overridable by user defines
@@ -362,6 +396,16 @@ protected:
 
     // Implementation details
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
+    // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
+#ifdef VL_THREADED
+    unsigned m_threads = std::thread::hardware_concurrency();
+#else
+    const unsigned m_threads = 1;
+#endif
+    // The thread pool shared by all models added to this context
+    std::unique_ptr<VerilatedVirtualBase> m_threadPool;
+    // The execution profiler shared by all models added to this context
+    std::unique_ptr<VerilatedVirtualBase> m_executionProfiler;
     // Coverage access
     std::unique_ptr<VerilatedVirtualBase> m_coveragep;  // Pointer for coveragep()
 
@@ -495,6 +539,12 @@ public:
     /// Get time precision as IEEE-standard text
     const char* timeprecisionString() const VL_MT_SAFE;
 
+    /// Get number of threads used for simulation (including the main thread)
+    unsigned threads() const { return m_threads; }
+    /// Set number of threads used for simulation (including the main thread)
+    /// Can only be called before the thread pool is created (before first model is added).
+    void threads(unsigned n);
+
     /// Allow traces to at some point be enabled (disables some optimizations)
     void traceEverOn(bool flag) VL_MT_SAFE {
         if (flag) calcUnusedSigs(true);
@@ -510,12 +560,19 @@ public:
     /// releases - contact the authors before production use.
     void scopesDump() const VL_MT_SAFE;
 
-public:  // But for internal use only
+    // METHODS - public but for internal use only
+
     // Internal: access to implementation class
     VerilatedContextImp* impp() { return reinterpret_cast<VerilatedContextImp*>(this); }
     const VerilatedContextImp* impp() const {
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
+
+    void addModel(VerilatedModel*);
+
+    VerilatedVirtualBase* threadPoolp();
+    VerilatedVirtualBase*
+    enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&));
 
     // Internal: $dumpfile
     void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
@@ -830,7 +887,6 @@ public:
     }
 #endif
 
-public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
     // Returns pointer to thread-local static data (overwritten on next call)

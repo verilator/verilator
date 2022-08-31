@@ -22,11 +22,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
-#include "V3Global.h"
-#include "V3File.h"
-#include "V3Graph.h"
 #include "V3TSP.h"
+
+#include "V3Error.h"
+#include "V3File.h"
+#include "V3Global.h"
+#include "V3Graph.h"
 
 #include <algorithm>
 #include <cmath>
@@ -34,8 +35,8 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 //######################################################################
@@ -51,7 +52,8 @@ VL_DEBUG_FUNC;  // Declare debug()
 }  // namespace V3TSP
 
 // Vertex that tracks a per-vertex key
-template <typename T_Key> class TspVertexTmpl : public V3GraphVertex {
+template <typename T_Key>
+class TspVertexTmpl final : public V3GraphVertex {
 private:
     const T_Key m_key;
 
@@ -68,7 +70,8 @@ private:
 
 // TspGraphTmpl represents a complete graph, templatized to work with
 // different T_Key types.
-template <typename T_Key> class TspGraphTmpl : public V3Graph {
+template <typename T_Key>
+class TspGraphTmpl final : public V3Graph {
 public:
     // TYPES
     using Vertex = TspVertexTmpl<T_Key>;

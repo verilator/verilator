@@ -24,6 +24,7 @@
 #define VERILATOR_VERILATED_THREADS_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
 #ifndef VL_THREADED
@@ -49,6 +50,9 @@
 # include <cpuid.h>  // For __cpuid_count()
 #endif
 // clang-format on
+
+class VlExecutionProfiler;
+class VlThreadPool;
 
 // VlMTaskVertex and VlThreadpool will work with multiple model class types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
@@ -129,20 +133,14 @@ public:
     }
 };
 
-class VlExecutionProfiler;
-class VlThreadPool;
-
 class VlWorkerThread final {
 private:
     // TYPES
     struct ExecRec {
-        VlExecFnp m_fnp;  // Function to execute
-        VlSelfP m_selfp;  // Symbol table to execute
-        bool m_evenCycle;  // Even/odd for flag alternation
-        ExecRec()
-            : m_fnp{nullptr}
-            , m_selfp{nullptr}
-            , m_evenCycle{false} {}
+        VlExecFnp m_fnp = nullptr;  // Function to execute
+        VlSelfP m_selfp = nullptr;  // Symbol table to execute
+        bool m_evenCycle = false;  // Even/odd for flag alternation
+        ExecRec() = default;
         ExecRec(VlExecFnp fnp, VlSelfP selfp, bool evenCycle)
             : m_fnp{fnp}
             , m_selfp{selfp}
@@ -162,26 +160,24 @@ private:
     // Store the size atomically, so we can spin wait
     std::atomic<size_t> m_ready_size;
 
-    std::atomic<bool> m_exiting;  // Worker thread should exit
     std::thread m_cthread;  // Underlying C++ thread record
-    VerilatedContext* const m_contextp;  // Context for spawned thread
 
     VL_UNCOPYABLE(VlWorkerThread);
 
 public:
     // CONSTRUCTORS
-    explicit VlWorkerThread(uint32_t threadId, VerilatedContext* contextp,
-                            VlExecutionProfiler* profilerp);
+    explicit VlWorkerThread(VerilatedContext* contextp);
     ~VlWorkerThread();
 
     // METHODS
+    template <bool SpinWait>
     inline void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Spin for a while, waiting for new data
-        for (int i = 0; i < VL_LOCK_SPINS; ++i) {
-            if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))) {  //
-                break;
+        if VL_CONSTEXPR_CXX17 (SpinWait) {
+            for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
+                if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))) break;
+                VL_CPU_RELAX();
             }
-            VL_CPU_RELAX();
         }
         VerilatedLockGuard lock{m_mutex};
         while (m_ready.empty()) {
@@ -195,8 +191,7 @@ public:
         m_ready.erase(m_ready.begin());
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
-    inline void wakeUp() { addTask(nullptr, nullptr, false); }
-    inline void addTask(VlExecFnp fnp, VlSelfP selfp, bool evenCycle)
+    inline void addTask(VlExecFnp fnp, VlSelfP selfp, bool evenCycle = false)
         VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
         {
@@ -207,12 +202,15 @@ public:
         }
         if (notify) m_cv.notify_one();
     }
+
+    void shutdown();  // Finish current tasks, then terminate thread
+    void wait();  // Blocks calling thread until all tasks complete in this thread
+
     void workerLoop();
-    static void startWorker(VlWorkerThread* workerp, uint32_t threadId,
-                            VlExecutionProfiler* profilerp);
+    static void startWorker(VlWorkerThread* workerp, VerilatedContext* contextp);
 };
 
-class VlThreadPool final {
+class VlThreadPool final : public VerilatedVirtualBase {
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
 
@@ -221,8 +219,8 @@ public:
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
     // pool will create these threads and make them available to execute tasks
     // via this->workerp(index)->addTask(...)
-    VlThreadPool(VerilatedContext* contextp, int nThreads, VlExecutionProfiler* profilerp);
-    ~VlThreadPool();
+    VlThreadPool(VerilatedContext* contextp, unsigned nThreads);
+    ~VlThreadPool() override;
 
     // METHODS
     inline int numThreads() const { return m_workers.size(); }

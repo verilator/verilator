@@ -17,14 +17,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3GraphAlg.h"
+
+#include "V3Global.h"
 #include "V3GraphPathChecker.h"
 
 #include <algorithm>
-#include <vector>
-#include <map>
 #include <list>
+#include <map>
+#include <vector>
 
 //######################################################################
 //######################################################################

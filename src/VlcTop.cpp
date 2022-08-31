@@ -14,10 +14,12 @@
 //
 //*************************************************************************
 
+#include "VlcTop.h"
+
 #include "V3Error.h"
 #include "V3Os.h"
+
 #include "VlcOptions.h"
-#include "VlcTop.h"
 
 #include <algorithm>
 #include <fstream>

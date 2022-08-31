@@ -20,8 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3EmitCConstInit.h"
+#include "V3Global.h"
 
 #include <algorithm>
 #include <map>
@@ -121,6 +121,28 @@ private:
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
     bool m_emitConstInit = false;  // Emitting constant initializer
+
+    // State associated with processing $display style string formatting
+    struct EmitDispState {
+        string m_format;  // "%s" and text from user
+        std::vector<char> m_argsChar;  // Format of each argument to be printed
+        std::vector<AstNode*> m_argsp;  // Each argument to be printed
+        std::vector<string> m_argsFunc;  // Function before each argument to be printed
+        EmitDispState() { clear(); }
+        void clear() {
+            m_format = "";
+            m_argsChar.clear();
+            m_argsp.clear();
+            m_argsFunc.clear();
+        }
+        void pushFormat(const string& fmt) { m_format += fmt; }
+        void pushFormat(char fmt) { m_format += fmt; }
+        void pushArg(char fmtChar, AstNode* nodep, const string& func) {
+            m_argsChar.push_back(fmtChar);
+            m_argsp.push_back(nodep);
+            m_argsFunc.push_back(func);
+        }
+    } m_emitDispState;
 
 protected:
     EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
@@ -357,6 +379,14 @@ public:
         }
         puts(")");
     }
+    virtual void visit(AstWildcardSel* nodep) override {
+        iterateAndNextNull(nodep->fromp());
+        putbs(".at(");
+        AstWildcardArrayDType* const adtypep = VN_AS(nodep->fromp()->dtypep(), WildcardArrayDType);
+        UASSERT_OBJ(adtypep, nodep, "Wildcard select on non-wildcard-associative type");
+        iterateAndNextNull(nodep->bitp());
+        puts(")");
+    }
     virtual void visit(AstCCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
         const AstNodeModule* const funcModp = EmitCParentModule::get(funcp);
@@ -581,7 +611,7 @@ public:
     }
     virtual void visit(AstTestPlusArgs* nodep) override {
         puts("VL_TESTPLUSARGS_I(");
-        putsQuoted(nodep->text());
+        emitCvtPackStr(nodep->searchp());
         puts(")");
     }
     virtual void visit(AstFError* nodep) override {
@@ -1159,6 +1189,24 @@ public:
         }
     }
     virtual void visit(AstSetAssoc* nodep) override {
+        iterateAndNextNull(nodep->lhsp());
+        putbs(".set(");
+        iterateAndNextNull(nodep->keyp());
+        puts(", ");
+        putbs("");
+        iterateAndNextNull(nodep->valuep());
+        puts(")");
+    }
+    virtual void visit(AstConsWildcard* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        puts("()");
+        if (nodep->defaultp()) {
+            putbs(".setDefault(");
+            iterateAndNextNull(nodep->defaultp());
+            puts(")");
+        }
+    }
+    virtual void visit(AstSetWildcard* nodep) override {
         iterateAndNextNull(nodep->lhsp());
         putbs(".set(");
         iterateAndNextNull(nodep->keyp());

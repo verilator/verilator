@@ -9,20 +9,21 @@
 //
 //*************************************************************************
 
-#include "Vt_vpi_cbs_called.h"
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include <cstdlib>
+#include "Vt_vpi_cbs_called.h"
+#include "vpi_user.h"
+
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <vector>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
-
-#include "vpi_user.h"
 
 const std::vector<int> cbs_to_test{cbReadWriteSynch,    cbReadOnlySynch,   cbNextSimTime,
                                    cbStartOfSimulation, cbEndOfSimulation, cbValueChange};
@@ -43,7 +44,6 @@ bool callbacks_expected_called[CB_COUNT] = {false};
 std::vector<int>::const_iterator cb_iter;
 std::vector<CallbackState>::const_iterator state_iter;
 
-unsigned int main_time = 0;
 bool got_error = false;
 
 #ifdef TEST_VERBOSE
@@ -245,27 +245,29 @@ static int register_test_callback() {
     return 0;
 }
 
-double sc_time_stamp() { return main_time; }
-
 int main(int argc, char** argv, char** env) {
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+
     uint64_t sim_time = 100;
     bool cbs_called;
-    Verilated::commandArgs(argc, argv);
+    contextp->commandArgs(argc, argv);
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
-    if (verbose) VL_PRINTF("-- { Sim Time %d } --\n", main_time);
+    if (verbose) VL_PRINTF("-- { Sim Time %" PRId64 " } --\n", contextp->time());
 
     register_test_callback();
 
     topp->eval();
     topp->clk = 0;
-    main_time += 1;
+    contextp->timeInc(1);
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
+    while (contextp->time() < sim_time && !contextp->gotFinish()) {
         if (verbose) {
-            VL_PRINTF("-- { Sim Time %d , Callback %s (%d) , Testcase State %d } --\n", main_time,
-                      cb_reason_to_string(*cb_iter), *cb_iter, *state_iter);
+            VL_PRINTF("-- { Sim Time %" PRId64 " , Callback %s (%d) , Testcase State %d } --\n",
+                      contextp->time(), cb_reason_to_string(*cb_iter), *cb_iter, *state_iter);
         }
 
         topp->eval();
@@ -285,14 +287,17 @@ int main(int argc, char** argv, char** env) {
 
         VerilatedVpi::callTimedCbs();
 
-        main_time = VerilatedVpi::cbNextDeadline();
-        if (main_time == -1 && !Verilated::gotFinish()) {
-            if (verbose) VL_PRINTF("-- { Sim Time %d , No more testcases } --\n", main_time);
+        int64_t next_time = VerilatedVpi::cbNextDeadline();
+        contextp->time(next_time);
+        if (next_time == -1 && !contextp->gotFinish()) {
+            if (verbose)
+                VL_PRINTF("-- { Sim Time %" PRId64 " , No more testcases } --\n",
+                          contextp->time());
             if (got_error) {
                 vl_stop(__FILE__, __LINE__, "TOP-cpp");
             } else {
                 VL_PRINTF("*-* All Finished *-*\n");
-                Verilated::gotFinish(true);
+                contextp->gotFinish(true);
             }
         }
 
@@ -302,11 +307,10 @@ int main(int argc, char** argv, char** env) {
         topp->clk = !topp->clk;
     }
 
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 
-    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }

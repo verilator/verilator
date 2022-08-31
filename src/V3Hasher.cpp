@@ -133,6 +133,11 @@ private:
             iterateNull(nodep->virtRefDTypep());
         });
     }
+    virtual void visit(AstWildcardArrayDType* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
+            iterateNull(nodep->virtRefDTypep());
+        });
+    }
     virtual void visit(AstBasicDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {
             m_hash += nodep->keyword();
@@ -221,11 +226,6 @@ private:
         });
     }
     virtual void visit(AstSScanF* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
-            m_hash += nodep->text();
-        });
-    }
-    virtual void visit(AstTestPlusArgs* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->text();
         });
@@ -494,7 +494,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    HasherVisitor(AstNode* nodep)
+    explicit HasherVisitor(AstNode* nodep)
         : m_cacheInUser4{true} {
         iterate(nodep);
     }
@@ -517,7 +517,7 @@ V3Hash V3Hasher::operator()(AstNode* nodep) const {
 
 V3Hash V3Hasher::rehash(AstNode* nodep) const {
     nodep->user4(0);
-    HasherVisitor{nodep};
+    { HasherVisitor{nodep}; }
     return V3Hash(nodep->user4());
 }
 

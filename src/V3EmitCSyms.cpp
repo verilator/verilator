@@ -17,9 +17,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 #include "V3LanguageWords.h"
 #include "V3PartitionGraph.h"
 
@@ -445,15 +445,15 @@ void EmitCSyms::emitSymHdr() {
     }
     puts("bool __Vm_didInit = false;\n");
 
-    if (v3Global.opt.profExec()) {
-        puts("\n// EXECUTION PROFILING\n");
-        puts("VlExecutionProfiler __Vm_executionProfiler;\n");
-    }
-
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
         puts("VlThreadPool* const __Vm_threadPoolp;\n");
         puts("bool __Vm_even_cycle = false;\n");
+    }
+
+    if (v3Global.opt.profExec()) {
+        puts("\n// EXECUTION PROFILING\n");
+        puts("VlExecutionProfiler* const __Vm_executionProfilerp;\n");
     }
 
     puts("\n// MODULE INSTANCE STATE\n");
@@ -673,12 +673,39 @@ void EmitCSyms::emitSymImp() {
         puts("_vm_pgoProfiler.write(\"" + topClassName()
              + "\", _vm_contextp__->profVltFilename());\n");
     }
-    if (v3Global.opt.mtasks()) puts("delete __Vm_threadPoolp;\n");
-    puts("}\n\n");
+    puts("}\n");
+
+    if (v3Global.needTraceDumper()) {
+        if (!optSystemC()) {
+            puts("\nvoid " + symClassName() + "::_traceDump() {\n");
+            // Caller checked for __Vm_dumperp non-nullptr
+            puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+            puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
+            puts("}\n");
+        }
+
+        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
+        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
+        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
+        puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
+        puts("std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
+        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
+        puts("__Vm_dumping = true;\n");
+        puts("}\n");
+        puts("}\n");
+
+        puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
+        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("__Vm_dumping = false;\n");
+        puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
+        puts("}\n");
+    }
+    puts("\n");
 
     // Constructor
-    puts(symClassName() + "::" + symClassName() + "(VerilatedContext* contextp, const char* namep,"
-         + topClassName() + "* modelp)\n");
+    puts(symClassName() + "::" + symClassName()
+         + "(VerilatedContext* contextp, const char* namep, " + topClassName() + "* modelp)\n");
     puts("    : VerilatedSyms{contextp}\n");
     puts("    // Setup internal state of the Syms class\n");
     puts("    , __Vm_modelp{modelp}\n");
@@ -705,9 +732,13 @@ void EmitCSyms::emitSymImp() {
         // Note we create N-1 threads in the thread pool. The thread
         // that calls eval() becomes the final Nth thread for the
         // duration of the eval call.
-        puts("    , __Vm_threadPoolp{new VlThreadPool{_vm_contextp__, "
-             + cvtToStr(v3Global.opt.threads() - 1) + ", "
-             + (v3Global.opt.profExec() ? "&__Vm_executionProfiler" : "nullptr") + "}}\n");
+        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp())}\n");
+    }
+
+    if (v3Global.opt.profExec()) {
+        puts("    , "
+             "__Vm_executionProfilerp{static_cast<VlExecutionProfiler*>(contextp->"
+             "enableExecutionProfiler(&VlExecutionProfiler::construct))}\n");
     }
 
     puts("    // Setup module instances\n");
@@ -771,7 +802,7 @@ void EmitCSyms::emitSymImp() {
                 puts(protectIf(aboveScopep->nameDotless(), aboveScopep->protect()));
             }
             puts(".");
-            puts(protName.substr(protName.rfind(".") + 1));
+            puts(protName.substr(protName.rfind('.') + 1));
             puts(" = &");
             puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
             ++m_numStmts;
@@ -920,35 +951,9 @@ void EmitCSyms::emitSymImp() {
 
     m_ofpBase->puts("}\n");
 
-    if (v3Global.needTraceDumper()) {
-        if (!optSystemC()) {
-            puts("\nvoid " + symClassName() + "::_traceDump() {\n");
-            // Caller checked for __Vm_dumperp non-nullptr
-            puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
-            puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
-            puts("}\n");
-        }
-
-        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
-        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
-        puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
-        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
-        puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
-        puts("std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
-        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
-        puts("__Vm_dumping = true;\n");
-        puts("}\n");
-        puts("}\n");
-
-        puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
-        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
-        puts("__Vm_dumping = false;\n");
-        puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
-        puts("}\n");
-    }
-
     closeSplit();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    m_ofp = nullptr;
+    VL_DO_CLEAR(delete m_ofpBase, m_ofpBase = nullptr);
 }
 
 //######################################################################

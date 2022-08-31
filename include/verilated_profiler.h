@@ -24,10 +24,6 @@
 
 #include "verilatedos.h"
 
-#ifndef VL_PROFILER
-#error "verilated_profiler.h/cpp expects VL_PROFILER (from --prof-{exec, pgo}"
-#endif
-
 #include "verilated.h"
 
 #include <array>
@@ -38,13 +34,14 @@
 #include <vector>
 
 class VlExecutionProfiler;
+class VlThreadPool;
 
 //=============================================================================
 // Macros to simplify generated code
 
 #define VL_EXEC_TRACE_ADD_RECORD(vlSymsp) \
-    if (VL_UNLIKELY((vlSymsp)->__Vm_executionProfiler.enabled())) \
-    (vlSymsp)->__Vm_executionProfiler.addRecord()
+    if (VL_UNLIKELY((vlSymsp)->__Vm_executionProfilerp->enabled())) \
+    (vlSymsp)->__Vm_executionProfilerp->addRecord()
 
 //=============================================================================
 // Return high-precision counter for profiling, or 0x0 if not available
@@ -136,7 +133,7 @@ static_assert(std::is_trivially_destructible<VlExecutionRecord>::value,
 //=============================================================================
 // VlExecutionProfiler is for collecting profiling data about model execution
 
-class VlExecutionProfiler final {
+class VlExecutionProfiler final : public VerilatedVirtualBase {
     // CONSTANTS
 
     // In order to try to avoid dynamic memory allocations during the actual profiling phase,
@@ -154,6 +151,7 @@ class VlExecutionProfiler final {
     using ExecutionTrace = std::vector<VlExecutionRecord>;
 
     // STATE
+    VerilatedContext& m_context;  // The context this profiler is under
     static VL_THREAD_LOCAL ExecutionTrace t_trace;  // thread-local trace buffers
     mutable VerilatedMutex m_mutex;
     // Map from thread id to &t_trace of given thread
@@ -167,31 +165,36 @@ class VlExecutionProfiler final {
 
 public:
     // CONSTRUCTOR
-    VlExecutionProfiler();
+    explicit VlExecutionProfiler(VerilatedContext& context);
+    ~VlExecutionProfiler() override = default;
 
     // METHODS
 
     // Is profiling enabled
     inline bool enabled() const { return m_enabled; }
     // Append a trace record to the trace buffer of the current thread
-    inline VlExecutionRecord& addRecord() {
+    static inline VlExecutionRecord& addRecord() {
         t_trace.emplace_back();
         return t_trace.back();
     }
     // Configure profiler (called in beginning of 'eval')
-    void configure(const VerilatedContext&);
+    void configure();
     // Setup profiling on a particular thread;
     void setupThread(uint32_t threadId);
     // Clear all profiling data
     void clear() VL_MT_SAFE_EXCLUDES(m_mutex);
     // Write profiling data into file
     void dump(const char* filenamep, uint64_t tickEnd) VL_MT_SAFE_EXCLUDES(m_mutex);
+
+    // Passed to VerilatedContext to create the VlExecutionProfiler profiler instance
+    static VerilatedVirtualBase* construct(VerilatedContext& context);
 };
 
 //=============================================================================
 // VlPgoProfiler is for collecting profiling data for PGO
 
-template <std::size_t T_Entries> class VlPgoProfiler final {
+template <std::size_t T_Entries>
+class VlPgoProfiler final {
     // TYPES
     struct Record final {
         const std::string m_name;  // Hashed name of mtask/etc

@@ -24,9 +24,10 @@
 #include "verilatedos.h"
 
 #include "V3Common.h"
+
 #include "V3Ast.h"
-#include "V3Global.h"
 #include "V3EmitCBase.h"
+#include "V3Global.h"
 
 //######################################################################
 // Common component builders
@@ -50,7 +51,7 @@ static void makeToString(AstClass* nodep) {
     funcp->isStatic(false);
     funcp->protect(false);
     AstNode* const exprp
-        = new AstCMath{nodep->fileline(), R"(std::string("'{") + to_string_middle() + "}")", 0};
+        = new AstCMath{nodep->fileline(), R"(std::string{"'{"} + to_string_middle() + "}")", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtp(funcp);
@@ -85,11 +86,11 @@ static void makeToStringMiddle(AstClass* nodep) {
             }
         }
     }
-    if (nodep->extendsp() && nodep->extendsp()->classp()->user1()) {
-        string stmt = "out += \"";
+    if (nodep->extendsp()) {
+        string stmt = "out += ";
         if (!comma.empty()) stmt += "\", \"+ ";
         // comma = ", ";  // Nothing further so not needed
-        stmt += nodep->extendsp()->dtypep()->nameProtect();
+        stmt += EmitCBaseVisitor::prefixNameProtect(nodep->extendsp()->dtypep());
         stmt += "::to_string_middle();\n";
         nodep->user1(true);  // So what we extend dumps this
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
@@ -103,13 +104,13 @@ static void makeToStringMiddle(AstClass* nodep) {
 
 void V3Common::commonAll() {
     UINFO(2, __FUNCTION__ << ": " << endl);
+    // NODE STATE
+    // Entire netlist:
+    //  AstClass::user1()     -> bool.  True if class needs to_string dumper
+    const VNUser1InUse m_inuser1;
     // Create common contents for each module
     for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            // NODE STATE
-            // Entire netlist:
-            //  AstClass::user1()     -> bool.  True if class needs to_string dumper
-            const VNUser1InUse m_inuser1;
             // Create ToString methods
             makeVlToString(classp);
             makeToString(classp);

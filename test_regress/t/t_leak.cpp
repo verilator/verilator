@@ -8,9 +8,10 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-#include <cstdlib>
-#include <cstdio>
 #include <verilated.h>
+
+#include <cstdio>
+#include <cstdlib>
 #include VM_PREFIX_INCLUDE
 
 unsigned int main_time = 0;
@@ -48,11 +49,12 @@ void make_and_destroy() {
 #ifdef VL_NO_LEGACY
     VerilatedContext* contextp = new VerilatedContext;
     VM_PREFIX* topp = new VM_PREFIX{contextp};
+    contextp->debug(0);
 #else
     VM_PREFIX* topp = new VM_PREFIX;
+    Verilated::debug(0);
 #endif
 
-    Verilated::debug(0);
     topp->eval();
     topp->clk = true;
     while (!

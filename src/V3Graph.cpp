@@ -17,9 +17,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3File.h"
 #include "V3Graph.h"
+
+#include "V3File.h"
+#include "V3Global.h"
 
 #include <map>
 #include <memory>
@@ -159,7 +160,7 @@ std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) {
 //######################################################################
 // Edges
 
-void V3GraphEdge::init(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
+void V3GraphEdge::init(V3Graph* /*graphp*/, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
                        bool cutable) {
     UASSERT(fromp, "Null from pointer");
     UASSERT(top, "Null to pointer");
@@ -178,6 +179,14 @@ V3GraphEdge* V3GraphEdge::relinkFromp(V3GraphVertex* newFromp) {
     m_outs.unlink(m_fromp->m_outs, this);
     m_fromp = newFromp;
     outPushBack();
+    return oldNxt;
+}
+
+V3GraphEdge* V3GraphEdge::relinkTop(V3GraphVertex* newTop) {
+    V3GraphEdge* oldNxt = inNextp();
+    m_ins.unlink(m_top->m_ins, this);
+    m_top = newTop;
+    inPushBack();
     return oldNxt;
 }
 

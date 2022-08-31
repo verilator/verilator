@@ -22,12 +22,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Combine.h"
-#include "V3DupFinder.h"
-#include "V3Stats.h"
+
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
+#include "V3DupFinder.h"
+#include "V3Global.h"
+#include "V3Stats.h"
 
 #include <list>
 #include <vector>
@@ -220,7 +221,9 @@ class CombineVisitor final : VNVisitor {
 
     // CONSTRUCTORS
     explicit CombineVisitor(AstNetlist* nodep) { iterate(nodep); }
-    ~CombineVisitor() { V3Stats::addStat("Optimizations, Combined CFuncs", m_cfuncsCombined); }
+    ~CombineVisitor() override {
+        V3Stats::addStat("Optimizations, Combined CFuncs", m_cfuncsCombined);
+    }
 
 public:
     static void apply(AstNetlist* netlistp) { CombineVisitor{netlistp}; }

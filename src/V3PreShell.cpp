@@ -17,12 +17,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3PreShell.h"
-#include "V3PreProc.h"
+
 #include "V3File.h"
-#include "V3Parse.h"
+#include "V3Global.h"
 #include "V3Os.h"
+#include "V3Parse.h"
+#include "V3PreProc.h"
 
 #include <algorithm>
 #include <iostream>
@@ -49,9 +50,8 @@ protected:
         return level;
     }
 
-    void boot(char** env) {
+    void boot() {
         // Create the implementation pointer
-        if (env) {}
         if (!s_preprocp) {
             FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
             s_preprocp = V3PreProc::createPreProc(cmdfl);
@@ -104,10 +104,10 @@ protected:
             // from the V3LangCode to the various Lex BEGIN states. The language
             // of this source file is updated here, in case there have been any
             // intervening +<lang>ext+ options since it was first encountered.
-            FileLine* const modfileline = new FileLine(modfilename);
+            FileLine* const modfileline = new FileLine{modfilename};
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
-            V3Parse::ppPushText(
-                parsep, (string("`begin_keywords \"") + modfileline->language().ascii() + "\"\n"));
+            V3Parse::ppPushText(parsep, (std::string{"`begin_keywords \""}
+                                         + modfileline->language().ascii() + "\"\n"));
             // FileLine tracks and frees modfileline
         }
 
@@ -162,7 +162,7 @@ VInFilter* V3PreShellImp::s_filterp = nullptr;
 //######################################################################
 // V3PreShell
 
-void V3PreShell::boot(char** env) { V3PreShellImp::s_preImp.boot(env); }
+void V3PreShell::boot() { V3PreShellImp::s_preImp.boot(); }
 bool V3PreShell::preproc(FileLine* fl, const string& modname, VInFilter* filterp,
                          V3ParseImp* parsep, const string& errmsg) {
     return V3PreShellImp::s_preImp.preproc(fl, modname, filterp, parsep, errmsg);

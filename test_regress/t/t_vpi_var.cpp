@@ -15,25 +15,26 @@
 
 #else
 
-#include "Vt_vpi_var.h"
 #include "verilated.h"
-#include "svdpi.h"
-
-#include "Vt_vpi_var__Dpi.h"
-
-#include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
+
+#include "Vt_vpi_var.h"
+#include "Vt_vpi_var__Dpi.h"
+#include "svdpi.h"
 
 #endif
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
+int errors = 0;
 // __FILE__ is too long
 #define FILENM "t_vpi_var.cpp"
 
@@ -535,7 +536,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
                     CHECK_RESULT_CSTR(v.value.str, data[i].str.c_str());
                 } else {
                     data[i].type = v.format;
-                    data[i].str = std::string(v.value.str);
+                    data[i].str = std::string{v.value.str};
                 }
             }
 
@@ -693,20 +694,24 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    uint64_t sim_time = 1100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    uint64_t sim_time = 1100;
+    contextp->commandArgs(argc, argv);
+    contextp->debug(0);
+
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
-    Verilated::scopesDump();
+    contextp->scopesDump();
 #endif
 #endif
 
 #if VM_TRACE
-    Verilated::traceEverOn(true);
+    contextp->traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
@@ -717,7 +722,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 10;
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !contextp->gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();
@@ -731,7 +736,7 @@ int main(int argc, char** argv, char** env) {
     CHECK_RESULT(callback_count_half, 250);
     CHECK_RESULT(callback_count_quad, 2);
     CHECK_RESULT(callback_count_strs, callback_count_strs_max);
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
@@ -740,7 +745,6 @@ int main(int argc, char** argv, char** env) {
     if (tfp) tfp->close();
 #endif
 
-    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }
 

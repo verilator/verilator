@@ -36,9 +36,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Dead.h"
+
 #include "V3Ast.h"
+#include "V3Global.h"
 
 #include <map>
 #include <vector>
@@ -85,7 +86,7 @@ private:
         }
         if (AstNode* const subnodep = nodep->getChildDTypep()) subnodep->user1Inc();
     }
-    void checkVarRef(AstNodeVarRef* nodep) {
+    void checkVarRef(AstNodeVarRef* nodep) const {
         if (nodep->classOrPackagep() && m_elimCells) nodep->classOrPackagep(nullptr);
     }
     void checkDType(AstNodeDType* nodep) {
@@ -316,7 +317,7 @@ private:
             }
         }
     }
-    bool mightElimVar(AstVar* nodep) {
+    bool mightElimVar(AstVar* nodep) const {
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
         if (nodep->isIO() || nodep->isClassMember()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;

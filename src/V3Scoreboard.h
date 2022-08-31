@@ -1,13 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Scoreboards for thread partitioner
-//
-// Provides scoreboard classes:
-//
-//  * SortByValueMap
-//  * V3Scoreboard
-//
-// See details below
+// DESCRIPTION: Verilator: Scoreboard for mtask coarsening
 //
 // Code available from: https://verilator.org
 //
@@ -28,445 +21,122 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
+#include "V3PairingHeap.h"
 
-#include <functional>
-#include <map>
-#include <set>
-#include <unordered_map>
+//===============================================================================================
+// V3Scoreboard is essentially a heap that can be hinted that some elements have changed keys, at
+// which points those elements will be deferred as 'unknown' until the next 'rescore' call. We
+// largely reuse the implementation of the slightly more generic PairingHeap, but we do rely on the
+// internal structure of the PairingHeap so changing that class requires changing this.
+//
+// For efficiency, the elements themselves must be the heap nodes, by deriving them from
+// V3Scoreboard<T_Elem, T_Key>::Node. This also means a single element can only be associated with
+// a single scoreboard.
 
-//######################################################################
-// SortByValueMap
-
-/// A generic key-value map, except it also supports iterating in
-/// value-sorted order.  Values need not be unique. Uses T_KeyCompare to
-/// break ties in the sort when values collide.
-
-template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key>>
-class SortByValueMap final {
-    // TYPES
-private:
-    using KeySet = std::set<T_Key, T_KeyCompare>;
-    using Val2Keys = std::map<T_Value, KeySet>;
-
-    // MEMBERS
-    std::unordered_map<T_Key, T_Value> m_keys;  // Map each key to its value. Not sorted.
-    Val2Keys m_vals;  // Map each value to its keys. Sorted.
-
-public:
-    // CONSTRUCTORS
-    SortByValueMap() = default;
-
-    class const_iterator VL_NOT_FINAL {
-        // TYPES
-    public:
-        using value_type = const_iterator;
-        using reference = const_iterator;  // See comment on operator*()
-        using pointer = void;
-        using difference_type = std::ptrdiff_t;
-        using iterator_category = std::bidirectional_iterator_tag;
-
-    protected:
-        friend class SortByValueMap;
-
-        // MEMBERS
-        typename KeySet::iterator m_keyIt;
-        typename Val2Keys::iterator m_valIt;
-        SortByValueMap* const m_sbvmp;
-        bool m_end = true;  // At the end()
-
-        // CONSTRUCTORS
-        explicit const_iterator(SortByValueMap* sbmvp)  // for end()
-            : m_sbvmp{sbmvp} {}
-        const_iterator(typename Val2Keys::iterator valIt, typename KeySet::iterator keyIt,
-                       SortByValueMap* sbvmp)
-            : m_keyIt{keyIt}
-            , m_valIt{valIt}
-            , m_sbvmp{sbvmp}
-            , m_end{false} {}
-
-        // METHODS
-        void advanceUntilValid() {
-            ++m_keyIt;
-            if (m_keyIt != m_valIt->second.end()) {  // Valid iterator, done.
-                return;
-            }
-            // Try the next value?
-            ++m_valIt;
-            if (m_valIt == m_sbvmp->m_vals.end()) {  // No more values
-                m_end = true;
-                return;
-            }
-            // Should find a value here, as every value bucket is supposed
-            // to have at least one key, even after keys get removed.
-            m_keyIt = m_valIt->second.begin();
-            UASSERT(m_keyIt != m_valIt->second.end(), "Algorithm should have key left");
-        }
-        void reverseUntilValid() {
-            if (m_end) {
-                UASSERT(!m_sbvmp->m_vals.empty(), "Reverse iterator causes underflow");
-                m_valIt = m_sbvmp->m_vals.end();
-                --m_valIt;
-
-                UASSERT(!m_valIt->second.empty(), "Reverse iterator causes underflow");
-                m_keyIt = m_valIt->second.end();
-                --m_keyIt;
-
-                m_end = false;
-                return;
-            }
-            if (m_keyIt != m_valIt->second.begin()) {
-                // Valid iterator, we're done.
-                --m_keyIt;
-                return;
-            }
-            // Try the previous value?
-            if (VL_UNCOVERABLE(m_valIt == m_sbvmp->m_vals.begin())) {
-                // No more values but it's not defined to decrement an
-                // iterator past the beginning.
-                v3fatalSrc("Decremented iterator past beginning");
-                return;  // LCOV_EXCL_LINE
-            }
-            --m_valIt;
-            // Should find a value here, as Every value bucket is supposed
-            // to have at least one key, even after keys get removed.
-            UASSERT(!m_valIt->second.empty(), "Value bucket should have key");
-            m_keyIt = m_valIt->second.end();
-            --m_keyIt;
-            UASSERT(m_keyIt != m_valIt->second.end(), "Value bucket should have key");
-        }
-
-    public:
-        const T_Key& key() const { return *m_keyIt; }
-        const T_Value& value() const { return m_valIt->first; }
-        const_iterator& operator++() {
-            advanceUntilValid();
-            return *this;
-        }
-        const_iterator& operator--() {
-            reverseUntilValid();
-            return *this;
-        }
-        bool operator==(const const_iterator& other) const {
-            // It's not legal to compare iterators from different
-            // sequences.  So check m_end before comparing m_valIt, and
-            // compare m_valIt's before comparing m_keyIt to ensure nothing
-            // here is undefined.
-            if (m_end || other.m_end) return m_end && other.m_end;
-            return ((m_valIt == other.m_valIt) && (m_keyIt == other.m_keyIt));
-        }
-        bool operator!=(const const_iterator& other) const { return (!this->operator==(other)); }
-
-        // WARNING: Cleverness.
-        //
-        // The "reference" returned by *it must remain valid after 'it'
-        // gets destroyed. The reverse_iterator relies on this for its
-        // operator*(), so it's not just a theoretical requirement, it's a
-        // real requirement.
-        //
-        // To make that work, define the "reference" type to be the
-        // iterator itself. So clients can do (*it).key() and
-        // (*it).value(). This is the clever part.
-        //
-        // That's mostly useful for a reverse iterator, where *rit returns
-        // the forward iterator pointing the to same element, so
-        // (*rit).key() and (*rit).value() work where rit.key() and
-        // rit.value() cannot.
-        //
-        // It would be nice to support it->key() and it->value(), however
-        // uncertain what would be an appropriate 'pointer' type define
-        // that makes this work safely through a reverse iterator. So this
-        // class does not provide an operator->().
-        //
-        // Q) Why not make our value_type be a pair<T_Key, T_Value> like a
-        //    normal map, and return a reference to that?  This could
-        //    return a reference to one of the pairs inside m_keys, that
-        //    would satisfy the constraint above.
-        //
-        // A) It would take a lookup to find that pair within m_keys. This
-        //    iterator is designed to minimize the number of hashtable and
-        //    tree lookups. Increment, decrement, key(), value(), erase()
-        //    by iterator, begin(), end() -- none of these require a
-        //    container lookup. That's true for reverse_iterators too.
-        reference operator*() const {
-            UASSERT(!m_end, "Dereferencing iterator that is at end()");
-            return *this;
-        }
-    };
-
-    class iterator final : public const_iterator {
-    public:
-        // TYPES
-        using value_type = iterator;
-        using reference = iterator;
-        // pointer, difference_type, and iterator_category inherit from
-        // const_iterator
-
-        // CONSTRUCTORS
-        explicit iterator(SortByValueMap* sbvmp)
-            : const_iterator{sbvmp} {}
-        iterator(typename Val2Keys::iterator valIt, typename KeySet::iterator keyIt,
-                 SortByValueMap* sbvmp)
-            : const_iterator{valIt, keyIt, sbvmp} {}
-
-        // METHODS
-        iterator& operator++() {
-            this->advanceUntilValid();
-            return *this;
-        }
-        iterator& operator--() {
-            this->reverseUntilValid();
-            return *this;
-        }
-        reference operator*() const {
-            UASSERT(!this->m_end, "Dereferencing iterator that is at end()");
-            return *this;
-        }
-    };
-
-    using reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-    // METHODS
-private:
-    void removeKeyFromOldVal(const T_Key& k, const T_Value& oldVal) {
-        // The value of 'k' is about to change, or, 'k' is about to be
-        // removed from the map.
-        // Clear the m_vals mapping for k.
-        KeySet& keysAtOldVal = m_vals[oldVal];
-        const size_t erased = keysAtOldVal.erase(k);
-        UASSERT(erased == 1, "removeKeyFromOldVal() removal key not found");
-        if (keysAtOldVal.empty()) {
-            // Don't keep empty sets in the value map.
-            m_vals.erase(oldVal);
-        }
-    }
-    void removeKeyFromOldVal(iterator it) {
-        it.m_valIt->second.erase(it.m_keyIt);
-        if (it.m_valIt->second.empty()) m_vals.erase(it.m_valIt);
-    }
-
-public:
-    iterator begin() {
-        const auto valIt = m_vals.begin();
-        if (valIt == m_vals.end()) return end();
-        const auto keyIt = valIt->second.begin();
-        return iterator(valIt, keyIt, this);
-    }
-    const_iterator begin() const {
-        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
-        const auto valIt = mutp->m_vals.begin();
-        if (valIt == mutp->m_vals.end()) return end();
-        const auto keyIt = valIt->second.begin();
-        return const_iterator(valIt, keyIt, mutp);
-    }
-    iterator end() { return iterator(this); }
-    const_iterator end() const {
-        // Safe to cast away const; the const_iterator will still enforce
-        // it. Same for the const begin() below.
-        return const_iterator(const_cast<SortByValueMap*>(this));
-    }
-    reverse_iterator rbegin() { return reverse_iterator(end()); }
-    reverse_iterator rend() { return reverse_iterator(begin()); }
-    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
-    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
-
-    iterator find(const T_Key& k) {
-        const auto kvit = m_keys.find(k);
-        if (kvit == m_keys.end()) return end();
-
-        const auto valIt = m_vals.find(kvit->second);
-        const auto keyIt = valIt->second.find(k);
-        return iterator(valIt, keyIt, this);
-    }
-    const_iterator find(const T_Key& k) const {
-        SortByValueMap* const mutp = const_cast<SortByValueMap*>(this);
-        const auto kvit = mutp->m_keys.find(k);
-        if (kvit == mutp->m_keys.end()) return end();
-
-        const auto valIt = mutp->m_vals.find(kvit->second);
-        const auto keyIt = valIt->second.find(k);
-        return const_iterator(valIt, keyIt, mutp);
-    }
-    void set(const T_Key& k, const T_Value& v) {
-        const auto kvit = m_keys.find(k);
-        if (kvit != m_keys.end()) {
-            if (kvit->second == v) {
-                return;  // LCOV_EXCL_LINE // Same value already present; stop.
-            }
-            // Must remove element from m_vals[oldValue]
-            removeKeyFromOldVal(k, kvit->second);
-        }
-        m_keys[k] = v;
-        m_vals[v].insert(k);
-    }
-    size_t erase(const T_Key& k) {
-        const auto kvit = m_keys.find(k);
-        if (kvit == m_keys.end()) return 0;
-        removeKeyFromOldVal(k, kvit->second);
-        m_keys.erase(kvit);
-        return 1;
-    }
-    void erase(const iterator& it) {
-        m_keys.erase(it.key());
-        removeKeyFromOldVal(it);
-    }
-    void erase(const reverse_iterator& it) {
-        erase(*it);  // Dereferencing returns a copy of the forward iterator
-    }
-    bool has(const T_Key& k) const { return (m_keys.find(k) != m_keys.end()); }
-    bool empty() const { return m_keys.empty(); }
-    // Look up a value. Returns a reference for efficiency. Note this must
-    // be a const reference, otherwise the client could corrupt the sorted
-    // order of m_byValue by reaching through and changing the value.
-    const T_Value& at(const T_Key& k) const {
-        const auto kvit = m_keys.find(k);
-        UASSERT(kvit != m_keys.end(), "at() lookup key not found");
-        return kvit->second;
-    }
-
-private:
-    VL_UNCOPYABLE(SortByValueMap);
-};
-
-//######################################################################
-
-/// V3Scoreboard takes a set of Elem*'s, each having some score.
-/// Scores are assigned by a user-supplied scoring function.
-///
-/// At any time, the V3Scoreboard can return the elem with the "best" score
-/// among those elements whose scores are known.
-///
-/// The best score is the _lowest_ score. This makes sense in contexts
-/// where scores represent costs.
-///
-/// The Scoreboard supports mutating element scores efficiently. The client
-/// must hint to the V3Scoreboard when an element's score may have
-/// changed. When it receives this hint, the V3Scoreboard will move the
-/// element into the set of elements whose scores are unknown. Later the
-/// client can tell V3Scoreboard to re-sort the list, which it does
-/// incrementally, by re-scoring all elements whose scores are unknown, and
-/// then moving these back into the score-sorted map. This is efficient
-/// when the subset of elements whose scores change is much smaller than
-/// the full set size.
-
-template <typename T_Elem, typename T_Score, class T_ElemCompare = std::less<T_Elem>>
+template <typename T_Elem, typename T_Key>
 class V3Scoreboard final {
-private:
     // TYPES
-    class CmpElems final {
-    public:
-        bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {
-            const T_ElemCompare cmp;
-            return cmp.operator()(*ap, *bp);
-        }
-    };
-    using SortedMap = SortByValueMap<const T_Elem*, T_Score, CmpElems>;
-    using UserScoreFnp = T_Score (*)(const T_Elem*);
+    using Heap = PairingHeap<T_Key>;
+
+public:
+    using Node = typename Heap::Node;
+
+private:
+    using Link = typename Heap::Link;
+
+    // Note: T_Elem is incomplete here, so we cannot assert 'std::is_base_of<Node, T_Elem>::value'
 
     // MEMBERS
-    // Below uses set<> not an unordered_set<>. unordered_set::clear() and
-    // construction results in a 491KB clear operation to zero all the
-    // buckets. Since the set size is generally small, and we iterate the
-    // set members, set is better performant.
-    std::set<const T_Elem*> m_unknown;  // Elements with unknown scores
-    SortedMap m_sorted;  // Set of elements with known scores
-    const UserScoreFnp m_scoreFnp;  // Scoring function
-    const bool m_slowAsserts;  // Do some asserts that require extra lookups
+    Heap m_known;  // The heap of entries with known scores
+    Link m_unknown;  // List of entries with unknown scores
 
 public:
     // CONSTRUCTORS
-    explicit V3Scoreboard(UserScoreFnp scoreFnp, bool slowAsserts)
-        : m_scoreFnp{scoreFnp}
-        , m_slowAsserts{slowAsserts} {}
+    explicit V3Scoreboard() = default;
     ~V3Scoreboard() = default;
-
-    // METHODS
-
-    // Add an element to the scoreboard.
-    // Element begins in needs-rescore state; it won't be returned by
-    // bestp() until after the next rescore().
-    void addElem(const T_Elem* elp) {
-        if (m_slowAsserts) {
-            UASSERT(!contains(elp), "Adding element to scoreboard that was already in scoreboard");
-        }
-        m_unknown.insert(elp);
-    }
-
-    // Remove elp from scoreboard.
-    void removeElem(const T_Elem* elp) {
-        if (0 == m_sorted.erase(elp)) {
-            UASSERT(m_unknown.erase(elp),
-                    "Could not find requested elem to remove from scoreboard");
-        }
-    }
-
-    // Returns true if elp is present in the scoreboard, false otherwise.
-    //
-    // Note: every other V3Scoreboard routine that takes an T_Elem* has
-    // undefined behavior if the element is not in the scoreboard.
-    bool contains(const T_Elem* elp) const {
-        if (m_unknown.find(elp) != m_unknown.end()) return true;
-        return (m_sorted.find(elp) != m_sorted.end());
-    }
-
-    // Get the best element, with the lowest score (lower is better), among
-    // elements whose scores are known. Returns nullptr if no elements with
-    // known scores exist.
-    //
-    // Note: This does not automatically rescore. Client must call
-    // rescore() periodically to ensure all elems in the scoreboard are
-    // reflected in the result of bestp(). Otherwise, bestp() only
-    // considers elements that aren't pending rescore.
-    const T_Elem* bestp() {
-        const auto result = m_sorted.begin();
-        if (VL_UNLIKELY(result == m_sorted.end())) return nullptr;
-        return (*result).key();
-    }
-
-    // Tell the scoreboard that this element's score may have changed.
-    //
-    // At the time of this call, the element's score becomes "unknown"
-    // to the V3Scoreboard. Unknown elements won't be returned by bestp().
-    // The element's score will remain unknown until the next rescore().
-    //
-    // The client MUST call this for each element whose score has changed.
-    //
-    // The client MAY call this for elements whose score has not changed.
-    // Doing so incurs some compute cost (to re-sort the element back to
-    // its original location) and still makes it ineligible to be returned
-    // by bestp() until the next rescore().
-    void hintScoreChanged(const T_Elem* elp) {
-        m_unknown.insert(elp);
-        m_sorted.erase(elp);
-    }
-
-    // True if any element's score is unknown to V3Scoreboard.
-    bool needsRescore() { return !m_unknown.empty(); }
-    // False if elp's score is known to V3Scoreboard,
-    // else true if elp's score is unknown until the next rescore().
-    bool needsRescore(const T_Elem* elp) { return (m_unknown.find(elp) != m_unknown.end()); }
-    // Retrieve the last known score for an element.
-    T_Score cachedScore(const T_Elem* elp) {
-        const auto result = m_sorted.find(elp);
-        UASSERT(result != m_sorted.end(), "V3Scoreboard::cachedScore() failed to find element");
-        return (*result).value();
-    }
-    // For each element whose score is unknown to V3Scoreboard,
-    // call the client's scoring function to get a new score,
-    // and sort all elements by their current score.
-    void rescore() {
-        for (const T_Elem* elp : m_unknown) {
-            const T_Score sortScore = m_scoreFnp(elp);
-            m_sorted.set(elp, sortScore);
-        }
-        m_unknown.clear();
-    }
 
 private:
     VL_UNCOPYABLE(V3Scoreboard);
+
+    // METHODSs
+    void addUnknown(T_Elem* nodep) {
+        // Just prepend it to the list of unknown entries
+        nodep->m_next.link(m_unknown.unlink());
+        m_unknown.linkNonNull(nodep);
+        // We mark nodes on the unknown list by making their child pointer point to themselves
+        nodep->m_kids.m_ptr = nodep;
+    }
+
+public:
+    // Returns true if the element is present in the scoreboard, false otherwise. Every other
+    // method that takes a T_Elem* (except for 'add') has undefined behavior if the element is not
+    // in this scoreboard. Furthermore, this method is only valid if the element can only possibly
+    // be in this scoreboard. That is: if the element might be in another scoreboard, the behaviour
+    // of this method is undefined.
+    static bool contains(const T_Elem* nodep) { return nodep->m_ownerpp; }
+
+    // Add an element to the scoreboard. This will not be returned before the next 'rescore' call.
+    void add(T_Elem* nodep) {
+#if VL_DEBUG
+        UASSERT(!contains(nodep), "Adding element to scoreboard that was already in a scoreboard");
+#endif
+        addUnknown(nodep);
+    }
+
+    // Remove element from scoreboard.
+    void remove(T_Elem* nodep) {
+        if (nodep->m_kids.m_ptr == nodep) {
+            // Node is on the unknown list, replace with next
+            nodep->replaceWith(nodep->m_next.unlink());
+            return;
+        }
+        // Node is in the known heap, remove it
+        m_known.remove(nodep);
+    }
+
+    // Get the known element with the highest score (as we are using a max-heap), or nullptr if
+    // there are no elements with known entries. This does not automatically 'rescore'. The client
+    // must call 'rescore' appropriately to ensure all elements in the scoreboard are reflected in
+    // the result of this method.
+    T_Elem* best() const { return T_Elem::heapNodeToElem(m_known.max()); }
+
+    // Tell the scoreboard that this element's score may have changed. At the time of this call,
+    // the element's score becomes 'unknown' to the scoreboard. Unknown elements will not be
+    // returned by 'best until the next call to 'rescore'.
+    void hintScoreChanged(T_Elem* nodep) {
+        // If it's already in the unknown list, then nothing to do
+        if (nodep->m_kids.m_ptr == nodep) return;
+        // Otherwise it was in the heap, remove it
+        m_known.remove(nodep);
+        // Prepend it to the unknown list
+        addUnknown(nodep);
+    }
+
+    // True if we have elements with unknown score
+    bool needsRescore() const { return m_unknown; }
+
+    // True if the element's score is unknown, false otherwise.
+    static bool needsRescore(const T_Elem* nodep) { return nodep->m_kids.m_ptr == nodep; }
+
+    // For each element whose score is unknown, recompute the score and add to the known heap
+    void rescore() {
+        // Rescore and insert all unknown elements
+        for (Node *nodep = m_unknown.unlink(), *nextp; nodep; nodep = nextp) {
+            // Pick up next
+            nextp = nodep->m_next.ptr();
+            // Reset pointers
+            nodep->m_next.m_ptr = nullptr;
+            nodep->m_kids.m_ptr = nullptr;
+            nodep->m_ownerpp = nullptr;
+            // Re-compute the score of the element
+            T_Elem::heapNodeToElem(nodep)->rescore();
+            // re-insert into the heap
+            m_known.insert(nodep);
+        }
+    }
 };
 
-//######################################################################
+// ######################################################################
 
 namespace V3ScoreboardBase {
 void selfTest();

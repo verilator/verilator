@@ -138,6 +138,8 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
                 AstNode* const keyp = arangep->elementsp()->unlinkFrBack();
                 arrayp = new AstBracketArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp,
                                                   keyp);
+            } else if (VN_IS(nrangep, WildcardRange)) {
+                arrayp = new AstWildcardArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp};
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }
@@ -268,7 +270,8 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
                 } else if (*cp == 'x' && isxdigit(cp[1])
                            && isxdigit(cp[2])) {  // SystemVerilog 3.1
 #define vl_decodexdigit(c) ((isdigit(c) ? ((c) - '0') : (tolower((c)) - 'a' + 10)))
-                    newtext += (char)(16 * vl_decodexdigit(cp[1]) + vl_decodexdigit(cp[2]));
+                    newtext
+                        += static_cast<char>(16 * vl_decodexdigit(cp[1]) + vl_decodexdigit(cp[2]));
                     cp += 2;
                 } else if (isalnum(*cp)) {
                     fileline->v3error("Unknown escape sequence: \\" << *cp);

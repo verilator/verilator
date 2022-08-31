@@ -25,6 +25,7 @@
 #define VERILATOR_VERILATED_VPI_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"
 #include "verilated_syms.h"
 
@@ -47,7 +48,7 @@ public:
     static bool callValueCbs() VL_MT_UNSAFE_ONE;
     /// Call callbacks of arbitrary types.
     /// User wrapper code should call this from their main loops.
-    static bool callCbs(const uint32_t reason) VL_MT_UNSAFE_ONE;
+    static bool callCbs(uint32_t reason) VL_MT_UNSAFE_ONE;
     /// Returns time of the next registered VPI callback, or
     /// ~(0ULL) if none are registered
     static QData cbNextDeadline() VL_MT_UNSAFE_ONE;

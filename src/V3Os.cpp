@@ -199,7 +199,7 @@ string V3Os::filenameRealPath(const string& filename) {
         realpath(filename.c_str(), retpath)
 #endif
     ) {
-        return string(retpath);
+        return std::string{retpath};
     } else {
         return filename;
     }
@@ -239,7 +239,7 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
     if (DIR* const dirp = opendir(dir.c_str())) {
         while (struct dirent* const direntp = readdir(dirp)) {
             if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
-                const string fullname = dir + "/" + string(direntp->d_name);
+                const string fullname = dir + "/" + std::string{direntp->d_name};
 #if defined(_WIN32) || defined(__MINGW32__)
                 _unlink(fullname.c_str());
 #else

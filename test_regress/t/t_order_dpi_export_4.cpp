@@ -9,10 +9,9 @@
 //
 //*************************************************************************
 
-#include <svdpi.h>
-
 #include <Vt_order_dpi_export_4.h>
 #include <Vt_order_dpi_export_4__Dpi.h>
+#include <svdpi.h>
 
 void toggle_other_clk(svBit val) { set_other_clk(val); }
 

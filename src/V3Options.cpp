@@ -17,13 +17,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
-#include "V3Ast.h"
-#include "V3Os.h"
 #include "V3Options.h"
-#include "V3OptionParser.h"
+
+#include "V3Ast.h"
 #include "V3Error.h"
 #include "V3File.h"
+#include "V3Global.h"
+#include "V3OptionParser.h"
+#include "V3Os.h"
 #include "V3PreShell.h"
 #include "V3String.h"
 
@@ -339,7 +340,7 @@ bool V3Options::hasParameter(const string& name) {
 }
 
 string V3Options::parameter(const string& name) {
-    const string value = m_parameters.find(name)->second;
+    string value = m_parameters.find(name)->second;
     m_parameters.erase(m_parameters.find(name));
     return value;
 }
@@ -358,8 +359,16 @@ void V3Options::addCFlags(const string& filename) { m_cFlags.push_back(filename)
 void V3Options::addLdLibs(const string& filename) { m_ldLibs.push_back(filename); }
 void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(filename); }
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
+void V3Options::addFuture0(const string& flag) { m_future0s.insert(flag); }
+void V3Options::addFuture1(const string& flag) { m_future1s.insert(flag); }
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
+}
+bool V3Options::isFuture0(const string& flag) const {
+    return m_future0s.find(flag) != m_future0s.end();
+}
+bool V3Options::isFuture1(const string& flag) const {
+    return m_future1s.find(flag) != m_future1s.end();
 }
 bool V3Options::isLibraryFile(const string& filename) const {
     return m_libraryFiles.find(filename) != m_libraryFiles.end();
@@ -477,7 +486,7 @@ string V3Options::fileExists(const string& filename) {
         return "";  // Not found
     }
     // Check if it is a directory, ignore if so
-    const string filenameOut = V3Os::filenameFromDirBase(dir, basename);
+    string filenameOut = V3Os::filenameFromDirBase(dir, basename);
     if (!fileStatNormal(filenameOut)) return "";  // Directory
     return filenameOut;
 }
@@ -518,11 +527,11 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // using the incdir and libext's.
     // Return "" if not found.
     for (const string& dir : m_impp->m_incDirUsers) {
-        const string exists = filePathCheckOneDir(modname, dir);
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirFallbacks) {
-        const string exists = filePathCheckOneDir(modname, dir);
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
 
@@ -1010,11 +1019,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (!strcmp(valp, "clang")) {
             m_compLimitBlocks = 80;  // limit unknown
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
-            m_compLimitParens = 80;  // limit unknown
+            m_compLimitParens = 240;  // controlled by -fbracket-depth, which defaults to 256
         } else if (!strcmp(valp, "gcc")) {
             m_compLimitBlocks = 0;  // Bug free
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
-            m_compLimitParens = 0;  // Bug free
+            m_compLimitParens = 240;  // Unlimited, but generate same code as for clang
         } else if (!strcmp(valp, "msvc")) {
             m_compLimitBlocks = 80;  // 128, but allow some room
             m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
@@ -1082,6 +1091,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
     });
     DECL_OPTION("-flatten", OnOff, &m_flatten);
+    DECL_OPTION("-future0", CbVal, [this](const char* valp) { addFuture0(valp); });
+    DECL_OPTION("-future1", CbVal, [this](const char* valp) { addFuture1(valp); });
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
@@ -1124,7 +1135,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         const V3HierarchicalBlockOption opt(valp);
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
-    DECL_OPTION("-hierarchical-child", OnOff, &m_hierChild);
+    DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
 
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
@@ -1425,7 +1436,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-Wno-", CbPartialMatch, [fl, &parser](const char* optp) {
         if (!FileLine::globalWarnOff(optp, true)) {
-            const string fullopt = string{"-Wno-"} + optp;
+            const string fullopt = std::string{"-Wno-"} + optp;
             fl->v3fatal("Unknown warning specified: " << fullopt
                                                       << parser.getSuggestion(fullopt.c_str()));
         }
@@ -1445,7 +1456,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
             if (!isFuture(optp)) {
-                const string fullopt = string{"-Wwarn-"} + optp;
+                const string fullopt = std::string{"-Wwarn-"} + optp;
                 fl->v3fatal("Unknown warning specified: "
                             << fullopt << parser.getSuggestion(fullopt.c_str()));
             }
@@ -1511,8 +1522,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 ++i;
             }
         } else if (argv[i][0] == '-' || argv[i][0] == '+') {
+            const char* argvNoDashp = (argv[i][1] == '-') ? (argv[i] + 2) : (argv[i] + 1);
             if (const int consumed = parser.parse(i, argc, argv)) {
                 i += consumed;
+            } else if (isFuture0(argvNoDashp)) {
+                ++i;
+            } else if (isFuture1(argvNoDashp)) {
+                i += 2;
             } else {
                 fl->v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
                 ++i;  // LCOV_EXCL_LINE

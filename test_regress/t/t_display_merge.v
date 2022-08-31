@@ -19,6 +19,10 @@ module t (/*AUTOARG*/);
       $write("should ");
       $display("merge");
 
+      $display("Merge:");
+      $write("This ", "", "should ", "", "also ");
+      $display("merge");
+
       $display("f");
       $write(" 1=%0d a=%m 1=%0d", one, one);
       $display(" 1=%0d b=%m 1=%0d", one, one);

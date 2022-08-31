@@ -43,17 +43,19 @@ public:
     using Super = VerilatedTrace<VerilatedFst, VerilatedFstBuffer>;
 
 private:
-    friend Buffer;  // Give the buffer access to the private bits
+    friend VerilatedFstBuffer;  // Give the buffer access to the private bits
 
     //=========================================================================
     // FST specific internals
 
-    void* m_fst;
+    void* m_fst = nullptr;
     std::map<uint32_t, fstHandle> m_code2symbol;
     std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
     char* m_strbuf = nullptr;  // String buffer long enough to hold maxBits() chars
+
+    bool m_useFstWriterThread = false;  // Whether to use the separate FST writer thread
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
@@ -65,15 +67,18 @@ protected:
     // Implementation of VerilatedTrace interface
 
     // Called when the trace moves forward to a new time point
-    virtual void emitTimeChange(uint64_t timeui) override;
+    void emitTimeChange(uint64_t timeui) override;
 
     // Hooks called from VerilatedTrace
-    virtual bool preFullDump() override { return isOpen(); }
-    virtual bool preChangeDump() override { return isOpen(); }
+    bool preFullDump() override { return isOpen(); }
+    bool preChangeDump() override { return isOpen(); }
 
     // Trace buffer management
-    virtual VerilatedFstBuffer* getTraceBuffer() override;
-    virtual void commitTraceBuffer(VerilatedFstBuffer*) override;
+    Buffer* getTraceBuffer() override;
+    void commitTraceBuffer(Buffer*) override;
+
+    // Configure sub-class
+    void configure(const VerilatedTraceConfig&) override;
 
 public:
     //=========================================================================
@@ -113,21 +118,31 @@ public:
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
-template <> void VerilatedFst::Super::dump(uint64_t time);
-template <> void VerilatedFst::Super::set_time_unit(const char* unitp);
-template <> void VerilatedFst::Super::set_time_unit(const std::string& unit);
-template <> void VerilatedFst::Super::set_time_resolution(const char* unitp);
-template <> void VerilatedFst::Super::set_time_resolution(const std::string& unit);
-template <> void VerilatedFst::Super::dumpvars(int level, const std::string& hier);
+template <>
+void VerilatedFst::Super::dump(uint64_t time);
+template <>
+void VerilatedFst::Super::set_time_unit(const char* unitp);
+template <>
+void VerilatedFst::Super::set_time_unit(const std::string& unit);
+template <>
+void VerilatedFst::Super::set_time_resolution(const char* unitp);
+template <>
+void VerilatedFst::Super::set_time_resolution(const std::string& unit);
+template <>
+void VerilatedFst::Super::dumpvars(int level, const std::string& hier);
 #endif
 
 //=============================================================================
 // VerilatedFstBuffer
 
-class VerilatedFstBuffer final : public VerilatedTraceBuffer<VerilatedFst, VerilatedFstBuffer> {
+class VerilatedFstBuffer VL_NOT_FINAL {
     // Give the trace file access to the private bits
     friend VerilatedFst;
     friend VerilatedFst::Super;
+    friend VerilatedFst::Buffer;
+    friend VerilatedFst::OffloadBuffer;
+
+    VerilatedFst& m_owner;  // Trace file owning this buffer. Required by subclasses.
 
     // The FST file handle
     void* const m_fst = m_owner.m_fst;
@@ -136,10 +151,10 @@ class VerilatedFstBuffer final : public VerilatedTraceBuffer<VerilatedFst, Veril
     // String buffer long enough to hold maxBits() chars
     char* const m_strbuf = m_owner.m_strbuf;
 
-public:
     // CONSTRUCTOR
-    explicit VerilatedFstBuffer(VerilatedFst& owner);
-    ~VerilatedFstBuffer() = default;
+    explicit VerilatedFstBuffer(VerilatedFst& owner)
+        : m_owner{owner} {}
+    virtual ~VerilatedFstBuffer() = default;
 
     //=========================================================================
     // Implementation of VerilatedTraceBuffer interface

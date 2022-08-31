@@ -284,33 +284,34 @@ detailed descriptions of these arguments.
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
     --build                     Build model executable/library after Verilation
-     -CFLAGS <flags>            C++ compiler arguments for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
+     -CFLAGS <flags>            C++ compiler arguments for makefile
     --clk <signal-name>         Mark specified signal as clock
-    --make <build-tool>         Generate scripts for specified build tool
+    --no-clk <signal-name>      Prevent marking specified signal as clock
     --compiler <compiler-name>  Tune for specified C++ compiler
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage
-    --coverage-user             Enable SVL user coverage
     --coverage-underscore       Enable coverage of _signals
+    --coverage-user             Enable SVL user coverage
      -D<var>[=<value>]          Set preprocessor define
     --debug                     Enable debugging
     --debug-check               Enable debugging assertions
     --no-debug-leak             Disable leaking memory in --debug mode
     --debugi <level>            Enable debugging at a specified level
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
+    --no-decoration             Disable comments and symbol decorations
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
     --dpi-hdr-only              Only produce the DPI header file
     --dump-defines              Show preprocessor defines with -E
     --dump-tree                 Enable dumping .tree files
+    --dump-tree-addrids         Use short identifiers instead of addresses
     --dump-treei <level>        Enable dumping .tree files at a level
     --dump-treei-<srcfile> <level>  Enable dumping .tree file at a source file at a level
-    --dump-tree-addrids         Use short identifiers instead of addresses
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
@@ -321,6 +322,7 @@ detailed descriptions of these arguments.
     --flatten                   Force inlining of all modules, tasks and functions
      -fno-<optimization>        Disable internal optimization stage
      -G<name>=<value>           Overwrite top-level parameter
+    --gate-stmts <value>        Tune gate optimizer depth
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
     --generate-key              Create random key for --protect-key
@@ -328,54 +330,50 @@ detailed descriptions of these arguments.
     --help                      Display this help
     --hierarchical              Enable hierarchical Verilation
      -I<dir>                    Directory to search for includes
-     -j <jobs>                  Parallelism for --build
-    --gate-stmts <value>        Tune gate optimizer depth
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
     --inline-mult <value>       Tune module inlining
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
-     -LDFLAGS <flags>           Linker pre-object arguments for makefile
+     -j <jobs>                  Parallelism for --build
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
+     -LDFLAGS <flags>           Linker pre-object arguments for makefile
     --lib-create <name>         Create a DPI library
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
+    --make <build-tool>         Generate scripts for specified build tool
      -MAKEFLAGS <flags>         Arguments to pass to make during --build
     --max-num-width <value>     Maximum number width (default: 64K)
-    --MMD                       Create .d dependency files
-    --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
+    --MMD                       Create .d dependency files
     --mod-prefix <topname>      Name to prepend to lower classes
-    --no-clk <signal-name>      Prevent marking specified signal as clock
-    --no-decoration             Disable comments and symbol decorations
-    --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
-    --no-skip-identical         Disable skipping identical output
+    --MP                        Create phony dependency targets
      +notimingchecks            Ignored
      -O0                        Disable optimizations
      -O3                        High performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --no-order-clock-delay      Disable ordering clock enable assignments
-    --no-verilate               Skip verilation and just compile previously Verilated code.
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
      -P                         Disable line numbers and blanks with -E
     --pins-bv <bits>            Specify types for top level ports
-    --pins-sc-uint              Specify types for top level ports
     --pins-sc-biguint           Specify types for top level ports
+    --pins-sc-uint              Specify types for top level ports
     --pins-uint8                Specify types for top level ports
+    --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --pipe-filter <command>     Filter all input through a script
     --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top level class
+    --private                   Debugging; see docs
     --prof-c                    Compile C++ code with profiling
     --prof-cfuncs               Name functions for profiling
     --prof-exec                 Enable generating execution profile for gantt chart
     --prof-pgo                  Enable generating profiling data for PGO
-    --protect-key <key>         Key for symbol protection
     --protect-ids               Hash identifier names for obscurity
+    --protect-key <key>         Key for symbol protection
     --protect-lib <name>        Create a DPI protected library
-    --private                   Debugging; see docs
     --public                    Debugging; see docs
     --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
@@ -386,6 +384,7 @@ detailed descriptions of these arguments.
     --rr                        Run Verilator and record with rr
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
+    --no-skip-identical         Disable skipping identical output
     --stats                     Create statistics file
     --stats-vars                Provide statistics on variables
      -sv                        Enable SystemVerilog parsing
@@ -413,6 +412,7 @@ detailed descriptions of these arguments.
     --unused-regexp <regexp>    Tune UNUSED lint signals
      -V                         Verbose version and config
      -v <filename>              Verilog library
+    --no-verilate               Skip verilation and just compile previously Verilated code.
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Displays program version and exits
@@ -427,6 +427,9 @@ detailed descriptions of these arguments.
      -Wno-lint                  Disable all lint warnings
      -Wno-style                 Disable all style warnings
      -Wpedantic                 Warn on compliance-test issues
+     -Wwarn-<message>           Enable specified warning message
+     -Wwarn-lint                Enable lint warning message
+     -Wwarn-style               Enable style warning message
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers

@@ -173,9 +173,10 @@ public:
     }
     static int debug() {
         static int level = -1;
-        if (VL_UNLIKELY(level < 0))
+        if (VL_UNLIKELY(level < 0)) {
             level = std::max(std::max(debugBison(), debugFlex()),
                              v3Global.opt.debugSrcLevel("V3ParseImp"));
+        }
         return level;
     }
 
@@ -229,13 +230,13 @@ public:
     // These can be called by either parser or lexer, as not lex/parser-position aware
     string* newString(const string& text) {
         // Allocate a string, remembering it so we can reclaim storage at lex end
-        string* const strp = new string(text);
+        string* const strp = new std::string{text};
         m_stringps.push_back(strp);
         return strp;
     }
     string* newString(const char* text) {
         // Allocate a string, remembering it so we can reclaim storage at lex end
-        string* const strp = new string(text);
+        string* const strp = new std::string{text};
         m_stringps.push_back(strp);
         return strp;
     }
@@ -273,7 +274,7 @@ public:
 
     //==== Symbol tables
     V3ParseSym* symp() { return m_symp; }
-    AstPackage* unitPackage(FileLine* fl) {
+    AstPackage* unitPackage(FileLine* /*fl*/) {
         // Find one made earlier?
         const VSymEnt* const rootSymp
             = symp()->symRootp()->findIdFlat(AstPackage::dollarUnitName());

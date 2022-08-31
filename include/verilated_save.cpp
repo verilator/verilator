@@ -24,8 +24,10 @@
 #define VERILATOR_VERILATED_SAVE_CPP_
 
 #include "verilatedos.h"
-#include "verilated.h"
+
 #include "verilated_save.h"
+
+#include "verilated.h"
 #include "verilated_imp.h"
 
 #include <cerrno>
@@ -38,13 +40,13 @@
 # include <unistd.h>
 #endif
 
-#ifndef O_LARGEFILE  // For example on WIN32
+#ifndef O_LARGEFILE  // WIN32 headers omit this
 # define O_LARGEFILE 0
 #endif
-#ifndef O_NONBLOCK
+#ifndef O_NONBLOCK  // WIN32 headers omit this
 # define O_NONBLOCK 0
 #endif
-#ifndef O_CLOEXEC
+#ifndef O_CLOEXEC  // WIN32 headers omit this
 # define O_CLOEXEC 0
 #endif
 // clang-format on

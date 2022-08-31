@@ -72,18 +72,19 @@
 //       Used for b) and c).
 //       This options is repeated for all instantiating hierarchical blocks.
 
-#include <memory>
-#include <sstream>
-#include <utility>
-#include <vector>
+#include "V3HierBlock.h"
 
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3File.h"
-#include "V3HierBlock.h"
 #include "V3Os.h"
-#include "V3String.h"
 #include "V3Stats.h"
+#include "V3String.h"
+
+#include <memory>
+#include <sstream>
+#include <utility>
+#include <vector>
 
 static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
     return v3Global.opt.makeDir() + "/" + prefix
@@ -156,7 +157,7 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     opts.push_back(" --lib-create " + modp()->name());  // possibly mangled name
     if (v3Global.opt.protectKeyProvided())
         opts.push_back(" --protect-key " + v3Global.opt.protectKeyDefaulted());
-    opts.push_back(" --hierarchical-child");
+    opts.push_back(" --hierarchical-child " + cvtToStr(std::max(1, v3Global.opt.threads())));
 
     const StrGParams gparamsStr = stringifyParams(gparams(), true);
     for (StrGParams::const_iterator paramIt = gparamsStr.begin(); paramIt != gparamsStr.end();
@@ -201,7 +202,7 @@ string V3HierBlock::hierGenerated(bool withDir) const {
 }
 
 string V3HierBlock::vFileIfNecessary() const {
-    const string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
+    string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
     for (const string& v : v3Global.opt.vFiles()) {
         // Already listed in vFiles, so no need to add the file.
         if (filename == V3Os::filenameRealPath(v)) return "";
@@ -253,7 +254,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitor {
         // Don't visit twice
         if (nodep->user1SetOnce()) return;
         UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
-                             << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : string("null"))
+                             << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : std::string{"null"})
                              << std::endl);
         VL_RESTORER(m_modp);
         AstModule* const prevHierBlockp = m_hierBlockp;
@@ -306,10 +307,6 @@ public:
 
 //######################################################################
 
-bool V3HierBlockPlan::isHierBlock(const AstNodeModule* modp) const {
-    return m_blocks.find(modp) != m_blocks.end();
-}
-
 void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams) {
     const iterator it = m_blocks.find(modp);
     if (it == m_blocks.end()) {
@@ -345,7 +342,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
         modp->hierBlock(false);
     }
 
-    std::unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
+    std::unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan);
     { HierBlockUsageCollectVisitor{planp.get(), nodep}; }
 
     V3Stats::addStat("HierBlock, Hierarchical blocks", planp->m_blocks.size());

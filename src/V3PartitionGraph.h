@@ -30,7 +30,7 @@
 
 class AbstractMTask VL_NOT_FINAL : public V3GraphVertex {
 public:
-    AbstractMTask(V3Graph* graphp)
+    explicit AbstractMTask(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
     virtual ~AbstractMTask() override = default;
     virtual uint32_t id() const = 0;
@@ -42,7 +42,7 @@ public:
     // TYPES
     using VxList = std::list<MTaskMoveVertex*>;
     // CONSTRUCTORS
-    AbstractLogicMTask(V3Graph* graphp)
+    explicit AbstractLogicMTask(V3Graph* graphp)
         : AbstractMTask{graphp} {}
     virtual ~AbstractLogicMTask() override = default;
     // METHODS
@@ -83,9 +83,9 @@ public:
     uint64_t profilerId() const { return m_profilerId; }
     string cFuncName() const {
         // If this MTask maps to a C function, this should be the name
-        return string("__Vmtask") + "__" + cvtToStr(m_id);
+        return std::string{"__Vmtask"} + "__" + cvtToStr(m_id);
     }
-    virtual string name() const override { return string("mt") + cvtToStr(id()); }
+    virtual string name() const override { return std::string{"mt"} + cvtToStr(id()); }
     string hashName() const { return m_hashName; }
     void hashName(const string& name) { m_hashName = name; }
     void dump(std::ostream& str) const {

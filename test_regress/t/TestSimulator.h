@@ -10,6 +10,7 @@
 //*************************************************************************
 
 #include "vpi_user.h"
+
 #include <sstream>
 
 class TestSimulator {
