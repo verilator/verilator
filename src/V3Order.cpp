@@ -1334,37 +1334,38 @@ void OrderProcess::processMTasks() {
     const V3GraphVertex* moveVxp;
     while ((moveVxp = emit_logic.nextp())) {
         const MTaskMoveVertex* const movep = dynamic_cast<const MTaskMoveVertex*>(moveVxp);
+        // Only care about logic vertices
+        if (!movep->logicp()) continue;
+
         const unsigned mtaskId = movep->color();
         UASSERT(mtaskId > 0, "Every MTaskMoveVertex should have an mtask assignment >0");
-        if (movep->logicp()) {
-            // Add this logic to the per-mtask order
-            mtaskStates[mtaskId].m_logics.push_back(movep->logicp());
 
-            // Since we happen to be iterating over every logic node,
-            // take this opportunity to annotate each AstVar with the id's
-            // of mtasks that consume it and produce it. We'll use this
-            // information in V3EmitC when we lay out var's in memory.
-            const OrderLogicVertex* const logicp = movep->logicp();
-            for (const V3GraphEdge* edgep = logicp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                const OrderVarVertex* const pre_varp
-                    = dynamic_cast<const OrderVarVertex*>(edgep->fromp());
-                if (!pre_varp) continue;
-                AstVar* const varp = pre_varp->vscp()->varp();
-                // varp depends on logicp, so logicp produces varp,
-                // and vice-versa below
-                varp->addProducingMTaskId(mtaskId);
-            }
-            for (const V3GraphEdge* edgep = logicp->outBeginp(); edgep;
-                 edgep = edgep->outNextp()) {
-                const OrderVarVertex* const post_varp
-                    = dynamic_cast<const OrderVarVertex*>(edgep->top());
-                if (!post_varp) continue;
-                AstVar* const varp = post_varp->vscp()->varp();
-                varp->addConsumingMTaskId(mtaskId);
-            }
-            // TODO? We ignore IO vars here, so those will have empty mtask
-            // signatures. But we could also give those mtask signatures.
+        // Add this logic to the per-mtask order
+        mtaskStates[mtaskId].m_logics.push_back(movep->logicp());
+
+        // Since we happen to be iterating over every logic node,
+        // take this opportunity to annotate each AstVar with the id's
+        // of mtasks that consume it and produce it. We'll use this
+        // information in V3EmitC when we lay out var's in memory.
+        const OrderLogicVertex* const logicp = movep->logicp();
+        for (const V3GraphEdge* edgep = logicp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+            const OrderVarVertex* const pre_varp
+                = dynamic_cast<const OrderVarVertex*>(edgep->fromp());
+            if (!pre_varp) continue;
+            AstVar* const varp = pre_varp->vscp()->varp();
+            // varp depends on logicp, so logicp produces varp,
+            // and vice-versa below
+            varp->addProducingMTaskId(mtaskId);
         }
+        for (const V3GraphEdge* edgep = logicp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            const OrderVarVertex* const post_varp
+                = dynamic_cast<const OrderVarVertex*>(edgep->top());
+            if (!post_varp) continue;
+            AstVar* const varp = post_varp->vscp()->varp();
+            varp->addConsumingMTaskId(mtaskId);
+        }
+        // TODO? We ignore IO vars here, so those will have empty mtask
+        // signatures. But we could also give those mtask signatures.
     }
 
     // Create the AstExecGraph node which represents the execution
