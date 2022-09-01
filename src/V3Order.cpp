@@ -1319,7 +1319,7 @@ void OrderProcess::processMTasks() {
     // Partition logicGraph into LogicMTask's. The partitioner will annotate
     // each vertex in logicGraph with a 'color' which is really an mtask ID
     // in this context.
-    V3Partition partitioner(&logicGraph);
+    V3Partition partitioner(&m_graph, &logicGraph);
     V3Graph mtasks;
     partitioner.go(&mtasks);
 

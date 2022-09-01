@@ -717,20 +717,6 @@ void MergeCandidate::rescore() {
     }
 }
 
-// ######################################################################
-//  Vertex utility classes
-
-class OrderByPtrId final {
-    PartPtrIdMap m_ids;
-
-public:
-    bool operator()(const OrderVarStdVertex* lhsp, const OrderVarStdVertex* rhsp) const {
-        const uint64_t l_id = m_ids.findId(lhsp);
-        const uint64_t r_id = m_ids.findId(rhsp);
-        return l_id < r_id;
-    }
-};
-
 //######################################################################
 // PartParallelismEst - Estimate parallelism of graph
 
@@ -1938,14 +1924,15 @@ class PartFixDataHazards final {
 private:
     // TYPES
     using TasksByRank = std::map<uint32_t /*rank*/, std::set<LogicMTask*, MTaskIdLessThan>>;
-    using OvvSet = std::set<const OrderVarStdVertex*, OrderByPtrId&>;
 
     // MEMBERS
+    const OrderGraph* const m_orderGraphp;  // The OrderGraph
     V3Graph* const m_mtasksp;  // Mtask graph
 public:
     // CONSTRUCTORs
-    explicit PartFixDataHazards(V3Graph* mtasksp)
-        : m_mtasksp{mtasksp} {}
+    explicit PartFixDataHazards(const OrderGraph* orderGraphp, V3Graph* mtasksp)
+        : m_orderGraphp{orderGraphp}
+        , m_mtasksp{mtasksp} {}
     // METHODS
 private:
     void findAdjacentTasks(const OrderVarStdVertex* varVtxp, TasksByRank& tasksByRank) {
@@ -2015,51 +2002,8 @@ private:
 
 public:
     void go() {
-        // Build an OLV->mtask map and a set of OVVs
-        OrderByPtrId ovvOrder;
-        OvvSet ovvSet(ovvOrder);
-        // OVV's which wrap systemC vars will be handled slightly specially
-        OvvSet ovvSetSystemC(ovvOrder);
-
-        // TODO: This loop is entirely redundant as we iterate every vertex of the graph
-        //       during ranking below anyway, so we could do all this work in the body of that
-        //       loop. However... the order in which OrderVarStdVertex are added to ovvSet can
-        //       have a significant impact on model performance (+/-15% was observed), and doing
-        //       it this way happens to be best on some benchmarks. Need to investigate and find
-        //       a better way that yields consistent performance.
-        for (V3GraphVertex* vxp = m_mtasksp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
-
-            // Set up the OrderLogicVertex -> LogicMTask map
-            // Entry and exit MTasks have no MTaskMoveVertices under them, so move on
-            if (mtaskp->vertexListp()->empty()) continue;
-            // Otherwise there should be only one MTaskMoveVertex in each MTask at this stage
-            UASSERT_OBJ(mtaskp->vertexListp()->size() == 1, mtaskp, "Multiple MTaskMoveVertex");
-            const MTaskMoveVertex* const moveVtxp = mtaskp->vertexListp()->front();
-            if (OrderLogicVertex* const lvtxp = moveVtxp->logicp()) {
-                // Set up mapping back to the MTask from the OrderLogicVertex
-                lvtxp->userp(mtaskp);
-                // Look at downstream variables
-                for (V3GraphEdge *edgep = lvtxp->outBeginp(), *nextp; edgep; edgep = nextp) {
-                    nextp = edgep->outNextp();
-                    // Only consider OrderVarStdVertex which reflects
-                    // an actual lvalue assignment; the others do not.
-                    if (const auto* const vvtxp = dynamic_cast<OrderVarStdVertex*>(edgep->top())) {
-                        if (vvtxp->vscp()->varp()->isSc()) {
-                            ovvSetSystemC.insert(vvtxp);
-                        } else {
-                            ovvSet.insert(vvtxp);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Rank the graph.
-        // DGS is faster than V3GraphAlg's recursive rank, in the worst
-        // cases where the recursive rank must pass through the same node
-        // many times. (We saw 22s for DGS vs. 500s for recursive rank on
-        // one large design.)
+        // Rank the graph. DGS is faster than V3GraphAlg's recursive rank, and also allows us to
+        // set up the OrderLogicVertex -> LogicMTask map at the same time.
         {
             GraphStreamUnordered serialize(m_mtasksp);
             while (LogicMTask* const mtaskp
@@ -2070,6 +2014,32 @@ public:
                     rank = std::max(edgep->fromp()->rank() + 1, rank);
                 }
                 mtaskp->rank(rank);
+
+                // Set up the OrderLogicVertex -> LogicMTask map
+                // Entry and exit MTasks have no MTaskMoveVertices under them, so move on
+                if (mtaskp->vertexListp()->empty()) continue;
+                // Otherwise there should be only one MTaskMoveVertex in each MTask at this stage
+                UASSERT_OBJ(mtaskp->vertexListp()->size() == 1, mtaskp,
+                            "Multiple MTaskMoveVertex");
+                const MTaskMoveVertex* const moveVtxp = mtaskp->vertexListp()->front();
+                // Set up mapping back to the MTask from the OrderLogicVertex
+                if (OrderLogicVertex* const lvtxp = moveVtxp->logicp()) lvtxp->userp(mtaskp);
+            }
+        }
+
+        // Gather all variables. SystemC vars will be handled slightly specially, so keep separate.
+        std::vector<const OrderVarStdVertex*> regularVars;
+        std::vector<const OrderVarStdVertex*> systemCVars;
+        for (V3GraphVertex *vtxp = m_orderGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+            nextp = vtxp->verticesNextp();
+            // Only consider OrderVarStdVertex which reflects
+            // an actual lvalue assignment; the others do not.
+            if (const OrderVarStdVertex* const vvtxp = dynamic_cast<OrderVarStdVertex*>(vtxp)) {
+                if (vvtxp->vscp()->varp()->isSc()) {
+                    systemCVars.push_back(vvtxp);
+                } else {
+                    regularVars.push_back(vvtxp);
+                }
             }
         }
 
@@ -2086,7 +2056,7 @@ public:
         // NOTE: we don't update the CP's stored in the LogicMTasks to
         // reflect the changes we make to the graph. That's OK, as we
         // haven't yet initialized CPs when we call this routine.
-        for (const OrderVarStdVertex* const varVtxp : ovvSet) {
+        for (const OrderVarStdVertex* const varVtxp : regularVars) {
             // Build a set of mtasks, per rank, which access this var.
             // Within a rank, sort by MTaskID to avoid nondeterminism.
             TasksByRank tasksByRank;
@@ -2126,7 +2096,7 @@ public:
         // Hopefully we only have a few SC vars -- top level ports, probably.
         {
             TasksByRank tasksByRank;
-            for (const OrderVarStdVertex* const varVtxp : ovvSetSystemC) {
+            for (const OrderVarStdVertex* const varVtxp : systemCVars) {
                 findAdjacentTasks(varVtxp, tasksByRank);
             }
             mergeSameRankTasks(tasksByRank);
@@ -2754,7 +2724,7 @@ void V3Partition::go(V3Graph* mtasksp) {
 
     // Merge nodes that could present data hazards; see comment within.
     {
-        PartFixDataHazards(mtasksp).go();
+        PartFixDataHazards(m_orderGraphp, mtasksp).go();
         V3Partition::debugMTaskGraphStats(mtasksp, "hazards");
         hashGraphDebug(mtasksp, "mtasksp after fixDataHazards()");
     }
