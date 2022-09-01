@@ -148,7 +148,8 @@ void VlTriggerScheduler::dump(const char* eventDescription) {
 // VlForkSync:: Methods
 
 void VlForkSync::done(const char* filename, int linenum) {
-    VL_DEBUG_IF(VL_DBG_MSGF("             Process forked at %s:%d finished", filename, linenum););
+    VL_DEBUG_IF(
+        VL_DBG_MSGF("             Process forked at %s:%d finished\n", filename, linenum););
     if (m_join->m_counter > 0) m_join->m_counter--;
     if (m_join->m_counter == 0) m_join->m_susp.resume();
 }
