@@ -2611,6 +2611,42 @@ void V3Partition::hashGraphDebug(const V3Graph* graphp, const char* debugName) {
     UINFO(0, "Hash of shape (not contents) of " << debugName << " = " << cvtToStr(hash) << endl);
 }
 
+// Predicate function to determine what MTaskMoveVertex to bypass when constructing the MTask
+// graph. The fine-grained dependency graph of MTaskMoveVertex vertices is a bipartite graph of:
+// - 1. MTaskMoveVertex instances containing logic via OrderLogicVertex
+//      (MTaskMoveVertex::logicp() != nullptr)
+// - 2. MTaskMoveVertex instances containing an (OrderVarVertex, domain) pair
+// Our goal is to order the logic vertices. The second type of variable/domain vertices only carry
+// dependencies and are eventually discarded. In order to reduce the working set size of
+// PartContraction, we 'bypass' and not create LogicMTask vertices for the variable vertices, and
+// instead add the transitive dependencies directly, but only if adding the transitive edges
+// directly does not require more dependency edges than keeping the intermediate vertex. That is,
+// we bypass a variable vertex if fanIn * fanOut <= fanIn + fanOut. This can only be true if fanIn
+// or fanOut are 1, or if they are both 2. This can cause significant reduction in working set
+// size.
+static bool bypassOk(MTaskMoveVertex* mvtxp) {
+    // Need to keep all logic vertices
+    if (mvtxp->logicp()) return false;
+    // Count fan-in, up to 3
+    unsigned fanIn = 0;
+    for (V3GraphEdge* edgep = mvtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+        if (++fanIn == 3) break;
+    }
+    UDEBUGONLY(UASSERT_OBJ(fanIn <= 3, mvtxp, "Should have stopped counting fanIn"););
+    // If fanInn no more than one, bypass
+    if (fanIn <= 1) return true;
+    // Count fan-out, up to 3
+    unsigned fanOut = 0;
+    for (V3GraphEdge* edgep = mvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+        if (++fanOut == 3) break;
+    }
+    UDEBUGONLY(UASSERT_OBJ(fanOut <= 3, mvtxp, "Should have stopped counting fanOut"););
+    // If fan-out no more than one, bypass
+    if (fanOut <= 1) return true;
+    // They can only be (2, 2), (2, 3), (3, 2), (3, 3) at this point, bypass if (2, 2)
+    return fanIn + fanOut == 4;
+}
+
 uint32_t V3Partition::setupMTaskDeps(V3Graph* mtasksp) {
     uint32_t totalGraphCost = 0;
 
@@ -2627,9 +2663,13 @@ uint32_t V3Partition::setupMTaskDeps(V3Graph* mtasksp) {
     for (V3GraphVertex *vtxp = m_fineDepsGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
         nextp = vtxp->verticesNextp();
         MTaskMoveVertex* const mVtxp = static_cast<MTaskMoveVertex*>(vtxp);
-        LogicMTask* const mtaskp = new LogicMTask{mtasksp, mVtxp};
-        mVtxp->userp(mtaskp);
-        totalGraphCost += mtaskp->cost();
+        if (bypassOk(mVtxp)) {
+            mVtxp->userp(nullptr);  // Set to nullptr to mark as bypassed
+        } else {
+            LogicMTask* const mtaskp = new LogicMTask{mtasksp, mVtxp};
+            mVtxp->userp(mtaskp);
+            totalGraphCost += mtaskp->cost();
+        }
     }
 
     // Artificial single exit point vertex in the MTask graph to allow sibling merges.
@@ -2647,20 +2687,34 @@ uint32_t V3Partition::setupMTaskDeps(V3Graph* mtasksp) {
 
         // At this point, there should only be one MTaskMoveVertex per LogicMTask
         UASSERT_OBJ(mtaskp->vertexListp()->size() == 1, mtaskp, "Multiple MTaskMoveVertex");
-
         MTaskMoveVertex* const mvtxp = mtaskp->vertexListp()->front();
-        for (V3GraphEdge* outp = mvtxp->outBeginp(); outp; outp = outp->outNextp()) {
-            UASSERT(outp->weight() > 0, "Dependency with 0 weight in Move graph");
+        UASSERT_OBJ(mvtxp->userp(), mtaskp, "Bypassed MTaskMoveVertex should not have MTask");
 
-            // Grab the opposite end MTask.
-            LogicMTask* const otherp = static_cast<LogicMTask*>(outp->top()->userp());
+        // Function to add a edge to a dependent from 'mtaskp'
+        const auto addEdge = [mtasksp, mtaskp](LogicMTask* otherp) {
             UASSERT_OBJ(otherp != mtaskp, mtaskp, "Would create a cycle edge");
-
-            // Don't create redundant edges.
-            if (mtaskp->hasRelativeMTask(otherp)) continue;
-
-            // Add the MTask->MTask dependency edge
+            if (mtaskp->hasRelativeMTask(otherp)) return;  // Don't create redundant edges.
             new MTaskEdge{mtasksp, mtaskp, otherp, 1};
+        };
+
+        // Iterate downstream direct dependents
+        for (V3GraphEdge *dEdgep = mvtxp->outBeginp(), *dNextp; dEdgep; dEdgep = dNextp) {
+            dNextp = dEdgep->outNextp();
+            V3GraphVertex* const top = dEdgep->top();
+            if (LogicMTask* const otherp = static_cast<LogicMTask*>(top->userp())) {
+                // The opposite end of the edge is not a bypassed vertex, add as direct dependent
+                addEdge(otherp);
+            } else {
+                // The opposite end of the edge is a bypassed vertex, add transitive dependents
+                for (V3GraphEdge *tEdgep = top->outBeginp(), *tNextp; tEdgep; tEdgep = tNextp) {
+                    tNextp = tEdgep->outNextp();
+                    LogicMTask* const transp = static_cast<LogicMTask*>(tEdgep->top()->userp());
+                    // The Move graph is bipartite (logic <-> var), and logic is never bypassed,
+                    // hence 'transp' must be non nullptr.
+                    UASSERT_OBJ(transp, mvtxp, "This cannot be a bypassed vertex");
+                    addEdge(transp);
+                }
+            }
         }
     }
 
