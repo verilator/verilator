@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_timing_localevent_unsup.v:12:17: Unsupported: waiting on local event variables
+                                                       : ... In instance t::Sleeper
+   12 |                 @e;
+      |                 ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

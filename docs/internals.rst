@@ -588,6 +588,31 @@ This split is done to avoid self-triggering and triggering coroutines multiple
 times. See the `Scheduling with timing` section for details on how this is
 used.
 
+``VlDynamicTriggerScheduler``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Like ``VlTriggerScheduler``, ``VlDynamicTriggerScheduler`` manages processes
+that await triggers. However, it does not rely on triggers evaluated externally
+by the 'act' trigger eval function. Instead, it is also responsible for trigger
+evaluation. Coroutines that make use of this scheduler must adhere to a certain
+procedure:
+
+::
+  __Vtrigger = 0;
+  <locals and inits required for trigger eval>
+  while (!__Vtrigger) {
+      co_await __VdynSched.evaluation();
+      <pre updates>;
+      __Vtrigger = <trigger eval>;
+      [optionally] co_await __VdynSched.postUpdate();
+      <post updates>;
+  }
+  co_await __VdynSched.resumption();
+
+The coroutines get resumed at trigger evaluation time, evaluate their local
+triggers, optionally await the post update step, and if the trigger is set,
+await proper resumption in the 'act' eval step.
+
 ``VlForkSync``
 ^^^^^^^^^^^^^^
 
@@ -616,6 +641,11 @@ The visitor in ``V3Timing.cpp`` transforms each timing control into a ``co_await
   ``trigger`` method. The awaited trigger scheduler is the one corresponding to
   the sentree referenced by the event control. This sentree is also referenced
   by the ``AstCAwait`` node, to be used later by the static scheduling code.
+* if an event control waits on a local variable or class member, it uses a
+  local trigger which it evaluates inline. It awaits a dynamic trigger
+  scheduler multiple times: for trigger evaluation, updates, and resumption.
+  The dynamic trigger scheduler is responsible for resuming the coroutine at
+  the correct point of evaluation.
 * delays are turned into ``co_await`` on a delay scheduler's ``delay`` method.
   The created ``AstCAwait`` nodes also reference a special sentree related to
   delays, to be used later by the static scheduling code.

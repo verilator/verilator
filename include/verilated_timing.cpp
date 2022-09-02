@@ -140,6 +140,54 @@ void VlTriggerScheduler::dump(const char* eventDescription) const {
 #endif
 
 //======================================================================
+// VlDynamicTriggerScheduler:: Methods
+
+bool VlDynamicTriggerScheduler::evaluate() {
+    VL_DEBUG_IF(dump(););
+    std::swap(m_suspended, m_evaluated);
+    for (auto& coro : m_evaluated) coro.resume();
+    m_evaluated.clear();
+    return !m_triggered.empty();
+}
+
+void VlDynamicTriggerScheduler::doPostUpdates() {
+    VL_DEBUG_IF(if (!m_post.empty())
+                    VL_DBG_MSGF("         Doing post updates for processes:\n");  //
+                for (const auto& susp
+                     : m_post) {
+                    VL_DBG_MSGF("           - ");
+                    susp.dump();
+                });
+    for (auto& coro : m_post) coro.resume();
+    m_post.clear();
+}
+
+void VlDynamicTriggerScheduler::resume() {
+    VL_DEBUG_IF(if (!m_triggered.empty()) VL_DBG_MSGF("         Resuming processes:\n");  //
+                for (const auto& susp
+                     : m_triggered) {
+                    VL_DBG_MSGF("           - ");
+                    susp.dump();
+                });
+    for (auto& coro : m_triggered) coro.resume();
+    m_triggered.clear();
+}
+
+#ifdef VL_DEBUG
+void VlDynamicTriggerScheduler::dump() const {
+    if (m_suspended.empty()) {
+        VL_DBG_MSGF("         No suspended processes waiting for dynamic trigger evaluation\n");
+    } else {
+        for (const auto& susp : m_suspended) {
+            VL_DBG_MSGF("         Suspended processes waiting for dynamic trigger evaluation:\n");
+            VL_DBG_MSGF("           - ");
+            susp.dump();
+        }
+    }
+}
+#endif
+
+//======================================================================
 // VlForkSync:: Methods
 
 void VlForkSync::done(const char* filename, int lineno) {

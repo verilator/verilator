@@ -29,10 +29,10 @@
 
 class SenExprBuilder final {
     // STATE
-    AstCFunc* const m_initp;  // The initialization function
-    AstScope* const m_scopeTopp;  // Top level scope
+    AstScope* const m_scopep;  // The scope
 
     std::vector<AstVar*> m_locals;  // Trigger eval local variables
+    std::vector<AstNodeStmt*> m_inits;  // Initialization statements for prevoius values
     std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
     std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
 
@@ -76,8 +76,8 @@ class SenExprBuilder final {
                 = new AstVar{flp, VVarType::BLOCKTEMP, m_currNames.get(exprp), exprp->dtypep()};
             varp->funcLocal(true);
             m_locals.push_back(varp);
-            AstVarScope* vscp = new AstVarScope{flp, m_scopeTopp, varp};
-            m_scopeTopp->addVarsp(vscp);
+            AstVarScope* vscp = new AstVarScope{flp, m_scopep, varp};
+            m_scopep->addVarsp(vscp);
             result.first->second = vscp;
         }
         AstVarScope* const currp = result.first->second;
@@ -106,13 +106,23 @@ class SenExprBuilder final {
                 name = m_prevNames.get(exprp);
             }
 
-            AstVarScope* const prevp = m_scopeTopp->createTemp(name, exprp->dtypep());
+            AstVarScope* prevp;
+            if (m_scopep->isTop()) {
+                prevp = m_scopep->createTemp(name, exprp->dtypep());
+            } else {
+                AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, m_prevNames.get(exprp),
+                                                exprp->dtypep()};
+                varp->funcLocal(true);
+                m_locals.push_back(varp);
+                prevp = new AstVarScope{flp, m_scopep, varp};
+                m_scopep->addVarsp(prevp);
+            }
             it = m_prev.emplace(*exprp, prevp).first;
 
             // Add the initializer init
-            AstNode* const initp = exprp->cloneTree(false);
-            m_initp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, prevp, VAccess::WRITE}, initp});
+            AstAssign* const initp = new AstAssign{flp, new AstVarRef{flp, prevp, VAccess::WRITE},
+                                                   exprp->cloneTree(false)};
+            m_inits.push_back(initp);
         }
 
         AstVarScope* const prevp = it->second;
@@ -222,6 +232,7 @@ public:
         return {resultp, firedAtInitialization};
     }
 
+    std::vector<AstNodeStmt*> getAndClearInits() { return std::move(m_inits); }
     std::vector<AstVar*> getAndClearLocals() { return std::move(m_locals); }
 
     std::vector<AstNodeStmt*> getAndClearPreUpdates() {
@@ -235,9 +246,8 @@ public:
     }
 
     // CONSTRUCTOR
-    SenExprBuilder(AstNetlist* netlistp, AstCFunc* initp)
-        : m_initp{initp}
-        , m_scopeTopp{netlistp->topScopep()->scopep()} {}
+    SenExprBuilder(AstScope* scopep)
+        : m_scopep{scopep} {}
 };
 
 #endif  // Guard

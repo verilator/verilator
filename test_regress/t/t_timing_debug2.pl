@@ -14,7 +14,7 @@ if (!$Self->have_coroutines) {
     skip("No coroutine support");
 }
 else {
-    top_filename("t/t_timing_fork_join.v");
+    top_filename("t/t_timing_class.v");
 
     compile(
         verilator_flags2 => ["--exe --main --timing"],

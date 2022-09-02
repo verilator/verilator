@@ -754,6 +754,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
             info.m_type = "VlDelayScheduler";
         } else if (bdtypep->isTriggerScheduler()) {
             info.m_type = "VlTriggerScheduler";
+        } else if (bdtypep->isDynamicTriggerScheduler()) {
+            info.m_type = "VlDynamicTriggerScheduler";
         } else if (bdtypep->isForkSync()) {
             info.m_type = "VlForkSync";
         } else if (bdtypep->isEvent()) {

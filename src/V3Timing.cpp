@@ -50,6 +50,7 @@
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Graph.h"
+#include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
 #include "V3UniqueNames.h"
 
@@ -114,6 +115,7 @@ private:
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
     V3UniqueNames m_forkNames{"__Vfork"};  // Fork name generator
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
+    V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
 
     // DTypes
     AstBasicDType* m_forkDtp = nullptr;  // Fork variable type
@@ -121,7 +123,9 @@ private:
 
     // Timing-related globals
     AstVarScope* m_delaySchedp = nullptr;  // Global delay scheduler
+    AstVarScope* m_dynamicSchedp = nullptr;  // Global dynamic trigger scheduler
     AstSenTree* m_delaySensesp = nullptr;  // Domain to trigger if a delayed coroutine is resumed
+    AstSenTree* m_dynamicSensesp = nullptr;  // Domain to trigger if a dynamic trigger is set
 
     // Other
     V3Graph m_depGraph;  // Dependency graph where a node is a dependency of another if it being
@@ -227,6 +231,44 @@ private:
             = new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE, awaitingCurrentTimep}};
         m_netlistp->topScopep()->addSenTreesp(m_delaySensesp);
         return m_delaySensesp;
+    }
+    // Creates the global dynamic trigger scheduler variable
+    AstVarScope* getCreateDynamicTriggerScheduler() {
+        if (m_dynamicSchedp) return m_dynamicSchedp;
+        auto* const dynSchedDtp
+            = new AstBasicDType{m_scopeTopp->fileline(), VBasicDTypeKwd::DYNAMIC_TRIGGER_SCHEDULER,
+                                VSigning::UNSIGNED};
+        m_netlistp->typeTablep()->addTypesp(dynSchedDtp);
+        m_dynamicSchedp = m_scopeTopp->createTemp("__VdynSched", dynSchedDtp);
+        return m_dynamicSchedp;
+    }
+    // Creates the dynamic trigger sentree
+    AstSenTree* getCreateDynamicTriggerSenTree() {
+        if (m_dynamicSensesp) return m_dynamicSensesp;
+        FileLine* const flp = m_scopeTopp->fileline();
+        auto* const awaitingCurrentTimep = new AstCMethodHard{
+            flp, new AstVarRef{flp, getCreateDynamicTriggerScheduler(), VAccess::READ},
+            "evaluate"};
+        awaitingCurrentTimep->dtypeSetBit();
+        m_dynamicSensesp
+            = new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE, awaitingCurrentTimep}};
+        m_netlistp->topScopep()->addSenTreesp(m_dynamicSensesp);
+        return m_dynamicSensesp;
+    }
+    // Returns true if we are under a class or the given tree has any references to locals. These
+    // are cases where static, globally-evaluated triggers are not suitable.
+    bool needDynamicTrigger(AstNode* const nodep) const {
+        return m_classp || nodep->exists([](const AstNodeVarRef* const refp) {
+            return refp->varp()->isFuncLocal();
+        });
+    }
+    // Returns true if the given trigger expression needs a destructive post update after trigger
+    // evaluation. Currently this only applies to named events.
+    bool destructivePostUpdate(AstNode* const exprp) const {
+        return exprp->exists([](const AstNodeVarRef* const refp) {
+            AstBasicDType* const dtypep = refp->dtypep()->basicp();
+            return dtypep && dtypep->isEvent();
+        });
     }
     // Creates a trigger scheduler variable
     AstVarScope* getCreateTriggerSchedulerp(AstSenTree* const sensesp) {
@@ -483,26 +525,90 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstEventControl* nodep) override {
-        if (m_classp) nodep->v3warn(E_UNSUPPORTED, "Unsupported: event controls in methods");
-        auto* const sensesp = m_finder.getSenTree(nodep->sensesp());
-        nodep->sensesp()->unlinkFrBack()->deleteTree();
-        // Get this sentree's trigger scheduler
-        FileLine* const flp = nodep->fileline();
-        // Replace self with a 'co_await trigSched.trigger()'
-        auto* const triggerMethodp = new AstCMethodHard{
-            flp, new AstVarRef{flp, getCreateTriggerSchedulerp(sensesp), VAccess::WRITE},
-            "trigger"};
-        triggerMethodp->dtypeSetVoid();
-        // Add debug info
-        addEventDebugInfo(triggerMethodp, sensesp);
-        // Create the co_await
-        auto* const awaitp = new AstCAwait{flp, triggerMethodp, sensesp};
-        awaitp->statement(true);
-        // Relink child statements after the co_await
-        if (nodep->stmtsp()) {
-            AstNode::addNext<AstNode, AstNode>(awaitp, nodep->stmtsp()->unlinkFrBackWithNext());
+        // Do not allow waiting on local named events, as they get enqueued for clearing, but can
+        // go out of scope before that happens
+        if (nodep->sensesp()->exists([](const AstNodeVarRef* refp) {
+                AstBasicDType* const dtypep = refp->dtypep()->skipRefp()->basicp();
+                return dtypep && dtypep->isEvent() && refp->varp()->isFuncLocal();
+            })) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: waiting on local event variables");
         }
-        nodep->replaceWith(awaitp);
+        FileLine* const flp = nodep->fileline();
+        // Relink child statements after the event control
+        if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
+        if (needDynamicTrigger(nodep->sensesp())) {
+            // Create the trigger variable and init it with 0
+            AstVarScope* const trigvscp
+                = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
+            auto* const initp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
+                                              new AstConst{flp, AstConst::BitFalse{}}};
+            nodep->addHereThisAsNext(initp);
+            // Await the eval step with the dynamic trigger scheduler. First, create the method
+            // call
+            auto* const evalMethodp = new AstCMethodHard{
+                flp, new AstVarRef{flp, getCreateDynamicTriggerScheduler(), VAccess::WRITE},
+                "evaluation"};
+            evalMethodp->dtypeSetVoid();
+            auto* const sensesp = nodep->sensesp();
+            addEventDebugInfo(evalMethodp, sensesp);
+            // Create the co_await
+            auto* const awaitEvalp
+                = new AstCAwait{flp, evalMethodp, getCreateDynamicTriggerSenTree()};
+            awaitEvalp->statement(true);
+            // Construct the sen expression for this sentree
+            SenExprBuilder senExprBuilder{m_scopep};
+            auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
+                                                senExprBuilder.build(sensesp).first};
+            // Put all the locals and inits before the trigger eval loop
+            for (AstVar* const varp : senExprBuilder.getAndClearLocals()) {
+                nodep->addHereThisAsNext(varp);
+            }
+            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearInits()) {
+                nodep->addHereThisAsNext(stmtp);
+            }
+            // Create the trigger eval loop, which will await the evaluation step and check the
+            // trigger
+            auto* const loopp = new AstWhile{
+                flp, new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}}, awaitEvalp};
+            // Put pre updates before the trigger check and assignment
+            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearPreUpdates()) {
+                loopp->addStmtsp(stmtp);
+            }
+            // Then the trigger check and assignment
+            loopp->addStmtsp(assignp);
+            // If the post update is destructive (e.g. event vars are cleared), create an await for
+            // the post update step
+            if (destructivePostUpdate(sensesp)) {
+                auto* const awaitPostUpdatep = awaitEvalp->cloneTree(false);
+                VN_AS(awaitPostUpdatep->exprp(), CMethodHard)->name("postUpdate");
+                loopp->addStmtsp(awaitPostUpdatep);
+            }
+            // Put the post updates at the end of the loop
+            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearPostUpdates()) {
+                loopp->addStmtsp(stmtp);
+            }
+            // Finally, await the resumption step in 'act'
+            auto* const awaitResumep = awaitEvalp->cloneTree(false);
+            VN_AS(awaitResumep->exprp(), CMethodHard)->name("resumption");
+            AstNode::addNext<AstNode, AstNode>(loopp, awaitResumep);
+            // Replace the event control with the loop
+            nodep->replaceWith(loopp);
+        } else {
+            auto* const sensesp = m_finder.getSenTree(nodep->sensesp());
+            nodep->sensesp()->unlinkFrBack()->deleteTree();
+            // Get this sentree's trigger scheduler
+            FileLine* const flp = nodep->fileline();
+            // Replace self with a 'co_await trigSched.trigger()'
+            auto* const triggerMethodp = new AstCMethodHard{
+                flp, new AstVarRef{flp, getCreateTriggerSchedulerp(sensesp), VAccess::WRITE},
+                "trigger"};
+            triggerMethodp->dtypeSetVoid();
+            addEventDebugInfo(triggerMethodp, sensesp);
+            // Create the co_await
+            auto* const awaitp = new AstCAwait{flp, triggerMethodp, sensesp};
+            awaitp->statement(true);
+            nodep->replaceWith(awaitp);
+        }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstNodeAssign* nodep) override {
@@ -584,22 +690,14 @@ private:
     }
     void visit(AstWait* nodep) override {
         // Wait on changed events related to the vars in the wait statement
-        AstSenItem* const senItemsp = varRefpsToSenItemsp(nodep->condp());
-        AstNode* const condp = nodep->condp()->unlinkFrBack();
+        FileLine* const flp = nodep->fileline();
         AstNode* const stmtsp = nodep->stmtsp();
         if (stmtsp) stmtsp->unlinkFrBackWithNext();
-        FileLine* const flp = nodep->fileline();
-        if (senItemsp) {
-            // Put the event control in a while loop with the wait expression as condition
-            AstNode* const loopp
-                = new AstWhile{flp, new AstLogNot{flp, condp},
-                               new AstEventControl{flp, new AstSenTree{flp, senItemsp}, nullptr}};
-            if (stmtsp) loopp->addNext(stmtsp);
-            nodep->replaceWith(loopp);
-        } else {
+        AstNode* const condp = V3Const::constifyEdit(nodep->condp()->unlinkFrBack());
+        auto* const constp = VN_CAST(condp, Const);
+        if (constp) {
             condp->v3warn(WAITCONST, "Wait statement condition is constant");
-            auto* constCondp = VN_AS(V3Const::constifyEdit(condp), Const);
-            if (constCondp->isZero()) {
+            if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack
                 auto* const awaitp = new AstCAwait{flp, new AstCStmt{flp, "VlForever{}"}};
@@ -607,10 +705,30 @@ private:
                 nodep->replaceWith(awaitp);
                 if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
             } else if (stmtsp) {
-                // Just put the body there
+                // Just put the statements there
                 nodep->replaceWith(stmtsp);
             }
-            VL_DO_DANGLING(constCondp->deleteTree(), condp);
+            VL_DO_DANGLING(condp->deleteTree(), condp);
+        } else if (needDynamicTrigger(condp)) {
+            // No point in making a sentree, just use the expression as sensitivity
+            // Put the event control in an if so we only wait if the condition isn't met already
+            auto* const ifp = new AstIf{
+                flp, new AstLogNot{flp, condp},
+                new AstEventControl{flp,
+                                    new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE,
+                                                                       condp->cloneTree(false)}},
+                                    nullptr}};
+            if (stmtsp) AstNode::addNext<AstNode, AstNode>(ifp, stmtsp);
+            nodep->replaceWith(ifp);
+        } else {
+            AstSenItem* const senItemsp = varRefpsToSenItemsp(condp);
+            UASSERT_OBJ(senItemsp, nodep, "No varrefs in wait statement condition");
+            // Put the event control in a while loop with the wait expression as condition
+            auto* const loopp
+                = new AstWhile{flp, new AstLogNot{flp, condp},
+                               new AstEventControl{flp, new AstSenTree{flp, senItemsp}, nullptr}};
+            if (stmtsp) AstNode::addNext<AstNode, AstNode>(loopp, stmtsp);
+            nodep->replaceWith(loopp);
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
