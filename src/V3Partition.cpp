@@ -24,6 +24,7 @@
 #include "V3File.h"
 #include "V3GraphStream.h"
 #include "V3InstrCount.h"
+#include "V3List.h"
 #include "V3Os.h"
 #include "V3PairingHeap.h"
 #include "V3PartitionGraph.h"
@@ -35,6 +36,7 @@
 #include <array>
 #include <list>
 #include <memory>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -217,10 +219,12 @@ private:
     // Store the outgoing and incoming edges in a heap sorted by the critical path length
     std::array<EdgeHeap, GraphWay::NUM_WAYS> m_edgeHeap;
 
-    // SiblingMC for which storage is owned by this MTask
-    std::set<SiblingMC> m_ownSibs;
-    // SiblingMC for which storage is owned by the opposite MTask
-    std::set<const SiblingMC*> m_farSibps;
+    // MTasks for which a SiblingMC exists with 'this' as the higher ID MTask (m_ap in SiblingMC)
+    std::set<LogicMTask*> m_siblings;
+    // List of SiblingMCs for which this is the higher ID MTask (m_ap in SiblingMC)
+    V3List<SiblingMC*> m_aSiblingMCs;
+    // List of SiblingMCs for which this is the lower ID MTask (m_bp in SiblingMC)
+    V3List<SiblingMC*> m_bSiblingMCs;
 
 public:
     // CONSTRUCTORS
@@ -240,8 +244,9 @@ public:
     }
 
     // METHODS
-    std::set<SiblingMC>& ownSibs() { return m_ownSibs; };
-    std::set<const SiblingMC*>& farSibs() { return m_farSibps; };
+    std::set<LogicMTask*>& siblings() { return m_siblings; };
+    V3List<SiblingMC*>& aSiblingMCs() { return m_aSiblingMCs; };
+    V3List<SiblingMC*>& bSiblingMCs() { return m_bSiblingMCs; };
 
     void moveAllVerticesFrom(LogicMTask* otherp) {
         // splice() is constant time
@@ -462,9 +467,11 @@ static_assert(sizeof(MergeCandidate) == sizeof(MergeCandidateScoreboard::Node),
 // A pair of associated LogicMTask's that are merge candidates for sibling
 // contraction
 class SiblingMC final : public MergeCandidate {
-private:
     LogicMTask* const m_ap;
     LogicMTask* const m_bp;
+
+    V3ListEnt<SiblingMC*> m_aEnt;  // List entry for m_ap->aSiblingMCs()
+    V3ListEnt<SiblingMC*> m_bEnt;  // List entry for m_bp->bSiblingMCs()
 
 public:
     // CONSTRUCTORS
@@ -473,26 +480,33 @@ public:
         : MergeCandidate{/* isSiblingMC: */ true}
         , m_ap{ap}
         , m_bp{bp} {
-        // operator< and storage management depends on this
+        // Storage management depends on this
         UASSERT(ap->id() > bp->id(), "Should be ordered");
+        UDEBUGONLY(UASSERT(ap->siblings().count(bp), "Should be in sibling map"););
+        m_aEnt.pushBack(m_ap->aSiblingMCs(), this);
+        m_bEnt.pushBack(m_bp->bSiblingMCs(), this);
     }
     ~SiblingMC() = default;
+
     // METHODS
+    SiblingMC* aNextp() const { return m_aEnt.nextp(); }
+    SiblingMC* bNextp() const { return m_bEnt.nextp(); }
+    void unlinkA() {
+        VL_ATTR_UNUSED const size_t removed = m_ap->siblings().erase(m_bp);
+        UDEBUGONLY(UASSERT(removed == 1, "Should have been in sibling set"););
+        m_aEnt.unlink(m_ap->aSiblingMCs(), this);
+    }
+    void unlinkB() { m_bEnt.unlink(m_bp->bSiblingMCs(), this); }
+
     LogicMTask* ap() const { return m_ap; }
     LogicMTask* bp() const { return m_bp; }
     bool mergeWouldCreateCycle() const {
         return (LogicMTask::pathExistsFrom(m_ap, m_bp, nullptr)
                 || LogicMTask::pathExistsFrom(m_bp, m_ap, nullptr));
     }
-    bool operator<(const SiblingMC& other) const {
-        if (m_ap->id() < other.m_ap->id()) return true;
-        if (m_ap->id() > other.m_ap->id()) return false;
-        return m_bp->id() < other.m_bp->id();
-    }
 };
 
-static_assert(sizeof(SiblingMC) == sizeof(MergeCandidate) + 2 * sizeof(LogicMTask*),
-              "Should not have a vtable");
+static_assert(!std::is_polymorphic<SiblingMC>::value, "Should not have a vtable");
 
 // GraphEdge for the MTask graph
 class MTaskEdge final : public V3GraphEdge, public MergeCandidate {
@@ -1374,12 +1388,13 @@ public:
             // New edges would be AC->B and B->AC which is not a DAG.
             // Do not allow this.
             if (mergeCanp->mergeWouldCreateCycle()) {
-                // Remove this edge from scoreboard so we don't keep
+                // Remove this candidate from scoreboard so we don't keep
                 // reconsidering it on every loop.
                 m_sb.remove(mergeCanp);
                 if (SiblingMC* const smcp = mergeCanp->toSiblingMC()) {
-                    smcp->bp()->farSibs().erase(smcp);
-                    smcp->ap()->ownSibs().erase(*smcp);  // Kills *smcp, so do last
+                    smcp->unlinkA();
+                    smcp->unlinkB();
+                    delete smcp;
                 }
                 continue;
             }
@@ -1444,29 +1459,45 @@ private:
     }
 
     void removeSiblingMCsWith(LogicMTask* mtaskp) {
-        for (const SiblingMC& pair : mtaskp->ownSibs()) {
-            m_sb.remove(const_cast<SiblingMC*>(&pair));
-            // Owner is always ap(), remove from the opposite side
-            pair.bp()->farSibs().erase(&pair);
+        for (SiblingMC *smcp = mtaskp->aSiblingMCs().begin(), *nextp;  // lintok-begin-on-ref
+             smcp; smcp = nextp) {
+            nextp = smcp->aNextp();
+            m_sb.remove(smcp);
+            smcp->unlinkB();
+            delete smcp;
         }
-        for (const SiblingMC* const pairp : mtaskp->farSibs()) {
-            m_sb.remove(const_cast<SiblingMC*>(pairp));
-            // Owner is always ap(), remove from the opposite side
-            pairp->ap()->ownSibs().erase(*pairp);
+        for (SiblingMC *smcp = mtaskp->bSiblingMCs().begin(), *nextp;  // lintok-begin-on-ref
+             smcp; smcp = nextp) {
+            nextp = smcp->bNextp();
+            m_sb.remove(smcp);
+            smcp->unlinkA();
+            delete smcp;
         }
-        mtaskp->ownSibs().clear();
-        mtaskp->farSibs().clear();
+    }
+
+    void removeSiblingMCs(LogicMTask* recipientp, LogicMTask* donorp) {
+        // The lists here should be disjoint (there should be only one SiblingMC involving these
+        // two MTasks, and we removed that elsewhere), so no need for unlinking from the lists we
+        // are clearing.
+        removeSiblingMCsWith(recipientp);
+        removeSiblingMCsWith(donorp);
+
+        // Clear the sibling map of the recipient. The donor will be deleted anyway, so we can
+        // leave that in a corrupt for efficiency.
+        recipientp->siblings().clear();
+        recipientp->aSiblingMCs().reset();
+        recipientp->bSiblingMCs().reset();
     }
 
     void contract(MergeCandidate* mergeCanp) {
         LogicMTask* top = nullptr;
         LogicMTask* fromp = nullptr;
-        MTaskEdge* mergeEdgep = mergeCanp->toMTaskEdge();
+        MTaskEdge* const mergeEdgep = mergeCanp->toMTaskEdge();
+        SiblingMC* const mergeSibsp = mergeCanp->toSiblingMC();
         if (mergeEdgep) {
             top = static_cast<LogicMTask*>(mergeEdgep->top());
             fromp = static_cast<LogicMTask*>(mergeEdgep->fromp());
         } else {
-            const SiblingMC* mergeSibsp = static_cast<SiblingMC*>(mergeCanp);
             top = mergeSibsp->ap();
             fromp = mergeSibsp->bp();
         }
@@ -1502,14 +1533,19 @@ private:
         const NewCp recipientNewCpRev = newCp<GraphWay::REVERSE>(recipientp, donorp, mergeEdgep);
         const NewCp donorNewCpRev = newCp<GraphWay::REVERSE>(donorp, recipientp, mergeEdgep);
 
+        m_sb.remove(mergeCanp);
+
         if (mergeEdgep) {
-            // Remove and free the connecting edge. Must do this before
-            // propagating CP's below.
-            m_sb.remove(mergeCanp);
+            // Remove and free the connecting edge. Must do this before propagating CP's below.
             mergeEdgep->fromMTaskp()->removeRelativeMTask(mergeEdgep->toMTaskp());
             mergeEdgep->fromMTaskp()->removeRelativeEdge<GraphWay::FORWARD>(mergeEdgep);
             mergeEdgep->toMTaskp()->removeRelativeEdge<GraphWay::REVERSE>(mergeEdgep);
-            VL_DO_CLEAR(mergeEdgep->unlinkDelete(), mergeEdgep = nullptr);
+            VL_DO_DANGLING(mergeEdgep->unlinkDelete(), mergeEdgep);
+        } else {
+            // Remove the siblingMC
+            mergeSibsp->unlinkA();
+            mergeSibsp->unlinkB();
+            VL_DO_DANGLING(delete mergeEdgep, mergeEdgep);
         }
 
         // This also updates cost and stepCost on recipientp
@@ -1541,13 +1577,10 @@ private:
         m_forwardPropagator.go();
         m_reversePropagator.go();
 
-        // Remove all SiblingMCs that include donorp. This Includes the one
-        // we're merging, if we're merging a SiblingMC.
-        removeSiblingMCsWith(donorp);
-        // Remove all SiblingMCs that include recipientp also, so we can't
-        // get huge numbers of SiblingMCs.  We'll recreate them below, up
+        // Remove all other SiblingMCs that include recipientp or donorp. We remove all siblingMCs
+        // of recipientp so we do not get huge numbers of SiblingMCs. We'll recreate them below, up
         // to a bounded number.
-        removeSiblingMCsWith(recipientp);
+        removeSiblingMCs(recipientp, donorp);
 
         // Redirect all edges, delete donorp
         partRedirectEdgesFrom(m_mtasksp, recipientp, donorp, &m_sb);
@@ -1596,20 +1629,19 @@ private:
 
     void makeSiblingMC(LogicMTask* ap, LogicMTask* bp) {
         if (ap->id() < bp->id()) std::swap(ap, bp);
-        // The higher id vertex owns the storage
-        const auto emplaceResult = ap->ownSibs().emplace(ap, bp);
-        if (emplaceResult.second) {
-            SiblingMC* const newSibsp = const_cast<SiblingMC*>(&(*emplaceResult.first));
-            bp->farSibs().insert(newSibsp);
-            m_sb.add(newSibsp);
-        } else if (m_slowAsserts) {
+        // The higher id vertex owns the association set
+        const auto first = ap->siblings().insert(bp).second;
+        if (first) {
+            m_sb.add(new SiblingMC{ap, bp});
+        } else if (VL_UNLIKELY(m_slowAsserts)) {
             // It's fine if we already have this SiblingMC, we may have
             // created it earlier. Just confirm that we have associated data.
             bool found = false;
-            for (const SiblingMC& sibs : ap->ownSibs()) {
-                UASSERT_OBJ(sibs.ap() == ap, ap, "Inconsistent SiblingMC");
-                UASSERT_OBJ(m_sb.contains(&sibs), ap, "Must be on the scoreboard");
-                if (sibs.bp() == bp) found = true;
+            for (const SiblingMC* smcp = ap->aSiblingMCs().begin();  // lintok-begin-on-ref
+                 smcp; smcp = smcp->aNextp()) {
+                UASSERT_OBJ(smcp->ap() == ap, ap, "Inconsistent SiblingMC");
+                UASSERT_OBJ(m_sb.contains(smcp), ap, "Must be on the scoreboard");
+                if (smcp->bp() == bp) found = true;
             }
             UASSERT_OBJ(found, ap, "Sibling not found");
         }

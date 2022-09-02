@@ -791,8 +791,8 @@ class OrderVerticesByDomainThenScope final {
 
 public:
     bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
-        const MTaskMoveVertex* const l_vxp = dynamic_cast<const MTaskMoveVertex*>(lhsp);
-        const MTaskMoveVertex* const r_vxp = dynamic_cast<const MTaskMoveVertex*>(rhsp);
+        const MTaskMoveVertex* const l_vxp = static_cast<const MTaskMoveVertex*>(lhsp);
+        const MTaskMoveVertex* const r_vxp = static_cast<const MTaskMoveVertex*>(rhsp);
         uint64_t l_id = m_ids.findId(l_vxp->domainp());
         uint64_t r_id = m_ids.findId(r_vxp->domainp());
         if (l_id < r_id) return true;
@@ -807,8 +807,8 @@ struct MTaskVxIdLessThan final {
     // Sort vertex's, which must be AbstractMTask's, into a deterministic
     // order by comparing their serial IDs.
     bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
-        const AbstractMTask* const lmtaskp = dynamic_cast<const AbstractLogicMTask*>(lhsp);
-        const AbstractMTask* const rmtaskp = dynamic_cast<const AbstractLogicMTask*>(rhsp);
+        const AbstractMTask* const lmtaskp = static_cast<const AbstractLogicMTask*>(lhsp);
+        const AbstractMTask* const rmtaskp = static_cast<const AbstractLogicMTask*>(rhsp);
         return lmtaskp->id() < rmtaskp->id();
     }
 };
@@ -1333,7 +1333,7 @@ void OrderProcess::processMTasks() {
     GraphStream<OrderVerticesByDomainThenScope> emit_logic(&logicGraph);
     const V3GraphVertex* moveVxp;
     while ((moveVxp = emit_logic.nextp())) {
-        const MTaskMoveVertex* const movep = dynamic_cast<const MTaskMoveVertex*>(moveVxp);
+        const MTaskMoveVertex* const movep = static_cast<const MTaskMoveVertex*>(moveVxp);
         // Only care about logic vertices
         if (!movep->logicp()) continue;
 
@@ -1378,7 +1378,7 @@ void OrderProcess::processMTasks() {
     GraphStream<MTaskVxIdLessThan> emit_mtasks(&mtasks);
     const V3GraphVertex* mtaskVxp;
     while ((mtaskVxp = emit_mtasks.nextp())) {
-        const AbstractLogicMTask* const mtaskp = dynamic_cast<const AbstractLogicMTask*>(mtaskVxp);
+        const AbstractLogicMTask* const mtaskp = static_cast<const AbstractLogicMTask*>(mtaskVxp);
 
         // Create a body for this mtask
         AstMTaskBody* const bodyp = new AstMTaskBody(rootFlp);
@@ -1420,7 +1420,7 @@ void OrderProcess::processMTasks() {
         for (V3GraphEdge* inp = mtaskp->inBeginp(); inp; inp = inp->inNextp()) {
             const V3GraphVertex* fromVxp = inp->fromp();
             const AbstractLogicMTask* const fromp
-                = dynamic_cast<const AbstractLogicMTask*>(fromVxp);
+                = static_cast<const AbstractLogicMTask*>(fromVxp);
             const MTaskState& fromState = mtaskStates[fromp->id()];
             new V3GraphEdge(depGraphp, fromState.m_execMTaskp, state.m_execMTaskp, 1);
         }
