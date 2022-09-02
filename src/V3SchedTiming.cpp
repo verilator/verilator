@@ -344,6 +344,7 @@ void transformForks(AstNetlist* const netlistp) {
                 nodep->replaceWith(callp);
                 // If we're in a class, add a vlSymsp arg
                 if (m_inClass) {
+                    newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
                     newfuncp->argTypes(EmitCBaseVisitor::symClassVar());
                     callp->argTypes("vlSymsp");
                 }
