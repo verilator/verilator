@@ -280,11 +280,7 @@ private:
                 addIgnore(ignoreReasonp);
             } else {
                 ++m_statSigs;
-                if (AstNode* const valuep = m_traVscp->valuep()) {
-                    m_traValuep = valuep->cloneTree(false);
-                } else {
-                    m_traValuep = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
-                }
+                m_traValuep = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
                 // Recurse into data type of the signal. The visit methods will add AstTraceDecls.
                 iterate(m_traVscp->varp()->dtypep()->skipRefToEnump());
                 // Cleanup

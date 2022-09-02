@@ -2553,9 +2553,6 @@ public:
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
     AstScope* scopep() const { return m_scopep; }  // Pointer to scope it's under
     void scopep(AstScope* nodep) { m_scopep = nodep; }
-    // op1 = Calculation of value of variable, nullptr=complicated
-    AstNode* valuep() const { return op1p(); }
-    void valuep(AstNode* valuep) { addOp1p(valuep); }
     bool isCircular() const { return m_circular; }
     void circular(bool flag) { m_circular = flag; }
     bool isTrace() const { return m_trace; }

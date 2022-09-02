@@ -408,7 +408,6 @@ private:
     void consumedMark();
     void consumedMarkRecurse(GateEitherVertex* vertexp);
     void consumedMove();
-    void replaceAssigns();
     void dedupe();
     void mergeAssigns();
     void decomposeClkVectors();
@@ -445,7 +444,6 @@ private:
         m_graph.dumpDotFilePrefixed("gate_opt");
         // Rewrite assignments
         consumedMove();
-        replaceAssigns();
     }
     virtual void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -654,14 +652,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
             while (V3GraphEdge* const edgep = vvertexp->inBeginp()) {
                 VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             }
-            // Clone tree so we remember it for tracing, and keep the pointer
-            // to the "ALWAYS" part of the tree as part of this statement
-            // That way if a later signal optimization that
-            // retained a pointer to the always can
-            // optimize it further
-            VL_DO_DANGLING(vvertexp->varScp()->valuep(logicp->unlinkFrBack()), logicp);
-            // Mark the vertex so we don't mark it as being
-            // unconsumed in the next step
+            // Mark the vertex so we don't mark it as being unconsumed in the next step
             vvertexp->user(true);
             logicVertexp->user(true);
         }
@@ -691,45 +682,6 @@ bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp,
         }
     }
     return true;
-}
-
-void GateVisitor::replaceAssigns() {
-    for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (const GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
-            // Take the Comments/assigns that were moved to the VarScope and change them to a
-            // simple value assignment
-            const AstVarScope* const vscp = vvertexp->varScp();
-            if (vscp->valuep() && !VN_IS(vscp->valuep(), NodeMath)) {
-                // if (debug() > 9) vscp->dumpTree(cout, "-vscPre:  ");
-                while (AstNode* delp = VN_CAST(vscp->valuep(), Comment)) {
-                    VL_DO_DANGLING(delp->unlinkFrBack()->deleteTree(), delp);
-                }
-                if (AstInitial* const delp = VN_CAST(vscp->valuep(), Initial)) {
-                    AstNode* const bodyp = delp->bodysp();
-                    bodyp->unlinkFrBackWithNext();
-                    delp->replaceWith(bodyp);
-                    VL_DO_DANGLING(delp->deleteTree(), delp);
-                }
-                if (AstAlways* const delp = VN_CAST(vscp->valuep(), Always)) {
-                    AstNode* const bodyp = delp->bodysp();
-                    bodyp->unlinkFrBackWithNext();
-                    delp->replaceWith(bodyp);
-                    VL_DO_DANGLING(delp->deleteTree(), delp);
-                }
-                if (AstNodeAssign* const delp = VN_CAST(vscp->valuep(), NodeAssign)) {
-                    AstNode* const rhsp = delp->rhsp();
-                    rhsp->unlinkFrBack();
-                    delp->replaceWith(rhsp);
-                    VL_DO_DANGLING(delp->deleteTree(), delp);
-                }
-                // if (debug() > 9) {vscp->dumpTree(cout, "-vscDone: "); cout<<endl;}
-                if (!VN_IS(vscp->valuep(), NodeMath) || vscp->valuep()->nextp()) {
-                    vscp->dumpTree(std::cerr, "vscStrange: ");
-                    vscp->v3fatalSrc("Value of varscope not mathematical");
-                }
-            }
-        }
-    }
 }
 
 //----------------------------------------------------------------------
@@ -1132,11 +1084,6 @@ private:
                     while (V3GraphEdge* const inedgep = vvertexp->inBeginp()) {
                         VL_DO_DANGLING(inedgep->unlinkDelete(), inedgep);
                     }
-                    // replaceAssigns() does the deleteTree on lvertexNodep in a later step
-                    AstNode* lvertexNodep = lvertexp->nodep();
-                    lvertexNodep->unlinkFrBack();
-                    vvertexp->varScp()->valuep(lvertexNodep);
-                    lvertexNodep = nullptr;
                     vvertexp->user(true);
                     lvertexp->user(true);
                 }
@@ -1527,16 +1474,5 @@ void GateVisitor::decomposeClkVectors() {
 void V3Gate::gateAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { const GateVisitor visitor{nodep}; }  // Destruct before checking
-
-    nodep->foreach<AstVarScope>([](AstVarScope* nodep) {
-        if (AstNodeAssign* const assp = VN_CAST(nodep->valuep(), NodeAssign)) {
-            UINFO(5, " Removeassign " << assp << endl);
-            AstNode* const valuep = assp->rhsp();
-            valuep->unlinkFrBack();
-            assp->replaceWith(valuep);
-            VL_DO_DANGLING(assp->deleteTree(), assp);
-        }
-    });
-
     V3Global::dumpCheckGlobalTree("gate", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
