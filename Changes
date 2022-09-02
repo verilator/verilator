@@ -13,6 +13,8 @@ Verilator 4.227 devel
 
 **Minor:**
 
+Fix crash in gate optimization of circular logic (#3543). [Bill Flynn]
+
 
 Verilator 4.226 2022-08-31
 ==========================

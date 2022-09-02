@@ -985,11 +985,18 @@ static void eliminate(AstNode* logicp,
                       const std::unordered_map<AstVarScope*, AstNode*>& substitutions,
                       GateDedupeVarVisitor* varVisp) {
 
-    const std::function<void(AstNodeVarRef*)> visit
-        = [&substitutions, &visit, varVisp](AstNodeVarRef* nodep) -> void {
+    // Recursion filter holding already replaced variables
+    std::unordered_set<const AstVarScope*> replaced(substitutions.size() * 2);
+
+    const std::function<void(AstNodeVarRef*)> visit = [&, varVisp](AstNodeVarRef* nodep) -> void {
         // See if this variable has a substitution
-        const auto& it = substitutions.find(nodep->varScopep());
+        AstVarScope* const vscp = nodep->varScopep();
+        const auto& it = substitutions.find(vscp);
         if (it == substitutions.end()) return;
+
+        // Do not substitute circular logic
+        if (!replaced.insert(vscp).second) return;
+
         AstNode* const substp = it->second;
 
         // Substitute in the new tree
@@ -1016,6 +1023,9 @@ static void eliminate(AstNode* logicp,
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         // Recursively substitute the new tree
         newp->foreach<AstNodeVarRef>(visit);
+
+        // Remove from recursion filter
+        replaced.erase(vscp);
     };
 
     logicp->foreach<AstNodeVarRef>(visit);
