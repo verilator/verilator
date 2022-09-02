@@ -107,7 +107,7 @@ public:
     VNUser iterateInEdges(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) {
         VNUser ret = VNUser(0);
         for (V3GraphEdge* edgep = inBeginp(); edgep; edgep = edgep->inNextp()) {
-            ret = dynamic_cast<GateEitherVertex*>(edgep->fromp())->accept(v, vu);
+            ret = static_cast<GateEitherVertex*>(edgep->fromp())->accept(v, vu);
         }
         return ret;
     }
@@ -121,7 +121,7 @@ public:
         for (V3GraphEdge* edgep = outBeginp(); edgep; edgep = next_edgep) {
             // Need to find the next edge before visiting in case the edge is deleted
             next_edgep = edgep->outNextp();
-            ret = dynamic_cast<GateEitherVertex*>(edgep->top())->accept(v, vu);
+            ret = static_cast<GateEitherVertex*>(edgep->top())->accept(v, vu);
         }
         return ret;
     }
@@ -683,7 +683,7 @@ bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp,
         varscopes.insert(vscp);
     }
     for (V3GraphEdge* edgep = consumeVertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-        const GateVarVertex* const consVVertexp = dynamic_cast<GateVarVertex*>(edgep->top());
+        const GateVarVertex* const consVVertexp = static_cast<GateVarVertex*>(edgep->top());
         AstVarScope* const vscp = consVVertexp->varScp();
         if (varscopes.find(vscp) != varscopes.end()) {
             UINFO(9, "    Block-unopt, insertion generates input vscp " << vscp << endl);
@@ -764,8 +764,8 @@ void GateVisitor::consumedMove() {
             if (!vvertexp->consumed() && !vvertexp->user()) {
                 UINFO(8, "Unconsumed " << vvertexp->varScp() << endl);
             }
-        }
-        if (const GateLogicVertex* const lvertexp = dynamic_cast<GateLogicVertex*>(vertexp)) {
+        } else {
+            const GateLogicVertex* const lvertexp = static_cast<GateLogicVertex*>(vertexp);
             AstNode* const nodep = lvertexp->nodep();
             const AstActive* const oldactp = lvertexp->activep();  // nullptr under cfunc
             if (!lvertexp->consumed() && oldactp) {
@@ -1108,7 +1108,7 @@ private:
                     // Replace all of this varvertex's consumers with dupVarRefp
                     for (V3GraphEdge* outedgep = vvertexp->outBeginp(); outedgep;) {
                         const GateLogicVertex* const consumeVertexp
-                            = dynamic_cast<GateLogicVertex*>(outedgep->top());
+                            = static_cast<GateLogicVertex*>(outedgep->top());
                         AstNode* const consumerp = consumeVertexp->nodep();
                         // if (debug() >= 9) m_graphp->dumpDotFilePrefixed("gate_preelim");
                         UINFO(9,
@@ -1283,7 +1283,7 @@ private:
                                         V3GraphEdge* oedgep = ledgep;
                                         ledgep = ledgep->inNextp();
                                         GateEitherVertex* const fromvp
-                                            = dynamic_cast<GateEitherVertex*>(oedgep->fromp());
+                                            = static_cast<GateEitherVertex*>(oedgep->fromp());
                                         new V3GraphEdge(m_graphp, fromvp, m_logicvp, 1);
                                         VL_DO_DANGLING(oedgep->unlinkDelete(), oedgep);
                                     }
