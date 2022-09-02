@@ -242,6 +242,7 @@ void transformForks(AstNetlist* const netlistp) {
 
         // STATE
         bool m_inClass = false;  // Are we in a class?
+        bool m_beginHasAwaits = false;  // Does the current begin have awaits?
         AstFork* m_forkp = nullptr;  // Current fork
         AstCFunc* m_funcp = nullptr;  // Current function
 
@@ -309,8 +310,11 @@ void transformForks(AstNetlist* const netlistp) {
             iterateChildren(nodep);
             m_funcp = nullptr;
         }
-        virtual void visit(AstVar* nodep) override { nodep->user1(true); }
+        virtual void visit(AstVar* nodep) override {
+            if (!m_forkp) nodep->user1(true);
+        }
         virtual void visit(AstFork* nodep) override {
+            if (m_forkp) return;  // Handle forks in forks after moving them to new functions
             VL_RESTORER(m_forkp);
             m_forkp = nodep;
             iterateChildrenConst(nodep);  // Const, so we don't iterate the calls twice
@@ -321,28 +325,40 @@ void transformForks(AstNetlist* const netlistp) {
         }
         virtual void visit(AstBegin* nodep) override {
             UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
-            UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
-            FileLine* const flp = nodep->fileline();
-            // Create a function to put this begin's statements in
-            AstCFunc* const newfuncp
-                = new AstCFunc{flp, nodep->name(), m_funcp->scopep(), "VlCoroutine"};
-            m_funcp->addNextHere(newfuncp);
-            newfuncp->isLoose(m_funcp->isLoose());
-            newfuncp->slow(m_funcp->slow());
-            newfuncp->isConst(m_funcp->isConst());
-            newfuncp->declPrivate(true);
-            // Replace the begin with a call to the newly created function
-            auto* const callp = new AstCCall{flp, newfuncp};
-            nodep->replaceWith(callp);
-            // If we're in a class, add a vlSymsp arg
-            if (m_inClass) {
-                newfuncp->argTypes(EmitCBaseVisitor::symClassVar());
-                callp->argTypes("vlSymsp");
+            // Start with children, so later we only find awaits that are actually in this begin
+            m_beginHasAwaits = false;
+            iterateChildrenConst(nodep);
+            if (m_beginHasAwaits) {
+                UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
+                // Create a function to put this begin's statements in
+                FileLine* const flp = nodep->fileline();
+                AstCFunc* const newfuncp
+                    = new AstCFunc{flp, nodep->name(), m_funcp->scopep(), "VlCoroutine"};
+                m_funcp->addNextHere(newfuncp);
+                newfuncp->isLoose(m_funcp->isLoose());
+                newfuncp->slow(m_funcp->slow());
+                newfuncp->isConst(m_funcp->isConst());
+                newfuncp->declPrivate(true);
+                // Replace the begin with a call to the newly created function
+                auto* const callp = new AstCCall{flp, newfuncp};
+                nodep->replaceWith(callp);
+                // If we're in a class, add a vlSymsp arg
+                if (m_inClass) {
+                    newfuncp->argTypes(EmitCBaseVisitor::symClassVar());
+                    callp->argTypes("vlSymsp");
+                }
+                // Put the begin's statements in the function, delete the begin
+                newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
+                remapLocals(newfuncp, callp);
+            } else {
+                // No awaits, just inline the forked process
+                nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             }
-            // Put the begin's statements in the function, delete the begin
-            newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            remapLocals(newfuncp, callp);
+        }
+        virtual void visit(AstCAwait* nodep) override {
+            m_beginHasAwaits = true;
+            iterateChildrenConst(nodep);
         }
 
         //--------------------
