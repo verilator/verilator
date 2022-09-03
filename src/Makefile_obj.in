@@ -79,7 +79,7 @@ ifeq ($(VL_NOOPT),1)
 CPPFLAGS += -O0
 else ifeq ($(VL_DEBUG),)
 # Optimize
-CPPFLAGS += -O2
+CPPFLAGS += -O3
 else
 # Debug
 CPPFLAGS += @CFG_CXXFLAGS_DEBUG@ -DVL_DEBUG -D_GLIBCXX_DEBUG
