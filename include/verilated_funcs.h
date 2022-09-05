@@ -506,6 +506,7 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
     int32_t lsb = 0; \
     uint32_t* chunk = _butemp.get_raw(); \
     while (lsb < (obits) - VL_SC_BITS_PER_DIGIT) { \
+        static_assert(std::is_same<IData, EData>::value, "IData and EData missmatch"); \
         const uint32_t data = VL_SEL_IWII(lsb+VL_SC_BITS_PER_DIGIT+1, (rwp).data(), lsb, VL_SC_BITS_PER_DIGIT); \
         *chunk = data & VL_MASK_E(VL_SC_BITS_PER_DIGIT); \
         chunk++; \
