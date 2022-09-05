@@ -283,7 +283,7 @@ public:
     auto join(const char* filename, int linenum) {
         assert(m_join);
         VL_DEBUG_IF(
-            VL_DBG_MSGF("             Awaiting join of fork at: %s:%d", filename, linenum););
+            VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, linenum););
         struct Awaitable {
             const std::shared_ptr<VlJoin> join;  // Join to await on
             bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists
