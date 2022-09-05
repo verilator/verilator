@@ -35,7 +35,7 @@ void compareWls(int obits, WDataInP const lwp, WDataInP const rwp) {
     }
 }
 
-/* old macro which is correct but has MT issue with range */
+// old macro which is correct but has MT issue with range
 #define VL_ASSIGN_SBW_MT_ISSUE(obits, svar, rwp) \
     { \
         sc_biguint<(obits)> _butemp; \
@@ -114,17 +114,13 @@ int main()
 #else
     tb->eval();
 #endif
-    /* 
-    This testcase is testing multi-thread safe VL_ASSIGN_SBW and VL_ASSIGN_WSB macros.
-
-    Testbench is assigning different number of bits from VlWide input_var variable to different inputs. 
-    Values around multiple of 30 (i.e. BITS_PER_DIGIT defined in SystemC sc_nbdefs.h) are tested with the special care, since
-    it is the value by which the data_ptr of sc_biguint underlying data type is increased by (and not expected 32, as width of uint32_t).
-    Correctness of the output is compared against the 'old' macro, which is correct but has multi-threaded issue since it's using range function.
-
-    Second part is testing VL_ASSIGN_WSB in a reverse way, it is reading signals from the previous test, 
-    and comparing the output with (fraction) of VlWide input_var variable.
-    */
+    // This testcase is testing multi-thread safe VL_ASSIGN_SBW and VL_ASSIGN_WSB macros.
+    // Testbench is assigning different number of bits from VlWide input_var variable to different inputs.
+    // Values around multiple of 30 (i.e. BITS_PER_DIGIT defined in SystemC sc_nbdefs.h) are tested with the special care, since
+    // it is the value by which the data_ptr of sc_biguint underlying data type is increased by (and not expected 32, as width of uint32_t).
+    // Correctness of the output is compared against the 'old' macro, which is correct but has multi-threaded issue since it's using range function.
+    // Second part is testing VL_ASSIGN_WSB in a reverse way, it is reading signals from the previous test,
+    // and comparing the output with (fraction) of VlWide input_var variable.
 
     // clang-format on
     VL_ASSIGN_SBW_TRY(29, i_29_s, input_var);
