@@ -2079,7 +2079,7 @@ private:
             AstSel* const sel2p = new AstSel(conp->fileline(), rhs2p, lsb2, msb2 - lsb2 + 1);
             // Make new assigns of same flavor as old one
             //*** Not cloneTree; just one node.
-            AstNode* newp = nullptr;
+            AstNodeAssign* newp = nullptr;
             if (!need_temp) {
                 AstNodeAssign* const asn1ap = VN_AS(nodep->cloneType(lc1p, sel1p), NodeAssign);
                 AstNodeAssign* const asn2ap = VN_AS(nodep->cloneType(lc2p, sel2p), NodeAssign);

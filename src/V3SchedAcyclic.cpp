@@ -372,7 +372,7 @@ LogicByScope fixCuts(AstNetlist* netlistp, const std::vector<VarVertex*>& cutVer
         for (AstVarScope* const vscp : lvtx2Cuts[lvtxp]) {
             AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::READ};
             AstSenItem* const nextp = new AstSenItem{flp, VEdgeType::ET_HYBRID, refp};
-            senItemsp = VN_AS(AstNode::addNext(senItemsp, nextp), SenItem);
+            senItemsp = AstNode::addNext(senItemsp, nextp);
         }
         AstSenTree* const senTree = new AstSenTree{flp, senItemsp};
         // Add logic to result with new sensitivity

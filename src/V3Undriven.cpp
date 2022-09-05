@@ -30,6 +30,7 @@
 
 #include "V3Ast.h"
 #include "V3Global.h"
+#include "V3Stats.h"
 #include "V3String.h"
 
 #include <algorithm>
@@ -475,4 +476,5 @@ public:
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { UndrivenVisitor{nodep}; }
+    if (v3Global.opt.stats()) V3Stats::statsStage("undriven");
 }

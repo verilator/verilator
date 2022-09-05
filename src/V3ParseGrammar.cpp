@@ -67,10 +67,10 @@ void V3ParseImp::parserClear() {
 //======================================================================
 // V3ParseGrammar functions requiring bison state
 
-AstNode* V3ParseGrammar::argWrapList(AstNode* nodep) {
+AstArg* V3ParseGrammar::argWrapList(AstNode* nodep) {
     // Convert list of expressions to list of arguments
     if (!nodep) return nullptr;
-    AstNode* outp = nullptr;
+    AstArg* outp = nullptr;
     AstBegin* const tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
     while (nodep) {
         AstNode* const nextp = nodep->nextp();
