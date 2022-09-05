@@ -446,20 +446,21 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
     { (vvar) = VL_CLEAN_QQ((obits), (obits), (svar).read().to_uint64()); }
 #define VL_ASSIGN_WSB(obits, owp, svar) \
     { \
-        const int words = VL_WORDS_I(obits); \
-        sc_biguint<(obits)> _butemp = (svar).read(); \
-        for (int i = 0; i < words; ++i) { \
-            int msb = ((i + 1) * VL_IDATASIZE) - 1; \
-            msb = (msb >= (obits)) ? ((obits)-1) : msb; \
-            uint32_t _wtmp = 0; \
-            for(int j = msb; j < (i * VL_IDATASIZE); j++) { \
-                if (_butemp.test(j)) { \
-                    _wtmp |= (1 << (j-msb));\
-                } \
-            } \
-            (owp)[i] = _wtmp; \
-        } \
-        (owp)[words - 1] &= VL_MASK_E(obits); \
+    const int words = VL_WORDS_I(obits); \
+    sc_biguint<(obits)> _butemp = (svar).read(); \
+    uint32_t* chunk = _butemp.get_raw(); \
+    int32_t lsb = 0; \
+    while (lsb < obits - BITS_PER_DIGIT) { \
+        const uint32_t data = *chunk; \
+        chunk++; \
+        _vl_insert_WI(owp.data(), data, lsb+BITS_PER_DIGIT-1, lsb); \
+        lsb += BITS_PER_DIGIT; \
+    } \
+    if (lsb < obits) { \
+        const uint32_t msb_data = *chunk; \
+        _vl_insert_WI(owp.data(), msb_data, obits-1, lsb); \
+    } \
+    (owp)[words - 1] &= VL_MASK_E(obits); \
     }
 
 // Copying verilog format from systemc integers and bit vectors.
@@ -498,13 +499,23 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
     { (svar).write(rd); }
 #define VL_ASSIGN_SBQ(obits, svar, rd) \
     { (svar).write(rd); }
+#define VL_SC_BITS_PER_DIGIT 30 // This comes from sc_nbdefs.h BITS_PER_DIGIT
 #define VL_ASSIGN_SBW(obits, svar, rwp) \
     { \
-        sc_biguint<(obits)> _butemp; \
-        for (int i = 0; i< (obits); ++i) { \
-            _butemp.set(i, (rwp).test(i)); \
-        } \
-        (svar).write(_butemp); \
+    sc_biguint<(obits)> _butemp; \
+    int32_t lsb = 0; \
+    uint32_t* chunk = _butemp.get_raw(); \
+    while (lsb < (obits) - VL_SC_BITS_PER_DIGIT) { \
+        const uint32_t data = VL_SEL_IWII(lsb+VL_SC_BITS_PER_DIGIT+1, (rwp).data(), lsb, VL_SC_BITS_PER_DIGIT); \
+        *chunk = data & VL_MASK_E(VL_SC_BITS_PER_DIGIT); \
+        chunk++; \
+        lsb += VL_SC_BITS_PER_DIGIT; \
+    } \
+    if (lsb < (obits)) { \
+        const uint32_t msb_data = VL_SEL_IWII((obits)+1, (rwp).data(), lsb, (obits) - lsb); \
+        *chunk = msb_data & VL_MASK_E((obits) - lsb); \
+    } \
+    (svar).write(_butemp); \
     }
 
 //===================================================================
