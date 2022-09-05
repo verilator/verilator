@@ -264,7 +264,7 @@ void transformForks(AstNetlist* const netlistp) {
                     // We can just pass it to the new function
                 } else if (m_forkp->joinType().join()) {
                     // If it's fork..join, we can refer to variables from the parent process
-                    if (m_funcp->user1SetOnce()) {  // Only do this once per function
+                    if (!m_funcp->user1SetOnce()) {  // Only do this once per function
                         // Move all locals to the heap before the fork
                         auto* const awaitp = new AstCAwait{
                             m_forkp->fileline(), new AstCStmt{m_forkp->fileline(), "VlNow{}"}};
