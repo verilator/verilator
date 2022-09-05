@@ -614,25 +614,12 @@ private:
             VL_RESTORER(m_procp);
             m_procp = beginp;
             iterate(beginp);
-            if (!m_procp->user2()) {
-                // No awaits, we can inline this process
-                if (auto* const stmtsp = beginp->stmtsp()) {
-                    nodep->addHereThisAsNext(stmtsp->unlinkFrBackWithNext());
-                }
-                VL_DO_DANGLING(beginp->unlinkFrBack()->deleteTree(), beginp);
-                // We inlined at least one process, so we can consider it joined; convert join_any
-                // to join_none
-                if (nodep->joinType().joinAny()) nodep->joinType(VJoinType::JOIN_NONE);
-            } else {
-                // Name the begin (later the name will be used for a new function)
-                beginp->name(nodep->name() + "__" + cvtToStr(idx++));
-            }
+            // Even if we do not find any awaits, we cannot simply inline the process here, as new
+            // awaits could be added later.
+            // Name the begin (later the name will be used for a new function)
+            beginp->name(nodep->name() + "__" + cvtToStr(idx++));
         }
-        if (!nodep->stmtsp()) {
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (!nodep->joinType().joinNone()) {
-            makeForkJoin(nodep);
-        }
+        if (!nodep->joinType().joinNone()) makeForkJoin(nodep);
     }
 
     //--------------------
