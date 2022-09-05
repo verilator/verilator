@@ -123,35 +123,35 @@ int main()
     // and comparing the output with (fraction) of VlWide input_var variable.
 
     // clang-format on
-    VL_ASSIGN_SBW_TRY(29, i_29_s, input_var);
+    VL_ASSIGN_SBW(29, i_29_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(29, i_29_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(30, i_30_s, input_var);
+    VL_ASSIGN_SBW(30, i_30_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(30, i_30_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(31, i_31_s, input_var);
+    VL_ASSIGN_SBW(31, i_31_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(31, i_31_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(32, i_32_s, input_var);
+    VL_ASSIGN_SBW(32, i_32_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(32, i_32_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(59, i_59_s, input_var);
+    VL_ASSIGN_SBW(59, i_59_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(59, i_59_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(60, i_60_s, input_var);
+    VL_ASSIGN_SBW(60, i_60_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(60, i_60_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(62, i_62_s, input_var);
+    VL_ASSIGN_SBW(62, i_62_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(62, i_62_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(64, i_64_s, input_var);
+    VL_ASSIGN_SBW(64, i_64_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(64, i_64_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(119, i_119_s, input_var);
+    VL_ASSIGN_SBW(119, i_119_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(119, i_119_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(120, i_120_s, input_var);
+    VL_ASSIGN_SBW(120, i_120_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(120, i_120_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(121, i_121_s, input_var);
+    VL_ASSIGN_SBW(121, i_121_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(121, i_121_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(127, i_127_s, input_var);
+    VL_ASSIGN_SBW(127, i_127_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(127, i_127_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(128, i_128_s, input_var);
+    VL_ASSIGN_SBW(128, i_128_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(128, i_128_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(255, i_255_s, input_var);
+    VL_ASSIGN_SBW(255, i_255_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(255, i_255_old_s, input_var);
-    VL_ASSIGN_SBW_TRY(256, i_256_s, input_var);
+    VL_ASSIGN_SBW(256, i_256_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(256, i_256_old_s, input_var);
 
 #ifdef SYSTEMC_VERSION
@@ -177,35 +177,35 @@ int main()
 
     ////////////////////////////////
 
-    VL_ASSIGN_WSB_TRY(29, out_var, o_29_s);
+    VL_ASSIGN_WSB(29, out_var, o_29_s);
     compareWls(29, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(30, out_var, o_30_s);
+    VL_ASSIGN_WSB(30, out_var, o_30_s);
     compareWls(30, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(31, out_var, o_31_s);
+    VL_ASSIGN_WSB(31, out_var, o_31_s);
     compareWls(31, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(32, out_var, o_32_s);
+    VL_ASSIGN_WSB(32, out_var, o_32_s);
     compareWls(32, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(59, out_var, o_59_s);
+    VL_ASSIGN_WSB(59, out_var, o_59_s);
     compareWls(59, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(60, out_var, o_60_s);
+    VL_ASSIGN_WSB(60, out_var, o_60_s);
     compareWls(60, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(62, out_var, o_62_s);
+    VL_ASSIGN_WSB(62, out_var, o_62_s);
     compareWls(62, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(64, out_var, o_64_s);
+    VL_ASSIGN_WSB(64, out_var, o_64_s);
     compareWls(64, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(119, out_var, o_119_s);
+    VL_ASSIGN_WSB(119, out_var, o_119_s);
     compareWls(119, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(120, out_var, o_120_s);
+    VL_ASSIGN_WSB(120, out_var, o_120_s);
     compareWls(120, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(121, out_var, o_121_s);
+    VL_ASSIGN_WSB(121, out_var, o_121_s);
     compareWls(121, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(127, out_var, o_127_s);
+    VL_ASSIGN_WSB(127, out_var, o_127_s);
     compareWls(127, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(128, out_var, o_128_s);
+    VL_ASSIGN_WSB(128, out_var, o_128_s);
     compareWls(128, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(255, out_var, o_255_s);
+    VL_ASSIGN_WSB(255, out_var, o_255_s);
     compareWls(255, input_var.data(), out_var.data());
-    VL_ASSIGN_WSB_TRY(256, out_var, o_256_s);
+    VL_ASSIGN_WSB(256, out_var, o_256_s);
     compareWls(256, input_var.data(), out_var.data());
 
     tb->final();
