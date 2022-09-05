@@ -154,12 +154,6 @@ template <std::size_t T_Words> struct VlWide final {
     bool operator<(const VlWide<T_Words>& rhs) const {
         return _vl_cmp_w(T_Words, data(), rhs.data()) < 0;
     }
-    inline bool test(size_t ind){
-        assert(ind < (T_Words * VL_EDATASIZE));
-        size_t index = ind / VL_EDATASIZE;
-        size_t offset = ind % VL_EDATASIZE;
-        return (m_storage[index] & (1<<offset));
-    }
 };
 
 // Convert a C array to std::array reference by pointer magic, without copy.
