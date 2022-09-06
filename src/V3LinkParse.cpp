@@ -62,6 +62,7 @@ private:
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
+    bool m_topIfacesSupported = false;
 
     // METHODS
     void cleanFileline(AstNode* nodep) {
@@ -281,7 +282,7 @@ private:
                                                  nodep->valuep()->unlinkFrBack()));
             }
         }
-        if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+        if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !m_topIfacesSupported) {
             // Only AstIfaceRefDType's at this point correspond to ports;
             // haven't made additional ones for interconnect yet, so assert is simple
             // What breaks later is we don't have a Scope/Cell representing
@@ -609,15 +610,15 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
+    explicit LinkParseVisitor(AstNetlist* rootp, bool topIfacesSupported) : m_topIfacesSupported{topIfacesSupported} { iterate(rootp); }
     ~LinkParseVisitor() override = default;
 };
 
 //######################################################################
 // Link class functions
 
-void V3LinkParse::linkParse(AstNetlist* rootp) {
+void V3LinkParse::linkParse(AstNetlist* rootp, bool topIfacesSupported) {
     UINFO(4, __FUNCTION__ << ": " << endl);
-    { LinkParseVisitor{rootp}; }  // Destruct before checking
+    { LinkParseVisitor{rootp, topIfacesSupported}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkparse", 0, dumpTree() >= 6);
 }

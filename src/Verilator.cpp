@@ -123,8 +123,10 @@ static void process() {
         std::exit(0);
     }
 
+    bool topIfacesSupported = v3Global.opt.lintOnly() && !v3Global.opt.hierarchical();
+
     // Convert parseref's to varrefs, and other directly post parsing fixups
-    V3LinkParse::linkParse(v3Global.rootp());
+    V3LinkParse::linkParse(v3Global.rootp(), topIfacesSupported);
     if (v3Global.opt.debugExitUvm()) {
         V3Error::abortIfErrors();
         cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
@@ -133,7 +135,7 @@ static void process() {
 
     // Cross-link signal names
     // Cross-link dotted hierarchical references
-    V3LinkDot::linkDotPrimary(v3Global.rootp());
+    V3LinkDot::linkDotPrimary(v3Global.rootp(), topIfacesSupported);
     v3Global.checkTree();  // Force a check, as link is most likely place for problems
     // Check if all parameters have been found
     v3Global.opt.checkParameters();
@@ -152,11 +154,11 @@ static void process() {
     // Remove parameters by cloning modules to de-parameterized versions
     //   This requires some width calculations and constant propagation
     V3Param::param(v3Global.rootp());
-    V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
+    V3LinkDot::linkDotParamed(v3Global.rootp(), topIfacesSupported);  // Cleanup as made new modules
     V3Error::abortIfErrors();
 
     // Remove any modules that were parameterized and are no longer referenced.
-    V3Dead::deadifyModules(v3Global.rootp());
+    V3Dead::deadifyModules(v3Global.rootp(), topIfacesSupported);
     v3Global.checkTree();
 
     // Create a hierarchical verilation plan
@@ -205,7 +207,7 @@ static void process() {
         // Add top level wrapper with instance pointing to old top
         // Move packages to under new top
         // Must do this after we know parameters and dtypes (as don't clone dtype decls)
-        V3LinkLevel::wrapTop(v3Global.rootp());
+        V3LinkLevel::wrapTop(v3Global.rootp(), topIfacesSupported);
     }
 
     // Propagate constants into expressions

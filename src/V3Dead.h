@@ -27,7 +27,7 @@ class AstNetlist;
 class V3Dead final {
 public:
     // Modules, no vars/dtypes
-    static void deadifyModules(AstNetlist* nodep);
+    static void deadifyModules(AstNetlist* nodep, bool topIfacesSupported);
     // Modules, Data types
     static void deadifyDTypes(AstNetlist* nodep);
     static void deadifyDTypesScoped(AstNetlist* nodep);

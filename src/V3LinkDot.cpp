@@ -308,6 +308,19 @@ public:
         if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
         return symp;
     }
+    VSymEnt* insertTopIface(AstCell* nodep, const string& scopename) {
+        VSymEnt* const symp = new VSymEnt(&m_syms, nodep);
+        UINFO(9,
+              "      INSERTtopiface se" << cvtToHex(symp) << "  " << scopename << " " << nodep << endl);
+        symp->parentp(rootEntp());  // Needed so backward search can find name of top module
+        symp->fallbackp(dunitEntp());  // Needed so can find $unit stuff
+        nodep->user1p(symp);
+        if (nodep->modp()) nodep->modp()->user1p(symp);
+        checkDuplicate(rootEntp(), nodep, nodep->origName());
+        rootEntp()->insert(nodep->origName(), symp);
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
+        return symp;
+    }
     VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp, AstCell* nodep,
                         const string& scopename) {
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
@@ -726,6 +739,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     bool m_explicitNew = false;  // Hit a "new" function
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
     int m_modWithNum = 0;  // With block number, 0=none seen
+    bool m_topIfacesSupported = false;
 
     // METHODS
     void makeImplicitNew(AstClass* nodep) {
@@ -764,8 +778,39 @@ class LinkDotFindVisitor final : public VNVisitor {
              modp = VN_AS(modp->nextp(), NodeModule)) {
             UINFO(8, "Top Module: " << modp << endl);
             m_scope = "TOP";
+
+            if (m_topIfacesSupported) {
+                for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+                    if (AstVar* const varp = VN_CAST(subnodep, Var)) {
+                        if (varp->isIfaceRef()) {
+                            AstIfaceRefDType* ifacerefp = nullptr;
+                            if (VN_IS(varp->subDTypep(), IfaceRefDType)) {
+                                ifacerefp = VN_AS(varp->subDTypep(), IfaceRefDType);
+                            }
+                            else if (VN_IS(varp->subDTypep(), BracketArrayDType)
+                                        && VN_IS(VN_AS(varp->subDTypep(), BracketArrayDType)->subDTypep(), IfaceRefDType)) {
+                                ifacerefp = VN_AS(VN_AS(varp->subDTypep(), BracketArrayDType)->subDTypep(), IfaceRefDType);
+                            }
+                            else if (VN_IS(varp->subDTypep(), UnpackArrayDType)
+                                        && VN_IS(VN_AS(varp->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
+                                ifacerefp = VN_AS(VN_AS(varp->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType);
+                            }
+
+                            if (ifacerefp && !ifacerefp->cellp()) {
+                                // A dummy cell to keep the top level interface alive and correctly optimized for default parameter values
+                                AstCell* ifacecellp = new AstCell(nodep->fileline(), nodep->fileline(), modp->name() + "__02E" + varp->name(), ifacerefp->ifaceName(), nullptr, nullptr, nullptr);
+                                ifacecellp->modp(ifacerefp->ifacep());
+                                m_curSymp = m_modSymp = m_statep->insertTopIface(ifacecellp, m_scope);
+                                { iterate(ifacecellp); }
+                            }
+                        }
+                    }
+                }
+            }
+
             m_curSymp = m_modSymp = m_statep->insertTopCell(modp, m_scope);
             { iterate(modp); }
+
             m_scope = "";
             m_curSymp = m_modSymp = nullptr;
         }
@@ -1377,8 +1422,8 @@ class LinkDotFindVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep)
-        : m_statep{statep} {
+    LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep, bool topIfacesSupported)
+        : m_statep{statep}, m_topIfacesSupported{topIfacesSupported} {
         UINFO(4, __FUNCTION__ << ": " << endl);
 
         iterate(rootp);
@@ -3167,12 +3212,12 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
+void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step, bool topIfacesSupported) {
     if (debug() >= 5 || dumpTree() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
     }
     LinkDotState state(rootp, step);
-    const LinkDotFindVisitor visitor{rootp, &state};
+    const LinkDotFindVisitor visitor{rootp, &state, topIfacesSupported};
     if (debug() >= 5 || dumpTree() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
     }
@@ -3202,15 +3247,15 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     { LinkDotResolveVisitor{rootp, &state}; }
 }
 
-void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
+void V3LinkDot::linkDotPrimary(AstNetlist* nodep, bool topIfacesSupported) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    linkDotGuts(nodep, LDS_PRIMARY);
+    linkDotGuts(nodep, LDS_PRIMARY, topIfacesSupported);
     V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTree() >= 6);
 }
 
-void V3LinkDot::linkDotParamed(AstNetlist* nodep) {
+void V3LinkDot::linkDotParamed(AstNetlist* nodep, bool topIfacesSupported) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    linkDotGuts(nodep, LDS_PARAMED);
+    linkDotGuts(nodep, LDS_PARAMED, topIfacesSupported);
     V3Global::dumpCheckGlobalTree("linkdotparam", 0, dumpTree() >= 3);
 }
 
