@@ -1371,7 +1371,7 @@ void OrderProcess::processMTasks() {
     // Create the AstExecGraph node which represents the execution
     // of the MTask graph.
     FileLine* const rootFlp = v3Global.rootp()->fileline();
-    AstExecGraph* const execGraphp = new AstExecGraph{rootFlp, "eval"};
+    AstExecGraph* const execGraphp = new AstExecGraph{rootFlp, m_tag};
     m_result.push_back(execGraphp);
 
     // Create CFuncs and bodies for each MTask.

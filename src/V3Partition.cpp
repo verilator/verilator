@@ -3150,15 +3150,15 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         }
 
         // Unblock the fake "final" mtask when this thread is finished
-        funcp->addStmtsp(
-            new AstCStmt(fl, "vlSelf->__Vm_mtaskstate_final.signalUpstreamDone(even_cycle);\n"));
+        funcp->addStmtsp(new AstCStmt(fl, "vlSelf->__Vm_mtaskstate_final__" + tag
+                                              + ".signalUpstreamDone(even_cycle);\n"));
     }
 
     // Create the fake "final" mtask state variable
     AstBasicDType* const mtaskStateDtypep
         = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
     AstVar* const varp
-        = new AstVar(fl, VVarType::MODULETEMP, "__Vm_mtaskstate_final", mtaskStateDtypep);
+        = new AstVar(fl, VVarType::MODULETEMP, "__Vm_mtaskstate_final__" + tag, mtaskStateDtypep);
     varp->valuep(new AstConst(fl, funcps.size()));
     varp->protect(false);  // Do not protect as we still have references in AstText
     modp->addStmtp(varp);
@@ -3170,6 +3170,7 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
                                       const std::vector<AstCFunc*>& funcps) {
     // FileLine used for constructing nodes below
     FileLine* const fl = v3Global.rootp()->fileline();
+    const string& tag = execGraphp->name();
 
     // Add thread function invocations to execGraph
     const auto addStrStmt = [=](const string& stmt) -> void {  //
@@ -3179,7 +3180,8 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         execGraphp->addStmtsp(new AstText(fl, text, /* tracking: */ true));
     };
 
-    addStrStmt("vlSymsp->__Vm_even_cycle = !vlSymsp->__Vm_even_cycle;\n");
+    addStrStmt("vlSymsp->__Vm_even_cycle__" + tag + " = !vlSymsp->__Vm_even_cycle__" + tag
+               + ";\n");
 
     const uint32_t last = funcps.size() - 1;
     for (uint32_t i = 0; i <= last; ++i) {
@@ -3188,17 +3190,18 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
             // The first N-1 will run on the thread pool.
             addTextStmt("vlSymsp->__Vm_threadPoolp->workerp(" + cvtToStr(i) + ")->addTask(");
             execGraphp->addStmtsp(new AstAddrOfCFunc(fl, funcp));
-            addTextStmt(", vlSelf, vlSymsp->__Vm_even_cycle);\n");
+            addTextStmt(", vlSelf, vlSymsp->__Vm_even_cycle__" + tag + ");\n");
         } else {
             // The last will run on the main thread.
             AstCCall* const callp = new AstCCall(fl, funcp);
-            callp->argTypes("vlSelf, vlSymsp->__Vm_even_cycle");
+            callp->argTypes("vlSelf, vlSymsp->__Vm_even_cycle__" + tag);
             execGraphp->addStmtsp(callp);
             addStrStmt("Verilated::mtaskId(0);\n");
         }
     }
 
-    addStrStmt("vlSelf->__Vm_mtaskstate_final.waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle);\n");
+    addStrStmt("vlSelf->__Vm_mtaskstate_final__" + tag
+               + ".waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ");\n");
 }
 
 static void implementExecGraph(AstExecGraph* const execGraphp) {
