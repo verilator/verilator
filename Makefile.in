@@ -391,7 +391,7 @@ yapf:
 FLAKE8 = flake8
 FLAKE8_FLAGS = \
 	--extend-exclude=fastcov.py \
-	--ignore=E123,E129,E251,E501,W503,W504,E701
+	--ignore=E123,E129,E251,E402,E501,W503,W504,E701
 
 PYLINT = pylint
 PYLINT_FLAGS = --disable=R0801
