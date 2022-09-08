@@ -394,7 +394,7 @@ FLAKE8_FLAGS = \
 	--ignore=E123,E129,E251,E402,E501,W503,W504,E701
 
 PYLINT = pylint
-PYLINT_FLAGS = --disable=R0801
+PYLINT_FLAGS = --score=n --disable=R0801
 
 lint-py:
 	-$(FLAKE8) $(FLAKE8_FLAGS) $(PY_PROGRAMS)
