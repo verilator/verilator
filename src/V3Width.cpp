@@ -3218,6 +3218,7 @@ private:
                     nodep->dtypeFrom(ftaskp);
                     nodep->classOrPackagep(classp);
                     if (VN_IS(ftaskp, Task)) nodep->makeStatement();
+                    processFTaskRefArgs(nodep);
                 }
                 return;
             }
