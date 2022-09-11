@@ -538,7 +538,7 @@ private:
                 || VN_IS(vdtypep, DynArrayDType)  //
                 || VN_IS(vdtypep, QueueDType)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Concatenation to form "
-                                                 << vdtypep->prettyDTypeNameQ() << "data type");
+                                                 << vdtypep->prettyDTypeNameQ() << " data type");
             }
 
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
