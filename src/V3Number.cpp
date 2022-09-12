@@ -79,8 +79,10 @@ void V3Number::v3errorEnd(std::ostringstream& str) const {
     nsstr << str.str();
     if (m_nodep) {
         m_nodep->v3errorEnd(nsstr);
-    } else {
+    } else if (m_fileline) {
         m_fileline->v3errorEnd(nsstr);
+    } else {
+        V3Error::v3errorEnd(nsstr);
     }
 }
 
