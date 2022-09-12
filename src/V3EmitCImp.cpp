@@ -551,14 +551,13 @@ public:
 
 class EmitCTrace final : EmitCFunc {
     // NODE STATE/TYPES
-    // Cleared on netlist
-    //  AstNode::user1() -> int.  Enum number
-    const VNUser1InUse m_inuser1;
+    // None allowed to support threaded emitting
 
     // MEMBERS
     const bool m_slow;  // Making slow file
     int m_enumNum = 0;  // Enumeration number (whole netlist)
     V3UniqueNames m_uniqueNames;  // For generating unique file names
+    std::unordered_map<AstNode*, int> m_enumNumMap;  // EnumDType to enumeration number
 
     // METHODS
     void openNextOutputFile() {
@@ -710,10 +709,10 @@ class EmitCTrace final : EmitCFunc {
             // Skip over refs-to-refs, but stop before final ref so can get data type name
             // Alternatively back in V3Width we could push enum names from upper typedefs
             if (AstEnumDType* const enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {
-                int enumNum = enump->user1();
+                int enumNum = m_enumNumMap[enump];
                 if (!enumNum) {
                     enumNum = ++m_enumNum;
-                    enump->user1(enumNum);
+                    m_enumNumMap[enump] = enumNum;
                     int nvals = 0;
                     puts("{\n");
                     puts("const char* " + protect("__VenumItemNames") + "[]\n");
