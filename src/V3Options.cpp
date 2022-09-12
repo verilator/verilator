@@ -1270,10 +1270,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
     DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
-    DECL_OPTION("-prefix", CbVal, [this](const char* valp) {
-        m_prefix = valp;
-        if (m_modPrefix == "") m_modPrefix = m_prefix;
-    });
+    DECL_OPTION("-prefix", Set, &m_prefix);
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
     DECL_OPTION("-prof-c", OnOff, &m_profC);
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
