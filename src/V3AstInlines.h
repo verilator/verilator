@@ -17,9 +17,9 @@
 #ifndef VERILATOR_V3ASTINLINES_H_
 #define VERILATOR_V3ASTINLINES_H_
 
-#ifndef VERILATOR_V3ASTNODES_H_
+#ifndef VERILATOR_V3AST_H_
 #error "Use V3Ast.h as the include"
-#include "V3AstNodes.h"  // This helps code analysis tools pick up symbols in V3Ast.h and V3AstNodes.h
+#include "V3Ast.h"  // This helps code analysis tools pick up symbols in V3Ast.h and relaed
 #endif
 
 //######################################################################
@@ -89,6 +89,74 @@ inline void AstIfaceRefDType::cloneRelink() {
     if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep();
     if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
     if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep();
+}
+
+AstRange::AstRange(FileLine* fl, int left, int right)
+    : ASTGEN_SUPER_Range(fl) {
+    setOp2p(new AstConst(fl, left));
+    setOp3p(new AstConst(fl, right));
+}
+AstRange::AstRange(FileLine* fl, const VNumRange& range)
+    : ASTGEN_SUPER_Range(fl) {
+    setOp2p(new AstConst(fl, range.left()));
+    setOp3p(new AstConst(fl, range.right()));
+}
+
+int AstRange::leftConst() const {
+    AstConst* const constp = VN_CAST(leftp(), Const);
+    return (constp ? constp->toSInt() : 0);
+}
+int AstRange::rightConst() const {
+    AstConst* const constp = VN_CAST(rightp(), Const);
+    return (constp ? constp->toSInt() : 0);
+}
+
+int AstQueueDType::boundConst() const {
+    AstConst* const constp = VN_CAST(boundp(), Const);
+    return (constp ? constp->toSInt() : 0);
+}
+
+AstPin::AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
+    : ASTGEN_SUPER_Pin(fl)
+    , m_pinNum{pinNum}
+    , m_name{varname->name()} {
+    setNOp1p(exprp);
+}
+
+AstDpiExportUpdated::AstDpiExportUpdated(FileLine* fl, AstVarScope* varScopep)
+    : ASTGEN_SUPER_DpiExportUpdated(fl) {
+    addOp1p(new AstVarRef{fl, varScopep, VAccess::WRITE});
+}
+
+AstVarScope* AstDpiExportUpdated::varScopep() const { return VN_AS(op1p(), VarRef)->varScopep(); }
+
+AstPackArrayDType::AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp,
+                                     AstRange* rangep)
+    : ASTGEN_SUPER_PackArrayDType(fl) {
+    childDTypep(dtp);  // Only for parser
+    refDTypep(nullptr);
+    setOp2p(rangep);
+    dtypep(nullptr);  // V3Width will resolve
+    const int width = subDTypep()->width() * rangep->elementsConst();
+    widthForce(width, width);
+}
+
+AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
+    : ASTGEN_SUPER_PackArrayDType(fl) {
+    refDTypep(dtp);
+    setOp2p(rangep);
+    dtypep(this);
+    const int width = subDTypep()->width() * rangep->elementsConst();
+    widthForce(width, width);
+}
+
+int AstBasicDType::hi() const { return (rangep() ? rangep()->hiConst() : m.m_nrange.hi()); }
+int AstBasicDType::lo() const { return (rangep() ? rangep()->loConst() : m.m_nrange.lo()); }
+int AstBasicDType::elements() const {
+    return (rangep() ? rangep()->elementsConst() : m.m_nrange.elements());
+}
+bool AstBasicDType::littleEndian() const {
+    return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian());
 }
 
 #endif  // Guard

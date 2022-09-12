@@ -155,6 +155,51 @@ void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs, const V3Numb
     }
 }
 
+void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int wantwidthmin,
+                         AstRange* rangep) {
+    // wantwidth=0 means figure it out, but if a widthmin is >=0
+    //    we allow width 0 so that {{0{x}},y} works properly
+    // wantwidthmin=-1:  default, use wantwidth if it is non zero
+    m.m_keyword = kwd;
+    // Implicitness: // "parameter X" is implicit and sized from initial
+    // value, "parameter reg x" not
+    if (keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT) {
+        if (rangep || wantwidth) m.m_keyword = VBasicDTypeKwd::LOGIC;
+    }
+    if (numer == VSigning::NOSIGN) {
+        if (keyword().isSigned()) {
+            numer = VSigning::SIGNED;
+        } else if (keyword().isUnsigned()) {
+            numer = VSigning::UNSIGNED;
+        }
+    }
+    numeric(numer);
+    if (!rangep && (wantwidth || wantwidthmin >= 0)) {  // Constant width
+        if (wantwidth > 1) m.m_nrange.init(wantwidth - 1, 0, false);
+        const int wmin = wantwidthmin >= 0 ? wantwidthmin : wantwidth;
+        widthForce(wantwidth, wmin);
+    } else if (!rangep) {  // Set based on keyword properties
+        // V3Width will pull from this width
+        if (keyword().width() > 1 && !isOpaque()) {
+            m.m_nrange.init(keyword().width() - 1, 0, false);
+        }
+        widthForce(keyword().width(), keyword().width());
+    } else {
+        widthForce(rangep->elementsConst(),
+                   rangep->elementsConst());  // Maybe unknown if parameters underneath it
+    }
+    setNOp1p(rangep);
+    dtypep(this);
+}
+
+void AstBasicDType::cvtRangeConst() {
+    if (rangep() && VN_IS(rangep()->leftp(), Const) && VN_IS(rangep()->rightp(), Const)) {
+        m.m_nrange = VNumRange{rangep()->leftConst(), rangep()->rightConst()};
+        rangep()->unlinkFrBackWithNext()->deleteTree();
+        rangep(nullptr);
+    }
+}
+
 int AstBasicDType::widthAlignBytes() const {
     if (width() <= 8) {
         return 1;
@@ -1368,6 +1413,18 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "class:" << name();
 }
+const char* AstClassRefDType::broken() const {
+    BROKEN_RTN(m_classp && !m_classp->brokeExists());
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
+    return nullptr;
+}
+void AstClassRefDType::cloneRelink() {
+    if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
+    if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+        m_classOrPackagep = m_classOrPackagep->clonep();
+    }
+}
+string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (immediate()) str << " [IMMEDIATE]";
@@ -1384,6 +1441,11 @@ void AstEnumItemRef::dump(std::ostream& str) const {
     } else {
         str << "UNLINKED";
     }
+}
+const char* AstEnumItemRef::broken() const {
+    BROKEN_RTN(m_itemp && !m_itemp->brokeExists());
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
+    return nullptr;
 }
 void AstIfaceRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
@@ -1532,6 +1594,23 @@ void AstRefDType::dump(std::ostream& str) const {
     } else {
         str << " -> UNLINKED";
     }
+}
+const char* AstRefDType::broken() const {
+    BROKEN_RTN(m_typedefp && !m_typedefp->brokeExists());
+    BROKEN_RTN(m_refDTypep && !m_refDTypep->brokeExists());
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
+    return nullptr;
+}
+void AstRefDType::cloneRelink() {
+    if (m_typedefp && m_typedefp->clonep()) m_typedefp = m_typedefp->clonep();
+    if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
+    if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+        m_classOrPackagep = m_classOrPackagep->clonep();
+    }
+}
+AstNodeDType* AstRefDType::subDTypep() const {
+    if (typedefp()) return typedefp()->subDTypep();
+    return refDTypep();  // Maybe nullptr
 }
 void AstNodeUOrStructDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);

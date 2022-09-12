@@ -711,7 +711,9 @@ parser.add_argument('infiles', nargs='*', help='list of input .cpp filenames')
 Args = parser.parse_args()
 
 read_types(Args.I + "/V3Ast.h")
-read_types(Args.I + "/V3AstNodes.h")
+read_types(Args.I + "/V3AstNodeDType.h")
+read_types(Args.I + "/V3AstNodeMath.h")
+read_types(Args.I + "/V3AstNodeOther.h")
 
 # Compute derived properties over the whole AstNode hierarchy
 Nodes["Node"].complete()
