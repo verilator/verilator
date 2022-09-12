@@ -557,7 +557,7 @@ class EmitCTrace final : EmitCFunc {
     const bool m_slow;  // Making slow file
     int m_enumNum = 0;  // Enumeration number (whole netlist)
     V3UniqueNames m_uniqueNames;  // For generating unique file names
-    std::unordered_map<AstNode*, int> m_enumNumMap; // EnumDType to enumeration number
+    std::unordered_map<AstNode*, int> m_enumNumMap;  // EnumDType to enumeration number
 
     // METHODS
     void openNextOutputFile() {
