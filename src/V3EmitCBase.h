@@ -100,7 +100,7 @@ public:
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
     }
 
-    static AstCFile* newCFile(const string& filename, bool slow, bool source);
+    static AstCFile* newCFile(const string& filename, bool slow, bool source, bool add = true);
     string cFuncArgs(const AstCFunc* nodep);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
