@@ -112,7 +112,7 @@ V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
 
 V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
     if (nodedtypep->isString()) {
-        init(nodep, 0);
+        init(nodep);
         setString("");
     } else if (nodedtypep->isDouble()) {
         init(nodep, 64);

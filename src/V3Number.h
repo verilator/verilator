@@ -478,10 +478,9 @@ public:
     // CONSTRUCTORS
     explicit V3Number(AstNode* nodep) { init(nodep, 1); }
     V3Number(AstNode* nodep, int width) {  // 0=unsized
-        init(nodep, std::max(width, 1), width > 0);
+        init(nodep, width, width > 0);
     }
     V3Number(AstNode* nodep, int width, uint32_t value, bool sized = true) {
-        UASSERT(width > 0, "Width must be a positive number.");
         init(nodep, width, sized);
         m_data.num()[0].m_value = value;
         opCleanThis();
@@ -496,13 +495,13 @@ public:
     V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
     class String {};
     V3Number(String, AstNode* nodep, const string& value) {
-        init(nodep, 0);
+        init(nodep);
         setString(value);
         m_data.m_fromString = true;
     }
     class Null {};
     V3Number(Null, AstNode* nodep) {
-        init(nodep, 0);
+        init(nodep);
         m_data.setLogic();
         m_data.m_isNull = true;
         m_data.m_autoExtend = true;
@@ -533,9 +532,13 @@ public:
 
 private:
     void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
-    void init(AstNode* nodep, int swidth, bool sized = true) {
+    void init(AstNode* nodep, int swidth = -1, bool sized = true) {
         setNames(nodep);
-        if (swidth) {
+        if (swidth >= 0) {
+            if (swidth == 0) {
+                swidth = 1;
+                sized = false;
+            }
             m_data.setLogic();
             m_data.resize(swidth);
             m_data.m_sized = sized;
