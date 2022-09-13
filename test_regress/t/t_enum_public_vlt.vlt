@@ -1,0 +1,11 @@
+// DESCRIPTION: Verilator: Verilog Test verilator_config file
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2022 by Robert Newgard
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+public -enum  "t_enum_1"
+public -enum  "t_enum_2"
+public -enum  "t_enum_3"
