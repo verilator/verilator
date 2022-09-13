@@ -78,7 +78,7 @@ private:
     // At least 2 words (64 fourstate bits). 4 words (128 fourstate bits) in most cases,
     // i.e. when std::string has 32 bytes.
     static constexpr int INLINE_WORDS
-        = vlstd::max(2ul, sizeof(std::string) / sizeof(ValueAndX),
+        = vlstd::max(2UL, sizeof(std::string) / sizeof(ValueAndX),
                      sizeof(std::vector<ValueAndX>) / sizeof(ValueAndX));
     // When m_width > MAX_INLINE_WIDTH number is stored in m_dynamicNumber.
     // Otherwise number is stored in m_inlineNumber.

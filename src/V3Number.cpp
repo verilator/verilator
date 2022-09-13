@@ -947,7 +947,7 @@ string V3Number::toString() const {
 }
 
 V3Hash V3Number::toHash() const {
-    V3Hash hash(width());
+    V3Hash hash{width()};
     if (isString()) {
         for (int i = 0; i < words(); ++i) { hash += 0; }
     } else {
@@ -2174,30 +2174,28 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
             } else {
                 m_data.str() = lhs.m_data.str();
             }
+        } else if (VL_UNLIKELY(lhs.isString())) {
+            // Non-compatible types, erase value.
+            setZero();
         } else {
-            if (VL_UNLIKELY(lhs.isString())) {
-                // Non-compatible types, erase value.
-                setZero();
-            } else {
-                int word = 0;
-                for (; word < std::min(words(), lhs.words()); ++word) {
-                    if (ignoreXZ) {
-                        const auto& lhsword = lhs.m_data.num()[word];
-                        m_data.num()[word] = {lhsword.m_value & ~lhsword.m_valueX, 0};
-                    } else {
-                        m_data.num()[word] = lhs.m_data.num()[word];
-                    }
+            int word = 0;
+            for (; word < std::min(words(), lhs.words()); ++word) {
+                if (ignoreXZ) {
+                    const auto& lhsword = lhs.m_data.num()[word];
+                    m_data.num()[word] = {lhsword.m_value & ~lhsword.m_valueX, 0};
+                } else {
+                    m_data.num()[word] = lhs.m_data.num()[word];
                 }
-                // Clear unused bits in last word
-                const unsigned bitsCountInLastWord = std::min(lhs.width(), width()) % 32;
-                if (bitsCountInLastWord > 0) {
-                    const uint32_t mask = (1 << bitsCountInLastWord) - 1;
-                    m_data.num()[word - 1].m_value &= mask;
-                    m_data.num()[word - 1].m_valueX &= mask;
-                }
-                // Clear unused words
-                for (; word < words(); ++word) { m_data.num()[word] = {0, 0}; }
             }
+            // Clear unused bits in last word
+            const unsigned bitsCountInLastWord = std::min(lhs.width(), width()) % 32;
+            if (bitsCountInLastWord > 0) {
+                const uint32_t mask = (1 << bitsCountInLastWord) - 1;
+                m_data.num()[word - 1].m_value &= mask;
+                m_data.num()[word - 1].m_valueX &= mask;
+            }
+            // Clear unused words
+            for (; word < words(); ++word) { m_data.num()[word] = {0, 0}; }
         }
     }
     return *this;
