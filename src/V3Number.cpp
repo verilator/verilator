@@ -949,7 +949,7 @@ string V3Number::toString() const {
 V3Hash V3Number::toHash() const {
     V3Hash hash{width()};
     if (isString()) {
-        for (int i = 0; i < words(); ++i) { hash += 0; }
+        hash += V3Hash{m_data.str()};
     } else {
         for (int i = 0; i < words(); ++i) { hash += m_data.num()[i].m_value; }
     }
