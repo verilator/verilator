@@ -966,14 +966,14 @@ uint8_t V3Number::dataByte(int byte) const {
 }
 
 bool V3Number::isAllZ() const {
-    if (isString()) return false;
+    if (isDouble() || isString()) return false;
     for (int i = 0; i < width(); i++) {
         if (!bitIsZ(i)) return false;
     }
     return true;
 }
 bool V3Number::isAllX() const {
-    if (isString()) return false;
+    if (isDouble() || isString()) return false;
     uint32_t mask = hiWordMask();
     for (int i = words() - 1; i >= 0; --i) {
         const ValueAndX v = m_data.num()[i];
