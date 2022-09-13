@@ -564,22 +564,6 @@ T const& as_const(T& v) {
     return v;
 }
 
-// constexpr std::max with values passed as value (required by constexpr before C++14)
-template <class T>
-constexpr T max(T a, T b) {
-    return a > b ? a : b;
-}
-
-// non-standard variable-argument max function
-template <typename T0, typename... TN>
-constexpr T0 max(T0 v0, TN... vn) {
-    return max(v0, max(vn...));
-}
-template <typename T>
-constexpr T max(T v) {
-    return v;
-}
-
 };  // namespace vlstd
 
 //=========================================================================

@@ -22,6 +22,7 @@
 
 #include "V3Error.h"
 #include "V3Hash.h"
+#include "V3StdFuture.h"
 
 #include <algorithm>
 #include <array>
