@@ -352,8 +352,8 @@ class V3Number final {
 
     // MEMBERS
     V3NumberData m_data;
-    AstNode* m_nodep;  // Parent node
-    FileLine* m_fileline;
+    AstNode* m_nodep = nullptr;  // Parent node
+    FileLine* m_fileline = nullptr;
 
     // METHODS
     V3Number& setSingleBits(char value);
