@@ -111,12 +111,7 @@ public:
         , m_fromString{false}
         , m_autoExtend{false} {}
 
-    ~V3NumberData() {
-        if (isDynamicNumber())
-            destroyDynamicNumber();
-        else if (isString())
-            destroyString();
-    }
+    ~V3NumberData() { destroyStoredValue(); }
 
     V3NumberData(const V3NumberData& other)
         : m_width{other.m_width}
@@ -137,20 +132,14 @@ public:
 
     V3NumberData& operator=(const V3NumberData& other) {
         if (other.isInlineNumber()) {
-            if (isDynamicNumber())
-                destroyDynamicNumber();
-            else if (isString())
-                destroyString();
+            destroyStoredValue();
             initInlineNumber(other.m_inlineNumber);
         } else if (other.isDynamicNumber()) {
             reinitWithOrAssignDynamicNumber(other.m_dynamicNumber);
         } else if (other.isString()) {
             reinitWithOrAssignString(other.m_string);
         } else {
-            if (isDynamicNumber())
-                destroyDynamicNumber();
-            else if (isString())
-                destroyString();
+            destroyStoredValue();
         }
         m_width = other.m_width;
         m_type = other.m_type;
@@ -182,20 +171,14 @@ public:
 
     V3NumberData& operator=(V3NumberData&& other) {
         if (other.isInlineNumber()) {
-            if (isDynamicNumber())
-                destroyDynamicNumber();
-            else if (isString())
-                destroyString();
+            destroyStoredValue();
             initInlineNumber(other.m_inlineNumber);
         } else if (other.isDynamicNumber()) {
             reinitWithOrAssignDynamicNumber(std::move(other.m_dynamicNumber));
         } else if (other.isString()) {
             reinitWithOrAssignString(std::move(other.m_string));
         } else {
-            if (isDynamicNumber())
-                destroyDynamicNumber();
-            else if (isString())
-                destroyString();
+            destroyStoredValue();
         }
         m_width = other.m_width;
         m_type = other.m_type;
@@ -272,11 +255,7 @@ public:
     }
 
     void setDouble() {
-        if (isString())
-            destroyString();
-        else if (isDynamicNumber())
-            destroyDynamicNumber();
-
+        destroyStoredValue();
         if (!isInlineNumber()) initInlineNumber();
         m_type = V3NumberDataType::DOUBLE;
         resize(64);
@@ -324,6 +303,12 @@ private:
 
     inline void destroyDynamicNumber() { m_dynamicNumber.~vector(); }
     inline void destroyString() { m_string.~string(); }
+    inline void destroyStoredValue() {
+        if (isString())
+            destroyString();
+        else if (isDynamicNumber())
+            destroyDynamicNumber();
+    }
 
     template <typename T>
     inline void reinitWithOrAssignDynamicNumber(T&& s) {
