@@ -4,13 +4,14 @@
 
 import argparse
 import glob
+import os
 import re
 import sys
 # from pprint import pprint, pformat
 
 
 class Node:
-    def __init__(self, name, superClass):
+    def __init__(self, name, superClass, file, lineno):
         self._name = name
         self._superClass = superClass
         self._subClasses = []  # Initially list, but tuple after completion
@@ -19,6 +20,9 @@ class Node:
         self._typeId = None  # Concrete type identifier number for leaf classes
         self._typeIdMin = None  # Lowest type identifier number for class
         self._typeIdMax = None  # Highest type identifier number for class
+        self._file = file  # File this class is defined in
+        self._lineno = lineno  # Line this class is defined on
+        self._ordIdx = None  # Ordering index of this class
 
     @property
     def name(self):
@@ -32,6 +36,14 @@ class Node:
     def isCompleted(self):
         return isinstance(self._subClasses, tuple)
 
+    @property
+    def file(self):
+        return self._file
+
+    @property
+    def lineno(self):
+        return self._lineno
+
     # Pre completion methods
     def addSubClass(self, subClass):
         assert not self.isCompleted
@@ -39,20 +51,25 @@ class Node:
 
     # Computes derived properties over entire class hierarchy.
     # No more changes to the hierarchy are allowed once this was called
-    def complete(self, typeId=0):
+    def complete(self, typeId=0, ordIdx=0):
         assert not self.isCompleted
         # Sort sub-classes and convert to tuple, which marks completion
-        self._subClasses = tuple(sorted(self._subClasses,
-                                        key=lambda _: _.name))
+        self._subClasses = tuple(
+            sorted(self._subClasses,
+                   key=lambda _: (bool(_._subClasses), _.name)))
+
+        self._ordIdx = ordIdx
+        ordIdx = ordIdx + 1
+
         # Leaves
         if self.isLeaf:
             self._typeId = typeId
-            return typeId + 1
+            return typeId + 1, ordIdx
 
         # Non-leaves
         for subClass in self._subClasses:
-            typeId = subClass.complete(typeId)
-        return typeId
+            typeId, ordIdx = subClass.complete(typeId, ordIdx)
+        return typeId, ordIdx
 
     # Post completion methods
     @property
@@ -116,6 +133,11 @@ class Node:
         if self._typeIdMax is None:
             self._typeIdMax = max(_.typeIdMax for _ in self.allSubClasses)
         return self._typeIdMax
+
+    @property
+    def ordIdx(self):
+        assert self.isCompleted
+        return self._ordIdx
 
     def isSubClassOf(self, other):
         assert self.isCompleted
@@ -472,7 +494,7 @@ class Cpt:
 
 def read_types(filename):
     with open(filename) as fh:
-        for line in fh:
+        for (lineno, line) in enumerate(fh, start=1):
             line = re.sub(r'//.*$', '', line)
             if re.match(r'^\s*$', line):
                 continue
@@ -485,12 +507,12 @@ def read_types(filename):
                 if re.search(r'Ast', supern) or classn == "AstNode":
                     classn = re.sub(r'^Ast', '', classn)
                     supern = re.sub(r'^Ast', '', supern)
-                    if supern:
-                        superClass = Nodes[supern]
-                        node = Node(classn, superClass)
-                        Nodes[supern].addSubClass(node)
-                    else:
-                        node = Node(classn, None)
+                    if not supern:
+                        sys.exit("%Error: 'Ast{}' has no super-class".format(
+                            classn))
+                    superClass = Nodes[supern]
+                    node = Node(classn, superClass, filename, lineno)
+                    superClass.addSubClass(node)
                     Nodes[classn] = node
 
 
@@ -701,6 +723,9 @@ Version 2.0.
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
 parser.add_argument('-I', action='store', help='source code include directory')
+parser.add_argument('--astdef',
+                    action='append',
+                    help='add AST definition file (relative to -I)')
 parser.add_argument('--classes',
                     action='store_true',
                     help='makes class declaration files')
@@ -710,10 +735,13 @@ parser.add_argument('infiles', nargs='*', help='list of input .cpp filenames')
 
 Args = parser.parse_args()
 
-read_types(Args.I + "/V3Ast.h")
-read_types(Args.I + "/V3AstNodeDType.h")
-read_types(Args.I + "/V3AstNodeMath.h")
-read_types(Args.I + "/V3AstNodeOther.h")
+# Set up the root AstNode type. It is standalone so we don't need to parse the
+# sources for this.
+Nodes["Node"] = Node("Node", None, "AstNode", 1)
+
+# Read Ast node definitions
+for filename in Args.astdef:
+    read_types(os.path.join(Args.I, filename))
 
 # Compute derived properties over the whole AstNode hierarchy
 Nodes["Node"].complete()
@@ -732,6 +760,36 @@ for node in SortedNodes:
             sys.exit(
                 "%Error: Non-final AstNode subclasses must be named AstNode*: Ast"
                 + node.name)
+
+# Check ordering of node definitions
+files = tuple(sorted(set(_.file for _ in SortedNodes)))
+
+hasOrderingError = False
+for file in files:
+    nodes = tuple(filter(lambda _, f=file: _.file == f, SortedNodes))
+    expectOrder = tuple(sorted(nodes, key=lambda _: (_.isLeaf, _.ordIdx)))
+    actualOrder = tuple(sorted(nodes, key=lambda _: _.lineno))
+    expect = {
+        node: pred
+        for pred, node in zip((None, ) + expectOrder[:-1], expectOrder)
+    }
+    actual = {
+        node: pred
+        for pred, node in zip((None, ) + actualOrder[:-1], actualOrder)
+    }
+    for node in nodes:
+        if expect[node] != actual[node]:
+            hasOrderingError = True
+            pred = expect[node]
+            print(file + ":" + str(node.lineno) +
+                  ": %Error: Definition of 'Ast" + node.name +
+                  "' is out of order. Should be " +
+                  ("right after 'Ast" + pred.name +
+                   "'" if pred else "first in file") + ".",
+                  file=sys.stderr)
+
+if hasOrderingError:
+    sys.exit("%Error: Stopping due to out of order definitions listed above")
 
 read_stages(Args.I + "/Verilator.cpp")
 

@@ -93,15 +93,14 @@ inline void AstIfaceRefDType::cloneRelink() {
 
 AstRange::AstRange(FileLine* fl, int left, int right)
     : ASTGEN_SUPER_Range(fl) {
-    setOp2p(new AstConst(fl, left));
-    setOp3p(new AstConst(fl, right));
+    setOp2p(new AstConst{fl, static_cast<uint32_t>(left)});
+    setOp3p(new AstConst{fl, static_cast<uint32_t>(right)});
 }
 AstRange::AstRange(FileLine* fl, const VNumRange& range)
     : ASTGEN_SUPER_Range(fl) {
-    setOp2p(new AstConst(fl, range.left()));
-    setOp3p(new AstConst(fl, range.right()));
+    setOp2p(new AstConst{fl, static_cast<uint32_t>(range.left())});
+    setOp3p(new AstConst{fl, static_cast<uint32_t>(range.right())});
 }
-
 int AstRange::leftConst() const {
     AstConst* const constp = VN_CAST(leftp(), Const);
     return (constp ? constp->toSInt() : 0);
@@ -140,7 +139,6 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType
     const int width = subDTypep()->width() * rangep->elementsConst();
     widthForce(width, width);
 }
-
 AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
     : ASTGEN_SUPER_PackArrayDType(fl) {
     refDTypep(dtp);
@@ -157,6 +155,60 @@ int AstBasicDType::elements() const {
 }
 bool AstBasicDType::littleEndian() const {
     return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian());
+}
+
+bool AstActive::hasInitial() const { return m_sensesp->hasInitial(); }
+bool AstActive::hasSettle() const { return m_sensesp->hasSettle(); }
+bool AstActive::hasClocked() const { return m_sensesp->hasClocked(); }
+
+AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNode* exprsp)
+    : ASTGEN_SUPER_ElabDisplay(fl) {
+    setOp1p(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp});
+    m_displayType = dispType;
+}
+
+AstCStmt::AstCStmt(FileLine* fl, const string& textStmt)
+    : ASTGEN_SUPER_CStmt(fl) {
+    addNOp1p(new AstText{fl, textStmt, true});
+}
+
+AstCMath::AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut)
+    : ASTGEN_SUPER_CMath(fl)
+    , m_cleanOut{cleanOut}
+    , m_pure{true} {
+    addNOp1p(new AstText{fl, textStmt, true});
+    if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+}
+
+AstVarRef::AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access)
+    : ASTGEN_SUPER_VarRef(fl, varp->name(), varp, access) {}
+// This form only allowed post-link (see above)
+AstVarRef::AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access)
+    : ASTGEN_SUPER_VarRef(fl, varscp->varp()->name(), varscp->varp(), access) {
+    varScopep(varscp);
+}
+bool AstVarRef::same(const AstVarRef* samep) const {
+    if (varScopep()) {
+        return (varScopep() == samep->varScopep() && access() == samep->access());
+    } else {
+        return (selfPointer() == samep->selfPointer() && varp()->name() == samep->varp()->name()
+                && access() == samep->access());
+    }
+}
+bool AstVarRef::sameNoLvalue(AstVarRef* samep) const {
+    if (varScopep()) {
+        return (varScopep() == samep->varScopep());
+    } else {
+        return (selfPointer() == samep->selfPointer()
+                && (!selfPointer().empty() || !samep->selfPointer().empty())
+                && varp()->name() == samep->varp()->name());
+    }
+}
+
+AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const VAccess& access)
+    : ASTGEN_SUPER_VarXRef(fl, varp->name(), varp, access)
+    , m_dotted{dotted} {
+    dtypeFrom(varp);
 }
 
 #endif  // Guard
