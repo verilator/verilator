@@ -290,6 +290,23 @@ public:
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
 };
 
+class AstStrengthSpec final : public AstNode {
+private:
+    VStrength m_s0;  // Drive 0 strength
+    VStrength m_s1;  // Drive 1 strength
+
+public:
+    AstStrengthSpec(FileLine* fl, VStrength s0, VStrength s1)
+        : ASTGEN_SUPER_StrengthSpec(fl)
+        , m_s0{s0}
+        , m_s1{s1} {}
+
+    ASTNODE_NODE_FUNCS(StrengthSpec)
+    VStrength strength0() { return m_s0; }
+    VStrength strength1() { return m_s1; }
+    virtual void dump(std::ostream& str) const override;
+};
+
 class AstGatePin final : public AstNodeMath {
     // Possibly expand a gate primitive input pin value to match the range of the gate primitive
 public:
@@ -2094,6 +2111,7 @@ private:
     bool m_isRand : 1;  // Random variable
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
+    bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
     bool m_isStatic : 1;  // Static C variable (for Verilog see instead isAutomatic)
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
@@ -2134,6 +2152,7 @@ private:
         m_isRand = false;
         m_isConst = false;
         m_isContinuously = false;
+        m_hasStrengthAssignment = false;
         m_isStatic = false;
         m_isPulldown = false;
         m_isPullup = false;
@@ -2297,6 +2316,8 @@ public:
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
     void funcLocal(bool flag) { m_funcLocal = flag; }
     void funcReturn(bool flag) { m_funcReturn = flag; }
+    void hasStrengthAssignment(bool flag) { m_hasStrengthAssignment = flag; }
+    bool hasStrengthAssignment() { return m_hasStrengthAssignment; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isDpiOpenArray() const { return m_isDpiOpenArray; }
     bool isHideLocal() const { return m_isHideLocal; }
@@ -2330,6 +2351,7 @@ public:
     bool isIfaceRef() const { return (varType() == VVarType::IFACEREF); }
     bool isIfaceParent() const { return m_isIfaceParent; }
     bool isSignal() const { return varType().isSignal(); }
+    bool isNet() const { return varType().isNet(); }
     bool isTemp() const { return varType().isTemp(); }
     bool isToggleCoverable() const {
         return ((isIO() || isSignal())
@@ -3630,6 +3652,8 @@ public:
     AstAssignW(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignW)
+    AstStrengthSpec* strengthSpecp() const { return VN_AS(op4p(), StrengthSpec); }
+    void strengthSpecp(AstStrengthSpec* const strengthSpecp) { setOp4p((AstNode*)strengthSpecp); }
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignW(this->fileline(), lhsp, rhsp);
     }

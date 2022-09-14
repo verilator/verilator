@@ -84,9 +84,13 @@ AstArg* V3ParseGrammar::argWrapList(AstNode* nodep) {
 }
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
-    return new AstAssignW(
-        fileline, new AstVarRef(fileline, name, VAccess::WRITE),
-        new AstConst(fileline, AstConst::StringToParse(), (value ? "'1" : "'0")));
+    AstAssignW* assignp
+        = new AstAssignW{fileline, new AstVarRef{fileline, name, VAccess::WRITE},
+                         new AstConst{fileline, AstConst::StringToParse{}, (value ? "'1" : "'0")}};
+    AstStrengthSpec* strengthSpecp
+        = new AstStrengthSpec{fileline, VStrength::SUPPLY, VStrength::SUPPLY};
+    assignp->strengthSpecp(strengthSpecp);
+    return assignp;
 }
 
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
