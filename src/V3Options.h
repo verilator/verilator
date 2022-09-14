@@ -283,7 +283,7 @@ private:
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
     bool m_xmlOnly = false;         // main switch: --xml-only
 
-    int         m_buildJobs = 1;    // main switch: -j
+    int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_dumpTree = 0;     // main switch: --dump-tree

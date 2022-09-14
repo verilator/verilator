@@ -14,7 +14,7 @@ top_filename("t/t_flag_werror.v");
 
 lint(
     fails => 1,
-    verilator_flags => [qw(-j 0 --build)],
+    verilator_flags => [qw(--build-jobs -1 --build)],
     expect_filename => $Self->{golden_filename},
     );
 
