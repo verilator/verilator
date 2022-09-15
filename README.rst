@@ -28,7 +28,7 @@ Welcome to Verilator
      - |Logo|
    * - |verilator multithreaded performance|
      - **Fast**
-        * Outperforms many commercial simulators
+        * Outperforms many closed-source commercial simulators
         * Single- and multi-threaded output models
    * - **Widely Used**
         * Wide industry and academic deployment
@@ -55,20 +55,19 @@ performing lint checks, and optionally inserting assertion checks and
 coverage-analysis points. It outputs single- or multi-threaded .cpp and .h
 files, the "Verilated" code.
 
-The user writes a little C++/SystemC wrapper file, which instantiates the
-"Verilated" model of the user's top level module. These C++/SystemC files
-are then compiled by a C++ compiler (gcc/clang/MSVC++). Executing the
-resulting executable performs the design simulation. Verilator also
-supports linking Verilated generated libraries, optionally encrypted, into
-other simulators.
+These Verilated C++/SystemC files are then compiled by a C++ compiler
+(gcc/clang/MSVC++), optionally along with a user's own C++/SystemC wrapper
+file to instantiate the Verilated model. Executing the resulting executable
+performs the design simulation. Verilator also supports linking Verilated
+generated libraries, optionally encrypted, into other simulators.
 
 Verilator may not be the best choice if you are expecting a full featured
-replacement for Incisive, ModelSim/Questa, VCS or another commercial
-Verilog simulator, or if you are looking for a behavioral Verilog simulator
-e.g. for a quick class project (we recommend `Icarus Verilog`_ for this.)
-However, if you are looking for a path to migrate SystemVerilog to C++ or
-SystemC, or your team is comfortable writing just a touch of C++ code,
-Verilator is the tool for you.
+replacement for a closed-source Verilog simulator, need SDF annotation,
+mixed-signal simulation, or are doing a quick class project (we recommend
+`Icarus Verilog`_ for classwork.)  However, if you are looking for a path
+to migrate SystemVerilog to C++/SystemC, or want high speed simulation of
+synthesizable designs containing limited verification constructs, Verilator
+is the tool for you.
 
 
 Performance
@@ -85,9 +84,11 @@ multithreading (yielding 200-1000x total over interpreted simulators).
 
 Verilator has typically similar or better performance versus the
 closed-source Verilog simulators (Carbon Design Systems Carbonator,
-Modelsim, Cadence Incisive/NC-Verilog, Synopsys VCS, VTOC, and Pragmatic
-CVer/CVC). But, Verilator is open-sourced, so you can spend on computes
-rather than licenses. Thus Verilator gives you the best cycles/dollar.
+Modelsim/Questa, Cadence Incisive/NC-Verilog, Synopsys VCS, VTOC, and
+Pragmatic CVer/CVC). But, Verilator is open-sourced, so you can spend on
+computes rather than licenses. Thus Verilator gives you the best
+cycles/dollar.
+
 
 Installation & Documentation
 ============================
