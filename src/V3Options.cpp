@@ -41,6 +41,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <thread>
 #include <set>
 
 #include "config_rev.h"
@@ -1006,6 +1007,17 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-bin", Set, &m_bin);
     DECL_OPTION("-build", Set, &m_build);
+    DECL_OPTION("-build-jobs", CbVal, [this, fl](const char* valp) {
+        int val = std::atoi(valp);
+        if (val < 0) {
+            fl->v3fatal("--build-jobs requires a non-negative integer, but '" << valp
+                                                                              << "' was passed");
+            val = 1;
+        } else if (val == 0) {
+            val = std::thread::hardware_concurrency();
+        }
+        m_buildJobs = val;
+    });
 
     DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
     DECL_OPTION("-cc", CbCall, [this]() { ccSet(); });
@@ -1514,14 +1526,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (!std::strcmp(argv[i], "-j")
             || !std::strcmp(argv[i], "--j")) {  // Allow gnu -- switches
             ++i;
-            m_buildJobs = 0;  // Unlimited parallelism
+            int val = 0;
             if (i < argc && isdigit(argv[i][0])) {
-                m_buildJobs = std::atoi(argv[i]);
-                if (m_buildJobs <= 0) {
-                    fl->v3error("-j accepts positive integer, but '" << argv[i] << "' is passed");
+                val = atoi(argv[i]);
+                if (val < 0) {
+                    fl->v3error("-j requires a non-negative integer argument, but '"
+                                << argv[i] << "' was passed");
+                    val = 1;  // Fall-back value, though we will exit on error.
+                } else if (val == 0) {
+                    val = std::thread::hardware_concurrency();
                 }
                 ++i;
             }
+            if (m_buildJobs == -1) m_buildJobs = val;
         } else if (argv[i][0] == '-' || argv[i][0] == '+') {
             const char* argvNoDashp = (argv[i][1] == '-') ? (argv[i] + 2) : (argv[i] + 1);
             if (const int consumed = parser.parse(i, argc, argv)) {
@@ -1553,6 +1570,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             ++i;
         }
     }
+    if (m_buildJobs == -1) m_buildJobs = 1;
 }
 
 //======================================================================
