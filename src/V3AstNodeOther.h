@@ -191,9 +191,8 @@ private:
     string m_name;  ///< Filename
 public:
     AstNodeFile(VNType t, FileLine* fl, const string& name)
-        : AstNode(t, fl) {
-        m_name = name;
-    }
+        : AstNode(t, fl)
+        , m_name{name} {}
     ASTNODE_BASE_FUNCS(NodeFile)
     virtual void dump(std::ostream& str) const override;
     virtual string name() const override { return m_name; }
@@ -599,10 +598,9 @@ private:
 
 protected:
     // Node that puts text into the output stream
-    AstNodeText(VNType t, FileLine* fl, const string& textp)
-        : AstNode{t, fl} {
-        m_text = textp;  // Copy it
-    }
+    AstNodeText(VNType t, FileLine* fl, const string& text)
+        : AstNode{t, fl}
+        , m_text{text} {}
 
 public:
     ASTNODE_BASE_FUNCS(NodeText)
@@ -638,10 +636,10 @@ private:
 
 public:
     AstActive(FileLine* fl, const string& name, AstSenTree* sensesp)
-        : ASTGEN_SUPER_Active(fl) {
-        m_name = name;  // Copy it
+        : ASTGEN_SUPER_Active(fl)
+        , m_name{name}
+        , m_sensesp{sensesp} {
         UASSERT(sensesp, "Sensesp required arg");
-        m_sensesp = sensesp;
     }
     ASTNODE_NODE_FUNCS(Active)
     virtual void dump(std::ostream& str = std::cout) const override;
@@ -1197,10 +1195,10 @@ private:
     string m_path;  // Dotted cellname to set parameter of
 public:
     AstDefParam(FileLine* fl, const string& path, const string& name, AstNode* rhsp)
-        : ASTGEN_SUPER_DefParam(fl) {
+        : ASTGEN_SUPER_DefParam(fl)
+        , m_name{name}
+        , m_path{path} {
         setOp1p(rhsp);
-        m_name = name;
-        m_path = path;
     }
     virtual string name() const override { return m_name; }  // * = Scope name
     ASTNODE_NODE_FUNCS(DefParam)
@@ -1714,9 +1712,9 @@ private:
 
 public:
     AstPull(FileLine* fl, AstNode* lhsp, bool direction)
-        : ASTGEN_SUPER_Pull(fl) {
+        : ASTGEN_SUPER_Pull(fl)
+        , m_direction{direction} {
         setOp1p(lhsp);
-        m_direction = direction;
     }
     ASTNODE_NODE_FUNCS(Pull)
     virtual bool same(const AstNode* samep) const override {
@@ -1996,7 +1994,7 @@ public:
 class AstTypedef final : public AstNode {
 private:
     string m_name;
-    bool m_attrPublic;
+    bool m_attrPublic = false;
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
 public:
     AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType,
@@ -2006,7 +2004,6 @@ public:
         childDTypep(dtp);  // Only for parser
         addAttrsp(attrsp);
         dtypep(nullptr);  // V3Width will resolve
-        m_attrPublic = false;
     }
     ASTNODE_NODE_FUNCS(Typedef)
     virtual void dump(std::ostream& str) const override;
@@ -3045,25 +3042,22 @@ class AstCoverDecl final : public AstNodeStmt {
     // Parents:  {statement list}
     // Children: none
 private:
-    AstCoverDecl* m_dataDeclp;  // [After V3CoverageJoin] Pointer to duplicate declaration to get
-                                // data from instead
+    AstCoverDecl* m_dataDeclp = nullptr;  // [After V3CoverageJoin] Pointer to duplicate
+                                          // declaration to get data from instead
     string m_page;
     string m_text;
     string m_hier;
     string m_linescov;
     int m_offset;  // Offset column numbers to uniq-ify IFs
-    int m_binNum;  // Set by V3EmitCSyms to tell final V3Emit what to increment
+    int m_binNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
     AstCoverDecl(FileLine* fl, const string& page, const string& comment, const string& linescov,
                  int offset)
-        : ASTGEN_SUPER_CoverDecl(fl) {
-        m_page = page;
-        m_text = comment;
-        m_linescov = linescov;
-        m_offset = offset;
-        m_binNum = 0;
-        m_dataDeclp = nullptr;
-    }
+        : ASTGEN_SUPER_CoverDecl(fl)
+        , m_page{page}
+        , m_text{comment}
+        , m_linescov{linescov}
+        , m_offset{offset} {}
     ASTNODE_NODE_FUNCS(CoverDecl)
     virtual const char* broken() const override {
         BROKEN_RTN(m_dataDeclp && !m_dataDeclp->brokeExists());
@@ -3200,17 +3194,17 @@ private:
 public:
     AstDisplay(FileLine* fl, VDisplayType dispType, const string& text, AstNode* filep,
                AstNode* exprsp, char missingArgChar = 'd')
-        : ASTGEN_SUPER_Display(fl) {
-        setOp1p(new AstSFormatF(fl, text, true, exprsp, missingArgChar));
+        : ASTGEN_SUPER_Display(fl)
+        , m_displayType{dispType} {
+        setOp1p(new AstSFormatF{fl, text, true, exprsp, missingArgChar});
         setNOp3p(filep);
-        m_displayType = dispType;
     }
     AstDisplay(FileLine* fl, VDisplayType dispType, AstNode* filep, AstNode* exprsp,
                char missingArgChar = 'd')
-        : ASTGEN_SUPER_Display(fl) {
-        setOp1p(new AstSFormatF(fl, AstSFormatF::NoFormat(), exprsp, missingArgChar));
+        : ASTGEN_SUPER_Display(fl)
+        , m_displayType{dispType} {
+        setOp1p(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp, missingArgChar});
         setNOp3p(filep);
-        m_displayType = dispType;
     }
     ASTNODE_NODE_FUNCS(Display)
     virtual void dump(std::ostream& str) const override;
@@ -4246,16 +4240,12 @@ public:
 };
 class AstIf final : public AstNodeIf {
 private:
-    bool m_uniquePragma;  // unique case
-    bool m_unique0Pragma;  // unique0 case
-    bool m_priorityPragma;  // priority case
+    bool m_uniquePragma = false;  // unique case
+    bool m_unique0Pragma = false;  // unique0 case
+    bool m_priorityPragma = false;  // priority case
 public:
     AstIf(FileLine* fl, AstNode* condp, AstNode* ifsp = nullptr, AstNode* elsesp = nullptr)
-        : ASTGEN_SUPER_If(fl, condp, ifsp, elsesp) {
-        m_uniquePragma = false;
-        m_unique0Pragma = false;
-        m_priorityPragma = false;
-    }
+        : ASTGEN_SUPER_If(fl, condp, ifsp, elsesp) {}
     ASTNODE_NODE_FUNCS(If)
     bool uniquePragma() const { return m_uniquePragma; }
     void uniquePragma(bool flag) { m_uniquePragma = flag; }

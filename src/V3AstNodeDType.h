@@ -35,22 +35,19 @@ class AstNodeDType VL_NOT_FINAL : public AstNode {
     // but it's currently so prevalent in the code we leave it here.
     // Note the below members are included in AstTypeTable::Key lookups
 private:
-    int m_width;  // (also in AstTypeTable::Key) Bit width of operation
-    int m_widthMin;  // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
+    int m_width = 0;  // (also in AstTypeTable::Key) Bit width of operation
+    int m_widthMin
+        = 0;  // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
     VSigning m_numeric;  // (also in AstTypeTable::Key) Node is signed
     // Other members
-    bool m_generic;  // Simple globally referenced type, don't garbage collect
+    bool m_generic = false;  // Simple globally referenced type, don't garbage collect
     // Unique number assigned to each dtype during creation for IEEE matching
     static int s_uniqueNum;
 
 protected:
     // CONSTRUCTORS
     AstNodeDType(VNType t, FileLine* fl)
-        : AstNode{t, fl} {
-        m_width = 0;
-        m_widthMin = 0;
-        m_generic = false;
-    }
+        : AstNode{t, fl} {}
 
 public:
     ASTNODE_BASE_FUNCS(NodeDType)
@@ -204,7 +201,7 @@ private:
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
     bool m_packed;
-    bool m_isFourstate;
+    bool m_isFourstate = false;  // V3Width computes
     MemberNameMap m_members;
     const int m_uniqueNum;
 
@@ -214,7 +211,6 @@ protected:
         , m_uniqueNum{uniqueNumInc()} {
         // VSigning::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != VSigning::NOSIGN);
-        m_isFourstate = false;  // V3Width computes
         numeric(VSigning::fromBool(numericUnpack.isSigned()));
     }
 

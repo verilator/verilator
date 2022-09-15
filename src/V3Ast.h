@@ -985,6 +985,7 @@ public:
     enum en : uint8_t { HIGHZ, SMALL, MEDIUM, WEAK, LARGE, PULL, STRONG, SUPPLY };
     enum en m_e;
 
+    // cppcheck-suppress noExplicitConstructor
     inline VStrength(en strengthLevel)
         : m_e(strengthLevel) {}
     explicit inline VStrength(int _e)

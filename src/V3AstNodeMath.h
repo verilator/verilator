@@ -1117,7 +1117,7 @@ public:
     }
     AstRand(FileLine* fl, AstNode* seedp, bool urandom)
         : ASTGEN_SUPER_Rand(fl)
-        , m_urandom(urandom) {
+        , m_urandom{urandom} {
         setNOp1p(seedp);
     }
     ASTNODE_NODE_FUNCS(Rand)
