@@ -60,9 +60,9 @@ void mon_scope_name(const char* namep) {
 #ifdef TEST_VERBOSE
     VL_PRINTF("-     mon_scope_name('%s', \"%s\");\n", modp, namep);
 #endif
-    if (strcmp(namep, "t.sub"))
+    if (std::strcmp(namep, "t.sub"))
         vl_fatal(__FILE__, __LINE__, "", (std::string{"Unexp scope name "} + namep).c_str());
-    if (strcmp(modp, "t.sub"))
+    if (std::strcmp(modp, "t.sub"))
         vl_fatal(__FILE__, __LINE__, "", (std::string{"Unexp dpiscope name "} + modp).c_str());
 }
 

@@ -85,7 +85,7 @@ private:
             string::size_type pos;
             while ((pos = dottedname.find("__DOT__")) != string::npos) {
                 const string ident = dottedname.substr(0, pos);
-                dottedname = dottedname.substr(pos + strlen("__DOT__"));
+                dottedname = dottedname.substr(pos + std::strlen("__DOT__"));
                 if (nodep->name() != "") {
                     m_displayScope = dot(m_displayScope, ident);
                     m_namedScope = dot(m_namedScope, ident);

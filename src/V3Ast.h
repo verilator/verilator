@@ -467,8 +467,9 @@ public:
         return names[m_e];
     }
     static void selfTest() {
-        UASSERT(0 == strcmp(VBasicDTypeKwd(_ENUM_MAX).ascii(), " MAX"), "SelfTest: Enum mismatch");
-        UASSERT(0 == strcmp(VBasicDTypeKwd(_ENUM_MAX).dpiType(), " MAX"),
+        UASSERT(0 == std::strcmp(VBasicDTypeKwd(_ENUM_MAX).ascii(), " MAX"),
+                "SelfTest: Enum mismatch");
+        UASSERT(0 == std::strcmp(VBasicDTypeKwd(_ENUM_MAX).dpiType(), " MAX"),
                 "SelfTest: Enum mismatch");
     }
     inline VBasicDTypeKwd()

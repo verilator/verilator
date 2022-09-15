@@ -565,7 +565,7 @@ class EmitCModel final : public EmitCFunc {
                 // Some hackery to locate handle__V for trace_init_task
                 // Considered a pragma on the handle, but that still doesn't help us attach it here
                 string handle = funcp->name();
-                const size_t wr_len = strlen("__Vdpiimwrap_");
+                const size_t wr_len = std::strlen("__Vdpiimwrap_");
                 UASSERT_OBJ(handle.substr(0, wr_len) == "__Vdpiimwrap_", funcp,
                             "Strange trace_init_task function name");
                 handle = "vlSymsp->TOP." + handle.substr(wr_len);

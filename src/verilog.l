@@ -1004,7 +1004,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                                           return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`timescale"{ws}+[^\n\r]*             { FL; PARSEP->lexTimescaleParse(yylval.fl,
-                                                                        yytext + strlen("`timescale"));
+                                                                        yytext + std::strlen("`timescale"));
                                           FL_BRK; }
   "`unconnected_drive"{ws}+"pull0"      { FL; return yaT_UNCONNECTED_PULL0; }
   "`unconnected_drive"{ws}+"pull1"      { FL; return yaT_UNCONNECTED_PULL1; }

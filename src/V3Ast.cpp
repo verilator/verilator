@@ -165,22 +165,22 @@ string AstNode::prettyName(const string& namein) {
             continue;
         }
         if (pos[0] == '_' && pos[1] == '_') {  // Short-circuit
-            if (0 == strncmp(pos, "__BRA__", 7)) {
+            if (0 == std::strncmp(pos, "__BRA__", 7)) {
                 pretty += "[";
                 pos += 7;
                 continue;
             }
-            if (0 == strncmp(pos, "__KET__", 7)) {
+            if (0 == std::strncmp(pos, "__KET__", 7)) {
                 pretty += "]";
                 pos += 7;
                 continue;
             }
-            if (0 == strncmp(pos, "__DOT__", 7)) {
+            if (0 == std::strncmp(pos, "__DOT__", 7)) {
                 pretty += ".";
                 pos += 7;
                 continue;
             }
-            if (0 == strncmp(pos, "__PVT__", 7)) {
+            if (0 == std::strncmp(pos, "__PVT__", 7)) {
                 pretty += "";
                 pos += 7;
                 continue;

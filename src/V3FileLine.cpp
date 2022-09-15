@@ -185,7 +185,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     const char* const ln = textp;
     while (*textp && !isspace(*textp)) textp++;
     if (isdigit(*ln)) {
-        lineno(atoi(ln));
+        lineno(std::atoi(ln));
     } else {
         fail = true;
     }
@@ -207,7 +207,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     // Grab level
     while (*textp && (isspace(*textp) || *textp == '"')) textp++;
     if (isdigit(*textp)) {
-        enterExitRef = atoi(textp);
+        enterExitRef = std::atoi(textp);
         if (enterExitRef >= 3) fail = true;
     } else {
         enterExitRef = 0;

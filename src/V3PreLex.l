@@ -126,7 +126,7 @@ bom             [\357\273\277]
                           if (LEXP->m_protBytes > 0) {
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "multiple `pragma protected encoding sections");
                           }
-                          res = sscanf(yytext + strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
+                          res = sscanf(yytext + std::strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
                           if (res == 0)
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "`pragma protected encoding must have an \"enctype\" field");
                           LEXP->m_encType = !VL_STRCASECMP(enctype, "uuencode") ? Enctype::UUENCODE :
@@ -242,7 +242,7 @@ bom             [\357\273\277]
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
                           static char buf[25];
                           VL_SNPRINTF(buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
-                          yytext = buf; yyleng = strlen(yytext);
+                          yytext = buf; yyleng = std::strlen(yytext);
                           return VP_TEXT; }
 
         /* Pass-through strings */

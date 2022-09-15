@@ -130,8 +130,8 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
     for (auto&& act : m_pimpl->m_options) {
         if (act.second->isFOnOffAllowed()) {  // Find starts with "-fno"
             if (const char* const nop
-                = VString::startsWith(optp, "-fno-") ? (optp + strlen("-fno-")) : nullptr) {
-                if (act.first.substr(strlen("-f"), std::string::npos)
+                = VString::startsWith(optp, "-fno-") ? (optp + std::strlen("-fno-")) : nullptr) {
+                if (act.first.substr(std::strlen("-f"), std::string::npos)
                     == nop) {  // [-f]opt = [-fno-]opt
                     return act.second.get();
                 }
@@ -139,7 +139,7 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
         }
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
             if (const char* const nop
-                = VString::startsWith(optp, "-no") ? (optp + strlen("-no")) : nullptr) {
+                = VString::startsWith(optp, "-no") ? (optp + std::strlen("-no")) : nullptr) {
                 if (act.first == nop || act.first == (std::string{"-"} + nop)) {
                     return act.second.get();
                 }
@@ -206,7 +206,7 @@ void V3OptionParser::finalize() {
         m_pimpl->m_spellCheck.pushCandidate(opt.first);
         if (opt.second->isFOnOffAllowed()) {
             m_pimpl->m_spellCheck.pushCandidate(
-                "-fno-" + opt.first.substr(strlen("-f"), std::string::npos));
+                "-fno-" + opt.first.substr(std::strlen("-f"), std::string::npos));
         }
         if (opt.second->isOnOffAllowed()) m_pimpl->m_spellCheck.pushCandidate("-no" + opt.first);
     }

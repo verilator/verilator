@@ -150,7 +150,7 @@ double VString::parseDouble(const string& str, bool* successp) {
     char* endp = strgp;
     const double d = strtod(strgp, &endp);
     const size_t parsed_len = endp - strgp;
-    if (parsed_len != strlen(strgp)) {
+    if (parsed_len != std::strlen(strgp)) {
         if (successp) *successp = false;
     }
     VL_DO_DANGLING(delete[] strgp, strgp);
@@ -402,7 +402,7 @@ void VHashSha256::selfTest() {
 
 string VName::dehash(const string& in) {
     static const char VHSH[] = "__Vhsh";
-    static const size_t DOT_LEN = strlen("__DOT__");
+    static const size_t DOT_LEN = std::strlen("__DOT__");
     std::string dehashed;
 
     // Need to split 'in' into components separated by __DOT__, 'last_dot_pos'

@@ -168,10 +168,10 @@ void i_string(const char** x) {
     static int n = 0;
     printf("i_string %d\n", n);
     if (n++ % 2 == 0) {
-        if (strcmp(*x, "Hello") != 0) stop();
+        if (std::strcmp(*x, "Hello") != 0) stop();
         *x = "Good";
     } else {
-        if (strcmp(*x, "World") != 0) stop();
+        if (std::strcmp(*x, "World") != 0) stop();
         *x = "Bye";
     }
 }
@@ -296,10 +296,10 @@ void i_string_t(const char** x) {
     static int n = 0;
     printf("i_string_t %d\n", n);
     if (n++ % 2 == 0) {
-        if (strcmp(*x, "World") != 0) stop();
+        if (std::strcmp(*x, "World") != 0) stop();
         *x = "Bye";
     } else {
-        if (strcmp(*x, "Hello") != 0) stop();
+        if (std::strcmp(*x, "Hello") != 0) stop();
         *x = "Good";
     }
 }
@@ -962,10 +962,10 @@ void check_exports() {
     e_string(&x_string);
     if ((n % 2) == 0) {
         if (x_chandle) stop();
-        if (strcmp(x_string, "Hello") != 0) stop();
+        if (std::strcmp(x_string, "Hello") != 0) stop();
     } else {
         if (x_chandle) stop();
-        if (strcmp(x_string, "World") != 0) stop();
+        if (std::strcmp(x_string, "World") != 0) stop();
     }
 
     x_bit = n % 2;
@@ -1045,10 +1045,10 @@ void check_exports() {
     e_string_t(&x_string_t);
     if ((n % 2) == 0) {
         if (x_chandle_t != NULL) stop();
-        if (strcmp(x_string_t, "World") != 0) stop();
+        if (std::strcmp(x_string_t, "World") != 0) stop();
     } else {
         if (x_chandle_t != NULL) stop();
-        if (strcmp(x_string_t, "Hello") != 0) stop();
+        if (std::strcmp(x_string_t, "Hello") != 0) stop();
     }
 
     x_bit_t = n % 2;

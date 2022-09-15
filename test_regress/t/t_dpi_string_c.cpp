@@ -39,5 +39,5 @@ extern int dpii_string(const char* s);
 
 int dpii_string(const char* s) {
     printf("dpii_string: %s\n", s);
-    return strlen(s);
+    return std::strlen(s);
 }

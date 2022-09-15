@@ -919,7 +919,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         string::size_type pos;
         if ((pos = dottedname.rfind("__DOT__")) != string::npos) {
             const string dotted = dottedname.substr(0, pos);
-            const string ident = dottedname.substr(pos + strlen("__DOT__"));
+            const string ident = dottedname.substr(pos + std::strlen("__DOT__"));
             string baddot;
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(nodep->fileline(), aboveSymp, dotted, baddot, okSymp);

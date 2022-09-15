@@ -5963,7 +5963,7 @@ private:
             }
             if ((VN_IS(nodep, Add) && underp->width() == 1 && underp->isOne())
                 || (VN_IS(nodep, Sub) && underp->width() == 1 && underp->isOne()
-                    && 0 == strcmp(side, "RHS"))) {
+                    && 0 == std::strcmp(side, "RHS"))) {
                 // "foo + 1'b1", or "foo - 1'b1" are very common, people assume
                 // they extend correctly
                 warnOn = false;

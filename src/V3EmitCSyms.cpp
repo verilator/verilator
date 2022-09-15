@@ -211,7 +211,7 @@ class EmitCSyms final : EmitCBaseVisitor {
                     const string::size_type dpos = whole.rfind("__DOT__");
                     if (dpos != string::npos) {
                         scpName = whole.substr(0, dpos);
-                        varBase = whole.substr(dpos + strlen("__DOT__"));
+                        varBase = whole.substr(dpos + std::strlen("__DOT__"));
                     } else {
                         varBase = whole;
                     }

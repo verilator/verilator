@@ -224,7 +224,7 @@ private:
         std::size_t len = strlen(str);
         std::size_t availableBytes = WRITE_BUFFER_SIZE_BYTES - m_usedBytes;
         while (VL_UNLIKELY(len >= availableBytes)) {
-            memcpy(m_bufferp->data() + m_usedBytes, str, availableBytes);
+            std::memcpy(m_bufferp->data() + m_usedBytes, str, availableBytes);
             m_usedBytes = WRITE_BUFFER_SIZE_BYTES;
             writeBlock();
             str += availableBytes;
@@ -232,7 +232,7 @@ private:
             availableBytes = WRITE_BUFFER_SIZE_BYTES;
         }
         if (len > 0) {
-            memcpy(m_bufferp->data() + m_usedBytes, str, len);
+            std::memcpy(m_bufferp->data() + m_usedBytes, str, len);
             m_usedBytes += len;
         }
     }
