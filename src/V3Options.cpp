@@ -435,6 +435,11 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
     return out;
 }
 
+void V3Options::ccSet() {  // --cc
+    m_outFormatOk = true;
+    m_systemC = false;
+}
+
 //######################################################################
 // File searching
 
@@ -719,9 +724,10 @@ bool V3Options::systemCFound() {
 // V3 Options notification methods
 
 void V3Options::notify() {
-    FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
-
     // Notify that all arguments have been passed and final modification can be made.
+    FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};
+
+    if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !cdc() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
         v3fatal("verilator: Need --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
                 "--xml-only or --E option");
@@ -1002,10 +1008,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-build", Set, &m_build);
 
     DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
-    DECL_OPTION("-cc", CbCall, [this]() {
-        m_outFormatOk = true;
-        m_systemC = false;
-    });
+    DECL_OPTION("-cc", CbCall, [this]() { ccSet(); });
     DECL_OPTION("-cdc", OnOff, &m_cdc);
     DECL_OPTION("-clk", CbVal, callStrSetter(&V3Options::addClocker));
     DECL_OPTION("-no-clk", CbVal, callStrSetter(&V3Options::addNoClocker));
@@ -1175,7 +1178,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_makeDir = valp;
         addIncDirFallback(m_makeDir);  // Need to find generated files there too
     });
-    DECL_OPTION("-main", OnOff, &m_main).undocumented();  // Future
+    DECL_OPTION("-main", OnOff, &m_main);
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
         if (!strcmp(valp, "cmake")) {
             m_cmake = true;

@@ -11,6 +11,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
+    verilator_flags => [# Custom as don't want -cc
+                        "-Mdir $Self->{obj_dir}",
+                        "--debug-check", ],
     verilator_flags2 => ['--exe --build --main'],
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
