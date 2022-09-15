@@ -77,7 +77,7 @@ class SenExprBuilder final {
             varp->funcLocal(true);
             m_locals.push_back(varp);
             AstVarScope* vscp = new AstVarScope{flp, m_scopeTopp, varp};
-            m_scopeTopp->addVarp(vscp);
+            m_scopeTopp->addVarsp(vscp);
             result.first->second = vscp;
         }
         AstVarScope* const currp = result.first->second;
@@ -178,16 +178,16 @@ class SenExprBuilder final {
 
                 // Clear 'fired' state when done
                 AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
-                ifp->addIfsp(clearp);
+                ifp->addThensp(clearp);
                 clearp->dtypeSetVoid();
                 clearp->statement(true);
 
                 // Enqueue for clearing 'triggered' state on next eval
                 AstTextBlock* const blockp = new AstTextBlock{flp};
-                ifp->addIfsp(blockp);
+                ifp->addThensp(blockp);
                 const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
                 add("vlSymsp->enqueueTriggeredEventForClearing(");
-                blockp->addNodep(currp());
+                blockp->addNodesp(currp());
                 add(");\n");
             }
 

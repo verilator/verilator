@@ -43,7 +43,7 @@ static void makeVlToString(AstClass* nodep) {
     AstNode* const exprp = new AstCMath{nodep->fileline(), "obj ? obj->to_string() : \"null\"", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-    nodep->addStmtp(funcp);
+    nodep->addStmtsp(funcp);
 }
 static void makeToString(AstClass* nodep) {
     AstCFunc* const funcp = new AstCFunc{nodep->fileline(), "to_string", nullptr, "std::string"};
@@ -54,7 +54,7 @@ static void makeToString(AstClass* nodep) {
         = new AstCMath{nodep->fileline(), R"(std::string{"'{"} + to_string_middle() + "}")", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-    nodep->addStmtp(funcp);
+    nodep->addStmtsp(funcp);
 }
 static void makeToStringMiddle(AstClass* nodep) {
     AstCFunc* const funcp
@@ -96,7 +96,7 @@ static void makeToStringMiddle(AstClass* nodep) {
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "return out;\n"});
-    nodep->addStmtp(funcp);
+    nodep->addStmtsp(funcp);
 }
 
 //######################################################################

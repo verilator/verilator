@@ -462,22 +462,22 @@ private:
             iterateCheckBool(nodep, "Conditional Test", nodep->condp(), BOTH);
             // Determine sub expression widths only relying on what's in the subops
             //  CONTEXT determined, but need data type for pattern assignments
-            userIterateAndNext(nodep->expr1p(), WidthVP(m_vup->dtypeNullp(), PRELIM).p());
-            userIterateAndNext(nodep->expr2p(), WidthVP(m_vup->dtypeNullp(), PRELIM).p());
+            userIterateAndNext(nodep->thenp(), WidthVP(m_vup->dtypeNullp(), PRELIM).p());
+            userIterateAndNext(nodep->elsep(), WidthVP(m_vup->dtypeNullp(), PRELIM).p());
             // Calculate width of this expression.
             // First call (prelim()) m_vup->width() is probably zero, so we'll return
             //  the size of this subexpression only.
             // Second call (final()) m_vup->width() is probably the expression size, so
             //  the expression includes the size of the output too.
-            if (nodep->expr1p()->isDouble() || nodep->expr2p()->isDouble()) {
+            if (nodep->thenp()->isDouble() || nodep->elsep()->isDouble()) {
                 nodep->dtypeSetDouble();
-            } else if (nodep->expr1p()->isString() || nodep->expr2p()->isString()) {
+            } else if (nodep->thenp()->isString() || nodep->elsep()->isString()) {
                 nodep->dtypeSetString();
             } else {
-                const int width = std::max(nodep->expr1p()->width(), nodep->expr2p()->width());
+                const int width = std::max(nodep->thenp()->width(), nodep->elsep()->width());
                 const int mwidth
-                    = std::max(nodep->expr1p()->widthMin(), nodep->expr2p()->widthMin());
-                const bool issigned = nodep->expr1p()->isSigned() && nodep->expr2p()->isSigned();
+                    = std::max(nodep->thenp()->widthMin(), nodep->elsep()->widthMin());
+                const bool issigned = nodep->thenp()->isSigned() && nodep->elsep()->isSigned();
                 nodep->dtypeSetLogicUnsized(width, mwidth, VSigning::fromBool(issigned));
             }
         }
@@ -486,9 +486,9 @@ private:
             AstNodeDType* const subDTypep = expDTypep;
             nodep->dtypeFrom(expDTypep);
             // Error report and change sizes for suboperands of this node.
-            iterateCheck(nodep, "Conditional True", nodep->expr1p(), CONTEXT, FINAL, subDTypep,
+            iterateCheck(nodep, "Conditional True", nodep->thenp(), CONTEXT, FINAL, subDTypep,
                          EXTEND_EXP);
-            iterateCheck(nodep, "Conditional False", nodep->expr2p(), CONTEXT, FINAL, subDTypep,
+            iterateCheck(nodep, "Conditional False", nodep->elsep(), CONTEXT, FINAL, subDTypep,
                          EXTEND_EXP);
         }
     }
@@ -1872,7 +1872,7 @@ private:
                     castSized(nodep, nodep->fromp(), width);
                     // Note castSized might modify nodep->fromp()
                 } else {
-                    iterateCheck(nodep, "value", nodep->lhsp(), SELF, FINAL, fromDtp, EXTEND_EXP,
+                    iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, fromDtp, EXTEND_EXP,
                                  false);
                 }
                 if (basicp->isDouble() && !nodep->fromp()->isDouble()) {
@@ -1904,14 +1904,14 @@ private:
                                   << toDtp->prettyDTypeNameQ());
             }
             if (!newp) newp = nodep->fromp()->unlinkFrBack();
-            nodep->lhsp(newp);
+            nodep->fromp(newp);
             // if (debug()) nodep->dumpTree(cout, "  CastOut: ");
             // if (debug()) nodep->backp()->dumpTree(cout, "  CastOutUpUp: ");
         }
         if (m_vup->final()) {
-            iterateCheck(nodep, "value", nodep->lhsp(), SELF, FINAL, nodep->lhsp()->dtypep(),
+            iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
                          EXTEND_EXP, false);
-            AstNode* const underp = nodep->lhsp()->unlinkFrBack();
+            AstNode* const underp = nodep->fromp()->unlinkFrBack();
             // if (debug()) underp->dumpTree(cout, "  CastRep: ");
             nodep->replaceWith(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4012,7 +4012,7 @@ private:
         userIterateAndNext(nodep->exprp(), WidthVP(CONTEXT, PRELIM).p());
         for (AstCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), CaseItem);  // Prelim may cause the node to get replaced
-            if (!VN_IS(nodep, GenCase)) userIterateAndNext(itemp->bodysp(), nullptr);
+            if (!VN_IS(nodep, GenCase)) userIterateAndNext(itemp->stmtsp(), nullptr);
             for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
                 nextcp = condp->nextp();  // Prelim may cause the node to get replaced
                 VL_DO_DANGLING(userIterate(condp, WidthVP(CONTEXT, PRELIM).p()), condp);
@@ -4055,27 +4055,27 @@ private:
         userIterateAndNext(nodep->initsp(), nullptr);
         iterateCheckBool(nodep, "For Test Condition", nodep->condp(),
                          BOTH);  // it's like an if() condition.
-        if (!VN_IS(nodep, GenFor)) userIterateAndNext(nodep->bodysp(), nullptr);
+        if (!VN_IS(nodep, GenFor)) userIterateAndNext(nodep->stmtsp(), nullptr);
         userIterateAndNext(nodep->incsp(), nullptr);
     }
     void visit(AstRepeat* nodep) override {
         assertAtStatement(nodep);
         userIterateAndNext(nodep->countp(), WidthVP(SELF, BOTH).p());
-        userIterateAndNext(nodep->bodysp(), nullptr);
+        userIterateAndNext(nodep->stmtsp(), nullptr);
     }
     void visit(AstWhile* nodep) override {
         assertAtStatement(nodep);
         userIterateAndNext(nodep->precondsp(), nullptr);
         iterateCheckBool(nodep, "For Test Condition", nodep->condp(),
                          BOTH);  // it's like an if() condition.
-        userIterateAndNext(nodep->bodysp(), nullptr);
+        userIterateAndNext(nodep->stmtsp(), nullptr);
         userIterateAndNext(nodep->incsp(), nullptr);
     }
     void visit(AstNodeIf* nodep) override {
         assertAtStatement(nodep);
         // if (debug()) nodep->dumpTree(cout, "  IfPre: ");
         if (!VN_IS(nodep, GenIf)) {  // for m_paramsOnly
-            userIterateAndNext(nodep->ifsp(), nullptr);
+            userIterateAndNext(nodep->thensp(), nullptr);
             userIterateAndNext(nodep->elsesp(), nullptr);
         }
         iterateCheckBool(nodep, "If", nodep->condp(), BOTH);  // it's like an if() condition.
@@ -4096,7 +4096,7 @@ private:
         UASSERT_OBJ(fromp->dtypep(), fromp, "Missing data type");
         AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
         // Split into for loop
-        AstNode* bodyp = nodep->bodysp();  // Might be null
+        AstNode* bodyp = nodep->stmtsp();  // Might be null
         if (bodyp) bodyp->unlinkFrBackWithNext();
         // We record where the body needs to eventually go with bodyPointp
         // (Can't use bodyp as might be null)
@@ -4404,8 +4404,8 @@ private:
                         argp->unlinkFrBack(&handle);
                         AstCMath* const newp
                             = new AstCMath(nodep->fileline(), "VL_TO_STRING(", 0, true);
-                        newp->addBodysp(argp);
-                        newp->addBodysp(new AstText(nodep->fileline(), ")", true));
+                        newp->addExprsp(argp);
+                        newp->addExprsp(new AstText(nodep->fileline(), ")", true));
                         newp->dtypeSetString();
                         newp->pure(true);
                         newp->protect(false);
@@ -5139,7 +5139,7 @@ private:
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetTrue()) {
                 userIterate(nodep->condp(), WidthVP(SELF, PRELIM).p());
-                iterateNull(nodep->bodysp());
+                iterateNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {
                 nodep->v3warn(E_NOTIMING, "Wait statements require --timing");
@@ -5150,9 +5150,9 @@ private:
         }
         // If we ignore timing:
         // Statements we'll just execute immediately; equivalent to if they followed this
-        if (AstNode* const bodysp = nodep->bodysp()) {
-            bodysp->unlinkFrBackWithNext();
-            nodep->replaceWith(bodysp);
+        if (AstNode* const stmtsp = nodep->stmtsp()) {
+            stmtsp->unlinkFrBackWithNext();
+            nodep->replaceWith(stmtsp);
         } else {
             nodep->unlinkFrBack();
         }
@@ -6459,7 +6459,7 @@ private:
         varp->isStatic(true);
         varp->valuep(initp);
         // Add to root, as don't know module we are in, and aids later structure sharing
-        v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
+        v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
         // Element 0 is a non-index and has speced values
         initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, 0));
         for (unsigned i = 1; i < msbdim + 1; ++i) {
@@ -6524,7 +6524,7 @@ private:
         varp->isStatic(true);
         varp->valuep(initp);
         // Add to root, as don't know module we are in, and aids later structure sharing
-        v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
+        v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
 
         // Default for all unspecified values
         if (attrType == VAttrType::ENUM_NAME) {

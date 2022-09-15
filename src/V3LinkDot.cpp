@@ -994,7 +994,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                         if (!nodep->isExternDef()) {
                             // Move it to proper spot under the target class
                             nodep->unlinkFrBack();
-                            classp->addStmtp(nodep);
+                            classp->addStmtsp(nodep);
                             nodep->isExternDef(true);  // So we check there's a matching extern
                             nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
                         }
@@ -1030,7 +1030,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 newvarp->funcReturn(true);
                 newvarp->trace(false);  // Not user visible
                 newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
-                nodep->addFvarp(newvarp);
+                nodep->fvarp(newvarp);
                 // Explicit insert required, as the var name shadows the upper level's task name
                 m_statep->insertSym(m_curSymp, newvarp->name(), newvarp,
                                     nullptr /*classOrPackagep*/);
@@ -1938,7 +1938,7 @@ private:
                                             VFlagLogicPacked{}, 1);
             newp->trace(modp->modTrace());
             nodep->varp(newp);
-            modp->addStmtp(newp);
+            modp->addStmtsp(newp);
             // Link it to signal list, must add the variable under the module;
             // current scope might be lower now
             m_statep->insertSym(moduleSymp, newp->name(), newp, nullptr /*classOrPackagep*/);
@@ -3097,7 +3097,7 @@ private:
                     nodep->classOrPackagep(foundp->classOrPackagep());
                 }
             } else if (AstClass* const defp = foundp ? VN_AS(foundp->nodep(), Class) : nullptr) {
-                AstNode* const paramsp = nodep->paramsp();
+                AstPin* const paramsp = nodep->paramsp();
                 if (paramsp) paramsp->unlinkFrBackWithNext();
                 AstClassRefDType* const newp
                     = new AstClassRefDType{nodep->fileline(), defp, paramsp};

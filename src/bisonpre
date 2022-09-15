@@ -391,9 +391,8 @@ def clean_input(filename, outname):
                 if not re.match(r'^\s*$', line):
                     sys.exit(
                         "%Error: " + filename + ":" + str(lineno) + ": Need " +
-                        needmore +
-                        " more blank lines to keep line numbers are constant\n"
-                    )
+                        str(needmore) +
+                        " more blank lines to keep line numbers constant\n")
                 needmore -= 1
             else:
                 lines.append(line)

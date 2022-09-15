@@ -253,9 +253,9 @@ private:
         AstVar* const indexVarp
             = new AstVar{fl, VVarType::BLOCKTEMP, "__Vtableidx" + cvtToStr(m_modTables),
                          VFlagBitPacked{}, static_cast<int>(m_inWidthBits)};
-        m_modp->addStmtp(indexVarp);
+        m_modp->addStmtsp(indexVarp);
         AstVarScope* const indexVscp = new AstVarScope{indexVarp->fileline(), m_scopep, indexVarp};
-        m_scopep->addVarp(indexVscp);
+        m_scopep->addVarsp(indexVscp);
 
         // The 'output assigned' table builder
         TableBuilder outputAssignedTableBuilder{fl};
@@ -274,8 +274,8 @@ private:
 
         // Link it in.
         // Keep sensitivity list, but delete all else
-        nodep->bodysp()->unlinkFrBackWithNext()->deleteTree();
-        nodep->addStmtp(stmtsp);
+        nodep->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+        nodep->addStmtsp(stmtsp);
         if (debug() >= 6) nodep->dumpTree(cout, "  table_new: ");
     }
 

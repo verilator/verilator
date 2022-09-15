@@ -193,11 +193,11 @@ public:
             const VPragmaType type
                 = m_inlineValue ? VPragmaType::INLINE_MODULE : VPragmaType::NO_INLINE_MODULE;
             AstNode* const nodep = new AstPragma(modp->fileline(), type);
-            modp->addStmtp(nodep);
+            modp->addStmtsp(nodep);
         }
         for (const auto& itr : m_modPragmas) {
             AstNode* const nodep = new AstPragma{modp->fileline(), itr};
-            modp->addStmtp(nodep);
+            modp->addStmtsp(nodep);
         }
     }
 

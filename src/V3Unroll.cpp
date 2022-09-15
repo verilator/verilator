@@ -387,21 +387,21 @@ private:
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
             // Grab assignment
             AstNode* incp = nullptr;  // Should be last statement
-            AstNode* bodysp = nodep->bodysp();
+            AstNode* stmtsp = nodep->stmtsp();
             if (nodep->incsp()) V3Const::constifyEdit(nodep->incsp());
             // cppcheck-suppress duplicateCondition
             if (nodep->incsp()) {
                 incp = nodep->incsp();
             } else {
-                for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
+                for (incp = nodep->stmtsp(); incp && incp->nextp(); incp = incp->nextp()) {}
                 if (incp) VL_DO_DANGLING(V3Const::constifyEdit(incp), incp);
                 // Again, as may have changed
-                bodysp = nodep->bodysp();
-                for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
-                if (incp == bodysp) bodysp = nullptr;
+                stmtsp = nodep->stmtsp();
+                for (incp = nodep->stmtsp(); incp && incp->nextp(); incp = incp->nextp()) {}
+                if (incp == stmtsp) stmtsp = nullptr;
             }
             // And check it
-            if (forUnrollCheck(nodep, initp, nodep->precondsp(), nodep->condp(), incp, bodysp)) {
+            if (forUnrollCheck(nodep, initp, nodep->precondsp(), nodep->condp(), incp, stmtsp)) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             }
         }
@@ -426,7 +426,7 @@ private:
                 // deleted by V3Const.
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             } else if (forUnrollCheck(nodep, nodep->initsp(), nullptr, nodep->condp(),
-                                      nodep->incsp(), nodep->bodysp())) {
+                                      nodep->incsp(), nodep->stmtsp())) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             } else {
                 nodep->v3error("For loop doesn't have genvar index, or is malformed");

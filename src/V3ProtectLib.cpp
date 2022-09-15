@@ -95,7 +95,7 @@ private:
     }
 
     void addComment(AstTextBlock* txtp, FileLine* fl, const string& comment) {
-        txtp->addNodep(new AstComment{fl, comment});
+        txtp->addNodesp(new AstComment{fl, comment});
     }
 
     void hashComment(AstTextBlock* txtp, FileLine* fl) {
@@ -143,7 +143,7 @@ private:
 
         // Module declaration
         m_modPortsp = new AstTextBlock{fl, "module " + m_libName + " (\n", false, true};
-        txtp->addNodep(m_modPortsp);
+        txtp->addNodesp(m_modPortsp);
         txtp->addText(fl, ");\n\n");
 
         // Timescale
@@ -177,7 +177,7 @@ private:
                                                "(\n",
                                          false, true};
         m_comboPortsp->addText(fl, "chandle handle__V\n");
-        txtp->addNodep(m_comboPortsp);
+        txtp->addNodesp(m_comboPortsp);
         txtp->addText(fl, ");\n\n");
         seqComment(txtp, fl);
         if (m_hasClk) {
@@ -187,7 +187,7 @@ private:
                                                  "(\n",
                                            false, true};
             m_seqPortsp->addText(fl, "chandle handle__V\n");
-            txtp->addNodep(m_seqPortsp);
+            txtp->addNodesp(m_seqPortsp);
             txtp->addText(fl, ");\n\n");
         }
         comboIgnoreComment(txtp, fl);
@@ -197,7 +197,7 @@ private:
                                                      "(\n",
                                                false, true};
         m_comboIgnorePortsp->addText(fl, "chandle handle__V\n");
-        txtp->addNodep(m_comboIgnorePortsp);
+        txtp->addNodesp(m_comboIgnorePortsp);
         txtp->addText(fl, ");\n\n");
 
         finalComment(txtp, fl);
@@ -227,17 +227,17 @@ private:
         txtp->addText(fl, "\n");
 
         m_comboDeclsp = new AstTextBlock{fl};
-        txtp->addNodep(m_comboDeclsp);
+        txtp->addNodesp(m_comboDeclsp);
         m_seqDeclsp = new AstTextBlock{fl};
-        txtp->addNodep(m_seqDeclsp);
+        txtp->addNodesp(m_seqDeclsp);
         m_tmpDeclsp = new AstTextBlock{fl};
-        txtp->addNodep(m_tmpDeclsp);
+        txtp->addNodesp(m_tmpDeclsp);
 
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
         addComment(txtp, fl, "library agree");
         m_hashValuep = new AstTextBlock{fl, "localparam int protectlib_hash__V = 32'd"};
-        txtp->addNodep(m_hashValuep);
+        txtp->addNodesp(m_hashValuep);
         txtp->addText(fl, "\n");
 
         // Initial
@@ -256,7 +256,7 @@ private:
                                               + m_libName + "_protectlib_combo_update(\n",
                                           false, true};
         m_comboParamsp->addText(fl, "handle__V\n");
-        txtp->addNodep(m_comboParamsp);
+        txtp->addNodesp(m_comboParamsp);
         txtp->addText(fl, ");\n");
         txtp->addText(fl, "end\n\n");
 
@@ -264,21 +264,21 @@ private:
         if (m_hasClk) {
             addComment(txtp, fl, "Evaluate clock edges");
             m_clkSensp = new AstTextBlock{fl, "always @(", false, true};
-            txtp->addNodep(m_clkSensp);
+            txtp->addNodesp(m_clkSensp);
             txtp->addText(fl, ") begin\n");
             m_comboIgnoreParamsp
                 = new AstTextBlock{fl, m_libName + "_protectlib_combo_ignore(\n", false, true};
             m_comboIgnoreParamsp->addText(fl, "handle__V\n");
-            txtp->addNodep(m_comboIgnoreParamsp);
+            txtp->addNodesp(m_comboIgnoreParamsp);
             txtp->addText(fl, ");\n");
             m_seqParamsp = new AstTextBlock{
                 fl, "last_seq_seqnum__V <= " + m_libName + "_protectlib_seq_update(\n", false,
                 true};
             m_seqParamsp->addText(fl, "handle__V\n");
-            txtp->addNodep(m_seqParamsp);
+            txtp->addNodesp(m_seqParamsp);
             txtp->addText(fl, ");\n");
             m_nbAssignsp = new AstTextBlock{fl};
-            txtp->addNodep(m_nbAssignsp);
+            txtp->addNodesp(m_nbAssignsp);
             txtp->addText(fl, "end\n\n");
         }
 
@@ -288,13 +288,13 @@ private:
         if (m_hasClk) {
             m_seqAssignsp = new AstTextBlock{fl, "if (last_seq_seqnum__V > "
                                                  "last_combo_seqnum__V) begin\n"};
-            txtp->addNodep(m_seqAssignsp);
+            txtp->addNodesp(m_seqAssignsp);
             m_comboAssignsp = new AstTextBlock{fl, "end\nelse begin\n"};
-            txtp->addNodep(m_comboAssignsp);
+            txtp->addNodesp(m_comboAssignsp);
             txtp->addText(fl, "end\n");
         } else {
             m_comboAssignsp = new AstTextBlock{fl, ""};
-            txtp->addNodep(m_comboAssignsp);
+            txtp->addNodesp(m_comboAssignsp);
         }
         txtp->addText(fl, "end\n\n");
 
@@ -341,7 +341,7 @@ private:
                               + "_protectlib_check_hash"
                                 "(int protectlib_hash__V) {\n");
         m_cHashValuep = new AstTextBlock{fl, "const int expected_hash__V = "};
-        txtp->addNodep(m_cHashValuep);
+        txtp->addNodesp(m_cHashValuep);
         txtp->addText(fl, /**/ "if (protectlib_hash__V != expected_hash__V) {\n");
         txtp->addText(fl, /****/ "fprintf(stderr, \"%%Error: cannot use " + m_libName
                               + " library, "
@@ -364,13 +364,13 @@ private:
         m_cComboParamsp = new AstTextBlock{
             fl, "long long " + m_libName + "_protectlib_combo_update(\n", false, true};
         m_cComboParamsp->addText(fl, "void* vhandlep__V\n");
-        txtp->addNodep(m_cComboParamsp);
+        txtp->addNodesp(m_cComboParamsp);
         txtp->addText(fl, ")\n");
         m_cComboInsp = new AstTextBlock{fl, "{\n"};
         castPtr(fl, m_cComboInsp);
-        txtp->addNodep(m_cComboInsp);
+        txtp->addNodesp(m_cComboInsp);
         m_cComboOutsp = new AstTextBlock{fl, "handlep__V->eval();\n"};
-        txtp->addNodep(m_cComboOutsp);
+        txtp->addNodesp(m_cComboOutsp);
         txtp->addText(fl, "return handlep__V->m_seqnum++;\n");
         txtp->addText(fl, "}\n\n");
 
@@ -379,13 +379,13 @@ private:
             m_cSeqParamsp = new AstTextBlock{
                 fl, "long long " + m_libName + "_protectlib_seq_update(\n", false, true};
             m_cSeqParamsp->addText(fl, "void* vhandlep__V\n");
-            txtp->addNodep(m_cSeqParamsp);
+            txtp->addNodesp(m_cSeqParamsp);
             txtp->addText(fl, ")\n");
             m_cSeqClksp = new AstTextBlock{fl, "{\n"};
             castPtr(fl, m_cSeqClksp);
-            txtp->addNodep(m_cSeqClksp);
+            txtp->addNodesp(m_cSeqClksp);
             m_cSeqOutsp = new AstTextBlock{fl, "handlep__V->eval();\n"};
-            txtp->addNodep(m_cSeqOutsp);
+            txtp->addNodesp(m_cSeqOutsp);
             txtp->addText(fl, "return handlep__V->m_seqnum++;\n");
             txtp->addText(fl, "}\n\n");
         }
@@ -394,7 +394,7 @@ private:
         m_cIgnoreParamsp = new AstTextBlock{
             fl, "void " + m_libName + "_protectlib_combo_ignore(\n", false, true};
         m_cIgnoreParamsp->addText(fl, "void* vhandlep__V\n");
-        txtp->addNodep(m_cIgnoreParamsp);
+        txtp->addNodesp(m_cIgnoreParamsp);
         txtp->addText(fl, ")\n");
         txtp->addText(fl, "{ }\n\n");
 
@@ -448,7 +448,7 @@ private:
     void handleClock(AstVar* varp) {
         FileLine* const fl = varp->fileline();
         handleInput(varp);
-        m_seqPortsp->addNodep(varp->cloneTree(false));
+        m_seqPortsp->addNodesp(varp->cloneTree(false));
         if (m_hasClk) {
             m_seqParamsp->addText(fl, varp->name() + "\n");
             m_clkSensp->addText(fl, "posedge " + varp->name() + " or negedge " + varp->name());
@@ -460,30 +460,30 @@ private:
     void handleDataInput(AstVar* varp) {
         FileLine* const fl = varp->fileline();
         handleInput(varp);
-        m_comboPortsp->addNodep(varp->cloneTree(false));
+        m_comboPortsp->addNodesp(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "\n");
-        m_comboIgnorePortsp->addNodep(varp->cloneTree(false));
+        m_comboIgnorePortsp->addNodesp(varp->cloneTree(false));
         if (m_hasClk) m_comboIgnoreParamsp->addText(fl, varp->name() + "\n");
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cComboInsp->addText(fl, cInputConnection(varp));
         m_cIgnoreParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
     }
 
-    void handleInput(AstVar* varp) { m_modPortsp->addNodep(varp->cloneTree(false)); }
+    void handleInput(AstVar* varp) { m_modPortsp->addNodesp(varp->cloneTree(false)); }
 
     static void addLocalVariable(AstTextBlock* textp, AstVar* varp, const char* suffix) {
         AstVar* const newVarp
             = new AstVar{varp->fileline(), VVarType::VAR, varp->name() + suffix, varp->dtypep()};
-        textp->addNodep(newVarp);
+        textp->addNodesp(newVarp);
     }
 
     void handleOutput(AstVar* varp) {
         FileLine* const fl = varp->fileline();
-        m_modPortsp->addNodep(varp->cloneTree(false));
-        m_comboPortsp->addNodep(varp->cloneTree(false));
+        m_modPortsp->addNodesp(varp->cloneTree(false));
+        m_comboPortsp->addNodesp(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "_combo__V\n");
         if (m_hasClk) {
-            m_seqPortsp->addNodep(varp->cloneTree(false));
+            m_seqPortsp->addNodesp(varp->cloneTree(false));
             m_seqParamsp->addText(fl, varp->name() + "_tmp__V\n");
         }
 

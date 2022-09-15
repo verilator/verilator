@@ -76,7 +76,7 @@ private:
         if (!m_monitorNumVarp) {
             m_monitorNumVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorNum",
                                           nodep->findUInt64DType()};
-            v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(m_monitorNumVarp);
+            v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(m_monitorNumVarp);
         }
         const auto varrefp = new AstVarRef(nodep->fileline(), m_monitorNumVarp, access);
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
@@ -86,7 +86,7 @@ private:
         if (!m_monitorOffVarp) {
             m_monitorOffVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorOff",
                                           nodep->findBitDType()};
-            v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(m_monitorOffVarp);
+            v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(m_monitorOffVarp);
         }
         const auto varrefp = new AstVarRef(nodep->fileline(), m_monitorOffVarp, access);
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
@@ -153,7 +153,7 @@ private:
                 selfDestruct = true;
             } else {
                 // V3Coverage assigned us a bucket to increment.
-                AstCoverInc* const covincp = VN_AS(snodep->coverincp(), CoverInc);
+                AstCoverInc* const covincp = VN_AS(snodep->coverincsp(), CoverInc);
                 UASSERT_OBJ(covincp, snodep, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
@@ -215,7 +215,7 @@ private:
                 iterateAndNextNull(ifp->condp());
 
                 // Recurse into the true case.
-                iterateAndNextNull(ifp->ifsp());
+                iterateAndNextNull(ifp->thensp());
 
                 // If the last else is not an else if, recurse into that too.
                 if (ifp->elsesp() && !nextifp) {  //
@@ -345,15 +345,15 @@ private:
         sentreep->unlinkFrBack();
         AstAlways* const alwaysp
             = new AstAlways(nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, nullptr);
-        m_modp->addStmtp(alwaysp);
+        m_modp->addStmtsp(alwaysp);
         for (uint32_t i = 0; i < ticks; ++i) {
             AstVar* const outvarp = new AstVar(
                 nodep->fileline(), VVarType::MODULETEMP,
                 "_Vpast_" + cvtToStr(m_modPastNum++) + "_" + cvtToStr(i), inp->dtypep());
-            m_modp->addStmtp(outvarp);
+            m_modp->addStmtsp(outvarp);
             AstNode* const assp = new AstAssignDly(
                 nodep->fileline(), new AstVarRef(nodep->fileline(), outvarp, VAccess::WRITE), inp);
-            alwaysp->addStmtp(assp);
+            alwaysp->addStmtsp(assp);
             // if (debug() >= 9) assp->dumpTree(cout, "-ass: ");
             invarp = outvarp;
             inp = new AstVarRef(nodep->fileline(), invarp, VAccess::READ);
@@ -425,7 +425,7 @@ private:
                 stmtsp};
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
             AstNode* const newp = new AstAlwaysPostponed{fl, ifp};
-            m_modp->addStmtp(newp);
+            m_modp->addStmtsp(newp);
         } else if (nodep->displayType() == VDisplayType::DT_STROBE) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
             // Need one-shot
@@ -433,7 +433,7 @@ private:
             const auto varp
                 = new AstVar{fl, VVarType::MODULETEMP, "__Vstrobe" + cvtToStr(m_modStrobeNum++),
                              nodep->findBitDType()};
-            m_modp->addStmtp(varp);
+            m_modp->addStmtsp(varp);
             // Where $strobe was we do "__Vstrobe = '1;"
             const auto newsetp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
                                                new AstConst{fl, AstConst::BitTrue{}}};
@@ -445,7 +445,7 @@ private:
             AstNode* const newp = new AstAlwaysPostponed{fl, ifp};
             stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
                                           new AstConst{fl, AstConst::BitFalse{}}});
-            m_modp->addStmtp(newp);
+            m_modp->addStmtsp(newp);
         }
     }
     void visit(AstMonitorOff* nodep) override {

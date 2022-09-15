@@ -98,10 +98,10 @@ private:
         FileLine* const flp = vscp->fileline();
         AstVar* const newvarp = new AstVar{flp, VVarType::MODULETEMP, newvarname, varp->dtypep()};
         newvarp->noReset(true);  // Reset by below assign
-        m_scopep->modp()->addStmtp(newvarp);
+        m_scopep->modp()->addStmtsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope{flp, m_scopep, newvarp};
         vscp->user1p(newvscp);
-        m_scopep->addVarp(newvscp);
+        m_scopep->addVarsp(newvscp);
         // At the top of _eval, assign them
         AstAssign* const finalp = new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE},
                                                 new AstVarRef{flp, vscp, VAccess::READ}};
@@ -133,7 +133,7 @@ private:
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addIfsp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
+        newp->addThensp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -159,7 +159,7 @@ private:
         }
 
         // Move statements to if
-        m_lastIfp->addIfsp(stmtsp);
+        m_lastIfp->addThensp(stmtsp);
 
         // Dispose of the AstActive
         VL_DO_DANGLING(nodep->deleteTree(), nodep);

@@ -283,7 +283,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
         AstNodeModule* const nodep = new AstNotFoundModule(fileline, modname);
-        v3Global.rootp()->addModulep(nodep);
+        v3Global.rootp()->addModulesp(nodep);
         return;
     }
 

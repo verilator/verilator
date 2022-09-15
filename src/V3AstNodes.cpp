@@ -188,8 +188,8 @@ void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int 
         widthForce(rangep->elementsConst(),
                    rangep->elementsConst());  // Maybe unknown if parameters underneath it
     }
-    setNOp1p(rangep);
-    dtypep(this);
+    this->rangep(rangep);
+    this->dtypep(this);
 }
 
 void AstBasicDType::cvtRangeConst() {
@@ -660,25 +660,15 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
         } else {
             return nullptr;
         }
-    } else if (VN_IS(nodep, VarRef)) {
-        if (VN_AS(nodep, VarRef)->varp()->isSc()) {
-            return VN_AS(nodep, VarRef)->varp();
+    } else if (AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
+        if (vrefp->varp()->isSc()) {
+            return vrefp->varp();
         } else {
             return nullptr;
         }
-    } else if (VN_IS(nodep, ArraySel)) {
-        if (nodep->op1p()) {
-            if (AstVar* p = scVarRecurse(nodep->op1p())) return p;
-        }
-        if (nodep->op2p()) {
-            if (AstVar* p = scVarRecurse(nodep->op2p())) return p;
-        }
-        if (nodep->op3p()) {
-            if (AstVar* p = scVarRecurse(nodep->op3p())) return p;
-        }
-        if (nodep->op4p()) {
-            if (AstVar* p = scVarRecurse(nodep->op4p())) return p;
-        }
+    } else if (AstArraySel* const arraySelp = VN_CAST(nodep, ArraySel)) {
+        if (AstVar* const p = scVarRecurse(arraySelp->fromp())) return p;
+        if (AstVar* const p = scVarRecurse(arraySelp->bitp())) return p;
     }
     return nullptr;
 }
@@ -918,18 +908,18 @@ AstVarScope* AstScope::createTemp(const string& name, unsigned width) {
     FileLine* const flp = fileline();
     AstVar* const varp
         = new AstVar{flp, VVarType::MODULETEMP, name, VFlagBitPacked{}, static_cast<int>(width)};
-    modp()->addStmtp(varp);
+    modp()->addStmtsp(varp);
     AstVarScope* const vscp = new AstVarScope{flp, this, varp};
-    addVarp(vscp);
+    addVarsp(vscp);
     return vscp;
 }
 
 AstVarScope* AstScope::createTemp(const string& name, AstNodeDType* dtypep) {
     FileLine* const flp = fileline();
     AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
-    modp()->addStmtp(varp);
+    modp()->addStmtsp(varp);
     AstVarScope* const vscp = new AstVarScope{flp, this, varp};
-    addVarp(vscp);
+    addVarsp(vscp);
     return vscp;
 }
 
@@ -1117,8 +1107,8 @@ AstConstPool::AstConstPool(FileLine* fl)
     : ASTGEN_SUPER_ConstPool(fl)
     , m_modp{new AstModule(fl, "@CONST-POOL@")}
     , m_scopep{new AstScope(fl, m_modp, "@CONST-POOL@", nullptr, nullptr)} {
-    addOp1p(m_modp);
-    m_modp->addStmtp(m_scopep);
+    this->modulep(m_modp);
+    m_modp->addStmtsp(m_scopep);
 }
 const char* AstConstPool::broken() const {
     BROKEN_RTN(m_modp && !m_modp->brokeExists());
@@ -1132,9 +1122,9 @@ AstVarScope* AstConstPool::createNewEntry(const string& name, AstNode* initp) {
     varp->isConst(true);
     varp->isStatic(true);
     varp->valuep(initp->cloneTree(false));
-    m_modp->addStmtp(varp);
+    m_modp->addStmtsp(varp);
     AstVarScope* const varScopep = new AstVarScope(fl, m_scopep, varp);
-    m_scopep->addVarp(varScopep);
+    m_scopep->addVarsp(varScopep);
     return varScopep;
 }
 
@@ -1280,7 +1270,7 @@ void AstWhile::addBeforeStmt(AstNode* newp, AstNode* belowp) {
     } else if (belowp == condp()) {
         // Goes before condition, IE in preconditions
         addPrecondsp(newp);
-    } else if (belowp == bodysp()) {
+    } else if (belowp == stmtsp()) {
         // Was first statement in body, so new front
         belowp->addHereThisAsNext(newp);
     } else {
@@ -1297,12 +1287,12 @@ void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
         belowp->addNextHere(newp);
     } else if (belowp == condp()) {
         // Becomes first statement in body, body may have been empty
-        if (bodysp()) {
-            bodysp()->addHereThisAsNext(newp);
+        if (stmtsp()) {
+            stmtsp()->addHereThisAsNext(newp);
         } else {
-            addBodysp(newp);
+            addStmtsp(newp);
         }
-    } else if (belowp == bodysp()) {
+    } else if (belowp == stmtsp()) {
         // Next statement in body
         belowp->addNextHere(newp);
     } else {
@@ -1571,19 +1561,15 @@ void AstInitArray::cloneRelink() {
         if (it->second->clonep()) it->second = it->second->clonep();
     }
 }
-AstNode* AstInitArray::addIndexValuep(uint64_t index, AstNode* newp) {
-    // Returns old value, caller must garbage collect
-    AstNode* oldp = nullptr;
+void AstInitArray::addIndexValuep(uint64_t index, AstNode* newp) {
     const auto it = m_map.find(index);
     if (it != m_map.end()) {
-        oldp = it->second->valuep();
         it->second->valuep(newp);
     } else {
         AstInitItem* const itemp = new AstInitItem(fileline(), newp);
         m_map.emplace(index, itemp);
-        addOp2p(itemp);
+        addInitsp(itemp);
     }
-    return oldp;
 }
 AstNode* AstInitArray::getIndexValuep(uint64_t index) const {
     const auto it = m_map.find(index);
@@ -1859,7 +1845,7 @@ AstPackage* AstNetlist::dollarUnitPkgAddp() {
         m_dollarUnitPkgp->inLibrary(true);
         m_dollarUnitPkgp->modTrace(false);  // may reconsider later
         m_dollarUnitPkgp->internal(true);
-        addModulep(m_dollarUnitPkgp);
+        addModulesp(m_dollarUnitPkgp);
     }
     return m_dollarUnitPkgp;
 }
@@ -1867,7 +1853,7 @@ void AstNetlist::createTopScope(AstScope* scopep) {
     UASSERT(scopep, "Must not be nullptr");
     UASSERT_OBJ(!m_topScopep, scopep, "TopScope already exits");
     m_topScopep = new AstTopScope{scopep->modp()->fileline(), scopep};
-    scopep->modp()->addStmtp(v3Global.rootp()->topScopep());
+    scopep->modp()->addStmtsp(v3Global.rootp()->topScopep());
 }
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);

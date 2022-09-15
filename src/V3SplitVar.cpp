@@ -191,16 +191,16 @@ struct SplitVarImpl {
 
     template <class T_ALWAYSLIKE>
     void insertBeginCore(T_ALWAYSLIKE* ap, AstNodeStmt* stmtp, AstNodeModule* modp) {
-        if (ap->isJustOneBodyStmt() && ap->bodysp() == stmtp) {
+        if (ap->isJustOneBodyStmt() && ap->stmtsp() == stmtp) {
             stmtp->unlinkFrBack();
             // Insert begin-end because temp value may be inserted to this block later.
             const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
-            ap->addStmtp(new AstBegin{ap->fileline(), name, stmtp});
+            ap->addStmtsp(new AstBegin{ap->fileline(), name, stmtp});
         }
     }
 
     void insertBeginCore(AstInitial* initp, AstNodeStmt* stmtp, AstNodeModule* modp) {
-        if (initp->isJustOneBodyStmt() && initp->bodysp() == stmtp) {
+        if (initp->isJustOneBodyStmt() && initp->stmtsp() == stmtp) {
             stmtp->unlinkFrBack();
             // Insert begin-end because temp value may be inserted to this block later.
             FileLine* const fl = initp->fileline();
@@ -477,7 +477,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sensesp());
         }
-        for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+        for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
             iterate(bodysp);
         }
     };
@@ -485,7 +485,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sensesp());
         }
-        for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+        for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
             iterate(bodysp);
         }
     }

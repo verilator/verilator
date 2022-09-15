@@ -132,11 +132,13 @@ private:
 };
 class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
-    // Children: DTYPE (moved to refDTypep() in V3Width)
-    // Children: RANGE (array bounds)
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
+    // @astgen op2 := rangep : Optional[AstRange] // array bounds
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
-    AstNode* rangenp() const { return op2p(); }  // op2 = Array(s) of variable
+
+    AstNode* rangenp() const { return reinterpret_cast<AstNode*>(rangep()); }
+
 protected:
     AstNodeArrayDType(VNType t, FileLine* fl)
         : AstNodeDType{t, fl} {}
@@ -165,14 +167,10 @@ public:
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
-    AstRange* rangep() const { return VN_AS(op2p(), Range); }  // op2 = Array(s) of variable
-    inline void rangep(AstRange* nodep);
     // METHODS
     AstBasicDType* basicp() const override {
         return subDTypep()->basicp();
@@ -193,6 +191,7 @@ public:
 };
 class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // A struct or union; common handling
+    // @astgen op1 := membersp : List[AstMemberDType]
 private:
     // TYPES
     using MemberNameMap = std::map<const std::string, AstMemberDType*>;
@@ -233,16 +232,11 @@ public:
     int widthAlignBytes() const override;
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     int widthTotalBytes() const override;
-    // op1 = members
     bool similarDType(AstNodeDType* samep) const override {
         return this == samep;  // We don't compare members, require exact equivalence
     }
     string name() const override { return m_name; }
     void name(const string& flag) override { m_name = flag; }
-    AstMemberDType* membersp() const {
-        return VN_AS(op1p(), MemberDType);
-    }  // op1 = AstMember list
-    void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
     // packed() but as don't support unpacked, presently all structs
     static bool packedUnsup() { return true; }
@@ -263,33 +257,31 @@ public:
 
 // === AstNode ===
 class AstEnumItem final : public AstNode {
+    // @astgen op1 := rangep : Optional[AstRange] // Range for name appending
+    // @astgen op2 := valuep : Optional[AstNode]
 private:
     string m_name;
 
 public:
     // Parents: ENUM
-    AstEnumItem(FileLine* fl, const string& name, AstNode* rangep, AstNode* initp)
+    AstEnumItem(FileLine* fl, const string& name, AstRange* rangep, AstNode* valuep)
         : ASTGEN_SUPER_EnumItem(fl)
         , m_name{name} {
-        addNOp1p(rangep);
-        addNOp2p(initp);
+        this->rangep(rangep);
+        this->valuep(valuep);
     }
     ASTGEN_MEMBERS_EnumItem;
     string name() const override { return m_name; }
     bool maybePointedTo() const override { return true; }
     bool hasDType() const override { return true; }
     void name(const string& flag) override { m_name = flag; }
-    AstRange* rangep() const { return VN_AS(op1p(), Range); }  // op1 = Range for name appending
-    void rangep(AstRange* nodep) { addOp1p((AstNode*)nodep); }
-    AstNode* valuep() const { return op2p(); }  // op2 = Value
-    void valuep(AstNode* nodep) { addOp2p(nodep); }
 };
 
 // === AstNodeDType ===
 class AstAssocArrayDType final : public AstNodeDType {
     // Associative array data type, ie "[some_dtype]"
-    // Children: DTYPE (moved to refDTypep() in V3Width)
-    // Children: DTYPE (the key, which remains here as a pointer)
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
+    // @astgen op2 := keyChildDTypep : AstNodeDType // the key, which remains here as a pointer
 private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
     AstNodeDType* m_keyDTypep;  // Keys of this type (after widthing)
@@ -335,9 +327,6 @@ public:
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* getChild2DTypep() const override { return keyChildDTypep(); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
@@ -347,9 +336,6 @@ public:
     //
     AstNodeDType* keyDTypep() const { return m_keyDTypep ? m_keyDTypep : keyChildDTypep(); }
     void keyDTypep(AstNodeDType* nodep) { m_keyDTypep = nodep; }
-    // op1 = Range of variable
-    AstNodeDType* keyChildDTypep() const { return VN_AS(op2p(), NodeDType); }
-    void keyChildDTypep(AstNodeDType* nodep) { setOp2p(nodep); }
     // METHODS
     AstBasicDType* basicp() const override { return nullptr; }
     AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
@@ -361,7 +347,7 @@ public:
 };
 class AstBasicDType final : public AstNodeDType {
     // Builtin atomic/vectored data type
-    // Children: RANGE (converted to constant in V3Width)
+    // @astgen op1 := rangep : Optional[AstRange] // Range of variable
 private:
     struct Members {
         VBasicDTypeKwd m_keyword;  // (also in VBasicTypeKey) What keyword created basic type
@@ -415,8 +401,6 @@ public:
         BROKEN_RTN(dtypep() != this);
         return nullptr;
     }
-    AstRange* rangep() const { return VN_AS(op1p(), Range); }  // op1 = Range of variable
-    void rangep(AstRange* nodep) { setNOp1p((AstNode*)nodep); }
     void setSignedState(const VSigning& signst) {
         // Note NOSIGN does NOT change the state; this is required by the parser
         if (signst == VSigning::UNSIGNED) {
@@ -474,21 +458,18 @@ public:
 class AstBracketArrayDType final : public AstNodeDType {
     // Associative/Queue/Normal array data type, ie "[dtype_or_expr]"
     // only for early parsing then becomes another data type
-    // Children: DTYPE (moved to refDTypep() in V3Width)
-    // Children: DTYPE (the key)
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
+    // @astgen op2 := elementsp : AstNode // ??? key dtype ???
 public:
-    AstBracketArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* elementsp)
+    AstBracketArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* childDTypep,
+                         AstNode* elementsp)
         : ASTGEN_SUPER_BracketArrayDType(fl) {
-        setOp1p(dtp);  // Only for parser
-        setOp2p(elementsp);  // Only for parser
+        this->childDTypep(childDTypep);
+        this->elementsp(elementsp);
     }
     ASTGEN_MEMBERS_BracketArrayDType;
     bool similarDType(AstNodeDType* samep) const override { V3ERROR_NA_RETURN(false); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     AstNodeDType* subDTypep() const override { return childDTypep(); }
-    // op2 = Range of variable
-    AstNode* elementsp() const { return op2p(); }
     // METHODS
     // Will be removed in V3Width, which relies on this
     // being a child not a dtype pointed node
@@ -503,16 +484,16 @@ public:
 };
 class AstClassRefDType final : public AstNodeDType {
     // Reference to a class
-    // Children: PINs (for parameter settings)
+    // @astgen op1 := paramsp: List[AstPin]
 private:
     AstClass* m_classp;  // data type pointed to, BELOW the AstTypedef
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
-    AstClassRefDType(FileLine* fl, AstClass* classp, AstNode* paramsp)
+    AstClassRefDType(FileLine* fl, AstClass* classp, AstPin* paramsp)
         : ASTGEN_SUPER_ClassRefDType(fl)
         , m_classp{classp} {
-        dtypep(this);
-        addNOp4p(paramsp);
+        this->dtypep(this);
+        this->addParamsp(paramsp);
     }
     ASTGEN_MEMBERS_ClassRefDType;
     // METHODS
@@ -541,13 +522,13 @@ public:
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
-    AstPin* paramsp() const { return VN_AS(op4p(), Pin); }
     bool isCompound() const override { return true; }
 };
 class AstConstDType final : public AstNodeDType {
     // const data type, ie "const some_dtype var_name [2:0]"
     // ConstDType are removed in V3LinkLValue and become AstVar::isConst.
     // When more generic types are supported AstConstDType will be propagated further.
+    // @astgen op1 := childDTypep : Optional[AstNodeDType]
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Inherit from this base data type
 public:
@@ -575,9 +556,6 @@ public:
         return skipRefp()->similarDType(samep->skipRefp());
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
@@ -598,6 +576,7 @@ class AstDefImplicitDType final : public AstNodeDType {
     // For parsing enum/struct/unions that are declared with a variable rather than typedef
     // This allows "var enum {...} a,b" to share the enum definition for both variables
     // After link, these become typedefs
+    // @astgen op1 := childDTypep : Optional[AstNodeDType]
 private:
     string m_name;
     void* m_containerp;  // In what scope is the name unique, so we can know what are duplicate
@@ -624,9 +603,6 @@ public:
         return type() == samep->type() && same(samep);
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return dtypep() ? dtypep() : childDTypep(); }
     void* containerp() const { return m_containerp; }
     // METHODS
@@ -644,7 +620,7 @@ public:
 };
 class AstDynArrayDType final : public AstNodeDType {
     // Dynamic array data type, ie "[]"
-    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
 public:
@@ -681,9 +657,6 @@ public:
     string prettyDTypeName() const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
@@ -726,19 +699,20 @@ public:
 };
 class AstEnumDType final : public AstNodeDType {
     // Parents: TYPEDEF/MODULE
-    // Children: ENUMVALUEs
+    // @astgen op1 := childDTypep : Optional[AstNodeDType]
+    // @astgen op2 := itemsp : List[AstEnumItem]
 private:
     string m_name;  // Name from upper typedef, if any
     AstNodeDType* m_refDTypep = nullptr;  // Elements are of this type after V3Width
     const int m_uniqueNum = 0;
 
 public:
-    AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* itemsp)
+    AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstEnumItem* itemsp)
         : ASTGEN_SUPER_EnumDType(fl)
         , m_uniqueNum{uniqueNumInc()} {
         childDTypep(dtp);  // Only for parser
         refDTypep(nullptr);
-        addNOp2p(itemsp);
+        addItemsp(itemsp);
         dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
@@ -758,16 +732,12 @@ public:
     }
     bool similarDType(AstNodeDType* samep) const override { return this == samep; }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }  // op1 = Data type
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    // op1 = Range of variable
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     string name() const override { return m_name; }
     void name(const string& flag) override { m_name = flag; }
-    AstEnumItem* itemsp() const { return VN_AS(op2p(), EnumItem); }  // op2 = AstEnumItem's
     // METHODS
     AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
     AstNodeDType* skipRefp() const override { return subDTypep()->skipRefp(); }
@@ -839,6 +809,7 @@ public:
 class AstMemberDType final : public AstNodeDType {
     // A member of a struct/union
     // PARENT: AstNodeUOrStructDType
+    // @astgen op1 := childDTypep : Optional[AstNodeDType]
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
     string m_name;  // Name of variable
@@ -873,9 +844,6 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
@@ -908,6 +876,7 @@ public:
 class AstParamTypeDType final : public AstNodeDType {
     // Parents: MODULE
     // A parameter type statement; much like a var or typedef
+    // @astgen op1 := childDTypep : Optional[AstNodeDType]
 private:
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     string m_name;  // Name of variable
@@ -922,9 +891,6 @@ public:
     }
     ASTGEN_MEMBERS_ParamTypeDType;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    // op1 = Type assigning to
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return dtypep() ? dtypep() : childDTypep(); }
     AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
     AstNodeDType* skipRefp() const override { return subDTypep()->skipRefp(); }
@@ -976,20 +942,21 @@ public:
 };
 class AstQueueDType final : public AstNodeDType {
     // Queue array data type, ie "[ $ ]"
-    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
+    // @astgen op2 := boundp : Optional[AstNode]
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
 public:
     AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* boundp)
         : ASTGEN_SUPER_QueueDType(fl) {
-        setNOp2p(boundp);
-        childDTypep(dtp);  // Only for parser
+        this->childDTypep(dtp);
+        this->boundp(boundp);
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
     AstQueueDType(FileLine* fl, AstNodeDType* dtp, AstNode* boundp)
         : ASTGEN_SUPER_QueueDType(fl) {
-        setNOp2p(boundp);
+        this->boundp(boundp);
         refDTypep(dtp);
         dtypep(dtp);
     }
@@ -1015,13 +982,8 @@ public:
     void dumpSmall(std::ostream& str) const override;
     string prettyDTypeName() const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
-    AstNode* boundp() const { return op2p(); }  // op2 = Bound, nullptr = none
-    void boundp(AstNode* nodep) { setNOp2p(nodep); }
     inline int boundConst() const;
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
@@ -1038,6 +1000,9 @@ public:
     bool isCompound() const override { return true; }
 };
 class AstRefDType final : public AstNodeDType {
+    // @astgen op1 := typeofp : AstNode
+    // @astgen op2 := classOrPackageOpp : Optional[AstNode]
+    // @astgen op3 := paramsp : List[AstPin]
 private:
     // Pre-Width must reference the Typeref, not what it points to, as some child
     // types like AstBracketArrayType will disappear and can't lose the handle
@@ -1050,16 +1015,16 @@ public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER_RefDType(fl)
         , m_name{name} {}
-    AstRefDType(FileLine* fl, const string& name, AstNode* classOrPackagep, AstNode* paramsp)
+    AstRefDType(FileLine* fl, const string& name, AstNode* classOrPackagep, AstPin* paramsp)
         : ASTGEN_SUPER_RefDType(fl)
         , m_name{name} {
-        setNOp3p(classOrPackagep);
-        addNOp4p(paramsp);
+        this->classOrPackageOpp(classOrPackagep);
+        addParamsp(paramsp);
     }
     class FlagTypeOfExpr {};  // type(expr) for parser only
     AstRefDType(FileLine* fl, FlagTypeOfExpr, AstNode* typeofp)
         : ASTGEN_SUPER_RefDType(fl) {
-        setOp2p(typeofp);
+        this->typeofp(typeofp);
     }
     ASTGEN_MEMBERS_RefDType;
     // METHODS
@@ -1110,7 +1075,6 @@ public:
     int widthAlignBytes() const override { return dtypeSkipRefp()->widthAlignBytes(); }
     int widthTotalBytes() const override { return dtypeSkipRefp()->widthTotalBytes(); }
     void name(const string& flag) override { m_name = flag; }
-    // op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
     AstTypedef* typedefp() const { return m_typedefp; }
     void typedefp(AstTypedef* nodep) { m_typedefp = nodep; }
@@ -1120,9 +1084,6 @@ public:
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
-    AstNode* typeofp() const { return op2p(); }
-    AstNode* classOrPackageOpp() const { return op3p(); }
-    AstPin* paramsp() const { return VN_AS(op4p(), Pin); }
     bool isCompound() const override {
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
@@ -1130,7 +1091,7 @@ public:
 };
 class AstUnsizedArrayDType final : public AstNodeDType {
     // Unsized/open-range Array data type, ie "some_dtype var_name []"
-    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
 private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
 public:
@@ -1153,9 +1114,6 @@ public:
     bool similarDType(AstNodeDType* samep) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
@@ -1198,7 +1156,7 @@ public:
 };
 class AstWildcardArrayDType final : public AstNodeDType {
     // Wildcard index type associative array data type, ie "some_dtype var_name [*]"
-    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
 private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
 public:
@@ -1221,9 +1179,6 @@ public:
     bool similarDType(AstNodeDType* samep) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    // op1 = Range of variable
-    AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
@@ -1241,8 +1196,6 @@ public:
 // === AstNodeArrayDType ===
 class AstPackArrayDType final : public AstNodeArrayDType {
     // Packed array data type, ie "some_dtype [2:0] var_name"
-    // Children: DTYPE (moved to refDTypep() in V3Width)
-    // Children: RANGE (array bounds)
 public:
     inline AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep);
     inline AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep);
@@ -1252,15 +1205,13 @@ public:
 };
 class AstUnpackArrayDType final : public AstNodeArrayDType {
     // Array data type, ie "some_dtype var_name [2:0]"
-    // Children: DTYPE (moved to refDTypep() in V3Width)
-    // Children: RANGE (array bounds)
     bool m_isCompound = false;  // Non-POD subDType, or parent requires compound
 public:
     AstUnpackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep)
         : ASTGEN_SUPER_UnpackArrayDType(fl) {
-        childDTypep(dtp);  // Only for parser
+        this->childDTypep(dtp);  // Only for parser
+        this->rangep(rangep);
         refDTypep(nullptr);
-        setOp2p((AstNode*)rangep);
         dtypep(nullptr);  // V3Width will resolve
         // For backward compatibility AstNodeArrayDType and others inherit
         // width and signing from the subDType/base type
@@ -1268,8 +1219,8 @@ public:
     }
     AstUnpackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
         : ASTGEN_SUPER_UnpackArrayDType(fl) {
+        this->rangep(rangep);
         refDTypep(dtp);
-        setOp2p((AstNode*)rangep);
         dtypep(this);
         // For backward compatibility AstNodeArrayDType and others inherit
         // width and signing from the subDType/base type

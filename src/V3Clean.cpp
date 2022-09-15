@@ -236,7 +236,7 @@ private:
         setClean(nodep, false);
         // We always clean, as we don't trust those pesky users.
         if (!VN_IS(nodep->backp(), And)) insertClean(nodep);
-        ensureCleanAndNext(nodep->bodysp());
+        ensureCleanAndNext(nodep->exprsp());
     }
     void visit(AstTraceDecl* nodep) override {
         // No cleaning, or would loose pointer to enum
@@ -259,7 +259,7 @@ private:
     void visit(AstNodeCond* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->condp());
-        setClean(nodep, isClean(nodep->expr1p()) && isClean(nodep->expr2p()));
+        setClean(nodep, isClean(nodep->thenp()) && isClean(nodep->elsep()));
     }
     void visit(AstWhile* nodep) override {
         iterateChildren(nodep);
@@ -276,7 +276,7 @@ private:
     }
     void visit(AstUCStmt* nodep) override {
         iterateChildren(nodep);
-        ensureCleanAndNext(nodep->bodysp());
+        ensureCleanAndNext(nodep->exprsp());
     }
     void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);

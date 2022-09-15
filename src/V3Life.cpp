@@ -351,7 +351,7 @@ private:
         LifeBlock* const elseLifep = new LifeBlock(prevLifep, m_statep);
         {
             m_lifep = ifLifep;
-            iterateAndNextNull(nodep->ifsp());
+            iterateAndNextNull(nodep->thensp());
         }
         {
             m_lifep = elseLifep;
@@ -386,7 +386,7 @@ private:
         }
         {
             m_lifep = bodyLifep;
-            iterateAndNextNull(nodep->bodysp());
+            iterateAndNextNull(nodep->stmtsp());
             iterateAndNextNull(nodep->incsp());
         }
         m_lifep = prevLifep;

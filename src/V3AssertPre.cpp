@@ -84,7 +84,7 @@ private:
     void visit(AstAlways* nodep) override {
         iterateAndNextNull(nodep->sensesp());
         if (nodep->sensesp()) m_seniAlwaysp = nodep->sensesp()->sensesp();
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->stmtsp());
         m_seniAlwaysp = nullptr;
     }
 

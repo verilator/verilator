@@ -116,7 +116,7 @@ private:
             }
         } else {
             // Move to module
-            m_modp->addStmtp(nodep);
+            m_modp->addStmtsp(nodep);
         }
     }
 
@@ -229,7 +229,7 @@ private:
             UINFO(8, "     rename to " << nodep->name() << endl);
             // Move to module
             nodep->unlinkFrBack();
-            m_modp->addStmtp(nodep);
+            m_modp->addStmtsp(nodep);
         }
         iterateChildren(nodep);
     }
@@ -248,10 +248,10 @@ private:
         const string scname = nodep->forFormat() ? m_displayScope : m_namedScope;
         if (!scname.empty()) {
             // To keep correct visual order, must add before other Text's
-            AstNode* const afterp = nodep->scopeAttrp();
+            AstText* const afterp = nodep->scopeAttrp();
             if (afterp) afterp->unlinkFrBackWithNext();
-            nodep->scopeAttrp(new AstText{nodep->fileline(), string("__DOT__") + scname});
-            if (afterp) nodep->scopeAttrp(afterp);
+            nodep->addScopeAttrp(new AstText{nodep->fileline(), string("__DOT__") + scname});
+            if (afterp) nodep->addScopeAttrp(afterp);
         }
         iterateChildren(nodep);
     }

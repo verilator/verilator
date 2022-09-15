@@ -114,7 +114,7 @@ private:
                 AstWhile* const whilep = new AstWhile(fl, condp, nullptr, incp);
                 initp->addNext(whilep);
                 bodyp->replaceWith(initp);
-                whilep->addBodysp(bodyp);
+                whilep->addStmtsp(bodyp);
 
                 // Replace constant index with new loop index
                 AstNode* const offsetp

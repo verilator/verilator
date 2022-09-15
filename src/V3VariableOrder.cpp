@@ -188,7 +188,7 @@ class VariableOrder final {
                 stmtsp->unlinkFrBackWithNext();
                 AstNode::addNext<AstNode, AstNode>(firstp, stmtsp);
             }
-            modp->addStmtp(firstp);
+            modp->addStmtsp(firstp);
         }
     }
 

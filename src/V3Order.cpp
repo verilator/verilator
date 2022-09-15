@@ -1235,7 +1235,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
     if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
         suspendable = procp->isSuspendable();
         if (suspendable) slow = slow && !VN_IS(procp, Always);
-        nodep = procp->bodysp();
+        nodep = procp->stmtsp();
         pushDeletep(procp);
     }
 
@@ -1262,7 +1262,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             newFuncpr->isLoose(true);
             newFuncpr->slow(slow);
             newStmtsr = 0;
-            scopep->addActivep(newFuncpr);
+            scopep->addBlocksp(newFuncpr);
             // Create top call to it
             AstCCall* const callp = new AstCCall{nodep->fileline(), newFuncpr};
             // Where will we be adding the call?
@@ -1423,7 +1423,7 @@ void OrderProcess::processMTasks() {
             const MTaskState& fromState = mtaskStates[fromp->id()];
             new V3GraphEdge(depGraphp, fromState.m_execMTaskp, state.m_execMTaskp, 1);
         }
-        execGraphp->addMTaskBodyp(bodyp);
+        execGraphp->addMTaskBodiesp(bodyp);
     }
 }
 
@@ -1501,7 +1501,7 @@ AstCFunc* order(AstNetlist* netlistp,  //
     funcp->slow(slow);
     funcp->isConst(false);
     funcp->declPrivate(true);
-    scopeTopp->addActivep(funcp);
+    scopeTopp->addBlocksp(funcp);
 
     // Add ordered statements to the result function
     for (AstNode* const nodep : nodeps) funcp->addStmtsp(nodep);

@@ -67,7 +67,7 @@ public:
         m_tlChgFuncp->isStatic(false);
         m_tlChgFuncp->isLoose(true);
         m_tlChgFuncp->declPrivate(true);
-        m_scopetopp->addActivep(m_tlChgFuncp);
+        m_scopetopp->addBlocksp(m_tlChgFuncp);
         // Each change detection function needs at least one AstChangeDet
         // to ensure that V3EmitC outputs the necessary code.
         maybeCreateMidChg();
@@ -86,7 +86,7 @@ public:
             m_chgFuncp->isStatic(false);
             m_chgFuncp->isLoose(true);
             m_chgFuncp->declPrivate(true);
-            m_scopetopp->addActivep(m_chgFuncp);
+            m_scopetopp->addBlocksp(m_chgFuncp);
 
             // Add a top call to it
             AstCCall* const callp = new AstCCall{m_scopetopp->fileline(), m_chgFuncp};
@@ -218,9 +218,9 @@ public:
             //          CHANGEDET(VARREF(_last), VARREF(var))
             AstVar* const newvarp
                 = new AstVar{varp->fileline(), VVarType::MODULETEMP, newvarname, varp};
-            m_state.m_topModp->addStmtp(newvarp);
+            m_state.m_topModp->addStmtsp(newvarp);
             m_newvscp = new AstVarScope{m_vscp->fileline(), m_state.m_scopetopp, newvarp};
-            m_state.m_scopetopp->addVarp(m_newvscp);
+            m_state.m_scopetopp->addVarsp(m_newvscp);
 
             m_varEqnp = new AstVarRef{m_vscp->fileline(), m_vscp, VAccess::READ};
             m_newLvEqnp = new AstVarRef{m_vscp->fileline(), m_newvscp, VAccess::WRITE};
