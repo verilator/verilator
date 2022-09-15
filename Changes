@@ -11,6 +11,12 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 4.227 devel
 ==========================
 
+**Announcement:**
+
+* The next release is anticipated primere Verilator Version 5.  Please
+  consider beta-testing the github 'develop-v5' branch, which will soon
+  merge into the github 'master' branch (#3383).
+
 **Minor:**
 
 * Support IEEE constant signal strengths (#3601). [Ryszard Rozak/Antmicro]
