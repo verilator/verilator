@@ -280,8 +280,15 @@ VLCOV_OBJS = \
 
 NON_STANDALONE_HEADERS = \
 	V3AstInlines.h  \
-	V3AstNodes.h  \
+	V3AstNodeDType.h  \
+	V3AstNodeMath.h  \
+	V3AstNodeOther.h  \
 	V3WidthCommit.h  \
+
+AST_DEFS := \
+  V3AstNodeDType.h \
+  V3AstNodeMath.h \
+  V3AstNodeOther.h \
 
 #### Linking
 
@@ -305,8 +312,8 @@ V3Number_test: V3Number_test.o
 
 #### Modules
 
-%__gen.cpp:	%.cpp $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PYTHON3) $(ASTGEN) -I $(srcdir) $*.cpp
+%__gen.cpp:	%.cpp $(ASTGEN) $(AST_DEFS)
+	$(PYTHON3) $(ASTGEN) -I $(srcdir) $(foreach f,$(AST_DEFS),--astdef $f) $*.cpp
 
 %.o:	%.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
@@ -336,8 +343,8 @@ vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
 	$(PYTHON3) $(VLCOVGEN) --srcdir $(srcdir)
 	touch $@
 
-V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PYTHON3) $(ASTGEN) -I $(srcdir)  --classes
+V3Ast__gen_classes.h : $(ASTGEN) $(AST_DEFS)
+	$(PYTHON3) $(ASTGEN) -I $(srcdir) $(foreach f,$(AST_DEFS),--astdef $f) --classes
 
 V3ParseBison.h: V3ParseBison.c
 

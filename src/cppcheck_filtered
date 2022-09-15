@@ -117,7 +117,7 @@ def _suppress(filename, linenum, eid):
     if filename == "*":
         return False
 
-    # Cleanup for e.g. ../V3AstNodes.h
+    # Cleanup for e.g. ../V3AstNode*.h
     filename = re.sub(r'^\.\./(.*)', r'src/\1', filename)
 
     # Specific suppressions

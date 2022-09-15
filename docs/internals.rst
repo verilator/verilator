@@ -1657,8 +1657,9 @@ Generally what would you do to add a new feature?
    language and has a lot of back-and-forth with Verilator's grammar. Copy
    the appropriate rules to src/verilog.y and modify the productions.
 
-4. If a new Ast type is needed, add it to V3AstNodes.h. Follow the
-   convention described above about the AstNode type hierarchy.
+4. If a new Ast type is needed, add it to the appropriate V3AstNode*.h.
+   Follow the convention described above about the AstNode type hierarchy.
+   Ordering of definitions is enforced by ``astgen``.
 
 5. Now you can run "test_regress/t/t_<newtestcase>.pl --debug" and it'll
    probably fail but you'll see a
