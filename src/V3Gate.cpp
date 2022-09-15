@@ -932,7 +932,7 @@ private:
         if (m_dedupable) {
             if (!m_always) {
                 m_always = true;
-                iterateAndNextNull(alwaysp->bodysp());
+                iterateAndNextNull(alwaysp->stmtsp());
             } else {
                 m_dedupable = false;
             }
@@ -947,7 +947,7 @@ private:
             if (m_always && !m_ifCondp && !ifp->elsesp()) {
                 // we're under an always, this is the first IF, and there's no else
                 m_ifCondp = ifp->condp();
-                iterateAndNextNull(ifp->ifsp());
+                iterateAndNextNull(ifp->thensp());
             } else {
                 m_dedupable = false;
             }

@@ -135,7 +135,7 @@ private:
         if (m_modp->isTop()) {
             v3Global.rootp()->createTopScope(m_scopep);
         } else {
-            m_modp->addStmtp(m_scopep);
+            m_modp->addStmtsp(m_scopep);
         }
 
         // Copy blocks into this scope
@@ -188,7 +188,7 @@ private:
         UINFO(4, "    Move " << nodep << endl);
         AstNode* const clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
+        m_scopep->addBlocksp(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
     void visit(AstAssignAlias* nodep) override {
@@ -196,7 +196,7 @@ private:
         UINFO(4, "    Move " << nodep << endl);
         AstNode* const clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
+        m_scopep->addBlocksp(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
     void visit(AstAssignVarScope* nodep) override {
@@ -204,7 +204,7 @@ private:
         UINFO(4, "    Move " << nodep << endl);
         AstNode* const clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
+        m_scopep->addBlocksp(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
     void visit(AstAssignW* nodep) override {
@@ -212,7 +212,7 @@ private:
         UINFO(4, "    Move " << nodep << endl);
         AstNode* const clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
+        m_scopep->addBlocksp(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
     void visit(AstAlwaysPublic* nodep) override {
@@ -220,7 +220,7 @@ private:
         UINFO(4, "    Move " << nodep << endl);
         AstNode* const clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
+        m_scopep->addBlocksp(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
     void visit(AstCoverToggle* nodep) override {
@@ -228,7 +228,7 @@ private:
         UINFO(4, "    Move " << nodep << endl);
         AstNode* const clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
+        m_scopep->addBlocksp(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
     void visit(AstCFunc* nodep) override {
@@ -236,7 +236,7 @@ private:
         UINFO(4, "    CFUNC " << nodep << endl);
         AstCFunc* const clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
+        m_scopep->addBlocksp(clonep);
         clonep->scopep(m_scopep);
         // We iterate under the *clone*
         iterateChildren(clonep);
@@ -253,7 +253,7 @@ private:
             clonep = nodep->cloneTree(false);
         }
         nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
+        m_scopep->addBlocksp(clonep);
         // We iterate under the *clone*
         iterateChildren(clonep);
     }
@@ -272,7 +272,7 @@ private:
             }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
             m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
-            m_scopep->addVarp(varscp);
+            m_scopep->addVarsp(varscp);
         }
     }
     void visit(AstVarRef* nodep) override {
@@ -295,14 +295,14 @@ private:
         // TOP and above will be the user's name().
         // Note 'TOP.' is stripped by scopePrettyName
         // To keep correct visual order, must add before other Text's
-        AstNode* afterp = nodep->scopeAttrp();
+        AstText* afterp = nodep->scopeAttrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeAttrp(new AstText(nodep->fileline(), prefix));
-        if (afterp) nodep->scopeAttrp(afterp);
+        nodep->addScopeAttrp(new AstText(nodep->fileline(), prefix));
+        if (afterp) nodep->addScopeAttrp(afterp);
         afterp = nodep->scopeEntrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeEntrp(new AstText(nodep->fileline(), prefix));
-        if (afterp) nodep->scopeEntrp(afterp);
+        nodep->addScopeEntrp(new AstText(nodep->fileline(), prefix));
+        if (afterp) nodep->addScopeEntrp(afterp);
         iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {

@@ -65,7 +65,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->isLoose(true);
         m_resumeFuncp->isConst(false);
         m_resumeFuncp->declPrivate(true);
-        scopeTopp->addActivep(m_resumeFuncp);
+        scopeTopp->addBlocksp(m_resumeFuncp);
         for (auto& p : m_lbs) {
             // Put all the timing actives in the resume function
             AstActive* const activep = p.second;
@@ -98,7 +98,7 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
                 m_commitFuncp->isLoose(true);
                 m_commitFuncp->isConst(false);
                 m_commitFuncp->declPrivate(true);
-                scopeTopp->addActivep(m_commitFuncp);
+                scopeTopp->addBlocksp(m_commitFuncp);
             }
             AstSenTree* const sensesp = activep->sensesp();
             FileLine* const flp = sensesp->fileline();
@@ -289,7 +289,7 @@ void transformForks(AstNetlist* const netlistp) {
                     funcp->addArgsp(newvarp);
                     AstVarScope* const newvscp
                         = new AstVarScope{newvarp->fileline(), funcp->scopep(), newvarp};
-                    funcp->scopep()->addVarp(newvscp);
+                    funcp->scopep()->addVarsp(newvscp);
                     vscp->user2p(newvscp);
                     callp->addArgsp(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
                 }

@@ -144,7 +144,7 @@ private:
         varp->isStatic(true);
         varp->valuep(initp);
         // Add to root, as don't know module we are in, and aids later structure sharing
-        v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
+        v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {

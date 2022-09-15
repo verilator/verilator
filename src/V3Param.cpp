@@ -1132,7 +1132,7 @@ class ParamVisitor final : public VNVisitor {
                                                   // NOT recurse the body.
         V3Const::constifyGenerateParamsEdit(nodep->condp());  // condp may change
         if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
-            if (AstNode* const keepp = (constp->isZero() ? nodep->elsesp() : nodep->ifsp())) {
+            if (AstNode* const keepp = (constp->isZero() ? nodep->elsesp() : nodep->thensp())) {
                 keepp->unlinkFrBackWithNext();
                 nodep->replaceWith(keepp);
             } else {
@@ -1150,9 +1150,7 @@ class ParamVisitor final : public VNVisitor {
     //!       expression, since this is currently restricted to simple comparisons. If we ever do
     //!       move to more generic constant expressions, such code will be needed here.
     void visit(AstBegin* nodep) override {
-        if (nodep->genforp()) {
-            AstGenFor* const forp = VN_AS(nodep->genforp(), GenFor);
-            UASSERT_OBJ(forp, nodep, "Non-GENFOR under generate-for BEGIN");
+        if (AstGenFor* const forp = VN_AS(nodep->genforp(), GenFor)) {
             // We should have a GENFOR under here.  We will be replacing the begin,
             // so process here rather than at the generate to avoid iteration problems
             UINFO(9, "  BEGIN " << nodep << endl);
@@ -1211,7 +1209,7 @@ class ParamVisitor final : public VNVisitor {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
                         V3Number match(nodep, 1);
                         match.opEq(ccondp->num(), exprp->num());
-                        if (!keepp && match.isNeqZero()) keepp = itemp->bodysp();
+                        if (!keepp && match.isNeqZero()) keepp = itemp->stmtsp();
                     } else {
                         itemp->v3error("Generate Case item does not evaluate to constant");
                     }
@@ -1222,7 +1220,7 @@ class ParamVisitor final : public VNVisitor {
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (itemp->isDefault()) {
-                if (!keepp) keepp = itemp->bodysp();
+                if (!keepp) keepp = itemp->stmtsp();
             }
         }
         // Replace
@@ -1269,7 +1267,7 @@ public:
                              });
 
             // Re-insert modules
-            for (AstNodeModule* const modp : modps) netlistp->addModulep(modp);
+            for (AstNodeModule* const modp : modps) netlistp->addModulesp(modp);
         }
     }
     ~ParamVisitor() override = default;

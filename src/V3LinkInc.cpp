@@ -106,7 +106,7 @@ private:
         iterateAndNextNull(nodep->condp());
         // Body insert just before themselves
         m_insStmtp = nullptr;  // First thing should be new statement
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->stmtsp());
         iterateAndNextNull(nodep->incsp());
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
@@ -131,7 +131,7 @@ private:
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
         m_insStmtp = nullptr;
-        iterateAndNextNull(nodep->ifsp());
+        iterateAndNextNull(nodep->thensp());
         iterateAndNextNull(nodep->elsesp());
         m_insStmtp = nullptr;
     }
@@ -143,7 +143,7 @@ private:
             iterateAndNextNull(nodep->condsp());
         }
         m_insStmtp = nullptr;  // Next thing should be new statement
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
@@ -165,7 +165,7 @@ private:
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
         m_insStmtp = nullptr;
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->stmtsp());
         m_insStmtp = nullptr;
     }
     void visit(AstNodeStmt* nodep) override {

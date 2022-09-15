@@ -218,7 +218,7 @@ private:
     // METHODS
     void addActive(AstActive* nodep) {
         UASSERT_OBJ(m_scopep, nodep, "nullptr scope");
-        m_scopep->addActivep(nodep);
+        m_scopep->addBlocksp(nodep);
     }
 
     // VISITORS
@@ -324,7 +324,7 @@ private:
             LatchDetectGraphVertex* const parentp = m_graph.currentp();
             LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
             m_graph.addPathVertex(branchp, "IF");
-            iterateAndNextNull(nodep->ifsp());
+            iterateAndNextNull(nodep->thensp());
             m_graph.addPathVertex(branchp, "ELSE");
             iterateAndNextNull(nodep->elsesp());
             m_graph.currentp(parentp);
@@ -529,7 +529,7 @@ private:
         visitAlways(nodep, nullptr, VAlwaysKwd::ALWAYS_COMB);
     }
     void visit(AstAlways* nodep) override {
-        if (!nodep->bodysp()) {  // Empty always. Remove it now.
+        if (!nodep->stmtsp()) {  // Empty always. Remove it now.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -539,7 +539,7 @@ private:
     void visit(AstAlwaysPostponed* nodep) override {
         // Might be empty with later optimizations, so this assertion can be removed,
         // but for now it is guaranteed to be not empty.
-        UASSERT_OBJ(nodep->bodysp(), nodep, "Should not be empty");
+        UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not be empty");
         visitAlways(nodep, nullptr, VAlwaysKwd::ALWAYS);
     }
     void visit(AstAlwaysPublic* nodep) override {

@@ -161,13 +161,13 @@ private:
         if (delayp) {
             auto* const delayStmtp = new AstDelay{flp, delayp, nullptr};
             stmtp->replaceWith(delayStmtp);
-            delayStmtp->stmtsp(stmtp);
+            delayStmtp->addStmtsp(stmtp);
             stmtp = delayStmtp;
         }
         if (auto* const sensesp = VN_CAST(controlp, SenTree)) {
             auto* const eventControlp = new AstEventControl{flp, sensesp, nullptr};
             stmtp->replaceWith(eventControlp);
-            eventControlp->stmtsp(stmtp);
+            eventControlp->addStmtsp(stmtp);
             stmtp = eventControlp;
         }
         return stmtp == nodep ? nullptr : stmtp;
@@ -216,7 +216,7 @@ private:
         awaitingCurrentTimep->dtypeSetBit();
         m_delaySensesp
             = new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE, awaitingCurrentTimep}};
-        m_netlistp->topScopep()->addSenTreep(m_delaySensesp);
+        m_netlistp->topScopep()->addSenTreesp(m_delaySensesp);
         return m_delaySensesp;
     }
     // Creates a trigger scheduler variable
@@ -265,10 +265,10 @@ private:
             insertBeforep->addHereThisAsNext(varp);
         } else {
             varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
-            m_scopep->modp()->addStmtp(varp);
+            m_scopep->modp()->addStmtsp(varp);
         }
         AstVarScope* vscp = new AstVarScope{flp, m_scopep, varp};
-        m_scopep->addVarp(vscp);
+        m_scopep->addVarsp(vscp);
         return vscp;
     }
     // Add a done() call on the fork sync
@@ -347,9 +347,9 @@ private:
             FileLine* const flp = nodep->fileline();
             AstSenTree* const sensesp = m_activep->sensesp();
             if (sensesp->hasClocked()) {
-                AstNode* bodysp = nodep->bodysp()->unlinkFrBackWithNext();
+                AstNode* bodysp = nodep->stmtsp()->unlinkFrBackWithNext();
                 auto* const controlp = new AstEventControl{flp, sensesp->cloneTree(false), bodysp};
-                nodep->addStmtp(controlp);
+                nodep->addStmtsp(controlp);
                 iterate(controlp);
             }
             // Note: The 'while (true)' outer loop will be added in V3Sched
@@ -412,9 +412,9 @@ private:
     }
     void visit(AstNodeCCall* nodep) override {
         if (nodep->funcp()->user2()) {  // If suspendable
-            auto* const awaitp = new AstCAwait{nodep->fileline(), nullptr};
-            nodep->replaceWith(awaitp);
-            awaitp->exprp(nodep);
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(new AstCAwait{nodep->fileline(), nodep});
         } else {
             // Add our process/func as the CFunc's dependency as we might have to put an await here
             DependencyVertex* const procVxp = getDependencyVertex(m_procp);
@@ -571,15 +571,15 @@ private:
         // Wait on changed events related to the vars in the wait statement
         AstSenItem* const senItemsp = varRefpsToSenItemsp(nodep->condp());
         AstNode* const condp = nodep->condp()->unlinkFrBack();
-        AstNode* const bodysp = nodep->bodysp();
-        if (bodysp) bodysp->unlinkFrBackWithNext();
+        AstNode* const stmtsp = nodep->stmtsp();
+        if (stmtsp) stmtsp->unlinkFrBackWithNext();
         FileLine* const flp = nodep->fileline();
         if (senItemsp) {
             // Put the event control in a while loop with the wait expression as condition
             AstNode* const loopp
                 = new AstWhile{flp, new AstLogNot{flp, condp},
                                new AstEventControl{flp, new AstSenTree{flp, senItemsp}, nullptr}};
-            if (bodysp) loopp->addNext(bodysp);
+            if (stmtsp) loopp->addNext(stmtsp);
             nodep->replaceWith(loopp);
         } else {
             condp->v3warn(WAITCONST, "Wait statement condition is constant");
@@ -590,10 +590,10 @@ private:
                 auto* const awaitp = new AstCAwait{flp, new AstCStmt{flp, "VlForever{}"}};
                 awaitp->statement(true);
                 nodep->replaceWith(awaitp);
-                if (bodysp) VL_DO_DANGLING(bodysp->deleteTree(), bodysp);
-            } else if (bodysp) {
+                if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
+            } else if (stmtsp) {
                 // Just put the body there
-                nodep->replaceWith(bodysp);
+                nodep->replaceWith(stmtsp);
             }
             VL_DO_DANGLING(constCondp->deleteTree(), condp);
         }

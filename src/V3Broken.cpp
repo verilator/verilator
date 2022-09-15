@@ -275,9 +275,9 @@ private:
         pushLocalScope();
         processEnter(nodep);
         processAndIterate(nodep->condp());
-        if (AstNode* const ifsp = nodep->ifsp()) {
+        if (AstNode* const thensp = nodep->thensp()) {
             pushLocalScope();
-            processAndIterateList(ifsp);
+            processAndIterateList(thensp);
             popLocalScope();
         }
         if (AstNode* const elsesp = nodep->elsesp()) {

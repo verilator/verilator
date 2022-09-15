@@ -178,9 +178,9 @@ private:
         iterateAndNextNull(nodep->condp());
         const uint32_t savedCount = m_instrCount;
 
-        UINFO(8, "ifsp:\n");
+        UINFO(8, "thensp:\n");
         reset();
-        iterateAndNextNull(nodep->ifsp());
+        iterateAndNextNull(nodep->thensp());
         uint32_t ifCount = m_instrCount;
         if (nodep->branchPred().unlikely()) ifCount = 0;
 
@@ -196,7 +196,7 @@ private:
             if (nodep->elsesp()) nodep->elsesp()->user4(0);  // Don't dump it
         } else {
             m_instrCount = savedCount + elseCount;
-            if (nodep->ifsp()) nodep->ifsp()->user4(0);  // Don't dump it
+            if (nodep->thensp()) nodep->thensp()->user4(0);  // Don't dump it
         }
     }
     void visit(AstNodeCond* nodep) override {
@@ -209,21 +209,21 @@ private:
 
         UINFO(8, "?\n");
         reset();
-        iterateAndNextNull(nodep->expr1p());
+        iterateAndNextNull(nodep->thenp());
         const uint32_t ifCount = m_instrCount;
 
         UINFO(8, ":\n");
         reset();
-        iterateAndNextNull(nodep->expr2p());
+        iterateAndNextNull(nodep->elsep());
         const uint32_t elseCount = m_instrCount;
 
         reset();
         if (ifCount < elseCount) {
             m_instrCount = savedCount + elseCount;
-            if (nodep->expr1p()) nodep->expr1p()->user4(0);  // Don't dump it
+            if (nodep->thenp()) nodep->thenp()->user4(0);  // Don't dump it
         } else {
             m_instrCount = savedCount + ifCount;
-            if (nodep->expr2p()) nodep->expr2p()->user4(0);  // Don't dump it
+            if (nodep->elsep()) nodep->elsep()->user4(0);  // Don't dump it
         }
     }
     void visit(AstCAwait* nodep) override {

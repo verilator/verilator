@@ -294,15 +294,15 @@ private:
             UASSERT_OBJ(exprconstp || exprvarrefp, nodep,
                         "Unknown interconnect type; pinReconnectSimple should have cleared up");
             if (exprconstp) {
-                m_modp->addStmtp(new AstAssignW(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
-                                                exprconstp->cloneTree(false)));
+                m_modp->addStmtsp(new AstAssignW(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
+                                                 exprconstp->cloneTree(false)));
             } else if (nodep->user3()) {
                 // Public variable at the lower module end - we need to make sure we propagate
                 // the logic changes up and down; if we aliased, we might
                 // remove the change detection on the output variable.
                 UINFO(9, "public pin assign: " << exprvarrefp << endl);
                 UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
-                m_modp->addStmtp(
+                m_modp->addStmtsp(
                     new AstAssignW(flp, new AstVarRef(flp, exprvarrefp->varp(), VAccess::WRITE),
                                    new AstVarRef(flp, nodep, VAccess::READ)));
             } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
@@ -310,11 +310,11 @@ private:
                 // instead of aliased, because otherwise it will pass V3Slice and invalid
                 // code will be emitted.
                 UINFO(9, "assign to public and unpacked: " << nodep << endl);
-                m_modp->addStmtp(
+                m_modp->addStmtsp(
                     new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
                                    new AstVarRef{flp, exprvarrefp->varp(), VAccess::READ}});
             } else if (nodep->isIfaceRef()) {
-                m_modp->addStmtp(
+                m_modp->addStmtsp(
                     new AstAssignVarScope(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
                                           new AstVarRef(flp, exprvarrefp->varp(), VAccess::READ)));
                 FileLine* const flbp = exprvarrefp->varp()->fileline();
@@ -323,7 +323,7 @@ private:
             } else {
                 // Do to inlining child's variable now within the same
                 // module, so a AstVarRef not AstVarXRef below
-                m_modp->addStmtp(
+                m_modp->addStmtsp(
                     new AstAssignAlias(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
                                        new AstVarRef(flp, exprvarrefp->varp(), VAccess::READ)));
                 FileLine* const flbp = exprvarrefp->varp()->fileline();
@@ -423,16 +423,16 @@ private:
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Begin
         // To keep correct visual order, must add before other Text's
-        AstNode* afterp = nodep->scopeAttrp();
+        AstText* afterp = nodep->scopeAttrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeAttrp(
+        nodep->addScopeAttrp(
             new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
-        if (afterp) nodep->scopeAttrp(afterp);
+        if (afterp) nodep->addScopeAttrp(afterp);
         afterp = nodep->scopeEntrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeEntrp(
+        nodep->addScopeEntrp(
             new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
-        if (afterp) nodep->scopeEntrp(afterp);
+        if (afterp) nodep->addScopeEntrp(afterp);
         iterateChildren(nodep);
     }
     void visit(AstCoverDecl* nodep) override {
@@ -566,7 +566,7 @@ private:
         // Move statements under the module we are inlining into
         if (AstNode* const stmtsp = newmodp->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
-            m_modp->addStmtp(stmtsp);
+            m_modp->addStmtsp(stmtsp);
         }
         // Clear any leftover ports, etc
         VL_DO_DANGLING(newmodp->deleteTree(), newmodp);
@@ -649,7 +649,7 @@ private:
         }
 
         if (VN_IS(nodep->modp(), Iface)) {
-            nodep->addIntfRefp(new AstIntfRef{nodep->fileline(), m_scope});
+            nodep->addIntfRefsp(new AstIntfRef{nodep->fileline(), m_scope});
         }
         {
             AstNodeModule* const modp = nodep->modp();
@@ -666,7 +666,7 @@ private:
                 if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
                     varp->user1p(cellp);
                     const string alias = m_scope + "__DOT__" + pinp->name();
-                    cellp->addIntfRefp(new AstIntfRef(pinp->fileline(), alias));
+                    cellp->addIntfRefsp(new AstIntfRef(pinp->fileline(), alias));
                 }
             }
 
@@ -695,7 +695,7 @@ private:
         string alias;
         if (!m_scope.empty()) alias = m_scope + "__DOT__";
         alias += varlp->name();
-        cellp->addIntfRefp(new AstIntfRef(varlp->fileline(), alias));
+        cellp->addIntfRefsp(new AstIntfRef(varlp->fileline(), alias));
     }
     //--------------------
     void visit(AstNodeMath*) override {}  // Accelerate

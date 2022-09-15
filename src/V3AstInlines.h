@@ -61,7 +61,6 @@ bool AstNode::sameGateTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, true);
 }
 
-void AstNodeArrayDType::rangep(AstRange* nodep) { setOp2p(nodep); }
 int AstNodeArrayDType::left() const { return rangep()->leftConst(); }
 int AstNodeArrayDType::right() const { return rangep()->rightConst(); }
 int AstNodeArrayDType::hi() const { return rangep()->hiConst(); }
@@ -71,13 +70,13 @@ VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right(
 
 AstRange::AstRange(FileLine* fl, int left, int right)
     : ASTGEN_SUPER_Range(fl) {
-    setOp2p(new AstConst{fl, static_cast<uint32_t>(left)});
-    setOp3p(new AstConst{fl, static_cast<uint32_t>(right)});
+    leftp(new AstConst{fl, static_cast<uint32_t>(left)});
+    rightp(new AstConst{fl, static_cast<uint32_t>(right)});
 }
 AstRange::AstRange(FileLine* fl, const VNumRange& range)
     : ASTGEN_SUPER_Range(fl) {
-    setOp2p(new AstConst{fl, static_cast<uint32_t>(range.left())});
-    setOp3p(new AstConst{fl, static_cast<uint32_t>(range.right())});
+    leftp(new AstConst{fl, static_cast<uint32_t>(range.left())});
+    rightp(new AstConst{fl, static_cast<uint32_t>(range.right())});
 }
 int AstRange::leftConst() const {
     AstConst* const constp = VN_CAST(leftp(), Const);
@@ -97,7 +96,7 @@ AstPin::AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
     : ASTGEN_SUPER_Pin(fl)
     , m_pinNum{pinNum}
     , m_name{varname->name()} {
-    setNOp1p(exprp);
+    this->exprp(exprp);
 }
 
 AstPackArrayDType::AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp,
@@ -105,7 +104,7 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType
     : ASTGEN_SUPER_PackArrayDType(fl) {
     childDTypep(dtp);  // Only for parser
     refDTypep(nullptr);
-    setOp2p(rangep);
+    this->rangep(rangep);
     dtypep(nullptr);  // V3Width will resolve
     const int width = subDTypep()->width() * rangep->elementsConst();
     widthForce(width, width);
@@ -113,7 +112,7 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType
 AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
     : ASTGEN_SUPER_PackArrayDType(fl) {
     refDTypep(dtp);
-    setOp2p(rangep);
+    this->rangep(rangep);
     dtypep(this);
     const int width = subDTypep()->width() * rangep->elementsConst();
     widthForce(width, width);
@@ -133,20 +132,20 @@ bool AstActive::hasCombo() const { return m_sensesp->hasCombo(); }
 
 AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNode* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {
-    setOp1p(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp});
+    addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp});
     m_displayType = dispType;
 }
 
 AstCStmt::AstCStmt(FileLine* fl, const string& textStmt)
     : ASTGEN_SUPER_CStmt(fl) {
-    addNOp1p(new AstText{fl, textStmt, true});
+    addExprsp(new AstText{fl, textStmt, true});
 }
 
 AstCMath::AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut)
     : ASTGEN_SUPER_CMath(fl)
     , m_cleanOut{cleanOut}
     , m_pure{true} {
-    addNOp1p(new AstText{fl, textStmt, true});
+    addExprsp(new AstText{fl, textStmt, true});
     if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
 }
 

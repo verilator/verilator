@@ -65,7 +65,7 @@ AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow) {
     funcp->slow(slow);
     funcp->isConst(false);
     funcp->declPrivate(true);
-    scopeTopp->addActivep(funcp);
+    scopeTopp->addBlocksp(funcp);
     return funcp;
 }
 
@@ -143,7 +143,7 @@ void splitCheck(AstCFunc* ofuncp) {
             funcp->isStatic(false);
             funcp->isLoose(true);
             funcp->slow(ofuncp->slow());
-            ofuncp->scopep()->addActivep(funcp);
+            ofuncp->scopep()->addBlocksp(funcp);
             //
             AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
             ofuncp->addStmtsp(callp);
@@ -209,7 +209,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         subFuncp->isConst(false);
         subFuncp->declPrivate(true);
         subFuncp->slow(funcp->slow());
-        scopep->addActivep(subFuncp);
+        scopep->addBlocksp(subFuncp);
         // Call it from the top function
         funcp->addStmtsp(new AstCCall{scopep->fileline(), subFuncp});
         return subFuncp;
@@ -226,7 +226,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
             auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
             nextp = logicp->nextp();
             if (AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure)) {
-                if (AstNode* bodyp = procp->bodysp()) {
+                if (AstNode* bodyp = procp->stmtsp()) {
                     bodyp->unlinkFrBackWithNext();
                     // If the process is suspendable, we need a separate function (a coroutine)
                     if (procp->isSuspendable()) {
@@ -326,7 +326,7 @@ AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, 
     callp->pure(true);
     AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_TRUE, callp};
     AstSenTree* const resultp = new AstSenTree{flp, senItemp};
-    topScopep->addSenTreep(resultp);
+    topScopep->addSenTreesp(resultp);
     return resultp;
 }
 
@@ -409,7 +409,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
 
         AstIf* const ifp = new AstIf{flp, getTrigRef(index, VAccess::READ)};
         dumpp->addStmtsp(ifp);
-        ifp->addIfsp(new AstText{flp, message, true});
+        ifp->addThensp(new AstText{flp, message, true});
     };
 
     // Add a print for each of the extra triggers
@@ -428,7 +428,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
         AstCMethodHard* const senp = getTrigRef(triggerNumber, VAccess::READ);
         AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_TRUE, senp};
         AstSenTree* const trigpSenp = new AstSenTree{flp, senItemp};
-        topScopep->addSenTreep(trigpSenp);
+        topScopep->addSenTreesp(trigpSenp);
         map[senTreep] = trigpSenp;
 
         // Add the trigger computation
@@ -479,8 +479,8 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
         AstIf* const ifp = new AstIf{flp, new AstNot{flp, condp}};
         funcp->addStmtsp(ifp);
         ifp->branchPred(VBranchPred::BP_UNLIKELY);
-        ifp->addIfsp(setVar(vscp, 1));
-        ifp->addIfsp(initialTrigsp);
+        ifp->addThensp(setVar(vscp, 1));
+        ifp->addThensp(initialTrigsp);
     }
 
     // Add a call to the dumping function if debug is enabled
@@ -490,7 +490,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
         const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
         add("#ifdef VL_DEBUG\n");
         add("if (VL_UNLIKELY(vlSymsp->_vm_contextp__->debug())) {\n");
-        blockp->addNodep(new AstCCall{flp, dumpp});
+        blockp->addNodesp(new AstCCall{flp, dumpp});
         add("}\n");
         add("#endif\n");
     }
@@ -515,7 +515,7 @@ AstNode* buildLoop(AstNetlist* netlistp, const string& name,
     AstWhile* const loopp = new AstWhile{flp, new AstVarRef{flp, condp, VAccess::READ}};
     resp->addNext(loopp);
     // Clear the loop condition variable in the loop
-    loopp->addBodysp(setVar(condp, 0));
+    loopp->addStmtsp(setVar(condp, 0));
     // Build the body
     build(condp, loopp);
     // Done
@@ -537,15 +537,15 @@ std::pair<AstVarScope*, AstNode*> makeEvalLoop(AstNetlist* netlistp, const strin
     AstNode* nodep = setVar(counterp, 0);
     nodep->addNext(buildLoop(netlistp, tag, [&](AstVarScope* continuep, AstWhile* loopp) {
         // Compute triggers
-        loopp->addBodysp(computeTriggers());
+        loopp->addStmtsp(computeTriggers());
         // Invoke body if triggered
         {
             AstVarRef* const refp = new AstVarRef{flp, trigVscp, VAccess::READ};
             AstCMethodHard* const callp = new AstCMethodHard{flp, refp, "any"};
             callp->dtypeSetBit();
             AstIf* const ifp = new AstIf{flp, callp};
-            loopp->addBodysp(ifp);
-            ifp->addIfsp(setVar(continuep, 1));
+            loopp->addStmtsp(ifp);
+            ifp->addThensp(setVar(continuep, 1));
 
             // If we exceeded the iteration limit, die
             {
@@ -555,15 +555,15 @@ std::pair<AstVarScope*, AstNode*> makeEvalLoop(AstNetlist* netlistp, const strin
                 constp->num().setLong(limit);
                 AstNodeMath* const condp = new AstGt{flp, refp, constp};
                 AstIf* const failp = new AstIf{flp, condp};
-                ifp->addIfsp(failp);
+                ifp->addThensp(failp);
                 AstTextBlock* const blockp = new AstTextBlock{flp};
-                failp->addIfsp(blockp);
+                failp->addThensp(blockp);
                 FileLine* const locp = netlistp->topModulep()->fileline();
                 const string& file = EmitCBaseVisitor::protect(locp->filename());
                 const string& line = cvtToStr(locp->lineno());
                 const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
                 add("#ifdef VL_DEBUG\n");
-                blockp->addNodep(new AstCCall{flp, trigDumpp});
+                blockp->addNodesp(new AstCCall{flp, trigDumpp});
                 add("#endif\n");
                 add("VL_FATAL_MT(\"" + file + "\", " + line + ", \"\", ");
                 add("\"" + name + " region did not converge.\");\n");
@@ -575,11 +575,11 @@ std::pair<AstVarScope*, AstNode*> makeEvalLoop(AstNetlist* netlistp, const strin
                 AstVarRef* const rrefp = new AstVarRef{flp, counterp, VAccess::READ};
                 AstConst* const onep = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
                 onep->num().setLong(1);
-                ifp->addIfsp(new AstAssign{flp, wrefp, new AstAdd{flp, rrefp, onep}});
+                ifp->addThensp(new AstAssign{flp, wrefp, new AstAdd{flp, rrefp, onep}});
             }
 
             // Add body
-            ifp->addIfsp(makeBody());
+            ifp->addThensp(makeBody());
         }
     }));
 
@@ -957,7 +957,7 @@ void schedule(AstNetlist* netlistp) {
                       refp->replaceWith(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
                       deleter.pushDeletep(refp);
                   });
-                  topScopep->addSenTreep(pair.second);
+                  topScopep->addSenTreesp(pair.second);
               }
               return newMap;
           };

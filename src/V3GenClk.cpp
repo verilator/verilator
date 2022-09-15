@@ -76,9 +76,9 @@ private:
             //          ASSIGN(VARREF(inpclk), VARREF(var))
             AstVar* const newvarp
                 = new AstVar(varp->fileline(), VVarType::MODULETEMP, newvarname, varp);
-            m_topModp->addStmtp(newvarp);
+            m_topModp->addStmtsp(newvarp);
             AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
-            m_scopetopp->addVarp(newvscp);
+            m_scopetopp->addVarsp(newvscp);
             AstAssign* const asninitp = new AstAssign(
                 vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
                 new AstVarRef(vscp->fileline(), vscp, VAccess::READ));

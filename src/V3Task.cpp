@@ -250,7 +250,7 @@ private:
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
         for (AstInitialAutomatic* initialp : m_initialps) {
-            if (AstNode* const newp = initialp->bodysp()) {
+            if (AstNode* const newp = initialp->stmtsp()) {
                 newp->unlinkFrBackWithNext();
                 if (!m_ctorp->stmtsp()) {
                     m_ctorp->addStmtsp(newp);
@@ -372,7 +372,7 @@ private:
         newvarp->funcLocal(true);
         funcp->addInitsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
-        m_scopep->addVarp(newvscp);
+        m_scopep->addVarsp(newvscp);
         return newvscp;
     }
     AstVarScope* createInputVar(AstCFunc* funcp, const string& name, VBasicDTypeKwd kwd) {
@@ -382,7 +382,7 @@ private:
         newvarp->direction(VDirection::INPUT);
         funcp->addArgsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
-        m_scopep->addVarp(newvscp);
+        m_scopep->addVarsp(newvscp);
         return newvscp;
     }
     AstVarScope* createVarScope(AstVar* invarp, const string& name) {
@@ -398,9 +398,9 @@ private:
                 = new AstVar{invarp->fileline(), VVarType::BLOCKTEMP, name, invarp};
             newvarp->funcLocal(false);
             newvarp->propagateAttrFrom(invarp);
-            m_modp->addStmtp(newvarp);
+            m_modp->addStmtsp(newvarp);
             AstVarScope* const newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
-            m_scopep->addVarp(newvscp);
+            m_scopep->addVarsp(newvscp);
             return newvscp;
         }
     }
@@ -767,7 +767,7 @@ private:
         funcp->protect(false);
         funcp->cname(nodep->cname());
         // Add DPI Export to top, since it's a global function
-        m_topScopep->scopep()->addActivep(funcp);
+        m_topScopep->scopep()->addBlocksp(funcp);
 
         {  // Create dispatch wrapper
             // Note this function may dispatch to myfunc on a different class.
@@ -856,9 +856,9 @@ private:
             // doesn't rip up the variables on us
             args += ");\n";
             AstCStmt* const newp = new AstCStmt(nodep->fileline(), "(*__Vcb)(");
-            newp->addBodysp(argnodesp);
+            newp->addExprsp(argnodesp);
             VL_DANGLING(argnodesp);
-            newp->addBodysp(new AstText(nodep->fileline(), args, true));
+            newp->addExprsp(new AstText(nodep->fileline(), args, true));
             funcp->addStmtsp(newp);
         }
 
@@ -900,7 +900,7 @@ private:
         funcp->protect(false);
         funcp->pure(nodep->pure());
         // Add DPI Import to top, since it's a global function
-        m_topScopep->scopep()->addActivep(funcp);
+        m_topScopep->scopep()->addBlocksp(funcp);
         makePortList(nodep, funcp);
         return funcp;
     }
@@ -1066,9 +1066,9 @@ private:
             FileLine* const fl = m_topScopep->fileline();
             const string name{"__Vdpi_export_trigger"};
             AstVar* const varp = new AstVar{fl, VVarType::VAR, name, VFlagBitPacked{}, 1};
-            m_topScopep->scopep()->modp()->addStmtp(varp);
+            m_topScopep->scopep()->modp()->addStmtsp(varp);
             dpiExportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
-            m_topScopep->scopep()->addVarp(dpiExportTriggerp);
+            m_topScopep->scopep()->addVarsp(dpiExportTriggerp);
             netlistp->dpiExportTriggerp(dpiExportTriggerp);
         }
         return dpiExportTriggerp;
@@ -1136,7 +1136,7 @@ private:
         AstVarScope* rtnvscp = nullptr;
         if (rtnvarp) {
             rtnvscp = new AstVarScope(rtnvarp->fileline(), m_scopep, rtnvarp);
-            m_scopep->addVarp(rtnvscp);
+            m_scopep->addVarsp(rtnvscp);
             rtnvarp->user2p(rtnvscp);
         }
 
@@ -1230,7 +1230,7 @@ private:
                     }
                     AstVarScope* const newvscp
                         = new AstVarScope{portp->fileline(), m_scopep, portp};
-                    m_scopep->addVarp(newvscp);
+                    m_scopep->addVarsp(newvscp);
                     portp->user2p(newvscp);
                 }
             }
@@ -1508,7 +1508,7 @@ private:
         iterateAndNextNull(nodep->condp());
         // Body insert just before themselves
         m_insStmtp = nullptr;  // First thing should be new statement
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->stmtsp());
         iterateAndNextNull(nodep->incsp());
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement

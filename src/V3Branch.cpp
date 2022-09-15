@@ -70,7 +70,7 @@ private:
         {
             // Do if
             reset();
-            iterateAndNextNull(nodep->ifsp());
+            iterateAndNextNull(nodep->thensp());
             const int ifLikely = m_likely;
             const int ifUnlikely = m_unlikely;
             // Do else

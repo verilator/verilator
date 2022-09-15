@@ -109,7 +109,7 @@ class ForceConvertVisitor final : public VNVisitor {
                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
                 activep->sensesStorep(activep->sensesp());
                 activep->addStmtsp(new AstInitial{flp, assignp});
-                vscp->scopep()->addActivep(activep);
+                vscp->scopep()->addBlocksp(activep);
             }
 
             {  // Add the combinational override
@@ -127,7 +127,7 @@ class ForceConvertVisitor final : public VNVisitor {
                                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}}};
                 activep->sensesStorep(activep->sensesp());
                 activep->addStmtsp(new AstAssignW{flp, lhsp, rhsp});
-                vscp->scopep()->addActivep(activep);
+                vscp->scopep()->addBlocksp(activep);
             }
         }
     };

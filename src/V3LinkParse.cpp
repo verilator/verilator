@@ -372,7 +372,7 @@ private:
             // lvalue is true, because we know we have a verilator public_flat_rw
             // but someday we may be more general
             const bool lvalue = m_varp->isSigUserRWPublic();
-            nodep->addStmtp(
+            nodep->addStmtsp(
                 new AstVarRef(nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ));
         }
     }
@@ -594,7 +594,7 @@ private:
                 sensesp->unlinkFrBackWithNext();
                 alwaysp->sensesp(sensesp);
             }
-            if (nodep->stmtsp()) alwaysp->addStmtp(nodep->stmtsp()->unlinkFrBackWithNext());
+            if (nodep->stmtsp()) alwaysp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }

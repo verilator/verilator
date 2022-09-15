@@ -565,7 +565,7 @@ private:
             return false;
         }
         if (const AstNodeCond* const condp = VN_CAST(nodep, NodeCond)) {
-            return yieldsOneOrZero(condp->expr1p()) && yieldsOneOrZero(condp->expr2p());
+            return yieldsOneOrZero(condp->thenp()) && yieldsOneOrZero(condp->elsep());
         }
         if (const AstCCast* const castp = VN_CAST(nodep, CCast)) {
             // Cast never sign extends
@@ -593,7 +593,7 @@ private:
             return new AstConst{rhsp->fileline(), AstConst::BitTrue{}, condTrue};
         } else if (const AstNodeCond* const condp = extractCondFromRhs(rhsp)) {
             AstNode* const resp
-                = condTrue ? condp->expr1p()->unlinkFrBack() : condp->expr2p()->unlinkFrBack();
+                = condTrue ? condp->thenp()->unlinkFrBack() : condp->elsep()->unlinkFrBack();
             if (condp == rhsp) return resp;
             if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
                 UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
@@ -676,7 +676,7 @@ private:
                     // Construct the new RHSs and add to branches
                     thenp->rhsp(foldAndUnlink(rhsp, true));
                     elsep->rhsp(foldAndUnlink(rhsp, false));
-                    resultp->addIfsp(thenp);
+                    resultp->addThensp(thenp);
                     resultp->addElsesp(elsep);
                     // Cleanup
                     VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
@@ -684,8 +684,8 @@ private:
                     AstNodeIf* const ifp = VN_AS(currp, NodeIf);
                     UASSERT_OBJ(ifp, currp, "Must be AstNodeIf");
                     // Move branch contents under new if
-                    if (AstNode* const listp = ifp->ifsp()) {
-                        resultp->addIfsp(listp->unlinkFrBackWithNext());
+                    if (AstNode* const listp = ifp->thensp()) {
+                        resultp->addThensp(listp->unlinkFrBackWithNext());
                     }
                     if (AstNode* const listp = ifp->elsesp()) {
                         resultp->addElsesp(listp->unlinkFrBackWithNext());
@@ -695,7 +695,7 @@ private:
                 }
             } while (nextp);
             // Merge the branches of the resulting AstIf after re-analysis
-            if (resultp->ifsp()) m_workQueuep->push(resultp->ifsp());
+            if (resultp->thensp()) m_workQueuep->push(resultp->thensp());
             if (resultp->elsesp()) m_workQueuep->push(resultp->elsesp());
         } else if (AstNodeIf* const ifp = VN_CAST(m_mgFirstp, NodeIf)) {
             // There was nothing to merge this AstNodeIf with, so try to merge its branches.
@@ -711,7 +711,7 @@ private:
         AstNode::user2ClearTree();
         // Merge recursively within the branches of an un-merged AstNodeIF
         if (recursivep) {
-            iterateAndNextNull(recursivep->ifsp());
+            iterateAndNextNull(recursivep->thensp());
             iterateAndNextNull(recursivep->elsesp());
             // Close a pending merge to ensure merge state is
             // reset as expected at the end of this function
@@ -840,7 +840,7 @@ private:
         // Check if mergeable
         if (!checkOrMakeMergeable(nodep)) {
             // If not mergeable, try to merge the branches
-            iterateAndNextNull(nodep->ifsp());
+            iterateAndNextNull(nodep->thensp());
             iterateAndNextNull(nodep->elsesp());
             return;
         }

@@ -141,7 +141,7 @@ private:
                 {
                     m_counting = false;
                     m_instrs = 0.0;
-                    iterateAndNextConstNull(nodep->ifsp());
+                    iterateAndNextConstNull(nodep->thensp());
                     ifInstrs = m_instrs;
                 }
             }
@@ -158,7 +158,7 @@ private:
             // Now collect the stats
             if (m_counting) {
                 if (ifInstrs >= elseInstrs) {
-                    iterateAndNextConstNull(nodep->ifsp());
+                    iterateAndNextConstNull(nodep->thensp());
                 } else {
                     iterateAndNextConstNull(nodep->elsesp());
                 }

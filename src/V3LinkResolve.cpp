@@ -86,7 +86,7 @@ private:
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial
         if (m_ftaskp) {
-            VL_DO_DANGLING(nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()), nodep);
+            VL_DO_DANGLING(nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext()), nodep);
         }
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
@@ -414,7 +414,7 @@ private:
                         }
                         varoutp = varp;
                         // Tie off
-                        m_modp->addStmtp(
+                        m_modp->addStmtsp(
                             new AstAssignW(varp->fileline(),
                                            new AstVarRef(varp->fileline(), varp, VAccess::WRITE),
                                            new AstConst(varp->fileline(), AstConst::BitFalse())));

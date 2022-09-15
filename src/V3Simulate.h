@@ -513,7 +513,7 @@ private:
             iterateAndNextNull(nodep->condp());
             if (optimizable()) {
                 if (fetchConst(nodep->condp())->num().isNeqZero()) {
-                    iterateAndNextNull(nodep->ifsp());
+                    iterateAndNextNull(nodep->thensp());
                 } else {
                     iterateAndNextNull(nodep->elsesp());
                 }
@@ -647,11 +647,11 @@ private:
             iterate(nodep->condp());
             if (optimizable()) {
                 if (fetchConst(nodep->condp())->num().isNeqZero()) {
-                    iterate(nodep->expr1p());
-                    newValue(nodep, fetchValue(nodep->expr1p()));
+                    iterate(nodep->thenp());
+                    newValue(nodep, fetchValue(nodep->thenp()));
                 } else {
-                    iterate(nodep->expr2p());
-                    newValue(nodep, fetchValue(nodep->expr2p()));
+                    iterate(nodep->elsep());
+                    newValue(nodep, fetchValue(nodep->elsep()));
                 }
             }
         }
@@ -835,7 +835,7 @@ private:
                             V3Number match{nodep, 1};
                             match.opEq(fetchConst(nodep->exprp())->num(), fetchConst(ep)->num());
                             if (match.isNeqZero()) {
-                                iterateAndNextNull(itemp->bodysp());
+                                iterateAndNextNull(itemp->stmtsp());
                                 hit = true;
                             }
                         }
@@ -847,7 +847,7 @@ private:
                  itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 if (hit) break;
                 if (!hit && itemp->isDefault()) {
-                    iterateAndNextNull(itemp->bodysp());
+                    iterateAndNextNull(itemp->stmtsp());
                     hit = true;
                 }
             }
@@ -917,7 +917,7 @@ private:
                 if (!fetchConst(nodep->condp())->num().isNeqZero()) {  //
                     break;
                 }
-                iterateAndNextNull(nodep->bodysp());
+                iterateAndNextNull(nodep->stmtsp());
                 iterateAndNextNull(nodep->incsp());
                 if (loops++ > unrollCount() * 16) {
                     clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
@@ -952,7 +952,7 @@ private:
                 if (!fetchConst(nodep->condp())->num().isNeqZero()) {  //
                     break;
                 }
-                iterateAndNextNull(nodep->bodysp());
+                iterateAndNextNull(nodep->stmtsp());
                 if (jumpingOver(nodep)) break;
                 iterateAndNextNull(nodep->incsp());
                 if (jumpingOver(nodep)) break;

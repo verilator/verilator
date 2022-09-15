@@ -77,7 +77,7 @@ public:
 
         // Not found, create a new one
         AstSenTree* const newSenTreep = senTreep->cloneTree(false);
-        m_topScopep->addSenTreep(newSenTreep);
+        m_topScopep->addSenTreesp(newSenTreep);
         m_trees.emplace(*newSenTreep);
         return newSenTreep;
     }

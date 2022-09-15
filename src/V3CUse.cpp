@@ -51,7 +51,7 @@ class CUseVisitor final : public VNVisitor {
     void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
         if (m_didUse.emplace(useType, name).second) {
             AstCUse* const newp = new AstCUse{nodep->fileline(), useType, name};
-            m_modp->addStmtp(newp);
+            m_modp->addStmtsp(newp);
             UINFO(8, "Insert " << newp << endl);
         }
     }

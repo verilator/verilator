@@ -77,7 +77,7 @@ private:
         if (!preventUnusedStmt.empty()) {
             funcp->addStmtsp(new AstCStmt{m_modp->fileline(), preventUnusedStmt});
         }
-        m_modp->addStmtp(funcp);
+        m_modp->addStmtsp(funcp);
         m_numStmts = 0;
         return funcp;
     }
@@ -136,7 +136,7 @@ void V3CCtors::evalAsserts() {
     funcp->isLoose(true);
     funcp->slow(false);
     funcp->ifdef("VL_DEBUG");
-    modp->addStmtp(funcp);
+    modp->addStmtsp(funcp);
     for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
         if (AstVar* const varp = VN_CAST(np, Var)) {
             if (varp->isPrimaryInish() && !varp->isSc()) {
@@ -211,7 +211,7 @@ void V3CCtors::cctorsAll() {
             // If can be referred to by base pointer, need virtual delete
             funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
-            modp->addStmtp(funcp);
+            modp->addStmtsp(funcp);
         }
     }
 }
