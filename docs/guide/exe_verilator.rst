@@ -716,6 +716,15 @@ Summary:
    (e.g. ``-MAKEFLAGS -l -MAKEFLAGS -k``). Use of this option should not be
    required for simple builds using the host toolchain.
 
+.. option:: --main
+
+   Generates a top-level C++ main() file that supports parsing arguments,
+   but does not drive any inputs.  This is sufficient to use for top-level
+   SystemVerilog designs that has no inputs, and does not need the C++ to
+   do any time advancement.
+
+   Implies :vlopt:`--cc` if no other output mode was provided.
+
 .. option:: --max-num-width <value>
 
    Set the maximum number literal width (e.g. in 1024'd22 this it the

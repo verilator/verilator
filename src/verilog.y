@@ -58,6 +58,13 @@
             assignp->timingControlp(nodep == assignsp ? delayp : delayp->cloneTree(false)); \
         } \
     }
+#define STRENGTHUNSUP(nodep) \
+    { \
+        if (nodep) { \
+            BBUNSUP((nodep->fileline()), "Unsupported: Strength specifier on this gate type"); \
+            nodep->deleteTree(); \
+        } \
+    }
 
 //======================================================================
 // Statics (for here only)
@@ -79,6 +86,7 @@ public:
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
     AstNode* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
+    AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
     AstNodeModule* m_modp = nullptr;  // Last module for timeunits
     bool m_pinAnsi = false;  // In ANSI port list
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
@@ -183,6 +191,7 @@ public:
         m_varDTypep = dtypep;
     }
     void setNetDelay(AstNode* netDelayp) { m_netDelayp = netDelayp; }
+    void setNetStrength(AstStrengthSpec* netStrengthp) { m_netStrengthp = netStrengthp; }
     void pinPush() {
         m_pinStack.push(m_pinNum);
         m_pinNum = 1;
@@ -300,6 +309,16 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 #define DEL(nodep) \
     { \
         if (nodep) nodep->deleteTree(); \
+    }
+
+#define APPLY_STRENGTH_TO_LIST(beginp, strengthSpecNodep, typeToCast) \
+    { \
+        if (AstStrengthSpec* specp = VN_CAST(strengthSpecNodep, StrengthSpec)) { \
+            for (auto* nodep = beginp; nodep; nodep = nodep->nextp()) { \
+                auto* const assignp = VN_AS(nodep, typeToCast); \
+                assignp->strengthSpecp(nodep == beginp ? specp : specp->cloneTree(false)); \
+            } \
+        } \
     }
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
@@ -557,6 +576,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yGLOBAL__CLOCKING "global-then-clocking"
 %token<fl>              yGLOBAL__ETC    "global"
 %token<fl>              yGLOBAL__LEX    "global-in-lex"
+%token<fl>              yHIGHZ0         "highz0"
+%token<fl>              yHIGHZ1         "highz1"
 %token<fl>              yIF             "if"
 %token<fl>              yIFF            "iff"
 //UNSUP %token<fl>      yIGNORE_BINS    "ignore_bins"
@@ -611,6 +632,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yPROGRAM        "program"
 %token<fl>              yPROPERTY       "property"
 %token<fl>              yPROTECTED      "protected"
+%token<fl>              yPULL0          "pull0"
+%token<fl>              yPULL1          "pull1"
 %token<fl>              yPULLDOWN       "pulldown"
 %token<fl>              yPULLUP         "pullup"
 %token<fl>              yPURE           "pure"
@@ -648,6 +671,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              ySTATIC__LEX    "static-in-lex"
 %token<fl>              ySTRING         "string"
 //UNSUP %token<fl>      ySTRONG         "strong"
+%token<fl>              ySTRONG0        "strong0"
+%token<fl>              ySTRONG1        "strong1"
 %token<fl>              ySTRUCT         "struct"
 %token<fl>              ySUPER          "super"
 %token<fl>              ySUPPLY0        "supply0"
@@ -701,6 +726,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 //UNSUP %token<fl>      yWAIT_ORDER     "wait_order"
 %token<fl>              yWAND           "wand"
 //UNSUP %token<fl>      yWEAK           "weak"
+%token<fl>              yWEAK0          "weak0"
+%token<fl>              yWEAK1          "weak1"
 %token<fl>              yWHILE          "while"
 //UNSUP %token<fl>      yWILDCARD       "wildcard"
 %token<fl>              yWIRE           "wire"
@@ -1731,11 +1758,18 @@ parameter_port_declarationTypeFrontE: // IEEE: parameter_port_declaration w/o as
         ;
 
 net_declaration<nodep>:         // IEEE: net_declaration - excluding implict
-                net_declarationFront netSigList ';'     { $$ = $2; }
+                net_declarationFront netSigList ';'
+                        { $$ = $2;
+                          if (GRAMMARP->m_netStrengthp) {
+                              VL_DO_CLEAR(delete GRAMMARP->m_netStrengthp, GRAMMARP->m_netStrengthp = nullptr);
+                          }}
         ;
 
 net_declarationFront:           // IEEE: beginning of net_declaration
-                net_declRESET net_type   strengthSpecE net_scalaredE net_dataTypeE { VARDTYPE_NDECL($5); }
+                net_declRESET net_type driveStrengthE net_scalaredE net_dataTypeE
+                        { VARDTYPE_NDECL($5);
+                          GRAMMARP->setNetStrength(VN_CAST($3, StrengthSpec));
+                        }
         //UNSUP net_declRESET yINTERCONNECT signingE rangeListE { VARNET($2); VARDTYPE(x); }
         ;
 
@@ -2441,10 +2475,11 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         ;
 
 continuous_assign<nodep>:       // IEEE: continuous_assign
-                yASSIGN strengthSpecE delay_controlE assignList ';'
+                yASSIGN driveStrengthE delay_controlE assignList ';'
                 {
                     $$ = $4;
-                    PUT_DLYS_IN_ASSIGNS($3, $$);
+                    APPLY_STRENGTH_TO_LIST($4, $2, AssignW);
+                    PUT_DLYS_IN_ASSIGNS($3, $4);
                 }
         ;
 
@@ -2733,6 +2768,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
         |       netId sigAttrListE '=' expr
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           auto* const assignp = new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4};
+                          if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           if ($$->delayp()) assignp->timingControlp($$->delayp()->unlinkFrBack());  // IEEE 1800-2017 10.3.3
                           $$->addNext(assignp); }
         |       netId variable_dimensionList sigAttrListE
@@ -4715,22 +4751,22 @@ stream_expressionOrDataType<nodep>:     // IEEE: from streaming_concatenation
 // Gate declarations
 
 gateDecl<nodep>:
-                yBUF    delay_controlE gateBufList ';'          { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yBUFIF0 delay_controlE gateBufif0List ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yBUFIF1 delay_controlE gateBufif1List ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yNOT    delay_controlE gateNotList ';'          { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yNOTIF0 delay_controlE gateNotif0List ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yNOTIF1 delay_controlE gateNotif1List ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yAND  delay_controlE gateAndList ';'            { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yNAND delay_controlE gateNandList ';'           { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yOR   delay_controlE gateOrList ';'             { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yNOR  delay_controlE gateNorList ';'            { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yXOR  delay_controlE gateXorList ';'            { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yXNOR delay_controlE gateXnorList ';'           { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yPULLUP delay_controlE gatePullupList ';'       { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+                yBUF      driveStrengthE delay_controlE gateBufList ';'        { $$ = $4; STRENGTHUNSUP($2); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yBUFIF0   driveStrengthE delay_controlE gateBufif0List ';'     { $$ = $4; STRENGTHUNSUP($2); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yBUFIF1   driveStrengthE delay_controlE gateBufif1List ';'     { $$ = $4; STRENGTHUNSUP($2); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yNOT      driveStrengthE delay_controlE gateNotList ';'        { $$ = $4; APPLY_STRENGTH_TO_LIST($4, $2, AssignW); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yNOTIF0   driveStrengthE delay_controlE gateNotif0List ';'     { $$ = $4; STRENGTHUNSUP($2); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yNOTIF1   driveStrengthE delay_controlE gateNotif1List ';'     { $$ = $4; STRENGTHUNSUP($2); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yAND      driveStrengthE delay_controlE gateAndList ';'        { $$ = $4; APPLY_STRENGTH_TO_LIST($4, $2, AssignW); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yNAND     driveStrengthE delay_controlE gateNandList ';'       { $$ = $4; APPLY_STRENGTH_TO_LIST($4, $2, AssignW); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yOR       driveStrengthE delay_controlE gateOrList ';'         { $$ = $4; APPLY_STRENGTH_TO_LIST($4, $2, AssignW); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yNOR      driveStrengthE delay_controlE gateNorList ';'        { $$ = $4; APPLY_STRENGTH_TO_LIST($4, $2, AssignW); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yXOR      driveStrengthE delay_controlE gateXorList ';'        { $$ = $4; APPLY_STRENGTH_TO_LIST($4, $2, AssignW); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yXNOR     driveStrengthE delay_controlE gateXnorList ';'       { $$ = $4; APPLY_STRENGTH_TO_LIST($4, $2, AssignW); PUT_DLYS_IN_ASSIGNS($3, $4); }
+        |       yPULLUP   delay_controlE gatePullupList ';'     { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
         |       yPULLDOWN delay_controlE gatePulldownList ';'   { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
-        |       yNMOS delay_controlE gateBufif1List ';'         { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }  // ~=bufif1, as don't have strengths yet
-        |       yPMOS delay_controlE gateBufif0List ';'         { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }  // ~=bufif0, as don't have strengths yet
+        |       yNMOS     delay_controlE gateBufif1List ';'     { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
+        |       yPMOS     delay_controlE gateBufif0List ';'     { $$ = $3; PUT_DLYS_IN_ASSIGNS($2, $3); }
         //
         |       yTRAN delay_controlE gateUnsupList ';'          { $$ = $3; GATEUNSUP($3,"tran"); } // Unsupported
         |       yRCMOS delay_controlE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3,"rcmos"); } // Unsupported
@@ -4898,21 +4934,33 @@ gatePinExpr<nodep>:
                 expr                                    { $$ = GRAMMARP->createGatePin($1); }
         ;
 
-// This list is also hardcoded in VParseLex.l
-strength:                       // IEEE: strength0+strength1 - plus HIGHZ/SMALL/MEDIUM/LARGE
-                ygenSTRENGTH                            { BBUNSUP($1, "Unsupported: Verilog 1995 strength specifiers"); }
-        |       ySUPPLY0                                { BBUNSUP($1, "Unsupported: Verilog 1995 strength specifiers"); }
-        |       ySUPPLY1                                { BBUNSUP($1, "Unsupported: Verilog 1995 strength specifiers"); }
+strength0<strength>:
+                ySUPPLY0                                { $$ = VStrength::SUPPLY; }
+        |       ySTRONG0                                { $$ = VStrength::STRONG; }
+        |       yPULL0                                  { $$ = VStrength::PULL; }
+        |       yWEAK0                                  { $$ = VStrength::WEAK; }
         ;
 
-strengthSpecE:                  // IEEE: drive_strength + pullup_strength + pulldown_strength + charge_strength - plus empty
-                /* empty */                             { }
-        |       strengthSpec                            { }
+strength1<strength>:
+                ySUPPLY1                                { $$ = VStrength::SUPPLY; }
+        |       ySTRONG1                                { $$ = VStrength::STRONG; }
+        |       yPULL1                                  { $$ = VStrength::PULL; }
+        |       yWEAK1                                  { $$ = VStrength::WEAK; }
         ;
 
-strengthSpec:                   // IEEE: drive_strength + pullup_strength + pulldown_strength + charge_strength - plus empty
-                yP_PAR__STRENGTH strength ')'                   { }
-        |       yP_PAR__STRENGTH strength ',' strength ')'      { }
+driveStrengthE<nodep>:
+                /* empty */                             { $$ = nullptr; }
+        |       driveStrength                           { $$ = $1; }
+        ;
+
+
+driveStrength<nodep>:
+                yP_PAR__STRENGTH strength0 ',' strength1 ')' { $$ = new AstStrengthSpec{$1, $2, $4}; }
+        |       yP_PAR__STRENGTH strength1 ',' strength0 ')' { $$ = new AstStrengthSpec{$1, $4, $2}; }
+        |       yP_PAR__STRENGTH strength0 ',' yHIGHZ1 ')' { BBUNSUP($<fl>4, "Unsupported: highz strength"); }
+        |       yP_PAR__STRENGTH strength1 ',' yHIGHZ0 ')' { BBUNSUP($<fl>4, "Unsupported: highz strength"); }
+        |       yP_PAR__STRENGTH yHIGHZ0 ',' strength1 ')' { BBUNSUP($<fl>2, "Unsupported: highz strength"); }
+        |       yP_PAR__STRENGTH yHIGHZ1 ',' strength0 ')' { BBUNSUP($<fl>2, "Unsupported: highz strength"); }
         ;
 
 //************************************************

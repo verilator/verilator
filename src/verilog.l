@@ -327,8 +327,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "forever"             { FL; return yFOREVER; }
   "fork"                { FL; return yFORK; }
   "function"            { FL; return yFUNCTION; }
-  "highz0"              { FL; return ygenSTRENGTH; }
-  "highz1"              { FL; return ygenSTRENGTH; }
+  "highz0"              { FL; return yHIGHZ0; }
+  "highz1"              { FL; return yHIGHZ1; }
   "if"                  { FL; return yIF; }
   "initial"             { FL; return yINITIAL; }
   "inout"               { FL; return yINOUT; }
@@ -352,8 +352,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "pmos"                { FL; return yPMOS; }
   "posedge"             { FL; return yPOSEDGE; }
   "primitive"           { FL; return yPRIMITIVE; }
-  "pull0"               { FL; return ygenSTRENGTH; }
-  "pull1"               { FL; return ygenSTRENGTH; }
+  "pull0"               { FL; return yPULL0; }
+  "pull1"               { FL; return yPULL1; }
   "pulldown"            { FL; return yPULLDOWN; }
   "pullup"              { FL; return yPULLUP; }
   "rcmos"               { FL; return yRCMOS; }
@@ -371,8 +371,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "small"               { FL; return ygenSTRENGTH; }
   "specify"             { FL; return ySPECIFY; }
   "specparam"           { FL; return ySPECPARAM; }
-  "strong0"             { FL; return ygenSTRENGTH; }
-  "strong1"             { FL; return ygenSTRENGTH; }
+  "strong0"             { FL; return ySTRONG0; }
+  "strong1"             { FL; return ySTRONG1; }
   "supply0"             { FL; return ySUPPLY0; }
   "supply1"             { FL; return ySUPPLY1; }
   "table"               { FL; yy_push_state(TABLE); return yTABLE; }
@@ -390,8 +390,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "vectored"            { FL; return yVECTORED; }
   "wait"                { FL; return yWAIT; }
   "wand"                { FL; return yWAND; }
-  "weak0"               { FL; return ygenSTRENGTH; }
-  "weak1"               { FL; return ygenSTRENGTH; }
+  "weak0"               { FL; return yWEAK0; }
+  "weak1"               { FL; return yWEAK1; }
   "while"               { FL; return yWHILE; }
   "wire"                { FL; return yWIRE; }
   "wor"                 { FL; return yWOR; }
@@ -1008,7 +1008,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                                           return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`timescale"{ws}+[^\n\r]*             { FL; PARSEP->lexTimescaleParse(yylval.fl,
-                                                                        yytext + strlen("`timescale"));
+                                                                        yytext + std::strlen("`timescale"));
                                           FL_BRK; }
   "`unconnected_drive"{ws}+"pull0"      { FL; return yaT_UNCONNECTED_PULL0; }
   "`unconnected_drive"{ws}+"pull1"      { FL; return yaT_UNCONNECTED_PULL1; }

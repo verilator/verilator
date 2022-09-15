@@ -57,11 +57,11 @@ string EmitCBaseVisitor::funcNameProtect(const AstCFunc* nodep, const AstNodeMod
     return name;
 }
 
-AstCFile* EmitCBaseVisitor::newCFile(const string& filename, bool slow, bool source) {
+AstCFile* EmitCBaseVisitor::newCFile(const string& filename, bool slow, bool source, bool add) {
     AstCFile* const cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
     cfilep->slow(slow);
     cfilep->source(source);
-    v3Global.rootp()->addFilesp(cfilep);
+    if (add) v3Global.rootp()->addFilesp(cfilep);
     return cfilep;
 }
 

@@ -359,6 +359,13 @@ private:
     }
     virtual void visit(AstVar*) override {}
     virtual void visit(AstConst*) override {}
+    virtual void visit(AstModule* nodep) override {
+        ++m_ops;
+        if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;
+        iterateChildren(nodep);
+        // Reduce peak memory usage by reclaiming the edited AstNodes
+        doDeletes();
+    }
     virtual void visit(AstNode* nodep) override {
         m_ops++;
         if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;

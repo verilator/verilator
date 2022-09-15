@@ -155,9 +155,9 @@ void i_string(const char* i) {
     static int n = 0;
     printf("i_string %d\n", n);
     if (n++ % 2 == 0) {
-        if (strcmp(i, "World") != 0) stop();
+        if (std::strcmp(i, "World") != 0) stop();
     } else {
-        if (strcmp(i, "Hello") != 0) stop();
+        if (std::strcmp(i, "Hello") != 0) stop();
     }
 }
 
@@ -266,9 +266,9 @@ void i_string_t(const char* i) {
     static int n = 0;
     printf("i_string_t %d\n", n);
     if (n++ % 2 == 0) {
-        if (strcmp(i, "World") != 0) stop();
+        if (std::strcmp(i, "World") != 0) stop();
     } else {
-        if (strcmp(i, "Hello") != 0) stop();
+        if (std::strcmp(i, "Hello") != 0) stop();
     }
 }
 

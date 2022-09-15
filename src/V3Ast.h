@@ -517,8 +517,9 @@ public:
         return names[m_e];
     }
     static void selfTest() {
-        UASSERT(0 == strcmp(VBasicDTypeKwd(_ENUM_MAX).ascii(), " MAX"), "SelfTest: Enum mismatch");
-        UASSERT(0 == strcmp(VBasicDTypeKwd(_ENUM_MAX).dpiType(), " MAX"),
+        UASSERT(0 == std::strcmp(VBasicDTypeKwd(_ENUM_MAX).ascii(), " MAX"),
+                "SelfTest: Enum mismatch");
+        UASSERT(0 == std::strcmp(VBasicDTypeKwd(_ENUM_MAX).dpiType(), " MAX"),
                 "SelfTest: Enum mismatch");
     }
     inline VBasicDTypeKwd()
@@ -786,6 +787,10 @@ public:
         return (m_e == WIRE || m_e == WREAL || m_e == IMPLICITWIRE || m_e == TRIWIRE || m_e == TRI0
                 || m_e == TRI1 || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR);
     }
+    bool isNet() const {
+        return (m_e == WIRE || m_e == IMPLICITWIRE || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1
+                || m_e == SUPPLY0 || m_e == SUPPLY1);
+    }
     bool isContAssignable() const {  // In Verilog, always ok in SystemVerilog
         return (m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == WIRE || m_e == WREAL
                 || m_e == IMPLICITWIRE || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1
@@ -1026,6 +1031,32 @@ inline bool operator==(const VParseRefExp& lhs, const VParseRefExp& rhs) {
 inline bool operator==(const VParseRefExp& lhs, VParseRefExp::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(VParseRefExp::en lhs, const VParseRefExp& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
+
+class VStrength final {
+public:
+    enum en : uint8_t { HIGHZ, SMALL, MEDIUM, WEAK, LARGE, PULL, STRONG, SUPPLY };
+    enum en m_e;
+
+    inline VStrength(en strengthLevel)
+        : m_e(strengthLevel) {}
+    explicit inline VStrength(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[]
+            = {"highz", "small", "medium", "weak", "large", "pull", "strong", "supply"};
+        return names[m_e];
+    }
+};
+inline bool operator==(const VStrength& lhs, const VStrength& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VStrength& lhs, VStrength::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VStrength::en lhs, const VStrength& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VStrength& rhs) {
     return os << rhs.ascii();
 }
 

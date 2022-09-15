@@ -61,7 +61,7 @@
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
+    if (std::strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
                (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \
@@ -100,7 +100,7 @@ int mon_check() {
     CHECK_RESULT_NZ(t_name);
 
     // Icarus reports the top most module as "top"
-    if (strcmp(t_name, "top") == 0) {
+    if (std::strcmp(t_name, "top") == 0) {
         it = vpi_iterate(vpiModule, topmod);
         CHECK_RESULT_NZ(it);
         CHECK_RESULT(vpi_get(vpiType, it), vpiModule);
@@ -129,7 +129,7 @@ int mon_check() {
     CHECK_RESULT_NZ(mod3);
 
     const char* mod_c_name = vpi_get_str(vpiName, mod3);
-    if (strcmp(mod_c_name, "mod_b") == 0) {
+    if (std::strcmp(mod_c_name, "mod_b") == 0) {
         // Full visibility in other simulators, skip mod_b
         TestVpiHandle mod4 = vpi_scan(it3);
         CHECK_RESULT_NZ(mod4);

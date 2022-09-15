@@ -7,9 +7,9 @@
 Simulating (Verilated-Model Runtime)
 ************************************
 
-This section describes items related to simulating, that using a Verilated
-model's executable.  For the runtime arguments to a simulated model, see
-:ref:`Simulation Runtime Arguments`.
+This section describes items related to simulating, that is, the use of a
+Verilated model's executable.  For the runtime arguments to a simulated
+model, see :ref:`Simulation Runtime Arguments`.
 
 
 .. _Benchmarking & Optimization:

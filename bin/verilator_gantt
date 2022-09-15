@@ -149,7 +149,8 @@ def report():
     for thread in Threads:
         # Make potentially multiple characters per column
         for start in Threads[thread]:
-            if not Threads[thread][start]: continue
+            if not Threads[thread][start]:
+                continue
             cpu = Threads[thread][start]['cpu']
             elapsed = Threads[thread][start]['end'] - start
             if cpu not in Global['cpus']:

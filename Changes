@@ -24,9 +24,21 @@ Verilator 5.001 devel
 Verilator 4.227 devel
 ==========================
 
+**Announcement:**
+
+* The next release is anticipated primere Verilator Version 5.  Please
+  consider beta-testing the github 'develop-v5' branch, which will soon
+  merge into the github 'master' branch (#3383).
+
 **Minor:**
 
-Fix crash in gate optimization of circular logic (#3543). [Bill Flynn]
+* Support IEEE constant signal strengths (#3601). [Ryszard Rozak/Antmicro]
+* Add --main to generate main() C++ (previously was experimental only).
+* Fix thread saftey in SystemC VL_ASSIGN_SBW/WSB (#3494) (#3513). [Mladen Slijepcevic]
+* Fix crash in gate optimization of circular logic (#3543). [Bill Flynn]
+* Fix arguments in non-static method call (#3547) (#3582). [Gustav Svensk]
+* Fix default --mod-prefix when --prefix is repeated (#3603). [Geza Lore]
+* Fix typedef'ed class conversion to boolean (#3616). [Aleksander Kiryk]
 
 
 Verilator 4.226 2022-08-31
@@ -46,7 +58,7 @@ Verilator 4.226 2022-08-31
 * Fix incorrect tristate logic (#3399) [shareefj, Vighnesh Iyer]
 * Fix incorrect bit op tree optimization (#3470). [algrobman]
 * Fix bisonpre for MSYS2 (#3471).
-* Fix max memory usage (#3483). [Kamil Rakoczy]
+* Fix max memory usage (#3483). [Kamil Rakoczy/Antmicro]
 * Fix empty string arguments to display (#3484). [Grulfen]
 * Fix table misoptimizing away display (#3488). [Stefan Post]
 * Fix unique_ptr memory header for MinGW64 (#3493).
@@ -57,7 +69,7 @@ Verilator 4.226 2022-08-31
 * Fix segfault exporting non-existant package (#3535).
 * Fix void-cast queue pop_front or pop_back (#3542) (#3364). [Drew Ranck]
 * Fix case statement comparing string literal (#3544). [Gustav Svensk]
-* Fix === with some tristate constants (#3551). [Ryszard Rozak]
+* Fix === with some tristate constants (#3551). [Ryszard Rozak/Antmicro]
 * Fix converting subclasses to string (#3552). [Arkadiusz Kozdra/Antmicro]
 * Fix --hierarchical with order-based pin connections (#3583) (#3585). [Kelin9298]
 

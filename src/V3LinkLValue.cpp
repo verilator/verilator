@@ -37,6 +37,7 @@ private:
 
     // STATE
     bool m_setContinuously = false;  // Set that var has some continuous assignment
+    bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
 
@@ -51,6 +52,9 @@ private:
         if (nodep->varp()) {
             if (nodep->access().isWriteOrRW() && m_setContinuously) {
                 nodep->varp()->isContinuously(true);
+                // Strength may only be specified in continuous assignment,
+                // so it is needed to check only if m_setContinuously is true
+                if (m_setStrengthSpecified) nodep->varp()->hasStrengthAssignment(true);
             }
             if (nodep->access().isWriteOrRW() && !m_ftaskp && nodep->varp()->isReadOnly()) {
                 nodep->v3warn(ASSIGNIN,
@@ -78,9 +82,13 @@ private:
         {
             m_setRefLvalue = VAccess::WRITE;
             m_setContinuously = VN_IS(nodep, AssignW) || VN_IS(nodep, AssignAlias);
+            if (AstAssignW* assignwp = VN_CAST(nodep, AssignW)) {
+                if (assignwp->strengthSpecp()) m_setStrengthSpecified = true;
+            }
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = VAccess::NOCHANGE;
             m_setContinuously = false;
+            m_setStrengthSpecified = false;
             iterateAndNextNull(nodep->rhsp());
         }
     }

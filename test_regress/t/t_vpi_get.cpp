@@ -71,7 +71,7 @@
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
+    if (std::strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
                (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \

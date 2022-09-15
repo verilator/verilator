@@ -711,9 +711,9 @@ void check_exports() {
 
     e_string(&x_string);
     if ((n % 2) == 0) {
-        if (strcmp(x_string, "Hello") != 0) stop();
+        if (std::strcmp(x_string, "Hello") != 0) stop();
     } else {
-        if (strcmp(x_string, "World") != 0) stop();
+        if (std::strcmp(x_string, "World") != 0) stop();
     }
 
     e_bit(&x_bit);
@@ -772,9 +772,9 @@ void check_exports() {
 
     e_string_t(&x_string_t);
     if ((n % 2) == 0) {
-        if (strcmp(x_string_t, "Hello") != 0) stop();
+        if (std::strcmp(x_string_t, "Hello") != 0) stop();
     } else {
-        if (strcmp(x_string_t, "World") != 0) stop();
+        if (std::strcmp(x_string_t, "World") != 0) stop();
     }
 
     e_bit_t(&x_bit_t);

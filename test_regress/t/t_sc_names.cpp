@@ -15,7 +15,7 @@ int sc_main(int argc, char* argv[]) {
 
     /* We expect to find clk in here. */
     for (int i = 0; i < ch.size(); ++i) {
-        if (!strcmp(ch[i]->basename(), "clk")) found = true;
+        if (!std::strcmp(ch[i]->basename(), "clk")) found = true;
     }
 
     if (found) {

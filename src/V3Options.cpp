@@ -435,6 +435,11 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
     return out;
 }
 
+void V3Options::ccSet() {  // --cc
+    m_outFormatOk = true;
+    m_systemC = false;
+}
+
 //######################################################################
 // File searching
 
@@ -727,9 +732,10 @@ bool V3Options::coroutineSupport() {
 // V3 Options notification methods
 
 void V3Options::notify() {
-    FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
-
     // Notify that all arguments have been passed and final modification can be made.
+    FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};
+
+    if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !cdc() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
         v3fatal("verilator: Need --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
                 "--xml-only or --E option");
@@ -910,8 +916,8 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) {
 //======================================================================
 
 bool V3Options::suffixed(const string& sw, const char* arg) {
-    if (strlen(arg) > sw.length()) return false;
-    return (0 == strcmp(sw.c_str() + sw.length() - strlen(arg), arg));
+    if (std::strlen(arg) > sw.length()) return false;
+    return (0 == std::strcmp(sw.c_str() + sw.length() - std::strlen(arg), arg));
 }
 
 void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) {
@@ -1010,10 +1016,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-build", Set, &m_build);
 
     DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
-    DECL_OPTION("-cc", CbCall, [this]() {
-        m_outFormatOk = true;
-        m_systemC = false;
-    });
+    DECL_OPTION("-cc", CbCall, [this]() { ccSet(); });
     DECL_OPTION("-cdc", OnOff, &m_cdc);
     DECL_OPTION("-clk", CbVal, callStrSetter(&V3Options::addClocker));
     DECL_OPTION("-no-clk", CbVal, callStrSetter(&V3Options::addNoClocker));
@@ -1024,15 +1027,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-comp-limit-parens", Set, &m_compLimitParens).undocumented();
     DECL_OPTION("-comp-limit-syms", CbVal, [](int val) { VName::maxLength(val); }).undocumented();
     DECL_OPTION("-compiler", CbVal, [this, fl](const char* valp) {
-        if (!strcmp(valp, "clang")) {
+        if (!std::strcmp(valp, "clang")) {
             m_compLimitBlocks = 80;  // limit unknown
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
             m_compLimitParens = 240;  // controlled by -fbracket-depth, which defaults to 256
-        } else if (!strcmp(valp, "gcc")) {
+        } else if (!std::strcmp(valp, "gcc")) {
             m_compLimitBlocks = 0;  // Bug free
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
             m_compLimitParens = 240;  // Unlimited, but generate same code as for clang
-        } else if (!strcmp(valp, "msvc")) {
+        } else if (!std::strcmp(valp, "msvc")) {
             m_compLimitBlocks = 80;  // 128, but allow some room
             m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
             m_compLimitParens = 80;  // 128, but allow some room
@@ -1183,11 +1186,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_makeDir = valp;
         addIncDirFallback(m_makeDir);  // Need to find generated files there too
     });
-    DECL_OPTION("-main", OnOff, &m_main).undocumented();  // Future
+    DECL_OPTION("-main", OnOff, &m_main);
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
-        if (!strcmp(valp, "cmake")) {
+        if (!std::strcmp(valp, "cmake")) {
             m_cmake = true;
-        } else if (!strcmp(valp, "gmake")) {
+        } else if (!std::strcmp(valp, "gmake")) {
             m_gmake = true;
         } else {
             fl->v3fatal("Unknown --make system specified: '" << valp << "'");
@@ -1280,10 +1283,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
     DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
-    DECL_OPTION("-prefix", CbVal, [this](const char* valp) {
-        m_prefix = valp;
-        if (m_modPrefix == "") m_modPrefix = m_prefix;
-    });
+    DECL_OPTION("-prefix", Set, &m_prefix);
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
     DECL_OPTION("-prof-c", OnOff, &m_profC);
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
@@ -1339,13 +1339,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (m_threads < 0) fl->v3fatal("--threads must be >= 0: " << valp);
     });
     DECL_OPTION("-threads-dpi", CbVal, [this, fl](const char* valp) {
-        if (!strcmp(valp, "all")) {
+        if (!std::strcmp(valp, "all")) {
             m_threadsDpiPure = true;
             m_threadsDpiUnpure = true;
-        } else if (!strcmp(valp, "none")) {
+        } else if (!std::strcmp(valp, "none")) {
             m_threadsDpiPure = false;
             m_threadsDpiUnpure = false;
-        } else if (!strcmp(valp, "pure")) {
+        } else if (!std::strcmp(valp, "pure")) {
             m_threadsDpiPure = true;
             m_threadsDpiUnpure = false;
         } else {
@@ -1481,13 +1481,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
     DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {
-        if (!strcmp(valp, "0")) {
+        if (!std::strcmp(valp, "0")) {
             m_xAssign = "0";
-        } else if (!strcmp(valp, "1")) {
+        } else if (!std::strcmp(valp, "1")) {
             m_xAssign = "1";
-        } else if (!strcmp(valp, "fast")) {
+        } else if (!std::strcmp(valp, "fast")) {
             m_xAssign = "fast";
-        } else if (!strcmp(valp, "unique")) {
+        } else if (!std::strcmp(valp, "unique")) {
             m_xAssign = "unique";
         } else {
             fl->v3fatal("Unknown setting for --x-assign: '"
@@ -1496,11 +1496,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         }
     });
     DECL_OPTION("-x-initial", CbVal, [this, fl](const char* valp) {
-        if (!strcmp(valp, "0")) {
+        if (!std::strcmp(valp, "0")) {
             m_xInitial = "0";
-        } else if (!strcmp(valp, "fast")) {
+        } else if (!std::strcmp(valp, "fast")) {
             m_xInitial = "fast";
-        } else if (!strcmp(valp, "unique")) {
+        } else if (!std::strcmp(valp, "unique")) {
             m_xInitial = "unique";
         } else {
             fl->v3fatal("Unknown setting for --x-initial: '"
@@ -1522,11 +1522,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
-        if (!strcmp(argv[i], "-j") || !strcmp(argv[i], "--j")) {  // Allow gnu -- switches
+        if (!std::strcmp(argv[i], "-j")
+            || !std::strcmp(argv[i], "--j")) {  // Allow gnu -- switches
             ++i;
             m_buildJobs = 0;  // Unlimited parallelism
             if (i < argc && isdigit(argv[i][0])) {
-                m_buildJobs = atoi(argv[i]);
+                m_buildJobs = std::atoi(argv[i]);
                 if (m_buildJobs <= 0) {
                     fl->v3error("-j accepts positive integer, but '" << argv[i] << "' is passed");
                 }

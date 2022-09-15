@@ -150,8 +150,8 @@ void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnO
 
 void V3ParseImp::lexVerilatorCmtBad(FileLine* fl, const char* textp) {
     string cmtparse = textp;
-    if (cmtparse.substr(0, strlen("/*verilator")) == "/*verilator") {
-        cmtparse.replace(0, strlen("/*verilator"), "");
+    if (cmtparse.substr(0, std::strlen("/*verilator")) == "/*verilator") {
+        cmtparse.replace(0, std::strlen("/*verilator"), "");
     }
     while (isspace(cmtparse[0])) cmtparse.replace(0, 1, "");
     string cmtname;
@@ -178,14 +178,14 @@ void V3ParseImp::lexErrorPreprocDirective(FileLine* fl, const char* textp) {
 }
 
 string V3ParseImp::lexParseTag(const char* textp) {
-    string tmp = textp + strlen("/*verilator tag ");
+    string tmp = textp + std::strlen("/*verilator tag ");
     string::size_type pos;
     if ((pos = tmp.rfind("*/")) != string::npos) tmp.erase(pos);
     return tmp;
 }
 
 double V3ParseImp::lexParseTimenum(const char* textp) {
-    const size_t length = strlen(textp);
+    const size_t length = std::strlen(textp);
     char* const strgp = new char[length + 1];
     char* dp = strgp;
     const char* sp = textp;
@@ -234,7 +234,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
             m_ppBuffers.push_front(remainder);  // Put back remainder for next time
             len = (max_size - got);
         }
-        memcpy(buf + got, front.c_str(), len);
+        std::memcpy(buf + got, front.c_str(), len);
         got += len;
     }
     if (debug() >= 9) {
@@ -398,8 +398,7 @@ void V3ParseImp::tokenPipeline() {
         const int nexttok = nexttokp->token;
         yylval = curValue;
         // Now potentially munge the current token
-        if (token == '('
-            && (nexttok == ygenSTRENGTH || nexttok == ySUPPLY0 || nexttok == ySUPPLY1)) {
+        if (token == '(' && isStrengthToken(nexttok)) {
             token = yP_PAR__STRENGTH;
         } else if (token == ':') {
             if (nexttok == yBEGIN) {
@@ -481,6 +480,12 @@ void V3ParseImp::tokenPipeline() {
     }
     yylval.token = token;
     // effectively returns yylval
+}
+
+bool V3ParseImp::isStrengthToken(int tok) {
+    return tok == ygenSTRENGTH || tok == ySUPPLY0 || tok == ySUPPLY1 || tok == ySTRONG0
+           || tok == ySTRONG1 || tok == yPULL0 || tok == yPULL1 || tok == yWEAK0 || tok == yWEAK1
+           || tok == yHIGHZ0 || tok == yHIGHZ1;
 }
 
 void V3ParseImp::tokenPipelineSym() {

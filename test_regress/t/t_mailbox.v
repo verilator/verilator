@@ -17,7 +17,7 @@
 //  endclass
 
 module t(/*AUTOARG*/);
-   mailbox m;
+   mailbox #(int) m;
    int     msg;
    int     out;
 

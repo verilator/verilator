@@ -36,18 +36,20 @@ constexpr int EMITC_NUM_CONSTW = 8;
 
 class EmitCLazyDecls final : public VNVisitor {
     // NODE STATE/TYPES
-    //  AstNode::user2() -> bool. Already emitted decl for symbols.
-    const VNUser2InUse m_inuser2;
+    // None allowed to support threaded emitting
 
     // MEMBERS
     std::unordered_set<string> m_emittedManually;  // Set of names already declared manually.
     EmitCBaseVisitor& m_emitter;  // For access to file output
     bool m_needsBlankLine = false;  // Emit blank line if any declarations were emitted (cosmetic)
+    std::set<AstNode*> m_emitted;  // -> in set. Already emitted decl for symbols.
 
     // METHODS
+    bool declaredOnce(AstNode* nodep) { return m_emitted.insert(nodep).second; }
+
     void lazyDeclare(AstCFunc* funcp) {
         // Already declared in this compilation unit
-        if (funcp->user2SetOnce()) return;
+        if (!declaredOnce(funcp)) return;
         // Check if this kind of function is lazily declared
         if (!(funcp->isMethod() && funcp->isLoose()) && !funcp->dpiImportPrototype()) return;
         // Already declared manually
@@ -58,7 +60,7 @@ class EmitCLazyDecls final : public VNVisitor {
     }
 
     void lazyDeclareConstPoolVar(AstVar* varp) {
-        if (varp->user2SetOnce()) return;  // Already declared
+        if (!declaredOnce(varp)) return;  // Already declared
         const string nameProtect
             = m_emitter.topClassName() + "__ConstPool__" + varp->nameProtect();
         m_emitter.puts("extern const ");
@@ -106,8 +108,8 @@ public:
         m_emitter.puts(suffix);
         m_emitter.ensureNewLine();
     }
-    void declared(AstCFunc* nodep) { nodep->user2SetOnce(); }
-    void reset() { AstNode::user2ClearTree(); }
+    void declared(AstCFunc* nodep) { m_emitted.insert(nodep); }
+    void reset() { m_emitted.clear(); }
 };
 
 //######################################################################

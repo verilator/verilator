@@ -89,7 +89,7 @@ int sc_main(int argc, char* argv[]) {
     // and if at run time passed the +trace argument, turn on tracing
     VerilatedVcdSc* tfp = nullptr;
     const char* flag = Verilated::commandArgsPlusMatch("trace");
-    if (flag && 0 == strcmp(flag, "+trace")) {
+    if (flag && 0 == std::strcmp(flag, "+trace")) {
         cout << "Enabling waves into logs/vlt_dump.vcd...\n";
         tfp = new VerilatedVcdSc;
         top->trace(tfp, 99);  // Trace 99 levels of hierarchy

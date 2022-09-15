@@ -6,16 +6,16 @@
 
 // Methods defined by IEEE:
 //  class process;
-//     enum state { FINISHED, RUNNING, WAITING, SUSPENDED, KILLED };
+//     enum state { FINISHED, RUNNING, WAITING, SUSPENDED, KILLED };  // UVM uses KILLED, FINISHED
 //     static function process self();
 //     function state status();
 //     function void kill();
 //     task await();  // Warn as unsupported (no UVM library use)
 //     function void suspend();  // Warn as unsupported (no UVM library use)
 //     function void resume();  // Warn as unsupported (no UVM library use)
-//     function void srandom( int seed );  // Just ignore?
-//     function string get_randstate();  // Just ignore?
-//     function void set_randstate( string state );  // Just ignore?
+//     function void srandom( int seed );  // Operate on all proceses for now?
+//     function string get_randstate();  // Operate on all proceses for now?
+//     function void set_randstate( string state );  // Operate on all proceses for now?
 //   endclass
 
 module t(/*AUTOARG*/);

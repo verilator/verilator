@@ -156,14 +156,15 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
         }
         value_startp = cp;
 
-        if (atoi(widthn.c_str())) {
-            if (atoi(widthn.c_str()) < 0 || atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
+        if (std::atoi(widthn.c_str())) {
+            if (std::atoi(widthn.c_str()) < 0
+                || std::atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
                 // atoi might convert large number to negative, so can't tell which
                 v3error("Unsupported: Width of number exceeds implementation limit: "
                         << sourcep << "  (IEEE 1800-2017 6.9.1)");
                 width(v3Global.opt.maxNumWidth(), true);
             } else {
-                width(atoi(widthn.c_str()), true);
+                width(std::atoi(widthn.c_str()), true);
             }
         }
     } else {
@@ -278,7 +279,8 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
         }
     } else {
         // Convert bin/octal number to hex
-        for (const char* cp = value_startp + strlen(value_startp) - 1; cp >= value_startp; cp--) {
+        for (const char* cp = value_startp + std::strlen(value_startp) - 1; cp >= value_startp;
+             cp--) {
             if (*cp != '_' && *cp != '0' && obit >= width()) {
                 v3error("Too many digits for " << width() << " bit number: " << sourcep);
                 break;
@@ -698,7 +700,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
                 if (fmtsize != "0") str += ' ';
             }
         }
-        const size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
         str = displayPad(fmtsizen, ' ', left, str);
         return str;
     }
@@ -747,7 +749,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         }
         const bool zeropad = fmtsize.length() > 0 && fmtsize[0] == '0';
         // fmtsize might have changed since we parsed the %fmtsize
-        const size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
         str = displayPad(fmtsizen, (zeropad ? '0' : ' '), left, str);
         return str;
     }
@@ -802,7 +804,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         return str;
     }
     case '@': {  // Packed string
-        const size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
         str = displayPad(fmtsizen, ' ', left, toString());
         return str;
     }
