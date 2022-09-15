@@ -50,7 +50,7 @@ protected:
         : AstNode{t, fl} {}
 
 public:
-    ASTNODE_BASE_FUNCS(NodeDType)
+    ASTGEN_MEMBERS_NodeDType;
     // ACCESSORS
     virtual void dump(std::ostream& str) const override;
     virtual void dumpSmall(std::ostream& str) const;
@@ -142,7 +142,7 @@ protected:
         : AstNodeDType{t, fl} {}
 
 public:
-    ASTNODE_BASE_FUNCS(NodeArrayDType)
+    ASTGEN_MEMBERS_NodeArrayDType;
     virtual void dump(std::ostream& str) const override;
     virtual void dumpSmall(std::ostream& str) const override;
     virtual const char* broken() const override {
@@ -215,7 +215,7 @@ protected:
     }
 
 public:
-    ASTNODE_BASE_FUNCS(NodeUOrStructDType)
+    ASTGEN_MEMBERS_NodeUOrStructDType;
     int uniqueNum() const { return m_uniqueNum; }
     virtual const char* broken() const override;
     virtual void dump(std::ostream& str) const override;
@@ -276,7 +276,7 @@ public:
         addNOp1p(rangep);
         addNOp2p(initp);
     }
-    ASTNODE_NODE_FUNCS(EnumItem)
+    ASTGEN_MEMBERS_EnumItem;
     virtual string name() const override { return m_name; }
     virtual bool maybePointedTo() const override { return true; }
     virtual bool hasDType() const override { return true; }
@@ -310,7 +310,7 @@ public:
         keyDTypep(keyDtp);
         dtypep(dtp);
     }
-    ASTNODE_NODE_FUNCS(AssocArrayDType)
+    ASTGEN_MEMBERS_AssocArrayDType;
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -403,7 +403,7 @@ private:
               AstRange* rangep);
 
 public:
-    ASTNODE_NODE_FUNCS(BasicDType)
+    ASTGEN_MEMBERS_BasicDType;
     virtual void dump(std::ostream& str) const override;
     // width/widthMin/numeric compared elsewhere
     virtual bool same(const AstNode* samep) const override {
@@ -482,7 +482,7 @@ public:
         setOp1p(dtp);  // Only for parser
         setOp2p(elementsp);  // Only for parser
     }
-    ASTNODE_NODE_FUNCS(BracketArrayDType)
+    ASTGEN_MEMBERS_BracketArrayDType;
     virtual bool similarDType(AstNodeDType* samep) const override { V3ERROR_NA_RETURN(false); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
@@ -514,7 +514,7 @@ public:
         dtypep(this);
         addNOp4p(paramsp);
     }
-    ASTNODE_NODE_FUNCS(ClassRefDType)
+    ASTGEN_MEMBERS_ClassRefDType;
     // METHODS
     const char* broken() const override;
     void cloneRelink() override;
@@ -558,7 +558,7 @@ public:
         dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
-    ASTNODE_NODE_FUNCS(ConstDType)
+    ASTGEN_MEMBERS_ConstDType;
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -616,7 +616,7 @@ public:
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTNODE_NODE_FUNCS(DefImplicitDType)
+    ASTGEN_MEMBERS_DefImplicitDType;
     int uniqueNum() const { return m_uniqueNum; }
     virtual bool same(const AstNode* samep) const override {
         const AstDefImplicitDType* const sp = static_cast<const AstDefImplicitDType*>(samep);
@@ -663,7 +663,7 @@ public:
         refDTypep(dtp);
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTNODE_NODE_FUNCS(DynArrayDType)
+    ASTGEN_MEMBERS_DynArrayDType;
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -710,7 +710,7 @@ public:
         : ASTGEN_SUPER_EmptyQueueDType(fl) {
         dtypep(this);
     }
-    ASTNODE_NODE_FUNCS(EmptyQueueDType)
+    ASTGEN_MEMBERS_EmptyQueueDType;
     virtual void dumpSmall(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
@@ -748,7 +748,7 @@ public:
         dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
-    ASTNODE_NODE_FUNCS(EnumDType)
+    ASTGEN_MEMBERS_EnumDType;
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -817,7 +817,7 @@ public:
         , m_cellName{cellName}
         , m_ifaceName{ifaceName}
         , m_modportName{modport} {}
-    ASTNODE_NODE_FUNCS(IfaceRefDType)
+    ASTGEN_MEMBERS_IfaceRefDType;
     // METHODS
     virtual const char* broken() const override;
     virtual void dump(std::ostream& str = std::cout) const override;
@@ -871,7 +871,7 @@ public:
         dtypep(this);
         widthFromSub(subDTypep());
     }
-    ASTNODE_NODE_FUNCS(MemberDType)
+    ASTGEN_MEMBERS_MemberDType;
     virtual string name() const override { return m_name; }  // * = Var name
     virtual bool hasDType() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
@@ -934,7 +934,7 @@ public:
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTNODE_NODE_FUNCS(ParamTypeDType)
+    ASTGEN_MEMBERS_ParamTypeDType;
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Type assigning to
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
@@ -975,7 +975,7 @@ class AstParseTypeDType final : public AstNodeDType {
 public:
     explicit AstParseTypeDType(FileLine* fl)
         : ASTGEN_SUPER_ParseTypeDType(fl) {}
-    ASTNODE_NODE_FUNCS(ParseTypeDType)
+    ASTGEN_MEMBERS_ParseTypeDType;
     AstNodeDType* dtypep() const { return nullptr; }
     // METHODS
     virtual bool similarDType(AstNodeDType* samep) const override { return this == samep; }
@@ -1011,7 +1011,7 @@ public:
         refDTypep(dtp);
         dtypep(dtp);
     }
-    ASTNODE_NODE_FUNCS(QueueDType)
+    ASTGEN_MEMBERS_QueueDType;
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -1081,7 +1081,7 @@ public:
         : ASTGEN_SUPER_RefDType(fl) {
         setOp2p(typeofp);
     }
-    ASTNODE_NODE_FUNCS(RefDType)
+    ASTGEN_MEMBERS_RefDType;
     // METHODS
     const char* broken() const override;
     void cloneRelink() override;
@@ -1160,7 +1160,7 @@ public:
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTNODE_NODE_FUNCS(UnsizedArrayDType)
+    ASTGEN_MEMBERS_UnsizedArrayDType;
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -1198,7 +1198,7 @@ public:
         : ASTGEN_SUPER_VoidDType(fl) {
         dtypep(this);
     }
-    ASTNODE_NODE_FUNCS(VoidDType)
+    ASTGEN_MEMBERS_VoidDType;
     virtual void dumpSmall(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual bool maybePointedTo() const override { return true; }
@@ -1230,7 +1230,7 @@ public:
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTNODE_NODE_FUNCS(WildcardArrayDType)
+    ASTGEN_MEMBERS_WildcardArrayDType;
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -1274,7 +1274,7 @@ class AstPackArrayDType final : public AstNodeArrayDType {
 public:
     inline AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep);
     inline AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep);
-    ASTNODE_NODE_FUNCS(PackArrayDType)
+    ASTGEN_MEMBERS_PackArrayDType;
     virtual string prettyDTypeName() const override;
     virtual bool isCompound() const override { return false; }
 };
@@ -1303,7 +1303,7 @@ public:
         // width and signing from the subDType/base type
         widthFromSub(subDTypep());
     }
-    ASTNODE_NODE_FUNCS(UnpackArrayDType)
+    ASTGEN_MEMBERS_UnpackArrayDType;
     virtual string prettyDTypeName() const override;
     virtual bool same(const AstNode* samep) const override {
         const AstUnpackArrayDType* const sp = static_cast<const AstUnpackArrayDType*>(samep);
@@ -1321,7 +1321,7 @@ public:
     // VSigning below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_StructDType(fl, numericUnpack) {}
-    ASTNODE_NODE_FUNCS(StructDType)
+    ASTGEN_MEMBERS_StructDType;
     virtual string verilogKwd() const override { return "struct"; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
@@ -1330,7 +1330,7 @@ public:
     // VSigning below is mispurposed to indicate if packed or not
     AstUnionDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_UnionDType(fl, numericUnpack) {}
-    ASTNODE_NODE_FUNCS(UnionDType)
+    ASTGEN_MEMBERS_UnionDType;
     virtual string verilogKwd() const override { return "union"; }
 };
 

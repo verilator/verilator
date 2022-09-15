@@ -44,7 +44,7 @@ protected:
         : AstNode{t, fl} {}
 
 public:
-    ASTNODE_BASE_FUNCS(NodeMath)
+    ASTGEN_MEMBERS_NodeMath;
     // METHODS
     virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
@@ -68,7 +68,7 @@ protected:
     }
 
 public:
-    ASTNODE_BASE_FUNCS(NodeBiop)
+    ASTGEN_MEMBERS_NodeBiop;
     // Clone single node, just get same type back.
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) = 0;
     // ACCESSORS
@@ -97,7 +97,7 @@ protected:
         : AstNodeBiop{t, fl, lhs, rhs} {}
 
 public:
-    ASTNODE_BASE_FUNCS(NodeBiCom)
+    ASTGEN_MEMBERS_NodeBiCom;
 };
 class AstNodeBiComAsv VL_NOT_FINAL : public AstNodeBiCom {
     // Binary math with commutative & associative properties
@@ -106,7 +106,7 @@ protected:
         : AstNodeBiCom{t, fl, lhs, rhs} {}
 
 public:
-    ASTNODE_BASE_FUNCS(NodeBiComAsv)
+    ASTGEN_MEMBERS_NodeBiComAsv;
 };
 class AstNodeSel VL_NOT_FINAL : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
@@ -115,7 +115,7 @@ protected:
         : AstNodeBiop{t, fl, fromp, bitp} {}
 
 public:
-    ASTNODE_BASE_FUNCS(NodeSel)
+    ASTGEN_MEMBERS_NodeSel;
     AstNode* fromp() const {
         return op1p();
     }  // op1 = Extracting what (nullptr=TBD during parsing)
@@ -134,7 +134,7 @@ protected:
     }
 
 public:
-    ASTNODE_BASE_FUNCS(NodeStream)
+    ASTGEN_MEMBERS_NodeStream;
 };
 class AstNodeSystemBiop VL_NOT_FINAL : public AstNodeBiop {
 public:
@@ -142,6 +142,7 @@ public:
         : AstNodeBiop(t, fl, lhsp, rhsp) {
         dtypeSetDouble();
     }
+    ASTGEN_MEMBERS_NodeSystemBiop;
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return false; }
     virtual bool cleanRhs() const override { return false; }
@@ -162,7 +163,7 @@ protected:
     }
 
 public:
-    ASTNODE_BASE_FUNCS(NodeQuadop)
+    ASTGEN_MEMBERS_NodeQuadop;
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
     AstNode* thsp() const { return op3p(); }
@@ -194,7 +195,7 @@ protected:
         : AstNodeMath{t, fl} {}
 
 public:
-    ASTNODE_BASE_FUNCS(NodeTermop)
+    ASTGEN_MEMBERS_NodeTermop;
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
@@ -212,7 +213,7 @@ protected:
     }
 
 public:
-    ASTNODE_BASE_FUNCS(NodeTriop)
+    ASTGEN_MEMBERS_NodeTriop;
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
     AstNode* thsp() const { return op3p(); }
@@ -246,7 +247,7 @@ protected:
     }
 
 public:
-    ASTNODE_BASE_FUNCS(NodeCond)
+    ASTGEN_MEMBERS_NodeCond;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) override;
     AstNode* condp() const { return op1p(); }  // op1 = Condition
@@ -274,7 +275,7 @@ protected:
     }
 
 public:
-    ASTNODE_BASE_FUNCS(NodeUniop)
+    ASTGEN_MEMBERS_NodeUniop;
     AstNode* lhsp() const { return op1p(); }
     void lhsp(AstNode* nodep) { return setOp1p(nodep); }
     // METHODS
@@ -296,7 +297,7 @@ public:
         : AstNodeUniop(t, fl, lhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_BASE_FUNCS(NodeSystemUniop)
+    ASTGEN_MEMBERS_NodeSystemUniop;
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
@@ -329,7 +330,7 @@ protected:
     }
 
 public:
-    ASTNODE_BASE_FUNCS(NodeVarRef)
+    ASTGEN_MEMBERS_NodeVarRef;
     virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual const char* broken() const override;
@@ -370,7 +371,7 @@ public:
     }
 
 public:
-    ASTNODE_NODE_FUNCS(AddrOfCFunc)
+    ASTGEN_MEMBERS_AddrOfCFunc;
     virtual void cloneRelink() override;
     virtual const char* broken() const override;
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -392,7 +393,7 @@ public:
         dtypeFrom(exprsp);
     }
     inline AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut = true);
-    ASTNODE_NODE_FUNCS(CMath)
+    ASTGEN_MEMBERS_CMath;
     virtual bool isGateOptimizable() const override { return m_pure; }
     virtual bool isPredictOptimizable() const override { return m_pure; }
     virtual bool cleanOut() const override { return m_cleanOut; }
@@ -413,7 +414,7 @@ public:
         : ASTGEN_SUPER_ConsAssoc(fl) {
         setNOp1p(defaultp);
     }
-    ASTNODE_NODE_FUNCS(ConsAssoc)
+    ASTGEN_MEMBERS_ConsAssoc;
     virtual string emitVerilog() override { return "'{}"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -432,7 +433,7 @@ public:
         setNOp1p(lhsp);
         setNOp2p(rhsp);
     }
-    ASTNODE_NODE_FUNCS(ConsDynArray)
+    ASTGEN_MEMBERS_ConsDynArray;
     virtual string emitVerilog() override { return "'{%l, %r}"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -452,7 +453,7 @@ public:
         setNOp1p(lhsp);
         setNOp2p(rhsp);
     }
-    ASTNODE_NODE_FUNCS(ConsQueue)
+    ASTGEN_MEMBERS_ConsQueue;
     virtual string emitVerilog() override { return "'{%l, %r}"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -471,7 +472,7 @@ public:
         : ASTGEN_SUPER_ConsWildcard(fl) {
         setNOp1p(defaultp);
     }
-    ASTNODE_NODE_FUNCS(ConsWildcard)
+    ASTGEN_MEMBERS_ConsWildcard;
     virtual string emitVerilog() override { return "'{}"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -593,7 +594,7 @@ public:
         dtypeSetBit();  // Events 1 bit, objects 64 bits, so autoExtend=1 and use bit here
         initWithNumber();
     }
-    ASTNODE_NODE_FUNCS(Const)
+    ASTGEN_MEMBERS_Const;
     virtual string name() const override { return num().ascii(); }  // * = Value
     const V3Number& num() const { return m_num; }  // * = Value
     V3Number& num() { return m_num; }  // * = Value
@@ -618,7 +619,7 @@ class AstEmptyQueue final : public AstNodeMath {
 public:
     explicit AstEmptyQueue(FileLine* fl)
         : ASTGEN_SUPER_EmptyQueue(fl) {}
-    ASTNODE_NODE_FUNCS(EmptyQueue)
+    ASTGEN_MEMBERS_EmptyQueue;
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() override { return "{}"; }
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
@@ -635,7 +636,7 @@ public:
         , m_classOrPackagep{classOrPackagep} {
         dtypeFrom(m_itemp);
     }
-    ASTNODE_NODE_FUNCS(EnumItemRef)
+    ASTGEN_MEMBERS_EnumItemRef;
     virtual void dump(std::ostream& str) const override;
     virtual string name() const override { return itemp()->name(); }
     virtual int instrCount() const override { return 0; }
@@ -665,7 +666,7 @@ public:
         setOp2p(resultp);  // Possibly in future nullptr could mean return rhsp()
         dtypeFrom(resultp);
     }
-    ASTNODE_NODE_FUNCS(ExprStmt)
+    ASTGEN_MEMBERS_ExprStmt;
     // ACCESSORS
     AstNode* stmtsp() const { return op1p(); }
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
@@ -683,7 +684,7 @@ public:
         setOp1p(filep);
         setOp2p(strp);
     }
-    ASTNODE_NODE_FUNCS(FError)
+    ASTGEN_MEMBERS_FError;
     virtual string emitVerilog() override { return "%f$ferror(%l, %r)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -713,7 +714,7 @@ public:
         setNOp3p(startp);
         setNOp4p(countp);
     }
-    ASTNODE_NODE_FUNCS(FRead)
+    ASTGEN_MEMBERS_FRead;
     virtual string verilogKwd() const override { return "$fread"; }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -740,7 +741,7 @@ public:
         : ASTGEN_SUPER_FRewind(fl) {
         setNOp2p(filep);
     }
-    ASTNODE_NODE_FUNCS(FRewind)
+    ASTGEN_MEMBERS_FRewind;
     virtual string verilogKwd() const override { return "$frewind"; }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -768,7 +769,7 @@ public:
         addNOp1p(exprsp);
         setNOp2p(filep);
     }
-    ASTNODE_NODE_FUNCS(FScanF)
+    ASTGEN_MEMBERS_FScanF;
     virtual string name() const override { return m_text; }
     virtual string verilogKwd() const override { return "$fscanf"; }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -800,7 +801,7 @@ public:
         setNOp3p(offset);
         setNOp4p(operation);
     }
-    ASTNODE_NODE_FUNCS(FSeek)
+    ASTGEN_MEMBERS_FSeek;
     virtual string verilogKwd() const override { return "$fseek"; }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -825,7 +826,7 @@ public:
         : ASTGEN_SUPER_FTell(fl) {
         setNOp2p(filep);
     }
-    ASTNODE_NODE_FUNCS(FTell)
+    ASTGEN_MEMBERS_FTell;
     virtual string verilogKwd() const override { return "$ftell"; }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -848,7 +849,7 @@ public:
         : ASTGEN_SUPER_Fell(fl) {
         addOp1p(exprp);
     }
-    ASTNODE_NODE_FUNCS(Fell)
+    ASTGEN_MEMBERS_Fell;
     virtual string emitVerilog() override { return "$fell(%l)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -867,7 +868,7 @@ public:
         setOp1p(lhsp);
         setOp2p((AstNode*)rangep);
     }
-    ASTNODE_NODE_FUNCS(GatePin)
+    ASTGEN_MEMBERS_GatePin;
     virtual string emitVerilog() override { return "%l"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -884,7 +885,7 @@ public:
         setOp1p(lhs);
         setOp2p(rhs);
     }
-    ASTNODE_NODE_FUNCS(Implication)
+    ASTGEN_MEMBERS_Implication;
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -906,7 +907,7 @@ public:
         addOp2p(itemsp);
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(Inside)
+    ASTGEN_MEMBERS_Inside;
     AstNode* exprp() const { return op1p(); }  // op1 = LHS expression to compare with
     // op2 = RHS, possibly a list of expr or AstInsideRange
     AstNode* itemsp() const { return op2p(); }
@@ -921,7 +922,7 @@ public:
         addOp1p(lhsp);
         addOp2p(rhsp);
     }
-    ASTNODE_NODE_FUNCS(InsideRange)
+    ASTGEN_MEMBERS_InsideRange;
     AstNode* lhsp() const { return op1p(); }  // op1 = LHS
     AstNode* rhsp() const { return op2p(); }  // op2 = RHS
     virtual string emitVerilog() override { return "[%l:%r]"; }
@@ -943,7 +944,7 @@ public:
         : ASTGEN_SUPER_LambdaArgRef(fl)
         , m_name{name}
         , m_index(index) {}
-    ASTNODE_NODE_FUNCS(LambdaArgRef)
+    ASTGEN_MEMBERS_LambdaArgRef;
     virtual bool same(const AstNode* /*samep*/) const override { return true; }
     virtual string emitVerilog() override { return name(); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -974,7 +975,7 @@ public:
         setOp1p(fromp);
         dtypep(dtp);
     }
-    ASTNODE_NODE_FUNCS(MemberSel)
+    ASTGEN_MEMBERS_MemberSel;
     void cloneRelink() override;
     const char* broken() const override;
     virtual void dump(std::ostream& str) const override;
@@ -1003,7 +1004,7 @@ public:
         dtypeFrom(rhsp);  // otherwise V3Width will resolve
         setNOp1p(rhsp);
     }
-    ASTNODE_NODE_FUNCS(NewCopy)
+    ASTGEN_MEMBERS_NewCopy;
     virtual string emitVerilog() override { return "new"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -1022,7 +1023,7 @@ public:
         setNOp1p(sizep);
         setNOp2p(rhsp);
     }
-    ASTNODE_NODE_FUNCS(NewDynamic)
+    ASTGEN_MEMBERS_NewDynamic;
     virtual string emitVerilog() override { return "new"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -1041,7 +1042,7 @@ public:
         addOp1p(exprp);
         addNOp2p(ticksp);
     }
-    ASTNODE_NODE_FUNCS(Past)
+    ASTGEN_MEMBERS_Past;
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -1065,7 +1066,7 @@ public:
         : ASTGEN_SUPER_PatMember(fl) {
         addOp1p(lhsp), setNOp2p(keyp), setNOp3p(repp);
     }
-    ASTNODE_NODE_FUNCS(PatMember)
+    ASTGEN_MEMBERS_PatMember;
     virtual string emitVerilog() override { return lhssp() ? "%f{%r{%k%l}}" : "%l"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -1088,7 +1089,7 @@ public:
         : ASTGEN_SUPER_Pattern(fl) {
         addNOp2p(itemsp);
     }
-    ASTNODE_NODE_FUNCS(Pattern)
+    ASTGEN_MEMBERS_Pattern;
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -1120,7 +1121,7 @@ public:
         , m_urandom{urandom} {
         setNOp1p(seedp);
     }
-    ASTNODE_NODE_FUNCS(Rand)
+    ASTGEN_MEMBERS_Rand;
     virtual string emitVerilog() override {
         return seedp() ? (m_urandom ? "%f$urandom(%l)" : "%f$random(%l)")
                        : (m_urandom ? "%f$urandom()" : "%f$random()");
@@ -1154,7 +1155,7 @@ public:
         : ASTGEN_SUPER_Rose(fl) {
         addOp1p(exprp);
     }
-    ASTNODE_NODE_FUNCS(Rose)
+    ASTGEN_MEMBERS_Rose;
     virtual string emitVerilog() override { return "$rose(%l)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -1179,7 +1180,7 @@ public:
         addNOp1p(exprsp);
         setOp2p(fromp);
     }
-    ASTNODE_NODE_FUNCS(SScanF)
+    ASTGEN_MEMBERS_SScanF;
     virtual string name() const override { return m_text; }
     virtual string verilogKwd() const override { return "$sscanf"; }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -1208,7 +1209,7 @@ public:
         : ASTGEN_SUPER_Sampled(fl) {
         addOp1p(exprp);
     }
-    ASTNODE_NODE_FUNCS(Sampled)
+    ASTGEN_MEMBERS_Sampled;
     virtual string emitVerilog() override { return "$sampled(%l)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -1234,7 +1235,7 @@ public:
         , m_forFormat{forFormat} {
         dtypeSetUInt64();
     }
-    ASTNODE_NODE_FUNCS(ScopeName)
+    ASTGEN_MEMBERS_ScopeName;
     virtual bool same(const AstNode* samep) const override {
         return (m_dpiExport == static_cast<const AstScopeName*>(samep)->m_dpiExport
                 && m_forFormat == static_cast<const AstScopeName*>(samep)->m_forFormat);
@@ -1274,7 +1275,7 @@ public:
         setNOp2p(keyp);
         setOp3p(valuep);
     }
-    ASTNODE_NODE_FUNCS(SetAssoc)
+    ASTGEN_MEMBERS_SetAssoc;
     virtual string emitVerilog() override { return "'{}"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -1296,7 +1297,7 @@ public:
         setNOp2p(keyp);
         setOp3p(valuep);
     }
-    ASTNODE_NODE_FUNCS(SetWildcard)
+    ASTGEN_MEMBERS_SetWildcard;
     virtual string emitVerilog() override { return "'{}"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -1316,7 +1317,7 @@ public:
         : ASTGEN_SUPER_Stable(fl) {
         addOp1p(exprp);
     }
-    ASTNODE_NODE_FUNCS(Stable)
+    ASTGEN_MEMBERS_Stable;
     virtual string emitVerilog() override { return "$stable(%l)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
@@ -1334,7 +1335,7 @@ public:
         : ASTGEN_SUPER_SystemF(fl) {
         setOp1p(lhsp);
     }
-    ASTNODE_NODE_FUNCS(SystemF)
+    ASTGEN_MEMBERS_SystemF;
     virtual string verilogKwd() const override { return "$system"; }
     virtual string emitVerilog() override { return verilogKwd(); }
     virtual string emitC() override { return "VL_SYSTEM_%nq(%lw, %P)"; }
@@ -1355,7 +1356,7 @@ public:
         : ASTGEN_SUPER_TestPlusArgs(fl) {
         setOp1p(searchp);
     }
-    ASTNODE_NODE_FUNCS(TestPlusArgs)
+    ASTGEN_MEMBERS_TestPlusArgs;
     virtual string verilogKwd() const override { return "$test$plusargs"; }
     virtual string emitVerilog() override { return verilogKwd(); }
     virtual string emitC() override { return "VL_VALUEPLUSARGS_%nq(%lw, %P, nullptr)"; }
@@ -1374,7 +1375,7 @@ public:
         : ASTGEN_SUPER_UCFunc(fl) {
         addNOp1p(exprsp);
     }
-    ASTNODE_NODE_FUNCS(UCFunc)
+    ASTGEN_MEMBERS_UCFunc;
     virtual bool cleanOut() const override { return false; }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -1395,7 +1396,7 @@ public:
         : ASTGEN_SUPER_Unbounded(fl) {
         dtypeSetSigned32();
     }
-    ASTNODE_NODE_FUNCS(Unbounded)
+    ASTGEN_MEMBERS_Unbounded;
     virtual string emitVerilog() override { return "$"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -1409,7 +1410,7 @@ public:
         setOp1p(searchp);
         setOp2p(outp);
     }
-    ASTNODE_NODE_FUNCS(ValuePlusArgs)
+    ASTGEN_MEMBERS_ValuePlusArgs;
     virtual string verilogKwd() const override { return "$value$plusargs"; }
     virtual string emitVerilog() override { return "%f$value$plusargs(%l, %k%r)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -1434,7 +1435,7 @@ public:
         : ASTGEN_SUPER_BufIf1(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(BufIf1)
+    ASTGEN_MEMBERS_BufIf1;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstBufIf1(this->fileline(), lhsp, rhsp);
     }
@@ -1461,7 +1462,7 @@ class AstCastDynamic final : public AstNodeBiop {
 public:
     AstCastDynamic(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_CastDynamic(fl, lhsp, rhsp) {}
-    ASTNODE_NODE_FUNCS(CastDynamic)
+    ASTGEN_MEMBERS_CastDynamic;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
     }
@@ -1490,7 +1491,7 @@ public:
         , m_ignoreCase{ignoreCase} {
         dtypeSetUInt32();
     }
-    ASTNODE_NODE_FUNCS(CompareNN)
+    ASTGEN_MEMBERS_CompareNN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstCompareNN(this->fileline(), lhsp, rhsp, m_ignoreCase);
     }
@@ -1521,7 +1522,7 @@ public:
                                VSigning::UNSIGNED);
         }
     }
-    ASTNODE_NODE_FUNCS(Concat)
+    ASTGEN_MEMBERS_Concat;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstConcat(this->fileline(), lhsp, rhsp);
     }
@@ -1544,7 +1545,7 @@ public:
         : ASTGEN_SUPER_ConcatN(fl, lhsp, rhsp) {
         dtypeSetString();
     }
-    ASTNODE_NODE_FUNCS(ConcatN)
+    ASTGEN_MEMBERS_ConcatN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstConcatN(this->fileline(), lhsp, rhsp);
     }
@@ -1567,7 +1568,7 @@ public:
         : ASTGEN_SUPER_Div(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Div)
+    ASTGEN_MEMBERS_Div;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstDiv(this->fileline(), lhsp, rhsp);
     }
@@ -1589,7 +1590,7 @@ public:
         : ASTGEN_SUPER_DivD(fl, lhsp, rhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(DivD)
+    ASTGEN_MEMBERS_DivD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstDivD(this->fileline(), lhsp, rhsp);
     }
@@ -1613,7 +1614,7 @@ public:
         : ASTGEN_SUPER_DivS(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(DivS)
+    ASTGEN_MEMBERS_DivS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstDivS(this->fileline(), lhsp, rhsp);
     }
@@ -1637,7 +1638,7 @@ public:
         : ASTGEN_SUPER_EqWild(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(EqWild)
+    ASTGEN_MEMBERS_EqWild;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstEqWild(this->fileline(), lhsp, rhsp);
     }
@@ -1659,7 +1660,7 @@ class AstFGetS final : public AstNodeBiop {
 public:
     AstFGetS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_FGetS(fl, lhsp, rhsp) {}
-    ASTNODE_NODE_FUNCS(FGetS)
+    ASTGEN_MEMBERS_FGetS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstFGetS(this->fileline(), lhsp, rhsp);
     }
@@ -1684,7 +1685,7 @@ class AstFUngetC final : public AstNodeBiop {
 public:
     AstFUngetC(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_FUngetC(fl, lhsp, rhsp) {}
-    ASTNODE_NODE_FUNCS(FUngetC)
+    ASTGEN_MEMBERS_FUngetC;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
     }
@@ -1715,7 +1716,7 @@ public:
         : ASTGEN_SUPER_GetcN(fl, lhsp, rhsp) {
         dtypeSetBitSized(8, VSigning::UNSIGNED);
     }
-    ASTNODE_NODE_FUNCS(GetcN)
+    ASTGEN_MEMBERS_GetcN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGetcN(this->fileline(), lhsp, rhsp);
     }
@@ -1740,7 +1741,7 @@ public:
         : ASTGEN_SUPER_GetcRefN(fl, lhsp, rhsp) {
         dtypeSetBitSized(8, VSigning::UNSIGNED);
     }
-    ASTNODE_NODE_FUNCS(GetcRefN)
+    ASTGEN_MEMBERS_GetcRefN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGetcRefN(this->fileline(), lhsp, rhsp);
     }
@@ -1762,7 +1763,7 @@ public:
         : ASTGEN_SUPER_Gt(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(Gt)
+    ASTGEN_MEMBERS_Gt;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGt(this->fileline(), lhsp, rhsp);
     }
@@ -1784,7 +1785,7 @@ public:
         : ASTGEN_SUPER_GtD(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(GtD)
+    ASTGEN_MEMBERS_GtD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGtD(this->fileline(), lhsp, rhsp);
     }
@@ -1808,7 +1809,7 @@ public:
         : ASTGEN_SUPER_GtN(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(GtN)
+    ASTGEN_MEMBERS_GtN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGtN(this->fileline(), lhsp, rhsp);
     }
@@ -1832,7 +1833,7 @@ public:
         : ASTGEN_SUPER_GtS(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(GtS)
+    ASTGEN_MEMBERS_GtS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGtS(this->fileline(), lhsp, rhsp);
     }
@@ -1855,7 +1856,7 @@ public:
         : ASTGEN_SUPER_Gte(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(Gte)
+    ASTGEN_MEMBERS_Gte;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGte(this->fileline(), lhsp, rhsp);
     }
@@ -1877,7 +1878,7 @@ public:
         : ASTGEN_SUPER_GteD(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(GteD)
+    ASTGEN_MEMBERS_GteD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGteD(this->fileline(), lhsp, rhsp);
     }
@@ -1901,7 +1902,7 @@ public:
         : ASTGEN_SUPER_GteN(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(GteN)
+    ASTGEN_MEMBERS_GteN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGteN(this->fileline(), lhsp, rhsp);
     }
@@ -1925,7 +1926,7 @@ public:
         : ASTGEN_SUPER_GteS(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(GteS)
+    ASTGEN_MEMBERS_GteS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstGteS(this->fileline(), lhsp, rhsp);
     }
@@ -1948,7 +1949,7 @@ public:
         : ASTGEN_SUPER_LogAnd(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LogAnd)
+    ASTGEN_MEMBERS_LogAnd;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLogAnd(this->fileline(), lhsp, rhsp);
     }
@@ -1971,7 +1972,7 @@ public:
         : ASTGEN_SUPER_LogIf(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LogIf)
+    ASTGEN_MEMBERS_LogIf;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLogIf(this->fileline(), lhsp, rhsp);
     }
@@ -1999,7 +2000,7 @@ public:
         : ASTGEN_SUPER_LogOr(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LogOr)
+    ASTGEN_MEMBERS_LogOr;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLogOr(this->fileline(), lhsp, rhsp);
     }
@@ -2030,7 +2031,7 @@ public:
         : ASTGEN_SUPER_Lt(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(Lt)
+    ASTGEN_MEMBERS_Lt;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLt(this->fileline(), lhsp, rhsp);
     }
@@ -2052,7 +2053,7 @@ public:
         : ASTGEN_SUPER_LtD(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LtD)
+    ASTGEN_MEMBERS_LtD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLtD(this->fileline(), lhsp, rhsp);
     }
@@ -2076,7 +2077,7 @@ public:
         : ASTGEN_SUPER_LtN(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LtN)
+    ASTGEN_MEMBERS_LtN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLtN(this->fileline(), lhsp, rhsp);
     }
@@ -2100,7 +2101,7 @@ public:
         : ASTGEN_SUPER_LtS(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LtS)
+    ASTGEN_MEMBERS_LtS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLtS(this->fileline(), lhsp, rhsp);
     }
@@ -2123,7 +2124,7 @@ public:
         : ASTGEN_SUPER_Lte(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(Lte)
+    ASTGEN_MEMBERS_Lte;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLte(this->fileline(), lhsp, rhsp);
     }
@@ -2145,7 +2146,7 @@ public:
         : ASTGEN_SUPER_LteD(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LteD)
+    ASTGEN_MEMBERS_LteD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLteD(this->fileline(), lhsp, rhsp);
     }
@@ -2169,7 +2170,7 @@ public:
         : ASTGEN_SUPER_LteN(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LteN)
+    ASTGEN_MEMBERS_LteN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLteN(this->fileline(), lhsp, rhsp);
     }
@@ -2193,7 +2194,7 @@ public:
         : ASTGEN_SUPER_LteS(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LteS)
+    ASTGEN_MEMBERS_LteS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLteS(this->fileline(), lhsp, rhsp);
     }
@@ -2216,7 +2217,7 @@ public:
         : ASTGEN_SUPER_ModDiv(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(ModDiv)
+    ASTGEN_MEMBERS_ModDiv;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstModDiv(this->fileline(), lhsp, rhsp);
     }
@@ -2238,7 +2239,7 @@ public:
         : ASTGEN_SUPER_ModDivS(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(ModDivS)
+    ASTGEN_MEMBERS_ModDivS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstModDivS(this->fileline(), lhsp, rhsp);
     }
@@ -2261,7 +2262,7 @@ public:
         : ASTGEN_SUPER_NeqWild(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(NeqWild)
+    ASTGEN_MEMBERS_NeqWild;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstNeqWild(this->fileline(), lhsp, rhsp);
     }
@@ -2283,7 +2284,7 @@ public:
         : ASTGEN_SUPER_Pow(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Pow)
+    ASTGEN_MEMBERS_Pow;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstPow(this->fileline(), lhsp, rhsp);
     }
@@ -2306,7 +2307,7 @@ public:
         : ASTGEN_SUPER_PowD(fl, lhsp, rhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(PowD)
+    ASTGEN_MEMBERS_PowD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstPowD(this->fileline(), lhsp, rhsp);
     }
@@ -2329,7 +2330,7 @@ public:
         : ASTGEN_SUPER_PowSS(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(PowSS)
+    ASTGEN_MEMBERS_PowSS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstPowSS(this->fileline(), lhsp, rhsp);
     }
@@ -2355,7 +2356,7 @@ public:
         : ASTGEN_SUPER_PowSU(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(PowSU)
+    ASTGEN_MEMBERS_PowSU;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstPowSU(this->fileline(), lhsp, rhsp);
     }
@@ -2381,7 +2382,7 @@ public:
         : ASTGEN_SUPER_PowUS(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(PowUS)
+    ASTGEN_MEMBERS_PowUS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstPowUS(this->fileline(), lhsp, rhsp);
     }
@@ -2415,7 +2416,7 @@ public:
     }
     AstReplicate(FileLine* fl, AstNode* lhsp, uint32_t repCount)
         : AstReplicate(fl, lhsp, new AstConst(fl, repCount)) {}
-    ASTNODE_NODE_FUNCS(Replicate)
+    ASTGEN_MEMBERS_Replicate;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstReplicate(this->fileline(), lhsp, rhsp);
     }
@@ -2440,7 +2441,7 @@ public:
     }
     AstReplicateN(FileLine* fl, AstNode* lhsp, uint32_t repCount)
         : AstReplicateN(fl, lhsp, new AstConst(fl, repCount)) {}
-    ASTNODE_NODE_FUNCS(ReplicateN)
+    ASTGEN_MEMBERS_ReplicateN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstReplicateN(this->fileline(), lhsp, rhsp);
     }
@@ -2463,7 +2464,7 @@ public:
         : ASTGEN_SUPER_ShiftL(fl, lhsp, rhsp) {
         if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
     }
-    ASTNODE_NODE_FUNCS(ShiftL)
+    ASTGEN_MEMBERS_ShiftL;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstShiftL(this->fileline(), lhsp, rhsp);
     }
@@ -2487,7 +2488,7 @@ public:
         : ASTGEN_SUPER_ShiftR(fl, lhsp, rhsp) {
         if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
     }
-    ASTNODE_NODE_FUNCS(ShiftR)
+    ASTGEN_MEMBERS_ShiftR;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstShiftR(this->fileline(), lhsp, rhsp);
     }
@@ -2515,7 +2516,7 @@ public:
         // Important that widthMin be correct, as opExtend requires it after V3Expand
         if (setwidth) dtypeSetLogicSized(setwidth, VSigning::SIGNED);
     }
-    ASTNODE_NODE_FUNCS(ShiftRS)
+    ASTGEN_MEMBERS_ShiftRS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstShiftRS(this->fileline(), lhsp, rhsp);
     }
@@ -2538,7 +2539,7 @@ public:
         : ASTGEN_SUPER_Sub(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Sub)
+    ASTGEN_MEMBERS_Sub;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstSub(this->fileline(), lhsp, rhsp);
     }
@@ -2560,7 +2561,7 @@ public:
         : ASTGEN_SUPER_SubD(fl, lhsp, rhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(SubD)
+    ASTGEN_MEMBERS_SubD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstSubD(this->fileline(), lhsp, rhsp);
     }
@@ -2585,7 +2586,7 @@ public:
         : ASTGEN_SUPER_URandomRange(fl, lhsp, rhsp) {
         dtypeSetUInt32();  // Says IEEE
     }
-    ASTNODE_NODE_FUNCS(URandomRange)
+    ASTGEN_MEMBERS_URandomRange;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstURandomRange(fileline(), lhsp, rhsp);
     }
@@ -2611,7 +2612,7 @@ public:
         : ASTGEN_SUPER_Eq(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(Eq)
+    ASTGEN_MEMBERS_Eq;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstEq(this->fileline(), lhsp, rhsp);
     }
@@ -2635,7 +2636,7 @@ public:
         : ASTGEN_SUPER_EqCase(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(EqCase)
+    ASTGEN_MEMBERS_EqCase;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstEqCase(this->fileline(), lhsp, rhsp);
     }
@@ -2657,7 +2658,7 @@ public:
         : ASTGEN_SUPER_EqD(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(EqD)
+    ASTGEN_MEMBERS_EqD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstEqD(this->fileline(), lhsp, rhsp);
     }
@@ -2681,7 +2682,7 @@ public:
         : ASTGEN_SUPER_EqN(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(EqN)
+    ASTGEN_MEMBERS_EqN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstEqN(this->fileline(), lhsp, rhsp);
     }
@@ -2705,7 +2706,7 @@ public:
         : ASTGEN_SUPER_LogEq(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LogEq)
+    ASTGEN_MEMBERS_LogEq;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstLogEq(this->fileline(), lhsp, rhsp);
     }
@@ -2728,7 +2729,7 @@ public:
         : ASTGEN_SUPER_Neq(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(Neq)
+    ASTGEN_MEMBERS_Neq;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstNeq(this->fileline(), lhsp, rhsp);
     }
@@ -2750,7 +2751,7 @@ public:
         : ASTGEN_SUPER_NeqCase(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(NeqCase)
+    ASTGEN_MEMBERS_NeqCase;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstNeqCase(this->fileline(), lhsp, rhsp);
     }
@@ -2772,7 +2773,7 @@ public:
         : ASTGEN_SUPER_NeqD(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(NeqD)
+    ASTGEN_MEMBERS_NeqD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstNeqD(this->fileline(), lhsp, rhsp);
     }
@@ -2796,7 +2797,7 @@ public:
         : ASTGEN_SUPER_NeqN(fl, lhsp, rhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(NeqN)
+    ASTGEN_MEMBERS_NeqN;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstNeqN(this->fileline(), lhsp, rhsp);
     }
@@ -2822,7 +2823,7 @@ public:
         : ASTGEN_SUPER_Add(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Add)
+    ASTGEN_MEMBERS_Add;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAdd(this->fileline(), lhsp, rhsp);
     }
@@ -2844,7 +2845,7 @@ public:
         : ASTGEN_SUPER_AddD(fl, lhsp, rhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(AddD)
+    ASTGEN_MEMBERS_AddD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAddD(this->fileline(), lhsp, rhsp);
     }
@@ -2868,7 +2869,7 @@ public:
         : ASTGEN_SUPER_And(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(And)
+    ASTGEN_MEMBERS_And;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAnd(this->fileline(), lhsp, rhsp);
     }
@@ -2890,7 +2891,7 @@ public:
         : ASTGEN_SUPER_Mul(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Mul)
+    ASTGEN_MEMBERS_Mul;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstMul(this->fileline(), lhsp, rhsp);
     }
@@ -2913,7 +2914,7 @@ public:
         : ASTGEN_SUPER_MulD(fl, lhsp, rhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(MulD)
+    ASTGEN_MEMBERS_MulD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstMulD(this->fileline(), lhsp, rhsp);
     }
@@ -2937,7 +2938,7 @@ public:
         : ASTGEN_SUPER_MulS(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(MulS)
+    ASTGEN_MEMBERS_MulS;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstMulS(this->fileline(), lhsp, rhsp);
     }
@@ -2962,7 +2963,7 @@ public:
         : ASTGEN_SUPER_Or(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Or)
+    ASTGEN_MEMBERS_Or;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstOr(this->fileline(), lhsp, rhsp);
     }
@@ -2984,7 +2985,7 @@ public:
         : ASTGEN_SUPER_Xor(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Xor)
+    ASTGEN_MEMBERS_Xor;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstXor(this->fileline(), lhsp, rhsp);
     }
@@ -3022,7 +3023,7 @@ public:
         : ASTGEN_SUPER_ArraySel(fl, fromp, new AstConst(fl, bit)) {
         init(fromp);
     }
-    ASTNODE_NODE_FUNCS(ArraySel)
+    ASTGEN_MEMBERS_ArraySel;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstArraySel(this->fileline(), lhsp, rhsp);
     }
@@ -3062,7 +3063,7 @@ public:
         : ASTGEN_SUPER_AssocSel(fl, fromp, bitp) {
         init(fromp);
     }
-    ASTNODE_NODE_FUNCS(AssocSel)
+    ASTGEN_MEMBERS_AssocSel;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssocSel(this->fileline(), lhsp, rhsp);
     }
@@ -3099,7 +3100,7 @@ public:
         : ASTGEN_SUPER_WildcardSel(fl, fromp, bitp) {
         init(fromp);
     }
-    ASTNODE_NODE_FUNCS(WildcardSel)
+    ASTGEN_MEMBERS_WildcardSel;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstWildcardSel{this->fileline(), lhsp, rhsp};
     }
@@ -3127,7 +3128,7 @@ public:
         : ASTGEN_SUPER_WordSel(fl, fromp, bitp) {
         dtypeSetUInt32();  // Always used on WData arrays so returns edata size
     }
-    ASTNODE_NODE_FUNCS(WordSel)
+    ASTGEN_MEMBERS_WordSel;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstWordSel(this->fileline(), lhsp, rhsp);
     }
@@ -3152,7 +3153,7 @@ class AstStreamL final : public AstNodeStream {
 public:
     AstStreamL(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_StreamL(fl, lhsp, rhsp) {}
-    ASTNODE_NODE_FUNCS(StreamL)
+    ASTGEN_MEMBERS_StreamL;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstStreamL(this->fileline(), lhsp, rhsp);
     }
@@ -3173,7 +3174,7 @@ class AstStreamR final : public AstNodeStream {
 public:
     AstStreamR(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_StreamR(fl, lhsp, rhsp) {}
-    ASTNODE_NODE_FUNCS(StreamR)
+    ASTGEN_MEMBERS_StreamR;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstStreamR(this->fileline(), lhsp, rhsp);
     }
@@ -3195,7 +3196,7 @@ class AstAtan2D final : public AstNodeSystemBiop {
 public:
     AstAtan2D(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_Atan2D(fl, lhsp, rhsp) {}
-    ASTNODE_NODE_FUNCS(Atan2D)
+    ASTGEN_MEMBERS_Atan2D;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAtan2D(this->fileline(), lhsp, rhsp);
     }
@@ -3209,7 +3210,7 @@ class AstHypotD final : public AstNodeSystemBiop {
 public:
     AstHypotD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_HypotD(fl, lhsp, rhsp) {}
-    ASTNODE_NODE_FUNCS(HypotD)
+    ASTGEN_MEMBERS_HypotD;
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstHypotD(this->fileline(), lhsp, rhsp);
     }
@@ -3231,7 +3232,7 @@ public:
         : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl2p->cloneTree(false)) {}
     AstCountBits(FileLine* fl, AstNode* exprp, AstNode* ctrl1p, AstNode* ctrl2p, AstNode* ctrl3p)
         : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl3p) {}
-    ASTNODE_NODE_FUNCS(CountBits)
+    ASTGEN_MEMBERS_CountBits;
     virtual void numberOperate(V3Number& out, const V3Number& expr, const V3Number& ctrl1,
                                const V3Number& ctrl2, const V3Number& ctrl3) override {
         out.opCountBits(expr, ctrl1, ctrl2, ctrl3);
@@ -3259,7 +3260,7 @@ public:
         , m_timeunit{timeunit} {
         dtypeSetUInt64();
     }
-    ASTNODE_NODE_FUNCS(Time)
+    ASTGEN_MEMBERS_Time;
     virtual string emitVerilog() override { return "%f$time"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -3279,7 +3280,7 @@ public:
         , m_timeunit{timeunit} {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(TimeD)
+    ASTGEN_MEMBERS_TimeD;
     virtual string emitVerilog() override { return "%f$realtime"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -3302,7 +3303,7 @@ class AstPostAdd final : public AstNodeTriop {
 public:
     AstPostAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
         : ASTGEN_SUPER_PostAdd(fl, lhsp, rhsp, thsp) {}
-    ASTNODE_NODE_FUNCS(PostAdd)
+    ASTGEN_MEMBERS_PostAdd;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) override {
         V3ERROR_NA;  // Need to modify lhs
@@ -3327,7 +3328,7 @@ class AstPostSub final : public AstNodeTriop {
 public:
     AstPostSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
         : ASTGEN_SUPER_PostSub(fl, lhsp, rhsp, thsp) {}
-    ASTNODE_NODE_FUNCS(PostSub)
+    ASTGEN_MEMBERS_PostSub;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) override {
         V3ERROR_NA;  // Need to modify lhs
@@ -3352,7 +3353,7 @@ class AstPreAdd final : public AstNodeTriop {
 public:
     AstPreAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
         : ASTGEN_SUPER_PreAdd(fl, lhsp, rhsp, thsp) {}
-    ASTNODE_NODE_FUNCS(PreAdd)
+    ASTGEN_MEMBERS_PreAdd;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) override {
         V3ERROR_NA;  // Need to modify lhs
@@ -3377,7 +3378,7 @@ class AstPreSub final : public AstNodeTriop {
 public:
     AstPreSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
         : ASTGEN_SUPER_PreSub(fl, lhsp, rhsp, thsp) {}
-    ASTNODE_NODE_FUNCS(PreSub)
+    ASTGEN_MEMBERS_PreSub;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) override {
         V3ERROR_NA;  // Need to modify lhs
@@ -3400,7 +3401,7 @@ public:
         : ASTGEN_SUPER_PutcN(fl, lhsp, rhsp, ths) {
         dtypeSetString();
     }
-    ASTNODE_NODE_FUNCS(PutcN)
+    ASTGEN_MEMBERS_PutcN;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) override {
         out.opPutcN(lhs, rhs, ths);
@@ -3439,7 +3440,7 @@ public:
         , m_declElWidth{1} {
         dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
     }
-    ASTNODE_NODE_FUNCS(Sel)
+    ASTGEN_MEMBERS_Sel;
     virtual void dump(std::ostream& str) const override;
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit,
                                const V3Number& width) override {
@@ -3487,7 +3488,7 @@ public:
         : ASTGEN_SUPER_SliceSel(fl, fromp, new AstConst(fl, declRange.lo()),
                                 new AstConst(fl, declRange.elements()))
         , m_declRange{declRange} {}
-    ASTNODE_NODE_FUNCS(SliceSel)
+    ASTGEN_MEMBERS_SliceSel;
     virtual void dump(std::ostream& str) const override;
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& lo,
                                const V3Number& width) override {
@@ -3519,7 +3520,7 @@ public:
         : ASTGEN_SUPER_SubstrN(fl, lhsp, rhsp, ths) {
         dtypeSetString();
     }
-    ASTNODE_NODE_FUNCS(SubstrN)
+    ASTGEN_MEMBERS_SubstrN;
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) override {
         out.opSubstrN(lhs, rhs, ths);
@@ -3545,7 +3546,7 @@ class AstCond final : public AstNodeCond {
 public:
     AstCond(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
         : ASTGEN_SUPER_Cond(fl, condp, expr1p, expr2p) {}
-    ASTNODE_NODE_FUNCS(Cond)
+    ASTGEN_MEMBERS_Cond;
     virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) override {
         return new AstCond(this->fileline(), condp, expr1p, expr2p);
     }
@@ -3557,7 +3558,7 @@ class AstCondBound final : public AstNodeCond {
 public:
     AstCondBound(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
         : ASTGEN_SUPER_CondBound(fl, condp, expr1p, expr2p) {}
-    ASTNODE_NODE_FUNCS(CondBound)
+    ASTGEN_MEMBERS_CondBound;
     virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) override {
         return new AstCondBound(this->fileline(), condp, expr1p, expr2p);
     }
@@ -3577,7 +3578,7 @@ public:
         , m_fmt{fmt} {
         fmt == ATOREAL ? dtypeSetDouble() : dtypeSetSigned32();
     }
-    ASTNODE_NODE_FUNCS(AtoN)
+    ASTGEN_MEMBERS_AtoN;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opAtoN(lhs, m_fmt);
     }
@@ -3613,7 +3614,7 @@ public:
         : ASTGEN_SUPER_BitsToRealD(fl, lhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(BitsToRealD)
+    ASTGEN_MEMBERS_BitsToRealD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opBitsToRealD(lhs);
     }
@@ -3643,7 +3644,7 @@ public:
         dtypeFrom(typeFromp);
         m_size = width();
     }
-    ASTNODE_NODE_FUNCS(CCast)
+    ASTGEN_MEMBERS_CCast;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
     virtual string emitVerilog() override { return "%f$_CAST(%l)"; }
     virtual string emitC() override { return "VL_CAST_%nq%lq(%nw,%lw, %P, %li)"; }
@@ -3663,7 +3664,7 @@ public:
         : ASTGEN_SUPER_CLog2(fl, lhsp) {
         dtypeSetSigned32();
     }
-    ASTNODE_NODE_FUNCS(CLog2)
+    ASTGEN_MEMBERS_CLog2;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCLog2(lhs); }
     virtual string emitVerilog() override { return "%f$clog2(%l)"; }
     virtual string emitC() override { return "VL_CLOG2_%lq(%lW, %P, %li)"; }
@@ -3677,7 +3678,7 @@ class AstCountOnes final : public AstNodeUniop {
 public:
     AstCountOnes(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_CountOnes(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(CountOnes)
+    ASTGEN_MEMBERS_CountOnes;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opCountOnes(lhs);
     }
@@ -3695,7 +3696,7 @@ public:
         : ASTGEN_SUPER_CvtPackString(fl, lhsp) {
         dtypeSetString();
     }
-    ASTNODE_NODE_FUNCS(CvtPackString)
+    ASTGEN_MEMBERS_CvtPackString;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
     virtual string emitVerilog() override { return "%f$_CAST(%l)"; }
     virtual string emitC() override { return "VL_CVT_PACK_STR_N%lq(%lW, %li)"; }
@@ -3713,7 +3714,7 @@ public:
         : ASTGEN_SUPER_Extend(fl, lhsp) {
         dtypeSetLogicSized(width, VSigning::UNSIGNED);
     }
-    ASTNODE_NODE_FUNCS(Extend)
+    ASTGEN_MEMBERS_Extend;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
     virtual string emitVerilog() override { return "%l"; }
     virtual string emitC() override { return "VL_EXTEND_%nq%lq(%nw,%lw, %P, %li)"; }
@@ -3734,7 +3735,7 @@ public:
         : ASTGEN_SUPER_ExtendS(fl, lhsp) {
         dtypeSetLogicSized(width, VSigning::UNSIGNED);
     }
-    ASTNODE_NODE_FUNCS(ExtendS)
+    ASTGEN_MEMBERS_ExtendS;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opExtendS(lhs, lhsp()->widthMinV());
     }
@@ -3752,7 +3753,7 @@ class AstFEof final : public AstNodeUniop {
 public:
     AstFEof(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_FEof(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(FEof)
+    ASTGEN_MEMBERS_FEof;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
     virtual string emitVerilog() override { return "%f$feof(%l)"; }
     virtual string emitC() override { return "(%li ? feof(VL_CVT_I_FP(%li)) : true)"; }
@@ -3769,7 +3770,7 @@ class AstFGetC final : public AstNodeUniop {
 public:
     AstFGetC(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_FGetC(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(FGetC)
+    ASTGEN_MEMBERS_FGetC;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
     virtual string emitVerilog() override { return "%f$fgetc(%l)"; }
     // Non-existent filehandle returns EOF
@@ -3790,7 +3791,7 @@ public:
         : ASTGEN_SUPER_ISToRD(fl, lhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(ISToRD)
+    ASTGEN_MEMBERS_ISToRD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opISToRD(lhs); }
     virtual string emitVerilog() override { return "%f$itor($signed(%l))"; }
     virtual string emitC() override { return "VL_ISTOR_D_%lq(%lw, %li)"; }
@@ -3807,7 +3808,7 @@ public:
         : ASTGEN_SUPER_IToRD(fl, lhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(IToRD)
+    ASTGEN_MEMBERS_IToRD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opIToRD(lhs); }
     virtual string emitVerilog() override { return "%f$itor(%l)"; }
     virtual string emitC() override { return "VL_ITOR_D_%lq(%lw, %li)"; }
@@ -3823,7 +3824,7 @@ public:
         : ASTGEN_SUPER_IsUnbounded(fl, lhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(IsUnbounded)
+    ASTGEN_MEMBERS_IsUnbounded;
     virtual void numberOperate(V3Number& out, const V3Number&) override {
         // Any constant isn't unbounded
         out.setZero();
@@ -3841,7 +3842,7 @@ public:
         : ASTGEN_SUPER_IsUnknown(fl, lhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(IsUnknown)
+    ASTGEN_MEMBERS_IsUnknown;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opIsUnknown(lhs);
     }
@@ -3858,7 +3859,7 @@ public:
         : ASTGEN_SUPER_LenN(fl, lhsp) {
         dtypeSetSigned32();
     }
-    ASTNODE_NODE_FUNCS(LenN)
+    ASTGEN_MEMBERS_LenN;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLenN(lhs); }
     virtual string emitVerilog() override { return "%f(%l)"; }
     virtual string emitC() override { return "VL_LEN_IN(%li)"; }
@@ -3872,7 +3873,7 @@ public:
         : ASTGEN_SUPER_LogNot(fl, lhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(LogNot)
+    ASTGEN_MEMBERS_LogNot;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLogNot(lhs); }
     virtual string emitVerilog() override { return "%f(! %l)"; }
     virtual string emitC() override { return "VL_LOGNOT_%nq%lq(%nw,%lw, %P, %li)"; }
@@ -3887,7 +3888,7 @@ public:
         : ASTGEN_SUPER_Negate(fl, lhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Negate)
+    ASTGEN_MEMBERS_Negate;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNegate(lhs); }
     virtual string emitVerilog() override { return "%f(- %l)"; }
     virtual string emitC() override { return "VL_NEGATE_%lq(%lW, %P, %li)"; }
@@ -3902,7 +3903,7 @@ public:
         : ASTGEN_SUPER_NegateD(fl, lhsp) {
         dtypeSetDouble();
     }
-    ASTNODE_NODE_FUNCS(NegateD)
+    ASTGEN_MEMBERS_NegateD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNegateD(lhs); }
     virtual string emitVerilog() override { return "%f(- %l)"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -3919,7 +3920,7 @@ public:
         : ASTGEN_SUPER_Not(fl, lhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(Not)
+    ASTGEN_MEMBERS_Not;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNot(lhs); }
     virtual string emitVerilog() override { return "%f(~ %l)"; }
     virtual string emitC() override { return "VL_NOT_%lq(%lW, %P, %li)"; }
@@ -3936,7 +3937,7 @@ public:
         : ASTGEN_SUPER_NullCheck(fl, lhsp) {
         dtypeFrom(lhsp);
     }
-    ASTNODE_NODE_FUNCS(NullCheck)
+    ASTGEN_MEMBERS_NullCheck;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
     virtual int instrCount() const override { return 1; }  // Rarely executes
     virtual string emitVerilog() override { return "%l"; }
@@ -3956,7 +3957,7 @@ public:
         : ASTGEN_SUPER_OneHot(fl, lhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(OneHot)
+    ASTGEN_MEMBERS_OneHot;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opOneHot(lhs); }
     virtual string emitVerilog() override { return "%f$onehot(%l)"; }
     virtual string emitC() override { return "VL_ONEHOT_%lq(%lW, %P, %li)"; }
@@ -3972,7 +3973,7 @@ public:
         : ASTGEN_SUPER_OneHot0(fl, lhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(OneHot0)
+    ASTGEN_MEMBERS_OneHot0;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opOneHot0(lhs); }
     virtual string emitVerilog() override { return "%f$onehot0(%l)"; }
     virtual string emitC() override { return "VL_ONEHOT0_%lq(%lW, %P, %li)"; }
@@ -3988,7 +3989,7 @@ public:
         : ASTGEN_SUPER_RToIRoundS(fl, lhsp) {
         dtypeSetSigned32();
     }
-    ASTNODE_NODE_FUNCS(RToIRoundS)
+    ASTGEN_MEMBERS_RToIRoundS;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opRToIRoundS(lhs);
     }
@@ -4008,7 +4009,7 @@ public:
         : ASTGEN_SUPER_RToIS(fl, lhsp) {
         dtypeSetSigned32();
     }
-    ASTNODE_NODE_FUNCS(RToIS)
+    ASTGEN_MEMBERS_RToIS;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRToIS(lhs); }
     virtual string emitVerilog() override { return "%f$rtoi(%l)"; }
     virtual string emitC() override { return "VL_RTOI_I_D(%li)"; }
@@ -4023,7 +4024,7 @@ public:
         : ASTGEN_SUPER_RealToBits(fl, lhsp) {
         dtypeSetUInt64();
     }
-    ASTNODE_NODE_FUNCS(RealToBits)
+    ASTGEN_MEMBERS_RealToBits;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opRealToBits(lhs);
     }
@@ -4040,7 +4041,7 @@ public:
         : ASTGEN_SUPER_RedAnd(fl, lhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(RedAnd)
+    ASTGEN_MEMBERS_RedAnd;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedAnd(lhs); }
     virtual string emitVerilog() override { return "%f(& %l)"; }
     virtual string emitC() override { return "VL_REDAND_%nq%lq(%lw, %P, %li)"; }
@@ -4054,7 +4055,7 @@ public:
         : ASTGEN_SUPER_RedOr(fl, lhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(RedOr)
+    ASTGEN_MEMBERS_RedOr;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedOr(lhs); }
     virtual string emitVerilog() override { return "%f(| %l)"; }
     virtual string emitC() override { return "VL_REDOR_%lq(%lW, %P, %li)"; }
@@ -4068,7 +4069,7 @@ public:
         : ASTGEN_SUPER_RedXor(fl, lhsp) {
         dtypeSetBit();
     }
-    ASTNODE_NODE_FUNCS(RedXor)
+    ASTGEN_MEMBERS_RedXor;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedXor(lhs); }
     virtual string emitVerilog() override { return "%f(^ %l)"; }
     virtual string emitC() override { return "VL_REDXOR_%lq(%lW, %P, %li)"; }
@@ -4088,7 +4089,7 @@ public:
         UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
                     "not coded to create after dtypes resolved");
     }
-    ASTNODE_NODE_FUNCS(Signed)
+    ASTGEN_MEMBERS_Signed;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opAssign(lhs);
         out.isSigned(false);
@@ -4106,7 +4107,7 @@ class AstTimeImport final : public AstNodeUniop {
 public:
     AstTimeImport(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_TimeImport(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(TimeImport)
+    ASTGEN_MEMBERS_TimeImport;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
     virtual string emitVerilog() override { return "%l"; }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -4124,7 +4125,7 @@ public:
         : ASTGEN_SUPER_ToLowerN(fl, lhsp) {
         dtypeSetString();
     }
-    ASTNODE_NODE_FUNCS(ToLowerN)
+    ASTGEN_MEMBERS_ToLowerN;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opToLowerN(lhs);
     }
@@ -4141,7 +4142,7 @@ public:
         : ASTGEN_SUPER_ToUpperN(fl, lhsp) {
         dtypeSetString();
     }
-    ASTNODE_NODE_FUNCS(ToUpperN)
+    ASTGEN_MEMBERS_ToUpperN;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opToUpperN(lhs);
     }
@@ -4159,7 +4160,7 @@ public:
         UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
                     "not coded to create after dtypes resolved");
     }
-    ASTNODE_NODE_FUNCS(Unsigned)
+    ASTGEN_MEMBERS_Unsigned;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opAssign(lhs);
         out.isSigned(false);
@@ -4177,7 +4178,7 @@ class AstAcosD final : public AstNodeSystemUniop {
 public:
     AstAcosD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_AcosD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(AcosD)
+    ASTGEN_MEMBERS_AcosD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::acos(lhs.toDouble()));
     }
@@ -4188,7 +4189,7 @@ class AstAcoshD final : public AstNodeSystemUniop {
 public:
     AstAcoshD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_AcoshD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(AcoshD)
+    ASTGEN_MEMBERS_AcoshD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::acosh(lhs.toDouble()));
     }
@@ -4199,7 +4200,7 @@ class AstAsinD final : public AstNodeSystemUniop {
 public:
     AstAsinD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_AsinD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(AsinD)
+    ASTGEN_MEMBERS_AsinD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::asin(lhs.toDouble()));
     }
@@ -4210,7 +4211,7 @@ class AstAsinhD final : public AstNodeSystemUniop {
 public:
     AstAsinhD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_AsinhD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(AsinhD)
+    ASTGEN_MEMBERS_AsinhD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::asinh(lhs.toDouble()));
     }
@@ -4221,7 +4222,7 @@ class AstAtanD final : public AstNodeSystemUniop {
 public:
     AstAtanD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_AtanD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(AtanD)
+    ASTGEN_MEMBERS_AtanD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::atan(lhs.toDouble()));
     }
@@ -4232,7 +4233,7 @@ class AstAtanhD final : public AstNodeSystemUniop {
 public:
     AstAtanhD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_AtanhD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(AtanhD)
+    ASTGEN_MEMBERS_AtanhD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::atanh(lhs.toDouble()));
     }
@@ -4243,7 +4244,7 @@ class AstCeilD final : public AstNodeSystemUniop {
 public:
     AstCeilD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_CeilD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(CeilD)
+    ASTGEN_MEMBERS_CeilD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::ceil(lhs.toDouble()));
     }
@@ -4254,7 +4255,7 @@ class AstCosD final : public AstNodeSystemUniop {
 public:
     AstCosD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_CosD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(CosD)
+    ASTGEN_MEMBERS_CosD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::cos(lhs.toDouble()));
     }
@@ -4265,7 +4266,7 @@ class AstCoshD final : public AstNodeSystemUniop {
 public:
     AstCoshD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_CoshD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(CoshD)
+    ASTGEN_MEMBERS_CoshD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::cosh(lhs.toDouble()));
     }
@@ -4276,7 +4277,7 @@ class AstExpD final : public AstNodeSystemUniop {
 public:
     AstExpD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_ExpD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(ExpD)
+    ASTGEN_MEMBERS_ExpD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::exp(lhs.toDouble()));
     }
@@ -4287,7 +4288,7 @@ class AstFloorD final : public AstNodeSystemUniop {
 public:
     AstFloorD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_FloorD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(FloorD)
+    ASTGEN_MEMBERS_FloorD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::floor(lhs.toDouble()));
     }
@@ -4298,7 +4299,7 @@ class AstLog10D final : public AstNodeSystemUniop {
 public:
     AstLog10D(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_Log10D(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(Log10D)
+    ASTGEN_MEMBERS_Log10D;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::log10(lhs.toDouble()));
     }
@@ -4309,7 +4310,7 @@ class AstLogD final : public AstNodeSystemUniop {
 public:
     AstLogD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_LogD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(LogD)
+    ASTGEN_MEMBERS_LogD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::log(lhs.toDouble()));
     }
@@ -4320,7 +4321,7 @@ class AstSinD final : public AstNodeSystemUniop {
 public:
     AstSinD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_SinD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(SinD)
+    ASTGEN_MEMBERS_SinD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::sin(lhs.toDouble()));
     }
@@ -4331,7 +4332,7 @@ class AstSinhD final : public AstNodeSystemUniop {
 public:
     AstSinhD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_SinhD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(SinhD)
+    ASTGEN_MEMBERS_SinhD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::sinh(lhs.toDouble()));
     }
@@ -4342,7 +4343,7 @@ class AstSqrtD final : public AstNodeSystemUniop {
 public:
     AstSqrtD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_SqrtD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(SqrtD)
+    ASTGEN_MEMBERS_SqrtD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::sqrt(lhs.toDouble()));
     }
@@ -4353,7 +4354,7 @@ class AstTanD final : public AstNodeSystemUniop {
 public:
     AstTanD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_TanD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(TanD)
+    ASTGEN_MEMBERS_TanD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::tan(lhs.toDouble()));
     }
@@ -4364,7 +4365,7 @@ class AstTanhD final : public AstNodeSystemUniop {
 public:
     AstTanhD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_TanhD(fl, lhsp) {}
-    ASTNODE_NODE_FUNCS(TanhD)
+    ASTGEN_MEMBERS_TanhD;
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.setDouble(std::tanh(lhs.toDouble()));
     }
@@ -4383,7 +4384,7 @@ public:
     inline AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access);
     // This form only allowed post-link (see above)
     inline AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access);
-    ASTNODE_NODE_FUNCS(VarRef)
+    ASTGEN_MEMBERS_VarRef;
     virtual void dump(std::ostream& str) const override;
     bool same(const AstNode* samep) const override;
     inline bool same(const AstVarRef* samep) const;
@@ -4406,7 +4407,7 @@ public:
         : ASTGEN_SUPER_VarXRef(fl, name, nullptr, access)
         , m_dotted{dotted} {}
     inline AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const VAccess& access);
-    ASTNODE_NODE_FUNCS(VarXRef)
+    ASTGEN_MEMBERS_VarXRef;
     virtual void dump(std::ostream& str) const override;
     string dotted() const { return m_dotted; }
     void dotted(const string& dotted) { m_dotted = dotted; }

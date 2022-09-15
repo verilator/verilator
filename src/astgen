@@ -7,6 +7,7 @@ import glob
 import os
 import re
 import sys
+import textwrap
 # from pprint import pprint, pformat
 
 
@@ -493,27 +494,58 @@ class Cpt:
 
 
 def read_types(filename):
+    hasErrors = False
+
+    def error(lineno, message):
+        nonlocal hasErrors
+        print(filename + ":" + str(lineno) + ": %Error: " + message,
+              file=sys.stderr)
+        hasErrors = True
+
+    node = None
+    hasAstgenMembers = False
+
+    def checkFinishedNode(node):
+        nonlocal hasAstgenMembers
+        if not node:
+            return
+        if not hasAstgenMembers:
+            error(
+                node.lineno, "'Ast" + node.name +
+                "' does not contain 'ASTGEN_MEMBERS_" + node.name + ";'")
+        hasAstgenMembers = False
+
     with open(filename) as fh:
         for (lineno, line) in enumerate(fh, start=1):
-            line = re.sub(r'//.*$', '', line)
-            if re.match(r'^\s*$', line):
+            line = line.strip()
+            if not line:
                 continue
+
             match = re.search(r'^\s*(class|struct)\s*(\S+)', line)
             if match:
                 classn = match.group(2)
                 match = re.search(r':\s*public\s+(\S+)', line)
                 supern = match.group(1) if match else ""
-                assert classn != "AstNode" or supern == "", "AstNode can't have a superclass"
-                if re.search(r'Ast', supern) or classn == "AstNode":
+                if re.search(r'Ast', supern):
                     classn = re.sub(r'^Ast', '', classn)
                     supern = re.sub(r'^Ast', '', supern)
                     if not supern:
                         sys.exit("%Error: 'Ast{}' has no super-class".format(
                             classn))
+                    checkFinishedNode(node)
                     superClass = Nodes[supern]
                     node = Node(classn, superClass, filename, lineno)
                     superClass.addSubClass(node)
                     Nodes[classn] = node
+
+            if not node:
+                continue
+
+            if re.match(r'^\s*ASTGEN_MEMBERS_' + node.name + ';', line):
+                hasAstgenMembers = True
+        checkFinishedNode(node)
+    if hasErrors:
+        sys.exit("%Error: Stopping due to errors reported above")
 
 
 def read_stages(filename):
@@ -698,13 +730,41 @@ def write_yystype(filename):
 
 def write_macros(filename):
     with open_file(filename) as fh:
-        for node in SortedNodes:
-            # Only care about leaf classes
-            if not node.isLeaf:
-                continue
+
+        def emitBlock(pattern, **fmt):
             fh.write(
-                "#define ASTGEN_SUPER_{t}(...) Ast{b}(VNType::at{t}, __VA_ARGS__)\n"
-                .format(t=node.name, b=node.superClass.name))
+                textwrap.indent(textwrap.dedent(pattern),
+                                "    ").format(**fmt).replace("\n", " \\\n"))
+
+        for node in SortedNodes:
+            fh.write("#define ASTGEN_MEMBERS_{t} \\\n".format(t=node.name))
+            emitBlock('''\
+            static Ast{t}* cloneTreeNull(Ast{t}* nodep, bool cloneNextLink) {{
+                return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
+            }}
+            Ast{t}* cloneTree(bool cloneNext) {{
+                return static_cast<Ast{t}*>(AstNode::cloneTree(cloneNext));
+            }}
+            Ast{t}* clonep() const {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
+            ''',
+                      t=node.name)
+
+            if node.isLeaf:
+                emitBlock('''\
+                virtual void accept(VNVisitor& v) override {{ v.visit(this); }}
+                virtual AstNode* clone() override {{ return new Ast{t}(*this); }}
+                ''',
+                          t=node.name)
+
+            fh.write(
+                "    static_assert(true, \"\")\n")  # Swallowing the semicolon
+
+            # Only care about leaf classes for the rest
+            if node.isLeaf:
+                fh.write(
+                    "#define ASTGEN_SUPER_{t}(...) Ast{b}(VNType::at{t}, __VA_ARGS__)\n"
+                    .format(t=node.name, b=node.superClass.name))
+            fh.write("\n")
 
 
 ######################################################################
@@ -807,7 +867,7 @@ if Args.classes:
     write_impl("V3Ast__gen_impl.h")
     write_types("V3Ast__gen_types.h")
     write_yystype("V3Ast__gen_yystype.h")
-    write_macros("V3AstNodes__gen_macros.h")
+    write_macros("V3Ast__gen_macros.h")
 
 for cpt in Args.infiles:
     if not re.search(r'.cpp$', cpt):
