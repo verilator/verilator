@@ -14,16 +14,15 @@ top_filename("t/t_flag_make_cmake.v");
 compile(
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
-    verilator_flags2 => ['--exe --cc --build -j 10 --build-jobs 2',
-                         '../' . $Self->{main_filename},
-                         '-MAKEFLAGS -p --trace'],
+    verilator_flags2 => ['--exe --cc --build -j 10 --build-jobs 2 --stats',
+                         '../' . $Self->{main_filename}],
     );
 
 execute(
     check_finished => 1,
     );
 
-file_grep($Self->{obj_dir} . '/vlt_compile.log', qr/MAKEFLAGS = pw -j2/);
+file_grep($Self->{stats}, qr/Build jobs: 2/);
 
 ok(1);
 1;
