@@ -76,7 +76,7 @@ void V3LinkLevel::modSortByLevel() {
     UINFO(9, "modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
     for (AstNodeModule* nodep : mods) nodep->unlinkFrBack();
     UASSERT_OBJ(!v3Global.rootp()->modulesp(), v3Global.rootp(), "Unlink didn't work");
-    for (AstNodeModule* nodep : mods) v3Global.rootp()->addModulep(nodep);
+    for (AstNodeModule* nodep : mods) v3Global.rootp()->addModulesp(nodep);
     UINFO(9, "modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
     V3Global::dumpCheckGlobalTree("cells", false, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
@@ -154,7 +154,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     newmodp->modPublic(true);
     newmodp->protect(false);
     newmodp->timeunit(oldmodp->timeunit());
-    rootp->addModulep(newmodp);
+    rootp->addModulesp(newmodp);
 
     // TODO the module creation above could be done after linkcells, but
     // the rest must be done after data type resolution
@@ -170,7 +170,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
                               // with module names/"v"
                               modp->name(), modp->name(), nullptr, nullptr, nullptr);
             cellp->modp(modp);
-            newmodp->addStmtp(cellp);
+            newmodp->addStmtsp(cellp);
         }
     }
 
@@ -213,7 +213,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
             (!v3Global.opt.l2Name().empty() ? v3Global.opt.l2Name() : oldmodp->name()),
             oldmodp->name(), nullptr, nullptr, nullptr);
         cellp->modp(oldmodp);
-        newmodp->addStmtp(cellp);
+        newmodp->addStmtsp(cellp);
 
         // Add pins
         for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
@@ -229,7 +229,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                     AstVar* const varp = oldvarp->cloneTree(false);
                     varp->name(name);
                     varp->protect(false);
-                    newmodp->addStmtp(varp);
+                    newmodp->addStmtsp(varp);
                     varp->sigPublic(true);  // User needs to be able to get to it...
                     if (oldvarp->isIO()) {
                         oldvarp->primaryIO(false);

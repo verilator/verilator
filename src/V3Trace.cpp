@@ -454,9 +454,9 @@ private:
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
         AstVar* const newvarp
             = new AstVar(flp, VVarType::MODULETEMP, "__Vm_traceActivity", newArrDtp);
-        m_topModp->addStmtp(newvarp);
+        m_topModp->addStmtsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope(flp, m_topScopep, newvarp);
-        m_topScopep->addVarp(newvscp);
+        m_topScopep->addVarsp(newvscp);
         m_activityVscp = newvscp;
 
         // Insert activity setters
@@ -493,7 +493,7 @@ private:
         funcp->slow(full);
         funcp->isStatic(isTopFunc);
         // Add it to top scope
-        m_topScopep->addActivep(funcp);
+        m_topScopep->addBlocksp(funcp);
         const auto addInitStr = [funcp, flp](const string& str) -> void {
             funcp->addInitsp(new AstCStmt(flp, str));
         };
@@ -676,7 +676,7 @@ private:
                 // Add TraceInc node
                 AstTraceInc* const incp
                     = new AstTraceInc(declp->fileline(), declp, /* full: */ false, baseCode);
-                ifp->addIfsp(incp);
+                ifp->addThensp(incp);
                 subStmts += incp->nodeCount();
 
                 // Track partitioning
@@ -698,7 +698,7 @@ private:
         cleanupFuncp->slow(false);
         cleanupFuncp->isStatic(true);
         cleanupFuncp->isLoose(true);
-        m_topScopep->addActivep(cleanupFuncp);
+        m_topScopep->addBlocksp(cleanupFuncp);
         cleanupFuncp->addInitsp(new AstCStmt(fl, voidSelfAssign(m_topModp)));
         cleanupFuncp->addInitsp(new AstCStmt(fl, symClassAssign()));
 
@@ -755,7 +755,7 @@ private:
         m_regFuncp->slow(true);
         m_regFuncp->isStatic(false);
         m_regFuncp->isLoose(true);
-        m_topScopep->addActivep(m_regFuncp);
+        m_topScopep->addBlocksp(m_regFuncp);
 
         // Create the full dump functions, also allocates signal numbers
         createFullTraceFunction(traces, nFullCodes, m_parallelism);

@@ -268,7 +268,7 @@ private:
             {
                 m_modp = modp;
                 // Important that this adds to end, as next iterate assumes does all cells
-                modp->addStmtp(cellsp);
+                modp->addStmtsp(cellsp);
                 iterateAndNextNull(cellsp);
             }
         }
@@ -321,7 +321,7 @@ private:
                             otherModp->recursiveClone(true);
                             // user1 etc will retain its pre-clone value
                             cellmodp->user2p(otherModp);
-                            v3Global.rootp()->addModulep(otherModp);
+                            v3Global.rootp()->addModulesp(otherModp);
                             new V3GraphEdge(&m_graph, vertex(cellmodp), vertex(otherModp), 1,
                                             false);
                         }

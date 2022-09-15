@@ -54,7 +54,7 @@ private:
         // Move this class
         nodep->name(m_prefix + nodep->name());
         nodep->unlinkFrBack();
-        v3Global.rootp()->addModulep(nodep);
+        v3Global.rootp()->addModulesp(nodep);
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep
@@ -62,7 +62,7 @@ private:
         packagep->name(nodep->name() + "__Vclpkg");
         nodep->classOrPackagep(packagep);
         packagep->classp(nodep);
-        v3Global.rootp()->addModulep(packagep);
+        v3Global.rootp()->addModulesp(packagep);
         // Add package to hierarchy
         AstCell* const cellp = new AstCell{packagep->fileline(),
                                            packagep->fileline(),
@@ -72,7 +72,7 @@ private:
                                            nullptr,
                                            nullptr};
         cellp->modp(packagep);
-        v3Global.rootp()->topModulep()->addStmtp(cellp);
+        v3Global.rootp()->topModulep()->addStmtsp(cellp);
         // Find class's scope
         // Alternative would be to move this and related to V3Scope
         const AstScope* classScopep = nullptr;
@@ -85,7 +85,7 @@ private:
         AstScope* const scopep
             = new AstScope{nodep->fileline(), packagep, classScopep->name(),
                            classScopep->aboveScopep(), classScopep->aboveCellp()};
-        packagep->addStmtp(scopep);
+        packagep->addStmtsp(scopep);
         // Iterate
         VL_RESTORER(m_prefix);
         VL_RESTORER(m_classPackagep);
@@ -178,15 +178,15 @@ public:
             AstScope* const scopep = moved.second;
             UINFO(9, "moving " << nodep << " to " << scopep << endl);
             if (VN_IS(nodep, NodeFTask)) {
-                scopep->addActivep(nodep->unlinkFrBack());
+                scopep->addBlocksp(nodep->unlinkFrBack());
             } else if (VN_IS(nodep, Var)) {
                 AstVarScope* const vscp = VN_AS(nodep->user1p(), VarScope);
                 vscp->scopep(scopep);
                 vscp->unlinkFrBack();
-                scopep->addVarp(vscp);
+                scopep->addVarsp(vscp);
             } else if (VN_IS(nodep, Initial) || VN_IS(nodep, InitialStatic)) {
                 nodep->unlinkFrBack();
-                scopep->addActivep(nodep);
+                scopep->addBlocksp(nodep);
             } else {
                 nodep->v3fatalSrc("Bad case");
             }
@@ -196,7 +196,7 @@ public:
             AstNodeModule* const modp = moved.second;
             UINFO(9, "moving " << nodep << " to " << modp << endl);
             nodep->unlinkFrBack();
-            modp->addStmtp(nodep);
+            modp->addStmtsp(nodep);
         }
     }
 };

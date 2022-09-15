@@ -120,7 +120,7 @@ private:
         } else {
             AstVar* const varp
                 = new AstVar(fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep());
-            m_modp->addStmtp(varp);
+            m_modp->addStmtsp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
             prep->replaceWith(new AstVarRef(fl, varp, VAccess::WRITE));
             AstIf* const newp = new AstIf(
@@ -173,7 +173,7 @@ private:
             m_constXCvt = false;  // Avoid losing the X's in casex
             iterateAndNextNull(nodep->condsp());
             m_constXCvt = true;
-            iterateAndNextNull(nodep->bodysp());
+            iterateAndNextNull(nodep->stmtsp());
         }
     }
     void visit(AstNodeDType* nodep) override {
@@ -353,9 +353,9 @@ private:
                 // Add inits in front of other statement.
                 // In the future, we should stuff the initp into the module's constructor.
                 AstNode* const afterp = m_modp->stmtsp()->unlinkFrBackWithNext();
-                m_modp->addStmtp(newvarp);
-                m_modp->addStmtp(newinitp);
-                m_modp->addStmtp(afterp);
+                m_modp->addStmtsp(newvarp);
+                m_modp->addStmtsp(newinitp);
+                m_modp->addStmtsp(afterp);
                 if (debug() >= 9) newref1p->dumpTree(cout, "     _new: ");
                 if (debug() >= 9) newvarp->dumpTree(cout, "     _new: ");
                 if (debug() >= 9) newinitp->dumpTree(cout, "     _new: ");

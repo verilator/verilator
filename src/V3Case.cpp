@@ -245,7 +245,7 @@ private:
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
-            m_valueItem[i] = VN_AS(m_valueItem[i], CaseItem)->bodysp();
+            m_valueItem[i] = VN_AS(m_valueItem[i], CaseItem)->stmtsp();
         }
         return true;  // All is fine
     }
@@ -346,7 +346,7 @@ private:
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (!itemp->condsp()) {
                 // Default clause.  Just make true, we'll optimize it away later
-                itemp->condsp(new AstConst(itemp->fileline(), AstConst::BitTrue()));
+                itemp->addCondsp(new AstConst(itemp->fileline(), AstConst::BitTrue()));
                 hadDefault = true;
             } else {
                 // Expressioned clause
@@ -397,7 +397,7 @@ private:
                     }
                 }
                 // Replace expression in tree
-                itemp->condsp(ifexprp);
+                itemp->addCondsp(ifexprp);
             }
         }
         VL_DO_DANGLING(cexprp->deleteTree(), cexprp);
@@ -420,7 +420,7 @@ private:
         AstIf* itemnextp = nullptr;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            AstNode* const istmtsp = itemp->bodysp();  // Maybe null -- no action.
+            AstNode* const istmtsp = itemp->stmtsp();  // Maybe null -- no action.
             if (istmtsp) istmtsp->unlinkFrBackWithNext();
             // Expressioned clause
             AstNode* const ifexprp = itemp->condsp()->unlinkFrBack();
@@ -452,7 +452,7 @@ private:
                 if (itemnextp) {
                     itemnextp->addElsesp(newp);
                 } else {
-                    groupnextp->addIfsp(newp);  // First in a new group
+                    groupnextp->addThensp(newp);  // First in a new group
                 }
                 itemnextp = newp;
             }

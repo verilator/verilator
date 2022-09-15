@@ -162,7 +162,7 @@ private:
         funcp->isStatic(false);
         funcp->isLoose(true);
         funcp->slow(true);
-        topScopep->addActivep(funcp);
+        topScopep->addBlocksp(funcp);
         return funcp;
     }
 
@@ -303,8 +303,8 @@ private:
             scopeName = scopeName.substr(0, lastDot + 1);
             const size_t scopeLen = scopeName.length();
 
-            UASSERT_OBJ(cellp->intfRefp(), cellp, "Interface without tracing reference");
-            for (AstIntfRef *irp = cellp->intfRefp(), *nextIrp; irp; irp = nextIrp) {
+            UASSERT_OBJ(cellp->intfRefsp(), cellp, "Interface without tracing reference");
+            for (AstIntfRef *irp = cellp->intfRefsp(), *nextIrp; irp; irp = nextIrp) {
                 nextIrp = VN_AS(irp->nextp(), IntfRef);
 
                 const string irpName = irp->prettyName();

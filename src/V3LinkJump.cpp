@@ -69,7 +69,7 @@ private:
             underp = VN_AS(nodep, NodeFTask)->stmtsp();
         } else if (VN_IS(nodep, Foreach)) {
             if (endOfIter) {
-                underp = VN_AS(nodep, Foreach)->bodysp();
+                underp = VN_AS(nodep, Foreach)->stmtsp();
             } else {
                 underp = nodep;
                 under_and_next = false;  // IE we skip the entire foreach
@@ -78,7 +78,7 @@ private:
             if (endOfIter) {
                 // Note we jump to end of bodysp; a FOR loop has its
                 // increment under incsp() which we don't skip
-                underp = VN_AS(nodep, While)->bodysp();
+                underp = VN_AS(nodep, While)->stmtsp();
             } else {
                 underp = nodep;
                 under_and_next = false;  // IE we skip the entire while
@@ -157,7 +157,7 @@ private:
         AstVar* const varp
             = new AstVar(nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType());
         varp->usedLoopIdx(true);
-        m_modp->addStmtp(varp);
+        m_modp->addStmtsp(varp);
         AstNode* initsp = new AstAssign(
             nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), countp);
         AstNode* const decp = new AstAssign(
@@ -167,7 +167,7 @@ private:
         AstNode* const zerosp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);
         AstNode* const condp = new AstGtS(
             nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::READ), zerosp);
-        AstNode* const bodysp = nodep->bodysp();
+        AstNode* const bodysp = nodep->stmtsp();
         if (bodysp) bodysp->unlinkFrBackWithNext();
         AstNode* newp = new AstWhile(nodep->fileline(), condp, bodysp, decp);
         initsp = initsp->addNext(newp);
@@ -178,7 +178,7 @@ private:
     void visit(AstWait* nodep) override {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait statements");
         // Statements we'll just execute immediately; equivalent to if they followed this
-        if (AstNode* const bodysp = nodep->bodysp()) {
+        if (AstNode* const bodysp = nodep->stmtsp()) {
             bodysp->unlinkFrBackWithNext();
             nodep->replaceWith(bodysp);
         } else {
@@ -195,7 +195,7 @@ private:
             m_loopInc = false;
             iterateAndNextNull(nodep->precondsp());
             iterateAndNextNull(nodep->condp());
-            iterateAndNextNull(nodep->bodysp());
+            iterateAndNextNull(nodep->stmtsp());
             m_loopInc = true;
             iterateAndNextNull(nodep->incsp());
         }
@@ -204,7 +204,7 @@ private:
         VL_RESTORER(m_loopp);
         {
             m_loopp = nodep;
-            iterateAndNextNull(nodep->bodysp());
+            iterateAndNextNull(nodep->stmtsp());
         }
     }
     void visit(AstReturn* nodep) override {

@@ -1068,6 +1068,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
+//  Blank lines for type insertion
 
 %start source_text
 
@@ -1092,8 +1093,8 @@ description:                    // ==IEEE: description
         |       interface_declaration                   { }
         |       program_declaration                     { }
         |       package_declaration                     { }
-        |       package_item                            { if ($1) PARSEP->unitPackage($1->fileline())->addStmtp($1); }
-        |       bind_directive                          { if ($1) PARSEP->unitPackage($1->fileline())->addStmtp($1); }
+        |       package_item                            { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
+        |       bind_directive                          { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
         //      unsupported     // IEEE: config_declaration
         //                      // Verilator only
         |       yaT_RESETALL                            { }  // Else, under design, and illegal based on IEEE 22.3
@@ -1119,7 +1120,7 @@ timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
 package_declaration:            // ==IEEE: package_declaration
                 packageFront package_itemListE yENDPACKAGE endLabelE
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
-                          if ($2) $1->addStmtp($2);
+                          if ($2) $1->addStmtsp($2);
                           GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>4,$1,$4); }
@@ -1132,7 +1133,7 @@ packageFront<nodeModulep>:
                           $$->lifetime($2);
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
-                          PARSEP->rootp()->addModulep($$);
+                          PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$);
                           GRAMMARP->m_modp = $$; }
         ;
@@ -1228,18 +1229,18 @@ module_declaration:             // ==IEEE: module_declaration
                 modFront importsAndParametersE portsStarE ';'
         /*cont*/    module_itemListE yENDMODULE endLabelE
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
-                          if ($2) $1->addStmtp($2);
-                          if ($3) $1->addStmtp($3);
-                          if ($5) $1->addStmtp($5);
+                          if ($2) $1->addStmtsp($2);
+                          if ($3) $1->addStmtsp($3);
+                          if ($5) $1->addStmtsp($5);
                           GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>7,$1,$7); }
         |       udpFront parameter_port_listE portsStarE ';'
         /*cont*/    module_itemListE yENDPRIMITIVE endLabelE
                         { $1->modTrace(false);  // Stash for implicit wires, etc
-                          if ($2) $1->addStmtp($2);
-                          if ($3) $1->addStmtp($3);
-                          if ($5) $1->addStmtp($5);
+                          if ($2) $1->addStmtsp($2);
+                          if ($3) $1->addStmtsp($3);
+                          if ($5) $1->addStmtsp($5);
                           GRAMMARP->m_tracingParse = true;
                           GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
@@ -1259,7 +1260,7 @@ modFront<nodeModulep>:
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive());
-                          PARSEP->rootp()->addModulep($$);
+                          PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$);
                           GRAMMARP->m_modp = $$; }
         ;
@@ -1275,9 +1276,9 @@ udpFront<nodeModulep>:
                         { $$ = new AstPrimitive($<fl>3, *$3); $$->inLibrary(true);
                           $$->lifetime($2);
                           $$->modTrace(false);
-                          $$->addStmtp(new AstPragma($<fl>3, VPragmaType::INLINE_MODULE));
+                          $$->addStmtsp(new AstPragma($<fl>3, VPragmaType::INLINE_MODULE));
                           GRAMMARP->m_tracingParse = false;
-                          PARSEP->rootp()->addModulep($$);
+                          PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$); }
         ;
 
@@ -1489,9 +1490,9 @@ interface_declaration:          // IEEE: interface_declaration + interface_nonan
         //                      // timeunits_delcarationE is instead in interface_item
                 intFront importsAndParametersE portsStarE ';'
                         interface_itemListE yENDINTERFACE endLabelE
-                        { if ($2) $1->addStmtp($2);
-                          if ($3) $1->addStmtp($3);
-                          if ($5) $1->addStmtp($5);
+                        { if ($2) $1->addStmtsp($2);
+                          if ($3) $1->addStmtsp($3);
+                          if ($5) $1->addStmtsp($5);
                           SYMP->popScope($1); }
         |       yEXTERN intFront parameter_port_listE portsStarE ';'
                         { BBUNSUP($<fl>1, "Unsupported: extern interface"); }
@@ -1502,7 +1503,7 @@ intFront<nodeModulep>:
                         { $$ = new AstIface($<fl>3, *$3);
                           $$->inLibrary(true);
                           $$->lifetime($2);
-                          PARSEP->rootp()->addModulep($$);
+                          PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$); }
         ;
 
@@ -1578,9 +1579,9 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
                 pgmFront parameter_port_listE portsStarE ';'
         /*cont*/    program_itemListE yENDPROGRAM endLabelE
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
-                          if ($2) $1->addStmtp($2);
-                          if ($3) $1->addStmtp($3);
-                          if ($5) $1->addStmtp($5);
+                          if ($2) $1->addStmtsp($2);
+                          if ($3) $1->addStmtsp($3);
+                          if ($5) $1->addStmtsp($5);
                           GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>7,$1,$7); }
@@ -1596,7 +1597,7 @@ pgmFront<nodeModulep>:
                           $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
-                          PARSEP->rootp()->addModulep($$);
+                          PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$);
                           GRAMMARP->m_modp = $$; }
         ;
@@ -2008,12 +2009,13 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
                         { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); SYMP->popScope($$); }
         ;
 
-struct_union_memberList<nodep>: // IEEE: { struct_union_member }
+struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
                 struct_union_member                             { $$ = $1; }
+
         |       struct_union_memberList struct_union_member     { $$ = addNextNull($1, $2); }
         ;
 
-struct_union_member<nodep>:     // ==IEEE: struct_union_member
+struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
         //                      // UNSUP random_qualifer not propagagted until have randomize support
                 random_qualifierE data_type_or_void
         /*mid*/         { GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
@@ -2021,7 +2023,7 @@ struct_union_member<nodep>:     // ==IEEE: struct_union_member
         |       vlTag                                   { $$ = nullptr; }
         ;
 
-list_of_member_decl_assignments<nodep>: // Derived from IEEE: list_of_variable_decl_assignments
+list_of_member_decl_assignments<memberDTypep>: // Derived from IEEE: list_of_variable_decl_assignments
                 member_decl_assignment          { $$ = $1; }
         |       list_of_member_decl_assignments ',' member_decl_assignment      { $$ = addNextNull($1, $3); }
         ;
@@ -2177,17 +2179,17 @@ enum_base_typeE<nodeDTypep>:    // IEEE: enum_base_type
                           $$ = GRAMMARP->createArray(refp, $3, true); }
         ;
 
-enum_nameList<nodep>:
+enum_nameList<enumItemp>:
                 enum_name_declaration                   { $$ = $1; }
         |       enum_nameList ',' enum_name_declaration { $$ = addNextNull($1, $3); }
         ;
 
-enum_name_declaration<nodep>:   // ==IEEE: enum_name_declaration
+enum_name_declaration<enumItemp>:   // ==IEEE: enum_name_declaration
                 idAny/*enum_identifier*/ enumNameRangeE enumNameStartE
                         { $$ = new AstEnumItem($<fl>1, *$1, $2, $3); }
         ;
 
-enumNameRangeE<nodep>:          // IEEE: second part of enum_name_declaration
+enumNameRangeE<rangep>:          // IEEE: second part of enum_name_declaration
                 /* empty */
                         { $$ = nullptr; }
         |       '[' intnumAsConst ']'
@@ -2472,7 +2474,7 @@ continuous_assign<nodep>:       // IEEE: continuous_assign
                     if ($3)
                         for (auto* nodep = $$; nodep; nodep = nodep->nextp()) {
                             auto* const assignp = VN_AS(nodep, NodeAssign);
-                            assignp->addTimingControlp(nodep == $$ ? $3 : $3->cloneTree(false));
+                            assignp->timingControlp(nodep == $$ ? $3 : $3->cloneTree(false));
                         }
                 }
         ;
@@ -2634,7 +2636,7 @@ loop_generate_construct<nodep>: // ==IEEE: loop_generate_construct
                           }
                           // Statements are under 'genforp' as cells under this
                           // for loop won't get an extra layer of hierarchy tacked on
-                          blkp->addGenforp(new AstGenFor($1, initp, $5, $7, lowerNoBegp));
+                          blkp->genforp(new AstGenFor($1, initp, $5, $7, lowerNoBegp));
                           $$ = blkp;
                           VL_DO_DANGLING(lowerBegp->deleteTree(), lowerBegp);
                         }
@@ -2679,12 +2681,12 @@ genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
         ;
 
-case_generate_itemListE<nodep>: // IEEE: [{ case_generate_itemList }]
+case_generate_itemListE<caseItemp>: // IEEE: [{ case_generate_itemList }]
                 /* empty */                             { $$ = nullptr; }
         |       case_generate_itemList                  { $$ = $1; }
         ;
 
-case_generate_itemList<nodep>:  // IEEE: { case_generate_itemList }
+case_generate_itemList<caseItemp>:  // IEEE: { case_generate_itemList }
                 ~c~case_generate_item                   { $$ = $1; }
         |       ~c~case_generate_itemList ~c~case_generate_item         { $$ = $1; $1->addNext($2); }
         ;
@@ -2693,7 +2695,7 @@ case_generate_itemList<nodep>:  // IEEE: { case_generate_itemList }
 //UNSUP         BISONPRE_COPY(case_generate_itemList,{s/~c~/c_/g})      // {copied}
 //UNSUP ;
 
-case_generate_item<nodep>:      // ==IEEE: case_generate_item
+case_generate_item<caseItemp>:      // ==IEEE: case_generate_item
                 caseCondList colon generate_block_or_null       { $$ = new AstCaseItem{$2, $1, $3}; }
         |       yDEFAULT colon generate_block_or_null           { $$ = new AstCaseItem{$1, nullptr, $3}; }
         |       yDEFAULT generate_block_or_null                 { $$ = new AstCaseItem{$1, nullptr, $2}; }
@@ -2768,7 +2770,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           auto* const assignp = new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4};
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
-                          if ($$->delayp()) assignp->addTimingControlp($$->delayp()->unlinkFrBack());  // IEEE 1800-2017 10.3.3
+                          if ($$->delayp()) assignp->timingControlp($$->delayp()->unlinkFrBack());  // IEEE 1800-2017 10.3.3
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }        |       netId variable_dimensionList sigAttrListE
                         { $$ = VARDONEA($<fl>1,*$1, $2, $3); }
         ;
@@ -4110,19 +4112,19 @@ funcId<nodeFTaskp>:                     // IEEE: function_data_type_or_implicit 
         //                      // function_data_type expanded here to prevent conflicts with implicit_type:empty vs data_type:ID
                 /**/ fIdScoped
                         { $$ = $1;
-                          $$->addFvarp(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
+                          $$->fvarp(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
         |       signingE rangeList fIdScoped
                         { $$ = $3;
-                          $$->addFvarp(GRAMMARP->addRange(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $1), $2,true));
+                          $$->fvarp(GRAMMARP->addRange(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $1), $2,true));
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>3); }
         |       signing fIdScoped
                         { $$ = $2;
-                          $$->addFvarp(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $1));
+                          $$->fvarp(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $1));
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
         |       data_type fIdScoped
                         { $$ = $2;
-                          $$->addFvarp($1);
+                          $$->fvarp($1);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
         //                      // To verilator tasks are the same as void functions (we separately detect time passing)
         |       yVOID taskId
@@ -4992,12 +4994,12 @@ combinational_body<nodep>:      // IEEE: combinational_body + sequential_body
                 yTABLE tableEntryList yENDTABLE         { $$ = new AstUdpTable($1,$2); }
         ;
 
-tableEntryList<nodep>:  // IEEE: { combinational_entry | sequential_entry }
+tableEntryList<udpTableLinep>:  // IEEE: { combinational_entry | sequential_entry }
                 tableEntry                              { $$ = $1; }
         |       tableEntryList tableEntry               { $$ = addNextNull($1, $2); }
         ;
 
-tableEntry<nodep>:      // IEEE: combinational_entry + sequential_entry
+tableEntry<udpTableLinep>:      // IEEE: combinational_entry + sequential_entry
                 yaTABLELINE                             { $$ = new AstUdpTableLine($<fl>1,*$1); }
         |       error                                   { $$ = nullptr; }
         ;
@@ -6227,14 +6229,14 @@ classVirtualE<cbool>:
         |       yVIRTUAL__CLASS                         { $$ = true; }
         ;
 
-classExtendsE<nodep>:           // IEEE: part of class_declaration
+classExtendsE<classExtendsp>:           // IEEE: part of class_declaration
         //                      // The classExtendsE rule relys on classFront having the
         //                      // new class scope correct via classFront
                 /* empty */                             { $$ = nullptr; $<scp>$ = nullptr; }
         |       yEXTENDS classExtendsList               { $$ = $2; $<scp>$ = $<scp>2; }
         ;
 
-classExtendsList<nodep>:        // IEEE: part of class_declaration
+classExtendsList<classExtendsp>:        // IEEE: part of class_declaration
                 classExtendsOne                         { $$ = $1; $<scp>$ = $<scp>1; }
         |       classExtendsList ',' classExtendsOne
                         { $$ = $3; $<scp>$ = $<scp>3;
@@ -6242,7 +6244,7 @@ classExtendsList<nodep>:        // IEEE: part of class_declaration
                                       "and unsupported for interface classes."); }
         ;
 
-classExtendsOne<nodep>:         // IEEE: part of class_declaration
+classExtendsOne<classExtendsp>:         // IEEE: part of class_declaration
                 class_typeExtImpList
                         { $$ = new AstClassExtends($1->fileline(), $1);
                           $<scp>$ = $<scp>1; }

@@ -102,10 +102,10 @@ private:
         AstVar* const newvarp = new AstVar(vscp->fileline(), VVarType::MODULETEMP, newvarname,
                                            VFlagLogicPacked{}, 1);
         newvarp->noReset(true);  // Reset by below assign
-        m_modp->addStmtp(newvarp);
+        m_modp->addStmtsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
         vscp->user1p(newvscp);
-        m_scopep->addVarp(newvscp);
+        m_scopep->addVarsp(newvscp);
         // Add init
         AstNode* fromp = new AstVarRef(newvarp->fileline(), vscp, VAccess::READ);
         if (v3Global.opt.xInitialEdge()) fromp = new AstNot(fromp->fileline(), fromp);
@@ -202,7 +202,7 @@ private:
         funcp->slow(slow);
         funcp->isConst(false);
         funcp->declPrivate(true);
-        m_topScopep->scopep()->addActivep(funcp);
+        m_topScopep->scopep()->addBlocksp(funcp);
         return funcp;
     }
     void splitCheck(AstCFunc* ofuncp) {
@@ -229,7 +229,7 @@ private:
                 funcp->isStatic(false);
                 funcp->isLoose(true);
                 funcp->slow(ofuncp->slow());
-                m_topScopep->scopep()->addActivep(funcp);
+                m_topScopep->scopep()->addBlocksp(funcp);
                 //
                 AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
                 ofuncp->addStmtsp(callp);
@@ -297,7 +297,7 @@ private:
         m_scopep = nullptr;
     }
     void visit(AstNodeProcedure* nodep) override {
-        if (AstNode* const stmtsp = nodep->bodysp()) {
+        if (AstNode* const stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
             nodep->addNextHere(stmtsp);
         }
@@ -316,7 +316,7 @@ private:
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addIfsp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
+        newp->addThensp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -367,7 +367,7 @@ private:
                     m_mtaskBodyp->addStmtsp(m_lastIfp);
                 }
                 // Move statements to if
-                m_lastIfp->addIfsp(stmtsp);
+                m_lastIfp->addThensp(stmtsp);
             } else if (nodep->hasInitial() || nodep->hasSettle()) {
                 nodep->v3fatalSrc("MTask should not include initial/settle logic.");
             } else {
@@ -393,7 +393,7 @@ private:
                     addToEvalLoop(m_lastIfp);
                 }
                 // Move statements to if
-                m_lastIfp->addIfsp(stmtsp);
+                m_lastIfp->addThensp(stmtsp);
             } else if (nodep->hasInitial()) {
                 // Don't need to: clearLastSen();, as we're adding it to different cfunc
                 // Move statements to function

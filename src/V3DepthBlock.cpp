@@ -57,7 +57,7 @@ private:
         funcp->isStatic(m_cfuncp->isStatic());
         funcp->isLoose(m_cfuncp->isLoose());
         funcp->addStmtsp(nodep);
-        scopep->addActivep(funcp);
+        scopep->addBlocksp(funcp);
         // Call sub function at the point where the body was removed from
         AstCCall* const callp = new AstCCall(nodep->fileline(), funcp);
         if (VN_IS(m_modp, Class)) {

@@ -601,14 +601,14 @@ protected:
         UINFO(4, "   ALW   " << nodep << endl);
         if (debug() >= 9) nodep->dumpTree(cout, "   alwIn:: ");
         scoreboardClear();
-        processBlock(nodep->bodysp());
+        processBlock(nodep->stmtsp());
         if (debug() >= 9) nodep->dumpTree(cout, "   alwOut: ");
     }
 
     void visit(AstNodeIf* nodep) override {
         UINFO(4, "     IF " << nodep << endl);
         iterateAndNextNull(nodep->condp());
-        processBlock(nodep->ifsp());
+        processBlock(nodep->thensp());
         processBlock(nodep->elsesp());
     }
 
@@ -713,14 +713,14 @@ public:
             // Put a placeholder node into stmtp to track our position.
             // We'll strip these out after the blocks are fully cloned.
             AstSplitPlaceholder* const placeholderp = makePlaceholderp();
-            alwaysp->addStmtp(placeholderp);
+            alwaysp->addStmtsp(placeholderp);
             m_addAfter[color] = placeholderp;
             m_newBlocksp->push_back(alwaysp);
         }
         // Scan the body of the always. We'll handle if/else
         // specially, everything else is a leaf node that we can
         // just clone into one of the split always blocks.
-        iterateAndNextNull(m_origAlwaysp->bodysp());
+        iterateAndNextNull(m_origAlwaysp->stmtsp());
     }
 
 protected:
@@ -776,7 +776,7 @@ protected:
             m_addAfter[color] = if_placeholderp;
         }
 
-        iterateAndNextNull(nodep->ifsp());
+        iterateAndNextNull(nodep->thensp());
 
         for (const auto& color : colors) m_addAfter[color] = clones[color]->elsesp();
 
@@ -804,7 +804,7 @@ class RemovePlaceholdersVisitor final : public VNVisitor {
         VL_RESTORER(m_isPure);
         m_isPure = true;
         iterateChildren(nodep);
-        if (!nodep->ifsp() && !nodep->elsesp() && m_isPure) pushDeletep(nodep->unlinkFrBack());
+        if (!nodep->thensp() && !nodep->elsesp() && m_isPure) pushDeletep(nodep->unlinkFrBack());
     }
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_isPure);
@@ -812,7 +812,7 @@ class RemovePlaceholdersVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (m_isPure) {
             bool emptyOrCommentOnly = true;
-            for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+            for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
                 // If this always block contains only AstComment, remove here.
                 // V3Gate will remove anyway.
                 if (!VN_IS(bodysp, Comment)) {
@@ -955,7 +955,7 @@ protected:
     void visit(AstAlways* nodep) override {
         // build the scoreboard
         scoreboardClear();
-        scanBlock(nodep->bodysp());
+        scanBlock(nodep->stmtsp());
 
         if (m_noReorderWhy != "") {
             // We saw a jump or something else rare that we don't handle.
@@ -989,7 +989,7 @@ protected:
         m_curIfConditional = nodep;
         iterateAndNextNull(nodep->condp());
         m_curIfConditional = nullptr;
-        scanBlock(nodep->ifsp());
+        scanBlock(nodep->thensp());
         scanBlock(nodep->elsesp());
     }
 

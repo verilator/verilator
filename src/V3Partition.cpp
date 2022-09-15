@@ -3051,7 +3051,7 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
         AstVar* const varp = new AstVar(fl, VVarType::MODULETEMP, name, mtaskStateDtypep);
         varp->valuep(new AstConst(fl, nDependencies));
         varp->protect(false);  // Do not protect as we still have references in AstText
-        modp->addStmtp(varp);
+        modp->addStmtsp(varp);
         // For now, reference is still via text bashing
         addStrStmt("vlSelf->" + name + +".waitUntilUpstreamDone(even_cycle);\n");
     }
@@ -3112,7 +3112,7 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         const uint32_t threadId = schedule.threadId(thread.front());
         const string name{"__Vthread__" + tag + "__" + cvtToStr(threadId)};
         AstCFunc* const funcp = new AstCFunc(fl, name, nullptr, "void");
-        modp->addStmtp(funcp);
+        modp->addStmtsp(funcp);
         funcps.push_back(funcp);
         funcp->isStatic(true);  // Uses void self pointer, so static and hand rolled
         funcp->isLoose(true);
@@ -3140,7 +3140,7 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         = new AstVar(fl, VVarType::MODULETEMP, "__Vm_mtaskstate_final", mtaskStateDtypep);
     varp->valuep(new AstConst(fl, funcps.size()));
     varp->protect(false);  // Do not protect as we still have references in AstText
-    modp->addStmtp(varp);
+    modp->addStmtsp(varp);
 
     return funcps;
 }

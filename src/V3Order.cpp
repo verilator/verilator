@@ -1789,7 +1789,7 @@ void OrderProcess::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
                              << " s=" << cvtToHex(scopep) << " " << lvertexp << endl);
     AstActive* const newActivep
         = processMoveOneLogic(lvertexp, m_pomNewFuncp /*ref*/, m_pomNewStmts /*ref*/);
-    if (newActivep) m_scopetop.addActivep(newActivep);
+    if (newActivep) m_scopetop.addBlocksp(newActivep);
     processMoveDoneOne(vertexp);
 }
 
@@ -1811,7 +1811,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
         // procedures. Everything else is handled in one go
         AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
         if (procp && !v3Global.opt.profCFuncs()) {
-            nodep = procp->bodysp();
+            nodep = procp->stmtsp();
             pushDeletep(procp);
         }
 
@@ -1831,7 +1831,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
                 newFuncpr->isLoose(true);
                 newStmtsr = 0;
                 if (domainp->hasInitial() || domainp->hasSettle()) newFuncpr->slow(true);
-                scopep->addActivep(newFuncpr);
+                scopep->addBlocksp(newFuncpr);
                 // Create top call to it
                 AstCCall* const callp = new AstCCall(nodep->fileline(), newFuncpr);
                 // Where will we be adding the call?
@@ -1886,7 +1886,7 @@ void OrderProcess::processMTasksInitial(InitialLogicE logic_type) {
         }
         AstActive* const newActivep
             = processMoveOneLogic(initp, initCFunc /*ref*/, initStmts /*ref*/);
-        if (newActivep) m_scopetop.addActivep(newActivep);
+        if (newActivep) m_scopetop.addBlocksp(newActivep);
     }
 }
 
@@ -1966,7 +1966,7 @@ void OrderProcess::processMTasks() {
     // of the MTask graph.
     FileLine* const rootFlp = v3Global.rootp()->fileline();
     AstExecGraph* const execGraphp = new AstExecGraph{rootFlp, "eval"};
-    m_scopetop.addActivep(execGraphp);
+    m_scopetop.addBlocksp(execGraphp);
 
     // Create CFuncs and bodies for each MTask.
     GraphStream<MTaskVxIdLessThan> emit_mtasks(&mtasks);
@@ -2018,7 +2018,7 @@ void OrderProcess::processMTasks() {
             const MTaskState& fromState = mtaskStates[fromp->id()];
             new V3GraphEdge(depGraphp, fromState.m_execMTaskp, state.m_execMTaskp, 1);
         }
-        execGraphp->addMTaskBodyp(bodyp);
+        execGraphp->addMTaskBodiesp(bodyp);
     }
 }
 

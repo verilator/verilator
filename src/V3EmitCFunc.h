@@ -828,7 +828,7 @@ public:
         puts("while (");
         iterateAndNextNull(nodep->condp());
         puts(") {\n");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->stmtsp());
         iterateAndNextNull(nodep->incsp());
         iterateAndNextNull(nodep->precondsp());  // Need to recompute before next loop
         puts("}\n");
@@ -842,7 +842,7 @@ public:
         iterateAndNextNull(nodep->condp());
         if (!nodep->branchPred().unknown()) puts(")");
         puts(") {\n");
-        iterateAndNextNull(nodep->ifsp());
+        iterateAndNextNull(nodep->thensp());
         puts("}");
         if (!nodep->elsesp()) {
             puts("\n");
@@ -935,17 +935,17 @@ public:
     }
     void visit(AstCStmt* nodep) override {
         putbs("");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->exprsp());
     }
     void visit(AstCMath* nodep) override {
         putbs("");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->exprsp());
     }
     void visit(AstUCStmt* nodep) override {
         VL_RESTORER(m_inUC);
         m_inUC = true;
         putsDecoration(ifNoProtect("// $c statement at " + nodep->fileline()->ascii() + "\n"));
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->exprsp());
         puts("\n");
     }
     void visit(AstUCFunc* nodep) override {
@@ -953,7 +953,7 @@ public:
         m_inUC = true;
         puts("\n");
         putsDecoration(ifNoProtect("// $c function at " + nodep->fileline()->ascii() + "\n"));
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->exprsp());
         puts("\n");
     }
 
@@ -1033,15 +1033,15 @@ public:
     }
     void visit(AstNodeCond* nodep) override {
         // Widths match up already, so we'll just use C++'s operator w/o any temps.
-        if (nodep->expr1p()->isWide()) {
-            emitOpName(nodep, nodep->emitC(), nodep->condp(), nodep->expr1p(), nodep->expr2p());
+        if (nodep->thenp()->isWide()) {
+            emitOpName(nodep, nodep->emitC(), nodep->condp(), nodep->thenp(), nodep->elsep());
         } else {
             putbs("(");
             iterateAndNextNull(nodep->condp());
             putbs(" ? ");
-            iterateAndNextNull(nodep->expr1p());
+            iterateAndNextNull(nodep->thenp());
             putbs(" : ");
-            iterateAndNextNull(nodep->expr2p());
+            iterateAndNextNull(nodep->elsep());
             puts(")");
         }
     }

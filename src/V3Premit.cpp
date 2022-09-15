@@ -176,7 +176,7 @@ private:
         iterateAndNextNull(nodep->condp());
         m_inWhilep = nullptr;
         startStatement(nodep);
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->stmtsp());
         iterateAndNextNull(nodep->incsp());
         m_stmtp = nullptr;
     }
@@ -329,7 +329,7 @@ private:
     }
     void visit(AstNodeCond* nodep) override {
         iterateChildren(nodep);
-        if (nodep->expr1p()->isWide() && !VN_IS(nodep->condp(), Const)
+        if (nodep->thenp()->isWide() && !VN_IS(nodep->condp(), Const)
             && !VN_IS(nodep->condp(), VarRef)) {
             // We're going to need the expression several times in the expanded code,
             // so might as well make it a common expression

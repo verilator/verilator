@@ -216,7 +216,7 @@ private:
     // METHODS
     void addActive(AstActive* nodep) {
         UASSERT_OBJ(m_scopep, nodep, "nullptr scope");
-        m_scopep->addActivep(nodep);
+        m_scopep->addBlocksp(nodep);
     }
     // VISITORS
     void visit(AstScope* nodep) override {
@@ -302,7 +302,7 @@ private:
             LatchDetectGraphVertex* const parentp = m_graph.currentp();
             LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
             m_graph.addPathVertex(branchp, "IF");
-            iterateAndNextNull(nodep->ifsp());
+            iterateAndNextNull(nodep->thensp());
             m_graph.addPathVertex(branchp, "ELSE");
             iterateAndNextNull(nodep->elsesp());
             m_graph.currentp(parentp);
@@ -458,7 +458,7 @@ private:
     void visit(AstFinal* nodep) override {
         // Relink to CFUNC for the final
         UINFO(4, "    FINAL " << nodep << endl);
-        if (!nodep->bodysp()) {  // Empty, Kill it.
+        if (!nodep->stmtsp()) {  // Empty, Kill it.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -471,10 +471,10 @@ private:
             m_scopeFinalp->isStatic(false);
             m_scopeFinalp->isLoose(true);
             m_scopeFinalp->slow(true);
-            m_namer.scopep()->addActivep(m_scopeFinalp);
+            m_namer.scopep()->addBlocksp(m_scopeFinalp);
         }
         nodep->unlinkFrBack();
-        m_scopeFinalp->addStmtsp(nodep->bodysp()->unlinkFrBackWithNext());
+        m_scopeFinalp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
@@ -542,7 +542,7 @@ private:
         UINFO(4, "    ALW   " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "  Alw: ");
 
-        if (!nodep->bodysp()) {
+        if (!nodep->stmtsp()) {
             // Empty always.  Kill it.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
@@ -551,7 +551,7 @@ private:
     }
     void visit(AstAlwaysPostponed* nodep) override {
         UINFO(4, "    ALW   " << nodep << endl);
-        if (!nodep->bodysp()) {
+        if (!nodep->stmtsp()) {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }

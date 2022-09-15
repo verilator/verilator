@@ -257,7 +257,7 @@ private:
             // If it's under a scope, move it up to the top
             if (m_scopep) {
                 nodep->unlinkFrBack();
-                m_modp->addStmtp(nodep);
+                m_modp->addStmtsp(nodep);
 
                 if (nodep->funcPublic()) {
                     // There may be multiple public functions by the same name;

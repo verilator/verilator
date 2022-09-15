@@ -306,8 +306,8 @@ private:
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
                           new AstCond{fl, rhsp->condp()->cloneTree(true),
-                                      newAstWordSelClone(rhsp->expr1p(), w),
-                                      newAstWordSelClone(rhsp->expr2p(), w)});
+                                      newAstWordSelClone(rhsp->thenp(), w),
+                                      newAstWordSelClone(rhsp->elsep(), w)});
         }
         return true;
     }

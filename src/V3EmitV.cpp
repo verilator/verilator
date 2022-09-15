@@ -110,7 +110,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             iterateAndNextConstNull(nodep->sensesp());
         }
         putbs(" begin\n");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end\n");
     }
     void visit(AstAlwaysPublic* nodep) override {
@@ -122,7 +122,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             iterateAndNextConstNull(nodep->sensesp());
         }
         putqs(nodep, " ");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "*/\n");
     }
     void visit(AstNodeAssign* nodep) override {
@@ -204,7 +204,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             putbs("default");
         }
         putfs(nodep, ": begin ");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end\n");
     }
     void visit(AstComment* nodep) override {
@@ -326,14 +326,14 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             iterateAndNextConstNull(nodep->incsp());
         }
         puts(") begin\n");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end\n");
     }
     void visit(AstRepeat* nodep) override {
         putfs(nodep, "repeat (");
         iterateAndNextConstNull(nodep->countp());
         puts(") begin\n");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putfs(nodep, "end\n");
     }
     void visit(AstWhile* nodep) override {
@@ -341,7 +341,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         putfs(nodep, "while (");
         iterateAndNextConstNull(nodep->condp());
         puts(") begin\n");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         iterateAndNextConstNull(nodep->incsp());
         iterateAndNextConstNull(nodep->precondsp());  // Need to recompute before next loop
         putfs(nodep, "end\n");
@@ -356,7 +356,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         puts("if (");
         iterateAndNextConstNull(nodep->condp());
         puts(") begin\n");
-        iterateAndNextConstNull(nodep->ifsp());
+        iterateAndNextConstNull(nodep->thensp());
         if (nodep->elsesp()) {
             putqs(nodep, "end\n");
             putqs(nodep, "else begin\n");
@@ -401,22 +401,22 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     void visit(AstScopeName* nodep) override {}
     void visit(AstCStmt* nodep) override {
         putfs(nodep, "$_CSTMT(");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
     void visit(AstCMath* nodep) override {
         putfs(nodep, "$_CMATH(");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
     void visit(AstUCStmt* nodep) override {
         putfs(nodep, "$c(");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
     void visit(AstUCFunc* nodep) override {
         putfs(nodep, "$c(");
-        iterateAndNextConstNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->exprsp());
         puts(")");
     }
 
@@ -521,9 +521,9 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         putbs("(");
         iterateAndNextConstNull(nodep->condp());
         putfs(nodep, " ? ");
-        iterateAndNextConstNull(nodep->expr1p());
+        iterateAndNextConstNull(nodep->thenp());
         putbs(" : ");
-        iterateAndNextConstNull(nodep->expr2p());
+        iterateAndNextConstNull(nodep->elsep());
         puts(")");
     }
     void visit(AstRange* nodep) override {

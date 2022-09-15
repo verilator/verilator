@@ -153,13 +153,13 @@ private:
                 varp = new AstVar(oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
                                   VFlagBitPacked(), width);
             }
-            addmodp->addStmtp(varp);
+            addmodp->addStmtsp(varp);
             m_modVarMap.emplace(std::make_pair(addmodp, name), varp);
         }
 
         AstVarScope* const varscp
             = new AstVarScope(oldvarscp->fileline(), oldvarscp->scopep(), varp);
-        oldvarscp->scopep()->addVarp(varscp);
+        oldvarscp->scopep()->addVarsp(varscp);
         return varscp;
     }
 
@@ -356,11 +356,11 @@ private:
             postLogicp = new AstIf(nodep->fileline(),
                                    new AstVarRef(nodep->fileline(), setvscp, VAccess::READ));
             UINFO(9, "     Created " << postLogicp << endl);
-            finalp->addStmtp(postLogicp);
+            finalp->addStmtsp(postLogicp);
             finalp->user3p(setvscp);  // Remember IF's vset variable
             finalp->user4p(postLogicp);  // and the associated IF, as we may be able to reuse it
         }
-        postLogicp->addIfsp(new AstAssign(nodep->fileline(), selectsp, valreadp));
+        postLogicp->addThensp(new AstAssign(nodep->fileline(), selectsp, valreadp));
         return newlhsp;
     }
 
