@@ -100,7 +100,7 @@ private:
         const string newvarname
             = (string("__Vclklast__") + vscp->scopep()->nameDotless() + "__" + varp->name());
         AstVar* const newvarp = new AstVar(vscp->fileline(), VVarType::MODULETEMP, newvarname,
-                                           VFlagLogicPacked(), 1);
+                                           VFlagLogicPacked{}, 1);
         newvarp->noReset(true);  // Reset by below assign
         m_modp->addStmtp(newvarp);
         AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);

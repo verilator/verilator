@@ -94,7 +94,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
         }
     }
     unit = v3Global.opt.timeComputeUnit(unit);  // Apply override
-    if (unit.isNone()) unit = VTimescale(VTimescale::TS_DEFAULT);
+    if (unit.isNone()) unit = VTimescale{VTimescale::TS_DEFAULT};
     v3Global.rootp()->timeunit(unit);
 
     bool dunitTimed = false;  // $unit had a timeunit
@@ -127,7 +127,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
 
     if (v3Global.rootp()->timeprecision().isNone()) {
         v3Global.rootp()->timeprecisionMerge(v3Global.rootp()->fileline(),
-                                             VTimescale(VTimescale::TS_DEFAULT));
+                                             VTimescale{VTimescale::TS_DEFAULT});
     }
 
     // Classes under package have timescale propaged in V3LinkParse

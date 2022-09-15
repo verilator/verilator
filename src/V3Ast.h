@@ -166,7 +166,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     VAccess invert() const {
-        return (m_e == READWRITE) ? VAccess(m_e) : (m_e == WRITE ? VAccess(READ) : VAccess(WRITE));
+        return (m_e == READWRITE) ? VAccess{m_e} : (m_e == WRITE ? VAccess{READ} : VAccess{WRITE});
     }
     bool isReadOnly() const { return m_e == READ; }  // False with READWRITE
     bool isWriteOnly() const { return m_e == WRITE; }  // False with READWRITE
@@ -200,7 +200,7 @@ public:
     inline VSigning(en _e)
         : m_e{_e} {}
     static inline VSigning fromBool(bool isSigned) {  // Factory method
-        return isSigned ? VSigning(SIGNED) : VSigning(UNSIGNED);
+        return isSigned ? VSigning{SIGNED} : VSigning{UNSIGNED};
     }
     explicit inline VSigning(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
@@ -465,9 +465,9 @@ public:
         return names[m_e];
     }
     static void selfTest() {
-        UASSERT(0 == std::strcmp(VBasicDTypeKwd(_ENUM_MAX).ascii(), " MAX"),
+        UASSERT(0 == std::strcmp(VBasicDTypeKwd{_ENUM_MAX}.ascii(), " MAX"),
                 "SelfTest: Enum mismatch");
-        UASSERT(0 == std::strcmp(VBasicDTypeKwd(_ENUM_MAX).dpiType(), " MAX"),
+        UASSERT(0 == std::strcmp(VBasicDTypeKwd{_ENUM_MAX}.dpiType(), " MAX"),
                 "SelfTest: Enum mismatch");
     }
     inline VBasicDTypeKwd()
@@ -1172,7 +1172,7 @@ public:
     AstNode* toNodep() const { return to<AstNode*>(); }
     V3GraphVertex* toGraphVertex() const { return to<V3GraphVertex*>(); }
     int toInt() const { return m_u.ui; }
-    static VNUser fromInt(int i) { return VNUser(i); }
+    static VNUser fromInt(int i) { return VNUser{i}; }
 };
 
 //######################################################################
@@ -1438,15 +1438,15 @@ class AstNode VL_NOT_FINAL {
     static int s_cloneCntGbl;  // Count of which userp is set
 
     // This member ordering both allows 64 bit alignment and puts associated data together
-    VNUser m_user1u = VNUser{0};  // Contains any information the user iteration routine wants
+    VNUser m_user1u{0};  // Contains any information the user iteration routine wants
     uint32_t m_user1Cnt = 0;  // Mark of when userp was set
     uint32_t m_user2Cnt = 0;  // Mark of when userp was set
-    VNUser m_user2u = VNUser{0};  // Contains any information the user iteration routine wants
-    VNUser m_user3u = VNUser{0};  // Contains any information the user iteration routine wants
+    VNUser m_user2u{0};  // Contains any information the user iteration routine wants
+    VNUser m_user3u{0};  // Contains any information the user iteration routine wants
     uint32_t m_user3Cnt = 0;  // Mark of when userp was set
     uint32_t m_user4Cnt = 0;  // Mark of when userp was set
-    VNUser m_user4u = VNUser{0};  // Contains any information the user iteration routine wants
-    VNUser m_user5u = VNUser{0};  // Contains any information the user iteration routine wants
+    VNUser m_user4u{0};  // Contains any information the user iteration routine wants
+    VNUser m_user5u{0};  // Contains any information the user iteration routine wants
     uint32_t m_user5Cnt = 0;  // Mark of when userp was set
 
     // METHODS
@@ -1638,13 +1638,13 @@ public:
     VNUser      user1u() const {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser1InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user1Cnt==VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser(0));
+        return ((m_user1Cnt==VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{0});
     }
     AstNode*    user1p() const { return user1u().toNodep(); }
     void        user1u(const VNUser& user) { m_user1u=user; m_user1Cnt=VNUser1InUse::s_userCntGbl; }
-    void        user1p(void* userp) { user1u(VNUser(userp)); }
+    void        user1p(void* userp) { user1u(VNUser{userp}); }
     int         user1() const { return user1u().toInt(); }
-    void        user1(int val) { user1u(VNUser(val)); }
+    void        user1(int val) { user1u(VNUser{val}); }
     int         user1Inc(int val=1) { int v=user1(); user1(v+val); return v; }
     int         user1SetOnce() { int v=user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
     static void user1ClearTree() { VNUser1InUse::clear(); }  // Clear userp()'s across the entire tree
@@ -1652,13 +1652,13 @@ public:
     VNUser      user2u() const {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser2InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user2Cnt==VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser(0));
+        return ((m_user2Cnt==VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{0});
     }
     AstNode*    user2p() const { return user2u().toNodep(); }
     void        user2u(const VNUser& user) { m_user2u=user; m_user2Cnt=VNUser2InUse::s_userCntGbl; }
-    void        user2p(void* userp) { user2u(VNUser(userp)); }
+    void        user2p(void* userp) { user2u(VNUser{userp}); }
     int         user2() const { return user2u().toInt(); }
-    void        user2(int val) { user2u(VNUser(val)); }
+    void        user2(int val) { user2u(VNUser{val}); }
     int         user2Inc(int val=1) { int v=user2(); user2(v+val); return v; }
     int         user2SetOnce() { int v=user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
     static void user2ClearTree() { VNUser2InUse::clear(); }  // Clear userp()'s across the entire tree
@@ -1666,13 +1666,13 @@ public:
     VNUser      user3u() const {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser3InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user3Cnt==VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser(0));
+        return ((m_user3Cnt==VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{0});
     }
     AstNode*    user3p() const { return user3u().toNodep(); }
     void        user3u(const VNUser& user) { m_user3u=user; m_user3Cnt=VNUser3InUse::s_userCntGbl; }
-    void        user3p(void* userp) { user3u(VNUser(userp)); }
+    void        user3p(void* userp) { user3u(VNUser{userp}); }
     int         user3() const { return user3u().toInt(); }
-    void        user3(int val) { user3u(VNUser(val)); }
+    void        user3(int val) { user3u(VNUser{val}); }
     int         user3Inc(int val=1) { int v=user3(); user3(v+val); return v; }
     int         user3SetOnce() { int v=user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
     static void user3ClearTree() { VNUser3InUse::clear(); }  // Clear userp()'s across the entire tree
@@ -1680,13 +1680,13 @@ public:
     VNUser      user4u() const {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser4InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user4Cnt==VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser(0));
+        return ((m_user4Cnt==VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{0});
     }
     AstNode*    user4p() const { return user4u().toNodep(); }
     void        user4u(const VNUser& user) { m_user4u=user; m_user4Cnt=VNUser4InUse::s_userCntGbl; }
-    void        user4p(void* userp) { user4u(VNUser(userp)); }
+    void        user4p(void* userp) { user4u(VNUser{userp}); }
     int         user4() const { return user4u().toInt(); }
-    void        user4(int val) { user4u(VNUser(val)); }
+    void        user4(int val) { user4u(VNUser{val}); }
     int         user4Inc(int val=1) { int v=user4(); user4(v+val); return v; }
     int         user4SetOnce() { int v=user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
@@ -1694,13 +1694,13 @@ public:
     VNUser      user5u() const {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser5InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user5Cnt==VNUser5InUse::s_userCntGbl) ? m_user5u : VNUser(0));
+        return ((m_user5Cnt==VNUser5InUse::s_userCntGbl) ? m_user5u : VNUser{0});
     }
     AstNode*    user5p() const { return user5u().toNodep(); }
     void        user5u(const VNUser& user) { m_user5u=user; m_user5Cnt=VNUser5InUse::s_userCntGbl; }
-    void        user5p(void* userp) { user5u(VNUser(userp)); }
+    void        user5p(void* userp) { user5u(VNUser{userp}); }
     int         user5() const { return user5u().toInt(); }
-    void        user5(int val) { user5u(VNUser(val)); }
+    void        user5(int val) { user5u(VNUser{val}); }
     int         user5Inc(int val=1) { int v=user5(); user5(v+val); return v; }
     int         user5SetOnce() { int v=user5(); if (!v) user5(1); return v; }  // Better for cache than user5Inc()
     static void user5ClearTree() { VNUser5InUse::clear(); }  // Clear userp()'s across the entire tree
@@ -2406,7 +2406,7 @@ inline AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 
 #define ASTNODE_NODE_FUNCS_NO_DTOR(name) \
     virtual void accept(VNVisitor& v) override { v.visit(this); } \
-    virtual AstNode* clone() override { return new Ast##name(*this); } \
+    virtual AstNode* clone() override { return new Ast##name{*this}; } \
     static Ast##name* cloneTreeNull(Ast##name* nodep, bool cloneNextLink) { \
         return nodep ? nodep->cloneTree(cloneNextLink) : nullptr; \
     } \

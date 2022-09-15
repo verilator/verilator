@@ -113,7 +113,7 @@ public:
 V3LangCode::V3LangCode(const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
     for (int codei = V3LangCode::L_ERROR; codei < V3LangCode::_ENUM_END; ++codei) {
-        const V3LangCode code = V3LangCode(codei);
+        const V3LangCode code{codei};
         if (0 == VL_STRCASECMP(textp, code.ascii())) {
             m_e = code;
             return;
@@ -265,7 +265,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
     if (!precStr.empty()) {
         VTimescale prec(VTimescale::NONE);
         bool precbad;
-        prec = VTimescale(precStr, precbad /*ref*/);
+        prec = VTimescale{precStr, precbad /*ref*/};
         if (precbad) {
             fl->v3error("`timescale timeprecision syntax error: '" << precStr << "'");
             return;
@@ -1164,7 +1164,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
     const auto setLang = [this, fl](const char* valp) {
-        const V3LangCode optval = V3LangCode(valp);
+        const V3LangCode optval{valp};
         if (optval.legal()) {
             m_defaultLanguage = optval;
         } else {

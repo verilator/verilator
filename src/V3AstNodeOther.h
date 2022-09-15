@@ -191,7 +191,7 @@ private:
     string m_name;  ///< Filename
 public:
     AstNodeFile(VNType t, FileLine* fl, const string& name)
-        : AstNode(t, fl)
+        : AstNode{t, fl}
         , m_name{name} {}
     ASTNODE_BASE_FUNCS(NodeFile)
     virtual void dump(std::ostream& str) const override;

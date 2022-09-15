@@ -56,15 +56,15 @@ private:
 
     inline void setUserp(T_Node* nodep, T_Data* userp) const {
         if VL_CONSTEXPR_CXX17 (T_UserN == 1) {
-            nodep->user1u(VNUser(userp));
+            nodep->user1u(VNUser{userp});
         } else if VL_CONSTEXPR_CXX17 (T_UserN == 2) {
-            nodep->user2u(VNUser(userp));
+            nodep->user2u(VNUser{userp});
         } else if VL_CONSTEXPR_CXX17 (T_UserN == 3) {
-            nodep->user3u(VNUser(userp));
+            nodep->user3u(VNUser{userp});
         } else if VL_CONSTEXPR_CXX17 (T_UserN == 4) {
-            nodep->user4u(VNUser(userp));
+            nodep->user4u(VNUser{userp});
         } else {
-            nodep->user5u(VNUser(userp));
+            nodep->user5u(VNUser{userp});
         }
     }
 

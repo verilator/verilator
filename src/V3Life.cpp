@@ -165,7 +165,7 @@ public:
             checkRemoveAssign(it);
             it->second.simpleAssign(assp);
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::SIMPLEASSIGN(), assp));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::SIMPLEASSIGN{}, assp});
         }
         // lifeDump();
     }
@@ -175,7 +175,7 @@ public:
         if (it != m_map.end()) {
             it->second.complexAssign();
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::COMPLEXASSIGN()));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::COMPLEXASSIGN{}});
         }
     }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
@@ -196,7 +196,7 @@ public:
             UINFO(4, "     usage: " << nodep << endl);
             it->second.consumed();
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::CONSUMED()));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::CONSUMED{}});
         }
     }
     void complexAssignFind(AstVarScope* nodep) {
@@ -205,7 +205,7 @@ public:
             UINFO(4, "     casfind: " << it->first << endl);
             it->second.complexAssign();
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::COMPLEXASSIGN()));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::COMPLEXASSIGN{}});
         }
     }
     void consumedFind(AstVarScope* nodep) {
@@ -213,7 +213,7 @@ public:
         if (it != m_map.end()) {
             it->second.consumed();
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::CONSUMED()));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::CONSUMED{}});
         }
     }
     void lifeToAbove() {

@@ -59,7 +59,7 @@ private:
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (AstVarScope* const newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
             UINFO(9, "  Replace " << nodep << " to " << newvscp << endl);
-            AstVarRef* const newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
+            AstVarRef* const newrefp = new AstVarRef{nodep->fileline(), newvscp, nodep->access()};
             nodep->replaceWith(newrefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }

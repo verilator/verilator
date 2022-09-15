@@ -1024,7 +1024,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 }
                 AstVar* const newvarp
                     = new AstVar(nodep->fileline(), VVarType::VAR, nodep->name(),
-                                 VFlagChildDType(), dtypep);  // Not dtype resolved yet
+                                 VFlagChildDType{}, dtypep);  // Not dtype resolved yet
                 newvarp->direction(VDirection::OUTPUT);
                 newvarp->lifetime(VLifetime::AUTOMATIC);
                 newvarp->funcReturn(true);
@@ -1139,8 +1139,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                     // We first search if the parameter is overwritten and then replace it with a
                     // new value. It will keep the same FileLine information.
                     if (v3Global.opt.hasParameter(nodep->name())) {
-                        AstVar* const newp = new AstVar(
-                            nodep->fileline(), VVarType(VVarType::GPARAM), nodep->name(), nodep);
+                        AstVar* const newp = new AstVar{
+                            nodep->fileline(), VVarType{VVarType::GPARAM}, nodep->name(), nodep};
                         newp->combineType(nodep);
                         const string svalue = v3Global.opt.parameter(nodep->name());
                         if (AstNode* const valuep
@@ -1935,7 +1935,7 @@ private:
                 }
             }
             AstVar* const newp = new AstVar(nodep->fileline(), VVarType::WIRE, nodep->name(),
-                                            VFlagLogicPacked(), 1);
+                                            VFlagLogicPacked{}, 1);
             newp->trace(modp->modTrace());
             nodep->varp(newp);
             modp->addStmtp(newp);
@@ -2509,7 +2509,7 @@ private:
                         UINFO(7, "   ErrParseRef curSymp=se" << cvtToHex(m_curSymp)
                                                              << " ds=" << m_ds.ascii() << endl);
                         const string suggest = m_statep->suggestSymFallback(
-                            m_ds.m_dotSymp, nodep->name(), VNodeMatcher());
+                            m_ds.m_dotSymp, nodep->name(), VNodeMatcher{});
                         nodep->v3error("Can't find definition of "
                                        << expectWhat << ": " << nodep->prettyNameQ() << '\n'
                                        << (suggest.empty() ? "" : nodep->warnMore() + suggest));

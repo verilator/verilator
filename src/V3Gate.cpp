@@ -62,8 +62,8 @@ public:
     explicit GateGraphBaseVisitor(V3Graph* graphp)
         : m_graphp{graphp} {}
     virtual ~GateGraphBaseVisitor() = default;
-    virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu = VNUser(0)) = 0;
-    virtual VNUser visit(GateVarVertex* vertexp, VNUser vu = VNUser(0)) = 0;
+    virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu = VNUser{0}) = 0;
+    virtual VNUser visit(GateVarVertex* vertexp, VNUser vu = VNUser{0}) = 0;
     VL_DEBUG_FUNC;  // Declare debug()
 };
 
@@ -102,10 +102,10 @@ public:
         clearReducible(nonReducibleReason);
         clearDedupable(nonReducibleReason);
     }
-    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) = 0;
+    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser{0}) = 0;
     // Returns only the result from the LAST vertex iterated over
-    VNUser iterateInEdges(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) {
-        VNUser ret = VNUser(0);
+    VNUser iterateInEdges(GateGraphBaseVisitor& v, VNUser vu = VNUser{0}) {
+        VNUser ret{0};
         for (V3GraphEdge* edgep = inBeginp(); edgep; edgep = edgep->inNextp()) {
             ret = static_cast<GateEitherVertex*>(edgep->fromp())->accept(v, vu);
         }
@@ -115,8 +115,8 @@ public:
     // Note: This behaves differently than iterateInEdges() in that it will traverse
     //          all edges that exist when it is initially called, whereas
     //          iterateInEdges() will stop traversing edges if one is deleted
-    VNUser iterateCurrentOutEdges(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) {
-        VNUser ret = VNUser(0);
+    VNUser iterateCurrentOutEdges(GateGraphBaseVisitor& v, VNUser vu = VNUser{0}) {
+        VNUser ret{0};
         V3GraphEdge* next_edgep = nullptr;
         for (V3GraphEdge* edgep = outBeginp(); edgep; edgep = next_edgep) {
             // Need to find the next edge before visiting in case the edge is deleted
@@ -162,7 +162,7 @@ public:
             setIsClock();
         }
     }
-    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) override {
+    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser{0}) override {
         return v.visit(this, vu);
     }
 };
@@ -188,7 +188,7 @@ public:
     AstNode* nodep() const { return m_nodep; }
     AstActive* activep() const { return m_activep; }
     bool slow() const { return m_slow; }
-    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) override {
+    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser{0}) override {
         return v.visit(this, vu);
     }
 };
@@ -1046,14 +1046,14 @@ private:
     virtual VNUser visit(GateVarVertex* vvertexp, VNUser) override {
         // Check that we haven't been here before
         if (m_depth > GATE_DEDUP_MAX_DEPTH)
-            return VNUser(0);  // Break loops; before user2 set so hit this vertex later
-        if (vvertexp->varScp()->user2()) return VNUser(0);
+            return VNUser{0};  // Break loops; before user2 set so hit this vertex later
+        if (vvertexp->varScp()->user2()) return VNUser{0};
         vvertexp->varScp()->user2(true);
 
         m_depth++;
         if (vvertexp->inSize1()) {
             AstNodeVarRef* const dupVarRefp = static_cast<AstNodeVarRef*>(
-                vvertexp->iterateInEdges(*this, VNUser(vvertexp)).toNodep());
+                vvertexp->iterateInEdges(*this, VNUser{vvertexp}).toNodep());
             if (dupVarRefp) {  // visit(GateLogicVertex*...) returned match
                 const V3GraphEdge* edgep = vvertexp->inBeginp();
                 GateLogicVertex* const lvertexp = static_cast<GateLogicVertex*>(edgep->fromp());
@@ -1100,7 +1100,7 @@ private:
             }
         }
         m_depth--;
-        return VNUser(0);
+        return VNUser{0};
     }
 
     // Given iterated logic, starting at vu which was consumer's GateVarVertex
@@ -1118,9 +1118,9 @@ private:
             // different generated clocks will never compare as equal, even if the
             // generated clocks are deduped into one clock.
             AstActive* const activep = lvertexp->activep();
-            return VNUser(m_varVisitor.findDupe(nodep, consumerVarScopep, activep));
+            return VNUser{m_varVisitor.findDupe(nodep, consumerVarScopep, activep)};
         }
-        return VNUser(0);
+        return VNUser{0};
     }
 
 public:
@@ -1257,10 +1257,10 @@ private:
                 }
             }
         }
-        return VNUser(0);
+        return VNUser{0};
     }
     virtual VNUser visit(GateLogicVertex*, VNUser) override {  //
-        return VNUser(0);
+        return VNUser{0};
     }
 
 public:
@@ -1363,7 +1363,7 @@ private:
     virtual VNUser visit(GateVarVertex* vvertexp, VNUser vu) override {
         // Check that we haven't been here before
         AstVarScope* const vsp = vvertexp->varScp();
-        if (vsp->user2SetOnce()) return VNUser(0);
+        if (vsp->user2SetOnce()) return VNUser{0};
         UINFO(9, "CLK DECOMP Var - " << vvertexp << " : " << vsp << endl);
         if (vsp->varp()->width() > 1) {
             m_seen_clk_vectors++;
@@ -1371,10 +1371,10 @@ private:
         }
         const GateClkDecompState* const currState = reinterpret_cast<GateClkDecompState*>(vu.c());
         GateClkDecompState nextState(currState->m_offset, vsp);
-        vvertexp->iterateCurrentOutEdges(*this, VNUser(&nextState));
+        vvertexp->iterateCurrentOutEdges(*this, VNUser{&nextState});
         if (vsp->varp()->width() > 1) --m_seen_clk_vectors;
         vsp->user2(false);
-        return VNUser(0);  // Unused
+        return VNUser{0};  // Unused
     }
 
     virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) override {
@@ -1390,37 +1390,37 @@ private:
                         UINFO(9, "CLK DECOMP Sel [ " << rselp->msbConst() << " : "
                                                      << rselp->lsbConst() << " ] dropped clock ("
                                                      << clk_offset << ")" << endl);
-                        return VNUser(0);
+                        return VNUser{0};
                     }
                     clk_offset -= rselp->lsbConst();
                 } else {
-                    return VNUser(0);
+                    return VNUser{0};
                 }
             } else if (AstConcat* const catp = VN_CAST(assignp->rhsp(), Concat)) {
                 UINFO(9, "CLK DECOMP Concat searching - " << assignp->lhsp() << endl);
                 int concat_offset;
                 if (!m_concat_visitor.concatOffset(catp, currState->m_last_vsp,
                                                    concat_offset /*ref*/)) {
-                    return VNUser(0);
+                    return VNUser{0};
                 }
                 clk_offset += concat_offset;
             } else if (VN_IS(assignp->rhsp(), VarRef)) {
                 UINFO(9, "CLK DECOMP VarRef searching - " << assignp->lhsp() << endl);
             } else {
-                return VNUser(0);
+                return VNUser{0};
             }
             // LHS
             if (const AstSel* const lselp = VN_CAST(assignp->lhsp(), Sel)) {
                 if (VN_IS(lselp->lsbp(), Const) && VN_IS(lselp->widthp(), Const)) {
                     clk_offset += lselp->lsbConst();
                 } else {
-                    return VNUser(0);
+                    return VNUser{0};
                 }
             } else if (const AstVarRef* const vrp = VN_CAST(assignp->lhsp(), VarRef)) {
                 if (vrp->dtypep()->width() == 1 && m_seen_clk_vectors) {
                     if (clk_offset != 0) {
                         UINFO(9, "Should only make it here with clk_offset = 0" << endl);
-                        return VNUser(0);
+                        return VNUser{0};
                     }
                     UINFO(9, "CLK DECOMP Connecting - " << assignp->lhsp() << endl);
                     UINFO(9, "                   to - " << m_clk_vsp << endl);
@@ -1433,12 +1433,12 @@ private:
                     m_total_decomposed_clk_vectors++;
                 }
             } else {
-                return VNUser(0);
+                return VNUser{0};
             }
             GateClkDecompState nextState(clk_offset, currState->m_last_vsp);
-            return lvertexp->iterateCurrentOutEdges(*this, VNUser(&nextState));
+            return lvertexp->iterateCurrentOutEdges(*this, VNUser{&nextState});
         }
-        return VNUser(0);
+        return VNUser{0};
     }
 
 public:
@@ -1455,7 +1455,7 @@ public:
         m_clk_vsp = vvertexp->varScp();
         m_clk_vvertexp = vvertexp;
         GateClkDecompState nextState(0, m_clk_vsp);
-        vvertexp->accept(*this, VNUser(&nextState));
+        vvertexp->accept(*this, VNUser{&nextState});
     }
 };
 

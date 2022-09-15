@@ -1335,9 +1335,10 @@ class OrderProcess final : VNDeleter {
     ~OrderProcess() override {
         // Stats
         for (int type = 0; type < OrderVEdgeType::_ENUM_END; type++) {
-            const double count = double(m_statCut[type]);
+            const double count{m_statCut[type]};
             if (count != 0.0) {
-                V3Stats::addStat(string("Order, cut, ") + OrderVEdgeType(type).ascii(), count);
+                V3Stats::addStat(std::string{"Order, cut, "} + OrderVEdgeType{type}.ascii(),
+                                 count);
             }
         }
     }

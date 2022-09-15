@@ -149,7 +149,7 @@ FileLine::FileLine(FileLine::EmptySecret) {
 
     m_warnOn = 0;
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code{codei};
         warnOff(code, code.defaultsOff());
     }
 }
@@ -309,14 +309,14 @@ bool FileLine::warnOff(const string& msg, bool flag) {
 
 void FileLine::warnLintOff(bool flag) {
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code{codei};
         if (code.lintError()) warnOff(code, flag);
     }
 }
 
 void FileLine::warnStyleOff(bool flag) {
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code{codei};
         if (code.styleError()) warnOff(code, flag);
     }
 }
@@ -335,7 +335,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code{codei};
         if (fromp->warnIsOff(code)) warnOff(code, true);
     }
 }

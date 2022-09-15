@@ -524,8 +524,8 @@ private:
                 // up array:   lsb/hi -: width
                 const int32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
                 const int32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
-                AstSliceSel* const newp = new AstSliceSel(
-                    nodep->fileline(), fromp, VNumRange(msb, lsb, fromRange.littleEndian()));
+                AstSliceSel* const newp = new AstSliceSel{
+                    nodep->fileline(), fromp, VNumRange{msb, lsb, fromRange.littleEndian()}};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {

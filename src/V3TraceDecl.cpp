@@ -392,7 +392,7 @@ private:
                 // Everything downstream is packed, so deal with as one trace unit.
                 // This may not be the nicest for user presentation, but is
                 // a much faster way to trace
-                addTraceDecl(VNumRange(), nodep->width());
+                addTraceDecl(VNumRange{}, nodep->width());
             } else {
                 FileLine* const flp = nodep->fileline();
                 AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
@@ -418,7 +418,7 @@ private:
                 // Everything downstream is packed, so deal with as one trace unit
                 // This may not be the nicest for user presentation, but is
                 // a much faster way to trace
-                addTraceDecl(VNumRange(), nodep->width());
+                addTraceDecl(VNumRange{}, nodep->width());
             } else if (!nodep->packed()) {
                 addIgnore("Unsupported: Unpacked struct/union");
             } else {
@@ -454,7 +454,7 @@ private:
             if (nodep->isString()) {
                 addIgnore("Unsupported: strings");
             } else {
-                addTraceDecl(VNumRange(), 0);
+                addTraceDecl(VNumRange{}, 0);
             }
         }
     }

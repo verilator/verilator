@@ -331,8 +331,8 @@ private:
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
                 AstVar* const newvarp
-                    = new AstVar(nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
-                                 VFlagLogicPacked(), nodep->width());
+                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
+                                 VFlagLogicPacked{}, nodep->width()};
                 newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;
                 VNRelinker replaceHandle;
@@ -454,7 +454,7 @@ private:
                 nodep->unlinkFrBack(&replaceHandle);
                 V3Number xnum(nodep, nodep->width());
                 if (nodep->isString()) {
-                    xnum = V3Number(V3Number::String(), nodep, "");
+                    xnum = V3Number{V3Number::String{}, nodep, ""};
                 } else {
                     xnum.setAllBitsX();
                 }

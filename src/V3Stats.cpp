@@ -231,7 +231,7 @@ public:
             V3Stats::addStat(m_stage, "Var space, scoped, bytes", m_statVarScpBytes);
         }
         for (unsigned i = 0; i < m_statVarWidths.size(); i++) {
-            const double count = double(m_statVarWidths.at(i));
+            const double count{m_statVarWidths.at(i)};
             if (count != 0.0) {
                 if (v3Global.opt.statsVars()) {
                     const NameMap& nameMapr = m_statVarWidthNames.at(i);
@@ -249,7 +249,7 @@ public:
         }
         // Node types
         for (int type = 0; type < VNType::_ENUM_END; type++) {
-            const double count = double(m_statTypeCount.at(type));
+            const double count{m_statTypeCount.at(type)};
             if (count != 0.0) {
                 V3Stats::addStat(m_stage, std::string{"Node count, "} + VNType{type}.ascii(),
                                  count);
@@ -257,18 +257,18 @@ public:
         }
         for (int type = 0; type < VNType::_ENUM_END; type++) {
             for (int type2 = 0; type2 < VNType::_ENUM_END; type2++) {
-                const double count = double(m_statAbove[type][type2]);
+                const double count{m_statAbove[type][type2]};
                 if (count != 0.0) {
                     V3Stats::addStat(m_stage,
                                      (std::string{"Node pairs, "} + VNType{type}.ascii() + "_"
-                                      + VNType(type2).ascii()),
+                                      + VNType{type2}.ascii()),
                                      count);
                 }
             }
         }
         // Branch pred
         for (int type = 0; type < VBranchPred::_ENUM_END; type++) {
-            const double count = double(m_statPred[type]);
+            const double count{m_statPred[type]};
             if (count != 0.0) {
                 V3Stats::addStat(m_stage,
                                  (std::string{"Branch prediction, "} + VBranchPred{type}.ascii()),

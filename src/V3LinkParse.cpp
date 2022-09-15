@@ -73,7 +73,7 @@ private:
             // We could have verilog.l create a new one on every token,
             // but that's a lot more structures than only doing AST nodes.
             if (m_filelines.find(nodep->fileline()) != m_filelines.end()) {
-                nodep->fileline(new FileLine(nodep->fileline()));
+                nodep->fileline(new FileLine{nodep->fileline()});
             }
             m_filelines.insert(nodep->fileline());
         }

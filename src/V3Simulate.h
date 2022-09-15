@@ -625,8 +625,8 @@ private:
             iterate(nodep->lhsp());
             if (optimizable()) {
                 if (fetchConst(nodep->lhsp())->num().isEqZero()) {
-                    const AstConst cnst(nodep->fileline(), AstConst::WidthedValue(), 1,
-                                        1);  // a one
+                    const AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, 1,
+                                        1};  // a one
                     newValue(nodep, &cnst);  // a one
                 } else {
                     iterate(nodep->rhsp());
@@ -1022,8 +1022,8 @@ private:
         m_callStack.push_back(&stackNode);
         // Clear output variable
         if (const auto* const basicp = VN_CAST(funcp->fvarp(), Var)->basicp()) {
-            AstConst cnst(funcp->fvarp()->fileline(), AstConst::WidthedValue(), basicp->widthMin(),
-                          0);
+            AstConst cnst{funcp->fvarp()->fileline(), AstConst::WidthedValue{}, basicp->widthMin(),
+                          0};
             if (basicp->isZeroInit()) {
                 cnst.num().setAllBits0();
             } else {

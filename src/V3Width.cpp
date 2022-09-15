@@ -6282,7 +6282,7 @@ private:
         VNumRange declRange;  // ranged() set false
         for (int i = 1; i <= dim; ++i) {
             // UINFO(9, "   dim at "<<dim<<"  "<<dtypep<<endl);
-            declRange = VNumRange();  // ranged() set false
+            declRange = VNumRange{};  // ranged() set false
             if (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 declRange = adtypep->declRange();
                 if (i < dim) dtypep = adtypep->subDTypep()->skipRefp();

@@ -89,19 +89,19 @@ void V3ParseImp::lexTimescaleParse(FileLine* fl, const char* textp) {
 }
 void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
                               bool precSet, double precVal) {
-    VTimescale unit(VTimescale::NONE);
+    VTimescale unit{VTimescale::NONE};
     if (unitSet) {
         bool bad;
-        unit = VTimescale(unitVal, bad /*ref*/);
+        unit = VTimescale{unitVal, bad /*ref*/};
         if (bad) {
             UINFO(1, "Value = " << unitVal << endl);
             fl->v3error("timeunit illegal value");
         }
     }
-    VTimescale prec(VTimescale::NONE);
+    VTimescale prec{VTimescale::NONE};
     if (precSet) {
         bool bad;
-        prec = VTimescale(precVal, bad /*ref*/);
+        prec = VTimescale{precVal, bad /*ref*/};
         if (bad) {
             UINFO(1, "Value = " << precVal << endl);
             fl->v3error("timeprecision illegal value");

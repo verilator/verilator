@@ -1872,7 +1872,7 @@ void AstTypeTable::dump(std::ostream& str) const {
     for (int i = 0; i < static_cast<int>(VBasicDTypeKwd::_ENUM_MAX); ++i) {
         if (AstBasicDType* const subnodep = m_basicps[i]) {
             str << '\n';  // Newline from caller, so newline first
-            str << "\t\t" << std::setw(8) << VBasicDTypeKwd(i).ascii();
+            str << "\t\t" << std::setw(8) << VBasicDTypeKwd{i}.ascii();
             str << "  -> ";
             subnodep->dump(str);
         }

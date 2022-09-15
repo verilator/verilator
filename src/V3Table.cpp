@@ -298,8 +298,8 @@ private:
             uint32_t shift = 0;
             for (AstVarScope* invscp : m_inVarps) {
                 // LSB is first variable, so extract it that way
-                const AstConst cnst(invscp->fileline(), AstConst::WidthedValue(), invscp->width(),
-                                    VL_MASK_I(invscp->width()) & (inValue >> shift));
+                const AstConst cnst{invscp->fileline(), AstConst::WidthedValue{}, invscp->width(),
+                                    VL_MASK_I(invscp->width()) & (inValue >> shift)};
                 simvis.newValue(invscp, &cnst);
                 shift += invscp->width();
                 // We are using 32 bit arithmetic, because there's no way the input table can be
