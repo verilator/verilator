@@ -57,11 +57,16 @@
 //
 //
 // Another thing done in this phase is signal strength handling.
-// Currently they are only supported in assignments and only in case when the strongest assignment
-// has constant with all bits equal on the RHS. It is the case when they can be statically
-// resolved.
+// Currently they are only supported in assignments and gates parsed as assignments (see verilog.y)
+// and only in case when the strongest assignment has RHS marked as non-tristate. It is the case
+// when they can be statically resolved.
+// If the RHS is equal to z, that assignment has to be skipped. Since the value may be not known at
+// verilation time, cases with tristates on RHS can't be handled statically.
 //
-// Static resolution is done in the following way:
+// Static resolution is split into 2 parts.
+// First part can be done before tristate propagation. It is about removing assignments that are
+// weaker or equally strong as the strongest assignment with constant on RHS that has all bits
+// the same (equal to 0 or 1). It is done in the following way:
 // - The assignment of value 0 (size may be greater than 1), that has greatest strength (the
 // one corresponding to 0) of all other assignments of 0, has to be found.
 // - The same is done for value '1 and strength corresponding to value 1.
@@ -72,16 +77,19 @@
 // both strengths non-greater that the one was found, because they are weaker no matter what is on
 // RHS.
 //
-// All assignments that are stronger than the one with strongest constant are left as they are.
+// Second part of static resolution is done after tristate propagation.
+// At that moment it is known that some expressions can't be equal to z. The exact value is
+// unknown (except the ones with constants that were handled before), so weaker of both strengths
+// has to be taken into account. All weaker assignments can be safely removed. It is done in
+// similar way to the first part:
+// - The assignment with non-tristate RHS with the greatest weaker strength has to be found.
+// - Then all not stronger assignments can be removed.
+//
+// All assignments that are stronger than the strongest with non-tristate RHS are left as they are.
 //
 // There is a possible problem with equally strong assignments, because multiple assignments with
 // the same strength, but different values should result in x value, but these values are
 // unsupported.
-//
-// Singal strength can also be used in simple logic gates parsed as assignments (see verilog.y),
-// but these gates are then either removed (if they are weaker than the strongest constant) or
-// handled as the gates witout signal strengths are handled now. In other words, gate with greater
-// strength won't properly overwrite weaker driver.
 //*************************************************************************
 
 #include "config_build.h"
@@ -268,6 +276,18 @@ public:
     }
     void associate(AstNode* fromp, AstNode* top) {
         new V3GraphEdge(&m_graph, makeVertex(fromp), makeVertex(top), 1);
+    }
+    void deleteVerticesFromSubtreeRecurse(AstNode* nodep) {
+        if (!nodep) return;
+        // Skip vars, because they may be connected to more than one varref
+        if (!VN_IS(nodep, Var)) {
+            TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
+            if (vertexp) vertexp->unlinkDelete(&m_graph);
+        }
+        deleteVerticesFromSubtreeRecurse(nodep->op1p());
+        deleteVerticesFromSubtreeRecurse(nodep->op2p());
+        deleteVerticesFromSubtreeRecurse(nodep->op3p());
+        deleteVerticesFromSubtreeRecurse(nodep->op4p());
     }
     void setTristate(AstNode* nodep) { makeVertex(nodep)->isTristate(true); }
     bool isTristate(AstNode* nodep) {
@@ -715,64 +735,93 @@ class TristateVisitor final : public TristateBaseVisitor {
         return assignmentOfValueOnAllBits(*maxIt, value) ? *maxIt : nullptr;
     }
 
-    void removeWeakerAssignments(Assigns& assigns) {
+    bool isAssignmentNotStrongerThanStrength(AstAssignW* assignp, uint8_t strength) {
+        // If the value of the RHS is known and has all bits equal, only strength corresponding to
+        // its value is taken into account. In opposite case, both strengths are compared.
+        const uint8_t strength0 = getStrength(assignp, 0);
+        const uint8_t strength1 = getStrength(assignp, 1);
+        return (strength0 <= strength && strength1 <= strength)
+               || (strength0 <= strength && assignmentOfValueOnAllBits(assignp, 0))
+               || (strength1 <= strength && assignmentOfValueOnAllBits(assignp, 1));
+    }
+
+    void removeNotStrongerAssignments(Assigns& assigns, AstAssignW* strongestp,
+                                      uint8_t greatestKnownStrength) {
         // Weaker assignments are these assignments that can't change the final value of the net.
-        // If the value of the RHS is known, only strength corresponding to its value is taken into
-        // account. Assignments of constants that have bits both 0 and 1 are skipped here, because
-        // it would involve handling parts of bits separately.
-
-        // First, the strongest assignment, that has value on the RHS consisting of only 1 or only
-        // 0, has to be found.
-        AstAssignW* const strongest0p = getStrongestAssignmentOfValue(assigns, 0);
-        AstAssignW* const strongest1p = getStrongestAssignmentOfValue(assigns, 1);
-        AstAssignW* strongestp = nullptr;
-        uint8_t greatestKnownStrength = 0;
-        const auto getIfStrongest = [&](AstAssignW* const strongestCandidatep, bool value) {
-            if (!strongestCandidatep) return;
-            uint8_t strength = getStrength(strongestCandidatep, value);
-            if (strength >= greatestKnownStrength) {
-                greatestKnownStrength = strength;
-                strongestp = strongestCandidatep;
+        // They can be safely removed. Assignments of the same strength are also removed, because
+        // duplicates aren't needed. One problem is with 2 assignments of different values and
+        // equal strengths. It should result in assignment of x value, but these values aren't
+        // supported now.
+        auto removedIt = std::remove_if(assigns.begin(), assigns.end(), [&](AstAssignW* assignp) {
+            if (assignp == strongestp) return false;
+            if (isAssignmentNotStrongerThanStrength(assignp, greatestKnownStrength)) {
+                // Vertices corresponding to nodes from removed assignment's subtree have to be
+                // removed.
+                m_tgraph.deleteVerticesFromSubtreeRecurse(assignp);
+                VL_DO_DANGLING(pushDeletep(assignp->unlinkFrBack()), assignp);
+                return true;
             }
-        };
-        getIfStrongest(strongest0p, 0);
-        getIfStrongest(strongest1p, 1);
+            return false;
+        });
+        assigns.erase(removedIt, assigns.end());
+    }
 
-        if (strongestp) {
-            // Then all weaker assignments can be safely removed.
-            // Assignments of the same strength are also removed, because duplicates aren't needed.
-            // One problem is with 2 assignments of different values and equal strengths. It should
-            // result in assignment of x value, but these values aren't supported now.
-            auto removedIt
-                = std::remove_if(assigns.begin(), assigns.end(), [&](AstAssignW* assignp) {
-                      if (assignp == strongestp) return false;
-                      const uint8_t strength0 = getStrength(assignp, 0);
-                      const uint8_t strength1 = getStrength(assignp, 1);
-                      const bool toRemove = (strength0 <= greatestKnownStrength
-                                             && strength1 <= greatestKnownStrength)
-                                            || (strength0 <= greatestKnownStrength
-                                                && assignmentOfValueOnAllBits(assignp, 0))
-                                            || (strength1 <= greatestKnownStrength
-                                                && assignmentOfValueOnAllBits(assignp, 1));
-                      if (toRemove) {
-                          // Don't propagate tristate if its assignment is removed.
-                          TristateVertex* const vertexp
-                              = reinterpret_cast<TristateVertex*>(assignp->rhsp()->user5p());
-                          if (vertexp) vertexp->isTristate(false);
-                          VL_DO_DANGLING(pushDeletep(assignp->unlinkFrBack()), assignp);
-                          return true;
-                      }
-                      return false;
-                  });
-            assigns.erase(removedIt, assigns.end());
+    void removeAssignmentsNotStrongerThanUniformConstant() {
+        // If a stronger assignment of a constant with all bits equal to the same
+        // value (0 or 1), is found, all weaker assignments can be safely removed.
+        for (auto& varpAssigns : m_assigns) {
+            Assigns& assigns = varpAssigns.second;
+            if (assigns.size() > 1) {
+                AstAssignW* const strongest0p = getStrongestAssignmentOfValue(assigns, 0);
+                AstAssignW* const strongest1p = getStrongestAssignmentOfValue(assigns, 1);
+                AstAssignW* strongestp = nullptr;
+                uint8_t greatestKnownStrength = 0;
+                const auto getIfStrongest
+                    = [&](AstAssignW* const strongestCandidatep, bool value) {
+                          if (!strongestCandidatep) return;
+                          uint8_t strength = getStrength(strongestCandidatep, value);
+                          if (strength >= greatestKnownStrength) {
+                              greatestKnownStrength = strength;
+                              strongestp = strongestCandidatep;
+                          }
+                      };
+                getIfStrongest(strongest0p, 0);
+                getIfStrongest(strongest1p, 1);
+
+                if (strongestp) {
+                    removeNotStrongerAssignments(assigns, strongestp, greatestKnownStrength);
+                }
+            }
         }
     }
 
-    void resolveMultipleNetAssignments() {
+    void removeAssignmentsNotStrongerThanNonTristate() {
+        // Similar function as removeAssignmentsNotStrongerThanUniformConstant, but here the
+        // assignments that have strength not stronger than the strongest assignment with
+        // non-tristate RHS are removed. Strengths are compared according to their smaller values,
+        // because the values of RHSs are unknown. (Assignments not stronger than strongest
+        // constant are already removed.)
         for (auto& varpAssigns : m_assigns) {
-            if (varpAssigns.second.size() > 1) {
-                // first the static resolution is tried
-                removeWeakerAssignments(varpAssigns.second);
+            Assigns& assigns = varpAssigns.second;
+            if (assigns.size() > 1) {
+                auto maxIt = std::max_element(
+                    assigns.begin(), assigns.end(), [&](AstAssignW* ap, AstAssignW* bp) {
+                        if (m_tgraph.isTristate(ap)) return !m_tgraph.isTristate(bp);
+                        if (m_tgraph.isTristate(bp)) return false;
+                        const uint8_t minStrengthA
+                            = std::min(getStrength(ap, 0), getStrength(ap, 1));
+                        const uint8_t minStrengthB
+                            = std::min(getStrength(bp, 0), getStrength(bp, 1));
+                        return minStrengthA < minStrengthB;
+                    });
+                // If RHSs of all assignments are tristate, 1st element is returned, so it is
+                // needed to check if it is non-tristate.
+                AstAssignW* const strongestp = m_tgraph.isTristate(*maxIt) ? nullptr : *maxIt;
+                if (strongestp) {
+                    uint8_t greatestKnownStrength
+                        = std::min(getStrength(strongestp, 0), getStrength(strongestp, 1));
+                    removeNotStrongerAssignments(assigns, strongestp, greatestKnownStrength);
+                }
             }
         }
     }
@@ -1534,10 +1583,14 @@ class TristateVisitor final : public TristateBaseVisitor {
                 iterateChildren(nodep);
                 m_graphing = false;
             }
-            // resolve multiple net assignments and signal strengths
-            resolveMultipleNetAssignments();
+            // Remove all assignments not stronger than the strongest uniform constant
+            removeAssignmentsNotStrongerThanUniformConstant();
             // Use graph to find tristate signals
             m_tgraph.graphWalk(nodep);
+
+            // Remove all assignments not stronger than the strongest non-tristate RHS
+            removeAssignmentsNotStrongerThanNonTristate();
+
             // Build the LHS drivers map for this module
             iterateChildren(nodep);
             // Insert new logic for all tristates
