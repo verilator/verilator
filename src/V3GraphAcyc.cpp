@@ -42,13 +42,13 @@ public:
     GraphAcycVertex(V3Graph* graphp, V3GraphVertex* origVertexp)
         : V3GraphVertex{graphp}
         , m_origVertexp{origVertexp} {}
-    virtual ~GraphAcycVertex() override = default;
+    ~GraphAcycVertex() override = default;
     V3GraphVertex* origVertexp() const { return m_origVertexp; }
     void setDelete() { m_deleted = true; }
     bool isDelete() const { return m_deleted; }
-    virtual string name() const override { return m_origVertexp->name(); }
-    virtual string dotColor() const override { return m_origVertexp->dotColor(); }
-    virtual FileLine* fileline() const override { return m_origVertexp->fileline(); }
+    string name() const override { return m_origVertexp->name(); }
+    string dotColor() const override { return m_origVertexp->dotColor(); }
+    FileLine* fileline() const override { return m_origVertexp->fileline(); }
 };
 
 //--------------------------------------------------------------------
@@ -67,11 +67,9 @@ public:
     GraphAcycEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
                   bool cutable = false)
         : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
-    virtual ~GraphAcycEdge() override = default;
+    ~GraphAcycEdge() override = default;
     // yellow=we might still cut it, else oldEdge: yellowGreen=made uncutable, red=uncutable
-    virtual string dotColor() const override {
-        return (cutable() ? "yellow" : origEdgep()->dotColor());
-    }
+    string dotColor() const override { return (cutable() ? "yellow" : origEdgep()->dotColor()); }
 };
 
 //--------------------------------------------------------------------

@@ -46,7 +46,7 @@ private:
 
     // VISITs
     // Result handing
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         // VarRef: LValue its reference
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
         if (nodep->varp()) {
@@ -65,7 +65,7 @@ private:
     }
 
     // Nodes that start propagating down lvalues
-    virtual void visit(AstPin* nodep) override {
+    void visit(AstPin* nodep) override {
         if (nodep->modVarp() && nodep->modVarp()->isWritable()) {
             // When the varref's were created, we didn't know the I/O state
             // Now that we do, and it's from a output, we know it's a lvalue
@@ -76,7 +76,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         VL_RESTORER(m_setContinuously);
         {
@@ -92,7 +92,7 @@ private:
             iterateAndNextNull(nodep->rhsp());
         }
     }
-    virtual void visit(AstRelease* nodep) override {
+    void visit(AstRelease* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         VL_RESTORER(m_setContinuously);
         {
@@ -101,7 +101,7 @@ private:
             iterateAndNextNull(nodep->lhsp());
         }
     }
-    virtual void visit(AstCastDynamic* nodep) override {
+    void visit(AstCastDynamic* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::NOCHANGE;
@@ -110,7 +110,7 @@ private:
             iterateAndNextNull(nodep->top());
         }
     }
-    virtual void visit(AstFOpen* nodep) override {
+    void visit(AstFOpen* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
@@ -120,7 +120,7 @@ private:
             iterateAndNextNull(nodep->modep());
         }
     }
-    virtual void visit(AstFOpenMcd* nodep) override {
+    void visit(AstFOpenMcd* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
@@ -129,14 +129,14 @@ private:
             iterateAndNextNull(nodep->filenamep());
         }
     }
-    virtual void visit(AstFClose* nodep) override {
+    void visit(AstFClose* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
         }
     }
-    virtual void visit(AstFError* nodep) override {
+    void visit(AstFError* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
@@ -144,21 +144,21 @@ private:
             iterateAndNextNull(nodep->strp());
         }
     }
-    virtual void visit(AstFFlush* nodep) override {
+    void visit(AstFFlush* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
         }
     }
-    virtual void visit(AstFGetC* nodep) override {
+    void visit(AstFGetC* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
         }
     }
-    virtual void visit(AstFGetS* nodep) override {
+    void visit(AstFGetS* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
@@ -166,7 +166,7 @@ private:
             iterateAndNextNull(nodep->strgp());
         }
     }
-    virtual void visit(AstFRead* nodep) override {
+    void visit(AstFRead* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
@@ -174,7 +174,7 @@ private:
             iterateAndNextNull(nodep->filep());
         }
     }
-    virtual void visit(AstFScanF* nodep) override {
+    void visit(AstFScanF* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
@@ -182,33 +182,33 @@ private:
             iterateAndNextNull(nodep->exprsp());
         }
     }
-    virtual void visit(AstFUngetC* nodep) override {
+    void visit(AstFUngetC* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
         }
     }
-    virtual void visit(AstSScanF* nodep) override {
+    void visit(AstSScanF* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->exprsp());
         }
     }
-    virtual void visit(AstSysIgnore* nodep) override {
+    void visit(AstSysIgnore* nodep) override {
         // Can't know if lvalue or not; presume so as stricter
         VL_RESTORER(m_setRefLvalue);
         iterateChildren(nodep);
     }
-    virtual void visit(AstRand* nodep) override {
+    void visit(AstRand* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             if (!nodep->urandom()) m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->seedp());
         }
     }
-    virtual void visit(AstReadMem* nodep) override {
+    void visit(AstReadMem* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
@@ -219,14 +219,14 @@ private:
             iterateAndNextNull(nodep->msbp());
         }
     }
-    virtual void visit(AstTestPlusArgs* nodep) override {
+    void visit(AstTestPlusArgs* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::NOCHANGE;
             iterateAndNextNull(nodep->searchp());
         }
     }
-    virtual void visit(AstValuePlusArgs* nodep) override {
+    void visit(AstValuePlusArgs* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::NOCHANGE;
@@ -235,7 +235,7 @@ private:
             iterateAndNextNull(nodep->outp());
         }
     }
-    virtual void visit(AstSFormat* nodep) override {
+    void visit(AstSFormat* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = VAccess::WRITE;
@@ -254,13 +254,13 @@ private:
             iterateAndNextNull(nodep->thsp());
         }
     }
-    virtual void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
-    virtual void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
-    virtual void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
-    virtual void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
+    void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
+    void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
+    void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
 
     // Nodes that change LValue state
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
             iterateAndNextNull(nodep->lhsp());
@@ -270,7 +270,7 @@ private:
             iterateAndNextNull(nodep->thsp());
         }
     }
-    virtual void visit(AstNodeSel* nodep) override {
+    void visit(AstNodeSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {  // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
@@ -278,14 +278,14 @@ private:
             iterateAndNextNull(nodep->rhsp());
         }
     }
-    virtual void visit(AstCellArrayRef* nodep) override {
+    void visit(AstCellArrayRef* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {  // selp is not an lvalue
             m_setRefLvalue = VAccess::NOCHANGE;
             iterateAndNextNull(nodep->selp());
         }
     }
-    virtual void visit(AstNodePreSel* nodep) override {
+    void visit(AstNodePreSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {  // Only set lvalues on the from
             iterateAndNextNull(nodep->fromp());
@@ -294,12 +294,12 @@ private:
             iterateAndNextNull(nodep->thsp());
         }
     }
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
         iterateChildren(nodep);
         m_ftaskp = nullptr;
     }
-    virtual void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         AstNode* pinp = nodep->pinsp();
         const AstNodeFTask* const taskp = nodep->taskp();
         // We'll deal with mismatching pins later
@@ -321,7 +321,7 @@ private:
         }
     }
 
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -329,7 +329,7 @@ public:
         : m_setRefLvalue{start} {
         iterate(nodep);
     }
-    virtual ~LinkLValueVisitor() override = default;
+    ~LinkLValueVisitor() override = default;
 };
 
 //######################################################################

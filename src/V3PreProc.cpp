@@ -250,13 +250,13 @@ public:
     void candidateDefines(VSpellCheck* spellerp) override;
 
     // METHODS, callbacks
-    virtual void comment(const string& text) override;  // Comment detected (if keepComments==2)
-    virtual void include(const string& filename) override;  // Request a include file be processed
-    virtual void undef(const string& name) override;
+    void comment(const string& text) override;  // Comment detected (if keepComments==2)
+    void include(const string& filename) override;  // Request a include file be processed
+    void undef(const string& name) override;
     virtual void undefineall();
-    virtual void define(FileLine* fl, const string& name, const string& value,
-                        const string& params, bool cmdline) override;
-    virtual string removeDefines(const string& text) override;  // Remove defines in a text string
+    void define(FileLine* fl, const string& name, const string& value, const string& params,
+                bool cmdline) override;
+    string removeDefines(const string& text) override;  // Remove defines in a text string
 
     // CONSTRUCTORS
     V3PreProcImp() {

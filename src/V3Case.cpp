@@ -59,7 +59,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstNodeCase* nodep) override {
+    void visit(AstNodeCase* nodep) override {
         if (VN_IS(nodep, Case) && VN_AS(nodep, Case)->casex()) {
             nodep->v3warn(CASEX, "Suggest casez (with ?'s) in place of casex (with X's)");
         }
@@ -86,7 +86,7 @@ private:
             m_caseExprp = nullptr;
         }
     }
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         // See also neverItem
         if (m_caseExprp && nodep->num().isFourState()) {
             if (VN_IS(m_caseExprp, GenCase)) {
@@ -107,12 +107,12 @@ private:
             }
         }
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit CaseLintVisitor(AstNodeCase* nodep) { iterate(nodep); }
-    virtual ~CaseLintVisitor() override = default;
+    ~CaseLintVisitor() override = default;
 };
 
 //######################################################################
@@ -493,7 +493,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCase* nodep) override {
+    void visit(AstCase* nodep) override {
         V3Case::caseLint(nodep);
         iterateChildren(nodep);
         if (debug() >= 9) nodep->dumpTree(cout, " case_old: ");
@@ -510,7 +510,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         if (VN_IS(nodep, Always)) m_alwaysp = nodep;
         iterateChildren(nodep);
     }
@@ -521,7 +521,7 @@ public:
         for (auto& itr : m_valueItem) itr = nullptr;
         iterate(nodep);
     }
-    virtual ~CaseVisitor() override {
+    ~CaseVisitor() override {
         V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
         V3Stats::addStat("Optimizations, Cases complex", m_statCaseSlow);
     }

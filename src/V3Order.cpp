@@ -157,7 +157,7 @@ static bool isClockerAssignment(AstNodeAssign* nodep) {
     private:
         // METHODS
         VL_DEBUG_FUNC;  // Declare debug()
-        virtual void visit(AstNodeAssign* nodep) override {
+        void visit(AstNodeAssign* nodep) override {
             if (const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
                 if (varrefp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                     m_clkAss = true;
@@ -166,8 +166,8 @@ static bool isClockerAssignment(AstNodeAssign* nodep) {
             }
             iterateChildren(nodep->rhsp());
         }
-        virtual void visit(AstNodeMath*) override {}  // Accelerate
-        virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+        void visit(AstNodeMath*) override {}  // Accelerate
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
     } visitor;
     visitor.iterate(nodep);
     return visitor.m_clkAss;
@@ -212,7 +212,7 @@ class OrderClkMarkVisitor final : public VNVisitor {
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         m_hasClk = false;
         m_inAss = true;
         m_childClkWidth = 0;
@@ -236,7 +236,7 @@ class OrderClkMarkVisitor final : public VNVisitor {
             }
         }
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         if (m_inAss && nodep->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
             if (m_inClocked) {
                 nodep->v3warn(CLKDATA,
@@ -249,7 +249,7 @@ class OrderClkMarkVisitor final : public VNVisitor {
             }
         }
     }
-    virtual void visit(AstConcat* nodep) override {
+    void visit(AstConcat* nodep) override {
         if (m_inAss) {
             iterateAndNextNull(nodep->lhsp());
             const int lw = m_childClkWidth;
@@ -258,20 +258,20 @@ class OrderClkMarkVisitor final : public VNVisitor {
             m_childClkWidth = lw + rw;  // Pass up
         }
     }
-    virtual void visit(AstNodeSel* nodep) override {
+    void visit(AstNodeSel* nodep) override {
         if (m_inAss) {
             iterateChildren(nodep);
             // Pass up result width
             if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
         }
     }
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         if (m_inAss) {
             iterateChildren(nodep);
             if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
         }
     }
-    virtual void visit(AstReplicate* nodep) override {
+    void visit(AstReplicate* nodep) override {
         if (m_inAss) {
             iterateChildren(nodep);
             if (VN_IS(nodep->rhsp(), Const)) {
@@ -281,12 +281,12 @@ class OrderClkMarkVisitor final : public VNVisitor {
             }
         }
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         m_inClocked = nodep->hasClocked();
         iterateChildren(nodep);
         m_inClocked = false;
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTORS
     explicit OrderClkMarkVisitor(AstNode* nodep) {
@@ -295,7 +295,7 @@ class OrderClkMarkVisitor final : public VNVisitor {
             iterate(nodep);
         } while (m_newClkMarked);
     }
-    virtual ~OrderClkMarkVisitor() override = default;
+    ~OrderClkMarkVisitor() override = default;
 
 public:
     static void process(AstNetlist* nodep) { OrderClkMarkVisitor{nodep}; }
@@ -416,19 +416,19 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstSenTree* nodep) override {
+    void visit(AstSenTree* nodep) override {
         // This should only find the global AstSenTrees under the AstTopScope, which we ignore
         // here. We visit AstSenTrees separately when encountering the AstActive that references
         // them.
         UASSERT_OBJ(!m_scopep, nodep, "AstSenTrees should have been made global in V3ActiveTop");
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         UASSERT_OBJ(!m_scopep, nodep, "Should not nest");
         m_scopep = nodep;
         iterateChildren(nodep);
         m_scopep = nullptr;
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         UASSERT_OBJ(!nodep->sensesStorep(), nodep,
                     "AstSenTrees should have been made global in V3ActiveTop");
         UASSERT_OBJ(m_scopep, nodep, "AstActive not under AstScope");
@@ -460,7 +460,7 @@ class OrderBuildVisitor final : public VNVisitor {
         m_activeSenVxp = nullptr;
         m_domainp = nullptr;
     }
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         // As we explicitly not visit (see ignored nodes below) any subtree that is not relevant
         // for ordering, we should be able to assert this:
         UASSERT_OBJ(m_scopep, nodep, "AstVarRef not under scope");
@@ -635,7 +635,7 @@ class OrderBuildVisitor final : public VNVisitor {
             }
         }
     }
-    virtual void visit(AstDpiExportUpdated* nodep) override {
+    void visit(AstDpiExportUpdated* nodep) override {
         // This is under a logic block (AstAlways) sensitive to a change in the DPI export trigger.
         // We just need to add an edge to the enclosing logic vertex (the vertex for the
         // AstAlways).
@@ -645,7 +645,7 @@ class OrderBuildVisitor final : public VNVisitor {
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstCCall* nodep) override {
+    void visit(AstCCall* nodep) override {
         // Calls to 'context' imported DPI function may call DPI exported functions
         if (m_dpiExportTriggerVxp && nodep->funcp()->dpiImportWrapper()
             && nodep->funcp()->dpiContext()) {
@@ -656,45 +656,45 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
-    virtual void visit(AstInitial* nodep) override {  //
+    void visit(AstInitial* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstInitialAutomatic* nodep) override {  //
+    void visit(AstInitialAutomatic* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstInitialStatic* nodep) override {  //
+    void visit(AstInitialStatic* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstAlways* nodep) override {  //
+    void visit(AstAlways* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep) override {
+    void visit(AstAlwaysPost* nodep) override {
         UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
         m_inPost = true;
         iterateLogic(nodep);
         m_inPost = false;
     }
-    virtual void visit(AstAlwaysPostponed* nodep) override {
+    void visit(AstAlwaysPostponed* nodep) override {
         UASSERT_OBJ(!m_inPostponed, nodep, "Should not nest");
         m_inPostponed = true;
         iterateLogic(nodep);
         m_inPostponed = false;
     }
-    virtual void visit(AstFinal* nodep) override {  // LCOV_EXCL_START
+    void visit(AstFinal* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("AstFinal should have been removed already");
     }  // LCOV_EXCL_STOP
 
     //--- Logic akin go SystemVerilog continuous assignments
-    virtual void visit(AstAssignAlias* nodep) override {  //
+    void visit(AstAssignAlias* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstAssignW* nodep) override {
+    void visit(AstAssignW* nodep) override {
         UASSERT_OBJ(!m_inClkAss, nodep, "Should not nest");
         m_inClkAss = isClockerAssignment(nodep);
         iterateLogic(nodep);
         m_inClkAss = false;
     }
-    virtual void visit(AstAssignPre* nodep) override {
+    void visit(AstAssignPre* nodep) override {
         UASSERT_OBJ(!m_inClkAss && !m_inPre, nodep, "Should not nest");
         m_inClkAss = isClockerAssignment(nodep);
         m_inPre = true;
@@ -702,7 +702,7 @@ class OrderBuildVisitor final : public VNVisitor {
         m_inPre = false;
         m_inClkAss = false;
     }
-    virtual void visit(AstAssignPost* nodep) override {
+    void visit(AstAssignPost* nodep) override {
         UASSERT_OBJ(!m_inClkAss && !m_inPost, nodep, "Should not nest");
         m_inClkAss = isClockerAssignment(nodep);
         m_inPost = true;
@@ -712,21 +712,21 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     //--- Verilator concoctions
-    virtual void visit(AstAlwaysPublic* nodep) override {  //
+    void visit(AstAlwaysPublic* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstCoverToggle* nodep) override {  //
+    void visit(AstCoverToggle* nodep) override {  //
         iterateLogic(nodep);
     }
 
     //--- Ignored nodes
-    virtual void visit(AstVar*) override {}
-    virtual void visit(AstVarScope* nodep) override {}
-    virtual void visit(AstCell*) override {}  // Only interested in the respective AstScope
-    virtual void visit(AstTypeTable*) override {}
-    virtual void visit(AstConstPool*) override {}
-    virtual void visit(AstClass*) override {}
-    virtual void visit(AstCFunc*) override {
+    void visit(AstVar*) override {}
+    void visit(AstVarScope* nodep) override {}
+    void visit(AstCell*) override {}  // Only interested in the respective AstScope
+    void visit(AstTypeTable*) override {}
+    void visit(AstConstPool*) override {}
+    void visit(AstClass*) override {}
+    void visit(AstCFunc*) override {
         // Calls to DPI exports handled with AstCCall. /* verilator public */ functions are
         // ignored for now (and hence potentially mis-ordered), but could use the same or
         // similar mechanism as DPI exports. Every other impure function (including those
@@ -734,7 +734,7 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     //---
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
     explicit OrderBuildVisitor(AstNetlist* nodep) {
@@ -981,15 +981,14 @@ public:
         : m_pomGraphp{pomGraphp}
         , m_pomWaitingp{pomWaitingp} {}
     // METHODS
-    virtual OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
-                                         const AstScope* scopep,
-                                         const AstSenTree* domainp) override {
+    OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
+                                 const AstScope* scopep, const AstSenTree* domainp) override {
         OrderMoveVertex* const resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
         resultp->domScopep(OrderMoveDomScope::findCreate(domainp, scopep));
         resultp->m_pomWaitingE.pushBack(*m_pomWaitingp, resultp);
         return resultp;
     }
-    virtual void freeVertexp(OrderMoveVertex* freeMep) override {
+    void freeVertexp(OrderMoveVertex* freeMep) override {
         freeMep->m_pomWaitingE.unlink(*m_pomWaitingp, freeMep);
         freeMep->unlinkDelete(m_pomGraphp);
     }
@@ -1005,18 +1004,14 @@ class OrderMTaskMoveVertexMaker final
 public:
     explicit OrderMTaskMoveVertexMaker(V3Graph* pomGraphp)
         : m_pomGraphp{pomGraphp} {}
-    virtual MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp,
-                                         const OrderEitherVertex* varVertexp,
-                                         const AstScope* scopep,
-                                         const AstSenTree* domainp) override {
+    MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
+                                 const AstScope* scopep, const AstSenTree* domainp) override {
         // Exclude initial/settle logic from the mtasks graph.
         // We'll output time-zero logic separately.
         if (domainp->hasInitial() || domainp->hasSettle()) return nullptr;
         return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, scopep, domainp);
     }
-    virtual void freeVertexp(MTaskMoveVertex* freeMep) override {
-        freeMep->unlinkDelete(m_pomGraphp);
-    }
+    void freeVertexp(MTaskMoveVertex* freeMep) override { freeMep->unlinkDelete(m_pomGraphp); }
 
 private:
     VL_UNCOPYABLE(OrderMTaskMoveVertexMaker);

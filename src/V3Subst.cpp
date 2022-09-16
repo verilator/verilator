@@ -189,7 +189,7 @@ private:
         return reinterpret_cast<SubstVarEntry*>(nodep->varp()->user1p());  // Might be nullptr
     }
     // VISITORS
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         const SubstVarEntry* const entryp = findEntryp(nodep);
         if (entryp) {
             // Don't sweat it.  We assign a new temp variable for every new assignment,
@@ -204,8 +204,8 @@ private:
             }
         }
     }
-    virtual void visit(AstConst*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstConst*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -214,7 +214,7 @@ public:
         UINFO(9, "        SubstUseVisitor " << origStep << " " << nodep << endl);
         iterate(nodep);
     }
-    virtual ~SubstUseVisitor() override = default;
+    ~SubstUseVisitor() override = default;
     // METHODS
     bool ok() const { return m_ok; }
 };
@@ -258,7 +258,7 @@ private:
     inline bool isSubstVar(AstVar* nodep) { return nodep->isStatementTemp() && !nodep->noSubst(); }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         m_ops = 0;
         m_assignStep++;
         iterateAndNextNull(nodep->rhsp());
@@ -304,7 +304,7 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         ++m_statSubsts;
     }
-    virtual void visit(AstWordSel* nodep) override {
+    void visit(AstWordSel* nodep) override {
         iterate(nodep->rhsp());
         AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);
         const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
@@ -329,7 +329,7 @@ private:
             iterate(nodep->lhsp());
         }
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         // Any variable
         if (nodep->access().isWriteOrRW()) {
             m_assignStep++;
@@ -357,16 +357,16 @@ private:
             }
         }
     }
-    virtual void visit(AstVar*) override {}
-    virtual void visit(AstConst*) override {}
-    virtual void visit(AstModule* nodep) override {
+    void visit(AstVar*) override {}
+    void visit(AstConst*) override {}
+    void visit(AstModule* nodep) override {
         ++m_ops;
         if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;
         iterateChildren(nodep);
         // Reduce peak memory usage by reclaiming the edited AstNodes
         doDeletes();
     }
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         m_ops++;
         if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;
         iterateChildren(nodep);
@@ -375,7 +375,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit SubstVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~SubstVisitor() override {
+    ~SubstVisitor() override {
         V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);
         for (SubstVarEntry* ip : m_entryps) {
             ip->deleteUnusedAssign();

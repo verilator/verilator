@@ -69,7 +69,7 @@ private:
 
     // VISITORS
     //========== Statements
-    virtual void visit(AstClocking* nodep) override {
+    void visit(AstClocking* nodep) override {
         UINFO(8, "   CLOCKING" << nodep << endl);
         // Store the new default clock, reset on new module
         m_seniDefaultp = nodep->sensesp();
@@ -81,14 +81,14 @@ private:
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstAlways* nodep) override {
         iterateAndNextNull(nodep->sensesp());
         if (nodep->sensesp()) m_seniAlwaysp = nodep->sensesp()->sensesp();
         iterateAndNextNull(nodep->bodysp());
         m_seniAlwaysp = nullptr;
     }
 
-    virtual void visit(AstNodeCoverOrAssert* nodep) override {
+    void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         clearAssertInfo();
         // Find Clocking's buried under nodep->exprsp
@@ -96,7 +96,7 @@ private:
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
         clearAssertInfo();
     }
-    virtual void visit(AstFell* nodep) override {
+    void visit(AstFell* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
@@ -110,12 +110,12 @@ private:
         nodep->sentreep(newSenTree(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstPast* nodep) override {
+    void visit(AstPast* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
     }
-    virtual void visit(AstRose* nodep) override {
+    void visit(AstRose* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
@@ -129,7 +129,7 @@ private:
         nodep->sentreep(newSenTree(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstStable* nodep) override {
+    void visit(AstStable* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
@@ -143,7 +143,7 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
-    virtual void visit(AstImplication* nodep) override {
+    void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
         FileLine* const fl = nodep->fileline();
@@ -161,7 +161,7 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
-    virtual void visit(AstPropClocked* nodep) override {
+    void visit(AstPropClocked* nodep) override {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
         if (m_senip)
@@ -183,12 +183,12 @@ private:
         nodep->replaceWith(blockp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         iterateChildren(nodep);
         // Reset defaults
         m_seniDefaultp = nullptr;
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -197,7 +197,7 @@ public:
         // Process
         iterate(nodep);
     }
-    virtual ~AssertPreVisitor() override = default;
+    ~AssertPreVisitor() override = default;
 };
 
 //######################################################################

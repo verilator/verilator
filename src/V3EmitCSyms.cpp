@@ -258,7 +258,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         // Collect list of scopes
         iterateChildren(nodep);
         varsExpand();
@@ -280,8 +280,8 @@ class EmitCSyms final : EmitCBaseVisitor {
             if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
-    virtual void visit(AstConstPool* nodep) override {}  // Ignore
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstConstPool* nodep) override {}  // Ignore
+    void visit(AstNodeModule* nodep) override {
         nameCheck(nodep);
         VL_RESTORER(m_modp);
         {
@@ -289,7 +289,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstCellInline* nodep) override {
+    void visit(AstCellInline* nodep) override {
         if (v3Global.opt.vpi()) {
             const string type
                 = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
@@ -300,7 +300,7 @@ class EmitCSyms final : EmitCBaseVisitor {
                 std::make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
 
@@ -315,7 +315,7 @@ class EmitCSyms final : EmitCBaseVisitor {
                                                         timeunit, type)));
         }
     }
-    virtual void visit(AstScopeName* nodep) override {
+    void visit(AstScopeName* nodep) override {
         const string name = nodep->scopeSymName();
         // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
         // <<" ss"<<name<<endl);
@@ -337,19 +337,19 @@ class EmitCSyms final : EmitCBaseVisitor {
             }
         }
     }
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
         if (nodep->isSigUserRdPublic() && !m_cfuncp)
             m_modVars.emplace_back(std::make_pair(m_modp, nodep));
     }
-    virtual void visit(AstCoverDecl* nodep) override {
+    void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
             nodep->binNum(m_coverBins++);
         }
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         nameCheck(nodep);
         if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) m_dpis.push_back(nodep);
         VL_RESTORER(m_cfuncp);
@@ -360,8 +360,8 @@ class EmitCSyms final : EmitCBaseVisitor {
     }
 
     //---------------------------------------
-    virtual void visit(AstConst*) override {}
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstConst*) override {}
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)

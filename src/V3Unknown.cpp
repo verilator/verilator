@@ -138,7 +138,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
@@ -153,21 +153,21 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstAssignDly* nodep) override {
+    void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_assigndlyp);
         {
             m_assigndlyp = nodep;
             VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         }
     }
-    virtual void visit(AstAssignW* nodep) override {
+    void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_assignwp);
         {
             m_assignwp = nodep;
             VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         }
     }
-    virtual void visit(AstCaseItem* nodep) override {
+    void visit(AstCaseItem* nodep) override {
         VL_RESTORER(m_constXCvt);
         {
             m_constXCvt = false;  // Avoid losing the X's in casex
@@ -176,7 +176,7 @@ private:
             iterateAndNextNull(nodep->bodysp());
         }
     }
-    virtual void visit(AstNodeDType* nodep) override {
+    void visit(AstNodeDType* nodep) override {
         VL_RESTORER(m_constXCvt);
         {
             m_constXCvt = false;  // Avoid losing the X's in casex
@@ -255,11 +255,11 @@ private:
         }
     }
 
-    virtual void visit(AstEqCase* nodep) override { visitEqNeqCase(nodep); }
-    virtual void visit(AstNeqCase* nodep) override { visitEqNeqCase(nodep); }
-    virtual void visit(AstEqWild* nodep) override { visitEqNeqWild(nodep); }
-    virtual void visit(AstNeqWild* nodep) override { visitEqNeqWild(nodep); }
-    virtual void visit(AstIsUnknown* nodep) override {
+    void visit(AstEqCase* nodep) override { visitEqNeqCase(nodep); }
+    void visit(AstNeqCase* nodep) override { visitEqNeqCase(nodep); }
+    void visit(AstEqWild* nodep) override { visitEqNeqWild(nodep); }
+    void visit(AstNeqWild* nodep) override { visitEqNeqWild(nodep); }
+    void visit(AstIsUnknown* nodep) override {
         iterateChildren(nodep);
         // Ahh, we're two state, so this is easy
         UINFO(4, " ISUNKNOWN->0 " << nodep << endl);
@@ -267,7 +267,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCountBits* nodep) override {
+    void visit(AstCountBits* nodep) override {
         // Ahh, we're two state, so this is easy
         std::array<bool, 3> dropop;
         dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->num().isAnyX();
@@ -303,7 +303,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep << endl);
             if (debug() >= 9) nodep->dumpTree(cout, "  Const_old: ");
@@ -364,7 +364,7 @@ private:
         }
     }
 
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
@@ -411,7 +411,7 @@ private:
     // visit(AstSliceSel) not needed as its bounds are constant and checked
     // in V3Width.
 
-    virtual void visit(AstArraySel* nodep) override {
+    void visit(AstArraySel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             if (debug() == 9) nodep->dumpTree(cout, "-in: ");
@@ -482,7 +482,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -491,7 +491,7 @@ public:
         , m_xrandNames{"__Vxrand"} {
         iterate(nodep);
     }
-    virtual ~UnknownVisitor() override {  //
+    ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
     }
 };

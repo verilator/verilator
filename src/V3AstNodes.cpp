@@ -564,11 +564,11 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
         return dpiTypesToStringConverter{}.convert(this);
     } else {
         class converter final : public dpiTypesToStringConverter {
-            virtual string bitLogicVector(const AstVar* varp, bool isBit) const override {
+            string bitLogicVector(const AstVar* varp, bool isBit) const override {
                 return string(varp->isReadOnly() ? "const " : "")
                        + dpiTypesToStringConverter::bitLogicVector(varp, isBit) + '*';
             }
-            virtual string primitive(const AstVar* varp) const override {
+            string primitive(const AstVar* varp) const override {
                 string type = dpiTypesToStringConverter::primitive(varp);
                 if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                     if (!varp->isWritable() && varp->basicp()->keyword() != VBasicDTypeKwd::STRING)
@@ -600,16 +600,16 @@ string AstVar::dpiTmpVarType(const string& varName) const {
                 return "";
             }
         }
-        virtual string openArray(const AstVar* varp) const override {
+        string openArray(const AstVar* varp) const override {
             return dpiTypesToStringConverter::openArray(varp) + ' ' + m_name
                    + arraySuffix(varp, 0);
         }
-        virtual string bitLogicVector(const AstVar* varp, bool isBit) const override {
+        string bitLogicVector(const AstVar* varp, bool isBit) const override {
             string type = dpiTypesToStringConverter::bitLogicVector(varp, isBit);
             type += ' ' + m_name + arraySuffix(varp, varp->widthWords());
             return type;
         }
-        virtual string primitive(const AstVar* varp) const override {
+        string primitive(const AstVar* varp) const override {
             string type = dpiTypesToStringConverter::primitive(varp);
             if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 if (!varp->isWritable() && varp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE)

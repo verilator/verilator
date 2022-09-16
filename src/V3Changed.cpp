@@ -155,13 +155,13 @@ private:
         m_state.m_numStmts += initp->nodeCount() + m_varEqnp->widthWords();
     }
 
-    virtual void visit(AstBasicDType*) override {  //
+    void visit(AstBasicDType*) override {  //
         newChangeDet();
     }
-    virtual void visit(AstPackArrayDType*) override {  //
+    void visit(AstPackArrayDType*) override {  //
         newChangeDet();
     }
-    virtual void visit(AstUnpackArrayDType* nodep) override {
+    void visit(AstUnpackArrayDType* nodep) override {
         for (int index = 0; index < nodep->elementsConst(); ++index) {
             VL_RESTORER(m_varEqnp);
             VL_RESTORER(m_newLvEqnp);
@@ -181,7 +181,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) override {
+    void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->packedUnsup()) {
             newChangeDet();
         } else {
@@ -191,7 +191,7 @@ private:
                                               << m_vscp->varp()->prettyNameQ());
         }
     }
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         if (debug()) nodep->dumpTree(cout, "-DETECTARRAY-general-");
         m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable"
@@ -231,7 +231,7 @@ public:
         m_newLvEqnp->deleteTree();
         m_newRvEqnp->deleteTree();
     }
-    virtual ~ChangedInsertVisitor() override = default;
+    ~ChangedInsertVisitor() override = default;
     VL_UNCOPYABLE(ChangedInsertVisitor);
 };
 

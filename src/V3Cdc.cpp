@@ -67,9 +67,9 @@ public:
         , m_srcDomainSet{false}
         , m_dstDomainSet{false}
         , m_asyncPath{false} {}
-    virtual ~CdcEitherVertex() override = default;
+    ~CdcEitherVertex() override = default;
     // ACCESSORS
-    virtual FileLine* fileline() const override { return nodep()->fileline(); }
+    FileLine* fileline() const override { return nodep()->fileline(); }
     AstScope* scopep() const { return m_scopep; }
     AstNode* nodep() const { return m_nodep; }
     AstSenTree* srcDomainp() const { return m_srcDomainp; }
@@ -93,11 +93,11 @@ public:
     CdcVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : CdcEitherVertex{graphp, scopep, varScp}
         , m_varScp{varScp} {}
-    virtual ~CdcVarVertex() override = default;
+    ~CdcVarVertex() override = default;
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
-    virtual string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
-    virtual string dotColor() const override {
+    string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
+    string dotColor() const override {
         return fromFlop() ? "green" : cntAsyncRst() ? "red" : "blue";
     }
     int cntAsyncRst() const { return m_cntAsyncRst; }
@@ -118,12 +118,10 @@ public:
         srcDomainp(sensenodep);
         dstDomainp(sensenodep);
     }
-    virtual ~CdcLogicVertex() override = default;
+    ~CdcLogicVertex() override = default;
     // ACCESSORS
-    virtual string name() const override {
-        return (cvtToHex(nodep()) + "@" + scopep()->prettyName());
-    }
-    virtual string dotColor() const override { return hazard() ? "black" : "yellow"; }
+    string name() const override { return (cvtToHex(nodep()) + "@" + scopep()->prettyName()); }
+    string dotColor() const override { return hazard() ? "black" : "yellow"; }
     bool hazard() const { return m_hazard; }
     void setHazard(AstNode* nodep) {
         m_hazard = true;
@@ -144,7 +142,7 @@ private:
     std::ofstream* const m_ofp = nullptr;  // Output file
     string m_prefix;
 
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         *m_ofp << m_prefix;
         if (nodep->user3()) {
             *m_ofp << " %%";
@@ -171,7 +169,7 @@ public:
         , m_prefix{prefix} {
         iterate(nodep);
     }
-    virtual ~CdcDumpVisitor() override = default;
+    ~CdcDumpVisitor() override = default;
 };
 
 //######################################################################
@@ -181,7 +179,7 @@ private:
     int m_maxLineno = 0;
     size_t m_maxFilenameLen = 0;
 
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         // Keeping line+filename lengths separate is much faster than calling ascii().length()
         if (nodep->fileline()->lineno() >= m_maxLineno) {
@@ -195,7 +193,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CdcWidthVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~CdcWidthVisitor() override = default;
+    ~CdcWidthVisitor() override = default;
     // ACCESSORS
     int maxWidth() const {
         size_t width = 1;
@@ -628,21 +626,21 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
         m_logicVertexp = nullptr;
         iterateChildren(nodep);
         m_scopep = nullptr;
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         // Create required blocks and add to module
         UINFO(4, "  BLOCK  " << nodep << endl);
         AstNode::user2ClearTree();
@@ -654,7 +652,7 @@ private:
         m_domainp = nullptr;
         AstNode::user2ClearTree();
     }
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         if (m_scopep) {
             UASSERT_OBJ(m_logicVertexp, nodep, "Var ref not under a logic block");
             AstVarScope* const varscp = nodep->varScopep();
@@ -682,53 +680,53 @@ private:
             }
         }
     }
-    virtual void visit(AstAssignDly* nodep) override {
+    void visit(AstAssignDly* nodep) override {
         m_inDly = true;
         iterateChildren(nodep);
         m_inDly = false;
     }
-    virtual void visit(AstSenItem* nodep) override {
+    void visit(AstSenItem* nodep) override {
         m_inSenItem = true;
         iterateChildren(nodep);
         m_inSenItem = false;
     }
-    virtual void visit(AstAlways* nodep) override { iterateNewStmt(nodep); }
-    virtual void visit(AstAlwaysPublic* nodep) override {
+    void visit(AstAlways* nodep) override { iterateNewStmt(nodep); }
+    void visit(AstAlwaysPublic* nodep) override {
         // CDC doesn't care about public variables
     }
-    virtual void visit(AstCFunc* nodep) override { iterateNewStmt(nodep); }
-    virtual void visit(AstAssignAlias* nodep) override { iterateNewStmt(nodep); }
-    virtual void visit(AstAssignW* nodep) override { iterateNewStmt(nodep); }
+    void visit(AstCFunc* nodep) override { iterateNewStmt(nodep); }
+    void visit(AstAssignAlias* nodep) override { iterateNewStmt(nodep); }
+    void visit(AstAssignW* nodep) override { iterateNewStmt(nodep); }
 
     // Math that shouldn't cause us to clear hazard
-    virtual void visit(AstConst*) override {}
-    virtual void visit(AstReplicate* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstConcat* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstNot* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstConst*) override {}
+    void visit(AstReplicate* nodep) override { iterateChildren(nodep); }
+    void visit(AstConcat* nodep) override { iterateChildren(nodep); }
+    void visit(AstNot* nodep) override { iterateChildren(nodep); }
+    void visit(AstSel* nodep) override {
         if (!VN_IS(nodep->lsbp(), Const)) setNodeHazard(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeSel* nodep) override {
+    void visit(AstNodeSel* nodep) override {
         if (!VN_IS(nodep->bitp(), Const)) setNodeHazard(nodep);
         iterateChildren(nodep);
     }
 
     // Ignores
-    virtual void visit(AstInitial*) override {}
-    virtual void visit(AstInitialAutomatic*) override {}
-    virtual void visit(AstInitialStatic*) override {}
-    virtual void visit(AstTraceDecl*) override {}
-    virtual void visit(AstCoverToggle*) override {}
-    virtual void visit(AstNodeDType*) override {}
+    void visit(AstInitial*) override {}
+    void visit(AstInitialAutomatic*) override {}
+    void visit(AstInitialStatic*) override {}
+    void visit(AstTraceDecl*) override {}
+    void visit(AstCoverToggle*) override {}
+    void visit(AstNodeDType*) override {}
 
     //--------------------
     // Default
-    virtual void visit(AstNodeMath* nodep) override {
+    void visit(AstNodeMath* nodep) override {
         setNodeHazard(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -754,7 +752,7 @@ public:
             *m_ofp << '\n';
         }
     }
-    virtual ~CdcVisitor() override {
+    ~CdcVisitor() override {
         if (m_ofp) VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
 };

@@ -47,9 +47,9 @@ protected:
 
 public:
     ASTGEN_MEMBERS_NodeBlock;
-    virtual void dump(std::ostream& str) const override;
-    virtual string name() const override { return m_name; }  // * = Block name
-    virtual void name(const string& name) override { m_name = name; }
+    void dump(std::ostream& str) const override;
+    string name() const override { return m_name; }  // * = Block name
+    void name(const string& name) override { m_name = name; }
     // op1 = Statements
     AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
@@ -112,14 +112,12 @@ protected:
 
 public:
     ASTGEN_MEMBERS_NodeFTask;
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual string name() const override { return m_name; }  // * = Var name
-    virtual bool maybePointedTo() const override { return true; }
-    virtual bool isGateOptimizable() const override {
-        return !((m_dpiExport || m_dpiImport) && !m_pure);
-    }
+    void dump(std::ostream& str = std::cout) const override;
+    string name() const override { return m_name; }  // * = Var name
+    bool maybePointedTo() const override { return true; }
+    bool isGateOptimizable() const override { return !((m_dpiExport || m_dpiImport) && !m_pure); }
     // {AstFunc only} op1 = Range output variable
-    virtual void name(const string& name) override { m_name = name; }
+    void name(const string& name) override { m_name = name; }
     string cname() const { return m_cname; }
     void cname(const string& cname) { m_cname = cname; }
     // op1 = Output variable (functions only, nullptr for tasks)
@@ -194,9 +192,9 @@ public:
         : AstNode{t, fl}
         , m_name{name} {}
     ASTGEN_MEMBERS_NodeFile;
-    virtual void dump(std::ostream& str) const override;
-    virtual string name() const override { return m_name; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    void dump(std::ostream& str) const override;
+    string name() const override { return m_name; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     void tblockp(AstTextBlock* tblockp) { setOp1p((AstNode*)tblockp); }
     AstTextBlock* tblockp() { return VN_AS(op1p(), TextBlock); }
 };
@@ -237,9 +235,9 @@ protected:
 
 public:
     ASTGEN_MEMBERS_NodeModule;
-    virtual void dump(std::ostream& str) const override;
-    virtual bool maybePointedTo() const override { return true; }
-    virtual string name() const override { return m_name; }
+    void dump(std::ostream& str) const override;
+    bool maybePointedTo() const override { return true; }
+    string name() const override { return m_name; }
     virtual bool timescaleMatters() const = 0;
     AstNode* stmtsp() const { return op2p(); }  // op2 = List of statements
     AstActive* activesp() const { return VN_AS(op3p(), Active); }  // op3 = List of i/sblocks
@@ -248,8 +246,8 @@ public:
     void addStmtp(AstNode* nodep) { addNOp2p(nodep); }
     void addActivep(AstNode* nodep) { addOp3p(nodep); }
     // ACCESSORS
-    virtual void name(const string& name) override { m_name = name; }
-    virtual string origName() const override { return m_origName; }
+    void name(const string& name) override { m_name = name; }
+    string origName() const override { return m_origName; }
     string someInstanceName() const { return m_someInstanceName; }
     void someInstanceName(const string& name) { m_someInstanceName = name; }
     bool inLibrary() const { return m_inLibrary; }
@@ -299,7 +297,7 @@ public:
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
     void attrp(AstAttrOf* nodep) { return setOp4p(reinterpret_cast<AstNode*>(nodep)); }
     // METHODS
-    virtual bool same(const AstNode*) const override { return true; }
+    bool same(const AstNode*) const override { return true; }
 };
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
@@ -312,7 +310,7 @@ protected:
 public:
     ASTGEN_MEMBERS_NodeProcedure;
     // METHODS
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
@@ -325,7 +323,7 @@ protected:
 
 public:
     ASTGEN_MEMBERS_NodeRange;
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
 };
 class AstNodeStmt VL_NOT_FINAL : public AstNode {
     // Statement -- anything that's directly under a function
@@ -340,11 +338,11 @@ public:
     // METHODS
     bool isStatement() const { return m_statement; }  // Really a statement
     void statement(bool flag) { m_statement = flag; }
-    virtual void addNextStmt(AstNode* newp,
-                             AstNode* belowp) override;  // Stop statement searchback here
-    virtual void addBeforeStmt(AstNode* newp,
-                               AstNode* belowp) override;  // Stop statement searchback here
-    virtual void dump(std::ostream& str = std::cout) const override;
+    void addNextStmt(AstNode* newp,
+                     AstNode* belowp) override;  // Stop statement searchback here
+    void addBeforeStmt(AstNode* newp,
+                       AstNode* belowp) override;  // Stop statement searchback here
+    void dump(std::ostream& str = std::cout) const override;
 };
 class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
 protected:
@@ -369,11 +367,11 @@ public:
     void addTimingControlp(AstNode* const np) { addNOp3p(np); }
     void rhsp(AstNode* np) { setOp1p(np); }
     void lhsp(AstNode* np) { setOp2p(np); }
-    virtual bool hasDType() const override { return true; }
+    bool hasDType() const override { return true; }
     virtual bool cleanRhs() const { return true; }
-    virtual int instrCount() const override { return widthInstrs(); }
-    virtual bool same(const AstNode*) const override { return true; }
-    virtual string verilogKwd() const override { return "="; }
+    int instrCount() const override { return widthInstrs(); }
+    bool same(const AstNode*) const override { return true; }
+    string verilogKwd() const override { return "="; }
     virtual bool brokeLhsMustBeLvalue() const = 0;
 };
 class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
@@ -391,19 +389,19 @@ protected:
 
 public:
     ASTGEN_MEMBERS_NodeCCall;
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual void cloneRelink() override;
-    virtual const char* broken() const override;
-    virtual int instrCount() const override { return INSTR_COUNT_CALL; }
-    virtual bool same(const AstNode* samep) const override {
+    void dump(std::ostream& str = std::cout) const override;
+    void cloneRelink() override;
+    const char* broken() const override;
+    int instrCount() const override { return INSTR_COUNT_CALL; }
+    bool same(const AstNode* samep) const override {
         const AstNodeCCall* const asamep = static_cast<const AstNodeCCall*>(samep);
         return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());
     }
     AstNode* exprsp() const { return op2p(); }  // op2 = expressions to print
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override;
-    virtual bool isOutputter() const override { return !isPure(); }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override;
+    bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
     void funcp(AstCFunc* funcp) { m_funcp = funcp; }
     void argTypes(const string& str) { m_argTypes = str; }
@@ -422,7 +420,7 @@ protected:
 
 public:
     ASTGEN_MEMBERS_NodeCase;
-    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
     AstNode* exprp() const { return op1p(); }  // op1 = case condition <expression>
     AstCaseItem* itemsp() const {
         return VN_AS(op2p(), CaseItem);
@@ -448,10 +446,10 @@ public:
         addNOp4p(passsp);
     }
     ASTGEN_MEMBERS_NodeCoverOrAssert;
-    virtual string name() const override { return m_name; }  // * = Var name
-    virtual bool same(const AstNode* samep) const override { return samep->name() == name(); }
-    virtual void name(const string& name) override { m_name = name; }
-    virtual void dump(std::ostream& str = std::cout) const override;
+    string name() const override { return m_name; }  // * = Var name
+    bool same(const AstNode* samep) const override { return samep->name() == name(); }
+    void name(const string& name) override { m_name = name; }
+    void dump(std::ostream& str = std::cout) const override;
     AstNode* propp() const { return op1p(); }  // op1 = property
     AstSenTree* sentreep() const { return VN_AS(op2p(), SenTree); }  // op2 = clock domain
     void sentreep(AstSenTree* sentreep) { addOp2p((AstNode*)sentreep); }  // op2 = clock domain
@@ -482,19 +480,17 @@ protected:
 
 public:
     ASTGEN_MEMBERS_NodeFTaskRef;
-    virtual const char* broken() const override;
-    virtual void cloneRelink() override;
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual string name() const override { return m_name; }  // * = Var name
-    virtual bool isGateOptimizable() const override {
-        return m_taskp && m_taskp->isGateOptimizable();
-    }
+    const char* broken() const override;
+    void cloneRelink() override;
+    void dump(std::ostream& str = std::cout) const override;
+    string name() const override { return m_name; }  // * = Var name
+    bool isGateOptimizable() const override { return m_taskp && m_taskp->isGateOptimizable(); }
     string dotted() const { return m_dotted; }  // * = Scope name or ""
     string inlinedDots() const { return m_inlinedDots; }
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
     AstNodeFTask* taskp() const { return m_taskp; }  // [After Link] Pointer to variable
     void taskp(AstNodeFTask* taskp) { m_taskp = taskp; }
-    virtual void name(const string& name) override { m_name = name; }
+    void name(const string& name) override { m_name = name; }
     void dotted(const string& name) { m_dotted = name; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
@@ -527,9 +523,9 @@ public:
     AstNode* condp() const { return op2p(); }  // op2 = condition to continue
     AstNode* incsp() const { return op3p(); }  // op3 = increment statements
     AstNode* bodysp() const { return op4p(); }  // op4 = body of loop
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
 private:
@@ -552,10 +548,10 @@ public:
     void condp(AstNode* newp) { setOp1p(newp); }
     void addIfsp(AstNode* newp) { addOp2p(newp); }
     void addElsesp(AstNode* newp) { addOp3p(newp); }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isGateDedupable() const override { return true; }
-    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isGateDedupable() const override { return true; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     void branchPred(VBranchPred flag) { m_branchPred = flag; }
     VBranchPred branchPred() const { return m_branchPred; }
     void isBoundsCheck(bool flag) { m_isBoundsCheck = flag; }
@@ -578,12 +574,12 @@ public:
         setNOp4p(msbp);
     }
     ASTGEN_MEMBERS_NodeReadWriteMem;
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual bool isUnlikely() const override { return true; }
-    virtual bool same(const AstNode* samep) const override {
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* samep) const override {
         return isHex() == static_cast<const AstNodeReadWriteMem*>(samep)->isHex();
     }
     bool isHex() const { return m_isHex; }
@@ -605,8 +601,8 @@ protected:
 
 public:
     ASTGEN_MEMBERS_NodeText;
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual bool same(const AstNode* samep) const override {
+    void dump(std::ostream& str = std::cout) const override;
+    bool same(const AstNode* samep) const override {
         const AstNodeText* asamep = static_cast<const AstNodeText*>(samep);
         return text() == asamep->text();
     }
@@ -643,8 +639,8 @@ public:
         UASSERT(sensesp, "Sensesp required arg");
     }
     ASTGEN_MEMBERS_Active;
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual string name() const override { return m_name; }
+    void dump(std::ostream& str = std::cout) const override;
+    string name() const override { return m_name; }
     const char* broken() const override;
     void cloneRelink() override;
     // Statements are broken into pieces, as some must come before others.
@@ -672,8 +668,8 @@ public:
         setNOp1p(exprp);
     }
     ASTGEN_MEMBERS_Arg;
-    virtual string name() const override { return m_name; }  // * = Pin name, ""=go by number
-    virtual void name(const string& name) override { m_name = name; }
+    string name() const override { return m_name; }  // * = Pin name, ""=go by number
+    void name(const string& name) override { m_name = name; }
     void exprp(AstNode* nodep) { addOp1p(nodep); }
     // op1 = Expression connected to pin, nullptr if unconnected
     AstNode* exprp() const { return op1p(); }
@@ -694,7 +690,7 @@ public:
     AstNode* fromp() const { return op1p(); }
     AstNode* dimp() const { return op2p(); }
     VAttrType attrType() const { return m_attrType; }
-    virtual void dump(std::ostream& str = std::cout) const override;
+    void dump(std::ostream& str = std::cout) const override;
 };
 class AstBind final : public AstNode {
     // Parents: MODULE
@@ -710,8 +706,8 @@ public:
     }
     ASTGEN_MEMBERS_Bind;
     // ACCESSORS
-    virtual string name() const override { return m_name; }  // * = Bind Target name
-    virtual void name(const string& name) override { m_name = name; }
+    string name() const override { return m_name; }  // * = Bind Target name
+    void name(const string& name) override { m_name = name; }
     AstNode* cellsp() const { return op1p(); }  // op1 = cells
 };
 class AstCFunc final : public AstNode {
@@ -779,12 +775,12 @@ public:
         m_dpiTraceInit = false;
     }
     ASTGEN_MEMBERS_CFunc;
-    virtual string name() const override { return m_name; }
+    string name() const override { return m_name; }
     const char* broken() const override;
     void cloneRelink() override;
-    virtual bool maybePointedTo() const override { return true; }
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual bool same(const AstNode* samep) const override {
+    bool maybePointedTo() const override { return true; }
+    void dump(std::ostream& str = std::cout) const override;
+    bool same(const AstNode* samep) const override {
         const AstCFunc* const asamep = static_cast<const AstCFunc*>(samep);
         return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && (ctorInits() == asamep->ctorInits())
@@ -792,8 +788,8 @@ public:
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
     //
-    virtual void name(const string& name) override { m_name = name; }
-    virtual int instrCount() const override {
+    void name(const string& name) override { m_name = name; }
+    int instrCount() const override {
         return dpiImportPrototype() ? v3Global.opt.instrCountDpi() : 0;
     }
     VBoolOrUnknown isConst() const { return m_isConst; }
@@ -883,8 +879,8 @@ public:
         , m_useType{useType}
         , m_name{name} {}
     ASTGEN_MEMBERS_CUse;
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual string name() const override { return m_name; }
+    void dump(std::ostream& str = std::cout) const override;
+    string name() const override { return m_name; }
     VUseType useType() const { return m_useType; }
 };
 class AstCaseItem final : public AstNode {
@@ -899,7 +895,7 @@ public:
         addNOp2p(bodysp);
     }
     ASTGEN_MEMBERS_CaseItem;
-    virtual int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     AstNode* condsp() const { return op1p(); }  // op1 = list of possible matching expressions
     AstNode* bodysp() const { return op2p(); }  // op2 = what to do
     void condsp(AstNode* nodep) { setOp1p(nodep); }
@@ -922,7 +918,7 @@ public:
         dtypeFrom(dtp);
     }
     ASTGEN_MEMBERS_Cast;
-    virtual bool hasDType() const override { return true; }
+    bool hasDType() const override { return true; }
     virtual string emitVerilog() { return "((%d)'(%l))"; }
     virtual bool cleanOut() const { V3ERROR_NA_RETURN(true); }
     virtual bool cleanLhs() const { return true; }
@@ -930,7 +926,7 @@ public:
     AstNode* lhsp() const { return op1p(); }
     AstNode* fromp() const { return lhsp(); }
     void lhsp(AstNode* nodep) { setOp1p(nodep); }
-    virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_AS(op2p(), NodeDType); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
 };
@@ -996,13 +992,13 @@ public:
     }
     ASTGEN_MEMBERS_Cell;
     // No cloneRelink, we presume cloneee's want the same module linkages
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     const char* broken() const override;
-    virtual bool maybePointedTo() const override { return true; }
+    bool maybePointedTo() const override { return true; }
     // ACCESSORS
-    virtual string name() const override { return m_name; }  // * = Cell name
-    virtual void name(const string& name) override { m_name = name; }
-    virtual string origName() const override { return m_origName; }  // * = Original name
+    string name() const override { return m_name; }  // * = Cell name
+    void name(const string& name) override { m_name = name; }
+    string origName() const override { return m_origName; }  // * = Original name
     void origName(const string& name) { m_origName = name; }
     string modName() const { return m_modName; }  // * = Instance name
     void modName(const string& name) { m_modName = name; }
@@ -1038,7 +1034,7 @@ public:
     }
     ASTGEN_MEMBERS_CellArrayRef;
     // ACCESSORS
-    virtual string name() const override { return m_name; }  // * = Array name
+    string name() const override { return m_name; }  // * = Array name
     AstNode* selp() const { return op1p(); }  // op1 = Select expression
 };
 class AstCellInline final : public AstNode {
@@ -1061,12 +1057,12 @@ public:
         , m_origModName{origModName}
         , m_timeunit{timeunit} {}
     ASTGEN_MEMBERS_CellInline;
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     const char* broken() const override;
     // ACCESSORS
-    virtual string name() const override { return m_name; }  // * = Cell name
+    string name() const override { return m_name; }  // * = Cell name
     string origModName() const { return m_origModName; }  // * = modp()->origName() before inlining
-    virtual void name(const string& name) override { m_name = name; }
+    void name(const string& name) override { m_name = name; }
     void scopep(AstScope* scp) { m_scopep = scp; }
     AstScope* scopep() const { return m_scopep; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
@@ -1085,7 +1081,7 @@ public:
     }
     ASTGEN_MEMBERS_CellRef;
     // ACCESSORS
-    virtual string name() const override { return m_name; }  // * = Array name
+    string name() const override { return m_name; }  // * = Array name
     AstNode* cellp() const { return op1p(); }  // op1 = Cell
     AstNode* exprp() const { return op2p(); }  // op2 = Expression
 };
@@ -1098,8 +1094,8 @@ public:
         setNOp2p(classOrPkgsp);  // Only for parser
     }
     ASTGEN_MEMBERS_ClassExtends;
-    virtual bool hasDType() const override { return true; }
-    virtual string verilogKwd() const override { return "extends"; }
+    bool hasDType() const override { return true; }
+    string verilogKwd() const override { return "extends"; }
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNode* classOrPkgsp() const { return op2p(); }
@@ -1120,21 +1116,21 @@ public:
     }
     ASTGEN_MEMBERS_ClassOrPackageRef;
     // METHODS
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(m_classOrPackageNodep && !m_classOrPackageNodep->brokeExists());
         return nullptr;
     }
-    virtual void cloneRelink() override {
+    void cloneRelink() override {
         if (m_classOrPackageNodep && m_classOrPackageNodep->clonep()) {
             m_classOrPackageNodep = m_classOrPackageNodep->clonep();
         }
     }
-    virtual bool same(const AstNode* samep) const override {
+    bool same(const AstNode* samep) const override {
         return (m_classOrPackageNodep
                 == static_cast<const AstClassOrPackageRef*>(samep)->m_classOrPackageNodep);
     }
-    virtual void dump(std::ostream& str = std::cout) const override;
-    virtual string name() const override { return m_name; }  // * = Var name
+    void dump(std::ostream& str = std::cout) const override;
+    string name() const override { return m_name; }  // * = Var name
     AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
     void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
     AstNodeModule* classOrPackagep() const;
@@ -1169,9 +1165,9 @@ class AstConstPool final : public AstNode {
 public:
     explicit AstConstPool(FileLine* fl);
     ASTGEN_MEMBERS_ConstPool;
-    virtual bool maybePointedTo() const override { return true; }
+    bool maybePointedTo() const override { return true; }
     const char* broken() const override;
-    virtual void cloneRelink() override { V3ERROR_NA; }
+    void cloneRelink() override { V3ERROR_NA; }
     AstModule* modp() const { return m_modp; }
 
     // Find a table (unpacked array) within the constant pool which is initialized with the
@@ -1201,9 +1197,9 @@ public:
         , m_path{path} {
         setOp1p(rhsp);
     }
-    virtual string name() const override { return m_name; }  // * = Scope name
+    string name() const override { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_DefParam;
-    virtual bool same(const AstNode*) const override { return true; }
+    bool same(const AstNode*) const override { return true; }
     AstNode* rhsp() const { return op1p(); }  // op1 = Assign from
     string path() const { return m_path; }
 };
@@ -1224,7 +1220,7 @@ public:
         if (!packageOrClassp) return rhsp;
         return new AstDot(fl, true, packageOrClassp, rhsp);
     }
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     AstNode* lhsp() const { return op1p(); }
     void rhsp(AstNode* nodep) { setOp2p(nodep); }
     AstNode* rhsp() const { return op2p(); }
@@ -1243,8 +1239,8 @@ public:
         , m_name{vname}
         , m_cname{cname} {}
     ASTGEN_MEMBERS_DpiExport;
-    virtual string name() const override { return m_name; }
-    virtual void name(const string& name) override { m_name = name; }
+    string name() const override { return m_name; }
+    void name(const string& name) override { m_name = name; }
     string cname() const { return m_cname; }
     void cname(const string& cname) { m_cname = cname; }
 };
@@ -1257,24 +1253,20 @@ private:
 public:
     inline AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNode* exprsp);
     ASTGEN_MEMBERS_ElabDisplay;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
-    virtual string verilogKwd() const override {
-        return (string("$") + string(displayType().ascii()));
-    }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override {
-        return false;
-    }  // SPECIAL: $display has 'visual' ordering
-    virtual bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
-    virtual bool isUnlikely() const override { return true; }
-    virtual bool same(const AstNode* samep) const override {
+    string verilogKwd() const override { return (string("$") + string(displayType().ascii())); }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* samep) const override {
         return displayType() == static_cast<const AstElabDisplay*>(samep)->displayType();
     }
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
+    int instrCount() const override { return INSTR_COUNT_PLI; }
     VDisplayType displayType() const { return m_displayType; }
     void displayType(VDisplayType type) { m_displayType = type; }
     void fmtp(AstSFormatF* nodep) { addOp1p((AstNode*)nodep); }  // op1 = To-String formatter
@@ -1286,7 +1278,7 @@ public:
     explicit AstEmpty(FileLine* fl)
         : ASTGEN_SUPER_Empty(fl) {}
     ASTGEN_MEMBERS_Empty;
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstExecGraph final : public AstNode {
     // For parallel execution, this node contains a dependency graph.  Each
@@ -1303,11 +1295,11 @@ public:
     explicit AstExecGraph(FileLine* fl, const string& name);
     ASTGEN_MEMBERS_ExecGraph;
     ~AstExecGraph() override;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(!m_depGraphp);
         return nullptr;
     }
-    virtual string name() const override { return m_name; }
+    string name() const override { return m_name; }
     V3Graph* depGraphp() { return m_depGraphp; }
     const V3Graph* depGraphp() const { return m_depGraphp; }
     // op1: The mtask bodies
@@ -1346,11 +1338,11 @@ public:
         addNOp1p(defaultp);
     }
     ASTGEN_MEMBERS_InitArray;
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     const char* broken() const override;
     void cloneRelink() override;
-    virtual bool hasDType() const override { return true; }
-    virtual bool same(const AstNode* samep) const override {
+    bool hasDType() const override { return true; }
+    bool same(const AstNode* samep) const override {
         // Only works if exact same children, instead should override comparison
         // of children list, and instead use map-vs-map key/value compare
         return m_map == static_cast<const AstInitArray*>(samep)->m_map;
@@ -1375,8 +1367,8 @@ public:
         addOp1p(valuep);
     }
     ASTGEN_MEMBERS_InitItem;
-    virtual bool maybePointedTo() const override { return true; }
-    virtual bool hasDType() const override { return false; }  // See valuep()'s dtype instead
+    bool maybePointedTo() const override { return true; }
+    bool hasDType() const override { return false; }  // See valuep()'s dtype instead
     AstNode* valuep() const { return op1p(); }  // op1 = Value
     void valuep(AstNode* nodep) { addOp1p(nodep); }
 };
@@ -1388,7 +1380,7 @@ public:
     AstIntfRef(FileLine* fl, const string& name)
         : ASTGEN_SUPER_IntfRef(fl)
         , m_name{name} {}
-    virtual string name() const override { return m_name; }
+    string name() const override { return m_name; }
     ASTGEN_MEMBERS_IntfRef;
 };
 class AstMTaskBody final : public AstNode {
@@ -1400,7 +1392,7 @@ public:
     explicit AstMTaskBody(FileLine* fl)
         : ASTGEN_SUPER_MTaskBody(fl) {}
     ASTGEN_MEMBERS_MTaskBody;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(!m_execMTaskp);
         return nullptr;
     }
@@ -1415,7 +1407,7 @@ public:
     }
     ExecMTask* execMTaskp() const { return m_execMTaskp; }
     void execMTaskp(ExecMTask* execMTaskp) { m_execMTaskp = execMTaskp; }
-    virtual void dump(std::ostream& str = std::cout) const override;
+    void dump(std::ostream& str = std::cout) const override;
 };
 class AstModport final : public AstNode {
     // A modport in an interface
@@ -1427,8 +1419,8 @@ public:
         , m_name{name} {
         addNOp1p(varsp);
     }
-    virtual string name() const override { return m_name; }
-    virtual bool maybePointedTo() const override { return true; }
+    string name() const override { return m_name; }
+    bool maybePointedTo() const override { return true; }
     ASTGEN_MEMBERS_Modport;
     AstNode* varsp() const { return op1p(); }  // op1 = List of Vars
 };
@@ -1449,8 +1441,8 @@ public:
     ASTGEN_MEMBERS_ModportFTaskRef;
     const char* broken() const override;
     void cloneRelink() override;
-    virtual void dump(std::ostream& str) const override;
-    virtual string name() const override { return m_name; }
+    void dump(std::ostream& str) const override;
+    string name() const override { return m_name; }
     bool isImport() const { return !m_export; }
     bool isExport() const { return m_export; }
     AstNodeFTask* ftaskp() const { return m_ftaskp; }  // [After Link] Pointer to variable
@@ -1472,8 +1464,8 @@ public:
     ASTGEN_MEMBERS_ModportVarRef;
     const char* broken() const override;
     void cloneRelink() override;
-    virtual void dump(std::ostream& str) const override;
-    virtual string name() const override { return m_name; }
+    void dump(std::ostream& str) const override;
+    string name() const override { return m_name; }
     void direction(const VDirection& flag) { m_direction = flag; }
     VDirection direction() const { return m_direction; }
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
@@ -1501,9 +1493,9 @@ public:
     AstNetlist();
     ASTGEN_MEMBERS_Netlist;
     const char* broken() const override;
-    virtual void cloneRelink() override { V3ERROR_NA; }
-    virtual string name() const override { return "$root"; }
-    virtual void dump(std::ostream& str) const override;
+    void cloneRelink() override { V3ERROR_NA; }
+    string name() const override { return "$root"; }
+    void dump(std::ostream& str) const override;
     AstNodeModule* modulesp() const {  // op1 = List of modules
         return VN_AS(op1p(), NodeModule);
     }
@@ -1553,8 +1545,8 @@ public:
     ASTGEN_MEMBERS_PackageExport;
     const char* broken() const override;
     void cloneRelink() override;
-    virtual void dump(std::ostream& str) const override;
-    virtual string name() const override { return m_name; }
+    void dump(std::ostream& str) const override;
+    string name() const override { return m_name; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
 };
@@ -1579,8 +1571,8 @@ public:
     ASTGEN_MEMBERS_PackageImport;
     const char* broken() const override;
     void cloneRelink() override;
-    virtual void dump(std::ostream& str) const override;
-    virtual string name() const override { return m_name; }
+    void dump(std::ostream& str) const override;
+    string name() const override { return m_name; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
 };
@@ -1604,13 +1596,13 @@ public:
         setNOp2p((AstNode*)ftaskrefp);
     }
     ASTGEN_MEMBERS_ParseRef;
-    virtual void dump(std::ostream& str) const override;
-    virtual string name() const override { return m_name; }  // * = Var name
-    virtual bool same(const AstNode* samep) const override {
+    void dump(std::ostream& str) const override;
+    string name() const override { return m_name; }  // * = Var name
+    bool same(const AstNode* samep) const override {
         const AstParseRef* const asamep = static_cast<const AstParseRef*>(samep);
         return (expect() == asamep->expect() && m_name == asamep->m_name);
     }
-    virtual void name(const string& name) override { m_name = name; }
+    void name(const string& name) override { m_name = name; }
     VParseRefExp expect() const { return m_expect; }
     void expect(VParseRefExp exp) { m_expect = exp; }
     // op1 = Components
@@ -1637,10 +1629,10 @@ public:
     }
     inline AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp);
     ASTGEN_MEMBERS_Pin;
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     const char* broken() const override;
-    virtual string name() const override { return m_name; }  // * = Pin name, ""=go by number
-    virtual void name(const string& name) override { m_name = name; }
+    string name() const override { return m_name; }  // * = Pin name, ""=go by number
+    void name(const string& name) override { m_name = name; }
     string prettyOperatorName() const override;
     bool dotStar() const { return name() == ".*"; }  // Fake name for .* connections until linked
     int pinNum() const { return m_pinNum; }
@@ -1668,7 +1660,7 @@ public:
         , m_pinNum{pinnum}
         , m_name{name} {}
     ASTGEN_MEMBERS_Port;
-    virtual string name() const override { return m_name; }  // * = Port name
+    string name() const override { return m_name; }  // * = Port name
     int pinNum() const { return m_pinNum; }  // * = Pin number, for order based instantiation
     AstNode* exprp() const { return op1p(); }  // op1 = Expression connected to port
 };
@@ -1683,8 +1675,8 @@ public:
         , m_pragType{pragType} {}
     ASTGEN_MEMBERS_Pragma;
     VPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool same(const AstNode* samep) const override {
+    bool isPredictOptimizable() const override { return false; }
+    bool same(const AstNode* samep) const override {
         return pragType() == static_cast<const AstPragma*>(samep)->pragType();
     }
 };
@@ -1700,7 +1692,7 @@ public:
         addOp3p(propp);
     }
     ASTGEN_MEMBERS_PropClocked;
-    virtual bool hasDType() const override {
+    bool hasDType() const override {
         return true;
     }  // Used under Cover, which expects a bool child
     AstSenItem* sensesp() const { return VN_AS(op1p(), SenItem); }  // op1 = Sensitivity list
@@ -1718,7 +1710,7 @@ public:
         setOp1p(lhsp);
     }
     ASTGEN_MEMBERS_Pull;
-    virtual bool same(const AstNode* samep) const override {
+    bool same(const AstNode* samep) const override {
         return direction() == static_cast<const AstPull*>(samep)->direction();
     }
     void lhsp(AstNode* np) { setOp1p(np); }
@@ -1758,13 +1750,13 @@ public:
         addNOp2p(nullptr);
     }
     ASTGEN_MEMBERS_SFormatF;
-    virtual string name() const override { return m_text; }
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
-    virtual bool hasDType() const override { return true; }
-    virtual bool same(const AstNode* samep) const override {
+    string name() const override { return m_text; }
+    int instrCount() const override { return INSTR_COUNT_PLI; }
+    bool hasDType() const override { return true; }
+    bool same(const AstNode* samep) const override {
         return text() == static_cast<const AstSFormatF*>(samep)->text();
     }
-    virtual string verilogKwd() const override { return "$sformatf"; }
+    string verilogKwd() const override { return "$sformatf"; }
     void addExprsp(AstNode* nodep) { addOp1p(nodep); }  // op1 = Expressions to output
     AstNode* exprsp() const { return op1p(); }  // op1 = Expressions to output
     string text() const { return m_text; }  // * = Text to display
@@ -1800,12 +1792,12 @@ public:
         , m_aboveCellp{aboveCellp}
         , m_modp{modp} {}
     ASTGEN_MEMBERS_Scope;
-    virtual void cloneRelink() override;
-    virtual const char* broken() const override;
-    virtual bool maybePointedTo() const override { return true; }
-    virtual string name() const override { return m_name; }  // * = Scope name
-    virtual void name(const string& name) override { m_name = name; }
-    virtual void dump(std::ostream& str) const override;
+    void cloneRelink() override;
+    const char* broken() const override;
+    bool maybePointedTo() const override { return true; }
+    string name() const override { return m_name; }  // * = Scope name
+    void name(const string& name) override { m_name = name; }
+    void dump(std::ostream& str) const override;
     string nameDotless() const;
     string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
     AstNodeModule* modp() const { return m_modp; }
@@ -1829,8 +1821,8 @@ public:
         addNOp2p(elementsp);
     }
     ASTGEN_MEMBERS_SelLoopVars;
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
-    virtual bool maybePointedTo() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    bool maybePointedTo() const override { return false; }
     AstNode* fromp() const { return op1p(); }
     void fromp(AstNode* nodep) { setOp1p(nodep); }
     AstNode* elementsp() const { return op2p(); }
@@ -1867,8 +1859,8 @@ public:
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_NEVER} {}
     ASTGEN_MEMBERS_SenItem;
-    virtual void dump(std::ostream& str) const override;
-    virtual bool same(const AstNode* samep) const override {
+    void dump(std::ostream& str) const override;
+    bool same(const AstNode* samep) const override {
         return edgeType() == static_cast<const AstSenItem*>(samep)->edgeType();
     }
     VEdgeType edgeType() const { return m_edgeType; }  // * = Posedge/negedge
@@ -1901,8 +1893,8 @@ public:
         addNOp1p(sensesp);
     }
     ASTGEN_MEMBERS_SenTree;
-    virtual void dump(std::ostream& str) const override;
-    virtual bool maybePointedTo() const override { return true; }
+    void dump(std::ostream& str) const override;
+    bool maybePointedTo() const override { return true; }
     bool isMulti() const { return m_multi; }
     // op1 = Sensitivity list
     AstSenItem* sensesp() const { return VN_AS(op1p(), SenItem); }
@@ -1935,7 +1927,7 @@ public:
     ASTGEN_MEMBERS_StrengthSpec;
     VStrength strength0() { return m_s0; }
     VStrength strength1() { return m_s1; }
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
 };
 class AstTopScope final : public AstNode {
     // A singleton, held under the top level AstModule. Holds the top level AstScope,
@@ -1950,7 +1942,7 @@ class AstTopScope final : public AstNode {
 
 public:
     ASTGEN_MEMBERS_TopScope;
-    virtual bool maybePointedTo() const override { return true; }
+    bool maybePointedTo() const override { return true; }
     AstSenTree* senTreesp() const { return VN_AS(op1p(), SenTree); }
     void addSenTreep(AstSenTree* nodep) { addOp1p((AstNode*)nodep); }
     AstScope* scopep() const { return VN_AS(op2p(), Scope); }
@@ -1969,14 +1961,14 @@ class AstTypeTable final : public AstNode {
 public:
     explicit AstTypeTable(FileLine* fl);
     ASTGEN_MEMBERS_TypeTable;
-    virtual bool maybePointedTo() const override { return true; }
-    virtual const char* broken() const override {
+    bool maybePointedTo() const override { return true; }
+    const char* broken() const override {
         BROKEN_RTN(m_emptyQueuep && !m_emptyQueuep->brokeExists());
         BROKEN_RTN(m_queueIndexp && !m_queueIndexp->brokeExists());
         BROKEN_RTN(m_voidp && !m_voidp->brokeExists());
         return nullptr;
     }
-    virtual void cloneRelink() override { V3ERROR_NA; }
+    void cloneRelink() override { V3ERROR_NA; }
     AstNodeDType* typesp() const { return VN_AS(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
     AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd);
@@ -1990,7 +1982,7 @@ public:
     AstVoidDType* findVoidDType(FileLine* fl);
     void clearCache();
     void repairCache();
-    virtual void dump(std::ostream& str = std::cout) const override;
+    void dump(std::ostream& str = std::cout) const override;
 };
 class AstTypedef final : public AstNode {
 private:
@@ -2007,8 +1999,8 @@ public:
         dtypep(nullptr);  // V3Width will resolve
     }
     ASTGEN_MEMBERS_Typedef;
-    virtual void dump(std::ostream& str) const override;
-    virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    void dump(std::ostream& str) const override;
+    AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Type assigning to
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
@@ -2016,14 +2008,14 @@ public:
     void addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode* attrsp() const { return op4p(); }  // op4 = Attributes during early parse
     // METHODS
-    virtual string name() const override { return m_name; }
-    virtual bool maybePointedTo() const override { return true; }
-    virtual bool hasDType() const override { return true; }
-    virtual void name(const string& flag) override { m_name = flag; }
+    string name() const override { return m_name; }
+    bool maybePointedTo() const override { return true; }
+    bool hasDType() const override { return true; }
+    void name(const string& flag) override { m_name = flag; }
     bool attrPublic() const { return m_attrPublic; }
     void attrPublic(bool flag) { m_attrPublic = flag; }
-    virtual void tag(const string& text) override { m_tag = text; }
-    virtual string tag() const override { return m_tag; }
+    void tag(const string& text) override { m_tag = text; }
+    string tag() const override { return m_tag; }
 };
 class AstTypedefFwd final : public AstNode {
     // Forward declaration of a type; stripped after netlist parsing is complete
@@ -2036,8 +2028,8 @@ public:
         , m_name{name} {}
     ASTGEN_MEMBERS_TypedefFwd;
     // METHODS
-    virtual string name() const override { return m_name; }
-    virtual bool maybePointedTo() const override { return true; }
+    string name() const override { return m_name; }
+    bool maybePointedTo() const override { return true; }
 };
 class AstUdpTable final : public AstNode {
 public:
@@ -2057,7 +2049,7 @@ public:
         : ASTGEN_SUPER_UdpTableLine(fl)
         , m_text{text} {}
     ASTGEN_MEMBERS_UdpTableLine;
-    virtual string name() const override { return m_text; }
+    string name() const override { return m_text; }
     string text() const { return m_text; }
 };
 class AstUnlinkedRef final : public AstNode {
@@ -2073,7 +2065,7 @@ public:
     }
     ASTGEN_MEMBERS_UnlinkedRef;
     // ACCESSORS
-    virtual string name() const override { return m_name; }  // * = Var name
+    string name() const override { return m_name; }  // * = Var name
     AstNode* refp() const { return op1p(); }  // op1 = VarXRef or AstNodeFTaskRef
     AstNode* cellrefp() const { return op2p(); }  // op2 = CellArrayRef or CellRef
 };
@@ -2232,11 +2224,11 @@ public:
         m_declKwd = examplep->declKwd();
     }
     ASTGEN_MEMBERS_Var;
-    virtual void dump(std::ostream& str) const override;
-    virtual string name() const override { return m_name; }  // * = Var name
-    virtual bool hasDType() const override { return true; }
-    virtual bool maybePointedTo() const override { return true; }
-    virtual string origName() const override { return m_origName; }  // * = Original name
+    void dump(std::ostream& str) const override;
+    string name() const override { return m_name; }  // * = Var name
+    bool hasDType() const override { return true; }
+    bool maybePointedTo() const override { return true; }
+    string origName() const override { return m_origName; }  // * = Original name
     void origName(const string& name) { m_origName = name; }
     VVarType varType() const { return m_varType; }  // * = Type of variable
     void direction(const VDirection& flag) {
@@ -2269,7 +2261,7 @@ public:
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
     void combineType(VVarType type);
-    virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_AS(op1p(), NodeDType); }
     // op2 = Net delay
@@ -2340,9 +2332,9 @@ public:
     bool isForceable() const { return m_isForceable; }
     void setForceable() { m_isForceable = true; }
     // METHODS
-    virtual void name(const string& name) override { m_name = name; }
-    virtual void tag(const string& text) override { m_tag = text; }
-    virtual string tag() const override { return m_tag; }
+    void name(const string& name) override { m_name = name; }
+    void tag(const string& text) override { m_tag = text; }
+    string tag() const override { return m_tag; }
     bool isAnsi() const { return m_ansi; }
     bool isContinuously() const { return m_isContinuously; }
     bool isDeclTyped() const { return m_declTyped; }
@@ -2406,7 +2398,7 @@ public:
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     VVarAttrClocker attrClocker() const { return m_attrClocker; }
-    virtual string verilogKwd() const override;
+    string verilogKwd() const override;
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     void propagateAttrFrom(AstVar* fromp) {
@@ -2469,22 +2461,22 @@ public:
         dtypeFrom(varp);
     }
     ASTGEN_MEMBERS_VarScope;
-    virtual void cloneRelink() override {
+    void cloneRelink() override {
         if (m_varp && m_varp->clonep()) {
             m_varp = m_varp->clonep();
             UASSERT(m_scopep->clonep(), "No clone cross link: " << this);
             m_scopep = m_scopep->clonep();
         }
     }
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(m_varp && !m_varp->brokeExists());
         BROKEN_RTN(m_scopep && !m_scopep->brokeExists());
         return nullptr;
     }
-    virtual bool maybePointedTo() const override { return true; }
-    virtual string name() const override { return scopep()->name() + "->" + varp()->name(); }
-    virtual void dump(std::ostream& str) const override;
-    virtual bool hasDType() const override { return true; }
+    bool maybePointedTo() const override { return true; }
+    string name() const override { return scopep()->name() + "->" + varp()->name(); }
+    void dump(std::ostream& str) const override;
+    bool hasDType() const override { return true; }
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
     AstScope* scopep() const { return m_scopep; }  // Pointer to scope it's under
     void scopep(AstScope* nodep) { m_scopep = nodep; }
@@ -2510,7 +2502,7 @@ public:
         , m_generate{generate}
         , m_implied{implied} {}
     ASTGEN_MEMBERS_Begin;
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     // op1p is statements in NodeBlock
     AstNode* genforp() const { return op2p(); }  // op2 = GENFOR, if applicable,
     // might NOT be a GenFor, as loop unrolling replaces with Begin
@@ -2530,7 +2522,7 @@ public:
     AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
         : ASTGEN_SUPER_Fork(fl, name, stmtsp) {}
     ASTGEN_MEMBERS_Fork;
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     VJoinType joinType() const { return m_joinType; }
     void joinType(const VJoinType& flag) { m_joinType = flag; }
 };
@@ -2544,7 +2536,7 @@ public:
         addNOp1p(fvarsp);
     }
     ASTGEN_MEMBERS_Func;
-    virtual bool hasDType() const override { return true; }
+    bool hasDType() const override { return true; }
 };
 class AstTask final : public AstNodeFTask {
     // A task inside a module
@@ -2569,7 +2561,7 @@ public:
         , m_source{false}
         , m_support{false} {}
     ASTGEN_MEMBERS_CFile;
-    virtual void dump(std::ostream& str = std::cout) const override;
+    void dump(std::ostream& str = std::cout) const override;
     bool slow() const { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool source() const { return m_source; }
@@ -2584,7 +2576,7 @@ public:
     AstVFile(FileLine* fl, const string& name)
         : ASTGEN_SUPER_VFile(fl, name) {}
     ASTGEN_MEMBERS_VFile;
-    virtual void dump(std::ostream& str = std::cout) const override;
+    void dump(std::ostream& str = std::cout) const override;
 };
 
 // === AstNodeModule ===
@@ -2602,12 +2594,12 @@ public:
     AstClass(FileLine* fl, const string& name)
         : ASTGEN_SUPER_Class(fl, name) {}
     ASTGEN_MEMBERS_Class;
-    virtual string verilogKwd() const override { return "class"; }
-    virtual bool maybePointedTo() const override { return true; }
-    virtual void dump(std::ostream& str) const override;
+    string verilogKwd() const override { return "class"; }
+    bool maybePointedTo() const override { return true; }
+    void dump(std::ostream& str) const override;
     const char* broken() const override;
     void cloneRelink() override;
-    virtual bool timescaleMatters() const override { return false; }
+    bool timescaleMatters() const override { return false; }
     // op1/op2/op3 in AstNodeModule
     AstClassPackage* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
@@ -2640,10 +2632,10 @@ public:
     AstClassPackage(FileLine* fl, const string& name)
         : ASTGEN_SUPER_ClassPackage(fl, name) {}
     ASTGEN_MEMBERS_ClassPackage;
-    virtual string verilogKwd() const override { return "classpackage"; }
-    virtual const char* broken() const override;
-    virtual void cloneRelink() override;
-    virtual bool timescaleMatters() const override { return false; }
+    string verilogKwd() const override { return "classpackage"; }
+    const char* broken() const override;
+    void cloneRelink() override;
+    bool timescaleMatters() const override { return false; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* classp) { m_classp = classp; }
 };
@@ -2655,8 +2647,8 @@ public:
     ASTGEN_MEMBERS_Iface;
     // Interfaces have `timescale applicability but lots of code seems to
     // get false warnings if we enable this
-    virtual string verilogKwd() const override { return "interface"; }
-    virtual bool timescaleMatters() const override { return false; }
+    string verilogKwd() const override { return "interface"; }
+    bool timescaleMatters() const override { return false; }
 };
 class AstModule final : public AstNodeModule {
     // A module declaration
@@ -2667,8 +2659,8 @@ public:
         : ASTGEN_SUPER_Module(fl, name)
         , m_isProgram{program} {}
     ASTGEN_MEMBERS_Module;
-    virtual string verilogKwd() const override { return m_isProgram ? "program" : "module"; }
-    virtual bool timescaleMatters() const override { return true; }
+    string verilogKwd() const override { return m_isProgram ? "program" : "module"; }
+    bool timescaleMatters() const override { return true; }
 };
 class AstNotFoundModule final : public AstNodeModule {
     // A missing module declaration
@@ -2676,8 +2668,8 @@ public:
     AstNotFoundModule(FileLine* fl, const string& name)
         : ASTGEN_SUPER_NotFoundModule(fl, name) {}
     ASTGEN_MEMBERS_NotFoundModule;
-    virtual string verilogKwd() const override { return "/*not-found-*/ module"; }
-    virtual bool timescaleMatters() const override { return false; }
+    string verilogKwd() const override { return "/*not-found-*/ module"; }
+    bool timescaleMatters() const override { return false; }
 };
 class AstPackage final : public AstNodeModule {
     // A package declaration
@@ -2685,8 +2677,8 @@ public:
     AstPackage(FileLine* fl, const string& name)
         : ASTGEN_SUPER_Package(fl, name) {}
     ASTGEN_MEMBERS_Package;
-    virtual string verilogKwd() const override { return "package"; }
-    virtual bool timescaleMatters() const override { return !isDollarUnit(); }
+    string verilogKwd() const override { return "package"; }
+    bool timescaleMatters() const override { return !isDollarUnit(); }
     static string dollarUnitName() { return AstNode::encodeName("$unit"); }
     bool isDollarUnit() const { return name() == dollarUnitName(); }
 };
@@ -2696,8 +2688,8 @@ public:
     AstPrimitive(FileLine* fl, const string& name)
         : ASTGEN_SUPER_Primitive(fl, name) {}
     ASTGEN_MEMBERS_Primitive;
-    virtual string verilogKwd() const override { return "primitive"; }
-    virtual bool timescaleMatters() const override { return false; }
+    string verilogKwd() const override { return "primitive"; }
+    bool timescaleMatters() const override { return false; }
 };
 
 // === AstNodePreSel ===
@@ -2755,7 +2747,7 @@ public:
     }
     ASTGEN_MEMBERS_Always;
     //
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     AstSenTree* sensesp() const { return VN_AS(op1p(), SenTree); }  // op1 = Sensitivity list
     void sensesp(AstSenTree* nodep) { setOp1p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
@@ -2818,10 +2810,10 @@ public:
     ASTGEN_MEMBERS_BracketRange;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     // Will be removed in V3Width, which relies on this
     // being a child not a dtype pointed node
-    virtual bool maybePointedTo() const override { return false; }
+    bool maybePointedTo() const override { return false; }
     AstNode* elementsp() const { return op1p(); }
 };
 class AstRange final : public AstNodeRange {
@@ -2851,9 +2843,9 @@ public:
     }
     int elementsConst() const { return hiConst() - loConst() + 1; }
     bool littleEndian() const { return leftConst() < rightConst(); }
-    virtual void dump(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstUnsizedRange final : public AstNodeRange {
     // Unsized range specification, for open arrays
@@ -2863,7 +2855,7 @@ public:
     ASTGEN_MEMBERS_UnsizedRange;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() { return "[]"; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstWildcardRange final : public AstNodeRange {
     // Wildcard range specification, for wildcard index type associative arrays
@@ -2873,7 +2865,7 @@ public:
     ASTGEN_MEMBERS_WildcardRange;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() { return "[*]"; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
 };
 
 // === AstNodeStmt ===
@@ -2887,7 +2879,7 @@ public:
         addNOp2p(bodysp);
     }
     ASTGEN_MEMBERS_AlwaysPublic;
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     //
     AstSenTree* sensesp() const { return VN_AS(op1p(), SenTree); }  // op1 = Sensitivity list
     AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
@@ -2901,8 +2893,8 @@ public:
     explicit AstBreak(FileLine* fl)
         : ASTGEN_SUPER_Break(fl) {}
     ASTGEN_MEMBERS_Break;
-    virtual string verilogKwd() const override { return "break"; }
-    virtual bool isBrancher() const override {
+    string verilogKwd() const override { return "break"; }
+    bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
     }
 };
@@ -2929,14 +2921,14 @@ public:
         addNOp2p(pinsp);
     }
     ASTGEN_MEMBERS_CMethodHard;
-    virtual string name() const override { return m_name; }  // * = Var name
-    virtual bool hasDType() const override { return true; }
-    virtual void name(const string& name) override { m_name = name; }
-    virtual bool same(const AstNode* samep) const override {
+    string name() const override { return m_name; }  // * = Var name
+    bool hasDType() const override { return true; }
+    void name(const string& name) override { m_name = name; }
+    bool same(const AstNode* samep) const override {
         const AstCMethodHard* asamep = static_cast<const AstCMethodHard*>(samep);
         return (m_name == asamep->m_name);
     }
-    virtual bool isPure() const override { return m_pure; }
+    bool isPure() const override { return m_pure; }
     void pure(bool flag) { m_pure = flag; }
     void makeStatement() {
         statement(true);
@@ -2957,9 +2949,9 @@ public:
         addNOp1p((AstNode*)exprsp);
     }
     ASTGEN_MEMBERS_CReset;
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     AstVarRef* varrefp() const { return VN_AS(op1p(), VarRef); }  // op1 = varref to reset
 };
 class AstCReturn final : public AstNodeStmt {
@@ -2972,8 +2964,8 @@ public:
         setOp1p(lhsp);
     }
     ASTGEN_MEMBERS_CReturn;
-    virtual int instrCount() const override { return widthInstrs(); }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    int instrCount() const override { return widthInstrs(); }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     //
     AstNode* lhsp() const { return op1p(); }
 };
@@ -2986,9 +2978,9 @@ public:
     }
     inline AstCStmt(FileLine* fl, const string& textStmt);
     ASTGEN_MEMBERS_CStmt;
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     void addBodysp(AstNode* nodep) { addNOp1p(nodep); }
     AstNode* bodysp() const { return op1p(); }  // op1 = expressions to print
 };
@@ -3004,10 +2996,10 @@ public:
     ASTGEN_MEMBERS_ChangeDet;
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return widthInstrs() * 2; }  // xor, or/logor
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    int instrCount() const override { return widthInstrs() * 2; }  // xor, or/logor
+    bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstComment final : public AstNodeStmt {
     // Some comment to put into the output stream
@@ -3022,10 +3014,8 @@ public:
         , m_showAt{showAt}
         , m_name{name} {}
     ASTGEN_MEMBERS_Comment;
-    virtual string name() const override { return m_name; }  // * = Text
-    virtual bool same(const AstNode* samep) const override {
-        return true;
-    }  // Ignore name in comments
+    string name() const override { return m_name; }  // * = Text
+    bool same(const AstNode* samep) const override { return true; }  // Ignore name in comments
     virtual bool showAt() const { return m_showAt; }
 };
 class AstContinue final : public AstNodeStmt {
@@ -3033,8 +3023,8 @@ public:
     explicit AstContinue(FileLine* fl)
         : ASTGEN_SUPER_Continue(fl) {}
     ASTGEN_MEMBERS_Continue;
-    virtual string verilogKwd() const override { return "continue"; }
-    virtual bool isBrancher() const override {
+    string verilogKwd() const override { return "continue"; }
+    bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
     }
 };
@@ -3060,19 +3050,19 @@ public:
         , m_linescov{linescov}
         , m_offset{offset} {}
     ASTGEN_MEMBERS_CoverDecl;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(m_dataDeclp && !m_dataDeclp->brokeExists());
         if (m_dataDeclp && m_dataDeclp->m_dataDeclp) {  // Avoid O(n^2) accessing
             v3fatalSrc("dataDeclp should point to real data, not be a list");
         }
         return nullptr;
     }
-    virtual void cloneRelink() override {
+    void cloneRelink() override {
         if (m_dataDeclp && m_dataDeclp->clonep()) m_dataDeclp = m_dataDeclp->clonep();
     }
-    virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
-    virtual bool maybePointedTo() const override { return true; }
+    void dump(std::ostream& str) const override;
+    int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
+    bool maybePointedTo() const override { return true; }
     void binNum(int flag) { m_binNum = flag; }
     int binNum() const { return m_binNum; }
     int offset() const { return m_offset; }
@@ -3082,12 +3072,12 @@ public:
     const string& hier() const { return m_hier; }
     void hier(const string& flag) { m_hier = flag; }
     void comment(const string& flag) { m_text = flag; }
-    virtual bool same(const AstNode* samep) const override {
+    bool same(const AstNode* samep) const override {
         const AstCoverDecl* const asamep = static_cast<const AstCoverDecl*>(samep);
         return (fileline() == asamep->fileline() && linescov() == asamep->linescov()
                 && hier() == asamep->hier() && comment() == asamep->comment());
     }
-    virtual bool isPredictOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
     void dataDeclp(AstCoverDecl* nodep) { m_dataDeclp = nodep; }
     // dataDecl nullptr means "use this one", but often you want "this" to
     // indicate to get data from here
@@ -3105,21 +3095,21 @@ public:
         : ASTGEN_SUPER_CoverInc(fl)
         , m_declp{declp} {}
     ASTGEN_MEMBERS_CoverInc;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(!declp()->brokeExists());
         return nullptr;
     }
-    virtual void cloneRelink() override {
+    void cloneRelink() override {
         if (m_declp->clonep()) m_declp = m_declp->clonep();
     }
-    virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
-    virtual bool same(const AstNode* samep) const override {
+    void dump(std::ostream& str) const override;
+    int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
+    bool same(const AstNode* samep) const override {
         return declp() == static_cast<const AstCoverInc*>(samep)->declp();
     }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isOutputter() const override { return true; }
     // but isPure()  true
     AstCoverDecl* declp() const { return m_declp; }  // Where defined
 };
@@ -3135,11 +3125,11 @@ public:
         setOp3p(changep);
     }
     ASTGEN_MEMBERS_CoverToggle;
-    virtual int instrCount() const override { return 3 + INSTR_COUNT_BRANCH + INSTR_COUNT_LD; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return true; }
-    virtual bool isOutputter() const override {
+    int instrCount() const override { return 3 + INSTR_COUNT_BRANCH + INSTR_COUNT_LD; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return true; }
+    bool isOutputter() const override {
         return false;  // Though the AstCoverInc under this is an outputter
     }
     // but isPure()  true
@@ -3157,7 +3147,7 @@ public:
         setNOp2p(stmtsp);
     }
     ASTGEN_MEMBERS_Delay;
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     //
     AstNode* lhsp() const { return op1p(); }  // op1 = delay value
     void lhsp(AstNode* nodep) { setOp1p(nodep); }
@@ -3172,9 +3162,9 @@ public:
         : ASTGEN_SUPER_Disable(fl)
         , m_name{name} {}
     ASTGEN_MEMBERS_Disable;
-    virtual string name() const override { return m_name; }  // * = Block name
-    virtual void name(const string& flag) override { m_name = flag; }
-    virtual bool isBrancher() const override {
+    string name() const override { return m_name; }  // * = Block name
+    void name(const string& flag) override { m_name = flag; }
+    bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
     }
 };
@@ -3208,26 +3198,24 @@ public:
         setNOp3p(filep);
     }
     ASTGEN_MEMBERS_Display;
-    virtual void dump(std::ostream& str) const override;
-    virtual const char* broken() const override {
+    void dump(std::ostream& str) const override;
+    const char* broken() const override {
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
-    virtual string verilogKwd() const override {
+    string verilogKwd() const override {
         return (filep() ? string("$f") + string(displayType().ascii())
                         : string("$") + string(displayType().ascii()));
     }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override {
-        return false;
-    }  // SPECIAL: $display has 'visual' ordering
-    virtual bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
-    virtual bool isUnlikely() const override { return true; }
-    virtual bool same(const AstNode* samep) const override {
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* samep) const override {
         return displayType() == static_cast<const AstDisplay*>(samep)->displayType();
     }
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
+    int instrCount() const override { return INSTR_COUNT_PLI; }
     VDisplayType displayType() const { return m_displayType; }
     void displayType(VDisplayType type) { m_displayType = type; }
     // * = Add a newline for $display
@@ -3256,12 +3244,12 @@ public:
         setNOp1p(exprp);
     }
     ASTGEN_MEMBERS_DumpCtl;
-    virtual string verilogKwd() const override { return ctlType().ascii(); }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
+    string verilogKwd() const override { return ctlType().ascii(); }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isOutputter() const override { return true; }
     virtual bool cleanOut() const { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     VDumpCtlType ctlType() const { return m_ctlType; }
     AstNode* exprp() const { return op1p(); }  // op2 = Expressions to output
     void exprp(AstNode* nodep) { setOp1p(nodep); }
@@ -3275,12 +3263,12 @@ public:
         setNOp2p(stmtsp);
     }
     ASTGEN_MEMBERS_EventControl;
-    virtual string verilogKwd() const override { return "@(%l) %r"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return false; }
-    virtual int instrCount() const override { return 0; }
+    string verilogKwd() const override { return "@(%l) %r"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return false; }
+    int instrCount() const override { return 0; }
     AstSenTree* sensesp() const { return VN_AS(op1p(), SenTree); }
     AstNode* stmtsp() const { return op2p(); }
 };
@@ -3293,13 +3281,13 @@ public:
         setNOp2p(filep);
     }
     ASTGEN_MEMBERS_FClose;
-    virtual string verilogKwd() const override { return "$fclose"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual bool isUnlikely() const override { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    string verilogKwd() const override { return "$fclose"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     AstNode* filep() const { return op2p(); }
     void filep(AstNodeVarRef* nodep) { setNOp2p((AstNode*)nodep); }
 };
@@ -3312,13 +3300,13 @@ public:
         setNOp2p(filep);
     }
     ASTGEN_MEMBERS_FFlush;
-    virtual string verilogKwd() const override { return "$fflush"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual bool isUnlikely() const override { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    string verilogKwd() const override { return "$fflush"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     AstNode* filep() const { return op2p(); }
     void filep(AstNodeVarRef* nodep) { setNOp2p((AstNode*)nodep); }
 };
@@ -3332,13 +3320,13 @@ public:
         setOp3p(modep);
     }
     ASTGEN_MEMBERS_FOpen;
-    virtual string verilogKwd() const override { return "$fopen"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual bool isUnlikely() const override { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    string verilogKwd() const override { return "$fopen"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     AstNode* filep() const { return op1p(); }
     AstNode* filenamep() const { return op2p(); }
     AstNode* modep() const { return op3p(); }
@@ -3352,13 +3340,13 @@ public:
         setOp2p(filenamep);
     }
     ASTGEN_MEMBERS_FOpenMcd;
-    virtual string verilogKwd() const override { return "$fopen"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual bool isUnlikely() const override { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    string verilogKwd() const override { return "$fopen"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     AstNode* filep() const { return op1p(); }
     AstNode* filenamep() const { return op2p(); }
 };
@@ -3367,17 +3355,13 @@ public:
     explicit AstFinish(FileLine* fl)
         : ASTGEN_SUPER_Finish(fl) {}
     ASTGEN_MEMBERS_Finish;
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override {
-        return false;
-    }  // SPECIAL: $display has 'visual' ordering
-    virtual bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
-    virtual bool isUnlikely() const override { return true; }
-    virtual int instrCount() const override { return 0; }  // Rarely executes
-    virtual bool same(const AstNode* samep) const override {
-        return fileline() == samep->fileline();
-    }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isUnlikely() const override { return true; }
+    int instrCount() const override { return 0; }  // Rarely executes
+    bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
 };
 class AstForeach final : public AstNodeStmt {
 public:
@@ -3389,9 +3373,9 @@ public:
     ASTGEN_MEMBERS_Foreach;
     AstNode* arrayp() const { return op1p(); }  // op1 = array and index vars
     AstNode* bodysp() const { return op4p(); }  // op4 = body of loop
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 class AstJumpBlock final : public AstNodeStmt {
@@ -3407,12 +3391,12 @@ public:
         : ASTGEN_SUPER_JumpBlock(fl) {
         addNOp1p(stmtsp);
     }
-    virtual const char* broken() const override;
-    virtual void cloneRelink() override;
+    const char* broken() const override;
+    void cloneRelink() override;
     ASTGEN_MEMBERS_JumpBlock;
-    virtual int instrCount() const override { return 0; }
-    virtual bool maybePointedTo() const override { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    int instrCount() const override { return 0; }
+    bool maybePointedTo() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     // op1 = Statements
     AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
@@ -3437,13 +3421,13 @@ public:
     ASTGEN_MEMBERS_JumpGo;
     const char* broken() const override;
     void cloneRelink() override;
-    virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual bool same(const AstNode* samep) const override {
+    void dump(std::ostream& str) const override;
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool same(const AstNode* samep) const override {
         return labelp() == static_cast<const AstJumpGo*>(samep)->labelp();
     }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isBrancher() const override {
+    bool isGateOptimizable() const override { return false; }
+    bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
     }
     AstJumpLabel* labelp() const { return m_labelp; }
@@ -3459,18 +3443,18 @@ public:
         : ASTGEN_SUPER_JumpLabel(fl)
         , m_blockp{blockp} {}
     ASTGEN_MEMBERS_JumpLabel;
-    virtual bool maybePointedTo() const override { return true; }
-    virtual const char* broken() const override {
+    bool maybePointedTo() const override { return true; }
+    const char* broken() const override {
         BROKEN_RTN(!blockp()->brokeExistsAbove());
         BROKEN_RTN(blockp()->labelp() != this);
         return nullptr;
     }
-    virtual void cloneRelink() override {
+    void cloneRelink() override {
         if (m_blockp->clonep()) m_blockp = m_blockp->clonep();
     }
-    virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return 0; }
-    virtual bool same(const AstNode* samep) const override {
+    void dump(std::ostream& str) const override;
+    int instrCount() const override { return 0; }
+    bool same(const AstNode* samep) const override {
         return blockp() == static_cast<const AstJumpLabel*>(samep)->blockp();
     }
     AstJumpBlock* blockp() const { return m_blockp; }
@@ -3483,15 +3467,13 @@ public:
         : ASTGEN_SUPER_MonitorOff(fl)
         , m_off{off} {}
     ASTGEN_MEMBERS_MonitorOff;
-    virtual string verilogKwd() const override { return m_off ? "$monitoroff" : "$monitoron"; }
-    virtual bool isGateOptimizable() const override { return false; }  // Though deleted before opt
-    virtual bool isPredictOptimizable() const override {
-        return false;
-    }  // Though deleted before opt
-    virtual bool isPure() const override { return false; }  // Though deleted before opt
-    virtual bool isOutputter() const override { return true; }  // Though deleted before opt
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
-    virtual bool same(const AstNode* samep) const override {
+    string verilogKwd() const override { return m_off ? "$monitoroff" : "$monitoron"; }
+    bool isGateOptimizable() const override { return false; }  // Though deleted before opt
+    bool isPredictOptimizable() const override { return false; }  // Though deleted before opt
+    bool isPure() const override { return false; }  // Though deleted before opt
+    bool isOutputter() const override { return true; }  // Though deleted before opt
+    int instrCount() const override { return INSTR_COUNT_PLI; }
+    bool same(const AstNode* samep) const override {
         return m_off == static_cast<const AstMonitorOff*>(samep)->m_off;
     }
     bool off() const { return m_off; }
@@ -3504,15 +3486,15 @@ public:
     explicit AstPrintTimeScale(FileLine* fl)
         : ASTGEN_SUPER_PrintTimeScale(fl) {}
     ASTGEN_MEMBERS_PrintTimeScale;
-    virtual void name(const string& name) override { m_name = name; }
-    virtual string name() const override { return m_name; }  // * = Var name
-    virtual void dump(std::ostream& str) const override;
-    virtual string verilogKwd() const override { return "$printtimescale"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
+    void name(const string& name) override { m_name = name; }
+    string name() const override { return m_name; }  // * = Var name
+    void dump(std::ostream& str) const override;
+    string verilogKwd() const override { return "$printtimescale"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    int instrCount() const override { return INSTR_COUNT_PLI; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
@@ -3536,11 +3518,9 @@ public:
     ASTGEN_MEMBERS_Repeat;
     AstNode* countp() const { return op2p(); }  // op2 = condition to continue
     AstNode* bodysp() const { return op3p(); }  // op3 = body of loop
-    virtual bool isGateOptimizable() const override {
-        return false;
-    }  // Not relevant - converted to FOR
-    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }  // Not relevant - converted to FOR
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 class AstReturn final : public AstNodeStmt {
@@ -3550,9 +3530,9 @@ public:
         setNOp1p(lhsp);
     }
     ASTGEN_MEMBERS_Return;
-    virtual string verilogKwd() const override { return "return"; }
+    string verilogKwd() const override { return "return"; }
     AstNode* lhsp() const { return op1p(); }
-    virtual bool isBrancher() const override {
+    bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
     }
 };
@@ -3573,18 +3553,18 @@ public:
         setOp3p(lhsp);
     }
     ASTGEN_MEMBERS_SFormat;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
-    virtual string verilogKwd() const override { return "$sformat"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return true; }
-    virtual bool isPure() const override { return true; }
-    virtual bool isOutputter() const override { return false; }
+    string verilogKwd() const override { return "$sformat"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return true; }
+    bool isPure() const override { return true; }
+    bool isOutputter() const override { return false; }
     virtual bool cleanOut() const { return false; }
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    int instrCount() const override { return INSTR_COUNT_PLI; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     void fmtp(AstSFormatF* nodep) { addOp1p(nodep); }  // op1 = To-String formatter
     AstSFormatF* fmtp() const { return VN_AS(op1p(), SFormatF); }
     AstNode* lhsp() const { return op3p(); }
@@ -3595,17 +3575,13 @@ public:
     AstStop(FileLine* fl, bool maybe)
         : ASTGEN_SUPER_Stop(fl) {}
     ASTGEN_MEMBERS_Stop;
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override {
-        return false;
-    }  // SPECIAL: $display has 'visual' ordering
-    virtual bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
-    virtual bool isUnlikely() const override { return true; }
-    virtual int instrCount() const override { return 0; }  // Rarely executes
-    virtual bool same(const AstNode* samep) const override {
-        return fileline() == samep->fileline();
-    }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isUnlikely() const override { return true; }
+    int instrCount() const override { return 0; }  // Rarely executes
+    bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
 };
 class AstSysFuncAsTask final : public AstNodeStmt {
     // Call what is normally a system function (with a return) in a non-return context
@@ -3617,13 +3593,13 @@ public:
         addNOp1p(exprsp);
     }
     ASTGEN_MEMBERS_SysFuncAsTask;
-    virtual string verilogKwd() const override { return ""; }
-    virtual bool isGateOptimizable() const override { return true; }
-    virtual bool isPredictOptimizable() const override { return true; }
-    virtual bool isPure() const override { return true; }
-    virtual bool isOutputter() const override { return false; }
-    virtual int instrCount() const override { return 0; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    string verilogKwd() const override { return ""; }
+    bool isGateOptimizable() const override { return true; }
+    bool isPredictOptimizable() const override { return true; }
+    bool isPure() const override { return true; }
+    bool isOutputter() const override { return false; }
+    int instrCount() const override { return 0; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     AstNode* lhsp() const { return op1p(); }  // op1 = Expressions to eval
     void lhsp(AstNode* nodep) { addOp1p(nodep); }  // op1 = Expressions to eval
 };
@@ -3636,14 +3612,12 @@ public:
         addNOp1p(exprsp);
     }
     ASTGEN_MEMBERS_SysIgnore;
-    virtual string verilogKwd() const override { return "$ignored"; }
-    virtual bool isGateOptimizable() const override { return false; }  // Though deleted before opt
-    virtual bool isPredictOptimizable() const override {
-        return false;
-    }  // Though deleted before opt
-    virtual bool isPure() const override { return false; }  // Though deleted before opt
-    virtual bool isOutputter() const override { return true; }  // Though deleted before opt
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
+    string verilogKwd() const override { return "$ignored"; }
+    bool isGateOptimizable() const override { return false; }  // Though deleted before opt
+    bool isPredictOptimizable() const override { return false; }  // Though deleted before opt
+    bool isPure() const override { return false; }  // Though deleted before opt
+    bool isOutputter() const override { return true; }  // Though deleted before opt
+    int instrCount() const override { return INSTR_COUNT_PLI; }
     AstNode* exprsp() const { return op1p(); }  // op1 = Expressions to output
     void exprsp(AstNode* nodep) { addOp1p(nodep); }  // op1 = Expressions to output
 };
@@ -3655,13 +3629,13 @@ public:
         setOp1p(lhsp);
     }
     ASTGEN_MEMBERS_SystemT;
-    virtual string verilogKwd() const override { return "$system"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual bool isUnlikely() const override { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    string verilogKwd() const override { return "$system"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     AstNode* lhsp() const { return op1p(); }
 };
 class AstTimeFormat final : public AstNodeStmt {
@@ -3676,12 +3650,12 @@ public:
         setOp4p(widthp);
     }
     ASTGEN_MEMBERS_TimeFormat;
-    virtual string verilogKwd() const override { return "$timeformat"; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
+    string verilogKwd() const override { return "$timeformat"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    int instrCount() const override { return INSTR_COUNT_PLI; }
     AstNode* unitsp() const { return op1p(); }
     AstNode* precisionp() const { return op2p(); }
     AstNode* suffixp() const { return op3p(); }
@@ -3718,13 +3692,13 @@ public:
         dtypeFrom(valuep);
         addNOp1p(valuep);
     }
-    virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return 100; }  // Large...
+    void dump(std::ostream& str) const override;
+    int instrCount() const override { return 100; }  // Large...
     ASTGEN_MEMBERS_TraceDecl;
-    virtual string name() const override { return m_showname; }
-    virtual bool maybePointedTo() const override { return true; }
-    virtual bool hasDType() const override { return true; }
-    virtual bool same(const AstNode* samep) const override { return false; }
+    string name() const override { return m_showname; }
+    bool maybePointedTo() const override { return true; }
+    bool hasDType() const override { return true; }
+    bool same(const AstNode* samep) const override { return false; }
     string showname() const { return m_showname; }  // * = Var name
     // Details on what we're tracing
     uint32_t code() const { return m_code; }
@@ -3758,22 +3732,22 @@ public:
         addOp2p(declp->valuep()->cloneTree(true));
     }
     ASTGEN_MEMBERS_TraceInc;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_RTN(!declp()->brokeExists());
         return nullptr;
     }
-    virtual void cloneRelink() override {
+    void cloneRelink() override {
         if (m_declp->clonep()) m_declp = m_declp->clonep();
     }
-    virtual void dump(std::ostream& str) const override;
-    virtual int instrCount() const override { return 10 + 2 * INSTR_COUNT_LD; }
-    virtual bool hasDType() const override { return true; }
-    virtual bool same(const AstNode* samep) const override {
+    void dump(std::ostream& str) const override;
+    int instrCount() const override { return 10 + 2 * INSTR_COUNT_LD; }
+    bool hasDType() const override { return true; }
+    bool same(const AstNode* samep) const override {
         return declp() == static_cast<const AstTraceInc*>(samep)->declp();
     }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isOutputter() const override { return true; }
     // but isPure()  true
     // op1 = Statements before the value
     AstNode* precondsp() const { return op1p(); }
@@ -3790,7 +3764,7 @@ public:
         : ASTGEN_SUPER_TracePopNamePrefix(fl)
         , m_count{count} {}
     ASTGEN_MEMBERS_TracePopNamePrefix;
-    virtual bool same(const AstNode* samep) const override { return false; }
+    bool same(const AstNode* samep) const override { return false; }
     unsigned count() const { return m_count; }
 };
 class AstTracePushNamePrefix final : public AstNodeStmt {
@@ -3800,7 +3774,7 @@ public:
         : ASTGEN_SUPER_TracePushNamePrefix(fl)
         , m_prefix{prefix} {}
     ASTGEN_MEMBERS_TracePushNamePrefix;
-    virtual bool same(const AstNode* samep) const override { return false; }
+    bool same(const AstNode* samep) const override { return false; }
     string prefix() const { return m_prefix; }
 };
 class AstUCStmt final : public AstNodeStmt {
@@ -3812,11 +3786,11 @@ public:
     }
     ASTGEN_MEMBERS_UCStmt;
     AstNode* bodysp() const { return op1p(); }  // op1 = expressions to print
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual bool isPure() const override { return false; }
-    virtual bool isOutputter() const override { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstWait final : public AstNodeStmt {
 public:
@@ -3853,13 +3827,13 @@ public:
     void addPrecondsp(AstNode* newp) { addOp1p(newp); }
     void addBodysp(AstNode* newp) { addOp3p(newp); }
     void addIncsp(AstNode* newp) { addOp4p(newp); }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     // Stop statement searchback here
-    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp) override;
+    void addBeforeStmt(AstNode* newp, AstNode* belowp) override;
     // Stop statement searchback here
-    virtual void addNextStmt(AstNode* newp, AstNode* belowp) override;
+    void addNextStmt(AstNode* newp, AstNode* belowp) override;
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == bodysp(); }
 };
 class AstWith final : public AstNodeStmt {
@@ -3878,9 +3852,9 @@ public:
         addNOp3p(exprp);
     }
     ASTGEN_MEMBERS_With;
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
-    virtual bool hasDType() const override { return true; }
-    virtual const char* broken() const override {
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    bool hasDType() const override { return true; }
+    const char* broken() const override {
         BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
         BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
         return nullptr;
@@ -3903,7 +3877,7 @@ public:
         addNOp2p(exprp);
     }
     ASTGEN_MEMBERS_WithParse;
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
     //
     AstNode* funcrefp() const { return op1p(); }
     AstNode* exprp() const { return op2p(); }
@@ -3917,10 +3891,10 @@ public:
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_Assign;
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssign(this->fileline(), lhsp, rhsp);
     }
-    virtual bool brokeLhsMustBeLvalue() const override { return true; }
+    bool brokeLhsMustBeLvalue() const override { return true; }
 };
 class AstAssignAlias final : public AstNodeAssign {
     // Like AstAssignW, but a true bidirect interconnection alias
@@ -3929,22 +3903,20 @@ public:
     AstAssignAlias(FileLine* fl, AstVarRef* lhsp, AstVarRef* rhsp)
         : ASTGEN_SUPER_AssignAlias(fl, (AstNode*)lhsp, (AstNode*)rhsp) {}
     ASTGEN_MEMBERS_AssignAlias;
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        V3ERROR_NA_RETURN(nullptr);
-    }
-    virtual bool brokeLhsMustBeLvalue() const override { return false; }
+    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override { V3ERROR_NA_RETURN(nullptr); }
+    bool brokeLhsMustBeLvalue() const override { return false; }
 };
 class AstAssignDly final : public AstNodeAssign {
 public:
     AstAssignDly(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignDly(fl, lhsp, rhsp, timingControlp) {}
     ASTGEN_MEMBERS_AssignDly;
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignDly(this->fileline(), lhsp, rhsp);
     }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual string verilogKwd() const override { return "<="; }
-    virtual bool brokeLhsMustBeLvalue() const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    string verilogKwd() const override { return "<="; }
+    bool brokeLhsMustBeLvalue() const override { return true; }
 };
 class AstAssignForce final : public AstNodeAssign {
     // Procedural 'force' statement
@@ -3952,10 +3924,10 @@ public:
     AstAssignForce(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_AssignForce(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AssignForce;
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignForce{this->fileline(), lhsp, rhsp};
     }
-    virtual bool brokeLhsMustBeLvalue() const override { return true; }
+    bool brokeLhsMustBeLvalue() const override { return true; }
 };
 class AstAssignPost final : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
@@ -3963,10 +3935,10 @@ public:
     AstAssignPost(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_AssignPost(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AssignPost;
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignPost(this->fileline(), lhsp, rhsp);
     }
-    virtual bool brokeLhsMustBeLvalue() const override { return true; }
+    bool brokeLhsMustBeLvalue() const override { return true; }
 };
 class AstAssignPre final : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
@@ -3974,10 +3946,10 @@ public:
     AstAssignPre(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_AssignPre(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AssignPre;
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignPre(this->fileline(), lhsp, rhsp);
     }
-    virtual bool brokeLhsMustBeLvalue() const override { return true; }
+    bool brokeLhsMustBeLvalue() const override { return true; }
 };
 class AstAssignVarScope final : public AstNodeAssign {
     // Assign two VarScopes to each other
@@ -3987,10 +3959,10 @@ public:
         dtypeFrom(rhsp);
     }
     ASTGEN_MEMBERS_AssignVarScope;
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignVarScope(this->fileline(), lhsp, rhsp);
     }
-    virtual bool brokeLhsMustBeLvalue() const override { return false; }
+    bool brokeLhsMustBeLvalue() const override { return false; }
 };
 class AstAssignW final : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
@@ -4000,10 +3972,10 @@ public:
     ASTGEN_MEMBERS_AssignW;
     AstStrengthSpec* strengthSpecp() const { return VN_AS(op4p(), StrengthSpec); }
     void strengthSpecp(AstStrengthSpec* const strengthSpecp) { setOp4p((AstNode*)strengthSpecp); }
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstAssignW(this->fileline(), lhsp, rhsp);
     }
-    virtual bool brokeLhsMustBeLvalue() const override { return true; }
+    bool brokeLhsMustBeLvalue() const override { return true; }
     AstAlways* convertToAlways() {
         AstNode* const lhs1p = lhsp()->unlinkFrBack();
         AstNode* const rhs1p = rhsp()->unlinkFrBack();
@@ -4041,7 +4013,7 @@ public:
         setOp1p(fromp);
     }
     ASTGEN_MEMBERS_CMethodCall;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_BASE_RTN(AstNodeCCall::broken());
         BROKEN_RTN(!fromp());
         return nullptr;
@@ -4060,7 +4032,7 @@ public:
         : ASTGEN_SUPER_CNew(fl, funcp, argsp) {
         statement(false);
     }
-    virtual bool hasDType() const override { return true; }
+    bool hasDType() const override { return true; }
     ASTGEN_MEMBERS_CNew;
 };
 
@@ -4082,10 +4054,8 @@ public:
         : ASTGEN_SUPER_Case(fl, exprp, casesp)
         , m_casex{casex} {}
     ASTGEN_MEMBERS_Case;
-    virtual string verilogKwd() const override {
-        return casez() ? "casez" : casex() ? "casex" : "case";
-    }
-    virtual bool same(const AstNode* samep) const override {
+    string verilogKwd() const override { return casez() ? "casez" : casex() ? "casex" : "case"; }
+    bool same(const AstNode* samep) const override {
         return m_casex == static_cast<const AstCase*>(samep)->m_casex;
     }
     bool casex() const { return m_casex == VCaseType::CT_CASEX; }
@@ -4163,7 +4133,7 @@ public:
     AstFuncRef(FileLine* fl, const string& name, AstNode* pinsp)
         : ASTGEN_SUPER_FuncRef(fl, false, name, pinsp) {}
     ASTGEN_MEMBERS_FuncRef;
-    virtual bool hasDType() const override { return true; }
+    bool hasDType() const override { return true; }
 };
 class AstMethodCall final : public AstNodeFTaskRef {
     // A reference to a member task (or function)
@@ -4182,13 +4152,13 @@ public:
         setOp2p(fromp);
     }
     ASTGEN_MEMBERS_MethodCall;
-    virtual const char* broken() const override {
+    const char* broken() const override {
         BROKEN_BASE_RTN(AstNodeFTaskRef::broken());
         BROKEN_RTN(!fromp());
         return nullptr;
     }
-    virtual void dump(std::ostream& str) const override;
-    virtual bool hasDType() const override { return true; }
+    void dump(std::ostream& str) const override;
+    bool hasDType() const override { return true; }
     void makeStatement() {
         statement(true);
         dtypeSetVoid();
@@ -4208,9 +4178,9 @@ public:
         : ASTGEN_SUPER_New(fl, false, "new", pinsp) {}
     ASTGEN_MEMBERS_New;
     virtual bool cleanOut() const { return true; }
-    virtual bool same(const AstNode* /*samep*/) const override { return true; }
-    virtual bool hasDType() const override { return true; }
-    virtual int instrCount() const override { return widthInstrs(); }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    bool hasDType() const override { return true; }
+    int instrCount() const override { return widthInstrs(); }
 };
 class AstTaskRef final : public AstNodeFTaskRef {
     // A reference to a task
@@ -4263,8 +4233,8 @@ public:
                AstNode* msbp)
         : ASTGEN_SUPER_ReadMem(fl, hex, filenamep, memp, lsbp, msbp) {}
     ASTGEN_MEMBERS_ReadMem;
-    virtual string verilogKwd() const override { return (isHex() ? "$readmemh" : "$readmemb"); }
-    virtual const char* cFuncPrefixp() const override { return "VL_READMEM_"; }
+    string verilogKwd() const override { return (isHex() ? "$readmemh" : "$readmemb"); }
+    const char* cFuncPrefixp() const override { return "VL_READMEM_"; }
 };
 class AstWriteMem final : public AstNodeReadWriteMem {
 public:
@@ -4272,8 +4242,8 @@ public:
                 AstNode* msbp)
         : ASTGEN_SUPER_WriteMem(fl, hex, filenamep, memp, lsbp, msbp) {}
     ASTGEN_MEMBERS_WriteMem;
-    virtual string verilogKwd() const override { return (isHex() ? "$writememh" : "$writememb"); }
-    virtual const char* cFuncPrefixp() const override { return "VL_WRITEMEM_"; }
+    string verilogKwd() const override { return (isHex() ? "$writememh" : "$writememb"); }
+    const char* cFuncPrefixp() const override { return "VL_WRITEMEM_"; }
 };
 
 // === AstNodeText ===
@@ -4282,48 +4252,48 @@ public:
     AstScCtor(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScCtor(fl, textp) {}
     ASTGEN_MEMBERS_ScCtor;
-    virtual bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    virtual bool isOutputter() const override { return true; }
+    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() const override { return true; }
 };
 class AstScDtor final : public AstNodeText {
 public:
     AstScDtor(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScDtor(fl, textp) {}
     ASTGEN_MEMBERS_ScDtor;
-    virtual bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    virtual bool isOutputter() const override { return true; }
+    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() const override { return true; }
 };
 class AstScHdr final : public AstNodeText {
 public:
     AstScHdr(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScHdr(fl, textp) {}
     ASTGEN_MEMBERS_ScHdr;
-    virtual bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    virtual bool isOutputter() const override { return true; }
+    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() const override { return true; }
 };
 class AstScImp final : public AstNodeText {
 public:
     AstScImp(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScImp(fl, textp) {}
     ASTGEN_MEMBERS_ScImp;
-    virtual bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    virtual bool isOutputter() const override { return true; }
+    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() const override { return true; }
 };
 class AstScImpHdr final : public AstNodeText {
 public:
     AstScImpHdr(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScImpHdr(fl, textp) {}
     ASTGEN_MEMBERS_ScImpHdr;
-    virtual bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    virtual bool isOutputter() const override { return true; }
+    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() const override { return true; }
 };
 class AstScInt final : public AstNodeText {
 public:
     AstScInt(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScInt(fl, textp) {}
     ASTGEN_MEMBERS_ScInt;
-    virtual bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    virtual bool isOutputter() const override { return true; }
+    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() const override { return true; }
 };
 
 // === AstNodeSimpleText ===

@@ -90,7 +90,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
         if (m_activep && !nodep->user3SetOnce()) {
             AstVarScope* const vscp = nodep->varScopep();
@@ -105,14 +105,14 @@ private:
             }
         }
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         m_activep = nodep;
         iterate(nodep->sensesp());
         m_activep = nullptr;
     }
 
     //-----
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -120,7 +120,7 @@ public:
         : m_topModp{topModp} {
         iterate(nodep);
     }
-    virtual ~GenClkRenameVisitor() override = default;
+    ~GenClkRenameVisitor() override = default;
 };
 
 //######################################################################
@@ -139,7 +139,7 @@ private:
     AstNodeModule* m_topModp = nullptr;  // Top module
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) override {
+    void visit(AstTopScope* nodep) override {
         {
             const VNUser1InUse user1InUse;
             iterateChildren(nodep);
@@ -148,14 +148,14 @@ private:
         // See rename, it does some AstNode::userClearTree()'s
         GenClkRenameVisitor{nodep, m_topModp};
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         // Only track the top scopes, not lower level functions
         if (nodep->isTop()) {
             m_topModp = nodep;
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);
         if (!nodep->funcp()->entryPoint()) {
             // Enter the function and trace it
@@ -163,7 +163,7 @@ private:
             iterate(nodep->funcp());
         }
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         if (!m_tracingCall && !nodep->entryPoint()) {
             // Only consider logic within a CFunc when looking
             // at the call to it, and not when scanning whatever
@@ -175,7 +175,7 @@ private:
     }
     //----
 
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
         AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
@@ -190,13 +190,13 @@ private:
             vscp->circular(true);
         }
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         // UINFO(8, "ASS " << nodep << endl);
         m_assignp = nodep;
         iterateChildren(nodep);
         m_assignp = nullptr;
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         UINFO(8, "ACTIVE " << nodep << endl);
         m_activep = nodep;
         UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
@@ -206,13 +206,13 @@ private:
     }
 
     //-----
-    virtual void visit(AstVar*) override {}  // Don't want varrefs under it
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstVar*) override {}  // Don't want varrefs under it
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit GenClkReadVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~GenClkReadVisitor() override = default;
+    ~GenClkReadVisitor() override = default;
 };
 
 //######################################################################

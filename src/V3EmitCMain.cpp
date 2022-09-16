@@ -32,7 +32,7 @@ class EmitCMain final : EmitCBaseVisitor {
 
     // VISITORS
     // This visitor doesn't really iterate, but exist to appease base class
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }  // LCOV_EXCL_LINE
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }  // LCOV_EXCL_LINE
 
 public:
     // CONSTRUCTORS

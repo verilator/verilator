@@ -253,7 +253,7 @@ public:
         m_vertices.splice(m_vertices.end(), otherp->m_vertices);
         m_cost += otherp->m_cost;
     }
-    virtual const VxList* vertexListp() const override { return &m_vertices; }
+    const VxList* vertexListp() const override { return &m_vertices; }
     static uint64_t incGeneration() {
         static uint64_t s_generation = 0;
         ++s_generation;
@@ -263,10 +263,10 @@ public:
     // Use this instead of pointer-compares to compare LogicMTasks. Avoids
     // nondeterministic output.  Also name mtasks based on this number in
     // the final C++ output.
-    virtual uint32_t id() const override { return m_serialId; }
+    uint32_t id() const override { return m_serialId; }
     void id(uint32_t id) { m_serialId = id; }
     // Abstract cost of every logic mtask
-    virtual uint32_t cost() const override { return m_cost; }
+    uint32_t cost() const override { return m_cost; }
     void setCost(uint32_t cost) { m_cost = cost; }  // For tests only
     uint32_t stepCost() const { return stepCost(m_cost); }
     static uint32_t stepCost(uint32_t cost) {
@@ -319,7 +319,7 @@ public:
 
     void checkRelativesCp(GraphWay way) const;
 
-    virtual string name() const override {
+    string name() const override {
         // Display forward and reverse critical path costs. This gives a quick
         // read on whether graph partitioning looks reasonable or bad.
         std::ostringstream out;
@@ -1850,7 +1850,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;
 
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         if (!m_tracingCall) return;
         m_tracingCall = false;
         if (nodep->dpiImportWrapper()) {
@@ -1861,19 +1861,19 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);
         // Enter the function and trace it
         m_tracingCall = true;
         iterate(nodep->funcp());
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit DpiImportCallVisitor(AstNode* nodep) { iterate(nodep); }
     bool hasDpiHazard() const { return m_hasDpiHazard; }
-    virtual ~DpiImportCallVisitor() override = default;
+    ~DpiImportCallVisitor() override = default;
 
 private:
     VL_UNCOPYABLE(DpiImportCallVisitor);

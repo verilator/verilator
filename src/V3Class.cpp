@@ -49,7 +49,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstClass* nodep) override {
+    void visit(AstClass* nodep) override {
         if (nodep->user1SetOnce()) return;
         // Move this class
         nodep->name(m_prefix + nodep->name());
@@ -100,7 +100,7 @@ private:
         }
         nodep->repairCache();
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
         VL_RESTORER(m_prefix);
         {
@@ -109,7 +109,7 @@ private:
         }
     }
 
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         if (m_packageScopep) {
             if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
@@ -127,12 +127,12 @@ private:
         }
     }
 
-    virtual void visit(AstVarScope* nodep) override {
+    void visit(AstVarScope* nodep) override {
         iterateChildren(nodep);
         nodep->varp()->user1p(nodep);
     }
 
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
         {
             m_ftaskp = nodep;
@@ -142,7 +142,7 @@ private:
             }
         }
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
         // TODO move function statics only
@@ -150,14 +150,14 @@ private:
         //    m_toScopeMoves.push_back(std::make_pair(nodep, m_classScopep));
         //}
     }
-    virtual void visit(AstInitial* nodep) override {
+    void visit(AstInitial* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);
         if (m_packageScopep) {
             m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
         }
     }
-    virtual void visit(AstInitialStatic* nodep) override {
+    void visit(AstInitialStatic* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);
         if (m_packageScopep) {
@@ -165,14 +165,14 @@ private:
         }
     }
 
-    virtual void visit(AstNodeMath* nodep) override {}  // Short circuit
-    virtual void visit(AstNodeStmt* nodep) override {}  // Short circuit
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeMath* nodep) override {}  // Short circuit
+    void visit(AstNodeStmt* nodep) override {}  // Short circuit
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit ClassVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ClassVisitor() override {
+    ~ClassVisitor() override {
         for (auto moved : m_toScopeMoves) {
             AstNode* const nodep = moved.first;
             AstScope* const scopep = moved.second;

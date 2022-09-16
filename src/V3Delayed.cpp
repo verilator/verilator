@@ -365,24 +365,24 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         // VV*****  We reset all userp() on the netlist
         m_modVarMap.clear();
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         AstNode::user3ClearTree();
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         {
             m_cfuncp = nodep;
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         m_activep = nodep;
         VL_RESTORER(m_inInitial);
         {
@@ -392,7 +392,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstAssignDly* nodep) override {
+    void visit(AstAssignDly* nodep) override {
         m_inDly = true;
         m_nextDlyp
             = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe nullptr.
@@ -426,7 +426,7 @@ private:
         m_nextDlyp = nullptr;
     }
 
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         if (!nodep->user2Inc()) {  // Not done yet
             if (m_inDly && nodep->access().isWriteOrRW()) {
                 UINFO(4, "AssignDlyVar: " << nodep << endl);
@@ -488,18 +488,18 @@ private:
         }
     }
 
-    virtual void visit(AstNodeReadWriteMem* nodep) override {
+    void visit(AstNodeReadWriteMem* nodep) override {
         VL_RESTORER(m_ignoreBlkAndNBlk);
         m_ignoreBlkAndNBlk = true;  // $readmem/$writemem often used in mem models
         // so we will suppress BLKANDNBLK warnings
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
+    void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin");
     }
-    virtual void visit(AstWhile* nodep) override {
+    void visit(AstWhile* nodep) override {
         VL_RESTORER(m_inLoop);
         {
             m_inLoop = true;
@@ -508,12 +508,12 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit DelayedVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~DelayedVisitor() override {
+    ~DelayedVisitor() override {
         V3Stats::addStat("Optimizations, Delayed shared-sets", m_statSharedSet);
     }
 };

@@ -180,32 +180,32 @@ class CombineVisitor final : VNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         // Gather functions and references
         iterateChildrenConst(nodep);
         // Combine functions
         process(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_modp, nodep, "Should not nest");
         m_modp = nodep;
         iterateChildrenConst(nodep);
         m_modp = nullptr;
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         iterateChildrenConst(nodep);
         if (nodep->dontCombine()) return;
         auto& coll = nodep->slow() ? m_cfuncs(m_modp).m_slow : m_cfuncs(m_modp).m_fast;
         coll.emplace_back(nodep);
     }
-    virtual void visit(AstCCall* nodep) override {
+    void visit(AstCCall* nodep) override {
         iterateChildrenConst(nodep);
         AstCFunc* const funcp = nodep->funcp();
         if (funcp->dontCombine()) return;
         m_callSites(funcp).emplace_back(nodep);
     }
 
-    virtual void visit(AstAddrOfCFunc* nodep) override {
+    void visit(AstAddrOfCFunc* nodep) override {
         iterateChildrenConst(nodep);
         if (nodep->funcp()->dontCombine()) return;
         // LCOV_EXCL_START
@@ -217,7 +217,7 @@ class CombineVisitor final : VNVisitor {
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     // CONSTRUCTORS
     explicit CombineVisitor(AstNetlist* nodep) { iterate(nodep); }

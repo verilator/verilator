@@ -196,7 +196,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstIf* nodep) override {
+    void visit(AstIf* nodep) override {
         if (nodep->user1SetOnce()) return;
         if (nodep->uniquePragma() || nodep->unique0Pragma()) {
             const AstNodeIf* ifp = nodep;
@@ -254,7 +254,7 @@ private:
     }
 
     //========== Case assertions
-    virtual void visit(AstCase* nodep) override {
+    void visit(AstCase* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
@@ -323,7 +323,7 @@ private:
     }
 
     //========== Past
-    virtual void visit(AstPast* nodep) override {
+    void visit(AstPast* nodep) override {
         iterateChildren(nodep);
         uint32_t ticks = 1;
         if (nodep->ticksp()) {
@@ -353,13 +353,13 @@ private:
         }
         nodep->replaceWith(inp);
     }
-    virtual void visit(AstSampled* nodep) override {
+    void visit(AstSampled* nodep) override {
         nodep->replaceWith(nodep->exprp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     //========== Statements
-    virtual void visit(AstDisplay* nodep) override {
+    void visit(AstDisplay* nodep) override {
         iterateChildren(nodep);
         // Replace the special types with standard text
         if (nodep->displayType() == VDisplayType::DT_INFO) {
@@ -410,32 +410,32 @@ private:
             m_modp->addStmtp(newp);
         }
     }
-    virtual void visit(AstMonitorOff* nodep) override {
+    void visit(AstMonitorOff* nodep) override {
         const auto newp
             = new AstAssign(nodep->fileline(), newMonitorOffVarRefp(nodep, VAccess::WRITE),
                             new AstConst(nodep->fileline(), AstConst::BitTrue{}, nodep->off()));
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstAssert* nodep) override {
+    void visit(AstAssert* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }
-    virtual void visit(AstAssertIntrinsic* nodep) override {
+    void visit(AstAssertIntrinsic* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }
-    virtual void visit(AstCover* nodep) override {
+    void visit(AstCover* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, nullptr);
     }
-    virtual void visit(AstRestrict* nodep) override {
+    void visit(AstRestrict* nodep) override {
         iterateChildren(nodep);
         // IEEE says simulator ignores these
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modPastNum);
         VL_RESTORER(m_modStrobeNum);
@@ -446,7 +446,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstBegin* nodep) override {
+    void visit(AstBegin* nodep) override {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
         VL_RESTORER(m_beginp);
@@ -456,12 +456,12 @@ private:
         }
     }
 
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit AssertVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~AssertVisitor() override {
+    ~AssertVisitor() override {
         V3Stats::addStat("Assertions, assert non-immediate statements", m_statAsNotImm);
         V3Stats::addStat("Assertions, assert immediate statements", m_statAsImm);
         V3Stats::addStat("Assertions, cover statements", m_statCover);

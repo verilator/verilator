@@ -242,7 +242,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) override {
+    void visit(AstTopScope* nodep) override {
         UINFO(4, " TOPSCOPE   " << nodep << endl);
         m_topScopep = nodep;
         m_scopep = nodep->scopep();
@@ -277,7 +277,7 @@ private:
         m_topScopep = nullptr;
         m_scopep = nullptr;
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         // UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
         {
@@ -285,7 +285,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         // UINFO(4, " SCOPE   " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
@@ -296,14 +296,14 @@ private:
         }
         m_scopep = nullptr;
     }
-    virtual void visit(AstNodeProcedure* nodep) override {
+    void visit(AstNodeProcedure* nodep) override {
         if (AstNode* const stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
             nodep->addNextHere(stmtsp);
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
-    virtual void visit(AstCoverToggle* nodep) override {
+    void visit(AstCoverToggle* nodep) override {
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
@@ -320,7 +320,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Link to global function
         if (nodep->isFinal()) {
@@ -329,7 +329,7 @@ private:
             m_finalFuncp->addStmtsp(callp);
         }
     }
-    virtual void visit(AstSenTree* nodep) override {
+    void visit(AstSenTree* nodep) override {
         // Delete it later; Actives still pointing to it
         nodep->unlinkFrBack();
         pushDeletep(nodep);
@@ -343,7 +343,7 @@ private:
     void addToInitial(AstNode* stmtsp) {
         m_initFuncp->addStmtsp(stmtsp);  // add to top level function
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         // Careful if adding variables here, ACTIVES can be under other ACTIVES
         // Need to save and restore any member state in AstUntilStable block
         if (!m_topScopep || !nodep->stmtsp()) {
@@ -411,7 +411,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstExecGraph* nodep) override {
+    void visit(AstExecGraph* nodep) override {
         VL_RESTORER(m_mtaskBodyp);
         for (m_mtaskBodyp = nodep->mTaskBodiesp(); m_mtaskBodyp;
              m_mtaskBodyp = VN_AS(m_mtaskBodyp->nextp(), MTaskBody)) {
@@ -427,7 +427,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -437,7 +437,7 @@ public:
         // easily without iterating through the tree.
         nodep->evalp(m_evalFuncp);
     }
-    virtual ~ClockVisitor() override = default;
+    ~ClockVisitor() override = default;
 };
 
 //######################################################################

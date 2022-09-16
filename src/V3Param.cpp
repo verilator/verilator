@@ -977,7 +977,7 @@ class ParamVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
         if (nodep->dead()) return;  // Marked by LinkDot (and above)
 
@@ -995,14 +995,14 @@ class ParamVisitor final : public VNVisitor {
         }
     }
 
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
-    virtual void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
-    virtual void visit(AstClassOrPackageRef* nodep) override { visitCellOrClassRef(nodep, false); }
+    void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
+    void visit(AstClassOrPackageRef* nodep) override { visitCellOrClassRef(nodep, false); }
 
     // Make sure all parameters are constantified
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         if (nodep->user5SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isParam()) {
@@ -1015,7 +1015,7 @@ class ParamVisitor final : public VNVisitor {
         }
     }
     // Make sure varrefs cause vars to constify before things above
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         // Might jump across functions, so beware if ever add a m_funcp
         if (nodep->varp()) iterate(nodep->varp());
     }
@@ -1036,7 +1036,7 @@ class ParamVisitor final : public VNVisitor {
         }
         return false;
     }
-    virtual void visit(AstVarXRef* nodep) override {
+    void visit(AstVarXRef* nodep) override {
         // Check to see if the scope is just an interface because interfaces are special
         const string dotted = nodep->dotted();
         if (!dotted.empty() && nodep->varp() && nodep->varp()->isParam()) {
@@ -1082,7 +1082,7 @@ class ParamVisitor final : public VNVisitor {
         nodep->varp(nullptr);  // Needs relink, as may remove pointed-to var
     }
 
-    virtual void visit(AstUnlinkedRef* nodep) override {
+    void visit(AstUnlinkedRef* nodep) override {
         AstVarXRef* const varxrefp = VN_CAST(nodep->op1p(), VarXRef);
         AstNodeFTaskRef* const taskrefp = VN_CAST(nodep->op1p(), NodeFTaskRef);
         if (varxrefp) {
@@ -1103,7 +1103,7 @@ class ParamVisitor final : public VNVisitor {
         nodep->replaceWith(nodep->op1p()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstCellArrayRef* nodep) override {
+    void visit(AstCellArrayRef* nodep) override {
         V3Const::constifyParamsEdit(nodep->selp());
         if (const AstConst* const constp = VN_CAST(nodep->selp(), Const)) {
             const string index = AstNode::encodeNumber(constp->toSInt());
@@ -1122,7 +1122,7 @@ class ParamVisitor final : public VNVisitor {
     }
 
     // Generate Statements
-    virtual void visit(AstGenIf* nodep) override {
+    void visit(AstGenIf* nodep) override {
         UINFO(9, "  GENIF " << nodep << endl);
         iterateAndNextNull(nodep->condp());
         // We suppress errors when widthing params since short-circuiting in
@@ -1149,7 +1149,7 @@ class ParamVisitor final : public VNVisitor {
     //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
     //!       expression, since this is currently restricted to simple comparisons. If we ever do
     //!       move to more generic constant expressions, such code will be needed here.
-    virtual void visit(AstBegin* nodep) override {
+    void visit(AstBegin* nodep) override {
         if (nodep->genforp()) {
             AstGenFor* const forp = VN_AS(nodep->genforp(), GenFor);
             UASSERT_OBJ(forp, nodep, "Non-GENFOR under generate-for BEGIN");
@@ -1181,10 +1181,10 @@ class ParamVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstGenFor* nodep) override {  // LCOV_EXCL_LINE
+    void visit(AstGenFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
     }
-    virtual void visit(AstGenCase* nodep) override {
+    void visit(AstGenCase* nodep) override {
         UINFO(9, "  GENCASE " << nodep << endl);
         AstNode* keepp = nullptr;
         iterateAndNextNull(nodep->exprp());
@@ -1235,7 +1235,7 @@ class ParamVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1272,7 +1272,7 @@ public:
             for (AstNodeModule* const modp : modps) netlistp->addModulep(modp);
         }
     }
-    virtual ~ParamVisitor() override = default;
+    ~ParamVisitor() override = default;
     VL_UNCOPYABLE(ParamVisitor);
 };
 

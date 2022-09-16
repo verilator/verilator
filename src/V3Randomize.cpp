@@ -82,7 +82,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstClass* nodep) override {
+    void visit(AstClass* nodep) override {
         iterateChildren(nodep);
         if (nodep->extendsp()) {
             // Save pointer to derived class
@@ -90,7 +90,7 @@ private:
             m_baseToDerivedMap[basep].insert(nodep);
         }
     }
-    virtual void visit(AstMethodCall* nodep) override {
+    void visit(AstMethodCall* nodep) override {
         iterateChildren(nodep);
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
@@ -100,7 +100,7 @@ private:
             markMembers(classp);
         }
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -108,7 +108,7 @@ public:
         iterate(nodep);
         markAllDerived();
     }
-    virtual ~RandomizeMarkVisitor() override = default;
+    ~RandomizeMarkVisitor() override = default;
 };
 
 //######################################################################
@@ -199,7 +199,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstClass* nodep) override {
+    void visit(AstClass* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep << endl);
@@ -241,12 +241,12 @@ private:
         }
         nodep->user1(false);
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit RandomizeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~RandomizeVisitor() override = default;
+    ~RandomizeVisitor() override = default;
 };
 
 //######################################################################
