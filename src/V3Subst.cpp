@@ -255,7 +255,7 @@ private:
             return entryp;
         }
     }
-    inline bool isSubstVar(AstVar* nodep) { return nodep->isStatementTemp() && !nodep->noSubst(); }
+    bool isSubstVar(AstVar* nodep) { return nodep->isStatementTemp() && !nodep->noSubst(); }
 
     // VISITORS
     void visit(AstNodeAssign* nodep) override {

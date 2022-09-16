@@ -54,12 +54,12 @@ public:
         //          // an array dimension or loop bound.
     };
     enum en m_e;
-    inline GraphWay()
+    GraphWay()
         : m_e{FORWARD} {}
     // cppcheck-suppress noExplicitConstructor
-    inline constexpr GraphWay(en _e)
+    constexpr GraphWay(en _e)
         : m_e{_e} {}
-    explicit inline constexpr GraphWay(int _e)
+    explicit constexpr GraphWay(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {

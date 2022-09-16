@@ -212,8 +212,7 @@ string AstNode::prettyTypeName() const {
 //######################################################################
 // Insertion
 
-inline void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno,
-                                     bool next) {
+void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno, bool next) {
 #ifdef VL_DEBUG
 // Called on all major tree changers.
 // Only for use for those really nasty bugs relating to internals

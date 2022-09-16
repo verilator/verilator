@@ -87,12 +87,12 @@ struct OrderVEdgeType {
         return names[m_e];
     }
     enum en m_e;
-    inline OrderVEdgeType()
+    OrderVEdgeType()
         : m_e{VERTEX_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    inline OrderVEdgeType(en _e)
+    OrderVEdgeType(en _e)
         : m_e{_e} {}
-    explicit inline OrderVEdgeType(int _e)
+    explicit OrderVEdgeType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };

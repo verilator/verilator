@@ -93,11 +93,11 @@ public:
     //   const char* ascii() const {...};
     enum en m_e;
     // cppcheck-suppress uninitVar  // responsibility of each subclass
-    inline VNType() = default;
+    VNType() = default;
     // cppcheck-suppress noExplicitConstructor
-    inline VNType(en _e)
+    VNType(en _e)
         : m_e{_e} {}
-    explicit inline VNType(int _e)
+    explicit VNType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
@@ -116,12 +116,12 @@ public:
         static const char* const names[] = {"NONE", "VAUTOM", "VSTATIC"};
         return names[m_e];
     }
-    inline VLifetime()
+    VLifetime()
         : m_e{NONE} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VLifetime(en _e)
+    VLifetime(en _e)
         : m_e{_e} {}
-    explicit inline VLifetime(int _e)
+    explicit VLifetime(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool isNone() const { return m_e == NONE; }
@@ -157,12 +157,12 @@ public:
         static const char* const names[] = {"[RV] <-", "[LV] =>", "[LV] <=>", "--"};
         return names[m_e];
     }
-    inline VAccess()
+    VAccess()
         : m_e{READ} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VAccess(en _e)
+    VAccess(en _e)
         : m_e{_e} {}
-    explicit inline VAccess(int _e)
+    explicit VAccess(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     VAccess invert() const {
@@ -194,19 +194,19 @@ public:
         static const char* const names[] = {"UNSIGNED", "SIGNED", "NOSIGN"};
         return names[m_e];
     }
-    inline VSigning()
+    VSigning()
         : m_e{UNSIGNED} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VSigning(en _e)
+    VSigning(en _e)
         : m_e{_e} {}
-    static inline VSigning fromBool(bool isSigned) {  // Factory method
+    static VSigning fromBool(bool isSigned) {  // Factory method
         return isSigned ? VSigning{SIGNED} : VSigning{UNSIGNED};
     }
-    explicit inline VSigning(int _e)
+    explicit VSigning(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
-    inline bool isSigned() const { return m_e == SIGNED; }
-    inline bool isNosign() const { return m_e == NOSIGN; }
+    bool isSigned() const { return m_e == SIGNED; }
+    bool isNosign() const { return m_e == NOSIGN; }
     // No isUnsigned() as it's ambiguous if NOSIGN should be included or not.
 };
 inline bool operator==(const VSigning& lhs, const VSigning& rhs) { return lhs.m_e == rhs.m_e; }
@@ -234,12 +234,12 @@ public:
         ENUM_SIZE
     };
     enum en m_e;
-    inline VPragmaType()
+    VPragmaType()
         : m_e{ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VPragmaType(en _e)
+    VPragmaType(en _e)
         : m_e{_e} {}
-    explicit inline VPragmaType(int _e)
+    explicit VPragmaType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
@@ -322,12 +322,12 @@ public:
         }
         return false;
     }
-    inline VEdgeType()
+    VEdgeType()
         : m_e{ET_ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VEdgeType(en _e)
+    VEdgeType(en _e)
         : m_e{_e} {}
-    explicit inline VEdgeType(int _e)
+    explicit VEdgeType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
@@ -403,12 +403,12 @@ public:
         // clang-format on
         return names[m_e];
     }
-    inline VAttrType()
+    VAttrType()
         : m_e{ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VAttrType(en _e)
+    VAttrType(en _e)
         : m_e{_e} {}
-    explicit inline VAttrType(int _e)
+    explicit VAttrType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
@@ -470,12 +470,12 @@ public:
         UASSERT(0 == std::strcmp(VBasicDTypeKwd{_ENUM_MAX}.dpiType(), " MAX"),
                 "SelfTest: Enum mismatch");
     }
-    inline VBasicDTypeKwd()
+    VBasicDTypeKwd()
         : m_e{UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VBasicDTypeKwd(en _e)
+    VBasicDTypeKwd(en _e)
         : m_e{_e} {}
-    explicit inline VBasicDTypeKwd(int _e)
+    explicit VBasicDTypeKwd(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     int width() const {
@@ -574,12 +574,12 @@ class VDirection final {
 public:
     enum en : uint8_t { NONE, INPUT, OUTPUT, INOUT, REF, CONSTREF };
     enum en m_e;
-    inline VDirection()
+    VDirection()
         : m_e{NONE} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VDirection(en _e)
+    VDirection(en _e)
         : m_e{_e} {}
-    explicit inline VDirection(int _e)
+    explicit VDirection(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
@@ -620,12 +620,12 @@ public:
     enum en : uint8_t { BU_FALSE = 0, BU_TRUE = 1, BU_UNKNOWN = 2, _ENUM_END };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline VBoolOrUnknown()
+    VBoolOrUnknown()
         : m_e{BU_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VBoolOrUnknown(en _e)
+    VBoolOrUnknown(en _e)
         : m_e{_e} {}
-    explicit inline VBoolOrUnknown(int _e)
+    explicit VBoolOrUnknown(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
         static const char* const names[] = {"FALSE", "TRUE", "UNK"};
@@ -659,12 +659,12 @@ public:
     enum en : uint8_t { JOIN = 0, JOIN_ANY = 1, JOIN_NONE = 2 };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline VJoinType()
+    VJoinType()
         : m_e{JOIN} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VJoinType(en _e)
+    VJoinType(en _e)
         : m_e{_e} {}
-    explicit inline VJoinType(int _e)
+    explicit VJoinType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
         static const char* const names[] = {"JOIN", "JOIN_ANY", "JOIN_NONE"};
@@ -712,12 +712,12 @@ public:
         MEMBER
     };
     enum en m_e;
-    inline VVarType()
+    VVarType()
         : m_e{UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VVarType(en _e)
+    VVarType(en _e)
         : m_e{_e} {}
-    explicit inline VVarType(int _e)
+    explicit VVarType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
@@ -764,12 +764,12 @@ public:
     enum en : uint8_t { BP_UNKNOWN = 0, BP_LIKELY, BP_UNLIKELY, _ENUM_END };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline VBranchPred()
+    VBranchPred()
         : m_e{BP_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VBranchPred(en _e)
+    VBranchPred(en _e)
         : m_e{_e} {}
-    explicit inline VBranchPred(int _e)
+    explicit VBranchPred(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool unknown() const { return m_e == BP_UNKNOWN; }
@@ -805,12 +805,12 @@ public:
     enum en : uint8_t { CLOCKER_UNKNOWN = 0, CLOCKER_YES, CLOCKER_NO, _ENUM_END };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline VVarAttrClocker()
+    VVarAttrClocker()
         : m_e{CLOCKER_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VVarAttrClocker(en _e)
+    VVarAttrClocker(en _e)
         : m_e{_e} {}
-    explicit inline VVarAttrClocker(int _e)
+    explicit VVarAttrClocker(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool unknown() const { return m_e == CLOCKER_UNKNOWN; }
@@ -847,12 +847,12 @@ class VAlwaysKwd final {
 public:
     enum en : uint8_t { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB };
     enum en m_e;
-    inline VAlwaysKwd()
+    VAlwaysKwd()
         : m_e{ALWAYS} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VAlwaysKwd(en _e)
+    VAlwaysKwd(en _e)
         : m_e{_e} {}
-    explicit inline VAlwaysKwd(int _e)
+    explicit VAlwaysKwd(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
@@ -870,12 +870,12 @@ class VCaseType final {
 public:
     enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };
     enum en m_e;
-    inline VCaseType()
+    VCaseType()
         : m_e{CT_CASE} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VCaseType(en _e)
+    VCaseType(en _e)
         : m_e{_e} {}
-    explicit inline VCaseType(int _e)
+    explicit VCaseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
@@ -903,7 +903,7 @@ public:
     // cppcheck-suppress noExplicitConstructor
     VDisplayType(en _e)
         : m_e{_e} {}
-    explicit inline VDisplayType(int _e)
+    explicit VDisplayType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool addNewline() const { return m_e != DT_WRITE; }
@@ -926,12 +926,12 @@ class VDumpCtlType final {
 public:
     enum en : uint8_t { FILE, VARS, ALL, FLUSH, LIMIT, OFF, ON };
     enum en m_e;
-    inline VDumpCtlType()
+    VDumpCtlType()
         : m_e{ON} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VDumpCtlType(en _e)
+    VDumpCtlType(en _e)
         : m_e{_e} {}
-    explicit inline VDumpCtlType(int _e)
+    explicit VDumpCtlType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
@@ -956,12 +956,12 @@ public:
         PX_TEXT  // Unknown ID component
     };
     enum en m_e;
-    inline VParseRefExp()
+    VParseRefExp()
         : m_e{PX_NONE} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VParseRefExp(en _e)
+    VParseRefExp(en _e)
         : m_e{_e} {}
-    explicit inline VParseRefExp(int _e)
+    explicit VParseRefExp(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
@@ -986,9 +986,9 @@ public:
     enum en m_e;
 
     // cppcheck-suppress noExplicitConstructor
-    inline VStrength(en strengthLevel)
+    VStrength(en strengthLevel)
         : m_e(strengthLevel) {}
-    explicit inline VStrength(int _e)
+    explicit VStrength(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
 
     operator en() const { return m_e; }
@@ -1080,12 +1080,12 @@ public:
         INT_FWD_CLASS,  // Interface (.h) needs a forward class declaration
     };
     enum en m_e;
-    inline VUseType()
+    VUseType()
         : m_e{IMP_FWD_CLASS} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VUseType(en _e)
+    VUseType(en _e)
         : m_e{_e} {}
-    explicit inline VUseType(int _e)
+    explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
     bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
@@ -1309,23 +1309,23 @@ class VNVisitor VL_NOT_FINAL : public VNDeleter {
 
 public:
     /// Call visit()s on nodep
-    void iterate(AstNode* nodep);
+    inline void iterate(AstNode* nodep);
     /// Call visit()s on nodep
-    void iterateNull(AstNode* nodep);
+    inline void iterateNull(AstNode* nodep);
     /// Call visit()s on nodep's children
-    void iterateChildren(AstNode* nodep);
+    inline void iterateChildren(AstNode* nodep);
     /// Call visit()s on nodep's children in backp() order
-    void iterateChildrenBackwards(AstNode* nodep);
+    inline void iterateChildrenBackwards(AstNode* nodep);
     /// Call visit()s on const nodep's children
-    void iterateChildrenConst(AstNode* nodep);
+    inline void iterateChildrenConst(AstNode* nodep);
     /// Call visit()s on nodep (maybe nullptr) and nodep's nextp() list
-    void iterateAndNextNull(AstNode* nodep);
+    inline void iterateAndNextNull(AstNode* nodep);
     /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list
-    void iterateAndNextConstNull(AstNode* nodep);
+    inline void iterateAndNextConstNull(AstNode* nodep);
     /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list, in reverse order
-    void iterateAndNextConstNullBackwards(AstNode* nodep);
+    inline void iterateAndNextConstNullBackwards(AstNode* nodep);
     /// Return edited nodep; see comments in V3Ast.cpp
-    AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
+    inline AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
 
     virtual void visit(AstNode* nodep) = 0;
 #include "V3Ast__gen_visitor_decls.h"  // From ./astgen
@@ -1353,7 +1353,7 @@ protected:
 
 public:
     VNRelinker() = default;
-    void relink(AstNode* newp);
+    inline void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
     void dump(std::ostream& str = std::cout) const;
 };
@@ -1525,7 +1525,7 @@ protected:
 
 public:
     // ACCESSORS
-    inline VNType type() const { return m_type; }
+    VNType type() const { return m_type; }
     const char* typeName() const { return type().ascii(); }  // See also prettyTypeName
     AstNode* nextp() const { return m_nextp; }
     AstNode* backp() const { return m_backp; }
@@ -1607,8 +1607,8 @@ public:
     virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }
     FileLine* fileline() const { return m_fileline; }
     void fileline(FileLine* fl) { m_fileline = fl; }
-    bool width1() const;
-    int widthInstrs() const;
+    inline bool width1() const;
+    inline int widthInstrs() const;
     void didWidth(bool flag) { m_flags.didWidth = flag; }
     bool didWidth() const { return m_flags.didWidth; }
     bool didWidthAndSet() {
@@ -1622,17 +1622,17 @@ public:
     void protect(bool flag) { m_flags.protect = flag; }
 
     // TODO stomp these width functions out, and call via dtypep() instead
-    int width() const;
-    int widthMin() const;
+    inline int width() const;
+    inline int widthMin() const;
     int widthMinV() const {
         return v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width();
     }
     int widthWords() const { return VL_WORDS_I(width()); }
     bool isQuad() const { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
     bool isWide() const { return (width() > VL_QUADSIZE); }
-    bool isDouble() const;
-    bool isSigned() const;
-    bool isString() const;
+    inline bool isDouble() const;
+    inline bool isSigned() const;
+    inline bool isString() const;
 
     // clang-format off
     VNUser      user1u() const {
@@ -1716,11 +1716,11 @@ public:
 
     // ACCESSORS for specific types
     // Alas these can't be virtual or they break when passed a nullptr
-    bool isZero() const;
-    bool isOne() const;
-    bool isNeqZero() const;
-    bool isAllOnes() const;
-    bool isAllOnesV() const;  // Verilog width rules apply
+    inline bool isZero() const;
+    inline bool isOne() const;
+    inline bool isNeqZero() const;
+    inline bool isAllOnes() const;
+    inline bool isAllOnesV() const;  // Verilog width rules apply
 
     // METHODS - data type changes especially for initial creation
     void dtypep(AstNodeDType* nodep) {
@@ -1832,9 +1832,9 @@ public:
     }
     AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
-    bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
+    inline bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
     // Does tree of this == node2p?, not allowing non-isGateOptimizable
-    bool sameGateTree(const AstNode* node2p) const;
+    inline bool sameGateTree(const AstNode* node2p) const;
     void deleteTree();  // Always deletes the next link
     void checkTree();  // User Interface version
     void checkIter() const;
@@ -1932,7 +1932,7 @@ private:
 public:
     // For use via the VN_IS macro only
     template <typename T, typename E>
-    inline static bool privateIs(const AstNode* nodep) {
+    static bool privateIs(const AstNode* nodep) {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_IS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_IS, node cannot be this type.");
         return nodep && privateTypeTest<T>(nodep);
@@ -1940,14 +1940,14 @@ public:
 
     // For use via the VN_CAST macro only
     template <typename T, typename E>
-    inline static T* privateCast(AstNode* nodep) {
+    static T* privateCast(AstNode* nodep) {
         static_assert(!uselessCast<T, E>(),
                       "Unnecessary VN_CAST, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_CAST, node cannot be this type.");
         return nodep && privateTypeTest<T>(nodep) ? reinterpret_cast<T*>(nodep) : nullptr;
     }
     template <typename T, typename E>
-    inline static const T* privateCast(const AstNode* nodep) {
+    static const T* privateCast(const AstNode* nodep) {
         static_assert(!uselessCast<T, E>(),
                       "Unnecessary VN_CAST, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_CAST, node cannot be this type.");
@@ -1956,7 +1956,7 @@ public:
 
     // For use via the VN_AS macro only
     template <typename T, typename E>
-    inline static T* privateAs(AstNode* nodep) {
+    static T* privateAs(AstNode* nodep) {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
@@ -1965,7 +1965,7 @@ public:
         return reinterpret_cast<T*>(nodep);
     }
     template <typename T, typename E>
-    inline static const T* privateAs(const AstNode* nodep) {
+    static const T* privateAs(const AstNode* nodep) {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
@@ -2172,7 +2172,7 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const std::function
         constexpr int prefetchDistance = 2;
 
         // Grow stack to given size
-        const auto grow = [&](size_t size) VL_ATTR_ALWINLINE {
+        const auto grow = [&](size_t size) {
             const ptrdiff_t occupancy = topp - basep;
             stack.resize(size);
             basep = stack.data() + prefetchDistance;
@@ -2188,7 +2188,7 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const std::function
         for (int i = -prefetchDistance; i; ++i) basep[i] = nodep;
 
         // Visit given node, enqueue children for traversal
-        const auto visit = [&](Node* currp) VL_ATTR_ALWINLINE {
+        const auto visit = [&](Node* currp) {
             // Type test this node
             if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
                 // Call the client function
@@ -2253,7 +2253,7 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep,
         constexpr int prefetchDistance = 2;
 
         // Grow stack to given size
-        const auto grow = [&](size_t size) VL_ATTR_ALWINLINE {
+        const auto grow = [&](size_t size) {
             const ptrdiff_t occupancy = topp - basep;
             stack.resize(size);
             basep = stack.data() + prefetchDistance;
@@ -2269,7 +2269,7 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep,
         for (int i = -prefetchDistance; i; ++i) basep[i] = nodep;
 
         // Visit given node, enqueue children for traversal, return true if result determined.
-        const auto visit = [&](Node* currp) VL_ATTR_ALWINLINE {
+        const auto visit = [&](Node* currp) {
             // Type test this node
             if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
                 // Call the client function
@@ -2322,7 +2322,7 @@ inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
     }
     return os;
 }
-inline void VNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
+void VNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 
 //######################################################################
 
@@ -2369,25 +2369,25 @@ struct std::equal_to<VNRef<T_Node>> final {
 //######################################################################
 // Inline VNVisitor METHODS
 
-inline void VNVisitor::iterate(AstNode* nodep) { nodep->accept(*this); }
-inline void VNVisitor::iterateNull(AstNode* nodep) {
+void VNVisitor::iterate(AstNode* nodep) { nodep->accept(*this); }
+void VNVisitor::iterateNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->accept(*this);
 }
-inline void VNVisitor::iterateChildren(AstNode* nodep) { nodep->iterateChildren(*this); }
-inline void VNVisitor::iterateChildrenBackwards(AstNode* nodep) {
+void VNVisitor::iterateChildren(AstNode* nodep) { nodep->iterateChildren(*this); }
+void VNVisitor::iterateChildrenBackwards(AstNode* nodep) {
     nodep->iterateChildrenBackwards(*this);
 }
-inline void VNVisitor::iterateChildrenConst(AstNode* nodep) { nodep->iterateChildrenConst(*this); }
-inline void VNVisitor::iterateAndNextNull(AstNode* nodep) {
+void VNVisitor::iterateChildrenConst(AstNode* nodep) { nodep->iterateChildrenConst(*this); }
+void VNVisitor::iterateAndNextNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateAndNext(*this);
 }
-inline void VNVisitor::iterateAndNextConstNullBackwards(AstNode* nodep) {
+void VNVisitor::iterateAndNextConstNullBackwards(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateListBackwards(*this);
 }
-inline void VNVisitor::iterateAndNextConstNull(AstNode* nodep) {
+void VNVisitor::iterateAndNextConstNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateAndNextConst(*this);
 }
-inline AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
+AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
     return nodep->iterateSubtreeReturnEdits(*this);
 }
 

@@ -29,7 +29,7 @@ public:
         , m_freeit(true) {}
     ~TestVpiHandle() { release(); }
     operator vpiHandle() const { return m_handle; }
-    inline TestVpiHandle& operator=(vpiHandle h) {
+    TestVpiHandle& operator=(vpiHandle h) {
         release();
         m_handle = h;
         return *this;

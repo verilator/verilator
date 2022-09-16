@@ -75,8 +75,7 @@ private:
 
 //--------------------------------------------------
 // SystemC 2.1.v1
-#define DECL_TRACE_METHOD_A(tp) \
-    void trace(const tp& object, const std::string& name) override;
+#define DECL_TRACE_METHOD_A(tp) void trace(const tp& object, const std::string& name) override;
 #define DECL_TRACE_METHOD_B(tp) \
     void trace(const tp& object, const std::string& name, int width) override;
 

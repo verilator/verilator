@@ -172,7 +172,7 @@ public:
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     AstRange* rangep() const { return VN_AS(op2p(), Range); }  // op2 = Array(s) of variable
-    void rangep(AstRange* nodep);
+    inline void rangep(AstRange* nodep);
     // METHODS
     AstBasicDType* basicp() const override {
         return subDTypep()->basicp();
@@ -184,12 +184,12 @@ public:
     int widthTotalBytes() const override {
         return elementsConst() * subDTypep()->widthTotalBytes();
     }
-    int left() const;
-    int right() const;
-    int hi() const;
-    int lo() const;
-    int elementsConst() const;
-    VNumRange declRange() const;
+    inline int left() const;
+    inline int right() const;
+    inline int hi() const;
+    inline int lo() const;
+    inline int elementsConst() const;
+    inline VNumRange declRange() const;
 };
 class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // A struct or union; common handling

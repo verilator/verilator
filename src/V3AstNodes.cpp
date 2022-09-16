@@ -683,6 +683,8 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
     return nullptr;
 }
 
+bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }
+
 class AstNodeDType::CTypeRecursed final {
 public:
     string m_type;  // The base type, e.g.: "Foo_t"s
@@ -1489,6 +1491,11 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
 void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "iface";
+}
+void AstIfaceRefDType::cloneRelink() {
+    if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep();
+    if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
+    if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep();
 }
 void AstInitArray::dump(std::ostream& str) const {
     this->AstNode::dump(str);

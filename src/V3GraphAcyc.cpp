@@ -121,7 +121,7 @@ private:
     void placeTryEdge(V3GraphEdge* edgep);
     bool placeIterate(GraphAcycVertex* vertexp, uint32_t currentRank);
 
-    inline bool origFollowEdge(V3GraphEdge* edgep) {
+    bool origFollowEdge(V3GraphEdge* edgep) {
         return (edgep->weight() && (m_origEdgeFuncp)(edgep));
     }
     V3GraphEdge* edgeFromEdge(V3GraphEdge* oldedgep, V3GraphVertex* fromp, V3GraphVertex* top) {

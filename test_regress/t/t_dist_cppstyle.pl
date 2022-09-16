@@ -24,8 +24,22 @@ foreach my $file (sort keys %files) {
     my $contents = file_contents($filename);
 
     checkPattern($filename, $contents,
-                 qr/virtual[^{};]+override/,
+                 qr/[^\/]*virtual[^{};]+override/,
                  "'virtual' keyword is redundant on 'override' method");
+
+    checkPattern($filename, $contents,
+                 qr/    \s*(\w+ )*\s*(inline) [^;]+?\([^;]*?\)[^;]+?(?:{|:|=\s*default)/,
+                 "'inline' keyword is redundant on method definitions inside classes");
+
+    checkPattern($filename, $contents,
+                 qr/(?<!template <>\n)inline \S+ [^;:(]+::[^;:(]+\([^;]*\)[^;]+{/,
+                 "Use 'inline' only on declaration inside classes (except for template specializatoins)");
+
+    if ($file =~ /\.(c|cpp)/) {
+        checkPattern($filename, $contents,
+                     qr/(\w+\s+)*(inline)/,
+                     "'inline' keyword is on functions defined in .cpp files");
+    }
 }
 
 ok(1);
@@ -51,8 +65,8 @@ sub checkPattern {
 
     my $offset = 0;
     my $buffer = $contents;
-    while ($buffer =~ s/.*?^[^\/]*($pattern)//sm) {
-      my $lineno = offset_to_lineno($contents, $offset + $-[1]);
+    while ($buffer =~ s/.*?^($pattern)//sm) {
+      my $lineno = offset_to_lineno($contents, $offset + $-[-1]);
       $offset += $+[1];
       error("$filename:$lineno: $message");
     }

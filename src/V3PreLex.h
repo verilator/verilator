@@ -143,7 +143,7 @@ public:
     ~VPreStream() { lexStreamDepthAdd(-1); }
 
 private:
-    void lexStreamDepthAdd(int delta);
+    inline void lexStreamDepthAdd(int delta);
 };
 
 //======================================================================
@@ -237,6 +237,6 @@ private:
     void scanSwitchStream(VPreStream* streamp);
 };
 
-inline void VPreStream::lexStreamDepthAdd(int delta) { m_lexp->streamDepthAdd(delta); }
+void VPreStream::lexStreamDepthAdd(int delta) { m_lexp->streamDepthAdd(delta); }
 
 #endif  // Guard

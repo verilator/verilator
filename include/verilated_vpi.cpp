@@ -114,7 +114,7 @@ public:
     static VerilatedVpio* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpio*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    inline vpiHandle castVpiHandle() { return reinterpret_cast<vpiHandle>(this); }
+    vpiHandle castVpiHandle() { return reinterpret_cast<vpiHandle>(this); }
     // ACCESSORS
     virtual const char* name() const { return "<null>"; }
     virtual const char* fullname() const { return "<null>"; }

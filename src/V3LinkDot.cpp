@@ -1966,7 +1966,7 @@ private:
             nodep->v3error("Illegal call of a task as a function: " << nodep->prettyNameQ());
         }
     }
-    inline void checkNoDot(AstNode* nodep) {
+    void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
             // UINFO(9, "ds=" << m_ds.ascii() << endl);
             nodep->v3error("Syntax Error: Not expecting " << nodep->type() << " under a "

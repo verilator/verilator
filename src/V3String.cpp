@@ -31,7 +31,7 @@ std::map<string, string> VName::s_dehashMap;
 // Wildcard
 
 // Double procedures, inlined, unrolls loop much better
-inline bool VString::wildmatchi(const char* s, const char* p) {
+bool VString::wildmatchi(const char* s, const char* p) {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
@@ -193,13 +193,11 @@ static const uint32_t sha256K[]
        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
        0xc67178f2};
 
-static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) VL_ATTR_ALWINLINE;
-static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) {
-    return lhs >> rhs | lhs << (32 - rhs);
-}
+VL_ATTR_ALWINLINE
+static uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) { return lhs >> rhs | lhs << (32 - rhs); }
 
-static inline void sha256Block(uint32_t* h, const uint32_t* chunk) VL_ATTR_ALWINLINE;
-static inline void sha256Block(uint32_t* h, const uint32_t* chunk) {
+VL_ATTR_ALWINLINE
+static void sha256Block(uint32_t* h, const uint32_t* chunk) {
     uint32_t ah[8];
     const uint32_t* p = chunk;
 

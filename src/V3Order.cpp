@@ -816,7 +816,7 @@ public:
 
 OrderMoveDomScope::DomScopeMap OrderMoveDomScope::s_dsMap;
 
-inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs) {
+std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs) {
     lhs << rhs.name();
     return lhs;
 }
@@ -1349,7 +1349,7 @@ public:
 // OrderMoveDomScope methods
 
 // Check the domScope is on ready list, add if not
-inline void OrderMoveDomScope::ready(OrderProcess* opp) {
+void OrderMoveDomScope::ready(OrderProcess* opp) {
     if (!m_onReadyList) {
         m_onReadyList = true;
         m_readyDomScopeE.pushBack(opp->m_pomReadyDomScope, this);
@@ -1357,7 +1357,7 @@ inline void OrderMoveDomScope::ready(OrderProcess* opp) {
 }
 
 // Mark one vertex as finished, remove from ready list if done
-inline void OrderMoveDomScope::movedVertex(OrderProcess* opp, OrderMoveVertex* vertexp) {
+void OrderMoveDomScope::movedVertex(OrderProcess* opp, OrderMoveVertex* vertexp) {
     UASSERT_OBJ(m_onReadyList, vertexp,
                 "Moving vertex from ready when nothing was on que as ready.");
     if (m_readyVertices.empty()) {  // Else more work to get to later

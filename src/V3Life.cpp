@@ -94,18 +94,18 @@ public:
         consumed();
     }
     ~LifeVarEntry() = default;
-    inline void simpleAssign(AstNodeAssign* assp) {  // New simple A=.... assignment
+    void simpleAssign(AstNodeAssign* assp) {  // New simple A=.... assignment
         m_assignp = assp;
         m_constp = nullptr;
         m_everSet = true;
         if (VN_IS(assp->rhsp(), Const)) m_constp = VN_AS(assp->rhsp(), Const);
     }
-    inline void complexAssign() {  // A[x]=... or some complicated assignment
+    void complexAssign() {  // A[x]=... or some complicated assignment
         m_assignp = nullptr;
         m_constp = nullptr;
         m_everSet = true;
     }
-    inline void consumed() {  // Rvalue read of A
+    void consumed() {  // Rvalue read of A
         m_assignp = nullptr;
     }
     AstNodeAssign* assignp() const { return m_assignp; }

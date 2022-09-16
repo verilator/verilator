@@ -309,7 +309,7 @@ public:
         if (lineMatch(lineno, VPragmaType::FULL_CASE)) nodep->fullPragma(true);
         if (lineMatch(lineno, VPragmaType::PARALLEL_CASE)) nodep->parallelPragma(true);
     }
-    inline void applyIgnores(FileLine* filelinep) {
+    void applyIgnores(FileLine* filelinep) {
         // HOT routine, called each parsed token line of this filename
         if (m_lastIgnore.lineno != filelinep->lineno()) {
             // UINFO(9, "   ApplyIgnores for " << filelinep->ascii() << endl);

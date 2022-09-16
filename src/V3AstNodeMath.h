@@ -341,7 +341,10 @@ public:
     VAccess access() const { return m_access; }
     void access(const VAccess& flag) { m_access = flag; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
-    void varp(AstVar* varp);
+    void varp(AstVar* varp) {
+        m_varp = varp;
+        dtypeFrom((AstNode*)varp);
+    }
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
     string selfPointer() const { return m_selfPointer; }

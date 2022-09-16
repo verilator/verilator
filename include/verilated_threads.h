@@ -103,7 +103,7 @@ public:
     // Upstream mtasks must call this when they complete.
     // Returns true when the current MTaskVertex becomes ready to execute,
     // false while it's still waiting on more dependencies.
-    inline bool signalUpstreamDone(bool evenCycle) {
+    bool signalUpstreamDone(bool evenCycle) {
         if (evenCycle) {
             const uint32_t upstreamDepsDone
                 = 1 + m_upstreamDepsDone.fetch_add(1, std::memory_order_release);
@@ -116,11 +116,11 @@ public:
             return (upstreamDepsDone_prev == 1);
         }
     }
-    inline bool areUpstreamDepsDone(bool evenCycle) const {
+    bool areUpstreamDepsDone(bool evenCycle) const {
         const uint32_t target = evenCycle ? m_upstreamDepCount : 0;
         return m_upstreamDepsDone.load(std::memory_order_acquire) == target;
     }
-    inline void waitUntilUpstreamDone(bool evenCycle) const {
+    void waitUntilUpstreamDone(bool evenCycle) const {
         unsigned ct = 0;
         while (VL_UNLIKELY(!areUpstreamDepsDone(evenCycle))) {
             VL_CPU_RELAX();
@@ -171,7 +171,7 @@ public:
 
     // METHODS
     template <bool SpinWait>
-    inline void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Spin for a while, waiting for new data
         if VL_CONSTEXPR_CXX17 (SpinWait) {
             for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
@@ -191,7 +191,7 @@ public:
         m_ready.erase(m_ready.begin());
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
-    inline void addTask(VlExecFnp fnp, VlSelfP selfp, bool evenCycle = false)
+    void addTask(VlExecFnp fnp, VlSelfP selfp, bool evenCycle = false)
         VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
         {
@@ -223,8 +223,8 @@ public:
     ~VlThreadPool() override;
 
     // METHODS
-    inline int numThreads() const { return m_workers.size(); }
-    inline VlWorkerThread* workerp(int index) {
+    int numThreads() const { return m_workers.size(); }
+    VlWorkerThread* workerp(int index) {
         assert(index >= 0);
         assert(index < m_workers.size());
         return m_workers[index];

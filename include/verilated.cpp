@@ -1003,22 +1003,22 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     }
 }
 
-static inline bool _vl_vsss_eof(FILE* fp, int floc) VL_MT_SAFE {
+static bool _vl_vsss_eof(FILE* fp, int floc) VL_MT_SAFE {
     if (VL_LIKELY(fp)) {
         return std::feof(fp) ? true : false;  // true : false to prevent MSVC++ warning
     } else {
         return floc < 0;
     }
 }
-static inline void _vl_vsss_advance(FILE* fp, int& floc) VL_MT_SAFE {
+static void _vl_vsss_advance(FILE* fp, int& floc) VL_MT_SAFE {
     if (VL_LIKELY(fp)) {
         std::fgetc(fp);
     } else {
         floc -= 8;
     }
 }
-static inline int _vl_vsss_peek(FILE* fp, int& floc, const WDataInP fromp,
-                                const std::string& fstr) VL_MT_SAFE {
+static int _vl_vsss_peek(FILE* fp, int& floc, const WDataInP fromp,
+                         const std::string& fstr) VL_MT_SAFE {
     // Get a character without advancing
     if (VL_LIKELY(fp)) {
         const int data = std::fgetc(fp);
@@ -1035,17 +1035,16 @@ static inline int _vl_vsss_peek(FILE* fp, int& floc, const WDataInP fromp,
         }
     }
 }
-static inline void _vl_vsss_skipspace(FILE* fp, int& floc, const WDataInP fromp,
-                                      const std::string& fstr) VL_MT_SAFE {
+static void _vl_vsss_skipspace(FILE* fp, int& floc, const WDataInP fromp,
+                               const std::string& fstr) VL_MT_SAFE {
     while (true) {
         const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
         if (c == EOF || !std::isspace(c)) return;
         _vl_vsss_advance(fp, floc);
     }
 }
-static inline void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp,
-                                     const std::string& fstr, char* tmpp,
-                                     const char* acceptp) VL_MT_SAFE {
+static void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
+                              char* tmpp, const char* acceptp) VL_MT_SAFE {
     // Read into tmp, consisting of characters from acceptp list
     char* cp = tmpp;
     while (true) {
@@ -1059,9 +1058,8 @@ static inline void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp,
     *cp++ = '\0';
     // VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
-static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp,
-                                      const std::string& fstr, char* beginp, std::size_t n,
-                                      const bool inhibit = false) {
+static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
+                               char* beginp, std::size_t n, const bool inhibit = false) {
     // Variant of _vl_vsss_read_str using the same underlying I/O functions but optimized
     // specifically for block reads of N bytes (read operations are not demarcated by
     // whitespace). In the fp case, except descriptor to have been opened in binary mode.
@@ -1073,12 +1071,11 @@ static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp,
     }
     return beginp;
 }
-static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits,
-                                   IData ld) VL_MT_SAFE {
+static void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
     for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) { VL_ASSIGNBIT_WI(lsb, owp, ld & 1); }
 }
-static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
-                                  size_t posstart, size_t posend) VL_MT_SAFE {
+static void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
+                           size_t posstart, size_t posend) VL_MT_SAFE {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
     int lsb = 0;
     for (int i = 0, pos = static_cast<int>(posend) - 1;

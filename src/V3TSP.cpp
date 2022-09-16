@@ -122,7 +122,7 @@ public:
         (new V3GraphEdge(this, tp, fp, cost))->user(userValue);
     }
 
-    inline static uint32_t getEdgeId(const V3GraphEdge* edgep) {
+    static uint32_t getEdgeId(const V3GraphEdge* edgep) {
         return static_cast<uint32_t>(edgep->user());
     }
 
@@ -138,7 +138,7 @@ private:
     // We will keep sorted lists of edges as vectors
     using EdgeList = std::vector<V3GraphEdge*>;
 
-    inline static bool edgeCmp(const V3GraphEdge* ap, const V3GraphEdge* bp) {
+    static bool edgeCmp(const V3GraphEdge* ap, const V3GraphEdge* bp) {
         // We pre-computed these when adding the edge to sort first by cost, then by identity
         return ap->user() > bp->user();
     }
@@ -150,7 +150,7 @@ private:
         }
     };
 
-    inline static Vertex* castVertexp(V3GraphVertex* vxp) { return static_cast<Vertex*>(vxp); }
+    static Vertex* castVertexp(V3GraphVertex* vxp) { return static_cast<Vertex*>(vxp); }
 
 public:
     // From *this, populate *mstp with the minimum spanning tree.

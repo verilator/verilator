@@ -55,13 +55,13 @@ public:
     bool legal() const { return m_e != L_ERROR; }
     //
     enum en m_e;
-    inline V3LangCode()
+    V3LangCode()
         : m_e{L_ERROR} {}
     // cppcheck-suppress noExplicitConstructor
-    inline V3LangCode(en _e)
+    V3LangCode(en _e)
         : m_e{_e} {}
     explicit V3LangCode(const char* textp);
-    explicit inline V3LangCode(int _e)
+    explicit V3LangCode(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };

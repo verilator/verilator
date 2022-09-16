@@ -132,8 +132,8 @@ private:
 public:
     // METHODS
     void clear() { m_linkable.clear(); }
-    inline void addLinkable(const AstNode* nodep) { m_linkable.emplace(nodep); }
-    inline bool isLinkable(const AstNode* nodep) const { return m_linkable.count(nodep) != 0; }
+    void addLinkable(const AstNode* nodep) { m_linkable.emplace(nodep); }
+    bool isLinkable(const AstNode* nodep) const { return m_linkable.count(nodep) != 0; }
 } s_linkableTable;
 
 bool V3Broken::isLinkable(const AstNode* nodep) { return s_linkableTable.isLinkable(nodep); }

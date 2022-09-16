@@ -247,7 +247,11 @@ public:
 
     // OPERATORS
     void v3errorEnd(std::ostringstream& str, const string& extra = "");
-    void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN;
+    void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN {
+        v3errorEnd(str);
+        assert(0);  // LCOV_EXCL_LINE
+        VL_UNREACHABLE
+    }
     /// When building an error, prefix for printing continuation lines
     /// e.g. information referring to the same FileLine as before
     string warnMore() const;
@@ -285,11 +289,5 @@ private:
     string warnContext(bool secondary) const;
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);
-
-inline void FileLine::v3errorEndFatal(std::ostringstream& str) {
-    v3errorEnd(str);
-    assert(0);  // LCOV_EXCL_LINE
-    VL_UNREACHABLE
-}
 
 #endif  // Guard
