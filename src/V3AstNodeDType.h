@@ -755,6 +755,7 @@ public:
 };
 class AstIfaceRefDType final : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
+    // @astgen op1 := paramsp : List[AstPin]
 private:
     FileLine* m_modportFileline;  // Where modport token was
     string m_cellName;  // "" = no cell, such as when connects to 'input' iface
@@ -777,6 +778,14 @@ public:
         , m_cellName{cellName}
         , m_ifaceName{ifaceName}
         , m_modportName{modport} {}
+    AstIfaceRefDType(FileLine* fl, FileLine* modportFl, const string& cellName,
+                     const string& ifaceName, const string& modport, AstPin* paramsp)
+        : ASTGEN_SUPER_IfaceRefDType(fl)
+        , m_modportFileline{modportFl}
+        , m_cellName{cellName}
+        , m_ifaceName{ifaceName} {
+        addParamsp(paramsp);
+    }
     ASTGEN_MEMBERS_AstIfaceRefDType;
     // METHODS
     const char* broken() const override;

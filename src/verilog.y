@@ -1401,9 +1401,9 @@ port<nodep>:                    // ==IEEE: port
                           VARDTYPE(new AstIfaceRefDType($<fl>2, $<fl>4, "", *$2, *$4));
                           addNextNull($$, VARDONEP($$,$6,$7)); }
         |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
-                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: virtual or generic interfaces"); }
+                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: generic interfaces"); }
         |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
-                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: virtual or generic interfaces"); }
+                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: generic interfaces"); }
         //
         //                      // IEEE: ansi_port_declaration, with [port_direction] removed
         //                      //   IEEE: [ net_port_header | interface_port_header ]
@@ -1955,6 +1955,11 @@ data_type<nodeDTypep>:          // ==IEEE: data_type
         |       packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
                           $$ = GRAMMARP->createArray(refp, $4, true); }
+        //                      // Rules overlap virtual_interface_declaration
+        |       yVIRTUAL__INTERFACE yINTERFACE data_typeVirtual
+                        { $$ = $3; }
+        |       yVIRTUAL__anyID                data_typeVirtual
+                        { $$ = $2; }
         ;
 
 data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
@@ -1980,21 +1985,20 @@ data_typeNoRef<nodeDTypep>:             // ==IEEE: data_type, excluding class_ty
                         { $$ = new AstBasicDType{$1, VBasicDTypeKwd::CHANDLE}; }
         |       yEVENT
                         { $$ = new AstBasicDType{$1, VBasicDTypeKwd::EVENT}; v3Global.setHasEvents(); }
-        //                      // Rules overlap virtual_interface_declaration
-        //                      // Parameters here are SV2009
-        //                      // IEEE has ['.' modport] but that will conflict with port
-        //                      // declarations which decode '.' modport themselves, so
-        //                      // instead see data_typeVar
-        |       yVIRTUAL__INTERFACE yINTERFACE id/*interface*/
-                        { $$ = new AstBasicDType{$1, VBasicDTypeKwd::CHANDLE};
-                          BBUNSUP($1, "Unsupported: virtual interface"); }
-        |       yVIRTUAL__anyID                id/*interface*/
-                        { $$ = new AstBasicDType{$1, VBasicDTypeKwd::CHANDLE};
-                          BBUNSUP($1, "Unsupported: virtual data type"); }
         |       type_reference                          { $$ = $1; }
         //                      // IEEE: class_scope: see data_type above
         //                      // IEEE: class_type: see data_type above
         //                      // IEEE: ps_covergroup: see data_type above
+        ;
+
+data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yINTERFACE ]
+        //                      // Parameters here are SV2009
+                id/*interface*/                         { $$ = new AstIfaceRefDType{$<fl>1, "", *$1}; }
+        |       id/*interface*/ '.' id/*modport*/       { $$ = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3}; }
+        |       id/*interface*/ parameter_value_assignmentClass
+                        { $$ = new AstIfaceRefDType{$<fl>1, nullptr, "", *$1, "", $2}; }
+        |       id/*interface*/ parameter_value_assignmentClass '.' id/*modport*/
+                        { $$ = new AstIfaceRefDType{$<fl>1, $<fl>4, "", *$1, *$4, $2}; }
         ;
 
 data_type_or_void<nodeDTypep>:  // ==IEEE: data_type_or_void
