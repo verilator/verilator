@@ -120,7 +120,7 @@ private:
         m_lastIfp = nullptr;
     }
     // VISITORS
-    virtual void visit(AstCoverToggle* nodep) override {
+    void visit(AstCoverToggle* nodep) override {
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
@@ -137,11 +137,11 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstSenTree* nodep) override {
+    void visit(AstSenTree* nodep) override {
         nodep->unlinkFrBack();
         pushDeletep(nodep);  // Delete it later, AstActives still pointing to it
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         UASSERT_OBJ(nodep->hasClocked(), nodep, "Should have been converted by V3Sched");
         UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not have been created if empty");
 
@@ -164,7 +164,7 @@ private:
         // Dispose of the AstActive
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstExecGraph* nodep) override {
+    void visit(AstExecGraph* nodep) override {
         for (AstMTaskBody* mtaskBodyp = nodep->mTaskBodiesp(); mtaskBodyp;
              mtaskBodyp = VN_AS(mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
@@ -174,14 +174,14 @@ private:
     }
 
     //========== Create sampled values
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         {
             m_scopep = nodep;
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstSampled* nodep) override {
+    void visit(AstSampled* nodep) override {
         VL_RESTORER(m_inSampled);
         {
             m_inSampled = true;
@@ -190,7 +190,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
         if (m_inSampled && !nodep->user1SetOnce()) {
             UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "Should have failed in V3Access");
@@ -204,7 +204,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -212,7 +212,7 @@ public:
         m_evalp = netlistp->evalp();
         iterate(netlistp);
     }
-    virtual ~ClockVisitor() override = default;
+    ~ClockVisitor() override = default;
 };
 
 //######################################################################

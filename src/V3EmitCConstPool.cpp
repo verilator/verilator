@@ -100,7 +100,7 @@ class EmitCConstPool final : public EmitCConstInit {
     }
 
     // VISITORS
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         m_outFileSize += nodep->num().isString() ? 10 : nodep->isWide() ? nodep->widthWords() : 1;
         EmitCConstInit::visit(nodep);
     }

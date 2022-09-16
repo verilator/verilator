@@ -151,7 +151,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         {
             m_cfuncp = nodep;
@@ -159,7 +159,7 @@ private:
             mergeEnd();  // Finish last pending merge, if any
         }
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         if (!m_cfuncp) return;
 
         // Left select WordSel or ArraySel
@@ -250,14 +250,14 @@ private:
         UINFO(9, "Start merge i=" << lindex << " o=" << m_mgOffset << nodep << endl);
     }
     //--------------------
-    virtual void visit(AstVar*) override {}  // Accelerate
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstVar*) override {}  // Accelerate
+    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit ReloopVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ReloopVisitor() override {
+    ~ReloopVisitor() override {
         V3Stats::addStat("Optimizations, Reloops", m_statReloops);
         V3Stats::addStat("Optimizations, Reloop iterations", m_statReItems);
     }

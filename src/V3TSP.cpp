@@ -61,7 +61,7 @@ public:
     TspVertexTmpl(V3Graph* graphp, const T_Key& k)
         : V3GraphVertex{graphp}
         , m_key{k} {}
-    virtual ~TspVertexTmpl() override = default;
+    ~TspVertexTmpl() override = default;
     const T_Key& key() const { return m_key; }
 
 private:
@@ -84,7 +84,7 @@ public:
     // CONSTRUCTORS
     TspGraphTmpl()
         : V3Graph{} {}
-    virtual ~TspGraphTmpl() override = default;
+    ~TspGraphTmpl() override = default;
 
     // METHODS
     void addVertex(const T_Key& key) {
@@ -122,7 +122,7 @@ public:
         (new V3GraphEdge(this, tp, fp, cost))->user(userValue);
     }
 
-    inline static uint32_t getEdgeId(const V3GraphEdge* edgep) {
+    static uint32_t getEdgeId(const V3GraphEdge* edgep) {
         return static_cast<uint32_t>(edgep->user());
     }
 
@@ -138,7 +138,7 @@ private:
     // We will keep sorted lists of edges as vectors
     using EdgeList = std::vector<V3GraphEdge*>;
 
-    inline static bool edgeCmp(const V3GraphEdge* ap, const V3GraphEdge* bp) {
+    static bool edgeCmp(const V3GraphEdge* ap, const V3GraphEdge* bp) {
         // We pre-computed these when adding the edge to sort first by cost, then by identity
         return ap->user() > bp->user();
     }
@@ -150,7 +150,7 @@ private:
         }
     };
 
-    inline static Vertex* castVertexp(V3GraphVertex* vxp) { return static_cast<Vertex*>(vxp); }
+    static Vertex* castVertexp(V3GraphVertex* vxp) { return static_cast<Vertex*>(vxp); }
 
 public:
     // From *this, populate *mstp with the minimum spanning tree.
@@ -542,8 +542,8 @@ public:
         : m_xpos{xpos}
         , m_ypos{ypos}
         , m_serial{++s_serialNext} {}
-    virtual ~TspTestState() override = default;
-    virtual int cost(const TspStateBase* otherp) const override {
+    ~TspTestState() override = default;
+    int cost(const TspStateBase* otherp) const override {
         return cost(dynamic_cast<const TspTestState*>(otherp));
     }
     static unsigned diff(unsigned a, unsigned b) {

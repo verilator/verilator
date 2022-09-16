@@ -73,20 +73,20 @@ public:
         m_activityCode = code;
         m_slow = false;
     }
-    virtual ~TraceActivityVertex() override = default;
+    ~TraceActivityVertex() override = default;
     // ACCESSORS
     AstNode* insertp() const {
         if (!m_insertp) v3fatalSrc("Null insertp; probably called on a special always/slow.");
         return m_insertp;
     }
-    virtual string name() const override {
+    string name() const override {
         if (activityAlways()) {
             return "*ALWAYS*";
         } else {
             return std::string{slow() ? "*SLOW* " : ""} + insertp()->name();
         }
     }
-    virtual string dotColor() const override { return slow() ? "yellowGreen" : "green"; }
+    string dotColor() const override { return slow() ? "yellowGreen" : "green"; }
     int32_t activityCode() const { return m_activityCode; }
     bool activityAlways() const { return activityCode() == ACTIVITY_ALWAYS; }
     bool activitySlow() const { return activityCode() == ACTIVITY_SLOW; }
@@ -104,12 +104,12 @@ public:
     TraceCFuncVertex(V3Graph* graphp, AstCFunc* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceCFuncVertex() override = default;
+    ~TraceCFuncVertex() override = default;
     // ACCESSORS
     AstCFunc* nodep() const { return m_nodep; }
-    virtual string name() const override { return nodep()->name(); }
-    virtual string dotColor() const override { return "yellow"; }
-    virtual FileLine* fileline() const override { return nodep()->fileline(); }
+    string name() const override { return nodep()->name(); }
+    string dotColor() const override { return "yellow"; }
+    FileLine* fileline() const override { return nodep()->fileline(); }
 };
 
 class TraceTraceVertex final : public V3GraphVertex {
@@ -121,12 +121,12 @@ public:
     TraceTraceVertex(V3Graph* graphp, AstTraceDecl* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceTraceVertex() override = default;
+    ~TraceTraceVertex() override = default;
     // ACCESSORS
     AstTraceDecl* nodep() const { return m_nodep; }
-    virtual string name() const override { return nodep()->name(); }
-    virtual string dotColor() const override { return "red"; }
-    virtual FileLine* fileline() const override { return nodep()->fileline(); }
+    string name() const override { return nodep()->name(); }
+    string dotColor() const override { return "red"; }
+    FileLine* fileline() const override { return nodep()->fileline(); }
     TraceTraceVertex* duplicatep() const { return m_duplicatep; }
     void duplicatep(TraceTraceVertex* dupp) {
         UASSERT_OBJ(!duplicatep(), nodep(), "Assigning duplicatep() to already duplicated node");
@@ -141,12 +141,12 @@ public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceVarVertex() override = default;
+    ~TraceVarVertex() override = default;
     // ACCESSORS
     AstVarScope* nodep() const { return m_nodep; }
-    virtual string name() const override { return nodep()->name(); }
-    virtual string dotColor() const override { return "skyblue"; }
-    virtual FileLine* fileline() const override { return nodep()->fileline(); }
+    string name() const override { return nodep()->name(); }
+    string dotColor() const override { return "skyblue"; }
+    FileLine* fileline() const override { return nodep()->fileline(); }
 };
 
 //######################################################################
@@ -796,7 +796,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         m_code = 1;  // Multiple TopScopes will require fixing how code#s
         // are assigned as duplicate varscopes must result in the same tracing code#.
 
@@ -811,11 +811,11 @@ private:
         // Create the trace functions and insert them into the tree
         createTraceFunctions();
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         if (nodep->isTop()) m_topModp = nodep;
         iterateChildren(nodep);
     }
-    virtual void visit(AstCCall* nodep) override {
+    void visit(AstCCall* nodep) override {
         UINFO(8, "   CCALL " << nodep << endl);
         if (!m_finding && !nodep->user2()) {
             // See if there are other calls in same statement list;
@@ -834,7 +834,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         UINFO(8, "   CFUNC " << nodep << endl);
         V3GraphVertex* const funcVtxp = getCFuncVertexp(nodep);
         if (!m_finding) {  // If public, we need a unique activity code to allow for sets
@@ -853,7 +853,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstTraceDecl* nodep) override {
+    void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep << endl);
         if (!m_finding) {
             V3GraphVertex* const vertexp = new TraceTraceVertex(&m_graph, nodep);
@@ -865,7 +865,7 @@ private:
             m_tracep = nullptr;
         }
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         if (m_tracep) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "Lvalue in trace?  Should be const.");
@@ -890,7 +890,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -898,7 +898,7 @@ public:
         : m_alwaysVtxp{new TraceActivityVertex{&m_graph, TraceActivityVertex::ACTIVITY_ALWAYS}} {
         iterate(nodep);
     }
-    virtual ~TraceVisitor() override {
+    ~TraceVisitor() override {
         V3Stats::addStat("Tracing, Unique traced signals", m_statUniqSigs);
         V3Stats::addStat("Tracing, Unique trace codes", m_statUniqCodes);
     }

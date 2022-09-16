@@ -212,8 +212,7 @@ string AstNode::prettyTypeName() const {
 //######################################################################
 // Insertion
 
-inline void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno,
-                                     bool next) {
+void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno, bool next) {
 #ifdef VL_DEBUG
 // Called on all major tree changers.
 // Only for use for those really nasty bugs relating to internals
@@ -927,7 +926,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* const tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
+        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep};
         {
             VL_DO_DANGLING(tempp->stmtsp()->accept(v),
                            nodep);  // nodep to null as may be replaced

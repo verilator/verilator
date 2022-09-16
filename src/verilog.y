@@ -3924,7 +3924,7 @@ system_f_call_or_t<nodep>:      // IEEE: part of system_tf_call (can be task or 
         |       yD_POW '(' expr ',' expr ')'            { $$ = new AstPowD($1,$3,$5); }
         |       yD_RANDOM '(' expr ')'                  { $$ = new AstRand($1, $3, false); }
         |       yD_RANDOM parenE                        { $$ = new AstRand($1, nullptr, false); }
-        |       yD_REALTIME parenE                      { $$ = new AstTimeD($1, VTimescale(VTimescale::NONE)); }
+        |       yD_REALTIME parenE                      { $$ = new AstTimeD{$1, VTimescale{VTimescale::NONE}}; }
         |       yD_REALTOBITS '(' expr ')'              { $$ = new AstRealToBits($1,$3); }
         |       yD_REWIND '(' idClassSel ')'            { $$ = new AstFSeek($1, $3, new AstConst($1, 0), new AstConst($1, 0)); }
         |       yD_RIGHT '(' exprOrDataType ')'         { $$ = new AstAttrOf($1,VAttrType::DIM_RIGHT,$3,nullptr); }
@@ -3942,13 +3942,14 @@ system_f_call_or_t<nodep>:      // IEEE: part of system_tf_call (can be task or 
         |       yD_SIZE '(' exprOrDataType ',' expr ')' { $$ = new AstAttrOf($1,VAttrType::DIM_SIZE,$3,$5); }
         |       yD_SQRT '(' expr ')'                    { $$ = new AstSqrtD($1,$3); }
         |       yD_SSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstSScanF($1,*$5,$3,$6); }
-        |       yD_STIME parenE                         { $$ = new AstSel($1, new AstTime($1, VTimescale(VTimescale::NONE)), 0, 32); }
+        |       yD_STIME parenE
+                        { $$ = new AstSel{$1, new AstTime{$1, VTimescale{VTimescale::NONE}}, 0, 32}; }
         |       yD_STABLE '(' expr ')'                  { $$ = new AstStable($1,$3); }
         |       yD_STABLE '(' expr ',' expr ')'         { $$ = $3; BBUNSUP($1, "Unsupported: $stable and clock arguments"); }
         |       yD_TAN '(' expr ')'                     { $$ = new AstTanD($1,$3); }
         |       yD_TANH '(' expr ')'                    { $$ = new AstTanhD($1,$3); }
         |       yD_TESTPLUSARGS '(' expr ')'            { $$ = new AstTestPlusArgs($1, $3); }
-        |       yD_TIME parenE                          { $$ = new AstTime($1, VTimescale(VTimescale::NONE)); }
+        |       yD_TIME parenE                          { $$ = new AstTime{$1, VTimescale{VTimescale::NONE}}; }
         |       yD_TYPENAME '(' exprOrDataType ')'      { $$ = new AstAttrOf($1, VAttrType::TYPENAME, $3); }
         |       yD_UNGETC '(' expr ',' expr ')'         { $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
         |       yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'   { $$ = new AstAttrOf($1,VAttrType::DIM_UNPK_DIMENSIONS,$3); }
@@ -6620,7 +6621,7 @@ vltOffFront<errcodeen>:
         |       yVLT_TRACING_OFF                        { $$ = V3ErrorCode::I_TRACING; }
         |       yVLT_LINT_OFF                           { $$ = V3ErrorCode::I_LINT; }
         |       yVLT_LINT_OFF yVLT_D_RULE idAny
-                        { $$ = V3ErrorCode((*$3).c_str());
+                        { $$ = V3ErrorCode{(*$3).c_str()};
                           if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
         ;
 
@@ -6630,7 +6631,7 @@ vltOnFront<errcodeen>:
         |       yVLT_TRACING_ON                         { $$ = V3ErrorCode::I_TRACING; }
         |       yVLT_LINT_ON                            { $$ = V3ErrorCode::I_LINT; }
         |       yVLT_LINT_ON yVLT_D_RULE idAny
-                        { $$ = V3ErrorCode((*$3).c_str());
+                        { $$ = V3ErrorCode{(*$3).c_str()};
                           if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
         ;
 

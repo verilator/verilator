@@ -129,6 +129,15 @@ Summary:
    is also used). Verilator manages the build itself, and for this --build
    requires GNU Make to be available on the platform.
 
+.. option:: --build-jobs [<value>]
+
+   Specify the level of parallelism for :vlopt:`--build`. If zero, uses the
+   number of threads in the current hardware. Otherwise, the <value> must
+   be a positive integer specifying the maximum number of parallel build
+   jobs.
+
+   See also :vlopt:`-j`.
+
 .. option:: --cc
 
    Specifies C++ without SystemC output mode; see also :vlopt:`--sc`
@@ -612,11 +621,10 @@ Summary:
 
 .. option:: -j [<value>]
 
-   Specify the level of parallelism for :vlopt:`--build`. The <value> must
-   be a positive integer specifying the maximum number of parallel build
-   jobs, or can be omitted. When <value> is omitted, the build will not try
-   to limit the number of parallel build jobs but attempt to execute all
-   independent build steps in parallel.
+   Specify the level of parallelism for :vlopt:`--build` if
+   :vlopt:`--build-jobs` isn't provided. If zero, uses the number of threads
+   in the current hardware. Otherwise, the <value> must be a positive
+   integer specifying the maximum number of parallel build jobs.
 
 .. option:: --l2-name <value>
 

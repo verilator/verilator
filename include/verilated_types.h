@@ -966,7 +966,7 @@ struct VlUnpacked final {
 
     // *this != that, which might be used for change detection/trigger computation, but avoid
     // operator overloading in VlUnpacked for safety in other contexts.
-    inline bool neq(const VlUnpacked<T_Value, T_Depth>& that) const { return neq(*this, that); }
+    bool neq(const VlUnpacked<T_Value, T_Depth>& that) const { return neq(*this, that); }
     // Similar to 'neq' above, *this = that used for change detection
     void assign(const VlUnpacked<T_Value, T_Depth>& that) { *this = that; }
 
@@ -992,7 +992,7 @@ private:
     }
 
     template <typename T_Other>  //
-    inline static bool neq(const T_Other& a, const T_Other& b) {
+    static bool neq(const T_Other& a, const T_Other& b) {
         // Base case (T_Other is not VlUnpacked<_, _>), fall back on !=
         return a != b;
     }

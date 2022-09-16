@@ -94,18 +94,18 @@ public:
         consumed();
     }
     ~LifeVarEntry() = default;
-    inline void simpleAssign(AstNodeAssign* assp) {  // New simple A=.... assignment
+    void simpleAssign(AstNodeAssign* assp) {  // New simple A=.... assignment
         m_assignp = assp;
         m_constp = nullptr;
         m_everSet = true;
         if (VN_IS(assp->rhsp(), Const)) m_constp = VN_AS(assp->rhsp(), Const);
     }
-    inline void complexAssign() {  // A[x]=... or some complicated assignment
+    void complexAssign() {  // A[x]=... or some complicated assignment
         m_assignp = nullptr;
         m_constp = nullptr;
         m_everSet = true;
     }
-    inline void consumed() {  // Rvalue read of A
+    void consumed() {  // Rvalue read of A
         m_assignp = nullptr;
     }
     AstNodeAssign* assignp() const { return m_assignp; }
@@ -165,7 +165,7 @@ public:
             checkRemoveAssign(it);
             it->second.simpleAssign(assp);
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::SIMPLEASSIGN(), assp));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::SIMPLEASSIGN{}, assp});
         }
         // lifeDump();
     }
@@ -175,7 +175,7 @@ public:
         if (it != m_map.end()) {
             it->second.complexAssign();
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::COMPLEXASSIGN()));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::COMPLEXASSIGN{}});
         }
     }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
@@ -196,7 +196,7 @@ public:
             UINFO(4, "     usage: " << nodep << endl);
             it->second.consumed();
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::CONSUMED()));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::CONSUMED{}});
         }
     }
     void complexAssignFind(AstVarScope* nodep) {
@@ -205,7 +205,7 @@ public:
             UINFO(4, "     casfind: " << it->first << endl);
             it->second.complexAssign();
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::COMPLEXASSIGN()));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::COMPLEXASSIGN{}});
         }
     }
     void consumedFind(AstVarScope* nodep) {
@@ -213,7 +213,7 @@ public:
         if (it != m_map.end()) {
             it->second.consumed();
         } else {
-            m_map.emplace(nodep, LifeVarEntry(LifeVarEntry::CONSUMED()));
+            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::CONSUMED{}});
         }
     }
     void lifeToAbove() {
@@ -291,7 +291,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
         // it's used so can't elim assignment before this use.
         UASSERT_OBJ(nodep->varScopep(), nodep, "nullptr");
@@ -305,7 +305,7 @@ private:
             VL_DO_DANGLING(m_lifep->varUsageReplace(vscp, nodep), nodep);
         }
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         if (nodep->isTimingControl()) {
             // V3Life doesn't understand time sense - don't optimize
             setNoopt();
@@ -331,7 +331,7 @@ private:
             iterateAndNextNull(nodep->lhsp());
         }
     }
-    virtual void visit(AstAssignDly* nodep) override {
+    void visit(AstAssignDly* nodep) override {
         // V3Life doesn't understand time sense
         if (nodep->isTimingControl()) {
             // Don't optimize
@@ -342,7 +342,7 @@ private:
     }
 
     //---- Track control flow changes
-    virtual void visit(AstNodeIf* nodep) override {
+    void visit(AstNodeIf* nodep) override {
         UINFO(4, "   IF " << nodep << endl);
         // Condition is part of PREVIOUS block
         iterateAndNextNull(nodep->condp());
@@ -368,7 +368,7 @@ private:
         VL_DO_DANGLING(delete elseLifep, elseLifep);
     }
 
-    virtual void visit(AstWhile* nodep) override {
+    void visit(AstWhile* nodep) override {
         // While's are a problem, as we don't allow loops in the graph.  We
         // may go around the cond/body multiple times.  Thus a
         // lifelication just in the body is ok, but we can't delete an
@@ -397,7 +397,7 @@ private:
         VL_DO_DANGLING(delete condLifep, condLifep);
         VL_DO_DANGLING(delete bodyLifep, bodyLifep);
     }
-    virtual void visit(AstJumpBlock* nodep) override {
+    void visit(AstJumpBlock* nodep) override {
         // As with While's we can't predict if a JumpGo will kill us or not
         // It's worse though as an IF(..., JUMPGO) may change the control flow.
         // Just don't optimize blocks with labels; they're rare - so far.
@@ -415,7 +415,7 @@ private:
         bodyLifep->lifeToAbove();
         VL_DO_DANGLING(delete bodyLifep, bodyLifep);
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         // UINFO(4, "  CCALL " << nodep << endl);
         iterateChildren(nodep);
         // Enter the function and trace it
@@ -425,7 +425,7 @@ private:
             iterate(nodep->funcp());
         }
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         // UINFO(4, "  CFUNC " << nodep << endl);
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
@@ -434,17 +434,17 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstUCFunc* nodep) override {
+    void visit(AstUCFunc* nodep) override {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
-    virtual void visit(AstCMath* nodep) override {
+    void visit(AstCMath* nodep) override {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstVar*) override {}  // Don't want varrefs under it
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstVar*) override {}  // Don't want varrefs under it
+    void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             // V3Life doesn't understand time sense - don't optimize
             setNoopt();
@@ -463,7 +463,7 @@ public:
             if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = nullptr);
         }
     }
-    virtual ~LifeVisitor() override {
+    ~LifeVisitor() override {
         if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = nullptr);
     }
     VL_UNCOPYABLE(LifeVisitor);
@@ -479,20 +479,20 @@ private:
     LifeState* const m_statep;  // Current state
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         if (nodep->entryPoint()) {
             // Usage model 1: Simulate all C code, doing lifetime analysis
             LifeVisitor{nodep, m_statep};
         }
     }
-    virtual void visit(AstNodeProcedure* nodep) override {
+    void visit(AstNodeProcedure* nodep) override {
         // Usage model 2: Cleanup basic blocks
         LifeVisitor{nodep, m_statep};
     }
-    virtual void visit(AstVar*) override {}  // Accelerate
-    virtual void visit(AstNodeStmt*) override {}  // Accelerate
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstVar*) override {}  // Accelerate
+    void visit(AstNodeStmt*) override {}  // Accelerate
+    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -500,7 +500,7 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    virtual ~LifeTopVisitor() override = default;
+    ~LifeTopVisitor() override = default;
 };
 
 //######################################################################

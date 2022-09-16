@@ -64,7 +64,7 @@ private:
     bool m_hasClk = false;  // True if the top module has sequential logic
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         m_vfilep
             = new AstVFile{nodep->fileline(), v3Global.opt.makeDir() + "/" + m_libName + ".sv"};
         nodep->addFilesp(m_vfilep);
@@ -74,7 +74,7 @@ private:
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         if (!nodep->isTop()) {
             return;
         } else {
@@ -422,7 +422,7 @@ private:
         m_cfilep->tblockp(txtp);
     }
 
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
@@ -439,7 +439,7 @@ private:
         }
     }
 
-    virtual void visit(AstNode*) override {}
+    void visit(AstNode*) override {}
 
     string cInputConnection(AstVar* varp) {
         return V3Task::assignDpiToInternal("handlep__V->" + varp->name(), varp);

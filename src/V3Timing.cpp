@@ -64,18 +64,18 @@ private:
     class DependencyVertex final : public V3GraphVertex {
         AstNode* const m_nodep;  // AST node represented by this graph vertex
         // ACCESSORS
-        virtual string name() const override {
+        string name() const override {
             return cvtToHex(nodep()) + ' ' + nodep()->prettyTypeName();
         }
-        virtual FileLine* fileline() const override { return nodep()->fileline(); }
-        virtual string dotColor() const override { return nodep()->user2() ? "red" : "black"; }
+        FileLine* fileline() const override { return nodep()->fileline(); }
+        string dotColor() const override { return nodep()->user2() ? "red" : "black"; }
 
     public:
         // CONSTRUCTORS
         DependencyVertex(V3Graph* graphp, AstNode* nodep)
             : V3GraphVertex{graphp}
             , m_nodep{nodep} {}
-        virtual ~DependencyVertex() override = default;
+        ~DependencyVertex() override = default;
 
         // ACCESSORS
         virtual AstNode* nodep() const { return m_nodep; }
@@ -317,7 +317,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         UASSERT(!m_classp, "Module or class under class");
         VL_RESTORER(m_classp);
         m_classp = VN_CAST(nodep, Class);
@@ -325,23 +325,23 @@ private:
         m_timescaleFactor = calculateTimescaleFactor(nodep->timeunit());
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
         iterateChildren(nodep);
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         m_activep = nodep;
         iterateChildren(nodep);
         m_activep = nullptr;
     }
-    virtual void visit(AstNodeProcedure* nodep) override {
+    void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
         if (nodep->user2()) nodep->setSuspendable();
     }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstAlways* nodep) override {
         visit(static_cast<AstNodeProcedure*>(nodep));
         if (nodep->isSuspendable() && !nodep->user1SetOnce()) {
             FileLine* const flp = nodep->fileline();
@@ -360,7 +360,7 @@ private:
             m_activep->addNextHere(activep);
         }
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
@@ -410,7 +410,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         if (nodep->funcp()->user2()) {  // If suspendable
             auto* const awaitp = new AstCAwait{nodep->fileline(), nullptr};
             nodep->replaceWith(awaitp);
@@ -423,11 +423,11 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstCAwait* nodep) override {
+    void visit(AstCAwait* nodep) override {
         v3Global.setUsesTiming();
         m_procp->user2(true);
     }
-    virtual void visit(AstDelay* nodep) override {
+    void visit(AstDelay* nodep) override {
         FileLine* const flp = nodep->fileline();
         AstNode* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         auto* const constp = VN_CAST(valuep, Const);
@@ -462,7 +462,7 @@ private:
         nodep->replaceWith(awaitp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstEventControl* nodep) override {
+    void visit(AstEventControl* nodep) override {
         if (m_classp) nodep->v3warn(E_UNSUPPORTED, "Unsupported: event controls in methods");
         auto* const sensesp = m_finder.getSenTree(nodep->sensesp());
         nodep->sensesp()->unlinkFrBack()->deleteTree();
@@ -485,7 +485,7 @@ private:
         nodep->replaceWith(awaitp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         iterateChildren(nodep);
         // Only process once to avoid infinite loops (due to the net delay)
         if (nodep->user1SetOnce()) return;
@@ -528,7 +528,7 @@ private:
         // Replace the RHS with an intermediate value var
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
     }
-    virtual void visit(AstAssignW* nodep) override {
+    void visit(AstAssignW* nodep) override {
         iterateChildren(nodep);
         auto* const netDelayp = getLhsNetDelay(nodep);
         if (!netDelayp && !nodep->timingControlp()) return;
@@ -563,7 +563,7 @@ private:
         // var
         alwaysp->addNextHere(nodep);
     }
-    virtual void visit(AstWait* nodep) override {
+    void visit(AstWait* nodep) override {
         // Wait on changed events related to the vars in the wait statement
         AstSenItem* const senItemsp = varRefpsToSenItemsp(nodep->condp());
         AstNode* const condp = nodep->condp()->unlinkFrBack();
@@ -595,7 +595,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstFork* nodep) override {
+    void visit(AstFork* nodep) override {
         if (nodep->user1SetOnce()) return;
         // Create a unique name for this fork
         nodep->name(m_forkNames.get(nodep));
@@ -623,8 +623,8 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -633,7 +633,7 @@ public:
         iterate(nodep);
         if (debug() >= 6) m_depGraph.dumpDotFilePrefixed("timing_deps");
     }
-    virtual ~TimingVisitor() override = default;
+    ~TimingVisitor() override = default;
 };
 
 //######################################################################

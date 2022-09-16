@@ -201,7 +201,7 @@ class EmitCModel final : public EmitCFunc {
                  + "C* tfp, int levels, int options = 0);\n");
             if (optSystemC()) {
                 puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
-                puts("virtual void trace(sc_trace_file* tfp) const override { "
+                puts("void trace(sc_trace_file* tfp) const override { "
                      "::sc_core::sc_module::trace(tfp); }\n");
             }
         }

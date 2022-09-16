@@ -146,7 +146,7 @@ V3FileDependImp dependImp;  // Depend implementation class
 //######################################################################
 // V3FileDependImp
 
-inline void V3FileDependImp::writeDepend(const string& filename) {
+void V3FileDependImp::writeDepend(const string& filename) {
     const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
@@ -171,7 +171,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
     }
 }
 
-inline std::vector<string> V3FileDependImp::getAllDeps() const {
+std::vector<string> V3FileDependImp::getAllDeps() const {
     std::vector<string> r;
     for (const auto& itr : m_filenameList) {
         if (!itr.target() && itr.exists()) r.push_back(itr.filename());
@@ -179,7 +179,7 @@ inline std::vector<string> V3FileDependImp::getAllDeps() const {
     return r;
 }
 
-inline void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
+void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
     const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
@@ -214,7 +214,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     }
 }
 
-inline bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
+bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
     const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(filename)};
     if (ifp->fail()) {
         UINFO(2, "   --check-times failed: no input " << filename << endl);

@@ -217,7 +217,7 @@ class SchedGraphBuilder final : public VNVisitor {
     }
 
     // VISIT methods
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         AstSenTree* const senTreep = nodep->sensesp();
         UASSERT_OBJ(senTreep->hasClocked() || senTreep->hasCombo() || senTreep->hasHybrid(), nodep,
                     "Unhandled");
@@ -236,30 +236,28 @@ class SchedGraphBuilder final : public VNVisitor {
         m_senTreep = nullptr;
     }
 
-    virtual void visit(AstNodeProcedure* nodep) override { visitLogic(nodep); }
-    virtual void visit(AstNodeAssign* nodep) override { visitLogic(nodep); }
-    virtual void visit(AstCoverToggle* nodep) override { visitLogic(nodep); }
-    virtual void visit(AstAlwaysPublic* nodep) override { visitLogic(nodep); }
+    void visit(AstNodeProcedure* nodep) override { visitLogic(nodep); }
+    void visit(AstNodeAssign* nodep) override { visitLogic(nodep); }
+    void visit(AstCoverToggle* nodep) override { visitLogic(nodep); }
+    void visit(AstAlwaysPublic* nodep) override { visitLogic(nodep); }
 
     // Pre and Post logic are handled separately
-    virtual void visit(AstAssignPre* nodep) override {}
-    virtual void visit(AstAssignPost* nodep) override {}
-    virtual void visit(AstAlwaysPost* nodep) override {}
+    void visit(AstAssignPre* nodep) override {}
+    void visit(AstAssignPost* nodep) override {}
+    void visit(AstAlwaysPost* nodep) override {}
 
     // LCOV_EXCL_START
     // Ignore
-    virtual void visit(AstInitialStatic* nodep) override {
+    void visit(AstInitialStatic* nodep) override { nodep->v3fatalSrc("Should not need ordering"); }
+    void visit(AstInitial* nodep) override {  //
         nodep->v3fatalSrc("Should not need ordering");
     }
-    virtual void visit(AstInitial* nodep) override {  //
-        nodep->v3fatalSrc("Should not need ordering");
-    }
-    virtual void visit(AstFinal* nodep) override {  //
+    void visit(AstFinal* nodep) override {  //
         nodep->v3fatalSrc("Should not need ordering");
     }
 
     // Default - Any other AstActive content not handled above will hit this
-    virtual void visit(AstNode* nodep) override {  //
+    void visit(AstNode* nodep) override {  //
         nodep->v3fatalSrc("Should behandled above");
     }
     // LCOV_EXCL_STOP

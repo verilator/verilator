@@ -202,7 +202,7 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         UASSERT_OBJ(!nodep->sensesStorep(), nodep,
                     "AstSenTrees should have been made global in V3ActiveTop");
         UASSERT_OBJ(m_scopep, nodep, "AstActive not under AstScope");
@@ -247,7 +247,7 @@ class OrderBuildVisitor final : public VNVisitor {
         m_domainp = nullptr;
         m_hybridp = nullptr;
     }
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         // As we explicitly not visit (see ignored nodes below) any subtree that is not relevant
         // for ordering, we should be able to assert this:
         UASSERT_OBJ(m_scopep, nodep, "AstVarRef not under scope");
@@ -376,49 +376,49 @@ class OrderBuildVisitor final : public VNVisitor {
             }
         }
     }
-    virtual void visit(AstCCall* nodep) override { iterateChildren(nodep); }
+    void visit(AstCCall* nodep) override { iterateChildren(nodep); }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
-    virtual void visit(AstInitial* nodep) override {  // LCOV_EXCL_START
+    void visit(AstInitial* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("AstInitial should not need ordering");
     }  // LCOV_EXCL_STOP
-    virtual void visit(AstInitialStatic* nodep) override {  // LCOV_EXCL_START
+    void visit(AstInitialStatic* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("AstInitialStatic should not need ordering");
     }  // LCOV_EXCL_STOP
-    virtual void visit(AstInitialAutomatic* nodep) override {  //
+    void visit(AstInitialAutomatic* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstAlways* nodep) override {  //
+    void visit(AstAlways* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep) override {
+    void visit(AstAlwaysPost* nodep) override {
         UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
         m_inPost = true;
         iterateLogic(nodep);
         m_inPost = false;
     }
-    virtual void visit(AstAlwaysPostponed* nodep) override {
+    void visit(AstAlwaysPostponed* nodep) override {
         UASSERT_OBJ(!m_inPostponed, nodep, "Should not nest");
         m_inPostponed = true;
         iterateLogic(nodep);
         m_inPostponed = false;
     }
-    virtual void visit(AstFinal* nodep) override {  // LCOV_EXCL_START
+    void visit(AstFinal* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("AstFinal should not need ordering");
     }  // LCOV_EXCL_STOP
 
     //--- Logic akin go SystemVerilog continuous assignments
-    virtual void visit(AstAssignAlias* nodep) override {  //
+    void visit(AstAssignAlias* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
-    virtual void visit(AstAssignPre* nodep) override {
+    void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
+    void visit(AstAssignPre* nodep) override {
         UASSERT_OBJ(!m_inPre, nodep, "Should not nest");
         m_inPre = true;
         iterateLogic(nodep);
         m_inPre = false;
     }
-    virtual void visit(AstAssignPost* nodep) override {
+    void visit(AstAssignPost* nodep) override {
         UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
         m_inPost = true;
         iterateLogic(nodep);
@@ -426,21 +426,21 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     //--- Verilator concoctions
-    virtual void visit(AstAlwaysPublic* nodep) override {  //
+    void visit(AstAlwaysPublic* nodep) override {  //
         iterateLogic(nodep);
     }
-    virtual void visit(AstCoverToggle* nodep) override {  //
+    void visit(AstCoverToggle* nodep) override {  //
         iterateLogic(nodep);
     }
 
     //--- Ignored nodes
-    virtual void visit(AstVar*) override {}
-    virtual void visit(AstVarScope* nodep) override {}
-    virtual void visit(AstCell*) override {}  // Only interested in the respective AstScope
-    virtual void visit(AstTypeTable*) override {}
-    virtual void visit(AstConstPool*) override {}
-    virtual void visit(AstClass*) override {}
-    virtual void visit(AstCFunc*) override {
+    void visit(AstVar*) override {}
+    void visit(AstVarScope* nodep) override {}
+    void visit(AstCell*) override {}  // Only interested in the respective AstScope
+    void visit(AstTypeTable*) override {}
+    void visit(AstConstPool*) override {}
+    void visit(AstClass*) override {}
+    void visit(AstCFunc*) override {
         // Calls to DPI exports handled with AstCCall. /* verilator public */ functions are
         // ignored for now (and hence potentially mis-ordered), but could use the same or
         // similar mechanism as DPI exports. Every other impure function (including those
@@ -448,7 +448,7 @@ class OrderBuildVisitor final : public VNVisitor {
     }
 
     //---
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
     OrderBuildVisitor(AstNetlist* /*nodep*/, const std::vector<V3Sched::LogicByScope*>& coll,
@@ -532,7 +532,7 @@ public:
 
 OrderMoveDomScope::DomScopeMap OrderMoveDomScope::s_dsMap;
 
-inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs) {
+std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs) {
     lhs << rhs.name();
     return lhs;
 }
@@ -756,8 +756,8 @@ public:
         : m_pomGraphp{pomGraphp}
         , m_pomWaitingp{pomWaitingp} {}
     // METHODS
-    virtual OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
-                                         const AstSenTree* domainp) override {
+    OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
+                                 const AstSenTree* domainp) override {
         OrderMoveVertex* const resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
         AstScope* const scopep = lvertexp ? lvertexp->scopep() : nullptr;
         resultp->domScopep(OrderMoveDomScope::findCreate(domainp, scopep));
@@ -776,9 +776,8 @@ class OrderMTaskMoveVertexMaker final
 public:
     explicit OrderMTaskMoveVertexMaker(V3Graph* pomGraphp)
         : m_pomGraphp{pomGraphp} {}
-    virtual MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp,
-                                         const OrderEitherVertex* varVertexp,
-                                         const AstSenTree* domainp) override {
+    MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
+                                 const AstSenTree* domainp) override {
         return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, domainp);
     }
 
@@ -938,7 +937,7 @@ public:
 // OrderMoveDomScope methods
 
 // Check the domScope is on ready list, add if not
-inline void OrderMoveDomScope::ready(OrderProcess* opp) {
+void OrderMoveDomScope::ready(OrderProcess* opp) {
     if (!m_onReadyList) {
         m_onReadyList = true;
         m_readyDomScopeE.pushBack(opp->m_pomReadyDomScope, this);
@@ -946,7 +945,7 @@ inline void OrderMoveDomScope::ready(OrderProcess* opp) {
 }
 
 // Mark one vertex as finished, remove from ready list if done
-inline void OrderMoveDomScope::movedVertex(OrderProcess* opp, OrderMoveVertex* vertexp) {
+void OrderMoveDomScope::movedVertex(OrderProcess* opp, OrderMoveVertex* vertexp) {
     UASSERT_OBJ(m_onReadyList, vertexp,
                 "Moving vertex from ready when nothing was on que as ready.");
     if (m_readyVertices.empty()) {  // Else more work to get to later

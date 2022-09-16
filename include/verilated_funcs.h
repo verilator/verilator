@@ -282,7 +282,7 @@ inline uint64_t vl_time_stamp64() {
 # endif
 #endif
 
-inline uint64_t VerilatedContext::time() const VL_MT_SAFE {
+uint64_t VerilatedContext::time() const VL_MT_SAFE {
     // When using non-default context, fastest path is return time
     if (VL_LIKELY(m_s.m_time)) return m_s.m_time;
 #if defined(SYSTEMC_VERSION) || (!defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY))

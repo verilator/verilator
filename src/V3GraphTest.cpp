@@ -56,18 +56,18 @@ public:
     V3GraphTestVertex(V3Graph* graphp, const string& name)
         : V3GraphVertex{graphp}
         , m_name{name} {}
-    virtual ~V3GraphTestVertex() override = default;
+    ~V3GraphTestVertex() override = default;
     // ACCESSORS
-    virtual string name() const override { return m_name; }
+    string name() const override { return m_name; }
 };
 
 class V3GraphTestVarVertex final : public V3GraphTestVertex {
 public:
     V3GraphTestVarVertex(V3Graph* graphp, const string& name)
         : V3GraphTestVertex{graphp, name} {}
-    virtual ~V3GraphTestVarVertex() override = default;
+    ~V3GraphTestVarVertex() override = default;
     // ACCESSORS
-    virtual string dotColor() const override { return "blue"; }
+    string dotColor() const override { return "blue"; }
 };
 
 //######################################################################
@@ -76,8 +76,8 @@ public:
 
 class V3GraphTestStrong final : public V3GraphTest {
 public:
-    virtual string name() override { return "strong"; }
-    virtual void runTest() override {
+    string name() override { return "strong"; }
+    void runTest() override {
         V3Graph* gp = &m_graph;
         // Verify we break edges at a good point
         // A simple alg would make 3 breaks, below only requires b->i to break
@@ -114,8 +114,8 @@ public:
 
 class V3GraphTestAcyc final : public V3GraphTest {
 public:
-    virtual string name() override { return "acyc"; }
-    virtual void runTest() override {
+    string name() override { return "acyc"; }
+    void runTest() override {
         V3Graph* gp = &m_graph;
         // Verify we break edges at a good point
         // A simple alg would make 3 breaks, below only requires b->i to break
@@ -142,8 +142,8 @@ public:
 
 class V3GraphTestVars final : public V3GraphTest {
 public:
-    virtual string name() override { return "vars"; }
-    virtual void runTest() override {
+    string name() override { return "vars"; }
+    void runTest() override {
         V3Graph* gp = &m_graph;
 
         V3GraphTestVertex* clk = new V3GraphTestVarVertex(gp, "$clk");
@@ -268,8 +268,8 @@ class V3GraphTestImport final : public V3GraphTest {
 #endif
 
 public:
-    virtual string name() override { return "import"; }
-    virtual void runTest() override {
+    string name() override { return "import"; }
+    void runTest() override {
         V3Graph* const gp = &m_graph;
         dotImport();
         dump();

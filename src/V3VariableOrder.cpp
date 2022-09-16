@@ -51,12 +51,12 @@ public:
     }
     ~VarTspSorter() override = default;
     // METHODS
-    virtual bool operator<(const TspStateBase& other) const override {
+    bool operator<(const TspStateBase& other) const override {
         return operator<(static_cast<const VarTspSorter&>(other));
     }
     bool operator<(const VarTspSorter& other) const { return m_serial < other.m_serial; }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
-    virtual int cost(const TspStateBase* otherp) const override {
+    int cost(const TspStateBase* otherp) const override {
         return cost(static_cast<const VarTspSorter*>(otherp));
     }
     int cost(const VarTspSorter* otherp) const {

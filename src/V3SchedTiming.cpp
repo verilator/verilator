@@ -168,7 +168,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         }
 
         // VISITORS
-        virtual void visit(AstNodeProcedure* const nodep) override {
+        void visit(AstNodeProcedure* const nodep) override {
             UASSERT_OBJ(!m_inProcess && !m_gatherVars && m_processDomains.empty()
                             && m_writtenBySuspendable.empty(),
                         nodep, "Process in process?");
@@ -186,20 +186,20 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
             m_inProcess = false;
             m_gatherVars = false;
         }
-        virtual void visit(AstFork* nodep) override {
+        void visit(AstFork* nodep) override {
             VL_RESTORER(m_gatherVars);
             if (m_inProcess) m_gatherVars = true;
             // If not in a process, we don't need to gather variables or domains
             iterateChildren(nodep);
         }
-        virtual void visit(AstCAwait* nodep) override {
+        void visit(AstCAwait* nodep) override {
             if (AstSenTree* const sensesp = nodep->sensesp()) {
                 if (!sensesp->user1SetOnce()) createResumeActive(nodep);
                 nodep->clearSensesp();  // Clear as these sentrees will get deleted later
                 if (m_inProcess) m_processDomains.insert(sensesp);
             }
         }
-        virtual void visit(AstNodeVarRef* nodep) override {
+        void visit(AstNodeVarRef* nodep) override {
             if (m_gatherVars && nodep->access().isWriteOrRW()
                 && !nodep->varScopep()->user2SetOnce()) {
                 m_writtenBySuspendable.push_back(nodep->varScopep());
@@ -207,8 +207,8 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         }
 
         //--------------------
-        virtual void visit(AstNodeMath*) override {}  // Accelerate
-        virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+        void visit(AstNodeMath*) override {}  // Accelerate
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:
         // CONSTRUCTORS
@@ -219,7 +219,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
             , m_externalDomains{externalDomains} {
             iterate(nodep);
         }
-        virtual ~AwaitVisitor() override = default;
+        ~AwaitVisitor() override = default;
     };
     LogicByScope lbs;
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
@@ -300,20 +300,20 @@ void transformForks(AstNetlist* const netlistp) {
         }
 
         // VISITORS
-        virtual void visit(AstNodeModule* nodep) override {
+        void visit(AstNodeModule* nodep) override {
             VL_RESTORER(m_inClass);
             m_inClass = VN_IS(nodep, Class);
             iterateChildren(nodep);
         }
-        virtual void visit(AstCFunc* nodep) override {
+        void visit(AstCFunc* nodep) override {
             m_funcp = nodep;
             iterateChildren(nodep);
             m_funcp = nullptr;
         }
-        virtual void visit(AstVar* nodep) override {
+        void visit(AstVar* nodep) override {
             if (!m_forkp) nodep->user1(true);
         }
-        virtual void visit(AstFork* nodep) override {
+        void visit(AstFork* nodep) override {
             if (m_forkp) return;  // Handle forks in forks after moving them to new functions
             VL_RESTORER(m_forkp);
             m_forkp = nodep;
@@ -323,7 +323,7 @@ void transformForks(AstNetlist* const netlistp) {
             nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
-        virtual void visit(AstBegin* nodep) override {
+        void visit(AstBegin* nodep) override {
             UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
             // Start with children, so later we only find awaits that are actually in this begin
             m_beginHasAwaits = false;
@@ -356,19 +356,19 @@ void transformForks(AstNetlist* const netlistp) {
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
-        virtual void visit(AstCAwait* nodep) override {
+        void visit(AstCAwait* nodep) override {
             m_beginHasAwaits = true;
             iterateChildrenConst(nodep);
         }
 
         //--------------------
-        virtual void visit(AstNodeMath*) override {}  // Accelerate
-        virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+        void visit(AstNodeMath*) override {}  // Accelerate
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:
         // CONSTRUCTORS
         explicit ForkVisitor(AstNetlist* nodep) { iterate(nodep); }
-        virtual ~ForkVisitor() override = default;
+        ~ForkVisitor() override = default;
     };
     ForkVisitor{netlistp};
     V3Global::dumpCheckGlobalTree("sched_forks", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);

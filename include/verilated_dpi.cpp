@@ -181,7 +181,7 @@ void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int w
 //======================================================================
 // Open array internals
 
-static inline const VerilatedDpiOpenVar* _vl_openhandle_varp(const svOpenArrayHandle h) {
+static const VerilatedDpiOpenVar* _vl_openhandle_varp(const svOpenArrayHandle h) {
     if (VL_UNLIKELY(!h)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "%%Error: DPI svOpenArrayHandle function called with nullptr handle");

@@ -73,7 +73,7 @@ private:
             // We could have verilog.l create a new one on every token,
             // but that's a lot more structures than only doing AST nodes.
             if (m_filelines.find(nodep->fileline()) != m_filelines.end()) {
-                nodep->fileline(new FileLine(nodep->fileline()));
+                nodep->fileline(new FileLine{nodep->fileline()});
             }
             m_filelines.insert(nodep->fileline());
         }
@@ -122,7 +122,7 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstNodeFTask* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             V3Config::applyFTask(m_modp, nodep);
             cleanFileline(nodep);
@@ -139,7 +139,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             UINFO(5, "   " << nodep << endl);
@@ -150,20 +150,20 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
-    virtual void visit(AstEnumDType* nodep) override {
+    void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
+    void visit(AstEnumDType* nodep) override {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
         }
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) override {
+    void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
         }
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstEnumItem* nodep) override {
+    void visit(AstEnumItem* nodep) override {
         // Expand ranges
         cleanFileline(nodep);
         iterateChildren(nodep);
@@ -198,7 +198,7 @@ private:
         }
     }
 
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         cleanFileline(nodep);
         if (nodep->lifetime().isNone()) {
             if (m_ftaskp) {
@@ -296,7 +296,7 @@ private:
         }
     }
 
-    virtual void visit(AstAttrOf* nodep) override {
+    void visit(AstAttrOf* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->attrType() == VAttrType::DT_PUBLIC) {
@@ -365,7 +365,7 @@ private:
         }
     }
 
-    virtual void visit(AstAlwaysPublic* nodep) override {
+    void visit(AstAlwaysPublic* nodep) override {
         // AlwaysPublic was attached under a var, but it's a statement that should be
         // at the same level as the var
         cleanFileline(nodep);
@@ -381,7 +381,7 @@ private:
         }
     }
 
-    virtual void visit(AstDefImplicitDType* nodep) override {
+    void visit(AstDefImplicitDType* nodep) override {
         cleanFileline(nodep);
         UINFO(8, "   DEFIMPLICIT " << nodep << endl);
         // Must remember what names we've already created, and combine duplicates
@@ -422,7 +422,7 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstForeach* nodep) override {
+    void visit(AstForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep << endl);
         // Separate iteration vars from base from variable
@@ -457,7 +457,7 @@ private:
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         V3Config::applyModule(nodep);
 
         VL_RESTORER(m_modp);
@@ -490,16 +490,16 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
+    void visit(AstAlways* nodep) override {
         VL_RESTORER(m_inAlways);
         m_inAlways = true;
         visitIterateNoValueMod(nodep);
     }
-    virtual void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
-    virtual void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
+    void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
+    void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
 
-    virtual void visit(AstBegin* nodep) override {
+    void visit(AstBegin* nodep) override {
         V3Config::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
         const AstNode* const backp = nodep->backp();
@@ -525,7 +525,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstGenCase* nodep) override {
+    void visit(AstGenCase* nodep) override {
         ++m_genblkNum;
         cleanFileline(nodep);
         {
@@ -536,7 +536,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstGenIf* nodep) override {
+    void visit(AstGenIf* nodep) override {
         cleanFileline(nodep);
         const bool nestedIf
             = (VN_IS(nodep->backp(), Begin) && nestedIfBegin(VN_CAST(nodep->backp(), Begin)));
@@ -551,39 +551,39 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstCase* nodep) override {
+    void visit(AstCase* nodep) override {
         V3Config::applyCase(nodep);
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstPrintTimeScale* nodep) override {
+    void visit(AstPrintTimeScale* nodep) override {
         // Inlining may change hierarchy, so just save timescale where needed
         cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->name(m_modp->name());
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstSFormatF* nodep) override {
+    void visit(AstSFormatF* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstTime* nodep) override {
+    void visit(AstTime* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstTimeD* nodep) override {
+    void visit(AstTimeD* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstTimeImport* nodep) override {
+    void visit(AstTimeImport* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstEventControl* nodep) override {
+    void visit(AstEventControl* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
         AstAlways* const alwaysp = VN_CAST(nodep->backp(), Always);
@@ -603,7 +603,7 @@ private:
         }
     }
 
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         // Default: Just iterate
         cleanFileline(nodep);
         iterateChildren(nodep);
@@ -612,7 +612,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
-    virtual ~LinkParseVisitor() override = default;
+    ~LinkParseVisitor() override = default;
 };
 
 //######################################################################

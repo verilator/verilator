@@ -185,7 +185,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
@@ -195,17 +195,17 @@ private:
             makePublicFuncWrappers();
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         m_scopep = nodep;
         iterateChildren(nodep);
         m_scopep = nullptr;
     }
-    virtual void visit(AstVarScope* nodep) override {
+    void visit(AstVarScope* nodep) override {
         // Delete the varscope when we're finished
         nodep->unlinkFrBack();
         pushDeletep(nodep);
     }
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         if (!nodep->varScopep()) {
             UASSERT_OBJ(nodep->varp()->isFuncLocal(), nodep,
@@ -229,7 +229,7 @@ private:
         nodep->varScopep(nullptr);
         UINFO(9, "  refout " << nodep << " selfPtr=" << nodep->selfPointer() << endl);
     }
-    virtual void visit(AstCCall* nodep) override {
+    void visit(AstCCall* nodep) override {
         // UINFO(9, "       " << nodep << endl);
         iterateChildren(nodep);
         // Convert the hierch name
@@ -239,9 +239,9 @@ private:
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }
-    virtual void visit(AstCMethodCall* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstCNew* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCMethodCall* nodep) override { iterateChildren(nodep); }
+    void visit(AstCNew* nodep) override { iterateChildren(nodep); }
+    void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_funcp);
         if (!nodep->user1()) {
             // Static functions should have been moved under the corresponding AstClassPackage
@@ -264,13 +264,13 @@ private:
             }
         }
     }
-    virtual void visit(AstVar*) override {}
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstVar*) override {}
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit DescopeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~DescopeVisitor() override = default;
+    ~DescopeVisitor() override = default;
 };
 
 //######################################################################

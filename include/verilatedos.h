@@ -39,7 +39,7 @@
 
 #ifdef __GNUC__
 # define VL_ATTR_ALIGNED(alignment) __attribute__((aligned(alignment)))
-# define VL_ATTR_ALWINLINE __attribute__((always_inline))
+# define VL_ATTR_ALWINLINE __attribute__((always_inline)) inline
 # define VL_ATTR_NOINLINE __attribute__((noinline))
 # define VL_ATTR_COLD __attribute__((cold))
 # define VL_ATTR_HOT __attribute__((hot))
@@ -548,8 +548,8 @@ struct reverse_wrapper {
 
     explicit reverse_wrapper(const T& a_v)
         : m_v(a_v) {}
-    inline auto begin() -> decltype(m_v.rbegin()) { return m_v.rbegin(); }
-    inline auto end() -> decltype(m_v.rend()) { return m_v.rend(); }
+    auto begin() -> decltype(m_v.rbegin()) { return m_v.rbegin(); }
+    auto end() -> decltype(m_v.rend()) { return m_v.rend(); }
 };
 
 // C++20's std::ranges::reverse_view

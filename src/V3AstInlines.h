@@ -25,71 +25,56 @@
 //######################################################################
 // Inline METHODS
 
-inline AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
-inline AstNode* AstNode::addNextNull(AstNode* newp) { return addNextNull(this, newp); }
-inline void AstNode::addPrev(AstNode* newp) {
+AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
+AstNode* AstNode::addNextNull(AstNode* newp) { return addNextNull(this, newp); }
+void AstNode::addPrev(AstNode* newp) {
     replaceWith(newp);
     newp->addNext(this);
 }
 
-inline int AstNode::width() const { return dtypep() ? dtypep()->width() : 0; }
-inline int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }
-inline bool AstNode::width1() const {  // V3Const uses to know it can optimize
+int AstNode::width() const { return dtypep() ? dtypep()->width() : 0; }
+int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }
+bool AstNode::width1() const {  // V3Const uses to know it can optimize
     return dtypep() && dtypep()->width() == 1;
 }
-inline int AstNode::widthInstrs() const {
+int AstNode::widthInstrs() const {
     return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1));
 }
-inline bool AstNode::isDouble() const {
+bool AstNode::isDouble() const {
     return dtypep() && VN_IS(dtypep(), BasicDType) && VN_AS(dtypep(), BasicDType)->isDouble();
 }
-inline bool AstNode::isString() const {
+bool AstNode::isString() const {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString();
 }
-inline bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
+bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
 
-inline bool AstNode::isZero() const {
+bool AstNode::isZero() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqZero());
 }
-inline bool AstNode::isNeqZero() const {
+bool AstNode::isNeqZero() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNeqZero());
 }
-inline bool AstNode::isOne() const {
-    return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqOne());
-}
-inline bool AstNode::isAllOnes() const {
+bool AstNode::isOne() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqOne()); }
+bool AstNode::isAllOnes() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->isEqAllOnes());
 }
-inline bool AstNode::isAllOnesV() const {
+bool AstNode::isAllOnesV() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->isEqAllOnesV());
 }
-inline bool AstNode::sameTree(const AstNode* node2p) const {
+bool AstNode::sameTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, false);
 }
-inline bool AstNode::sameGateTree(const AstNode* node2p) const {
+bool AstNode::sameGateTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, true);
 }
 
-inline void AstNodeVarRef::varp(AstVar* varp) {
-    m_varp = varp;
-    dtypeFrom(varp);
-}
-
-inline bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }
-
-inline void AstNodeArrayDType::rangep(AstRange* nodep) { setOp2p(nodep); }
-inline int AstNodeArrayDType::left() const { return rangep()->leftConst(); }
-inline int AstNodeArrayDType::right() const { return rangep()->rightConst(); }
-inline int AstNodeArrayDType::hi() const { return rangep()->hiConst(); }
-inline int AstNodeArrayDType::lo() const { return rangep()->loConst(); }
-inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
-inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right()}; }
-
-inline void AstIfaceRefDType::cloneRelink() {
-    if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep();
-    if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
-    if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep();
-}
+void AstNodeArrayDType::rangep(AstRange* nodep) { setOp2p(nodep); }
+int AstNodeArrayDType::left() const { return rangep()->leftConst(); }
+int AstNodeArrayDType::right() const { return rangep()->rightConst(); }
+int AstNodeArrayDType::hi() const { return rangep()->hiConst(); }
+int AstNodeArrayDType::lo() const { return rangep()->loConst(); }
+int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
+VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right()}; }
 
 AstRange::AstRange(FileLine* fl, int left, int right)
     : ASTGEN_SUPER_Range(fl) {

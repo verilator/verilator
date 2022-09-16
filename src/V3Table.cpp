@@ -59,12 +59,12 @@ class TableSimulateVisitor final : public SimulateVisitor {
 
 public:
     ///< Call other-this function on all new var references
-    virtual void varRefCb(AstVarRef* nodep) override;
+    void varRefCb(AstVarRef* nodep) override;
 
     // CONSTRUCTORS
     explicit TableSimulateVisitor(TableVisitor* cbthis)
         : m_cbthis{cbthis} {}
-    virtual ~TableSimulateVisitor() override = default;
+    ~TableSimulateVisitor() override = default;
 };
 
 //######################################################################
@@ -298,8 +298,8 @@ private:
             uint32_t shift = 0;
             for (AstVarScope* invscp : m_inVarps) {
                 // LSB is first variable, so extract it that way
-                const AstConst cnst(invscp->fileline(), AstConst::WidthedValue(), invscp->width(),
-                                    VL_MASK_I(invscp->width()) & (inValue >> shift));
+                const AstConst cnst{invscp->fileline(), AstConst::WidthedValue{}, invscp->width(),
+                                    VL_MASK_I(invscp->width()) & (inValue >> shift)};
                 simvis.newValue(invscp, &cnst);
                 shift += invscp->width();
                 // We are using 32 bit arithmetic, because there's no way the input table can be
@@ -379,8 +379,8 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modTables);
         {
@@ -389,20 +389,20 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
         m_scopep = nullptr;
     }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstAlways* nodep) override {
         UINFO(4, "  ALWAYS  " << nodep << endl);
         if (treeTest(nodep)) {
             // Well, then, I'll be a memory hog.
             replaceWithTable(nodep);
         }
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         // It's nearly impossible to have a large enough assign to make this worthwhile
         // For now we won't bother.
         // Accelerated: no iterate
@@ -411,7 +411,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit TableVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~TableVisitor() override {  //
+    ~TableVisitor() override {  //
         V3Stats::addStat("Optimizations, Tables created", m_statTablesCre);
     }
 };

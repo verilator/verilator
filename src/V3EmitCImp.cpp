@@ -68,59 +68,59 @@ class EmitCGatherDependencies final : VNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstCCall* nodep) override {
+    void visit(AstCCall* nodep) override {
         addSelfDependency(nodep->selfPointer(), nodep->funcp());
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstCNew* nodep) override {
+    void visit(AstCNew* nodep) override {
         addDTypeDependency(nodep->dtypep());
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstCMethodCall* nodep) override {
+    void visit(AstCMethodCall* nodep) override {
         addDTypeDependency(nodep->fromp()->dtypep());
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstNewCopy* nodep) override {
+    void visit(AstNewCopy* nodep) override {
         addDTypeDependency(nodep->dtypep());
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberSel* nodep) override {
         addDTypeDependency(nodep->fromp()->dtypep());
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         addSelfDependency(nodep->selfPointer(), nodep->varp());
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstCoverDecl* nodep) override {
+    void visit(AstCoverDecl* nodep) override {
         addSymsDependency();
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstCoverInc* nodep) override {
+    void visit(AstCoverInc* nodep) override {
         addSymsDependency();
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstDumpCtl* nodep) override {
+    void visit(AstDumpCtl* nodep) override {
         addSymsDependency();
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstScopeName* nodep) override {
+    void visit(AstScopeName* nodep) override {
         addSymsDependency();
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstPrintTimeScale* nodep) override {
+    void visit(AstPrintTimeScale* nodep) override {
         addSymsDependency();
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstTimeFormat* nodep) override {
+    void visit(AstTimeFormat* nodep) override {
         addSymsDependency();
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstNodeSimpleText* nodep) override {
+    void visit(AstNodeSimpleText* nodep) override {
         if (nodep->text().find("vlSymsp") != string::npos) addSymsDependency();
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     // CONSTRUCTOR
     explicit EmitCGatherDependencies(AstCFunc* cfuncp) {
@@ -517,7 +517,7 @@ class EmitCImp final : EmitCFunc {
     }
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         if (splitNeeded()) {
             // Splitting file, so using parallel build.
             v3Global.useParallelBuild(true);
@@ -549,7 +549,7 @@ class EmitCImp final : EmitCFunc {
         // Emit implementations of all AstCFunc
         emitCFuncImp(modp);
     }
-    virtual ~EmitCImp() override = default;
+    ~EmitCImp() override = default;
 
 public:
     static void main(const AstNodeModule* modp, bool slow, std::deque<AstCFile*>& cfilesr) {
@@ -828,7 +828,7 @@ class EmitCTrace final : EmitCFunc {
 
     // VISITORS
     using EmitCFunc::visit;  // Suppress hidden overloaded virtual function warning
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         if (!nodep->isTrace()) return;
         if (nodep->slow() != m_slow) return;
 
@@ -843,17 +843,17 @@ class EmitCTrace final : EmitCFunc {
 
         EmitCFunc::visit(nodep);
     }
-    virtual void visit(AstTracePushNamePrefix* nodep) override {
+    void visit(AstTracePushNamePrefix* nodep) override {
         puts("tracep->pushNamePrefix(");
         putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
         puts(");\n");
     }
-    virtual void visit(AstTracePopNamePrefix* nodep) override {  //
+    void visit(AstTracePopNamePrefix* nodep) override {  //
         puts("tracep->popNamePrefix(");
         puts(cvtToStr(nodep->count()));
         puts(");\n");
     }
-    virtual void visit(AstTraceDecl* nodep) override {
+    void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());
         if (nodep->arrayRange().ranged()) {
             puts("for (int i = 0; i < " + cvtToStr(nodep->arrayRange().elements()) + "; ++i) {\n");
@@ -864,7 +864,7 @@ class EmitCTrace final : EmitCFunc {
             puts("\n");
         }
     }
-    virtual void visit(AstTraceInc* nodep) override {
+    void visit(AstTraceInc* nodep) override {
         if (nodep->declp()->arrayRange().ranged()) {
             // It traces faster if we unroll the loop
             for (int i = 0; i < nodep->declp()->arrayRange().elements(); i++) {
@@ -888,7 +888,7 @@ class EmitCTrace final : EmitCFunc {
         // Close output file
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
-    virtual ~EmitCTrace() override = default;
+    ~EmitCTrace() override = default;
 
 public:
     static void main(AstNodeModule* modp, bool slow, std::deque<AstCFile*>& cfilesr) {

@@ -151,11 +151,11 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         {
             m_cfuncp = nodep;
@@ -167,7 +167,7 @@ private:
         m_assignLhs = false;
         if (m_cfuncp) m_stmtp = nodep;
     }
-    virtual void visit(AstWhile* nodep) override {
+    void visit(AstWhile* nodep) override {
         UINFO(4, "  WHILE  " << nodep << endl);
         startStatement(nodep);
         iterateAndNextNull(nodep->precondsp());
@@ -180,7 +180,7 @@ private:
         iterateAndNextNull(nodep->incsp());
         m_stmtp = nullptr;
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         startStatement(nodep);
         {
             bool noopt = false;
@@ -207,7 +207,7 @@ private:
         m_assignLhs = false;
         m_stmtp = nullptr;
     }
-    virtual void visit(AstNodeStmt* nodep) override {
+    void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -217,7 +217,7 @@ private:
         iterateChildren(nodep);
         m_stmtp = nullptr;
     }
-    virtual void visit(AstTraceInc* nodep) override {
+    void visit(AstTraceInc* nodep) override {
         startStatement(nodep);
         m_inTracep = nodep;
         iterateChildren(nodep);
@@ -271,31 +271,31 @@ private:
         iterateChildren(nodep);
         checkNode(nodep);
     }
-    virtual void visit(AstShiftL* nodep) override { visitShift(nodep); }
-    virtual void visit(AstShiftR* nodep) override { visitShift(nodep); }
-    virtual void visit(AstShiftRS* nodep) override { visitShift(nodep); }
+    void visit(AstShiftL* nodep) override { visitShift(nodep); }
+    void visit(AstShiftR* nodep) override { visitShift(nodep); }
+    void visit(AstShiftRS* nodep) override { visitShift(nodep); }
     // Operators
-    virtual void visit(AstNodeTermop* nodep) override {
+    void visit(AstNodeTermop* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
     }
-    virtual void visit(AstNodeUniop* nodep) override {
+    void visit(AstNodeUniop* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
     }
-    virtual void visit(AstNodeBiop* nodep) override {
+    void visit(AstNodeBiop* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
     }
-    virtual void visit(AstRand* nodep) override {
+    void visit(AstRand* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
     }
-    virtual void visit(AstUCFunc* nodep) override {
+    void visit(AstUCFunc* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
     }
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
             VL_RESTORER(m_assignLhs);
@@ -305,7 +305,7 @@ private:
         }
         checkNode(nodep);
     }
-    virtual void visit(AstArraySel* nodep) override {
+    void visit(AstArraySel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
             VL_RESTORER(m_assignLhs);
@@ -314,7 +314,7 @@ private:
         }
         checkNode(nodep);
     }
-    virtual void visit(AstAssocSel* nodep) override {
+    void visit(AstAssocSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
             VL_RESTORER(m_assignLhs);
@@ -323,11 +323,11 @@ private:
         }
         checkNode(nodep);
     }
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
     }
-    virtual void visit(AstNodeCond* nodep) override {
+    void visit(AstNodeCond* nodep) override {
         iterateChildren(nodep);
         if (nodep->expr1p()->isWide() && !VN_IS(nodep->condp(), Const)
             && !VN_IS(nodep->condp(), VarRef)) {
@@ -339,7 +339,7 @@ private:
     }
 
     // Autoflush
-    virtual void visit(AstDisplay* nodep) override {
+    void visit(AstDisplay* nodep) override {
         startStatement(nodep);
         iterateChildren(nodep);
         m_stmtp = nullptr;
@@ -356,7 +356,7 @@ private:
             }
         }
     }
-    virtual void visit(AstSFormatF* nodep) override {
+    void visit(AstSFormatF* nodep) override {
         iterateChildren(nodep);
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
@@ -370,8 +370,8 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*) override {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstVar*) override {}  // Don't hit varrefs under vars
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

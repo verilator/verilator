@@ -55,35 +55,34 @@ public:
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
     }
     /// Destruct, flush, and close the dump
-    virtual ~VerilatedVcdSc() /*override*/ { close(); }
+    ~VerilatedVcdSc() override { close(); }
 
     // METHODS - for SC kernel
     // Called by SystemC simulate()
-    virtual void cycle(bool delta_cycle) {
+    void cycle(bool delta_cycle) override {
         if (!delta_cycle) this->dump(sc_time_stamp().to_double());
     }
 
     // Override VerilatedVcdC. Must be called after starting simulation.
-    // cppcheck-suppress missingOverride  // GCC won't accept override
-    virtual void open(const char* filename) /*override*/ VL_MT_SAFE;
+    void open(const char* filename) override VL_MT_SAFE;
 
 private:
     // METHODS - Fake outs for linker
 
 #ifdef NC_SYSTEMC
     // Cadence Incisive has these as abstract functions so we must create them
-    virtual void set_time_unit(int exponent10_seconds) {}  // deprecated
+    void set_time_unit(int exponent10_seconds) override {}  // deprecated
 #endif
-    virtual void set_time_unit(double v, sc_time_unit tu) {}  // LCOV_EXCL_LINE
+    void set_time_unit(double v, sc_time_unit tu) override {}  // LCOV_EXCL_LINE
 
 //--------------------------------------------------
 // SystemC 2.1.v1
-#define DECL_TRACE_METHOD_A(tp) virtual void trace(const tp& object, const std::string& name);
+#define DECL_TRACE_METHOD_A(tp) void trace(const tp& object, const std::string& name) override;
 #define DECL_TRACE_METHOD_B(tp) \
-    virtual void trace(const tp& object, const std::string& name, int width);
+    void trace(const tp& object, const std::string& name, int width) override;
 
-    virtual void write_comment(const std::string&);
-    virtual void trace(const unsigned int&, const std::string&, const char**);
+    void write_comment(const std::string&) override;
+    void trace(const unsigned int&, const std::string&, const char**) override;
 
     // clang-format off
     // Formatting matches that of sc_trace.h

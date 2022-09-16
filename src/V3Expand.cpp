@@ -313,7 +313,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstExtend* nodep) override {
+    void visit(AstExtend* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -339,7 +339,7 @@ private:
         }
     }
 
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         // Remember, Sel's may have non-integer rhs, so need to optimize for that!
@@ -628,7 +628,7 @@ private:
         }
     }
 
-    virtual void visit(AstConcat* nodep) override {
+    void visit(AstConcat* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -665,7 +665,7 @@ private:
         return true;
     }
 
-    virtual void visit(AstReplicate* nodep) override {
+    void visit(AstReplicate* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -750,10 +750,10 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstEq* nodep) override { visitEqNeq(nodep); }
-    virtual void visit(AstNeq* nodep) override { visitEqNeq(nodep); }
+    void visit(AstEq* nodep) override { visitEqNeq(nodep); }
+    void visit(AstNeq* nodep) override { visitEqNeq(nodep); }
 
-    virtual void visit(AstRedOr* nodep) override {
+    void visit(AstRedOr* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
@@ -775,7 +775,7 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstRedAnd* nodep) override {
+    void visit(AstRedAnd* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
@@ -805,7 +805,7 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstRedXor* nodep) override {
+    void visit(AstRedXor* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
@@ -825,7 +825,7 @@ private:
         // which the inlined function does nicely.
     }
 
-    virtual void visit(AstNodeStmt* nodep) override {
+    void visit(AstNodeStmt* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
@@ -835,7 +835,7 @@ private:
         iterateChildren(nodep);
         m_stmtp = nullptr;
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         m_stmtp = nodep;
         iterateChildren(nodep);
@@ -876,13 +876,13 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstVar*) override {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstVar*) override {}  // Don't hit varrefs under vars
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ExpandVisitor() override {
+    ~ExpandVisitor() override {
         V3Stats::addStat("Optimizations, expand wides", m_statWides);
         V3Stats::addStat("Optimizations, expand wide words", m_statWideWords);
         V3Stats::addStat("Optimizations, expand limited", m_statWideLimited);

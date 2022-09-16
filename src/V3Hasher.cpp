@@ -80,7 +80,7 @@ private:
     //------------------------------------------------------------
     // AstNode - Warns to help find missing cases
 
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
 #if VL_DEBUG
         UINFO(0, "%Warning: Hashing node as AstNode: " << nodep << endl);
 #endif
@@ -89,93 +89,93 @@ private:
 
     //------------------------------------------------------------
     // AstNodeDType
-    virtual void visit(AstNodeArrayDType* nodep) override {
+    void visit(AstNodeArrayDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {
             iterateNull(nodep->virtRefDTypep());
             m_hash += nodep->left();
             m_hash += nodep->right();
         });
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) override {
+    void visit(AstNodeUOrStructDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, false, [=]() {  //
             m_hash += nodep->uniqueNum();
         });
     }
-    virtual void visit(AstParamTypeDType* nodep) override {
+    void visit(AstParamTypeDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             m_hash += nodep->name();
             m_hash += nodep->varType();
         });
     }
-    virtual void visit(AstMemberDType* nodep) override {
+    void visit(AstMemberDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstDefImplicitDType* nodep) override {
+    void visit(AstDefImplicitDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->uniqueNum();
         });
     }
-    virtual void visit(AstAssocArrayDType* nodep) override {
+    void visit(AstAssocArrayDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {
             iterateNull(nodep->virtRefDTypep());
             iterateNull(nodep->virtRefDType2p());
         });
     }
-    virtual void visit(AstDynArrayDType* nodep) override {
+    void visit(AstDynArrayDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->virtRefDTypep());
         });
     }
-    virtual void visit(AstUnsizedArrayDType* nodep) override {
+    void visit(AstUnsizedArrayDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->virtRefDTypep());
         });
     }
-    virtual void visit(AstWildcardArrayDType* nodep) override {
+    void visit(AstWildcardArrayDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->virtRefDTypep());
         });
     }
-    virtual void visit(AstBasicDType* nodep) override {
+    void visit(AstBasicDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {
             m_hash += nodep->keyword();
             m_hash += nodep->nrange().left();
             m_hash += nodep->nrange().right();
         });
     }
-    virtual void visit(AstConstDType* nodep) override {
+    void visit(AstConstDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->virtRefDTypep());
         });
     }
-    virtual void visit(AstClassRefDType* nodep) override {
+    void visit(AstClassRefDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->classp());
         });
     }
-    virtual void visit(AstIfaceRefDType* nodep) override {
+    void visit(AstIfaceRefDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->cellp());
         });
     }
-    virtual void visit(AstQueueDType* nodep) override {
+    void visit(AstQueueDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->virtRefDTypep());
         });
     }
-    virtual void visit(AstRefDType* nodep) override {
+    void visit(AstRefDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {
             m_hash += nodep->name();
             iterateNull(nodep->typedefp());
             iterateNull(nodep->refDTypep());
         });
     }
-    virtual void visit(AstVoidDType* nodep) override {
+    void visit(AstVoidDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstEnumDType* nodep) override {
+    void visit(AstEnumDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, false, [=]() {  //
             m_hash += nodep->uniqueNum();
         });
@@ -183,23 +183,23 @@ private:
 
     //------------------------------------------------------------
     // AstNodeMath
-    virtual void visit(AstNodeMath* nodep) override {
+    void visit(AstNodeMath* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->num().toHash();
         });
     }
-    virtual void visit(AstNullCheck* nodep) override {
+    void visit(AstNullCheck* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstCCast* nodep) override {
+    void visit(AstCCast* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->size();
         });
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             if (nodep->varScopep()) {
                 iterateNull(nodep->varScopep());
@@ -209,28 +209,28 @@ private:
             }
         });
     }
-    virtual void visit(AstVarXRef* nodep) override {
+    void visit(AstVarXRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             iterateNull(nodep->varp());
             m_hash += nodep->dotted();
         });
     }
-    virtual void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberSel* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstFScanF* nodep) override {
+    void visit(AstFScanF* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->text();
         });
     }
-    virtual void visit(AstSScanF* nodep) override {
+    void visit(AstSScanF* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->text();
         });
     }
-    virtual void visit(AstAddrOfCFunc* nodep) override {
+    void visit(AstAddrOfCFunc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->funcp());
         });
@@ -238,61 +238,61 @@ private:
 
     //------------------------------------------------------------
     // AstNodeStmt
-    virtual void visit(AstNodeStmt* nodep) override {
+    void visit(AstNodeStmt* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstNodeText* nodep) override {
+    void visit(AstNodeText* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->text();
         });
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->funcp());
         });
     }
-    virtual void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {
             iterateNull(nodep->taskp());
             iterateNull(nodep->classOrPackagep());
         });
     }
-    virtual void visit(AstCMethodHard* nodep) override {
+    void visit(AstCMethodHard* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstCAwait* nodep) override {
+    void visit(AstCAwait* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->sensesp());
         });
     }
-    virtual void visit(AstCoverInc* nodep) override {
+    void visit(AstCoverInc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->declp());
         });
     }
-    virtual void visit(AstDisplay* nodep) override {
+    void visit(AstDisplay* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->displayType();
         });
     }
-    virtual void visit(AstMonitorOff* nodep) override {
+    void visit(AstMonitorOff* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->off();
         });
     }
-    virtual void visit(AstJumpGo* nodep) override {
+    void visit(AstJumpGo* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->labelp());
         });
     }
-    virtual void visit(AstTraceInc* nodep) override {
+    void visit(AstTraceInc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->declp());
         });
     }
-    virtual void visit(AstNodeCoverOrAssert* nodep) override {
+    void visit(AstNodeCoverOrAssert* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
@@ -300,62 +300,62 @@ private:
 
     //------------------------------------------------------------
     // AstNode direct descendents
-    virtual void visit(AstNodeRange* nodep) override {
+    void visit(AstNodeRange* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, false, [=]() {  //
             m_hash += nodep->origName();
         });
     }
-    virtual void visit(AstNodePreSel* nodep) override {
+    void visit(AstNodePreSel* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstClassExtends* nodep) override {
+    void visit(AstClassExtends* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstSelLoopVars* nodep) override {
+    void visit(AstSelLoopVars* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstDefParam* nodep) override {
+    void visit(AstDefParam* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstArg* nodep) override {
+    void visit(AstArg* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstParseRef* nodep) override {
+    void visit(AstParseRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             m_hash += nodep->expect();
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstClassOrPackageRef* nodep) override {
+    void visit(AstClassOrPackageRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->classOrPackageNodep());
         });
     }
-    virtual void visit(AstSenItem* nodep) override {
+    void visit(AstSenItem* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->edgeType();
         });
     }
-    virtual void visit(AstSenTree* nodep) override {
+    void visit(AstSenTree* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstSFormatF* nodep) override {
+    void visit(AstSFormatF* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->text();
         });
     }
-    virtual void visit(AstElabDisplay* nodep) override {
+    void visit(AstElabDisplay* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->displayType();
         });
     }
-    virtual void visit(AstInitItem* nodep) override {
+    void visit(AstInitItem* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstInitArray* nodep) override {
+    void visit(AstInitArray* nodep) override {
         if (const AstAssocArrayDType* const dtypep = VN_CAST(nodep->dtypep(), AssocArrayDType)) {
             if (nodep->defaultp()) {
                 m_hash
@@ -381,22 +381,22 @@ private:
             });
         }
     }
-    virtual void visit(AstPragma* nodep) override {
+    void visit(AstPragma* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->pragType();
         });
     }
-    virtual void visit(AstAttrOf* nodep) override {
+    void visit(AstAttrOf* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->attrType();
         });
     }
-    virtual void visit(AstNodeFile* nodep) override {
+    void visit(AstNodeFile* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             // We might be in a recursive function, if so on *second* call
             // here we need to break what would be an infinite loop.
@@ -407,90 +407,90 @@ private:
             m_hash += nodep->isLoose();
         });
     }
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             m_hash += nodep->name();
             m_hash += nodep->varType();
         });
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, false, [=]() {
             m_hash += nodep->name();
             iterateNull(nodep->aboveScopep());
         });
     }
-    virtual void visit(AstVarScope* nodep) override {
+    void visit(AstVarScope* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             iterateNull(nodep->varp());
             iterateNull(nodep->scopep());
         });
     }
-    virtual void visit(AstEnumItem* nodep) override {
+    void visit(AstEnumItem* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstTypedef* nodep) override {
+    void visit(AstTypedef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstTypedefFwd* nodep) override {
+    void visit(AstTypedefFwd* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->sensesp());
         });
     }
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             m_hash += nodep->name();
             iterateNull(nodep->modp());
         });
     }
-    virtual void visit(AstCellInline* nodep) override {
+    void visit(AstCellInline* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             m_hash += nodep->name();
             iterateNull(nodep->scopep());
         });
     }
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstNodeFTask* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstModport* nodep) override {
+    void visit(AstModport* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstModportVarRef* nodep) override {
+    void visit(AstModportVarRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             m_hash += nodep->name();
             iterateNull(nodep->varp());
         });
     }
-    virtual void visit(AstModportFTaskRef* nodep) override {
+    void visit(AstModportFTaskRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             m_hash += nodep->name();
             iterateNull(nodep->ftaskp());
         });
     }
-    virtual void visit(AstMTaskBody* nodep) override {
+    void visit(AstMTaskBody* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstNodeProcedure* nodep) override {
+    void visit(AstNodeProcedure* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
-    virtual void visit(AstNodeBlock* nodep) override {
+    void visit(AstNodeBlock* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             m_hash += nodep->name();
         });
     }
-    virtual void visit(AstPin* nodep) override {
+    void visit(AstPin* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {
             m_hash += nodep->name();
             m_hash += nodep->pinNum();
@@ -509,7 +509,7 @@ public:
         iterate(const_cast<AstNode*>(nodep));
     }
     V3Hash finalHash() const { return m_hash; }
-    virtual ~HasherVisitor() override = default;
+    ~HasherVisitor() override = default;
 };
 
 //######################################################################

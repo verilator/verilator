@@ -823,7 +823,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         if (AstNode* const condp = (*m_stmtPropertiesp)(nodep).m_condp) {
             // Check if mergeable
             if (!checkOrMakeMergeable(nodep)) return;
@@ -836,7 +836,7 @@ private:
         }
     }
 
-    virtual void visit(AstNodeIf* nodep) override {
+    void visit(AstNodeIf* nodep) override {
         // Check if mergeable
         if (!checkOrMakeMergeable(nodep)) {
             // If not mergeable, try to merge the branches
@@ -850,25 +850,25 @@ private:
         addToList(nodep, nodep->condp());
     }
 
-    virtual void visit(AstNodeStmt* nodep) override {
+    void visit(AstNodeStmt* nodep) override {
         if (m_mgFirstp && addIfHelpfulElseEndMerge(nodep)) return;
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         // Merge function body
         if (nodep->stmtsp()) process(nodep->stmtsp());
     }
 
     // For speed, only iterate what is necessary.
-    virtual void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
-    virtual void visit(AstNodeModule* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
-    virtual void visit(AstNode* nodep) override {}
+    void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
+    void visit(AstNodeModule* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
+    void visit(AstNode* nodep) override {}
 
 public:
     // CONSTRUCTORS
     explicit MergeCondVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~MergeCondVisitor() override {
+    ~MergeCondVisitor() override {
         V3Stats::addStat("Optimizations, MergeCond merges", m_statMerges);
         V3Stats::addStat("Optimizations, MergeCond merged items", m_statMergedItems);
         V3Stats::addStat("Optimizations, MergeCond longest merge", m_statLongestList);

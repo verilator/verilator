@@ -66,8 +66,8 @@ public:
         : V3GraphVertex{graphp}
         , m_name{name}
         , m_type{type} {}
-    virtual string name() const override { return m_name + " " + typestr(); }
-    virtual string dotColor() const override { return user() ? "green" : "black"; }
+    string name() const override { return m_name + " " + typestr(); }
+    string dotColor() const override { return user() ? "green" : "black"; }
     virtual int type() const { return m_type; }
 };
 
@@ -120,7 +120,7 @@ protected:
 
 public:
     LatchDetectGraph() { clear(); }
-    virtual ~LatchDetectGraph() override { clear(); }
+    ~LatchDetectGraph() override { clear(); }
     // ACCESSORS
     LatchDetectGraphVertex* currentp() { return m_curVertexp; }
     void currentp(LatchDetectGraphVertex* vertex) { m_curVertexp = vertex; }
@@ -222,7 +222,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         m_scopep = nodep;
         m_sActivep = nullptr;
         m_iActivep = nullptr;
@@ -232,13 +232,13 @@ private:
         iterateChildren(nodep);
         // Don't clear scopep, the namer persists beyond this visit
     }
-    virtual void visit(AstSenTree* nodep) override {
+    void visit(AstSenTree* nodep) override {
         // Simplify sensitivity list
         VL_DO_DANGLING(V3Const::constifyExpensiveEdit(nodep), nodep);
     }
     //--------------------
-    virtual void visit(AstNodeStmt*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeStmt*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // Specialized below for the special sensitivity classes
     template <typename SenItemKind>
@@ -280,7 +280,7 @@ public:
 
     // CONSTRUCTORS
     ActiveNamer() = default;
-    virtual ~ActiveNamer() override = default;
+    ~ActiveNamer() override = default;
     void main(AstScope* nodep) { iterate(nodep); }
 };
 
@@ -313,13 +313,13 @@ private:
     // STATE
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
         if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()) {
             m_graph.addAssignment(nodep);
         }
     }
-    virtual void visit(AstNodeIf* nodep) override {
+    void visit(AstNodeIf* nodep) override {
         if (!nodep->isBoundsCheck()) {
             LatchDetectGraphVertex* const parentp = m_graph.currentp();
             LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
@@ -331,7 +331,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -355,7 +355,7 @@ private:
     const CheckType m_check;  // Process type we are checking
 
     // VISITORS
-    virtual void visit(AstAssignDly* nodep) override {
+    void visit(AstAssignDly* nodep) override {
         // Non-blocking assignments are OK in sequential processes
         if (m_check == CT_SEQ) return;
 
@@ -381,7 +381,7 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstAssign* nodep) override {
+    void visit(AstAssign* nodep) override {
         // Blocking assignments are always OK in combinational (and initial/final) processes
         if (m_check != CT_SEQ) return;
 
@@ -404,7 +404,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -505,36 +505,30 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         m_namer.main(nodep);  // Clear last scope's names, and collect this scope's existing names
         iterateChildren(nodep);
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         // Actives are being formed, so we can ignore any already made
     }
 
-    virtual void visit(AstInitialStatic* nodep) override {
-        moveUnderSpecial<AstSenItem::Static>(nodep);
-    }
-    virtual void visit(AstInitial* nodep) override {
+    void visit(AstInitialStatic* nodep) override { moveUnderSpecial<AstSenItem::Static>(nodep); }
+    void visit(AstInitial* nodep) override {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         visitSenItems(nodep);
         moveUnderSpecial<AstSenItem::Initial>(nodep);
     }
-    virtual void visit(AstFinal* nodep) override {
+    void visit(AstFinal* nodep) override {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
-    virtual void visit(AstAssignAlias* nodep) override {
-        moveUnderSpecial<AstSenItem::Combo>(nodep);
-    }
-    virtual void visit(AstCoverToggle* nodep) override {
-        moveUnderSpecial<AstSenItem::Combo>(nodep);
-    }
-    virtual void visit(AstAssignW* nodep) override {
+    void visit(AstAssignAlias* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
+    void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
+    void visit(AstAssignW* nodep) override {
         visitAlways(nodep, nullptr, VAlwaysKwd::ALWAYS_COMB);
     }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstAlways* nodep) override {
         if (!nodep->bodysp()) {  // Empty always. Remove it now.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
@@ -542,18 +536,17 @@ private:
         visitSenItems(nodep);
         visitAlways(nodep, nodep->sensesp(), nodep->keyword());
     }
-    virtual void visit(AstAlwaysPostponed* nodep) override {
+    void visit(AstAlwaysPostponed* nodep) override {
         // Might be empty with later optimizations, so this assertion can be removed,
         // but for now it is guaranteed to be not empty.
         UASSERT_OBJ(nodep->bodysp(), nodep, "Should not be empty");
         visitAlways(nodep, nullptr, VAlwaysKwd::ALWAYS);
     }
-    virtual void visit(AstAlwaysPublic* nodep) override {
+    void visit(AstAlwaysPublic* nodep) override {
         visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
-    virtual void visit(AstCFunc* nodep) override { visitSenItems(nodep); }
-
-    virtual void visit(AstSenItem* nodep) override {
+    void visit(AstCFunc* nodep) override { visitSenItems(nodep); }
+    void visit(AstSenItem* nodep) override {
         UASSERT_OBJ(!m_walkingBody, nodep,
                     "Should not reach here when walking body without --timing");
         if (!nodep->sensp()) return;  // Ignore sequential items (e.g.: initial, comb, etc.)
@@ -563,6 +556,7 @@ private:
 
         if (const auto* const dtypep = nodep->sensp()->dtypep()) {
             if (const auto* const basicp = dtypep->basicp()) {
+
                 if (basicp->isEvent()) nodep->edgeType(VEdgeType::ET_EVENT);
             }
         }
@@ -573,7 +567,7 @@ private:
         });
     }
 
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         AstVarScope* const vscp = nodep->varScopep();
         if (nodep->access().isWriteOnly()) {
             vscp->user2(true);
@@ -584,24 +578,24 @@ private:
             if (!vscp->user2() && !vscp->user1()) m_canBeComb = false;
         }
     }
-    virtual void visit(AstAssignDly* nodep) override {
+    void visit(AstAssignDly* nodep) override {
         m_canBeComb = false;
         if (nodep->isTimingControl()) m_clockedProcess = true;
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstFireEvent* nodep) override {
+    void visit(AstFireEvent* nodep) override {
         m_canBeComb = false;
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstAssignForce* nodep) override {
+    void visit(AstAssignForce* nodep) override {
         m_canBeComb = false;
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstRelease* nodep) override {
+    void visit(AstRelease* nodep) override {
         m_canBeComb = false;
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstFork* nodep) override {
+    void visit(AstFork* nodep) override {
         if (nodep->isTimingControl()) {
             m_canBeComb = false;
             m_clockedProcess = true;
@@ -610,9 +604,9 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstVar*) override {}  // Accelerate
-    virtual void visit(AstVarScope*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstVar*) override {}  // Accelerate
+    void visit(AstVarScope*) override {}  // Accelerate
+    void visit(AstNode* nodep) override {
         if (!v3Global.opt.timing().isSetTrue() && m_walkingBody && !m_canBeComb) {
             return;  // Accelerate
         }

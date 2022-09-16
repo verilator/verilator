@@ -53,10 +53,10 @@ public:
         , m_logicp{logicp}
         , m_state{POM_WAIT}
         , m_domScopep{nullptr} {}
-    virtual ~OrderMoveVertex() override = default;
+    ~OrderMoveVertex() override = default;
 
     // METHODS
-    virtual string dotColor() const override {
+    string dotColor() const override {
         if (logicp()) {
             return logicp()->dotColor();
         } else {
@@ -64,7 +64,7 @@ public:
         }
     }
 
-    virtual string name() const override {
+    string name() const override {
         string nm;
         if (VL_UNCOVERABLE(!logicp())) {  // Avoid crash when debugging
             nm = "nul";  // LCOV_EXCL_LINE
@@ -108,7 +108,7 @@ public:
         , m_domainp{domainp} {
         UASSERT(!(logicp && varp), "MTaskMoveVertex: logicp and varp may not both be set!\n");
     }
-    virtual ~MTaskMoveVertex() override = default;
+    ~MTaskMoveVertex() override = default;
 
     // ACCESSORS
     OrderLogicVertex* logicp() const { return m_logicp; }
@@ -116,14 +116,14 @@ public:
     const AstScope* scopep() const { return m_logicp ? m_logicp->scopep() : nullptr; }
     const AstSenTree* domainp() const { return m_domainp; }
 
-    virtual string dotColor() const override {
+    string dotColor() const override {
         if (logicp()) {
             return logicp()->dotColor();
         } else {
             return "yellow";
         }
     }
-    virtual string name() const override {
+    string name() const override {
         string nm;
         if (logicp()) {
             nm = logicp()->name();

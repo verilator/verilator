@@ -39,12 +39,12 @@ class VOptionBool final {
 public:
     enum en : uint8_t { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE };
     enum en m_e;
-    inline VOptionBool()
+    VOptionBool()
         : m_e{OPT_DEFAULT_FALSE} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VOptionBool(en _e)
+    VOptionBool(en _e)
         : m_e{_e} {}
-    explicit inline VOptionBool(int _e)
+    explicit VOptionBool(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
@@ -78,12 +78,12 @@ public:
     enum : uint8_t { TS_DEFAULT = TS_1PS };
     enum en m_e;
     // CONSTRUCTOR
-    inline VTimescale()
+    VTimescale()
         : m_e{NONE} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VTimescale(en _e)
+    VTimescale(en _e)
         : m_e{_e} {}
-    explicit inline VTimescale(int _e)
+    explicit VTimescale(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     // Construct from string
     VTimescale(const string& value, bool& badr);
@@ -131,9 +131,9 @@ class TraceFormat final {
 public:
     enum en : uint8_t { VCD = 0, FST } m_e;
     // cppcheck-suppress noExplicitConstructor
-    inline TraceFormat(en _e = VCD)
+    TraceFormat(en _e = VCD)
         : m_e{_e} {}
-    explicit inline TraceFormat(int _e)
+    explicit TraceFormat(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
@@ -283,7 +283,7 @@ private:
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
     bool m_xmlOnly = false;         // main switch: --xml-only
 
-    int         m_buildJobs = 1;    // main switch: -j
+    int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_dumpTree = 0;     // main switch: --dump-tree

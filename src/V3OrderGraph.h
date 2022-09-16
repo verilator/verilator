@@ -116,7 +116,7 @@ protected:
     OrderEitherVertex(OrderGraph* graphp, AstSenTree* domainp)
         : V3GraphVertex{graphp}
         , m_domainp{domainp} {}
-    virtual ~OrderEitherVertex() override = default;
+    ~OrderEitherVertex() override = default;
 
 public:
     // METHODS
@@ -148,10 +148,10 @@ public:
         UASSERT_OBJ(scopep, nodep, "Must not be null");
         UASSERT_OBJ(!(domainp && hybridp), nodep, "Cannot have bot domainp and hybridp set");
     }
-    virtual ~OrderLogicVertex() override = default;
+    ~OrderLogicVertex() override = default;
 
     // METHODS
-    virtual bool domainMatters() override { return true; }
+    bool domainMatters() override { return true; }
 
     // ACCESSORS
     AstNode* nodep() const { return m_nodep; }
@@ -159,12 +159,10 @@ public:
     AstSenTree* hybridp() const { return m_hybridp; }
 
     // LCOV_EXCL_START // Debug code
-    virtual string name() const override {
+    string name() const override {
         return (cvtToHex(m_nodep) + "\\n " + cvtToStr(nodep()->typeName()));
     }
-    virtual string dotShape() const override {
-        return VN_IS(m_nodep, Active) ? "doubleoctagon" : "rect";
-    }
+    string dotShape() const override { return VN_IS(m_nodep, Active) ? "doubleoctagon" : "rect"; }
     // LCOV_EXCL_STOP
 };
 
@@ -176,7 +174,7 @@ public:
     OrderVarVertex(OrderGraph* graphp, AstVarScope* vscp)
         : OrderEitherVertex{graphp, nullptr}
         , m_vscp{vscp} {}
-    virtual ~OrderVarVertex() override = default;
+    ~OrderVarVertex() override = default;
 
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
@@ -195,14 +193,14 @@ public:
     // CONSTRUCTOR
     OrderVarStdVertex(OrderGraph* graphp, AstVarScope* vscp)
         : OrderVarVertex{graphp, vscp} {}
-    virtual ~OrderVarStdVertex() override = default;
+    ~OrderVarStdVertex() override = default;
 
     // METHODS
-    virtual bool domainMatters() override { return true; }
+    bool domainMatters() override { return true; }
 
     // LCOV_EXCL_START // Debug code
-    virtual string nameSuffix() const override { return ""; }
-    virtual string dotColor() const override { return "grey"; }
+    string nameSuffix() const override { return ""; }
+    string dotColor() const override { return "grey"; }
     // LCOV_EXCL_STOP
 };
 
@@ -211,14 +209,14 @@ public:
     // CONSTRUCTOR
     OrderVarPreVertex(OrderGraph* graphp, AstVarScope* vscp)
         : OrderVarVertex{graphp, vscp} {}
-    virtual ~OrderVarPreVertex() override = default;
+    ~OrderVarPreVertex() override = default;
 
     // METHODS
-    virtual bool domainMatters() override { return false; }
+    bool domainMatters() override { return false; }
 
     // LCOV_EXCL_START // Debug code
-    virtual string nameSuffix() const override { return "PRE"; }
-    virtual string dotColor() const override { return "green"; }
+    string nameSuffix() const override { return "PRE"; }
+    string dotColor() const override { return "green"; }
     // LCOV_EXCL_STOP
 };
 
@@ -227,14 +225,14 @@ public:
     // CONSTRUCTOR
     OrderVarPostVertex(OrderGraph* graphp, AstVarScope* vscp)
         : OrderVarVertex{graphp, vscp} {}
-    virtual ~OrderVarPostVertex() override = default;
+    ~OrderVarPostVertex() override = default;
 
     // METHODS
-    virtual bool domainMatters() override { return false; }
+    bool domainMatters() override { return false; }
 
     // LCOV_EXCL_START // Debug code
-    virtual string nameSuffix() const override { return "POST"; }
-    virtual string dotColor() const override { return "red"; }
+    string nameSuffix() const override { return "POST"; }
+    string dotColor() const override { return "red"; }
     // LCOV_EXCL_STOP
 };
 
@@ -243,14 +241,14 @@ public:
     // CONSTRUCTOR
     OrderVarPordVertex(OrderGraph* graphp, AstVarScope* vscp)
         : OrderVarVertex{graphp, vscp} {}
-    virtual ~OrderVarPordVertex() override = default;
+    ~OrderVarPordVertex() override = default;
 
     // METHODS
-    virtual bool domainMatters() override { return false; }
+    bool domainMatters() override { return false; }
 
     // LCOV_EXCL_START // Debug code
-    virtual string nameSuffix() const override { return "PORD"; }
-    virtual string dotColor() const override { return "blue"; }
+    string nameSuffix() const override { return "PORD"; }
+    string dotColor() const override { return "blue"; }
     // LCOV_EXCL_STOP
 };
 
@@ -263,10 +261,10 @@ class OrderEdge final : public V3GraphEdge {
     OrderEdge(OrderGraph* graphp, OrderEitherVertex* fromp, OrderEitherVertex* top, int weight,
               bool cutable)
         : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
-    virtual ~OrderEdge() override = default;
+    ~OrderEdge() override = default;
 
     // LCOV_EXCL_START // Debug code
-    virtual string dotColor() const override { return cutable() ? "green" : "red"; }
+    string dotColor() const override { return cutable() ? "green" : "red"; }
     // LCOV_EXCL_STOP
 };
 

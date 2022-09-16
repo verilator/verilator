@@ -110,7 +110,7 @@ public:
 
     // CONSTRUCTORS
     EmitCBaseVisitor() = default;
-    virtual ~EmitCBaseVisitor() override = default;
+    ~EmitCBaseVisitor() override = default;
 };
 
 #endif  // guard

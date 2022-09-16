@@ -327,7 +327,7 @@ class EmitCHeader final : public EmitCConstInit {
         // Close output file
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
-    virtual ~EmitCHeader() override = default;
+    ~EmitCHeader() override = default;
 
 public:
     static void main(const AstNodeModule* modp) { EmitCHeader emitCHeader(modp); }

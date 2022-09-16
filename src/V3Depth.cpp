@@ -73,7 +73,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_mtaskbodyp);
         {
@@ -85,7 +85,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstMTaskBody* nodep) override {
+    void visit(AstMTaskBody* nodep) override {
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_mtaskbodyp);
         {
@@ -106,7 +106,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeStmt* nodep) override {
+    void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
         } else {
@@ -114,8 +114,8 @@ private:
         }
     }
     // Operators
-    virtual void visit(AstNodeTermop* nodep) override {}
-    virtual void visit(AstNodeMath* nodep) override {
+    void visit(AstNodeTermop* nodep) override {}
+    void visit(AstNodeMath* nodep) override {
         // We have some operator defines that use 2 parens, so += 2.
         {
             VL_RESTORER(m_depth);
@@ -142,19 +142,19 @@ private:
             m_cfuncp->isStatic(false);
         }
     }
-    virtual void visit(AstUCFunc* nodep) override {
+    void visit(AstUCFunc* nodep) override {
         needNonStaticFunc(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstUCStmt* nodep) override {
+    void visit(AstUCStmt* nodep) override {
         needNonStaticFunc(nodep);
         visitStmt(nodep);
     }
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*) override {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstVar*) override {}  // Don't hit varrefs under vars
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -162,7 +162,7 @@ public:
         : m_tempNames{"__Vdeeptemp"} {
         iterate(nodep);
     }
-    virtual ~DepthVisitor() override = default;
+    ~DepthVisitor() override = default;
 };
 
 //######################################################################

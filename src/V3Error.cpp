@@ -54,7 +54,7 @@ v3errorIniter v3errorInit;
 V3ErrorCode::V3ErrorCode(const char* msgp) {
     // Return error encoding for given string, or ERROR, which is a bad code
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code{codei};
         if (0 == VL_STRCASECMP(msgp, code.ascii())) {
             m_e = code;
             return;
@@ -69,9 +69,9 @@ V3ErrorCode::V3ErrorCode(const char* msgp) {
 void V3Error::init() {
     for (int i = 0; i < V3ErrorCode::_ENUM_MAX; i++) {
         s_describedEachWarn[i] = false;
-        s_pretendError[i] = V3ErrorCode(i).pretendError();
+        s_pretendError[i] = V3ErrorCode{i}.pretendError();
     }
-    if (VL_UNCOVERABLE(string(V3ErrorCode(V3ErrorCode::_ENUM_MAX).ascii()) != " MAX")) {
+    if (VL_UNCOVERABLE(string(V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()) != " MAX")) {
         v3fatalSrc("Enum table in V3ErrorCode::EC_ascii() is munged");
     }
 }
