@@ -684,16 +684,6 @@ Summary:
    If the design is not to be completely Verilated see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
 
-.. option:: --main
-
-   Generates a simple main C++ file. Without :vlopt:`--timing`, you need to
-   modify this file to provide some stimuli to the design. However, this option
-   is especially useful with :vlopt:`--timing` and delay-generated clocks, as
-   then the main file provides a timing-enabled eval loop and requires no
-   modification by the user. :vlopt:`--build` can then be used to build the
-   simulation, allowing you to use Verilator without directly invoking
-   the C++ toolchain.
-
 .. option:: --make <build-tool>
 
    Generates a script for the specified build tool.
@@ -720,8 +710,15 @@ Summary:
 
    Generates a top-level C++ main() file that supports parsing arguments,
    but does not drive any inputs.  This is sufficient to use for top-level
-   SystemVerilog designs that has no inputs, and does not need the C++ to
-   do any time advancement.
+   SystemVerilog designs that has no inputs.
+
+   This option can also be used once to generate a main .cpp file as a
+   starting point for editing.  Copy it outside the obj directory, manually
+   edit, and then pass the filename on later Verilator command line
+   invocations.
+
+   Typically used with :vlopt:`--timing` to support delay-generated clocks,
+   and :vlopt:`--build`.
 
    Implies :vlopt:`--cc` if no other output mode was provided.
 
