@@ -302,11 +302,12 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 
 #define APPLY_STRENGTH_TO_LIST(beginp, strengthSpecNodep, typeToCast) \
     { \
-        if (AstStrengthSpec* specp = VN_CAST(strengthSpecNodep, StrengthSpec)) \
+        if (AstStrengthSpec* specp = VN_CAST(strengthSpecNodep, StrengthSpec)) { \
             for (auto* nodep = beginp; nodep; nodep = nodep->nextp()) { \
                 auto* const assignp = VN_AS(nodep, typeToCast); \
                 assignp->strengthSpecp(nodep == beginp ? specp : specp->cloneTree(false)); \
             } \
+        } \
     }
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {

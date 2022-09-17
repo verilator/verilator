@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Block code ordering
+// DESCRIPTION: Verilator: Ordering constraint graph
 //
 // Code available from: https://verilator.org
 //
