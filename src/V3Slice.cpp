@@ -147,7 +147,7 @@ class SliceVisitor final : public VNVisitor {
                                                  cloneAndSel(nodep->rhsp(), elements, offset)),
                                 NodeAssign);
                     if (debug() >= 9) newp->dumpTree(cout, "-new ");
-                    newlistp = AstNode::addNextNull(newlistp, newp);
+                    newlistp = AstNode::addNext(newlistp, newp);
                 }
                 if (debug() >= 9) nodep->dumpTree(cout, " Deslice-Dn: ");
                 nodep->replaceWith(newlistp);

@@ -768,9 +768,11 @@ void createEval(AstNetlist* netlistp,  //
         = makeEvalLoop(
               netlistp, "act", "Active", actTrig.m_vscp, actTrig.m_dumpp,
               [&]() {  // Trigger
-                  auto* const resultp = new AstCCall{flp, actTrig.m_funcp};
+                  AstNode* const resultp = new AstCCall{flp, actTrig.m_funcp};
                   // Commit trigger awaits from the previous iteration
-                  resultp->addNextNull(timingKit.createCommit(netlistp));
+                  if (AstNode* const commitp = timingKit.createCommit(netlistp)) {
+                      resultp->addNext(commitp);
+                  }
                   return resultp;
               },
               [&]() {  // Body
@@ -799,7 +801,9 @@ void createEval(AstNetlist* netlistp,  //
                   }
 
                   // Resume triggered timing schedulers
-                  resultp = AstNode::addNextNull(resultp, timingKit.createResume(netlistp));
+                  if (AstNode* const resumep = timingKit.createResume(netlistp)) {
+                      resultp = AstNode::addNext(resultp, resumep);
+                  }
 
                   // Invoke body function
                   return AstNode::addNext(resultp, new AstCCall{flp, actFuncp});

@@ -134,7 +134,7 @@ private:
                 incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::WRITE),
                 new AstAdd(incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::READ),
                            new AstConst(incp->fileline(), AstConst::WidthedValue(), 32, 1)));
-            incp->addNext(assp);
+            AstNode::addNext<AstNode, AstNode>(incp, assp);
         }
         return incp;
     }

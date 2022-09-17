@@ -177,21 +177,17 @@ private:
             const int right = nodep->rangep()->rightConst();
             const int increment = (left > right) ? -1 : 1;
             int offset_from_init = 0;
-            AstNode* addp = nullptr;
+            AstEnumItem* addp = nullptr;
+            FileLine* const flp = nodep->fileline();
             for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
                 const string name = nodep->name() + cvtToStr(i);
                 AstNode* valuep = nullptr;
                 if (nodep->valuep()) {
-                    valuep = new AstAdd(
-                        nodep->fileline(), nodep->valuep()->cloneTree(true),
-                        new AstConst(nodep->fileline(), AstConst::Unsized32(), offset_from_init));
+                    valuep
+                        = new AstAdd(flp, nodep->valuep()->cloneTree(true),
+                                     new AstConst(flp, AstConst::Unsized32(), offset_from_init));
                 }
-                AstNode* const newp = new AstEnumItem(nodep->fileline(), name, nullptr, valuep);
-                if (addp) {
-                    addp = addp->addNextNull(newp);
-                } else {
-                    addp = newp;
-                }
+                addp = AstNode::addNext(addp, new AstEnumItem{flp, name, nullptr, valuep});
             }
             nodep->replaceWith(addp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -372,7 +368,7 @@ private:
         iterateChildren(nodep);
         if (m_varp) {
             nodep->unlinkFrBack();
-            m_varp->addNext(nodep);
+            AstNode::addNext<AstNode, AstNode>(m_varp, nodep);
             // lvalue is true, because we know we have a verilator public_flat_rw
             // but someday we may be more general
             const bool lvalue = m_varp->isSigUserRWPublic();

@@ -279,15 +279,15 @@ private:
         }
         if (precondsp) {
             precondsp->unlinkFrBackWithNext();
-            stmtsp = AstNode::addNextNull(stmtsp, precondsp);
+            stmtsp = AstNode::addNext(stmtsp, precondsp);
         }
         if (bodysp) {
             bodysp->unlinkFrBackWithNext();
-            stmtsp = AstNode::addNextNull(stmtsp, bodysp);  // Maybe null if no body
+            stmtsp = AstNode::addNext(stmtsp, bodysp);  // Maybe null if no body
         }
         if (incp && !VN_IS(nodep, GenFor)) {  // Generates don't need to increment loop index
             incp->unlinkFrBackWithNext();
-            stmtsp = AstNode::addNextNull(stmtsp, incp);  // Maybe null if no body
+            stmtsp = AstNode::addNext(stmtsp, incp);  // Maybe null if no body
         }
         // Mark variable to disable some later warnings
         m_forVarp->usedLoopIdx(true);

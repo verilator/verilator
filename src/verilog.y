@@ -150,7 +150,7 @@ public:
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay(fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr);
-        nodep->addNext(new AstStop(fileline, true));
+        AstNode::addNext<AstNode, AstNode>(nodep, new AstStop(fileline, true));
         return nodep;
     }
     AstNode* createGatePin(AstNode* exprp) {
@@ -340,6 +340,12 @@ static void UNSUPREAL(FileLine* fileline) {
 //======================================================================
 
 void yyerror(const char* errmsg) { PARSEP->bisonLastFileline()->v3error(errmsg); }
+
+template <typename T_Node, typename T_Next>
+static T_Node* addNextNull(T_Node* nodep, T_Next* nextp) {
+    if (!nextp) return nodep;
+    return AstNode::addNext<T_Node, T_Next>(nodep, nextp);
+}
 
 //======================================================================
 
@@ -1151,7 +1157,7 @@ package_itemListE<nodep>:       // IEEE: [{ package_item }]
 
 package_itemList<nodep>:        // IEEE: { package_item }
                 package_item                            { $$ = $1; }
-        |       package_itemList package_item           { $$ = $1->addNextNull($2); }
+        |       package_itemList package_item           { $$ = addNextNull($1, $2); }
         ;
 
 package_item<nodep>:            // ==IEEE: package_item
@@ -1180,7 +1186,7 @@ package_or_generate_item_declaration<nodep>:    // ==IEEE: package_or_generate_i
 
 package_import_declarationList<nodep>:
                 package_import_declaration              { $$ = $1; }
-        |       package_import_declarationList package_import_declaration { $$ = $1->addNextNull($2); }
+        |       package_import_declarationList package_import_declaration { $$ = addNextNull($1, $2); }
         ;
 
 package_import_declaration<nodep>:      // ==IEEE: package_import_declaration
@@ -1189,7 +1195,7 @@ package_import_declaration<nodep>:      // ==IEEE: package_import_declaration
 
 package_import_itemList<nodep>:
                 package_import_item                     { $$ = $1; }
-        |       package_import_itemList ',' package_import_item { $$ = $1->addNextNull($3); }
+        |       package_import_itemList ',' package_import_item { $$ = addNextNull($1, $3); }
         ;
 
 package_import_item<nodep>:     // ==IEEE: package_import_item
@@ -1217,7 +1223,7 @@ package_export_declaration<nodep>: // IEEE: package_export_declaration
 
 package_export_itemList<nodep>:
                 package_export_item                     { $$ = $1; }
-        |       package_export_itemList ',' package_export_item { $$ = $1->addNextNull($3); }
+        |       package_export_itemList ',' package_export_item { $$ = addNextNull($1, $3); }
         ;
 
 package_export_item<nodep>:     // ==IEEE: package_export_item
@@ -1274,7 +1280,7 @@ modFront<nodeModulep>:
 importsAndParametersE<nodep>:   // IEEE: common part of module_declaration, interface_declaration, program_declaration
         //                      // { package_import_declaration } [ parameter_port_list ]
                 parameter_port_listE                    { $$ = $1; }
-        |       package_import_declarationList parameter_port_listE     { $$ = $1->addNextNull($2); }
+        |       package_import_declarationList parameter_port_listE     { $$ = addNextNull($1, $2); }
         ;
 
 udpFront<nodeModulep>:
@@ -1345,12 +1351,12 @@ portsStarE<nodep>:              // IEEE: .* + list_of_ports + list_of_port_decla
 
 list_of_portsE<nodep>:          // IEEE: list_of_ports + list_of_port_declarations
                 portAndTagE                     { $$ = $1; }
-        |       list_of_portsE ',' portAndTagE          { $$ = $1->addNextNull($3); }
+        |       list_of_portsE ',' portAndTagE          { $$ = addNextNull($1, $3); }
         ;
 
 list_of_ports<nodep>:           // IEEE: list_of_ports + list_of_port_declarations
                 portAndTag                      { $$ = $1; }
-        |       list_of_portsE ',' portAndTagE          { $$ = $1->addNextNull($3); }
+        |       list_of_portsE ',' portAndTagE          { $$ = addNextNull($1, $3); }
         ;
 
 portAndTagE<nodep>:
@@ -1388,11 +1394,11 @@ port<nodep>:                    // ==IEEE: port
                 portDirNetE id/*interface*/                      portSig variable_dimensionListE sigAttrListE
                         { $$ = $3; VARDECL(IFACEREF); VARIO(NONE);
                           VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2));
-                          $$->addNextNull(VARDONEP($$,$4,$5)); }
+                          addNextNull($$, VARDONEP($$,$4,$5)); }
         |       portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
                         { $$ = $5; VARDECL(IFACEREF); VARIO(NONE);
                           VARDTYPE(new AstIfaceRefDType($<fl>2, $<fl>4, "", *$2, *$4));
-                          $$->addNextNull(VARDONEP($$,$6,$7)); }
+                          addNextNull($$, VARDONEP($$,$6,$7)); }
         |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
                         { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: virtual or generic interfaces"); }
         |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
@@ -1443,29 +1449,29 @@ port<nodep>:                    // ==IEEE: port
         //UNSUP         { UNSUP }
         //
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
-                        { $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5)); }
+                        { $$=$3; VARDTYPE($2); addNextNull($$, VARDONEP($$,$4,$5)); }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE
-                        { $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
+                        { $$=$4; VARDTYPE($3); addNextNull($$, VARDONEP($$,$5,$6)); }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
-                        { $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
+                        { $$=$4; VARDTYPE($3); addNextNull($$, VARDONEP($$,$5,$6)); }
         |       portDirNetE signing             portSig variable_dimensionListE sigAttrListE
                         { $$=$3; VARDTYPE_NDECL(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2));
-                          $$->addNextNull(VARDONEP($$, $4, $5)); }
+                          addNextNull($$, VARDONEP($$, $4, $5)); }
         |       portDirNetE signingE rangeList  portSig variable_dimensionListE sigAttrListE
                         { $$=$4; VARDTYPE_NDECL(GRAMMARP->addRange(
                                     new AstBasicDType{$3->fileline(), LOGIC_IMPLICIT, $2}, $3, true));
-                          $$->addNextNull(VARDONEP($$, $5, $6)); }
+                          addNextNull($$, VARDONEP($$, $5, $6)); }
         |       portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE
-                        { $$=$2; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); }
+                        { $$=$2; /*VARDTYPE-same*/ addNextNull($$, VARDONEP($$,$3,$4)); }
         //
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$=$3; VARDTYPE($2); if (AstVar* vp = VARDONEP($$, $4, $5)) { $$->addNextNull(vp); vp->valuep($7); } }
+                        { $$=$3; VARDTYPE($2); if (AstVar* vp = VARDONEP($$, $4, $5)) { addNextNull($$, vp); vp->valuep($7); } }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$=$4; VARDTYPE($3); if (AstVar* vp = VARDONEP($$, $5, $6)) { $$->addNextNull(vp); vp->valuep($8); } }
+                        { $$=$4; VARDTYPE($3); if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$=$4; VARDTYPE($3); if (AstVar* vp = VARDONEP($$, $5, $6)) { $$->addNextNull(vp); vp->valuep($8); } }
+                        { $$=$4; VARDTYPE($3); if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$=$2; /*VARDTYPE-same*/ if (AstVar* vp = VARDONEP($$, $3, $4)) { $$->addNextNull(vp); vp->valuep($6); } }
+                        { $$=$2; /*VARDTYPE-same*/ if (AstVar* vp = VARDONEP($$, $3, $4)) { addNextNull($$, vp); vp->valuep($6); } }
         ;
 
 portDirNetE:                    // IEEE: part of port, optional net type and/or direction
@@ -1520,7 +1526,7 @@ interface_itemListE<nodep>:
 
 interface_itemList<nodep>:
                 interface_item                          { $$ = $1; }
-        |       interface_itemList interface_item       { $$ = $1->addNextNull($2); }
+        |       interface_itemList interface_item       { $$ = addNextNull($1, $2); }
         ;
 
 interface_item<nodep>:          // IEEE: interface_item + non_port_interface_item
@@ -1568,7 +1574,7 @@ anonymous_program_itemListE<nodep>:     // IEEE: { anonymous_program_item }
 
 anonymous_program_itemList<nodep>:      // IEEE: { anonymous_program_item }
                 anonymous_program_item                  { $$ = $1; }
-        |       anonymous_program_itemList anonymous_program_item       { $$ = $1->addNextNull($2); }
+        |       anonymous_program_itemList anonymous_program_item       { $$ = addNextNull($1, $2); }
         ;
 
 anonymous_program_item<nodep>:  // ==IEEE: anonymous_program_item
@@ -1615,7 +1621,7 @@ program_itemListE<nodep>:       // ==IEEE: [{ program_item }]
 
 program_itemList<nodep>:        // ==IEEE: { program_item }
                 program_item                            { $$ = $1; }
-        |       program_itemList program_item           { $$ = $1->addNextNull($2); }
+        |       program_itemList program_item           { $$ = addNextNull($1, $2); }
         ;
 
 program_item<nodep>:            // ==IEEE: program_item
@@ -1655,7 +1661,7 @@ modport_declaration<nodep>:             // ==IEEE: modport_declaration
 
 modport_itemList<nodep>:                // IEEE: part of modport_declaration
                 modport_item                            { $$ = $1; }
-        |       modport_itemList ',' modport_item       { $$ = $1->addNextNull($3); }
+        |       modport_itemList ',' modport_item       { $$ = addNextNull($1, $3); }
         ;
 
 modport_item<nodep>:                    // ==IEEE: modport_item
@@ -1666,7 +1672,7 @@ modport_item<nodep>:                    // ==IEEE: modport_item
 
 modportPortsDeclList<nodep>:
                 modportPortsDecl                            { $$ = $1; }
-        |       modportPortsDeclList ',' modportPortsDecl   { $$ = $1->addNextNull($3); }
+        |       modportPortsDeclList ',' modportPortsDecl   { $$ = addNextNull($1, $3); }
         ;
 
 // IEEE: modport_ports_declaration  + modport_simple_ports_declaration
@@ -2020,7 +2026,7 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
 
 struct_union_memberList<nodep>: // IEEE: { struct_union_member }
                 struct_union_member                             { $$ = $1; }
-        |       struct_union_memberList struct_union_member     { $$ = $1->addNextNull($2); }
+        |       struct_union_memberList struct_union_member     { $$ = addNextNull($1, $2); }
         ;
 
 struct_union_member<nodep>:     // ==IEEE: struct_union_member
@@ -2033,7 +2039,7 @@ struct_union_member<nodep>:     // ==IEEE: struct_union_member
 
 list_of_member_decl_assignments<nodep>: // Derived from IEEE: list_of_variable_decl_assignments
                 member_decl_assignment          { $$ = $1; }
-        |       list_of_member_decl_assignments ',' member_decl_assignment      { $$ = $1->addNextNull($3); }
+        |       list_of_member_decl_assignments ',' member_decl_assignment      { $$ = addNextNull($1, $3); }
         ;
 
 member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assignment
@@ -2066,7 +2072,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
 
 list_of_variable_decl_assignments<varp>:        // ==IEEE: list_of_variable_decl_assignments
                 variable_decl_assignment                { $$ = $1; }
-        |       list_of_variable_decl_assignments ',' variable_decl_assignment  { $$ = VN_CAST($1->addNextNull($3), Var); }
+        |       list_of_variable_decl_assignments ',' variable_decl_assignment  { $$ = addNextNull($1, $3); }
         ;
 
 variable_decl_assignment<varp>: // ==IEEE: variable_decl_assignment
@@ -2096,7 +2102,7 @@ list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifie
 tf_variable_identifier<varp>:           // IEEE: part of list_of_tf_variable_identifiers
                 id variable_dimensionListE sigAttrListE exprEqE
                         { $$ = VARDONEA($<fl>1,*$1, $2, $3);
-                          if ($4) $$->addNext(new AstAssign($4->fileline(), new AstVarRef($<fl>1, *$1, VAccess::WRITE), $4)); }
+                          if ($4) AstNode::addNext<AstNode, AstNode>($$, new AstAssign($4->fileline(), new AstVarRef($<fl>1, *$1, VAccess::WRITE), $4)); }
         ;
 
 variable_declExpr<nodep>:               // IEEE: part of variable_decl_assignment - rhs of expr
@@ -2112,7 +2118,7 @@ variable_dimensionListE<nodeRangep>:    // IEEE: variable_dimension + empty
 
 variable_dimensionList<nodeRangep>:     // IEEE: variable_dimension + empty
                 variable_dimension                      { $$ = $1; }
-        |       variable_dimensionList variable_dimension       { $$ = VN_CAST($1->addNext($2), NodeRange); }
+        |       variable_dimensionList variable_dimension       { $$ = $1->addNext($2); }
         ;
 
 variable_dimension<nodeRangep>: // ==IEEE: variable_dimension
@@ -2189,7 +2195,7 @@ enum_base_typeE<nodeDTypep>:    // IEEE: enum_base_type
 
 enum_nameList<nodep>:
                 enum_name_declaration                   { $$ = $1; }
-        |       enum_nameList ',' enum_name_declaration { $$ = $1->addNextNull($3); }
+        |       enum_nameList ',' enum_name_declaration { $$ = addNextNull($1, $3); }
         ;
 
 enum_name_declaration<nodep>:   // ==IEEE: enum_name_declaration
@@ -2380,7 +2386,7 @@ dtypeAttrListE<nodep>:
 
 dtypeAttrList<nodep>:
                 dtypeAttr                               { $$ = $1; }
-        |       dtypeAttrList dtypeAttr                 { $$ = $1->addNextNull($2); }
+        |       dtypeAttrList dtypeAttr                 { $$ = addNextNull($1, $2); }
         ;
 
 dtypeAttr<nodep>:
@@ -2401,7 +2407,7 @@ module_itemListE<nodep>:        // IEEE: Part of module_declaration
 
 module_itemList<nodep>:         // IEEE: Part of module_declaration
                 module_item                             { $$ = $1; }
-        |       module_itemList module_item             { $$ = $1->addNextNull($2); }
+        |       module_itemList module_item             { $$ = addNextNull($1, $2); }
         ;
 
 module_item<nodep>:             // ==IEEE: module_item
@@ -2585,7 +2591,7 @@ genItemOrBegin<nodep>:          // Not in IEEE, but our begin isn't under genera
 
 genItemList<nodep>:
                 ~c~genItemOrBegin                       { $$ = $1; }
-        |       ~c~genItemList ~c~genItemOrBegin        { $$ = $1->addNextNull($2); }
+        |       ~c~genItemList ~c~genItemOrBegin        { $$ = addNextNull($1, $2); }
         ;
 
 //UNSUPc_genItemList<nodep>:  // (for checkers)
@@ -2653,7 +2659,7 @@ loop_generate_construct<nodep>: // ==IEEE: loop_generate_construct
 genvar_initialization<nodep>:   // ==IEEE: genvar_initialization
                 varRefBase '=' expr                     { $$ = new AstAssign($2,$1,$3); }
         |       yGENVAR genvar_identifierDecl '=' constExpr
-                        { $$ = $2; $2->addNext(new AstAssign($3, new AstVarRef($2->fileline(), $2, VAccess::WRITE), $4)); }
+                        { $$ = $2; AstNode::addNext<AstNode, AstNode>($$, new AstAssign($3, new AstVarRef($2->fileline(), $2, VAccess::WRITE), $4)); }
         ;
 
 genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
@@ -2770,7 +2776,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                           auto* const assignp = new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4};
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           if ($$->delayp()) assignp->timingControlp($$->delayp()->unlinkFrBack());  // IEEE 1800-2017 10.3.3
-                          $$->addNext(assignp); }
+                          AstNode::addNext<AstNode, AstNode>($$, assignp); }
         |       netId variable_dimensionList sigAttrListE
                         { $$ = VARDONEA($<fl>1,*$1, $2, $3); }
         ;
@@ -2787,7 +2793,7 @@ sigAttrListE<nodep>:
 
 sigAttrList<nodep>:
                 sigAttr                                 { $$ = $1; }
-        |       sigAttrList sigAttr                     { $$ = $1->addNextNull($2); }
+        |       sigAttrList sigAttr                     { $$ = addNextNull($1, $2); }
         ;
 
 sigAttr<nodep>:
@@ -2814,7 +2820,7 @@ rangeListE<nodeRangep>:         // IEEE: [{packed_dimension}]
 
 rangeList<nodeRangep>:          // IEEE: {packed_dimension}
                 anyrange                                { $$ = $1; }
-        |       rangeList anyrange                      { $$ = $1; $1->addNext($2); }
+        |       rangeList anyrange                      { $$ = $1->addNext($2); }
         ;
 
 //UNSUPbit_selectE<fl>:  // IEEE: constant_bit_select (IEEE included empty)
@@ -2836,7 +2842,7 @@ packed_dimensionListE<nodeRangep>:      // IEEE: [{ packed_dimension }]
 
 packed_dimensionList<nodeRangep>:       // IEEE: { packed_dimension }
                 packed_dimension                        { $$ = $1; }
-        |       packed_dimensionList packed_dimension   { $$ = VN_CAST($1->addNext($2), NodeRange); }
+        |       packed_dimensionList packed_dimension   { $$ = $1->addNext($2); }
         ;
 
 packed_dimension<nodeRangep>:   // ==IEEE: packed_dimension
@@ -2865,7 +2871,7 @@ param_assignment<varp>:         // ==IEEE: param_assignment
 
 list_of_param_assignments<varp>:        // ==IEEE: list_of_param_assignments
                 param_assignment                        { $$ = $1; }
-        |       list_of_param_assignments ',' param_assignment  { $$ = $1; $1->addNext($3); }
+        |       list_of_param_assignments ',' param_assignment  { $$ = $1->addNext($3); }
         ;
 
 type_assignment<varp>:          // ==IEEE: type_assignment
@@ -2876,7 +2882,7 @@ type_assignment<varp>:          // ==IEEE: type_assignment
 
 list_of_type_assignments<varp>:         // ==IEEE: list_of_type_assignments
                 type_assignment                         { $$ = $1; }
-        |       list_of_type_assignments ',' type_assignment    { $$ = $1; $1->addNext($3); }
+        |       list_of_type_assignments ',' type_assignment    { $$ = $1->addNext($3); }
         ;
 
 list_of_defparam_assignments<nodep>:    //== IEEE: list_of_defparam_assignments
@@ -2956,7 +2962,7 @@ instRangeListE<nodeRangep>:
 
 instRangeList<nodeRangep>:
                 instRange                               { $$ = $1; }
-        |       instRangeList instRange                 { $$ = VN_CAST($1->addNextNull($2), Range); }
+        |       instRangeList instRange                 { $$ = addNextNull($1, $2); }
         ;
 
 instRange<nodeRangep>:
@@ -2976,12 +2982,12 @@ cellpinList<pinp>:
 
 cellparamItList<pinp>:          // IEEE: list_of_parameter_assignmente
                 cellparamItemE                          { $$ = $1; }
-        |       cellparamItList ',' cellparamItemE      { $$ = VN_CAST($1->addNextNull($3), Pin); }
+        |       cellparamItList ',' cellparamItemE      { $$ = addNextNull($1, $3); }
         ;
 
 cellpinItList<pinp>:            // IEEE: list_of_port_connections
                 cellpinItemE                            { $$ = $1; }
-        |       cellpinItList ',' cellpinItemE          { $$ = VN_CAST($1->addNextNull($3), Pin); }
+        |       cellpinItList ',' cellpinItemE          { $$ = addNextNull($1, $3); }
         ;
 
 cellparamItemE<pinp>:           // IEEE: named_parameter_assignment + empty
@@ -3059,11 +3065,11 @@ event_control<senTreep>:        // ==IEEE: event_control
 event_expression<senItemp>:     // IEEE: event_expression - split over several
         //UNSUP                 // Below are all removed
                 senitem                                 { $$ = $1; }
-        |       event_expression yOR senitem            { $$ = VN_CAST($1->addNextNull($3), SenItem); }
-        |       event_expression ',' senitem            { $$ = VN_CAST($1->addNextNull($3), SenItem); } /* Verilog 2001 */
+        |       event_expression yOR senitem            { $$ = addNextNull($1, $3); }
+        |       event_expression ',' senitem            { $$ = addNextNull($1, $3); } /* Verilog 2001 */
         //UNSUP                 // Above are all removed, replace with:
         //UNSUP ev_expr                                 { $$ = $1; }
-        //UNSUP event_expression ',' ev_expr %prec yOR  { $$ = VN_CAST($1->addNextNull($3), SenItem); }
+        //UNSUP event_expression ',' ev_expr %prec yOR  { $$ = addNextNull($1, $3); }
         ;
 
 senitem<senItemp>:              // IEEE: part of event_expression, non-'OR' ',' terms
@@ -3160,7 +3166,7 @@ par_blockFrontPreId<forkp>:     // IEEE: part of par_block/stmt with leading id
 blockDeclStmtList<nodep>:       // IEEE: { block_item_declaration } { statement or null }
         //                      // The spec seems to suggest a empty declaration isn't ok, but most simulators take it
                 block_item_declarationList              { $$ = $1; }
-        |       block_item_declarationList stmtList     { $$ = $1->addNextNull($2); }
+        |       block_item_declarationList stmtList     { $$ = addNextNull($1, $2); }
         |       stmtList                                { $$ = $1; }
         ;
 
@@ -3171,7 +3177,7 @@ blockDeclStmtListE<nodep>:      // IEEE: [ { block_item_declaration } { statemen
 
 block_item_declarationList<nodep>:      // IEEE: [ block_item_declaration ]
                 block_item_declaration                  { $$ = $1; }
-        |       block_item_declarationList block_item_declaration       { $$ = $1->addNextNull($2); }
+        |       block_item_declarationList block_item_declaration       { $$ = addNextNull($1, $2); }
         ;
 
 block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
@@ -3182,7 +3188,7 @@ block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
 
 stmtList<nodep>:
                 stmtBlock                               { $$ = $1; }
-        |       stmtList stmtBlock                      { $$ = $2 ? $1->addNext($2) : $1; }
+        |       stmtList stmtBlock                      { $$ = addNextNull($1, $2); }
         ;
 
 stmt<nodep>:                    // IEEE: statement_or_null == function_statement_or_null
@@ -3314,11 +3320,11 @@ statement_item<nodep>:          // IEEE: statement_item
         |       delay_control stmtBlock                 { AstNode* nextp = nullptr;
                                                           if ($2 && $2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
                                                           $$ = new AstDelay{$1->fileline(), $1, $2};
-                                                          $$->addNextNull(nextp); }
+                                                          addNextNull($$, nextp); }
         |       event_control stmtBlock                 { AstNode* nextp = nullptr;
                                                           if ($2 && $2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
                                                           $$ = new AstEventControl{FILELINE_OR_CRE($1), $1, $2};
-                                                          $$->addNextNull(nextp); }
+                                                          addNextNull($$, nextp); }
         //UNSUP cycle_delay stmtBlock                   { UNSUP }
         //
         |       seq_block                               { $$ = $1; }
@@ -3485,23 +3491,23 @@ case_itemList<caseItemp>:       // IEEE: { case_item + ... }
                 caseCondList colon stmtBlock                    { $$ = new AstCaseItem{$2, $1, $3}; }
         |       yDEFAULT colon stmtBlock                        { $$ = new AstCaseItem{$1, nullptr, $3}; }
         |       yDEFAULT stmtBlock                              { $$ = new AstCaseItem{$1, nullptr, $2}; }
-        |       case_itemList caseCondList colon stmtBlock      { $$ = $1; $1->addNext(new AstCaseItem{$3, $2, $4}); }
-        |       case_itemList yDEFAULT stmtBlock                { $$ = $1; $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
-        |       case_itemList yDEFAULT colon stmtBlock          { $$ = $1; $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
+        |       case_itemList caseCondList colon stmtBlock      { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+        |       case_itemList yDEFAULT stmtBlock                { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
+        |       case_itemList yDEFAULT colon stmtBlock          { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
         ;
 
 case_inside_itemList<caseItemp>:        // IEEE: { case_inside_item + open_range_list ... }
                 open_range_list colon stmtBlock                 { $$ = new AstCaseItem{$2, $1, $3}; }
         |       yDEFAULT colon stmtBlock                        { $$ = new AstCaseItem{$1, nullptr, $3}; }
         |       yDEFAULT stmtBlock                              { $$ = new AstCaseItem{$1, nullptr, $2}; }
-        |       case_inside_itemList open_range_list colon stmtBlock { $$ = $1; $1->addNext(new AstCaseItem{$3, $2, $4}); }
-        |       case_inside_itemList yDEFAULT stmtBlock         { $$ = $1; $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
-        |       case_inside_itemList yDEFAULT colon stmtBlock   { $$ = $1; $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
+        |       case_inside_itemList open_range_list colon stmtBlock { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+        |       case_inside_itemList yDEFAULT stmtBlock         { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
+        |       case_inside_itemList yDEFAULT colon stmtBlock   { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
         ;
 
 open_range_list<nodep>:         // ==IEEE: open_range_list + open_value_range
                 open_value_range                        { $$ = $1; }
-        |       open_range_list ',' open_value_range    { $$ = $1; $1->addNext($3); }
+        |       open_range_list ',' open_value_range    { $$ = $1->addNext($3); }
         ;
 
 open_value_range<nodep>:        // ==IEEE: open_value_range
@@ -3520,7 +3526,7 @@ value_range<nodep>:             // ==IEEE: value_range
 
 caseCondList<nodep>:            // IEEE: part of case_item
                 expr                                    { $$ = $1; }
-        |       caseCondList ',' expr                   { $$ = $1; $1->addNext($3); }
+        |       caseCondList ',' expr                   { $$ = $1->addNext($3); }
         ;
 
 patternNoExpr<nodep>:           // IEEE: pattern **Excluding Expr*
@@ -3537,7 +3543,7 @@ patternNoExpr<nodep>:           // IEEE: pattern **Excluding Expr*
 
 patternList<nodep>:             // IEEE: part of pattern
                 patternOne                              { $$ = $1; }
-        |       patternList ',' patternOne              { $$ = $1->addNextNull($3); }
+        |       patternList ',' patternOne              { $$ = addNextNull($1, $3); }
         ;
 
 patternOne<nodep>:              // IEEE: part of pattern
@@ -3549,7 +3555,7 @@ patternOne<nodep>:              // IEEE: part of pattern
 
 patternMemberList<nodep>:       // IEEE: part of pattern and assignment_pattern
                 patternMemberOne                        { $$ = $1; }
-        |       patternMemberList ',' patternMemberOne  { $$ = $1->addNextNull($3); }
+        |       patternMemberList ',' patternMemberOne  { $$ = addNextNull($1, $3); }
         ;
 
 patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
@@ -3631,7 +3637,7 @@ for_stepE<nodep>:               // IEEE: for_step + empty
 
 for_step<nodep>:                // IEEE: for_step
                 for_step_assignment                     { $$ = $1; }
-        |       for_step ',' for_step_assignment        { $$ = AstNode::addNextNull($1, $3); }
+        |       for_step ',' for_step_assignment        { $$ = addNextNull($1, $3); }
         ;
 
 for_step_assignment<nodep>:  // ==IEEE: for_step_assignment
@@ -3650,7 +3656,7 @@ for_step_assignment<nodep>:  // ==IEEE: for_step_assignment
 
 loop_variables<nodep>:          // IEEE: loop_variables
                 parseRefBase                            { $$ = $1; }
-        |       loop_variables ',' parseRefBase         { $$ = $1; $$->addNext($3); }
+        |       loop_variables ',' parseRefBase         { $$ = $1->addNext($3); }
         |       ',' parseRefBase                        { $$ = new AstEmpty{$1}; $$->addNext($2); }
         ;
 
@@ -4006,7 +4012,7 @@ exprOrDataType<nodep>:          // expr | data_type: combined to prevent conflic
 
 //UNSUPexprOrDataTypeList<nodep>:
 //UNSUP         exprOrDataType                          { $$ = $1; }
-//UNSUP |       exprOrDataTypeList ',' exprOrDataType   { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       exprOrDataTypeList ',' exprOrDataType   { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 list_of_argumentsE<nodep>:      // IEEE: [list_of_arguments]
@@ -4015,7 +4021,7 @@ list_of_argumentsE<nodep>:      // IEEE: [list_of_arguments]
                         { if (VN_IS($1, Arg) && VN_CAST($1, Arg)->emptyConnectNoNext()) {
                               $1->deleteTree(); $$ = nullptr;  // Mis-created when have 'func()'
                           } else { $$ = $1; } }
-        |       argsExprListE ',' argsDottedList        { $$ = $1->addNextNull($3); }
+        |       argsExprListE ',' argsDottedList        { $$ = addNextNull($1, $3); }
         ;
 
 task_declaration<nodeFTaskp>:   // ==IEEE: task_declaration
@@ -4157,20 +4163,20 @@ fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_
         ;
 
 tfGuts<nodep>:
-                '(' tf_port_listE ')' ';' tfBodyE       { $$ = $2->addNextNull($5); }
+                '(' tf_port_listE ')' ';' tfBodyE       { $$ = addNextNull($2, $5); }
         |       ';' tfBodyE                             { $$ = $2; }
         ;
 
 tfBodyE<nodep>:                 // IEEE: part of function_body_declaration/task_body_declaration
                 /* empty */                             { $$ = nullptr; }
         |       tf_item_declarationList                 { $$ = $1; }
-        |       tf_item_declarationList stmtList        { $$ = $1->addNextNull($2); }
+        |       tf_item_declarationList stmtList        { $$ = addNextNull($1, $2); }
         |       stmtList                                { $$ = $1; }
         ;
 
 tf_item_declarationList<nodep>:
                 tf_item_declaration                     { $$ = $1; }
-        |       tf_item_declarationList tf_item_declaration     { $$ = $1->addNextNull($2); }
+        |       tf_item_declarationList tf_item_declaration     { $$ = addNextNull($1, $2); }
         ;
 
 tf_item_declaration<nodep>:     // ==IEEE: tf_item_declaration
@@ -4193,7 +4199,7 @@ tf_port_listE<nodep>:           // IEEE: tf_port_list + empty
 
 tf_port_listList<nodep>:        // IEEE: part of tf_port_list
                 tf_port_item                            { $$ = $1; }
-        |       tf_port_listList ',' tf_port_item       { $$ = $1->addNextNull($3); }
+        |       tf_port_listList ',' tf_port_item       { $$ = addNextNull($1, $3); }
         ;
 
 tf_port_item<nodep>:            // ==IEEE: tf_port_item
@@ -4626,7 +4632,7 @@ exprStrText<nodep>:
 
 cStrList<nodep>:
                 exprStrText                             { $$ = $1; }
-        |       exprStrText ',' cStrList                { $$ = $1; $1->addNext($3); }
+        |       exprStrText ',' cStrList                { $$ = $1->addNext($3); }
         ;
 
 cateList<nodep>:
@@ -4642,20 +4648,20 @@ exprListE<nodep>:
 
 exprList<nodep>:
                 expr                                    { $$ = $1; }
-        |       exprList ',' expr                       { $$ = $1; $1->addNext($3); }
+        |       exprList ',' expr                       { $$ = $1->addNext($3); }
         ;
 
 exprDispList<nodep>:            // exprList for within $display
                 expr                                    { $$ = $1; }
-        |       exprDispList ',' expr                   { $$ = $1; $1->addNext($3); }
+        |       exprDispList ',' expr                   { $$ = $1->addNext($3); }
         //                      // ,, creates a space in $display
         |       exprDispList ',' /*empty*/
-                        { $$ = $1; $1->addNext(new AstConst($<fl>2, AstConst::VerilogStringLiteral(), " ")); }
+                        { $$ = $1->addNext(new AstConst($<fl>2, AstConst::VerilogStringLiteral(), " ")); }
         ;
 
 vrdList<nodep>:
                 idClassSel                              { $$ = $1; }
-        |       vrdList ',' idClassSel                  { $$ = $1; $1->addNext($3); }
+        |       vrdList ',' idClassSel                  { $$ = $1->addNext($3); }
         ;
 
 commaVRDListE<nodep>:
@@ -4675,7 +4681,7 @@ argsExprListE<nodep>:           // IEEE: part of list_of_arguments
 
 //UNSUPpev_argsExprListE<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
 //UNSUP         pev_argsExprOneE                        { $$ = $1; }
-//UNSUP |       pev_argsExprListE ',' pev_argsExprOneE  { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       pev_argsExprListE ',' pev_argsExprOneE  { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 argsExprOneE<nodep>:            // IEEE: part of list_of_arguments
@@ -4690,12 +4696,12 @@ argsExprOneE<nodep>:            // IEEE: part of list_of_arguments
 
 argsDottedList<nodep>:          // IEEE: part of list_of_arguments
                 argsDotted                              { $$ = $1; }
-        |       argsDottedList ',' argsDotted           { $$ = $1->addNextNull($3); }
+        |       argsDottedList ',' argsDotted           { $$ = addNextNull($1, $3); }
         ;
 
 //UNSUPpev_argsDottedList<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
 //UNSUP         pev_argsDotted                          { $$ = $1; }
-//UNSUP |       pev_argsDottedList ',' pev_argsDotted   { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       pev_argsDottedList ',' pev_argsDotted   { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 argsDotted<nodep>:              // IEEE: part of list_of_arguments
@@ -4973,7 +4979,7 @@ combinational_body<nodep>:      // IEEE: combinational_body + sequential_body
 
 tableEntryList<nodep>:  // IEEE: { combinational_entry | sequential_entry }
                 tableEntry                              { $$ = $1; }
-        |       tableEntryList tableEntry               { $$ = $1->addNextNull($2); }
+        |       tableEntryList tableEntry               { $$ = addNextNull($1, $2); }
         ;
 
 tableEntry<nodep>:      // IEEE: combinational_entry + sequential_entry
@@ -5069,7 +5075,7 @@ variable_lvalueConcList<nodep>: // IEEE: part of variable_lvalue: '{' variable_l
 
 //UNSUPvariable_lvalueList<nodep>:  // IEEE: part of variable_lvalue: variable_lvalue { ',' variable_lvalue }
 //UNSUP         variable_lvalue                         { $$ = $1; }
-//UNSUP |       variable_lvalueList ',' variable_lvalue { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       variable_lvalueList ',' variable_lvalue { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 // VarRef to dotted, and/or arrayed, and/or bit-ranged variable
@@ -5147,9 +5153,9 @@ idArrayedForeach<nodep>:        // IEEE: id + select (under foreach expression)
         //                      // IEEE: loop_variables (under foreach expression)
         //                      // To avoid conflicts we allow expr as first element, must post-check
         |       idArrayed '[' expr ',' loop_variables ']'
-                        { $3 = AstNode::addNextNull($3, $5); $$ = new AstSelLoopVars($2, $1, $3); }
+                        { $3 = addNextNull($3, $5); $$ = new AstSelLoopVars($2, $1, $3); }
         |       idArrayed '[' ',' loop_variables ']'
-                        { $4 = AstNode::addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4); $$ = new AstSelLoopVars($2, $1, $4); }
+                        { $4 = addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4); $$ = new AstSelLoopVars($2, $1, $4); }
         ;
 
 // VarRef without any dots or vectorizaion
@@ -5228,7 +5234,7 @@ clocking_declaration<nodep>:            // IEEE: clocking_declaration  (INCOMPLE
 
 //UNSUPclocking_itemList:  // IEEE: [ clocking_item ]
 //UNSUP         clocking_item                           { $$ = $1; }
-//UNSUP |       clocking_itemList clocking_item         { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       clocking_itemList clocking_item         { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPclocking_item:  // ==IEEE: clocking_item
@@ -5535,7 +5541,7 @@ property_spec<nodep>:                   // IEEE: property_spec
 
 //UNSUPproperty_case_itemList<nodep>:  // IEEE: {property_case_item}
 //UNSUP         property_case_item                      { $$ = $1; }
-//UNSUP |       property_case_itemList ',' property_case_item   { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       property_case_itemList ',' property_case_item   { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 //UNSUPproperty_case_item<nodep>:  // ==IEEE: property_case_item
@@ -5792,7 +5798,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPcoverage_spec_or_optionList<nodep>:  // IEEE: {coverage_spec_or_option}
 //UNSUP         coverage_spec_or_option                 { $$ = $1; }
-//UNSUP |       coverage_spec_or_optionList coverage_spec_or_option     { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       coverage_spec_or_optionList coverage_spec_or_option     { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPcoverage_spec_or_option<nodep>:  // ==IEEE: coverage_spec_or_option
@@ -5833,7 +5839,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPbins_or_optionsList<nodep>:  // IEEE: { bins_or_options ';' }
 //UNSUP         bins_or_options ';'                     { $$ = $1; }
-//UNSUP |       bins_or_optionsList bins_or_options ';' { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       bins_or_optionsList bins_or_options ';' { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPbins_or_options<nodep>:  // ==IEEE: bins_or_options
@@ -5869,7 +5875,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPcovergroup_range_list:  // ==IEEE: covergroup_range_list
 //UNSUP         covergroup_value_range                  { $$ = $1; }
-//UNSUP |       covergroup_range_list ',' covergroup_value_range        { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       covergroup_range_list ',' covergroup_value_range        { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 //UNSUPtrans_list:  // ==IEEE: trans_list
@@ -5896,7 +5902,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPrepeat_range:  // ==IEEE: repeat_range
 //UNSUP         cgexpr                                  { $$ = $1; }
-//UNSUP |       cgexpr ':' cgexpr                       { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       cgexpr ':' cgexpr                       { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 //UNSUPcover_cross:  // ==IEEE: cover_cross
@@ -5905,13 +5911,13 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 //UNSUP ;
 
 //UNSUPlist_of_cross_items<nodep>:  // ==IEEE: list_of_cross_items
-//UNSUP         cross_item ',' cross_item               { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP         cross_item ',' cross_item               { $$ = addNextNull($1, $3); }
 //UNSUP |       cross_item ',' cross_item ',' cross_itemList    { }
 //UNSUP ;
 
 //UNSUPcross_itemList<nodep>:  // IEEE: part of list_of_cross_items
 //UNSUP         cross_item                              { $$ = nullptr; }
-//UNSUP |       cross_itemList ',' cross_item           { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       cross_itemList ',' cross_item           { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 //UNSUPcross_item<nodep>:  // ==IEEE: cross_item
@@ -5927,7 +5933,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPcross_body_itemSemiList:  // IEEE: part of cross_body
 //UNSUP         cross_body_item ';'                     { $$ = $1; }
-//UNSUP |       cross_body_itemSemiList cross_body_item ';' { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       cross_body_itemSemiList cross_body_item ';' { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPcross_body_item<nodep>:  // ==IEEE: cross_body_item
@@ -6007,7 +6013,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPproductionList<nodep>:  // IEEE: production+
 //UNSUP         production                              { $$ = $1; }
-//UNSUP |       productionList production               { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       productionList production               { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPproduction<nodep>:  // ==IEEE: production
@@ -6023,7 +6029,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPrs_ruleList<nodep>:  // IEEE: rs_rule+ part of production
 //UNSUP         rs_rule                                 { $$ = $1; }
-//UNSUP |       rs_ruleList '|' rs_rule                 { $$ = AstNode::addNextNull($1, $3); }
+//UNSUP |       rs_ruleList '|' rs_rule                 { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 //UNSUPrs_rule<nodep>:  // ==IEEE: rs_rule
@@ -6051,7 +6057,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPrs_code_blockItemList<nodep>:  // IEEE: part of rs_code_block
 //UNSUP         rs_code_blockItem                       { $$ = $1; }
-//UNSUP |       rs_code_blockItemList rs_code_blockItem         { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       rs_code_blockItemList rs_code_blockItem         { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPrs_code_blockItem<nodep>:  // IEEE: part of rs_code_block
@@ -6061,7 +6067,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPrs_prodList<nodep>:  // IEEE: rs_prod+
 //UNSUP         rs_prod                                 { $$ = $1; }
-//UNSUP |       rs_prodList rs_prod                     { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       rs_prodList rs_prod                     { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPrs_prod<nodep>:  // ==IEEE: rs_prod
@@ -6078,7 +6084,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPproduction_itemList<nodep>:  // IEEE: production_item+
 //UNSUP         production_item                         { $$ = $1; }
-//UNSUP |       production_itemList production_item     { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       production_itemList production_item     { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPproduction_item<nodep>:  // ==IEEE: production_item
@@ -6088,7 +6094,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPrs_case_itemList<nodep>:  // IEEE: rs_case_item+
 //UNSUP         rs_case_item                            { $$ = $1; }
-//UNSUP |       rs_case_itemList rs_case_item           { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       rs_case_itemList rs_case_item           { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPrs_case_item<nodep>:  // ==IEEE: rs_case_item
@@ -6124,7 +6130,7 @@ complex_pexpr<nodep>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPchecker_or_generate_itemList<nodep>:  // IEEE: { checker_or_generate_itemList }
 //UNSUP         checker_or_generate_item                { $$ = $1; }
-//UNSUP |       checker_or_generate_itemList checker_or_generate_item   { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP |       checker_or_generate_itemList checker_or_generate_item   { $$ = addNextNull($1, $2); }
 //UNSUP ;
 
 //UNSUPchecker_or_generate_item<nodep>:  // ==IEEE: checker_or_generate_item
@@ -6243,7 +6249,7 @@ classImplementsE<nodep>:        // IEEE: part of class_declaration
 classImplementsList<nodep>:     // IEEE: part of class_declaration
         //                      // All 1800-2012
                 class_typeExtImpList                    { $$ = nullptr; BBUNSUP($1, "Unsupported: implements class"); }
-        |       classImplementsList ',' class_typeExtImpList    { $$ = AstNode::addNextNull($1, $3); }
+        |       classImplementsList ',' class_typeExtImpList    { $$ = addNextNull($1, $3); }
         ;
 
 class_typeExtImpList<nodep>:    // IEEE: class_type: "[package_scope] id [ parameter_value_assignment ]"
@@ -6370,7 +6376,7 @@ class_itemListE<nodep>:
 
 class_itemList<nodep>:
                 class_item                              { $$ = $1; }
-        |       class_itemList class_item               { $$ = AstNode::addNextNull($1, $2); }
+        |       class_itemList class_item               { $$ = addNextNull($1, $2); }
         ;
 
 class_item<nodep>:                      // ==IEEE: class_item
@@ -6455,7 +6461,7 @@ constraint_block<nodep>:  // ==IEEE: constraint_block
 
 constraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
                 constraint_block_item                           { $$ = $1; }
-        |       constraint_block_itemList constraint_block_item { $$ = AstNode::addNextNull($1, $2); }
+        |       constraint_block_itemList constraint_block_item { $$ = addNextNull($1, $2); }
         ;
 
 constraint_block_item<nodep>:  // ==IEEE: constraint_block_item
@@ -6466,7 +6472,7 @@ constraint_block_item<nodep>:  // ==IEEE: constraint_block_item
 
 solve_before_list<nodep>:  // ==IEEE: solve_before_list
                 constraint_primary                              { $$ = $1; }
-        |       solve_before_list ',' constraint_primary        { $$ = AstNode::addNextNull($1, $3); }
+        |       solve_before_list ',' constraint_primary        { $$ = addNextNull($1, $3); }
         ;
 
 constraint_primary<nodep>:  // ==IEEE: constraint_primary
@@ -6477,7 +6483,7 @@ constraint_primary<nodep>:  // ==IEEE: constraint_primary
 
 constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
-        |       constraint_expressionList constraint_expression { $$ = AstNode::addNextNull($1, $2); }
+        |       constraint_expressionList constraint_expression { $$ = addNextNull($1, $2); }
         ;
 
 constraint_expression<nodep>:  // ==IEEE: constraint_expression
@@ -6505,7 +6511,7 @@ constraint_set<nodep>:  // ==IEEE: constraint_set
 
 dist_list<nodep>:  // ==IEEE: dist_list
                 dist_item                               { $$ = $1; }
-        |       dist_list ',' dist_item                 { $$ = AstNode::addNextNull($1, $3); }
+        |       dist_list ',' dist_item                 { $$ = addNextNull($1, $3); }
         ;
 
 dist_item<nodep>:  // ==IEEE: dist_item + dist_weight

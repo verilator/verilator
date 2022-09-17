@@ -458,7 +458,9 @@ private:
         auto* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
         awaitp->statement(true);
         // Relink child statements after the co_await
-        if (nodep->stmtsp()) awaitp->addNext(nodep->stmtsp()->unlinkFrBackWithNext());
+        if (nodep->stmtsp()) {
+            AstNode::addNext<AstNode, AstNode>(awaitp, nodep->stmtsp()->unlinkFrBackWithNext());
+        }
         nodep->replaceWith(awaitp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -481,7 +483,9 @@ private:
         auto* const awaitp = new AstCAwait{flp, triggerMethodp, sensesp};
         awaitp->statement(true);
         // Relink child statements after the co_await
-        if (nodep->stmtsp()) awaitp->addNext(nodep->stmtsp()->unlinkFrBackWithNext());
+        if (nodep->stmtsp()) {
+            AstNode::addNext<AstNode, AstNode>(awaitp, nodep->stmtsp()->unlinkFrBackWithNext());
+        }
         nodep->replaceWith(awaitp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -572,10 +576,10 @@ private:
         FileLine* const flp = nodep->fileline();
         if (senItemsp) {
             // Put the event control in a while loop with the wait expression as condition
-            auto* const loopp
+            AstNode* const loopp
                 = new AstWhile{flp, new AstLogNot{flp, condp},
                                new AstEventControl{flp, new AstSenTree{flp, senItemsp}, nullptr}};
-            loopp->addNextNull(bodysp);
+            if (bodysp) loopp->addNext(bodysp);
             nodep->replaceWith(loopp);
         } else {
             condp->v3warn(WAITCONST, "Wait statement condition is constant");
