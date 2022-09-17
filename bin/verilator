@@ -344,7 +344,7 @@ detailed descriptions of these arguments.
     --lint-only                 Lint, but do not make output
     --make <build-tool>         Generate scripts for specified build tool
      -MAKEFLAGS <flags>         Arguments to pass to make during --build
-    --main                      Generate C++ main()
+    --main                      Generate C++ main() file
     --max-num-width <value>     Maximum number width (default: 64K)
     --Mdir <directory>          Name of output object directory
     --MMD                       Create .d dependency files
@@ -356,6 +356,7 @@ detailed descriptions of these arguments.
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --no-order-clock-delay      Disable ordering clock enable assignments
+    --no-verilate               Skip Verilation, only compile previously Verilated code
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
