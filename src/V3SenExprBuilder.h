@@ -160,7 +160,7 @@ class SenExprBuilder final {
                 resultp->dtypeSetBit();
                 return {resultp, true};
             }
-            return {new AstNeq(flp, currp(), prevp()), true};
+            return {new AstNeq{flp, currp(), prevp()}, true};
         case VEdgeType::ET_BOTHEDGE:  //
             return {lsb(new AstXor{flp, currp(), prevp()}), false};
         case VEdgeType::ET_POSEDGE:  //

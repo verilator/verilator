@@ -2693,9 +2693,9 @@ private:
                         // TODO: This really is dodgy, as strictgly compliant simulators will not
                         //       execute this block, but but t_func_check relies on it
                         nodep->replaceWith(
-                            new AstSenItem(nodep->fileline(), AstSenItem::Initial()));
+                            new AstSenItem{nodep->fileline(), AstSenItem::Initial{}});
                     } else {
-                        nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Never()));
+                        nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Never{}});
                     }
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 } else {

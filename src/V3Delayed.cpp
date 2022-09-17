@@ -556,14 +556,14 @@ private:
                 if (!dlyvscp) {  // First use of this delayed variable
                     const string newvarname = (string("__Vdly__") + nodep->varp()->shortName());
                     dlyvscp = createVarSc(oldvscp, newvarname, 0, nullptr);
-                    AstNodeAssign* const prep = new AstAssignPre(
+                    AstNodeAssign* const prep = new AstAssignPre{
                         nodep->fileline(),
-                        new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE),
-                        new AstVarRef(nodep->fileline(), oldvscp, VAccess::READ));
-                    AstNodeAssign* const postp = new AstAssignPost(
+                        new AstVarRef{nodep->fileline(), dlyvscp, VAccess::WRITE},
+                        new AstVarRef{nodep->fileline(), oldvscp, VAccess::READ}};
+                    AstNodeAssign* const postp = new AstAssignPost{
                         nodep->fileline(),
-                        new AstVarRef(nodep->fileline(), oldvscp, VAccess::WRITE),
-                        new AstVarRef(nodep->fileline(), dlyvscp, VAccess::READ));
+                        new AstVarRef{nodep->fileline(), oldvscp, VAccess::WRITE},
+                        new AstVarRef{nodep->fileline(), dlyvscp, VAccess::READ}};
                     postp->lhsp()->user2(true);  // Don't detect this assignment
                     oldvscp->user1p(dlyvscp);  // So we can find it later
                     // Make new ACTIVE with identical sensitivity tree

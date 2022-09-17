@@ -364,8 +364,9 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
     const uint32_t nTriggers = senTreeps.size() + extraTriggers.size();
 
     // Create the TRIGGERVEC variable
-    AstBasicDType* const tDtypep = new AstBasicDType(flp, VBasicDTypeKwd::TRIGGERVEC,
-                                                     VSigning::UNSIGNED, nTriggers, nTriggers);
+    AstBasicDType* const tDtypep
+        = new AstBasicDType{flp, VBasicDTypeKwd::TRIGGERVEC, VSigning::UNSIGNED,
+                            static_cast<int>(nTriggers), static_cast<int>(nTriggers)};
     netlistp->typeTablep()->addTypesp(tDtypep);
     AstVarScope* const vscp = scopeTopp->createTemp("__V" + name + "Triggered", tDtypep);
 
@@ -489,7 +490,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
         const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
         add("#ifdef VL_DEBUG\n");
         add("if (VL_UNLIKELY(vlSymsp->_vm_contextp__->debug())) {\n");
-        blockp->addNodep(new AstCCall(flp, dumpp));
+        blockp->addNodep(new AstCCall{flp, dumpp});
         add("}\n");
         add("#endif\n");
     }

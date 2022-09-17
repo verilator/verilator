@@ -778,7 +778,7 @@ public:
         : m_pomGraphp{pomGraphp} {}
     MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
                                  const AstSenTree* domainp) override {
-        return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, domainp);
+        return new MTaskMoveVertex{m_pomGraphp, lvertexp, varVertexp, domainp};
     }
 
 private:
@@ -1264,9 +1264,9 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             newStmtsr = 0;
             scopep->addActivep(newFuncpr);
             // Create top call to it
-            AstCCall* const callp = new AstCCall(nodep->fileline(), newFuncpr);
+            AstCCall* const callp = new AstCCall{nodep->fileline(), newFuncpr};
             // Where will we be adding the call?
-            AstActive* const newActivep = new AstActive(nodep->fileline(), name, domainp);
+            AstActive* const newActivep = new AstActive{nodep->fileline(), name, domainp};
             newActivep->addStmtsp(callp);
             if (!activep) {
                 activep = newActivep;

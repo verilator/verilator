@@ -3928,7 +3928,7 @@ public:
     ASTGEN_MEMBERS_Assign;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssign(this->fileline(), lhsp, rhsp, controlp);
+        return new AstAssign{fileline(), lhsp, rhsp, controlp};
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
 };
@@ -3949,7 +3949,7 @@ public:
     ASTGEN_MEMBERS_AssignDly;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignDly(this->fileline(), lhsp, rhsp, controlp);
+        return new AstAssignDly{fileline(), lhsp, rhsp, controlp};
     }
     bool isGateOptimizable() const override { return false; }
     string verilogKwd() const override { return "<="; }
@@ -4011,7 +4011,7 @@ public:
     void strengthSpecp(AstStrengthSpec* const strengthSpecp) { setOp4p((AstNode*)strengthSpecp); }
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignW(this->fileline(), lhsp, rhsp, controlp);
+        return new AstAssignW{fileline(), lhsp, rhsp, controlp};
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
     AstAlways* convertToAlways();

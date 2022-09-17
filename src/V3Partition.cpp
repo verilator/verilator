@@ -3150,15 +3150,15 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         }
 
         // Unblock the fake "final" mtask when this thread is finished
-        funcp->addStmtsp(new AstCStmt(fl, "vlSelf->__Vm_mtaskstate_final__" + tag
-                                              + ".signalUpstreamDone(even_cycle);\n"));
+        funcp->addStmtsp(new AstCStmt{fl, "vlSelf->__Vm_mtaskstate_final__" + tag
+                                              + ".signalUpstreamDone(even_cycle);\n"});
     }
 
     // Create the fake "final" mtask state variable
     AstBasicDType* const mtaskStateDtypep
         = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
     AstVar* const varp
-        = new AstVar(fl, VVarType::MODULETEMP, "__Vm_mtaskstate_final__" + tag, mtaskStateDtypep);
+        = new AstVar{fl, VVarType::MODULETEMP, "__Vm_mtaskstate_final__" + tag, mtaskStateDtypep};
     varp->valuep(new AstConst(fl, funcps.size()));
     varp->protect(false);  // Do not protect as we still have references in AstText
     modp->addStmtp(varp);
