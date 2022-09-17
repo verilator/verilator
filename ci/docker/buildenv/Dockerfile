@@ -6,7 +6,7 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive \
