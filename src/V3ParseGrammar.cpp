@@ -76,7 +76,6 @@ AstArg* V3ParseGrammar::argWrapList(AstNode* nodep) {
         AstNode* const nextp = nodep->nextp();
         AstNode* const exprp = nodep->unlinkFrBack();
         nodep = nextp;
-        // addNext can handle nulls:
         outp = AstNode::addNext(outp, new AstArg(exprp->fileline(), "", exprp));
     }
     VL_DO_DANGLING(tempp->deleteTree(), tempp);
@@ -204,15 +203,17 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
 
     if (GRAMMARP->m_varDecl == VVarType::SUPPLY0) {
-        nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0));
+        AstNode::addNext<AstNode, AstNode>(
+            nodep, V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0));
     }
     if (GRAMMARP->m_varDecl == VVarType::SUPPLY1) {
-        nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
+        AstNode::addNext<AstNode, AstNode>(
+            nodep, V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
         // Parser needs to know what is a type
         AstNode* const newp = new AstTypedefFwd(fileline, name);
-        nodep->addNext(newp);
+        AstNode::addNext<AstNode, AstNode>(nodep, newp);
         SYMP->reinsert(newp);
     }
     // Don't set dtypep in the ranging;

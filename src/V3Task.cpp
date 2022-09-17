@@ -496,7 +496,7 @@ private:
                     // Put assignment in FRONT of all other statements
                     if (AstNode* const afterp = beginp->nextp()) {
                         afterp->unlinkFrBackWithNext();
-                        assp->addNext(afterp);
+                        AstNode::addNext<AstNode, AstNode>(assp, afterp);
                     }
                     beginp->addNext(assp);
                 }
@@ -819,7 +819,7 @@ private:
                     AstVarRef* const refp
                         = new AstVarRef(portp->fileline(), outvscp,
                                         portp->isWritable() ? VAccess::WRITE : VAccess::READ);
-                    argnodesp = argnodesp->addNextNull(refp);
+                    argnodesp = argnodesp->addNext(refp);
 
                     if (portp->isNonOutput()) {
                         std::string frName
@@ -847,7 +847,7 @@ private:
             outvscp->varp()->protect(false);
             AstVarRef* const refp = new AstVarRef(
                 portp->fileline(), outvscp, portp->isWritable() ? VAccess::WRITE : VAccess::READ);
-            argnodesp = argnodesp->addNextNull(refp);
+            argnodesp = argnodesp->addNext(refp);
         }
 
         {  // Call the user function

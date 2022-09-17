@@ -139,14 +139,14 @@ private:
                     UINFO(6,
                           "  at " << newfuncp->argTypes() << " und " << funcp->argTypes() << endl);
                     funcp->declPrivate(true);
-                    AstNode* argsp = nullptr;
+                    AstVarRef* argsp = nullptr;
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
                         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
-                                AstNode* const newp = new AstVarRef(
+                                AstVarRef* const newp = new AstVarRef(
                                     portp->fileline(), portp,
                                     portp->isWritable() ? VAccess::WRITE : VAccess::READ);
-                                argsp = argsp ? argsp->addNextNull(newp) : newp;
+                                argsp = AstNode::addNext(argsp, newp);
                             }
                         }
                     }

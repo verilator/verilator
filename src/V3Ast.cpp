@@ -272,12 +272,6 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
     return nodep;
 }
 
-template <>
-AstNode* AstNode::addNextNull<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
-    if (!newp) return nodep;
-    return addNext(nodep, newp);
-}
-
 void AstNode::addNextHere(AstNode* newp) {
     // Add to m_nextp on exact node passed, not at the end.
     //  This could be at head, tail, or both (single)

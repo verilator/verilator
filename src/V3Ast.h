@@ -1797,19 +1797,9 @@ public:
                       "'T_NodeNext' must be a subtype of 'T_NodeResult'");
         return static_cast<T_NodeResult*>(addNext<AstNode, AstNode>(nodep, newp));
     }
-    // Returns nodep, adds newp (maybe nullptr) to end of nodep's list
-    template <typename T_NodeResult, typename T_NodeNext>
-    static T_NodeResult* addNextNull(T_NodeResult* nodep, T_NodeNext* newp) {
-        static_assert(std::is_base_of<AstNode, T_NodeResult>::value,
-                      "'T_NodeResult' must be a subtype of AstNode");
-        static_assert(std::is_base_of<T_NodeResult, T_NodeNext>::value,
-                      "'T_NodeNext' must be a subtype of 'T_NodeResult'");
-        return static_cast<T_NodeResult*>(addNextNull<AstNode, AstNode>(nodep, newp));
-    }
     inline AstNode* addNext(AstNode* newp);
-    inline AstNode* addNextNull(AstNode* newp);
-    void addNextHere(AstNode* newp);  // Insert newp at this->nextp
     inline void addPrev(AstNode* newp);
+    void addNextHere(AstNode* newp);  // Insert newp at this->nextp
     void addHereThisAsNext(AstNode* newp);  // Adds at old place of this, this becomes next
     void replaceWith(AstNode* newp);  // Replace current node in tree with new node
     AstNode* unlinkFrBack(VNRelinker* linkerp
@@ -2100,8 +2090,13 @@ public:
 // Forward declarations of specializations defined in V3Ast.cpp
 template <>
 AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp);
-template <>
-AstNode* AstNode::addNextNull<AstNode, AstNode>(AstNode* nodep, AstNode* newp);
+
+// Inline method implementations
+AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
+void AstNode::addPrev(AstNode* newp) {
+    replaceWith(newp);
+    newp->addNext(this);
+}
 
 // Specialisations of privateTypeTest
 #include "V3Ast__gen_impl.h"  // From ./astgen

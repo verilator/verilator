@@ -186,7 +186,7 @@ class VariableOrder final {
             for (; it != varps.cend(); ++it) firstp->addNext(*it);
             if (AstNode* const stmtsp = modp->stmtsp()) {
                 stmtsp->unlinkFrBackWithNext();
-                firstp->addNext(stmtsp);
+                AstNode::addNext<AstNode, AstNode>(firstp, stmtsp);
             }
             modp->addStmtp(firstp);
         }

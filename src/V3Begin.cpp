@@ -177,11 +177,7 @@ private:
             AstNode* addsp = nullptr;
             if (AstNode* const stmtsp = nodep->stmtsp()) {
                 stmtsp->unlinkFrBackWithNext();
-                if (addsp) {
-                    addsp = addsp->addNextNull(stmtsp);
-                } else {
-                    addsp = stmtsp;
-                }
+                addsp = AstNode::addNext(addsp, stmtsp);
             }
             if (addsp) {
                 nodep->replaceWith(addsp);

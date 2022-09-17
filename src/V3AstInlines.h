@@ -25,13 +25,6 @@
 //######################################################################
 // Inline METHODS
 
-AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
-AstNode* AstNode::addNextNull(AstNode* newp) { return addNextNull(this, newp); }
-void AstNode::addPrev(AstNode* newp) {
-    replaceWith(newp);
-    newp->addNext(this);
-}
-
 int AstNode::width() const { return dtypep() ? dtypep()->width() : 0; }
 int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }
 bool AstNode::width1() const {  // V3Const uses to know it can optimize
