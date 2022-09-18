@@ -26,6 +26,8 @@
 #include <functional>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 class EmitCModel final : public EmitCFunc {
     // TYPES
     using CFuncVector = std::vector<const AstCFunc*>;
@@ -34,8 +36,6 @@ class EmitCModel final : public EmitCFunc {
     V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
-    VL_DEBUG_FUNC;
-
     CFuncVector findFuncps(std::function<bool(const AstCFunc*)> cb) {
         CFuncVector funcps;
         for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {

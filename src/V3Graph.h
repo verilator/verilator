@@ -81,7 +81,6 @@ class V3Graph VL_NOT_FINAL {
 private:
     // MEMBERS
     V3List<V3GraphVertex*> m_vertices;  // All vertices
-    static int s_debug;
 
 protected:
     friend class V3GraphVertex;
@@ -92,12 +91,10 @@ protected:
     void dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep);
     void verticesUnlink() { m_vertices.reset(); }
     // ACCESSORS
-    static int debug();
 
 public:
     V3Graph();
     virtual ~V3Graph();
-    static void debug(int level) { s_debug = level; }
     virtual string dotRankDir() const { return "TB"; }  // rankdir for dot plotting
 
     // METHODS

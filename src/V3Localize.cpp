@@ -34,6 +34,8 @@
 
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // LocalizeVisitor
 
@@ -62,8 +64,6 @@ private:
     std::vector<AstVarScope*> m_varScopeps;  // List of variables to consider for localization
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     bool isOptimizable(AstVarScope* nodep) {
         return !nodep->user1() ||  // Not marked as not optimizable, or ...
                (nodep->varp()->varType() == VVarType::BLOCKTEMP
@@ -221,5 +221,5 @@ public:
 void V3Localize::localizeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LocalizeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("localize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("localize", 0, dumpTree() >= 6);
 }

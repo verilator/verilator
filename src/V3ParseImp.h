@@ -161,25 +161,10 @@ class V3ParseImp final {
     VTimescale m_timeLastUnit;  // Last `timescale's unit
 
 public:
+    VL_DEFINE_DEBUG_FUNCTIONS;
     // Note these are an exception to using the filename as the debug type
-    static int debugBison() {
-        static int level = -1;
-        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("bison");
-        return level;
-    }
-    static int debugFlex() {
-        static int level = -1;
-        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("flex");
-        return level;
-    }
-    static int debug() {
-        static int level = -1;
-        if (VL_UNLIKELY(level < 0)) {
-            level = std::max(std::max(debugBison(), debugFlex()),
-                             v3Global.opt.debugSrcLevel("V3ParseImp"));
-        }
-        return level;
-    }
+    VL_DEFINE_DEBUG(Bison);  // Define 'unsigned debugBison()'
+    VL_DEFINE_DEBUG(Flex);  // Define 'unsigned debugFlex()'
 
     // Functions called by lex rules:
     int yylexThis();

@@ -39,6 +39,8 @@
 #include <unordered_set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Support classes
 
@@ -47,8 +49,6 @@ static uint32_t edgeIdNext = 0;
 
 static void selfTestStates();
 static void selfTestString();
-
-VL_DEBUG_FUNC;  // Declare debug()
 }  // namespace V3TSP
 
 // Vertex that tracks a per-vertex key
@@ -396,7 +396,7 @@ public:
         }
     }
     void dumpGraphFilePrefixed(const string& nameComment) const {
-        if (v3Global.opt.dumpTree()) {
+        if (::dump()) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
             const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
             if (logp->fail()) v3fatal("Can't write " << filename);
@@ -406,7 +406,7 @@ public:
 
     void findEulerTour(std::vector<T_Key>* sortedOutp) {
         UASSERT(sortedOutp->empty(), "Output graph must start empty");
-        if (debug() >= 6) dumpDotFilePrefixed("findEulerTour");
+        if (::dumpGraph() >= 6) dumpDotFilePrefixed("findEulerTour");
         std::unordered_set<unsigned /*edgeID*/> markedEdges;
         // Pick a start node
         Vertex* const start_vertexp = castVertexp(verticesBeginp());
@@ -464,12 +464,12 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     // Create the minimum spanning tree
     Graph minGraph;
     graph.makeMinSpanningTree(&minGraph);
-    if (debug() >= 6) minGraph.dumpGraphFilePrefixed("minGraph");
+    if (dumpGraph() >= 6) minGraph.dumpGraphFilePrefixed("minGraph");
 
     const std::vector<const TspStateBase*> oddDegree = minGraph.getOddDegreeKeys();
     Graph matching;
     graph.perfectMatching(oddDegree, &matching);
-    if (debug() >= 6) matching.dumpGraphFilePrefixed("matching");
+    if (dumpGraph() >= 6) matching.dumpGraphFilePrefixed("matching");
 
     // Adds edges to minGraph, the resulting graph will have even number of
     // edge counts at every vertex:
@@ -672,12 +672,12 @@ void V3TSP::selfTestString() {
 
     Graph minGraph;
     graph.makeMinSpanningTree(&minGraph);
-    if (debug() >= 6) minGraph.dumpGraphFilePrefixed("minGraph");
+    if (dumpGraph() >= 6) minGraph.dumpGraphFilePrefixed("minGraph");
 
     const std::vector<string> oddDegree = minGraph.getOddDegreeKeys();
     Graph matching;
     graph.perfectMatching(oddDegree, &matching);
-    if (debug() >= 6) matching.dumpGraphFilePrefixed("matching");
+    if (dumpGraph() >= 6) matching.dumpGraphFilePrefixed("matching");
 
     minGraph.combineGraph(matching);
 

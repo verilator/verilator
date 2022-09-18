@@ -34,6 +34,8 @@
 #include <algorithm>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Establish mtask variable sort order in mtasks mode
 
@@ -205,5 +207,5 @@ void V3VariableOrder::orderAll() {
          modp = VN_AS(modp->nextp(), NodeModule)) {
         VariableOrder::processModule(modp);
     }
-    V3Global::dumpCheckGlobalTree("variableorder", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("variableorder", 0, dumpTree() >= 3);
 }

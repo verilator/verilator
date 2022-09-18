@@ -24,6 +24,8 @@
 
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class EmitCInlines final : EmitCBaseVisitor {

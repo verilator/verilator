@@ -26,6 +26,7 @@
 #include <array>
 #include <bitset>
 #include <cassert>
+#include <cctype>
 #include <deque>
 #include <map>
 #include <set>
@@ -317,7 +318,6 @@ public:
 };
 
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.
-inline int debug() { return V3Error::debugDefault(); }
 inline void v3errorEnd(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 inline void v3errorEndFatal(std::ostringstream& sstr) {
     V3Error::v3errorEnd(sstr);
@@ -412,19 +412,47 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     V3ERROR_NA; \
     return value
 
-/// Declare a convenience debug() routine that may be added to any class in
-/// Verilator so that --debugi-<srcfile> will work to control UINFOs in
-/// that class:
-#define VL_DEBUG_FUNC \
-    static int debug() { \
+// Helper macros for VL_DEBUG_FUNCTIONS
+#define VL_DEFINE_DEBUG(name) \
+    VL_ATTR_UNUSED static int debug##name() { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
-            const int debugSrcLevel = v3Global.opt.debugSrcLevel(__FILE__); \
-            if (!v3Global.opt.available()) return debugSrcLevel; \
-            level = debugSrcLevel; \
+            std::string tag{VL_STRINGIFY(name)}; \
+            tag[0] = std::tolower(tag[0]); \
+            const unsigned debugTag = v3Global.opt.debugLevel(tag); \
+            const unsigned debugSrc = v3Global.opt.debugSrcLevel(__FILE__); \
+            const unsigned debugLevel = debugTag >= debugSrc ? debugTag : debugSrc; \
+            if (!v3Global.opt.available()) return static_cast<int>(debugLevel); \
+            level = static_cast<int>(debugLevel); \
         } \
         return level; \
-    }
+    } \
+    static_assert(true, "")
+
+#define VL_DEFINE_DUMP(name) \
+    VL_ATTR_UNUSED static int dump##name() { \
+        static int level = -1; \
+        if (VL_UNLIKELY(level < 0)) { \
+            std::string tag{VL_STRINGIFY(name)}; \
+            tag[0] = std::tolower(tag[0]); \
+            const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \
+            const unsigned dumpSrc = v3Global.opt.dumpSrcLevel(__FILE__); \
+            const unsigned dumpLevel = dumpTag >= dumpSrc ? dumpTag : dumpSrc; \
+            if (!v3Global.opt.available()) return static_cast<int>(dumpLevel); \
+            level = static_cast<int>(dumpLevel); \
+        } \
+        return level; \
+    } \
+    static_assert(true, "")
+
+// Define debug*() and dump*() routines. This needs to be added to every compilation unit so that
+// --debugi-<tag/srcfile> and --dumpi-<tag/srcfile> can be used to control debug prints and dumping
+#define VL_DEFINE_DEBUG_FUNCTIONS \
+    VL_DEFINE_DEBUG(); /* Define 'unsigned debug()' */ \
+    VL_DEFINE_DUMP(); /* Define 'unsigned dump()' */ \
+    VL_DEFINE_DUMP(Graph); /* Define 'unsigned dumpGraph()' */ \
+    VL_DEFINE_DUMP(Tree); /* Define 'unsigned dumpTree()' */ \
+    static_assert(true, "")
 
 //----------------------------------------------------------------------
 

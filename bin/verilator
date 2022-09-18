@@ -309,10 +309,13 @@ detailed descriptions of these arguments.
      +define+<var>=<value>      Set preprocessor define
     --dpi-hdr-only              Only produce the DPI header file
     --dump-defines              Show preprocessor defines with -E
-    --dump-tree                 Enable dumping .tree files
+    --dump-graph                Enable dumping V3Graphs to .dot
+    --dump-tree                 Enable dumping Ast .tree files
     --dump-tree-addrids         Use short identifiers instead of addresses
-    --dump-treei <level>        Enable dumping .tree files at a level
-    --dump-treei-<srcfile> <level>  Enable dumping .tree file at a source file at a level
+    --dump-<srcfile>            Enable dumping everything in source file
+    --dumpi-graph <level>       Enable dumping V3Graphs to .dot files at level
+    --dumpi-tree <level>        Enable dumping Ast .tree files at level
+    --dumpi-<srcfile> <level>   Enable dumping everything in source file at level
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable

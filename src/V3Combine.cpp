@@ -33,6 +33,8 @@
 #include <list>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 class CombineVisitor final : VNVisitor {
     // NODE STATE
     // AstNodeModule::user1()   List of AstCFuncs in this module (via m_cfuncs)
@@ -57,7 +59,6 @@ class CombineVisitor final : VNVisitor {
     VDouble0 m_cfuncsCombined;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void removeEmptyFunctions(std::list<AstCFunc*>& funcps) {
         for (funcit_t it = funcps.begin(), nit; it != funcps.end(); it = nit) {
@@ -235,5 +236,5 @@ public:
 void V3Combine::combineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     CombineVisitor::apply(nodep);
-    V3Global::dumpCheckGlobalTree("combine", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("combine", 0, dumpTree() >= 3);
 }

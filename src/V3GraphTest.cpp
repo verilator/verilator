@@ -20,6 +20,8 @@
 #include "V3Global.h"
 #include "V3Graph.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 //######################################################################
 // Test class
@@ -34,14 +36,14 @@ protected:
     virtual string name() = 0;  // Name of the test
 
     // Utilities
-    void dump() {
-        if (debug() >= 9) m_graph.dumpDotFilePrefixed("v3graphtest_" + name());
+    void dumpSelf() {
+        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("v3graphtest_" + name());
     }
 
 public:
     V3GraphTest() = default;
     virtual ~V3GraphTest() = default;
-    VL_DEBUG_FUNC;  // Declare debug()
+
     void run() { runTest(); }
 };
 
@@ -101,7 +103,7 @@ public:
         new V3GraphEdge(gp, g3, q, 2, true);
 
         gp->stronglyConnected(&V3GraphEdge::followAlwaysTrue);
-        dump();
+        dumpSelf();
 
         UASSERT(i->color() != a->color() && a->color() != g2->color() && g2->color() != q->color(),
                 "SelfTest: Separate colors not assigned");
@@ -136,7 +138,7 @@ public:
 
         gp->acyclic(&V3GraphEdge::followAlwaysTrue);
         gp->order();
-        dump();
+        dumpSelf();
     }
 };
 
@@ -253,7 +255,7 @@ public:
         gp->acyclic(&V3GraphEdge::followAlwaysTrue);
         gp->order();
 
-        dump();
+        dumpSelf();
     }
 };
 
@@ -272,11 +274,11 @@ public:
     void runTest() override {
         V3Graph* const gp = &m_graph;
         dotImport();
-        dump();
+        dumpSelf();
         gp->acyclic(&V3GraphEdge::followAlwaysTrue);
-        dump();
+        dumpSelf();
         gp->rank(&V3GraphEdge::followAlwaysTrue);
-        dump();
+        dumpSelf();
     }
 };
 

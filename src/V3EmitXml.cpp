@@ -26,6 +26,8 @@
 #include <map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Emit statements and math operators
 
@@ -39,7 +41,6 @@ class EmitXmlFileVisitor final : public VNVisitor {
     uint64_t m_id = 0;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // Outfile methods
     V3OutFile* ofp() const { return m_ofp; }
@@ -330,7 +331,6 @@ private:
     std::deque<FileLine*> m_nodeModules;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     void visit(AstNetlist* nodep) override {
@@ -378,7 +378,6 @@ private:
     bool m_hasChildren = false;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     void visit(AstConstPool*) override {}

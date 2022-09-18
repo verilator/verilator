@@ -39,18 +39,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 class GateDedupeVarVisitor;
 
 using GateVarRefList = std::list<AstNodeVarRef*>;
 
 constexpr int GATE_DEDUP_MAX_DEPTH = 20;
-
-//######################################################################
-
-class GateBaseVisitor VL_NOT_FINAL : public VNVisitor {
-public:
-    VL_DEBUG_FUNC;  // Declare debug()
-};
 
 //######################################################################
 
@@ -64,7 +59,6 @@ public:
     virtual ~GateGraphBaseVisitor() = default;
     virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu = VNUser{0}) = 0;
     virtual VNUser visit(GateVarVertex* vertexp, VNUser vu = VNUser{0}) = 0;
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
@@ -194,7 +188,7 @@ public:
 //######################################################################
 // Is this a simple math expression with a single input and single output?
 
-class GateOkVisitor final : public GateBaseVisitor {
+class GateOkVisitor final : public VNVisitor {
 private:
     // RETURN STATE
     bool m_isSimple = true;  // Set false when we know it isn't simple
@@ -309,7 +303,7 @@ static void eliminate(AstNode* logicp,
 // ######################################################################
 //  Gate class functions
 
-class GateVisitor final : public GateBaseVisitor {
+class GateVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
@@ -413,13 +407,12 @@ private:
     // VISITORS
     void visit(AstNetlist* nodep) override {
         iterateChildren(nodep);
-        // if (debug() > 6) m_graph.dump();
-        if (debug() > 6) m_graph.dumpDotFilePrefixed("gate_pre");
+        if (dumpGraph() >= 3) m_graph.dumpDotFilePrefixed("gate_pre");
         warnSignals();  // Before loss of sync/async pointers
         // Decompose clock vectors -- need to do this before removing redundant edges
         decomposeClkVectors();
         m_graph.removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
-        m_graph.dumpDotFilePrefixed("gate_simp");
+        if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("gate_simp");
         // Find gate interconnect and optimize
         m_graph.userClearVertices();  // vertex->user(): bool. Indicates we've set it as consumed
         // Get rid of buffers first,
@@ -431,15 +424,15 @@ private:
         // Remove redundant logic
         if (v3Global.opt.fDedupe()) {
             dedupe();
-            if (debug() >= 6) m_graph.dumpDotFilePrefixed("gate_dedup");
+            if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("gate_dedup");
         }
         if (v3Global.opt.fAssemble()) {
             mergeAssigns();
-            if (debug() >= 6) m_graph.dumpDotFilePrefixed("gate_assm");
+            if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("gate_assm");
         }
         // Consumption warnings
         consumedMark();
-        m_graph.dumpDotFilePrefixed("gate_opt");
+        if (dumpGraph() >= 3) m_graph.dumpDotFilePrefixed("gate_opt");
         // Rewrite assignments
         consumedMove();
     }
@@ -780,8 +773,6 @@ private:
     V3DupFinder m_dupFinder;  // Duplicate finder for rhs of assigns
     std::unordered_set<AstNode*> m_nodeDeleteds;  // Any node in this hash was deleted
 
-    VL_DEBUG_FUNC;  // Declare debug()
-
     bool same(AstNode* node1p, AstNode* node2p) {
         // Regarding the complexity of this funcition 'same':
         // Applying this comparison function to a a set of n trees pairwise is O(n^2) in the
@@ -886,7 +877,7 @@ public:
 //######################################################################
 // Have we seen the rhs of this assign before?
 
-class GateDedupeVarVisitor final : public GateBaseVisitor {
+class GateDedupeVarVisitor final : public VNVisitor {
     // Given a node, it is visited to try to find the AstNodeAssign under
     // it that can used for dedupe.
     // Right now, only the following node trees are supported for dedupe.
@@ -1070,7 +1061,6 @@ private:
                         const GateLogicVertex* const consumeVertexp
                             = static_cast<GateLogicVertex*>(outedgep->top());
                         AstNode* const consumerp = consumeVertexp->nodep();
-                        // if (debug() >= 9) m_graphp->dumpDotFilePrefixed("gate_preelim");
                         UINFO(9,
                               "elim src vtx" << lvertexp << " node " << lvertexp->nodep() << endl);
                         UINFO(9,
@@ -1286,7 +1276,7 @@ void GateVisitor::mergeAssigns() {
 //######################################################################
 // Find a var's offset in a concatenation
 
-class GateConcatVisitor final : public GateBaseVisitor {
+class GateConcatVisitor final : public VNVisitor {
 private:
     // STATE
     const AstVarScope* m_vscp = nullptr;  // Varscope we're trying to find
@@ -1482,5 +1472,5 @@ void GateVisitor::decomposeClkVectors() {
 void V3Gate::gateAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { const GateVisitor visitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("gate", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("gate", 0, dumpTree() >= 3);
 }

@@ -235,7 +235,7 @@ sub parameter {
     elsif ($param =~ /\.pl/) {
         push @opt_tests, $param;
     }
-    elsif ($param =~ /^-?(-debugi|-dump-treei)/) {
+    elsif ($param =~ /^-?(-debugi|-dumpi)/) {
         push @Opt_Driver_Verilator_Flags, $param;
         $_Parameter_Next_Level = $param;
     }

@@ -34,13 +34,7 @@
 #include <algorithm>
 #include <vector>
 
-//######################################################################
-// Common debugging baseclass
-
-class SubstBaseVisitor VL_NOT_FINAL : public VNVisitor {
-public:
-    VL_DEBUG_FUNC;  // Declare debug()
-};
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // Class for each word of a multi-word variable
@@ -72,7 +66,6 @@ class SubstVarEntry final {
     bool m_wordUse = false;  // True if any individual word usage
     SubstVarWord m_whole;  // Data for whole vector used at once
     std::vector<SubstVarWord> m_words;  // Data for every word, if multi word variable
-    static int debug() { return SubstBaseVisitor::debug(); }
 
 public:
     // CONSTRUCTORS
@@ -175,7 +168,7 @@ public:
 // See if any variables have changed value since we determined subst value,
 // as a visitor of each AstNode
 
-class SubstUseVisitor final : public SubstBaseVisitor {
+class SubstUseVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // See SubstVisitor
@@ -222,7 +215,7 @@ public:
 //######################################################################
 // Subst state, as a visitor of each AstNode
 
-class SubstVisitor final : public SubstBaseVisitor {
+class SubstVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Passed to SubstUseVisitor
@@ -390,5 +383,5 @@ public:
 void V3Subst::substituteAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SubstVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("subst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("subst", 0, dumpTree() >= 3);
 }

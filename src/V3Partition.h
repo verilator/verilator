@@ -67,7 +67,6 @@ public:
 private:
     static void setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp);
 
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(V3Partition);
 };
 

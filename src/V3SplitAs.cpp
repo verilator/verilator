@@ -32,12 +32,13 @@
 
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class SplitAsBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
@@ -196,5 +197,5 @@ public:
 void V3SplitAs::splitAsAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SplitAsVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("splitas", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("splitas", 0, dumpTree() >= 3);
 }

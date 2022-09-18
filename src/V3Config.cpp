@@ -27,6 +27,8 @@
 #include <string>
 #include <unordered_map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Resolve wildcards in files, modules, ftasks or variables
 

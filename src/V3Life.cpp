@@ -36,6 +36,8 @@
 #include <map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Structure for global state
 
@@ -128,8 +130,6 @@ class LifeBlock final {
     LifeMap m_map;  // Current active lifetime map for current scope
     LifeBlock* const m_aboveLifep;  // Upper life, or nullptr
     LifeState* const m_statep;  // Current global state
-
-    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     LifeBlock(LifeBlock* aboveLifep, LifeState* statep)
@@ -284,7 +284,6 @@ private:
     LifeBlock* m_lifep;  // Current active lifetime map for current scope
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
     void setNoopt() {
         m_noopt = true;
         m_lifep->clear();
@@ -495,5 +494,5 @@ void V3Life::lifeAll(AstNetlist* nodep) {
         LifeState state;
         LifeTopVisitor{nodep, &state};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("life", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("life", 0, dumpTree() >= 3);
 }

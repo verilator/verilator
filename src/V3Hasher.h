@@ -40,7 +40,6 @@ public:
     ~V3Hasher() = default;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // Compute hash of node. This method caches the hash in the node's user4().
     V3Hash operator()(AstNode* nodep) const;

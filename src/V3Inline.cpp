@@ -40,6 +40,8 @@
 #include <unordered_set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 // CONFIG
 static const int INLINE_MODS_SMALLER = 100;  // If a mod is < this # nodes, can always inline it
 
@@ -95,7 +97,6 @@ private:
     std::unordered_map<AstNodeModule*, LocalInstanceMap> m_instances;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
     void cantInline(const char* reason, bool hard) {
         if (hard) {
             if (m_modp->user2() != CIL_NOTHARD) {
@@ -255,9 +256,6 @@ private:
     std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
     AstNodeModule* const m_modp;  // Current module
     const AstCell* const m_cellp;  // Cell being cloned
-
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     void visit(AstCellInline* nodep) override {
@@ -478,8 +476,6 @@ private:
     VDouble0 m_statCells;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     void inlineCell(AstCell* nodep) {
         UINFO(5, " Inline CELL   " << nodep << endl);
 
@@ -635,9 +631,6 @@ private:
 
     string m_scope;  // Scope name
 
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // VISITORS
     void visit(AstNetlist* nodep) override { iterateChildren(nodep->topModulep()); }
     void visit(AstCell* nodep) override {
@@ -734,5 +727,5 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     }
 
     { InlineIntfRefVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("inline", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("inline", 0, dumpTree() >= 3);
 }

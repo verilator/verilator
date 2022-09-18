@@ -28,6 +28,8 @@
 #include <map>
 #include <memory>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // V3DupFinder class functions
 
@@ -98,7 +100,5 @@ void V3DupFinder::dumpFile(const string& filename, bool tree) {
 }
 
 void V3DupFinder::dumpFilePrefixed(const string& nameComment, bool tree) {
-    if (v3Global.opt.dumpTree()) {  //
-        dumpFile(v3Global.debugFilename(nameComment) + ".hash", tree);
-    }
+    if (dump()) dumpFile(v3Global.debugFilename(nameComment) + ".hash", tree);
 }

@@ -27,6 +27,8 @@
 #include <algorithm>
 #include <cinttypes>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Const pool emitter
 
@@ -38,7 +40,6 @@ class EmitCConstPool final : public EmitCConstInit {
     VDouble0 m_constsEmitted;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     V3OutCFile* newOutCFile() const {
         const string fileName = v3Global.opt.makeDir() + "/" + topClassName() + "__ConstPool_"

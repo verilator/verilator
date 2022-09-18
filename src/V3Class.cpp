@@ -28,6 +28,8 @@
 #include "V3Ast.h"
 #include "V3Global.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class ClassVisitor final : public VNVisitor {
@@ -47,7 +49,6 @@ private:
     std::vector<std::pair<AstNode*, AstNodeModule*>> m_toPackageMoves;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void visit(AstClass* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -207,5 +208,5 @@ public:
 void V3Class::classAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ClassVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("class", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("class", 0, dumpTree() >= 3);
 }

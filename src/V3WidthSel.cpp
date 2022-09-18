@@ -34,6 +34,8 @@
 #include "V3Global.h"
 #include "V3Width.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Width state, as a visitor of each AstNode
 
@@ -47,7 +49,6 @@ private:
 #define iterateChildren DO_NOT_iterateChildern_IN_V3WidthSel
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void checkConstantOrReplace(AstNode* nodep, const string& message) {
         // See also V3Width::checkConstantOrReplace

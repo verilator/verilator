@@ -103,6 +103,8 @@
 
 #include <ctime>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 V3Global v3Global;
 
 static void reportStatsIfEnabled() {
@@ -607,7 +609,7 @@ static void verilate(const string& argString) {
     }
 
     // Final steps
-    V3Global::dumpCheckGlobalTree("final", 990, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("final", 990, dumpTree() >= 3);
 
     V3Error::abortIfErrors();
 

@@ -33,6 +33,8 @@
 #include <stack>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //======================================================================
 // Build in LEX script
 
@@ -111,8 +113,6 @@ public:
     // TYPES
     using DefinesMap = std::map<const std::string, VDefine>;
     using StrList = VInFilter::StrList;
-
-    // debug() -> see V3PreShellImp::debug; use --debugi-V3PreShell
 
     // Defines list
     DefinesMap m_defines;  ///< Map of defines
@@ -259,10 +259,7 @@ public:
     string removeDefines(const string& text) override;  // Remove defines in a text string
 
     // CONSTRUCTORS
-    V3PreProcImp() {
-        m_debug = 0;
-        m_states.push(ps_TOP);
-    }
+    V3PreProcImp() { m_states.push(ps_TOP); }
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
         m_preprocp = this;  // Silly, but to make code more similar to Verilog-Perl
@@ -273,7 +270,6 @@ public:
         m_lexp->m_keepComments = keepComments();
         m_lexp->m_keepWhitespace = keepWhitespace();
         m_lexp->m_pedantic = pedantic();
-        debug(debug());  // Set lexer debug via V3PreProc::debug() method
     }
     ~V3PreProcImp() override {
         if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = nullptr);
@@ -489,12 +485,6 @@ void V3PreProcImp::comment(const string& text) {
 
 //*************************************************************************
 // VPreProc Methods.
-
-void V3PreProc::debug(int level) {
-    m_debug = level;
-    V3PreProcImp* idatap = static_cast<V3PreProcImp*>(this);
-    if (idatap->m_lexp) idatap->m_lexp->debug(debug() >= 5 ? debug() : 0);
-}
 
 FileLine* V3PreProc::fileline() {
     const V3PreProcImp* idatap = static_cast<V3PreProcImp*>(this);
@@ -777,6 +767,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
 void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filename) {
     // Open a new file, possibly overriding the current one which is active.
     if (m_incError) return;
+    m_lexp->setYYDebug(debug() >= 5);
     V3File::addSrcDepend(filename);
 
     // Read a list<string> with the whole file.

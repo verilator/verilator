@@ -26,6 +26,8 @@
 #include <map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Emit statements and math operators
 
@@ -36,7 +38,6 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     AstSenTree* m_sensesp;  // Domain for printing one a ALWAYS under a ACTIVE
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     virtual void puts(const string& str) = 0;
     virtual void putbs(const string& str) = 0;

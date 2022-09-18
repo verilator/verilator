@@ -32,6 +32,8 @@
 #include <set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Link state, as a visitor of each AstNode
 
@@ -62,8 +64,6 @@ private:
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     void cleanFileline(AstNode* nodep) {
         if (!nodep->user2SetOnce()) {  // Process once
             // We make all filelines unique per AstNode.  This allows us to
@@ -619,5 +619,5 @@ public:
 void V3LinkParse::linkParse(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     { LinkParseVisitor{rootp}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkparse", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("linkparse", 0, dumpTree() >= 6);
 }

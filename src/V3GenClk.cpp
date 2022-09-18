@@ -27,18 +27,12 @@
 #include "V3Ast.h"
 #include "V3Global.h"
 
-//######################################################################
-// GenClk state, as a visitor of each AstNode
-
-class GenClkBaseVisitor VL_NOT_FINAL : public VNVisitor {
-protected:
-    VL_DEBUG_FUNC;  // Declare debug()
-};
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // GenClk Read
 
-class GenClkRenameVisitor final : public GenClkBaseVisitor {
+class GenClkRenameVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on top scope
@@ -126,7 +120,7 @@ public:
 //######################################################################
 // GenClk Read
 
-class GenClkReadVisitor final : public GenClkBaseVisitor {
+class GenClkReadVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared on top scope
@@ -221,5 +215,5 @@ public:
 void V3GenClk::genClkAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { GenClkReadVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("genclk", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("genclk", 0, dumpTree() >= 3);
 }

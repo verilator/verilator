@@ -67,7 +67,6 @@ public:
         : m_modp{modp}
         , m_gparams{gparams} {}
     ~V3HierBlock();
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void addParent(V3HierBlock* parentp) { m_parents.insert(parentp); }
     void addChild(V3HierBlock* childp) { m_children.insert(childp); }
@@ -107,7 +106,6 @@ public:
     using iterator = HierMap::iterator;
     using const_iterator = HierMap::const_iterator;
     using HierVector = std::vector<const V3HierBlock*>;
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams);
     void registerUsage(const AstNodeModule* parentp, const AstNodeModule* childp);

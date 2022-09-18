@@ -115,7 +115,7 @@ private:
     std::vector<AstNode*> m_reclaimValuesp;  // List of allocated string numbers
 
     // Note level 8&9 include debugging each simulation value
-    VL_DEBUG_FUNC;  // Declare debug()
+    VL_DEFINE_DEBUG_FUNCTIONS;
 
     // Potentially very slow, intended for debugging
     string prettyNumber(const V3Number* nump, AstNodeDType* dtypep) {

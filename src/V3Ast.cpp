@@ -28,6 +28,8 @@
 #include <iomanip>
 #include <memory>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //======================================================================
 // Statics
 
@@ -1120,7 +1122,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
             *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
-            if (editCountGbl() == editCountLast() && !(v3Global.opt.dumpTree() >= 9)) {
+            if (editCountGbl() == editCountLast() && ::dumpTree() < 9) {
                 *logsp << '\n';
                 *logsp << "No changes since last dump!\n";
             } else {
@@ -1130,7 +1132,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
         }
     }
     if (doDump && v3Global.opt.debugEmitV()) V3EmitV::debugEmitV(filename + ".v");
-    if (doCheck && (v3Global.opt.debugCheck() || v3Global.opt.dumpTree())) {
+    if (doCheck && (v3Global.opt.debugCheck() || ::dumpTree())) {
         // Error check
         checkTree();
         // Broken isn't part of check tree because it can munge iterp's

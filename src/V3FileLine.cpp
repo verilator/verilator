@@ -33,6 +33,8 @@
 #include <iomanip>
 #include <unordered_set>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // FileLineSingleton class functions
 
@@ -82,12 +84,6 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
 
 //######################################################################
 // VFileContents class functions
-
-int VFileContent::debug() {
-    static int level = -1;
-    if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-    return level;
-}
 
 void VFileContent::pushText(const string& text) {
     if (m_lines.size() == 0) {

@@ -41,6 +41,8 @@
 #include <unordered_set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 class LogicMTask;
 class MTaskEdge;
 class MergeCandidate;
@@ -390,7 +392,6 @@ public:
     static void dumpCpFilePrefixed(const V3Graph* graphp, const string& nameComment);
 
 private:
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(LogicMTask);
 };
 
@@ -826,7 +827,6 @@ public:
     }
 
 private:
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(PartParallelismEst);
 };
 
@@ -1070,7 +1070,6 @@ public:
     }
 
 private:
-    VL_DEBUG_FUNC;
     VL_UNCOPYABLE(PartPropagateCp);
 };
 
@@ -1834,7 +1833,6 @@ public:
     }
 
 private:
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(PartContraction);
 };
 
@@ -1848,8 +1846,6 @@ private:
     bool m_hasDpiHazard = false;  // Found a DPI import call.
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     // METHODS
-    VL_DEBUG_FUNC;
-
     void visit(AstCFunc* nodep) override {
         if (!m_tracingCall) return;
         m_tracingCall = false;
@@ -2203,7 +2199,6 @@ public:
 
 private:
     VL_UNCOPYABLE(PartFixDataHazards);
-    VL_DEBUG_FUNC;
 };
 
 //######################################################################
@@ -2525,7 +2520,7 @@ public:
             }
         }
 
-        if (debug() >= 4) schedule.dumpDotFilePrefixedAlways(mtaskGraph, "schedule");
+        if (dumpGraph() >= 4) schedule.dumpDotFilePrefixedAlways(mtaskGraph, "schedule");
 
         return schedule;
     }
@@ -2583,7 +2578,6 @@ public:
     }
 
 private:
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(PartPackMTasks);
 };
 
@@ -2591,7 +2585,7 @@ private:
 // V3Partition implementation
 
 void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stage) {
-    if (!debug()) return;
+    if (!debug() && !dump() && !dumpGraph()) return;
 
     UINFO(4, "\n");
     UINFO(4, " Stats for " << stage << endl);
@@ -2628,7 +2622,7 @@ void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stag
     if (mtaskCount < 1000) {
         string filePrefix("ordermv_");
         filePrefix += stage;
-        if (debug() >= 4) graphp->dumpDotFilePrefixedAlways(filePrefix);
+        if (dumpGraph() >= 4) graphp->dumpDotFilePrefixedAlways(filePrefix);
     }
 
     // Look only at the cost of each mtask, neglect communication cost.
@@ -2729,9 +2723,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     // For debug: print out the longest critical path.  This allows us to
     // verify that the costs look reasonable, that we aren't combining
     // nodes that should probably be split, etc.
-    if (v3Global.opt.dumpTreeLevel(__FILE__) >= 3) {
-        LogicMTask::dumpCpFilePrefixed(mtasksp, "cp");
-    }
+    if (dump() >= 3) LogicMTask::dumpCpFilePrefixed(mtasksp, "cp");
 
     // Merge nodes that could present data hazards; see comment within.
     {
