@@ -320,7 +320,7 @@ private:
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
     int         m_compLimitParens = 240;  // compiler selection; number of nested parens
 
-    string      m_bin;          // main switch: --bin {binary}
+    string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
@@ -419,7 +419,6 @@ public:
     bool makePhony() const { return m_makePhony; }
     bool preprocNoLine() const { return m_preprocNoLine; }
     bool underlineZero() const { return m_underlineZero; }
-    string bin() const { return m_bin; }
     string flags() const { return m_flags; }
     bool systemC() const { return m_systemC; }
     bool savable() const { return m_savable; }
@@ -431,6 +430,8 @@ public:
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
     bool build() const { return m_build; }
+    string buildDepBin() const { return m_buildDepBin; }
+    void buildDepBin(const string& flag) { m_buildDepBin = flag; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
     bool context() const { return m_context; }
@@ -631,7 +632,6 @@ public:
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
     string allArgsStringForHierBlock(bool forTop) const;
-    void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv);
     void parseOptsFile(FileLine* fl, const string& filename, bool rel);

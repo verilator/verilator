@@ -1005,8 +1005,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_bboxUnsup = flag;
         FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
     });
-    DECL_OPTION("-bin", Set, &m_bin);
     DECL_OPTION("-build", Set, &m_build);
+    DECL_OPTION("-build-dep-bin", Set, &m_buildDepBin);
     DECL_OPTION("-build-jobs", CbVal, [this, fl](const char* valp) {
         int val = std::atoi(valp);
         if (val < 0) {

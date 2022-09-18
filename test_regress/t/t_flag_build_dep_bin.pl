@@ -10,13 +10,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-top_filename("t/t_flag_werror.v");
-
-lint(
-    fails => 1,
-    verilator_flags => [qw(--build-jobs -1 --build)],
-    expect_filename => $Self->{golden_filename},
+compile(
+    v_flags2 => ['--build-dep-bin', 'path_to_exe'],
     );
+
+file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}__ver.d", qr/path_to_exe/);
 
 ok(1);
 1;

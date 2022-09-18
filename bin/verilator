@@ -282,8 +282,8 @@ detailed descriptions of these arguments.
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
-    --bin <filename>            Override Verilator binary
     --build                     Build model executable/library after Verilation
+    --build-dep-bin <filename>  Override build dependency Verilator binary
     --build-jobs <jobs>         Parallelism for --build
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
