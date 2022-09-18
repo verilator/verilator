@@ -90,8 +90,6 @@ class EmitCLazyDecls final : public VNVisitor {
 
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
-    VL_DEBUG_FUNC;
-
 public:
     explicit EmitCLazyDecls(EmitCBaseVisitor& emitter)
         : m_emitter(emitter) {}
@@ -154,7 +152,6 @@ protected:
 
 public:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // ACCESSORS
     void splitSizeInc(int count) { m_splitSize += count; }

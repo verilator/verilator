@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Class for every variable we may process
 
@@ -46,8 +48,6 @@ class UndrivenVarEntry final {
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
-
-    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     // CONSTRUCTORS
@@ -257,7 +257,6 @@ private:
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
         if (!(which_user == 1 ? nodep->user1p() : nodep->user2p())) {

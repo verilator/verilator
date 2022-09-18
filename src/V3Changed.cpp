@@ -36,6 +36,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class ChangedState final {
@@ -252,5 +254,5 @@ void V3Changed::changedAll(AstNetlist* nodep) {
         }
     });
 
-    V3Global::dumpCheckGlobalTree("changed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("changed", 0, dumpTree() >= 3);
 }

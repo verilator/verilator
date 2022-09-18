@@ -33,6 +33,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Clean state, as a visitor of each AstNode
 
@@ -54,7 +56,6 @@ private:
     const AstNodeModule* m_modp = nullptr;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // Width resetting
     int cppWidth(AstNode* nodep) {
@@ -317,5 +318,5 @@ public:
 void V3Clean::cleanAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CleanVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("clean", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("clean", 0, dumpTree() >= 3);
 }

@@ -35,6 +35,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class BeginState final {
@@ -70,7 +72,6 @@ private:
     int m_ifDepth = 0;  // Current if depth
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     string dot(const string& a, const string& b) {
         if (a == "") return b;
@@ -322,5 +323,5 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
         { BeginVisitor{nodep, &state}; }
         if (state.anyFuncInBegin()) { BeginRelinkVisitor{nodep, &state}; }
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("begin", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("begin", 0, dumpTree() >= 3);
 }

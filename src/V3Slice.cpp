@@ -43,6 +43,8 @@
 #include "V3Ast.h"
 #include "V3Global.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //*************************************************************************
 
 class SliceVisitor final : public VNVisitor {
@@ -58,8 +60,6 @@ class SliceVisitor final : public VNVisitor {
     bool m_assignError = false;  // True if the current assign already has an error
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     AstNode* cloneAndSel(AstNode* nodep, int elements, int offset) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
@@ -240,5 +240,5 @@ public:
 void V3Slice::sliceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SliceVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("slice", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("slice", 0, dumpTree() >= 3);
 }

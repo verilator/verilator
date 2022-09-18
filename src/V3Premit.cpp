@@ -36,6 +36,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 constexpr int STATIC_CONST_MIN_WIDTH = 256;  // Minimum size to extract to static constant
 
 //######################################################################
@@ -62,8 +64,6 @@ private:
     VDouble0 m_extractedToConstPool;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     bool assignNoTemp(AstNodeAssign* nodep) {
         return (VN_IS(nodep->lhsp(), VarRef) && !AstVar::scVarRecurse(nodep->lhsp())
                 && VN_IS(nodep->rhsp(), Const));
@@ -394,5 +394,5 @@ public:
 void V3Premit::premitAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { PremitVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("premit", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("premit", 0, dumpTree() >= 3);
 }

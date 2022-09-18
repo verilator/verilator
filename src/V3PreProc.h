@@ -39,8 +39,7 @@ class V3PreProc VL_NOT_FINAL {
     // After creating, call open(), then getline() in a loop.  The class will to the rest...
 
 protected:
-    // STATE
-    int m_debug;  // Debugging
+    VL_DEFINE_DEBUG_FUNCTIONS;
 
 public:
     // CONSTANTS
@@ -60,9 +59,6 @@ public:
     virtual string getline() = 0;  // Return next line/lines. (Null if done.)
     virtual bool isEof() const = 0;  // Return true on EOF.
     virtual void insertUnreadback(const string& text) = 0;
-
-    int debug() const { return m_debug; }
-    void debug(int level);
 
     FileLine* fileline();  ///< File/Line number for last getline call
 
@@ -99,7 +95,7 @@ public:
 
 protected:
     // CONSTRUCTORS
-    V3PreProc() { m_debug = 0; }
+    V3PreProc() {}
     void configure(FileLine* fl);
 
 public:

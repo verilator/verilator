@@ -25,6 +25,8 @@
 #include "V3Ast.h"
 #include "V3Global.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Assert class functions
 
@@ -45,7 +47,6 @@ private:
     AstNode* m_disablep = nullptr;  // Last disable
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     AstSenTree* newSenTree(AstNode* nodep) {
         // Create sentree based on clocked or default clock
@@ -206,5 +207,5 @@ public:
 void V3AssertPre::assertPreAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { AssertPreVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("assertpre", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("assertpre", 0, dumpTree() >= 3);
 }

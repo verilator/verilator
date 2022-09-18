@@ -40,6 +40,8 @@
 #include <algorithm>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class LinkJumpVisitor final : public VNVisitor {
@@ -54,8 +56,6 @@ private:
     std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
         // Put label under given node, and if WHILE optionally at end of iteration
         UINFO(4, "Create label for " << nodep << endl);
@@ -303,5 +303,5 @@ public:
 void V3LinkJump::linkJump(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LinkJumpVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkjump", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("linkjump", 0, dumpTree() >= 3);
 }

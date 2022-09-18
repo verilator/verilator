@@ -106,12 +106,13 @@
 #include <algorithm>
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class TristateBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
@@ -176,7 +177,6 @@ public:
 
 private:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     TristateVertex* makeVertex(AstNode* nodep) {
         TristateVertex* vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
@@ -264,7 +264,6 @@ public:
         AstNode::user5ClearTree();  // Wipe all node user5p's that point to vertexes
     }
     void graphWalk(AstNodeModule* nodep) {
-        // if (debug() >= 9) m_graph.dumpDotFilePrefixed("tri_pre__" + nodep->name());
         UINFO(9, " Walking " << nodep << endl);
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             graphWalkRecurseFwd(static_cast<TristateVertex*>(itp), 0);
@@ -272,7 +271,7 @@ public:
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             graphWalkRecurseBack(static_cast<TristateVertex*>(itp), 0);
         }
-        if (debug() >= 9) m_graph.dumpDotFilePrefixed("tri_pos__" + nodep->name());
+        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("tri_pos__" + nodep->name());
     }
     void associate(AstNode* fromp, AstNode* top) {
         new V3GraphEdge(&m_graph, makeVertex(fromp), makeVertex(top), 1);
@@ -1643,5 +1642,5 @@ public:
 void V3Tristate::tristateAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TristateVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("tristate", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("tristate", 0, dumpTree() >= 3);
 }

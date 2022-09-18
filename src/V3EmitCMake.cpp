@@ -26,13 +26,14 @@
 
 #include <memory>
 
-//######################################################################
-// Emit statements
+VL_DEFINE_DEBUG_FUNCTIONS;
+
+// ######################################################################
+//  Emit statements
 
 class CMakeEmitter final {
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // STATIC FUNCTIONS
 

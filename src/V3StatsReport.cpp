@@ -27,6 +27,8 @@
 #include <map>
 #include <unordered_map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Stats dumping
 

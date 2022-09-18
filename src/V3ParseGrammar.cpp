@@ -18,6 +18,8 @@
 
 #include "V3Ast.h"  // This must be before V3ParseBison.cpp, as we don't want #defines to conflict
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //======================================================================
 // The guts come from bison output
 

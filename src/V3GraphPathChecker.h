@@ -56,7 +56,6 @@ private:
     void initHalfCriticalPaths(GraphWay way, bool checkOnly);
     void incGeneration() { ++m_generation; }
 
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(GraphPathChecker);
 };
 

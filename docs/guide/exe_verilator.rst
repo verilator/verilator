@@ -266,8 +266,8 @@ Summary:
      generally is a less-optimized binary with symbols present (so GDB can be used on it).
    * Enable debugging messages (equivalent to :vlopt:`--debugi 3 <--debugi>`).
    * Enable internal assertions (equivalent to :vlopt:`--debug-check`).
-   * Enable intermediate form dump files (equivalent to :vlopt:`--dump-treei 3
-     <--dump-treei>`).
+   * Enable intermediate form dump files (equivalent to :vlopt:`--dumpi-tree 3
+     <--dumpi-tree>`).
    * Leak to make node numbers unique (equivalent to :vlopt:`--debug-leak
      <--no-debug-leak>`.
    * Call abort() instead of exit() if there are any errors (so GDB can see
@@ -358,25 +358,20 @@ Summary:
 
        touch foo.v ; verilator -E --dump-defines foo.v
 
+.. option:: --dump-graph
+
+   Rarely needed.  Enable dumping V3Graph .dot debug files with dumping
+   level 3. Before Verilator 4.228, :vlopt:`--dump-tree` used
+   to include this option.
+
 .. option:: --dump-tree
 
-   Rarely needed.  Enable writing .tree debug files with dumping level 3,
+   Rarely needed.  Enable dumping Ast .tree debug files with dumping level 3,
    which dumps the standard critical stages.  For details on the format see
    the Verilator Internals manual.  :vlopt:`--dump-tree` is enabled
    automatically with :vlopt:`--debug`, so :vlopt:`--debug --no-dump-tree
    <--dump-tree>` may be useful if the dump files are large and not
    desired.
-
-.. option:: --dump-treei <level>
-
-.. option:: --dump-treei-<srcfile> <level>
-
-   Rarely needed - for developer use.  Set internal tree dumping level
-   globally to a specific dumping level or set the specified Verilator
-   source file to the specified tree dumping level (e.g.
-   :vlopt:`--dump-treei-V3Order 9 <--dump-treei>`).  Level 0 disables dumps
-   and is equivalent to :vlopt:`--no-dump-tree <--dump-tree>`.  Level 9
-   enables dumping of every stage.
 
 .. option:: --dump-tree-addrids
 
@@ -386,6 +381,28 @@ Summary:
    not necessarily unique per node instance as an address might get reused
    by a newly allocated node after a node with the same address has been
    dumped then freed.
+
+.. option:: --dump-<srcfile>
+
+   Rarely needed - for developer use. Enable all dumping in the given
+   source file at level 3.
+
+.. option:: --dumpi-graph <level>
+
+   Rarely needed - for developer use.  Set internal V3Graph dumping level
+   globally to the specified value.
+
+.. option:: --dumpi-tree <level>
+
+   Rarely needed - for developer use.  Set internal Ast dumping level
+   globally to the specified value.
+
+.. option:: --dumpi-<srcfile> <level>
+
+   Rarely needed - for developer use. Set the dumping level in the
+   specified Verilator source file to the specified value (e.g.
+   :vlopt:`--dumpi-V3Order 9`).  Level 0 disables dumps and is equivalent
+   to :vlopt:`--no-dump-<srcfile>`.  Level 9 enables dumping of everything.
 
 .. option:: -E
 

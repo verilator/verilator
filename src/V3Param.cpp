@@ -65,6 +65,8 @@
 #include <memory>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Hierarchical block and parameter db (modules without parameter is also handled)
 
@@ -88,7 +90,6 @@ class ParameterizedHierBlocks final {
         m_modParams;  // Parameter variables of hierarchical blocks
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
@@ -270,7 +271,6 @@ class ParamProcessor final {
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     static void makeSmallNames(AstNodeModule* modp) {
         std::vector<int> usedLetter;
@@ -888,7 +888,6 @@ class ParamVisitor final : public VNVisitor {
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void visitCells(AstNodeModule* nodep) {
         UASSERT_OBJ(!m_iterateModule, nodep, "Should not nest");
@@ -1280,5 +1279,5 @@ public:
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ParamVisitor{rootp}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("param", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("param", 0, dumpTree() >= 6);
 }

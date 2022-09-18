@@ -45,6 +45,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 #define CASE_OVERLAP_WIDTH 16  // Maximum width we can check for overlaps in
 #define CASE_BARF 999999  // Magic width when non-constant
 #define CASE_ENCODER_GROUP_DEPTH 8  // Levels of priority to be ORed together in top IF tree
@@ -57,7 +59,6 @@ private:
         = nullptr;  // Under a CASE value node, if so the relevant case statement
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void visit(AstNodeCase* nodep) override {
         if (VN_IS(nodep, Case) && VN_AS(nodep, Case)->casex()) {
@@ -138,7 +139,6 @@ private:
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     bool isCaseTreeFast(AstCase* nodep) {
         int width = 0;
@@ -533,7 +533,7 @@ public:
 void V3Case::caseAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CaseVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("case", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("case", 0, dumpTree() >= 3);
 }
 void V3Case::caseLint(AstNodeCase* nodep) {
     UINFO(4, __FUNCTION__ << ": " << endl);

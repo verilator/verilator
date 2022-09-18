@@ -87,6 +87,8 @@
 #include <queue>
 #include <set>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 namespace {
 
 //######################################################################
@@ -455,7 +457,6 @@ private:
     StmtPropertiesAllocator* m_stmtPropertiesp = nullptr;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // Function that processes a whole sub-tree
     void process(AstNode* nodep) {
@@ -883,5 +884,5 @@ public:
 void V3MergeCond::mergeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { MergeCondVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("merge_cond", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("merge_cond", 0, dumpTree() >= 6);
 }

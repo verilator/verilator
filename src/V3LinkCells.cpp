@@ -39,6 +39,8 @@
 #include <unordered_set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Graph subclasses
 
@@ -118,8 +120,6 @@ private:
     std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
 
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // METHODS
     V3GraphVertex* vertex(AstNodeModule* nodep) {
         // Return corresponding vertex for this module
@@ -167,7 +167,7 @@ private:
         iterateChildren(nodep);
         // Find levels in graph
         m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
-        m_graph.dumpDotFilePrefixed("linkcells");
+        if (dumpGraph()) m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (const LinkCellsVertex* const vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {

@@ -28,6 +28,8 @@
 #include "V3Global.h"
 #include "V3LanguageWords.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Name state, as a visitor of each AstNode
 
@@ -44,8 +46,6 @@ private:
     const AstNodeModule* m_modp = nullptr;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
             if (addPvt) {
@@ -144,5 +144,5 @@ public:
 void V3Name::nameAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { NameVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("name", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("name", 0, dumpTree() >= 6);
 }

@@ -27,6 +27,8 @@
 #include <map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 //######################################################################
 // Algorithms - weakly connected components
@@ -120,7 +122,6 @@ public:
     }
 
 private:
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(GraphAlgRemoveTransitiveEdges);
 };
 

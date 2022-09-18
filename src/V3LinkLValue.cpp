@@ -28,6 +28,8 @@
 
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Link state, as a visitor of each AstNode
 
@@ -40,9 +42,6 @@ private:
     bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
-
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITs
     // Result handing
@@ -338,7 +337,7 @@ public:
 void V3LinkLValue::linkLValue(AstNetlist* nodep) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     { LinkLValueVisitor{nodep, VAccess::NOCHANGE}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linklvalue", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("linklvalue", 0, dumpTree() >= 6);
 }
 void V3LinkLValue::linkLValueSet(AstNode* nodep) {
     // Called by later link functions when it is known a node needs

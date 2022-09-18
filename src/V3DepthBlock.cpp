@@ -31,6 +31,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class DepthBlockVisitor final : public VNVisitor {
@@ -44,7 +46,6 @@ private:
     int m_deepNum = 0;  // How many functions made
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     AstCFunc* createDeepFunc(AstNode* nodep) {
         VNRelinker relinkHandle;
@@ -131,5 +132,5 @@ public:
 void V3DepthBlock::depthBlockAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DepthBlockVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deepblock", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("deepblock", 0, dumpTree() >= 3);
 }

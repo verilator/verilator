@@ -107,6 +107,8 @@
 #include <unordered_set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Utilities
 
@@ -156,7 +158,6 @@ static bool isClockerAssignment(AstNodeAssign* nodep) {
         bool m_clkAss = false;  // There is signals marked as clocker in the assignment
     private:
         // METHODS
-        VL_DEBUG_FUNC;  // Declare debug()
         void visit(AstNodeAssign* nodep) override {
             if (const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
                 if (varrefp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
@@ -210,7 +211,6 @@ class OrderClkMarkVisitor final : public VNVisitor {
     int m_childClkWidth = 0;  // If in hasClk, width of clock signal in child
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void visit(AstNodeAssign* nodep) override {
         m_hasClk = false;
@@ -394,7 +394,6 @@ class OrderBuildVisitor final : public VNVisitor {
     bool m_inPostponed = false;  // Underneath AstAlwaysPostponed
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void iterateLogic(AstNode* nodep) {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
@@ -738,9 +737,6 @@ class OrderBuildVisitor final : public VNVisitor {
 
     // CONSTRUCTOR
     explicit OrderBuildVisitor(AstNetlist* nodep) {
-        // Enable debugging (3 is default if global debug; we want acyc debugging)
-        if (debug()) m_graphp->debug(5);
-
         // Add edges from the InputVertex to all top level input signal VarStdVertex
         for (AstVarScope* vscp = nodep->topScopep()->scopep()->varsp(); vscp;
              vscp = VN_AS(vscp->nextp(), VarScope)) {
@@ -1078,7 +1074,6 @@ class OrderProcess final : VNDeleter {
     std::array<VDouble0, OrderVEdgeType::_ENUM_END> m_statCut;  // Count of each edge type cut
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void process();
     void processCircular();
@@ -2027,7 +2022,7 @@ void OrderProcess::processMTasks() {
 
 void OrderProcess::process() {
     // Dump data
-    m_graph.dumpDotFilePrefixed("orderg_pre");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed("orderg_pre");
 
     // Break cycles. Each strongly connected subgraph (including cutable
     // edges) will have its own color, and corresponds to a loop in the
@@ -2035,12 +2030,12 @@ void OrderProcess::process() {
     // edges are actually still there, just with weight 0).
     UINFO(2, "  Acyclic & Order...\n");
     m_graph.acyclic(&V3GraphEdge::followAlwaysTrue);
-    m_graph.dumpDotFilePrefixed("orderg_acyc");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed("orderg_acyc");
 
     // Assign ranks so we know what to follow
     // Then, sort vertices and edges by that ordering
     m_graph.order();
-    m_graph.dumpDotFilePrefixed("orderg_order");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed("orderg_order");
 
     // This finds everything that can be traced from an input (which by
     // definition are the source clocks). After this any vertex which was
@@ -2054,19 +2049,17 @@ void OrderProcess::process() {
     // Assign logic vertices to new domains
     UINFO(2, "  Domains...\n");
     processDomains();
-    m_graph.dumpDotFilePrefixed("orderg_domain");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed("orderg_domain");
 
-    if (debug() && v3Global.opt.dumpTree()) processEdgeReport();
+    if (dump()) processEdgeReport();
 
     if (!v3Global.opt.mtasks()) {
         UINFO(2, "  Construct Move Graph...\n");
         processMoveBuildGraph();
-        if (debug() >= 4) {
-            m_pomGraph.dumpDotFilePrefixed(
-                "ordermv_start");  // Different prefix (ordermv) as it's not the same graph
-        }
+        // Different prefix (ordermv) as it's not the same graph
+        if (dumpGraph() >= 4) m_pomGraph.dumpDotFilePrefixed("ordermv_start");
         m_pomGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
-        if (debug() >= 4) m_pomGraph.dumpDotFilePrefixed("ordermv_simpl");
+        if (dumpGraph() >= 4) m_pomGraph.dumpDotFilePrefixed("ordermv_simpl");
 
         UINFO(2, "  Move...\n");
         processMove();
@@ -2080,14 +2073,7 @@ void OrderProcess::process() {
     processSensitive();  // must be after processDomains
 
     // Dump data
-    m_graph.dumpDotFilePrefixed("orderg_done");
-    if (false && debug()) {
-        const string dfilename
-            = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_INT_order";
-        const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(dfilename)};
-        if (logp->fail()) v3fatal("Can't write " << dfilename);
-        m_graph.dump(*logp);
-    }
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed("orderg_done");
 }
 
 //######################################################################
@@ -2101,8 +2087,6 @@ void V3Order::orderAll(AstNetlist* netlistp) {
     std::unique_ptr<OrderGraph> orderGraph = OrderBuildVisitor::process(netlistp);
     // Order the netlist
     OrderProcess::main(netlistp, *orderGraph);
-    // Reset debug level
-    orderGraph->debug(V3Error::debugDefault());
     // Dump tree
-    V3Global::dumpCheckGlobalTree("order", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("order", 0, dumpTree() >= 3);
 }

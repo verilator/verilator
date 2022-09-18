@@ -462,11 +462,8 @@ void V3PreLex::pushStateIncFilename() {
     yymore();
 }
 
-void V3PreLex::debug(int level) {
-    yy_flex_debug = level;  // Use --debugi-V3PreShell, if level<5 this level is 0
-}
-int V3PreLex::debug() {
-    return yy_flex_debug; }
+void V3PreLex::setYYDebug(bool on) {
+    yy_flex_debug = static_cast<int>(on); }
 
 int V3PreLex::lex() {
     V3PreLex::s_currentLexp = this;  // Tell parser where to get/put data

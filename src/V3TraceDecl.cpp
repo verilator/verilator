@@ -37,6 +37,8 @@
 #include <limits>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Utility class to emit path adjustments
 
@@ -133,7 +135,6 @@ private:
     VDouble0 m_statIgnSigs;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     const char* vscIgnoreTrace(const AstVarScope* nodep) {
         // Return true if this shouldn't be traced
@@ -525,5 +526,5 @@ public:
 void V3TraceDecl::traceDeclAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TraceDeclVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("tracedecl", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("tracedecl", 0, dumpTree() >= 3);
 }

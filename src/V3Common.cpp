@@ -29,6 +29,8 @@
 #include "V3EmitCBase.h"
 #include "V3Global.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Common component builders
 
@@ -117,5 +119,5 @@ void V3Common::commonAll() {
             makeToStringMiddle(classp);
         }
     }
-    V3Global::dumpCheckGlobalTree("common", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("common", 0, dumpTree() >= 3);
 }

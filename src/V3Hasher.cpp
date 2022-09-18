@@ -21,6 +21,8 @@
 
 #include <functional>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Visitor that computes node hashes
 
@@ -35,7 +37,6 @@ private:
     const bool m_cacheInUser4;  // Use user4 to cache each V3Hash?
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     V3Hash hashNodeAndIterate(AstNode* nodep, bool hashDType, bool hashChildren,
                               std::function<void()>&& f) {

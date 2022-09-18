@@ -37,6 +37,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Expand state, as a visitor of each AstNode
 
@@ -53,7 +55,6 @@ private:
     VDouble0 m_statWideLimited;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     bool doExpand(AstNode* nodep) {
         ++m_statWides;
@@ -898,5 +899,5 @@ public:
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ExpandVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("expand", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("expand", 0, dumpTree() >= 3);
 }

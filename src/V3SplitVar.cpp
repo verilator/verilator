@@ -125,6 +125,8 @@
 #include <set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 struct SplitVarImpl {
     // NODE STATE
     //  AstNodeModule::user1()  -> Block number counter for generating unique names
@@ -782,7 +784,6 @@ public:
         V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
     }
     const SplitVarRefsMap& getPackedVarRefs() const { return m_refsForPackedSplit; }
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // Check if the passed variable can be split.
     // Even if this function returns true, the variable may not be split
@@ -1243,7 +1244,6 @@ public:
         }
         return reason;
     }
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 const char* SplitVarImpl::cannotSplitPackedVarReason(const AstVar* varp) {
@@ -1260,9 +1260,9 @@ void V3SplitVar::splitVariable(AstNetlist* nodep) {
         const SplitUnpackedVarVisitor visitor{nodep};
         refs = visitor.getPackedVarRefs();
     }
-    V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
+    V3Global::dumpCheckGlobalTree("split_var", 0, dumpTree() >= 9);
     { SplitPackedVarVisitor{nodep, refs}; }
-    V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
+    V3Global::dumpCheckGlobalTree("split_var", 0, dumpTree() >= 9);
 }
 
 bool V3SplitVar::canSplitVar(const AstVar* varp) {

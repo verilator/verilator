@@ -31,6 +31,8 @@
 
 #include "V3Ast.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
@@ -47,8 +49,6 @@ private:
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
 
     // METHODS
-    VL_DEBUG_FUNC;
-
     void markMembers(AstClass* nodep) {
         for (auto* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
@@ -127,8 +127,6 @@ private:
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
 
     // METHODS
-    VL_DEBUG_FUNC;
-
     AstVar* enumValueTabp(AstEnumDType* nodep) {
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
@@ -258,7 +256,7 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
         const RandomizeMarkVisitor markVisitor{nodep};
         RandomizeVisitor{nodep};
     }
-    V3Global::dumpCheckGlobalTree("randomize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("randomize", 0, dumpTree() >= 3);
 }
 
 AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {

@@ -27,6 +27,8 @@
 #include <map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Symbol table emitting
 

@@ -34,6 +34,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class DepthVisitor final : public VNVisitor {
@@ -49,7 +51,6 @@ private:
     V3UniqueNames m_tempNames;  // For generating unique temporary variable names
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void createDeepTemp(AstNode* nodep) {
         UINFO(6, "  Deep  " << nodep << endl);
@@ -171,5 +172,5 @@ public:
 void V3Depth::depthAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DepthVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("depth", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("depth", 0, dumpTree() >= 6);
 }

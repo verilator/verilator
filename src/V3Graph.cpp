@@ -28,8 +28,7 @@
 #include <unordered_set>
 #include <vector>
 
-int V3Graph::s_debug = 0;
-int V3Graph::debug() { return std::max(V3Error::debugDefault(), s_debug); }
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 //######################################################################
@@ -312,9 +311,7 @@ void V3Graph::dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* ed
 }
 
 void V3Graph::dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph) const {
-    if (v3Global.opt.dumpTree()) {
-        dumpDotFile(v3Global.debugFilename(nameComment) + ".dot", colorAsSubgraph);
-    }
+    dumpDotFile(v3Global.debugFilename(nameComment) + ".dot", colorAsSubgraph);
 }
 
 //! Variant of dumpDotFilePrefixed without --dump option check

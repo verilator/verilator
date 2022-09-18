@@ -35,6 +35,8 @@
 #include <map>
 #include <unordered_map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Coverage state, as a visitor of each AstNode
 
@@ -86,7 +88,6 @@ private:
         m_handleLines;  // All line numbers for a given m_stateHandle
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     const char* varIgnoreToggle(AstVar* nodep) {
         // Return true if this shouldn't be traced
@@ -546,5 +547,5 @@ public:
 void V3Coverage::coverage(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CoverageVisitor{rootp}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("coverage", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("coverage", 0, dumpTree() >= 3);
 }

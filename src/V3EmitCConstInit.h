@@ -32,7 +32,6 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitor {
     uint32_t m_unpackedWord = 0;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     uint32_t tabModulus(AstNodeDType* dtypep) {
         const uint32_t elemBytes = dtypep->widthTotalBytes();

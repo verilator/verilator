@@ -37,6 +37,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Convert every WRITE AstVarRef to a READ ref
 
@@ -88,7 +90,6 @@ private:
     AstMTaskBody* m_mtaskBodyp = nullptr;  // Current mtask body
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     AstVarScope* getCreateLastClk(AstVarScope* vscp) {
         if (vscp->user1p()) return static_cast<AstVarScope*>(vscp->user1p());
@@ -446,5 +447,5 @@ public:
 void V3Clock::clockAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ClockVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("clock", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("clock", 0, dumpTree() >= 3);
 }
