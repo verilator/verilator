@@ -22,8 +22,10 @@
 
 #include "V3Error.h"
 #include "V3Hash.h"
+#include "V3StdFuture.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <vector>
@@ -42,8 +44,6 @@ class AstNode;
 class AstNodeDType;
 class FileLine;
 
-// Holds a few entries of ValueAndX to avoid dynamic allocation in std::vector for less width of
-// constants
 class V3NumberData final {
 public:
     // TYPES
@@ -57,53 +57,294 @@ public:
         }
     };
 
+    enum class V3NumberDataType : uint8_t {
+        UNINITIALIZED = 0,
+        LOGIC = 1,
+        DOUBLE = 2,
+        STRING = 3,
+    };
+    friend std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) {
+        switch (rhs) {
+        case V3NumberDataType::UNINITIALIZED: return os << "UNINITIALIZED";
+        case V3NumberDataType::LOGIC: return os << "LOGIC";
+        case V3NumberDataType::DOUBLE: return os << "DOUBLE";
+        case V3NumberDataType::STRING: return os << "STRING";
+        }
+        return os;
+    }
+
 private:
+    // CONSTANTS
+    // At least 2 words (64 fourstate bits). 4 words (128 fourstate bits) in most cases,
+    // i.e. when std::string has 32 bytes.
+    static constexpr int INLINE_WORDS
+        = vlstd::max(2UL, vlstd::max(sizeof(std::string) / sizeof(ValueAndX),
+                                     sizeof(std::vector<ValueAndX>) / sizeof(ValueAndX)));
+    // When m_width > MAX_INLINE_WIDTH number is stored in m_dynamicNumber.
+    // Otherwise number is stored in m_inlineNumber.
+    static constexpr int MAX_INLINE_WIDTH = INLINE_WORDS * sizeof(ValueAndX) / 2 * 8;
+
     // MEMBERS
-    static constexpr size_t m_inlinedSize = 2;  // Can hold 64 bit without dynamic allocation
-    ValueAndX m_inlined[m_inlinedSize];  // Holds the beginning m_inlinedSize words
-    std::vector<ValueAndX> m_data;  // Holds m_inlinedSize-th word and later
+    union {
+        std::array<ValueAndX, INLINE_WORDS> m_inlineNumber;
+        std::vector<ValueAndX> m_dynamicNumber;
+        std::string m_string;
+    };
+
+    int m_width = 0;  // Width (in bits) as specified/calculated
+    V3NumberDataType m_type;
+
+public:
+    bool m_sized : 1;  // True if the user specified the width, else we track it.
+    bool m_signed : 1;  // True if signed value
+    bool m_isNull : 1;  // True if "null" versus normal 0
+    bool m_fromString : 1;  // True if from string literal
+    bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
 
 public:
     // CONSTRUCTORS
-    V3NumberData() {
-        for (size_t i = 0; i < m_inlinedSize; ++i) m_inlined[i] = {0, 0};
+    V3NumberData()
+        : m_type{V3NumberDataType::UNINITIALIZED}
+        , m_sized{false}
+        , m_signed{false}
+        , m_isNull{false}
+        , m_fromString{false}
+        , m_autoExtend{false} {}
+
+    ~V3NumberData() { destroyStoredValue(); }
+
+    V3NumberData(const V3NumberData& other)
+        : m_width{other.m_width}
+        , m_type{other.m_type}
+        , m_sized{other.m_sized}
+        , m_signed{other.m_signed}
+        , m_isNull{other.m_isNull}
+        , m_fromString{other.m_fromString}
+        , m_autoExtend{other.m_autoExtend} {
+        if (other.isInlineNumber()) {
+            initInlineNumber(other.m_inlineNumber);
+        } else if (other.isDynamicNumber()) {
+            initDynamicNumber(other.m_dynamicNumber);
+        } else if (other.isString()) {
+            initString(other.m_string);
+        }
     }
 
+    V3NumberData& operator=(const V3NumberData& other) {
+        if (other.isInlineNumber()) {
+            destroyStoredValue();
+            initInlineNumber(other.m_inlineNumber);
+        } else if (other.isDynamicNumber()) {
+            reinitWithOrAssignDynamicNumber(other.m_dynamicNumber);
+        } else if (other.isString()) {
+            reinitWithOrAssignString(other.m_string);
+        } else {
+            destroyStoredValue();
+        }
+        m_width = other.m_width;
+        m_type = other.m_type;
+        m_sized = other.m_sized;
+        m_signed = other.m_signed;
+        m_isNull = other.m_isNull;
+        m_fromString = other.m_fromString;
+        m_autoExtend = other.m_autoExtend;
+        return *this;
+    }
+
+    V3NumberData(V3NumberData&& other)
+        : m_width{other.m_width}
+        , m_type{other.m_type}
+        , m_sized{other.m_sized}
+        , m_signed{other.m_signed}
+        , m_isNull{other.m_isNull}
+        , m_fromString{other.m_fromString}
+        , m_autoExtend{other.m_autoExtend} {
+        if (other.isInlineNumber()) {
+            initInlineNumber(other.m_inlineNumber);
+        } else if (other.isDynamicNumber()) {
+            initDynamicNumber(std::move(other.m_dynamicNumber));
+        } else if (other.isString()) {
+            initString(std::move(other.m_string));
+        }
+        other.m_type = V3NumberDataType::UNINITIALIZED;
+    }
+
+    V3NumberData& operator=(V3NumberData&& other) {
+        if (other.isInlineNumber()) {
+            destroyStoredValue();
+            initInlineNumber(other.m_inlineNumber);
+        } else if (other.isDynamicNumber()) {
+            reinitWithOrAssignDynamicNumber(std::move(other.m_dynamicNumber));
+        } else if (other.isString()) {
+            reinitWithOrAssignString(std::move(other.m_string));
+        } else {
+            destroyStoredValue();
+        }
+        m_width = other.m_width;
+        m_type = other.m_type;
+        m_sized = other.m_sized;
+        m_signed = other.m_signed;
+        m_isNull = other.m_isNull;
+        m_fromString = other.m_fromString;
+        m_autoExtend = other.m_autoExtend;
+        other.m_type = V3NumberDataType::UNINITIALIZED;
+        return *this;
+    }
+
+    // ACCESSORS
+    ValueAndX* num() {
+        UASSERT(isNumber(), "`num` member accessed when data type is " << m_type);
+        return isInlineNumber() ? m_inlineNumber.data() : m_dynamicNumber.data();
+    }
+    const ValueAndX* num() const {
+        UASSERT(isNumber(), "`num` member accessed when data type is " << m_type);
+        return isInlineNumber() ? m_inlineNumber.data() : m_dynamicNumber.data();
+    }
+    std::string& str() {
+        UASSERT(isString(), "`str` member accessed when data type is " << m_type);
+        return m_string;
+    }
+    const std::string& str() const {
+        UASSERT(isString(), "`str` member accessed when data type is " << m_type);
+        return m_string;
+    }
+
+    int width() const { return m_width; }
+    V3NumberDataType type() const { return m_type; }
+
     // METHODS
-    void ensureSizeAtLeast(size_t s) {
-        if (VL_UNLIKELY(s > m_data.size() + m_inlinedSize)) m_data.resize(s - m_inlinedSize);
+    void resize(int bitsCount) {
+        if (m_width == bitsCount) return;
+        if (bitsToWords(m_width) == bitsToWords(bitsCount)) {
+            m_width = bitsCount;
+            return;
+        }
+        if (isDynamicNumber()) {
+            if (bitsCount > MAX_INLINE_WIDTH) {
+                m_dynamicNumber.resize(bitsToWords(bitsCount));
+            } else {
+                const auto dynamicBits = std::move(m_dynamicNumber);
+                destroyDynamicNumber();
+                initInlineNumber();
+                std::memcpy(m_inlineNumber.data(), dynamicBits.data(), sizeof(m_inlineNumber));
+            }
+        } else if (isInlineNumber()) {
+            if (bitsCount > MAX_INLINE_WIDTH) {
+                const auto bits = m_inlineNumber;
+                initDynamicNumber(bitsToWords(bitsCount));
+                std::memcpy(m_dynamicNumber.data(), bits.data(), sizeof(bits));
+            }
+        }
+        m_width = bitsCount;
     }
-    ValueAndX& operator[](size_t idx) {
-        UDEBUGONLY(UASSERT(idx < m_data.size() + m_inlinedSize,
-                           "idx:" << idx << " size:" << m_data.size()
-                                  << " inlinedSize:" << m_inlinedSize););
-        return idx >= m_inlinedSize ? m_data[idx - m_inlinedSize] : m_inlined[idx];
+
+    void setString() {
+        // If there has been a string already it is kept intact.
+        if (isString()) return;
+        if (isDynamicNumber()) destroyDynamicNumber();
+        initString();
+        m_type = V3NumberDataType::STRING;
     }
-    const ValueAndX& operator[](size_t idx) const { return const_cast<V3NumberData&>(*this)[idx]; }
+    void setString(std::string&& s) {
+        reinitWithOrAssignString(std::move(s));
+        m_type = V3NumberDataType::STRING;
+    }
+    void setString(const std::string& s) {
+        reinitWithOrAssignString(s);
+        m_type = V3NumberDataType::STRING;
+    }
+
+    void setDouble() {
+        destroyStoredValue();
+        if (!isInlineNumber()) initInlineNumber();
+        m_type = V3NumberDataType::DOUBLE;
+        resize(64);
+    }
+
+    void setLogic() {
+        if (isString()) destroyString();
+        if (!isNumber()) {
+            if (m_width <= MAX_INLINE_WIDTH) {
+                initInlineNumber();
+            } else {
+                initDynamicNumber(bitsToWords(m_width));
+            }
+        }
+        m_type = V3NumberDataType::LOGIC;
+        resize(m_width);
+    }
+
+private:
+    static constexpr int bitsToWords(int bitsCount) { return (bitsCount + 31) / 32; }
+
+    bool isNumber() const {
+        return m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC;
+    }
+    bool isInlineNumber() const {
+        return (m_width <= MAX_INLINE_WIDTH)
+               && (m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC);
+    }
+    bool isDynamicNumber() const {
+        return (m_width > MAX_INLINE_WIDTH) && (m_type == V3NumberDataType::LOGIC);
+    }
+    bool isString() const { return m_type == V3NumberDataType::STRING; }
+
+    template <typename... Args>
+    void initInlineNumber(Args&&... args) {
+        new (&m_inlineNumber) std::array<ValueAndX, INLINE_WORDS>(std::forward<Args>(args)...);
+    }
+    template <typename... Args>
+    void initDynamicNumber(Args&&... args) {
+        new (&m_dynamicNumber) std::vector<ValueAndX>(std::forward<Args>(args)...);
+    }
+    template <typename... Args>
+    void initString(Args&&... args) {
+        new (&m_string) std::string(std::forward<Args>(args)...);
+    }
+
+    void destroyDynamicNumber() { m_dynamicNumber.~vector(); }
+    void destroyString() { m_string.~string(); }
+    void destroyStoredValue() {
+        if (isString())
+            destroyString();
+        else if (isDynamicNumber())
+            destroyDynamicNumber();
+    }
+
+    template <typename T>
+    void reinitWithOrAssignDynamicNumber(T&& s) {
+        if (isDynamicNumber()) {
+            m_dynamicNumber = std::forward<T>(s);
+            return;
+        }
+        if (isString()) destroyString();
+        initDynamicNumber(std::forward<T>(s));
+    }
+    template <typename T>
+    void reinitWithOrAssignString(T&& s) {
+        if (isString()) {
+            m_string = std::forward<T>(s);
+            return;
+        }
+        if (isDynamicNumber()) destroyDynamicNumber();
+        initString(std::forward<T>(s));
+    }
 };
 
 class V3Number final {
     // TYPES
     using ValueAndX = V3NumberData::ValueAndX;
+    using V3NumberDataType = V3NumberData::V3NumberDataType;
 
-    // Large 4-state number handling
-    int m_width;  // Width as specified/calculated.
-    bool m_sized : 1;  // True if the user specified the width, else we track it.
-    bool m_signed : 1;  // True if signed value
-    bool m_double : 1;  // True if double real value
-    bool m_isNull : 1;  // True if "null" versus normal 0
-    bool m_isString : 1;  // True if string
-    bool m_fromString : 1;  // True if from string literal
-    bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
-    FileLine* m_fileline;
-    AstNode* m_nodep;  // Parent node
-    V3NumberData m_value;  // Value and X/Z information
-    string m_stringVal;  // If isString, the value of the string
+    // MEMBERS
+    V3NumberData m_data;
+    AstNode* m_nodep = nullptr;  // Parent node
+    FileLine* m_fileline = nullptr;
+
     // METHODS
     V3Number& setSingleBits(char value);
     V3Number& setString(const string& str) {
-        m_isString = true;
-        m_stringVal = str;
+        m_data.setString(str);
         return *this;
     }
     void opCleanThis(bool warnOnTruncation = false);
@@ -116,10 +357,10 @@ public:
     V3Number& setLong(uint32_t value);
     V3Number& setLongS(int32_t value);
     V3Number& setDouble(double value);
-    void setBit(int bit, char value) {  // Note must be pre-zeroed!
-        if (bit >= m_width) return;
+    void setBit(int bit, char value) {  // Note: must be initialized as number and pre-zeroed!
+        if (bit >= m_data.width()) return;
         const uint32_t mask = (1UL << (bit & 31));
-        ValueAndX& v = m_value[bit / 32];
+        ValueAndX& v = m_data.num()[bit / 32];
         if (value == '0' || value == 0) {
             v.m_value &= ~mask;
             v.m_valueX &= ~mask;
@@ -137,65 +378,71 @@ public:
 
 private:
     char bitIs(int bit) const {
-        if (bit >= m_width || bit < 0) {
+        if (bit >= m_data.width() || bit < 0) {
             // We never sign extend
             return '0';
         }
-        const ValueAndX v = m_value[bit / 32];
+        const ValueAndX v = m_data.num()[bit / 32];
         return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
                         | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
     }
     char bitIsExtend(int bit, int lbits) const {
         // lbits usually = width, but for C optimizations width=32_bits, lbits = 32_or_less
         if (bit < 0) return '0';
-        UASSERT(lbits <= m_width, "Extend of wrong size");
+        UASSERT(lbits <= m_data.width(), "Extend of wrong size");
         if (bit >= lbits) {
             bit = lbits ? lbits - 1 : 0;
-            const ValueAndX v = m_value[bit / 32];
+            const ValueAndX v = m_data.num()[bit / 32];
             // We do sign extend
             return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
                             | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
         }
-        const ValueAndX v = m_value[bit / 32];
+        const ValueAndX v = m_data.num()[bit / 32];
         return ("01zx"[(((v.m_value & (1UL << (bit & 31))) ? 1 : 0)
                         | ((v.m_valueX & (1UL << (bit & 31))) ? 2 : 0))]);
     }
 
 public:
     bool bitIs0(int bit) const {
+        if (!isNumber()) return false;
         if (bit < 0) return false;
-        if (bit >= m_width) return !bitIsXZ(m_width - 1);
-        const ValueAndX v = m_value[bit / 32];
+        if (bit >= m_data.width()) return !bitIsXZ(m_data.width() - 1);
+        const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_value & (1UL << (bit & 31))) == 0 && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIs1(int bit) const {
+        if (!isNumber()) return false;
         if (bit < 0) return false;
-        if (bit >= m_width) return false;
-        const ValueAndX v = m_value[bit / 32];
+        if (bit >= m_data.width()) return false;
+        const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_value & (1UL << (bit & 31))) && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIs1Extend(int bit) const {
+        if (!isNumber()) return false;
         if (bit < 0) return false;
-        if (bit >= m_width) return bitIs1Extend(m_width - 1);
-        const ValueAndX v = m_value[bit / 32];
+        if (bit >= m_data.width()) return bitIs1Extend(m_data.width() - 1);
+        const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_value & (1UL << (bit & 31))) && !(v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsX(int bit) const {
+        if (!isNumber()) return false;
         if (bit < 0) return false;
-        if (bit >= m_width) return bitIsZ(m_width - 1);
-        const ValueAndX v = m_value[bit / 32];
+        if (bit >= m_data.width()) return bitIsZ(m_data.width() - 1);
+        const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_value & (1UL << (bit & 31))) && (v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsXZ(int bit) const {
+        if (!isNumber()) return false;
         if (bit < 0) return false;
-        if (bit >= m_width) return bitIsXZ(m_width - 1);
-        const ValueAndX v = m_value[bit / 32];
+        if (bit >= m_data.width()) return bitIsXZ(m_data.width() - 1);
+        const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_valueX & (1UL << (bit & 31))));
     }
     bool bitIsZ(int bit) const {
+        if (!isNumber()) return false;
         if (bit < 0) return false;
-        if (bit >= m_width) return bitIsZ(m_width - 1);
-        const ValueAndX v = m_value[bit / 32];
+        if (bit >= m_data.width()) return bitIsZ(m_data.width() - 1);
+        const ValueAndX v = m_data.num()[bit / 32];
         return ((~v.m_value & (1UL << (bit & 31))) && (v.m_valueX & (1UL << (bit & 31))));
     }
 
@@ -217,10 +464,12 @@ private:
 public:
     // CONSTRUCTORS
     explicit V3Number(AstNode* nodep) { init(nodep, 1); }
-    V3Number(AstNode* nodep, int width) { init(nodep, width); }  // 0=unsized
+    V3Number(AstNode* nodep, int width) {  // 0=unsized
+        init(nodep, width, width > 0);
+    }
     V3Number(AstNode* nodep, int width, uint32_t value, bool sized = true) {
         init(nodep, width, sized);
-        m_value[0].m_value = value;
+        m_data.num()[0].m_value = value;
         opCleanThis();
     }
     // Create from a verilog 32'hxxxx number.
@@ -233,15 +482,16 @@ public:
     V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
     class String {};
     V3Number(String, AstNode* nodep, const string& value) {
-        init(nodep, 0);
+        init(nodep);
         setString(value);
-        m_fromString = true;
+        m_data.m_fromString = true;
     }
     class Null {};
     V3Number(Null, AstNode* nodep) {
-        init(nodep, 0);
-        m_isNull = true;
-        m_autoExtend = true;
+        init(nodep);
+        m_data.setLogic();
+        m_data.m_isNull = true;
+        m_data.m_autoExtend = true;
     }
     explicit V3Number(const V3Number* nump, int width = 1) {
         init(nullptr, width);
@@ -249,7 +499,7 @@ public:
     }
     V3Number(const V3Number* nump, int width, uint32_t value) {
         init(nullptr, width);
-        m_value[0].m_value = value;
+        m_data.num()[0].m_value = value;
         opCleanThis();
         m_fileline = nump->fileline();
     }
@@ -259,19 +509,31 @@ public:
     }
     V3Number(AstNode* nodep, const AstNodeDType* nodedtypep);
 
+    V3Number(const V3Number& other) = default;
+    V3Number& operator=(const V3Number& other) = default;
+
+    V3Number(V3Number&& other) = default;
+    V3Number& operator=(V3Number&& other) = default;
+
+    ~V3Number() {}
+
 private:
     void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
-    void init(AstNode* nodep, int swidth, bool sized = true) {
+    void init(AstNode* nodep, int swidth = -1, bool sized = true) {
         setNames(nodep);
-        // dtype info does NOT from nodep's dtype; nodep only for error reporting
-        m_signed = false;
-        m_double = false;
-        m_isNull = false;
-        m_isString = false;
-        m_autoExtend = false;
-        m_fromString = false;
-        width(swidth, sized);
-        for (int i = 0; i < words(); ++i) m_value[i] = {0, 0};
+        if (swidth >= 0) {
+            if (swidth == 0) {
+                swidth = 1;
+                sized = false;
+            }
+            m_data.setLogic();
+            m_data.resize(swidth);
+            m_data.m_sized = sized;
+            for (int i = 0; i < words(); ++i) m_data.num()[i] = {0, 0};
+        } else {
+            m_data.resize(1);
+            m_data.m_sized = false;
+        }
     }
     void setNames(AstNode* nodep);
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
@@ -282,15 +544,8 @@ public:
     void v3errorEnd(std::ostringstream& sstr) const;
     void v3errorEndFatal(std::ostringstream& sstr) const VL_ATTR_NORETURN;
     void width(int width, bool sized = true) {
-        // Set width.  Only set m_width here, as we need to tweak vector size
-        if (width) {
-            m_sized = sized;
-            m_width = width;
-        } else {
-            m_sized = false;
-            m_width = 1;
-        }
-        m_value.ensureSizeAtLeast(words());
+        m_data.m_sized = sized;
+        m_data.resize(width);
     }
 
     // SETTERS
@@ -305,25 +560,39 @@ public:
     string ascii(bool prefixed = true, bool cleanVerilog = false) const;
     string displayed(AstNode* nodep, const string& vformat) const;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
-    int width() const { return m_width; }
+    int width() const { return m_data.width(); }
     int widthMin() const;  // Minimum width that can represent this number (~== log2(num)+1)
-    bool sized() const { return m_sized; }
-    bool autoExtend() const { return m_autoExtend; }
-    bool isFromString() const { return m_fromString; }
+    bool sized() const { return m_data.m_sized; }
+    bool autoExtend() const { return m_data.m_autoExtend; }
+    bool isFromString() const { return m_data.m_fromString; }
+    V3NumberDataType dataType() const { return m_data.type(); }
+    void dataType(V3NumberDataType newType) {
+        if (dataType() == newType) return;
+        UASSERT(newType != V3NumberDataType::UNINITIALIZED, "Can't set type to UNINITIALIZED.");
+        switch (newType) {
+        case V3NumberDataType::STRING: m_data.setString(); break;
+        case V3NumberDataType::DOUBLE: m_data.setDouble(); break;
+        case V3NumberDataType::LOGIC: m_data.setLogic(); break;
+        case V3NumberDataType::UNINITIALIZED: break;
+        }
+    }
     // Only correct for parsing of numbers from strings, otherwise not used
     // (use AstConst::isSigned())
-    bool isSigned() const { return m_signed; }
-    // Only correct for parsing of numbers from strings, otherwise not used
-    // (use AstConst::isSigned())
-    bool isDouble() const { return m_double; }
-    // Only if have 64 bit value loaded, and want to indicate it's real
-    bool isString() const { return m_isString; }
-    bool isNegative() const { return bitIs1(width() - 1); }
-    bool isNull() const { return m_isNull; }
+    bool isSigned() const { return m_data.m_signed; }
+    void isSigned(bool ssigned) { m_data.m_signed = ssigned; }
+    bool isDouble() const { return dataType() == V3NumberDataType::DOUBLE; }
+    bool isString() const { return dataType() == V3NumberDataType::STRING; }
+    bool isNumber() const {
+        return m_data.type() == V3NumberDataType::LOGIC
+               || m_data.type() == V3NumberDataType::DOUBLE;
+    }
+    bool isNegative() const { return !isString() && bitIs1(width() - 1); }
+    bool isNull() const { return m_data.m_isNull; }
     bool isFourState() const;
     bool hasZ() const {
+        if (isString()) return false;
         for (int i = 0; i < words(); i++) {
-            const ValueAndX v = m_value[i];
+            const ValueAndX v = m_data.num()[i];
             if ((~v.m_value) & v.m_valueX) return true;
         }
         return false;
@@ -337,11 +606,10 @@ public:
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
-    void isSigned(bool ssigned) { m_signed = ssigned; }
     bool isAnyX() const;
     bool isAnyXZ() const;
     bool isAnyZ() const;
-    bool isMsbXZ() const { return bitIsXZ(m_width - 1); }
+    bool isMsbXZ() const { return bitIsXZ(m_data.width() - 1); }
     uint32_t toUInt() const;
     int32_t toSInt() const;
     uint64_t toUQuad() const;
