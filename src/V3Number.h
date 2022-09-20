@@ -264,10 +264,11 @@ public:
     void setLogic() {
         if (isString()) destroyString();
         if (!isNumber()) {
-            if (m_width <= MAX_INLINE_WIDTH)
+            if (m_width <= MAX_INLINE_WIDTH) {
                 initInlineNumber();
-            else
+            } else {
                 initDynamicNumber(bitsToWords(m_width));
+            }
         }
         m_type = V3NumberDataType::LOGIC;
         resize(m_width);
