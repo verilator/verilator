@@ -552,6 +552,11 @@ class EmitCModel final : public EmitCFunc {
                     "elaboration.\");\n");
             puts(/**/ "}");
         }
+        puts(/**/ "if (tfp->isOpen()) {\n");
+        puts(/****/ "vl_fatal(__FILE__, __LINE__, __FILE__,\"'" + topClassName()
+             + +"::trace()' shall not be called after '" + v3Global.opt.traceClassBase()
+             + "C::open()'.\");\n");
+        puts(/**/ "}\n");
         puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
         puts(/**/ "tfp->spTrace()->addModel(this);\n");
         puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
