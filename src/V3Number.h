@@ -63,7 +63,7 @@ public:
         DOUBLE = 2,
         STRING = 3,
     };
-    inline friend std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) {
+    friend std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) {
         switch (rhs) {
         case V3NumberDataType::UNINITIALIZED: return os << "UNINITIALIZED";
         case V3NumberDataType::LOGIC: return os << "LOGIC";
@@ -192,19 +192,19 @@ public:
     }
 
     // ACCESSORS
-    inline ValueAndX* num() {
+    ValueAndX* num() {
         UASSERT(isNumber(), "`num` member accessed when data type is " << m_type);
         return isInlineNumber() ? m_inlineNumber.data() : m_dynamicNumber.data();
     }
-    inline const ValueAndX* num() const {
+    const ValueAndX* num() const {
         UASSERT(isNumber(), "`num` member accessed when data type is " << m_type);
         return isInlineNumber() ? m_inlineNumber.data() : m_dynamicNumber.data();
     }
-    inline std::string& str() {
+    std::string& str() {
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
         return m_string;
     }
-    inline const std::string& str() const {
+    const std::string& str() const {
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
         return m_string;
     }
@@ -277,34 +277,34 @@ public:
 private:
     static constexpr int bitsToWords(int bitsCount) { return (bitsCount + 31) / 32; }
 
-    inline bool isNumber() const {
+    bool isNumber() const {
         return m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC;
     }
-    inline bool isInlineNumber() const {
+    bool isInlineNumber() const {
         return (m_width <= MAX_INLINE_WIDTH)
                && (m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC);
     }
-    inline bool isDynamicNumber() const {
+    bool isDynamicNumber() const {
         return (m_width > MAX_INLINE_WIDTH) && (m_type == V3NumberDataType::LOGIC);
     }
-    inline bool isString() const { return m_type == V3NumberDataType::STRING; }
+    bool isString() const { return m_type == V3NumberDataType::STRING; }
 
     template <typename... Args>
-    inline void initInlineNumber(Args&&... args) {
+    void initInlineNumber(Args&&... args) {
         new (&m_inlineNumber) std::array<ValueAndX, INLINE_WORDS>(std::forward<Args>(args)...);
     }
     template <typename... Args>
-    inline void initDynamicNumber(Args&&... args) {
+    void initDynamicNumber(Args&&... args) {
         new (&m_dynamicNumber) std::vector<ValueAndX>(std::forward<Args>(args)...);
     }
     template <typename... Args>
-    inline void initString(Args&&... args) {
+    void initString(Args&&... args) {
         new (&m_string) std::string(std::forward<Args>(args)...);
     }
 
-    inline void destroyDynamicNumber() { m_dynamicNumber.~vector(); }
-    inline void destroyString() { m_string.~string(); }
-    inline void destroyStoredValue() {
+    void destroyDynamicNumber() { m_dynamicNumber.~vector(); }
+    void destroyString() { m_string.~string(); }
+    void destroyStoredValue() {
         if (isString())
             destroyString();
         else if (isDynamicNumber())
@@ -312,7 +312,7 @@ private:
     }
 
     template <typename T>
-    inline void reinitWithOrAssignDynamicNumber(T&& s) {
+    void reinitWithOrAssignDynamicNumber(T&& s) {
         if (isDynamicNumber()) {
             m_dynamicNumber = std::forward<T>(s);
             return;
@@ -321,7 +321,7 @@ private:
         initDynamicNumber(std::forward<T>(s));
     }
     template <typename T>
-    inline void reinitWithOrAssignString(T&& s) {
+    void reinitWithOrAssignString(T&& s) {
         if (isString()) {
             m_string = std::forward<T>(s);
             return;
