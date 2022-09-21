@@ -181,7 +181,7 @@ Summary:
    individual bits, Verilator will attempt to decompose the vector and
    connect the single-bit clock signals.
 
-   In versions prior to 5.002, the clocker attribute is useful in cases where
+   In versions prior to 5.000, the clocker attribute is useful in cases where
    Verilator does not properly distinguish clock signals from other data
    signals. Using clocker will cause the signal indicated to be considered a
    clock, and remove it from the combinatorial logic reevaluation checking
@@ -795,7 +795,7 @@ Summary:
 
    Deprecated and has no effect (ignored).
 
-   In versions prior to 5.002:
+   In versions prior to 5.000:
 
    Rarely needed.  Disables a bug fix for ordering of clock enables with
    delayed assignments.  This option should only be used when suggested by
@@ -1618,7 +1618,7 @@ The grammar of configuration commands is as follows:
 
    Deprecated and has no effect (ignored).
 
-   In versions prior to 5.002:
+   In versions prior to 5.000:
 
    Indicate the signal is used to gate a clock, and the user takes
    responsibility for insuring there are no races related to it.

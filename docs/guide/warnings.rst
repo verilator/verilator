@@ -316,6 +316,20 @@ List Of Warnings
    potential for reset glitches.
 
 
+.. option:: CLKDATA
+
+   Historical, never issued since version 5.000.
+
+   Warned that clock signal was mixed used with/as data signal. The
+   checking for this warning was enabled only if user has explicitly marked
+   some signal as clocker using command line option or in-source meta
+   comment (see :vlopt:`--clk`).
+
+   The warning could be disabled without affecting the simulation
+   result. But it was recommended to check the warning as it may have
+   degrated the performance of the Verilated model.
+
+
 .. option:: CMPCONST
 
    .. TODO better example
@@ -577,6 +591,14 @@ List Of Warnings
    with a newline."
 
 
+.. option:: GENCLK
+
+   Historical, never issued since version 5.000.
+
+   Indicated that the specified signal was generated inside the model, and
+   was also being used as a clock.
+
+
 .. option:: HIERBLOCK
 
    Warns that the top module is marked as a hierarchy block by the
@@ -632,6 +654,16 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly.
+
+
+.. option:: IMPERFECTSCH
+
+   Historical, never issued since version 5.000.
+
+   Warned that the scheduling of the model is not absolutely perfect, and
+   some manual code edits may result in faster performance.  This warning
+   defaulted to off, was not part of -Wall, and had to be turned on
+   explicitly before the top module statement is processed.
 
 
 .. option:: IMPLICIT
@@ -1362,6 +1394,16 @@ List Of Warnings
    undriven (...) and will be removed".
 
 
+.. option:: UNOPT
+
+   Historical, never issued since version 5.000.
+
+   Warned that due to some construct, optimization of the specified signal
+   or block was disabled.
+
+   Ignoring this warning only slowed simulations, it simulated correctly.
+
+
 .. option:: UNOPTFLAT
 
    .. TODO better example
@@ -1429,6 +1471,10 @@ List Of Warnings
    are independent, but occur in the same always block.  To fix this, use
    the :option:`/*verilator&32;isolate_assignments*/` metacomment described
    above.
+
+   Prior to version 5.000, the UNOPTFLAT warning may also have been due to
+   clock enables, identified from the reported path going through a clock
+   gating instance.  To fix these, the clock_enable meta comment was used.
 
    To assist in resolving UNOPTFLAT, the option :vlopt:`--report-unoptflat`
    can be used, which will provide suggestions for variables that can be
@@ -1700,32 +1746,3 @@ List Of Warnings
    Inactive region. Such processes do get resumed in the same time slot
    somewhere in the Active region. Issued only if Verilator is run with the
    :vlopt:`--timing` option.
-
-
-Historical Warnings
-===================
-
-The following list of warnings used to be issued by some earlier versions of
-Verilator. The current version never issues these warnings. For compatibility,
-these warning codes are still accepted by the message control mechanisms (see
-:ref:`Disabling Warnings`), but have no other effect.
-
-
-.. option:: CLKDATA
-
-   Historical, never issued by current version of Verilator.
-
-
-.. option:: GENCLK
-
-   Historical, never issued by current version of Verilator.
-
-
-.. option:: IMPERFECTSCH
-
-   Historical, never issued by current version of Verilator.
-
-
-.. option:: UNOPT
-
-   Historical, never issued by current version of Verilator.

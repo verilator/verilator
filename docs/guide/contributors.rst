@@ -151,8 +151,8 @@ In 2018, Verilator 4.000 was released with multithreaded support.
 In 2019, Verilator joined the `CHIPS Alliance
 <https://chipsalliance.org>`_.
 
-In 2022, Verilator 5.000 was released with IEEE scheduling semantics
-and other improvements.
+In 2022, Verilator 5.000 was released with IEEE scheduling semantics,
+fork/join, delay handling, and other improvements.
 
 Currently, various language features and performance enhancements are added
 as the need arises.  Verilator is now about 3x faster than in 2002, and is

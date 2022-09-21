@@ -162,7 +162,7 @@ or "`ifdef`"'s may break other tools.
 
    Deprecated and has no effect (ignored).
 
-   In versions prior to 5.002:
+   In versions prior to 5.000:
 
    Used after a signal declaration to indicate the signal is used to gate a
    clock, and the user takes responsibility for insuring there are no races
