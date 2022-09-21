@@ -910,7 +910,9 @@ def write_op_checks(filename):
         indent = ""
 
         def emitBlock(pattern, **fmt):
-            fh.write(textwrap.indent(textwrap.dedent(pattern), indent).format(**fmt))
+            fh.write(
+                textwrap.indent(textwrap.dedent(pattern),
+                                indent).format(**fmt))
 
         for node in SortedNodes:
             if not node.isLeaf:
@@ -924,7 +926,7 @@ def write_op_checks(filename):
             indent = "    "
             for n in range(1, 5):
                 op = node.getOp(n)
-                emitBlock("// Checking op{n}p\n",n=n)
+                emitBlock("// Checking op{n}p\n", n=n)
                 if op:
                     name, monad, kind = op
                     if not monad:
@@ -967,14 +969,17 @@ def write_op_checks(filename):
                                   nodeName=node.name,
                                   opName=name,
                                   kind=kind,
-next = "VN_AS(opp->nextp(), {kind})".format(kind=kind) if kind != "Node" else "opp->nextp()"
-)
+                                  next="VN_AS(opp->nextp(), {kind})".format(
+                                      kind=kind)
+                                  if kind != "Node" else "opp->nextp()")
                     else:
                         sys.exit("Unknown operand type")
                 else:
                     emitBlock('''\
                         UASSERT_OBJ(!currp->op{n}p(), currp, "Ast{nodeName} does not use op{n}p()");
-                        ''', n=n, nodeName=node.name)
+                        ''',
+                              n=n,
+                              nodeName=node.name)
             indent = ""
             emitBlock('''\
                     break;
