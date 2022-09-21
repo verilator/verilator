@@ -1470,8 +1470,7 @@ class AstNode VL_NOT_FINAL {
 private:
     AstNode* cloneTreeIter();
     AstNode* cloneTreeIterList();
-    void checkTreeIter(AstNode* backp);
-    void checkTreeIterList(AstNode* backp);
+    void checkTreeIter(const AstNode* backp) const;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
                              bool gateOnly);
@@ -1826,7 +1825,9 @@ public:
     // Does tree of this == node2p?, not allowing non-isGateOptimizable
     inline bool sameGateTree(const AstNode* node2p) const;
     void deleteTree();  // Always deletes the next link
-    void checkTree();  // User Interface version
+    void checkTree() const {
+        if (v3Global.opt.debugCheck()) checkTreeIter(backp());
+    }
     void checkIter() const;
     void dumpPtrs(std::ostream& os = std::cout) const;
     void dumpTree(std::ostream& os = std::cout, const string& indent = "    ",

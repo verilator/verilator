@@ -999,43 +999,12 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 //======================================================================
 // Debugging
 
-void AstNode::checkTreeIter(AstNode* backp) {
+void AstNode::checkTreeIter(const AstNode* backp) const {
     // private: Check a tree and children
     UASSERT_OBJ(backp == this->backp(), this, "Back node inconsistent");
-    if (VN_IS(this, NodeTermop) || VN_IS(this, NodeVarRef)) {
-        // Termops have a short-circuited iterateChildren, so check usage
-        UASSERT_OBJ(!(op1p() || op2p() || op3p() || op4p()), this,
-                    "Terminal operation with non-terminals");
-    }
-    if (m_op1p) m_op1p->checkTreeIterList(this);
-    if (m_op2p) m_op2p->checkTreeIterList(this);
-    if (m_op3p) m_op3p->checkTreeIterList(this);
-    if (m_op4p) m_op4p->checkTreeIterList(this);
-}
-
-void AstNode::checkTreeIterList(AstNode* backp) {
-    // private: Check a (possible) list of nodes, this is always the head of the list
-    // Audited to make sure this is never nullptr
-    AstNode* const headp = this;
-    const AstNode* tailp = this;
-    for (AstNode* nodep = headp; nodep; nodep = nodep->nextp()) {
-        nodep->checkTreeIter(backp);
-        UASSERT_OBJ(headp == this || !nextp(), this,
-                    "Headtailp should be null in middle of lists");
-        tailp = nodep;
-        backp = nodep;
-    }
-    UASSERT_OBJ(headp->m_headtailp == tailp, headp, "Tail in headtailp is inconsistent");
-    UASSERT_OBJ(tailp->m_headtailp == headp, tailp, "Head in headtailp is inconsistent");
-}
-
-void AstNode::checkTree() {
-    if (!debug()) return;
-    if (this->backp()) {
-        // Linked tree- check only the passed node
-        this->checkTreeIter(this->backp());
-    } else {
-        this->checkTreeIterList(this->backp());
+    switch (this->type()) {
+#include "V3Ast__gen_op_checks.h"
+    default: VL_UNREACHABLE;  // LCOV_EXCL_LINE
     }
 }
 

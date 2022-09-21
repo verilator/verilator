@@ -187,7 +187,6 @@ protected:
 public:
     ASTGEN_MEMBERS_NodeTermop;
     // Know no children, and hot function, so skip iterator for speed
-    // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
     void iterateChildren(VNVisitor& v) {}
     void dump(std::ostream& str) const override;
@@ -339,7 +338,6 @@ public:
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
-    // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
     void iterateChildren(VNVisitor& v) {}
 };
@@ -825,7 +823,7 @@ class AstImplication final : public AstNodeMath {
     // Verilog |-> |=>
     // @astgen op1 := lhsp : AstNode
     // @astgen op2 := rhsp : AstNode
-    // @astgen op3 := sentreep : AstSenTree
+    // @astgen op3 := sentreep : Optional[AstSenTree]
 public:
     AstImplication(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_Implication(fl) {

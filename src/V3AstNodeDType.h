@@ -281,7 +281,7 @@ public:
 class AstAssocArrayDType final : public AstNodeDType {
     // Associative array data type, ie "[some_dtype]"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
-    // @astgen op2 := keyChildDTypep : AstNodeDType // the key, which remains here as a pointer
+    // @astgen op2 := keyChildDTypep : Optional[AstNodeDType]
 private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
     AstNodeDType* m_keyDTypep;  // Keys of this type (after widthing)
@@ -996,7 +996,7 @@ public:
     bool isCompound() const override { return true; }
 };
 class AstRefDType final : public AstNodeDType {
-    // @astgen op1 := typeofp : AstNode
+    // @astgen op1 := typeofp : Optional[AstNode]
     // @astgen op2 := classOrPackageOpp : Optional[AstNode]
     // @astgen op3 := paramsp : List[AstPin]
 private:

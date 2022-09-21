@@ -904,6 +904,84 @@ def write_macros(filename):
             fh.write("\n")
 
 
+def write_op_checks(filename):
+    with open_file(filename) as fh:
+
+        indent = ""
+
+        def emitBlock(pattern, **fmt):
+            fh.write(textwrap.indent(textwrap.dedent(pattern), indent).format(**fmt))
+
+        for node in SortedNodes:
+            if not node.isLeaf:
+                continue
+
+            emitBlock('''\
+                case VNType::at{nodeName}: {{
+                    const Ast{nodeName}* const currp = static_cast<const Ast{nodeName}*>(this);
+                ''',
+                      nodeName=node.name)
+            indent = "    "
+            for n in range(1, 5):
+                op = node.getOp(n)
+                emitBlock("// Checking op{n}p\n",n=n)
+                if op:
+                    name, monad, kind = op
+                    if not monad:
+                        emitBlock('''\
+                            UASSERT_OBJ(currp->{opName}(), currp, "Ast{nodeName} must have non nullptr {opName}()");
+                            UASSERT_OBJ(!currp->{opName}()->nextp(), currp, "Ast{nodeName}::{opName}() cannot have a non nullptr nextp()");
+                            currp->{opName}()->checkTreeIter(currp);
+                            ''',
+                                  n=n,
+                                  nodeName=node.name,
+                                  opName=name)
+                    elif monad == "Optional":
+                        emitBlock('''\
+                            if (Ast{kind}* const opp = currp->{opName}()) {{
+                                UASSERT_OBJ(!currp->{opName}()->nextp(), currp, "Ast{nodeName}::{opName}() cannot have a non nullptr nextp()");
+                                opp->checkTreeIter(currp);
+                            }}
+                            ''',
+                                  n=n,
+                                  nodeName=node.name,
+                                  opName=name,
+                                  kind=kind)
+                    elif monad == "List":
+                        emitBlock('''\
+                            if (const Ast{kind}* const headp = currp->{opName}()) {{
+                                const AstNode* backp = currp;
+                                const Ast{kind}* tailp = headp;
+                                const Ast{kind}* opp = headp;
+                                do {{
+                                    opp->checkTreeIter(backp);
+                                    UASSERT_OBJ(opp == headp || !opp->nextp() || !opp->m_headtailp, opp, "Headtailp should be null in middle of lists");
+                                    backp = tailp = opp;
+                                    opp = {next};
+                                }} while (opp);
+                                UASSERT_OBJ(headp->m_headtailp == tailp, headp, "Tail in headtailp is inconsistent");
+                                UASSERT_OBJ(tailp->m_headtailp == headp, tailp, "Head in headtailp is inconsistent");
+                            }}
+                            ''',
+                                  n=n,
+                                  nodeName=node.name,
+                                  opName=name,
+                                  kind=kind,
+next = "VN_AS(opp->nextp(), {kind})".format(kind=kind) if kind != "Node" else "opp->nextp()"
+)
+                    else:
+                        sys.exit("Unknown operand type")
+                else:
+                    emitBlock('''\
+                        UASSERT_OBJ(!currp->op{n}p(), currp, "Ast{nodeName} does not use op{n}p()");
+                        ''', n=n, nodeName=node.name)
+            indent = ""
+            emitBlock('''\
+                    break;
+                }}
+                ''')
+
+
 ######################################################################
 # main
 
@@ -1005,6 +1083,7 @@ if Args.classes:
     write_types("V3Ast__gen_types.h")
     write_yystype("V3Ast__gen_yystype.h")
     write_macros("V3Ast__gen_macros.h")
+    write_op_checks("V3Ast__gen_op_checks.h")
 
 for cpt in Args.infiles:
     if not re.search(r'.cpp$', cpt):

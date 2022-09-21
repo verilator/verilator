@@ -101,10 +101,10 @@ AstPin::AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
 
 AstDpiExportUpdated::AstDpiExportUpdated(FileLine* fl, AstVarScope* varScopep)
     : ASTGEN_SUPER_DpiExportUpdated(fl) {
-    addOp1p(new AstVarRef{fl, varScopep, VAccess::WRITE});
+    this->varRefp(new AstVarRef{fl, varScopep, VAccess::WRITE});
 }
 
-AstVarScope* AstDpiExportUpdated::varScopep() const { return VN_AS(op1p(), VarRef)->varScopep(); }
+AstVarScope* AstDpiExportUpdated::varScopep() const { return varRefp()->varScopep(); }
 
 AstPackArrayDType::AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp,
                                      AstRange* rangep)
