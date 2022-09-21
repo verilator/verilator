@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     VerilatedVcdC tfp;
     Vt_trace_open_wrong_order dut;
     ctx.traceEverOn(true);
-    tfp.open("dump.vcd");  // Error! shall put to the next line!
+    tfp.open(VL_STRINGIFY(TEST_OBJ_DIR) "/dump.vcd");  // Error! shall put to the next line!
     dut.trace(&tfp, 99);  // Error!
     tfp.dump(0);
     tfp.close();
