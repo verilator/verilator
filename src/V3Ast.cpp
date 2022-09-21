@@ -1212,7 +1212,11 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
             const_cast<AstNode*>(this)->dump(nsstr);
             nsstr << endl;
         }
-        m_fileline->v3errorEnd(nsstr, instanceStr());
+        // Don't look for instance name when warning is disabled.
+        // In case of large number of warnings, this can
+        // take significant amount of time
+        m_fileline->v3errorEnd(nsstr,
+                               m_fileline->warnIsOff(V3Error::errorCode()) ? "" : instanceStr());
     }
 }
 
