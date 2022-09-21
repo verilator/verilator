@@ -115,19 +115,21 @@ Summary:
 
    Using this argument will likely cause incorrect simulation.
 
-.. option:: --bin <filename>
-
-   Rarely needed.  Override the default filename for Verilator itself.
-   When a dependency (.d) file is created, this filename will become a
-   source dependency, such that a change in this binary will have make
-   rebuild the output files.
-
 .. option:: --build
 
    After generating the SystemC/C++ code, Verilator will invoke the
    toolchain to build the model library (and executable when :vlopt:`--exe`
    is also used). Verilator manages the build itself, and for this --build
    requires GNU Make to be available on the platform.
+
+.. option:: --build-dep-bin <filename>
+
+   Rarely needed.  When a dependency (.d) file is created, this filename
+   will become a source dependency, such that a change in this binary will
+   have make rebuild the output files.  Defaults to the full path to the
+   Verilator binary.
+
+   This option was named `--bin` prior to version 4.228.
 
 .. option:: --build-jobs [<value>]
 

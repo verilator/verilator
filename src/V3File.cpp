@@ -154,7 +154,7 @@ void V3FileDependImp::writeDepend(const string& filename) {
         if (i.target()) *ofp << i.filename() << " ";
     }
     *ofp << " : ";
-    *ofp << v3Global.opt.bin();
+    *ofp << v3Global.opt.buildDepBin();
     *ofp << " ";
 
     for (const DependFile& i : m_filenameList) {

@@ -34,6 +34,7 @@ Verilator 4.227 devel
 
 * Support IEEE constant signal strengths (#3601). [Ryszard Rozak/Antmicro]
 * Add --main to generate main() C++ (previously was experimental only).
+* Rename --bin to --build-dep-bin.
 * Fix thread saftey in SystemC VL_ASSIGN_SBW/WSB (#3494) (#3513). [Mladen Slijepcevic]
 * Fix crash in gate optimization of circular logic (#3543). [Bill Flynn]
 * Fix arguments in non-static method call (#3547) (#3582). [Gustav Svensk]

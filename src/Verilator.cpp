@@ -565,7 +565,7 @@ static void verilate(const string& argString) {
     UINFO(1, "Option --verilate: Start Verilation\n");
 
     // Can we skip doing everything if times are ok?
-    V3File::addSrcDepend(v3Global.opt.bin());
+    V3File::addSrcDepend(v3Global.opt.buildDepBin());
     if (v3Global.opt.skipIdentical().isTrue()
         && V3File::checkTimes(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
                                   + "__verFiles.dat",
@@ -716,7 +716,7 @@ int main(int argc, char** argv, char** /*env*/) {
     V3PreShell::boot();
 
     // Command option parsing
-    v3Global.opt.bin(argv[0]);
+    v3Global.opt.buildDepBin(argv[0]);
     const string argString = V3Options::argString(argc - 1, argv + 1);
     v3Global.opt.parseOpts(new FileLine{FileLine::commandLineFilename()}, argc - 1, argv + 1);
 

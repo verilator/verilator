@@ -563,6 +563,7 @@ template <class T>
 T const& as_const(T& v) {
     return v;
 }
+
 };  // namespace vlstd
 
 //=========================================================================
