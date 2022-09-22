@@ -27,6 +27,8 @@
 #include <cmath>
 #include <functional>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 constexpr int MAX_SPRINTF_DOUBLE_SIZE
     = 1100;  // Maximum characters with a sprintf %e/%f/%g (really 1079)
 

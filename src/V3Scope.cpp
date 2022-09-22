@@ -34,6 +34,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Scope class functions
 
@@ -62,7 +64,6 @@ private:
         m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void cleanupVarRefs() {
         for (const auto& itr : m_varRefScopes) {
@@ -327,7 +328,6 @@ private:
     AstScope* m_scopep = nullptr;  // Current scope we are building
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     void visit(AstScope* nodep) override {
@@ -405,5 +405,5 @@ void V3Scope::scopeAll(AstNetlist* nodep) {
         const ScopeVisitor visitor{nodep};
         ScopeCleanupVisitor{nodep};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("scope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("scope", 0, dumpTree() >= 3);
 }

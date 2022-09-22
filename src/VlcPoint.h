@@ -102,6 +102,8 @@ private:
     std::vector<VlcPoint> m_points;  //< List of all points
     uint64_t m_numPoints = 0;  //< Total unique points
 
+    static int debug() { return V3Error::debugDefault(); }
+
 public:
     // ITERATORS
     using ByName = NameMap;

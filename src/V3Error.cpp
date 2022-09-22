@@ -20,6 +20,7 @@
 # include "V3Ast.h"
 # include "V3Global.h"
 # include "V3Stats.h"
+VL_DEFINE_DEBUG_FUNCTIONS;
 #endif
 // clang-format on
 
@@ -275,8 +276,10 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& extra) {
                     s_tellManual = 2;
                 }
 #ifndef V3ERROR_NO_GLOBAL_
-                if (debug()) {
+                if (dumpTree()) {
                     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree", 990));
+                }
+                if (debug()) {
                     if (s_errorExitCb) s_errorExitCb();
                     V3Stats::statsFinalAll(v3Global.rootp());
                     V3Stats::statsReport();

@@ -33,6 +33,8 @@
 #include "V3Global.h"
 #include "V3SenTree.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Active class functions
 
@@ -41,7 +43,6 @@ class ActiveTopVisitor final : public VNVisitor {
     SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     static bool isInitial(AstNode* nodep) {
         const VNUser1InUse user1InUse;
@@ -144,5 +145,5 @@ public:
 void V3ActiveTop::activeTopAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ActiveTopVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("activetop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("activetop", 0, dumpTree() >= 3);
 }

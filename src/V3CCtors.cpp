@@ -35,6 +35,8 @@
 #include <algorithm>
 #include <list>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 class VCtorType final {
 public:
     enum en : uint8_t { MODULE, CLASS, COVERAGE };

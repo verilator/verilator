@@ -188,7 +188,7 @@ class V3Options final {
 public:
 private:
     // TYPES
-    using DebugSrcMap = std::map<const std::string, int>;
+    using DebugLevelMap = std::map<const std::string, unsigned>;
 
     // MEMBERS (general options)
     V3OptionsImp* m_impp;  // Slow hidden options
@@ -206,8 +206,8 @@ private:
     V3StringSet m_noClockers;   // argument: Verilog -noclk signals
     V3StringList m_vFiles;      // argument: Verilog files to read
     V3StringList m_forceIncs;   // argument: -FI
-    DebugSrcMap m_debugSrcs;    // argument: --debugi-<srcfile>=<level>
-    DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
+    DebugLevelMap m_debugLevel; // argument: --debugi-<srcfile/tag> <level>
+    DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
     std::map<const string, string> m_parameters;  // Parameters
     std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
 
@@ -238,8 +238,6 @@ private:
     bool m_debugSelfTest = false;   // main switch: --debug-self-test
     bool m_decoration = true;       // main switch: --decoration
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
-    bool m_dumpDefines = false;     // main switch: --dump-defines
-    bool m_dumpTreeAddrids = false; // main switch: --dump-tree-addrids
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
     bool m_hierarchical = false;    // main switch: --hierarchical
@@ -286,7 +284,6 @@ private:
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
-    int         m_dumpTree = 0;     // main switch: --dump-tree
     int         m_expandLimit = 64;  // main switch: --expand-limit
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_hierChild = 0;      // main switch: --hierarchical-child
@@ -395,10 +392,10 @@ public:
     V3Options();
     ~V3Options();
     void setDebugMode(int level);
-    void setDebugSrcLevel(const string& srcfile, int level);
-    int debugSrcLevel(const string& srcfile_path, int default_level = V3Error::debugDefault());
-    void setDumpTreeLevel(const string& srcfile, int level);
-    int dumpTreeLevel(const string& srcfile_path);
+    unsigned debugLevel(const string& tag) const;
+    unsigned debugSrcLevel(const string& srcfile_path) const;
+    unsigned dumpLevel(const string& tag) const;
+    unsigned dumpSrcLevel(const string& srcfile_path) const;
 
     // METHODS
     void addCppFile(const string& filename);
@@ -452,7 +449,7 @@ public:
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool decoration() const { return m_decoration; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
-    bool dumpDefines() const { return m_dumpDefines; }
+    bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
     bool exe() const { return m_exe; }
     bool flatten() const { return m_flatten; }
     bool gmake() const { return m_gmake; }
@@ -493,8 +490,7 @@ public:
     int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
-    int dumpTree() const { return m_dumpTree; }
-    bool dumpTreeAddrids() const { return m_dumpTreeAddrids; }
+    bool dumpTreeAddrids() const;
     int expandLimit() const { return m_expandLimit; }
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }

@@ -77,7 +77,6 @@ public:
     void pushText(const string& text);  // Add arbitrary text (need not be line-by-line)
     string getLine(int lineno) const;
     string ascii() const { return "ct" + cvtToStr(m_id); }
-    static int debug();
 };
 std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
 

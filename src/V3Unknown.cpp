@@ -41,6 +41,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class UnknownVisitor final : public VNVisitor {
@@ -65,7 +67,6 @@ private:
     V3UniqueNames m_xrandNames;  // For generating unique temporary variable names
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void replaceBoundLvalue(AstNode* nodep, AstNode* condp) {
         // Spec says a out-of-range LHS SEL results in a NOP.
@@ -516,5 +517,5 @@ public:
 void V3Unknown::unknownAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { UnknownVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("unknown", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("unknown", 0, dumpTree() >= 3);
 }

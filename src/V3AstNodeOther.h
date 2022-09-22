@@ -433,7 +433,7 @@ public:
 };
 class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeStmt {
     // A reference to a task (or function)
-    // @astgen op1 := namep : AstNode
+    // @astgen op1 := namep : Optional[AstNode]
     // op2 used by some sub-types only
     // @astgen op3 := pinsp : List[AstNode]
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
@@ -1737,7 +1737,7 @@ public:
 };
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE
-    // @astgen op1 := sensp : AstNode // Sensitivity expression
+    // @astgen op1 := sensp : Optional[AstNode] // Sensitivity expression
     VEdgeType m_edgeType;  // Edge type
 public:
     class Combo {};  // for constructor type-overload selection
@@ -3523,7 +3523,8 @@ class AstTraceDecl final : public AstNodeStmt {
     // Trace point declaration
     // Separate from AstTraceInc; as a declaration can't be deleted
     // Parents:  {statement list}
-    // @astgen op1 := valuep : AstNode // Expressio being traced
+    // Expression being traced - Moved to AstTraceInc by V3Trace
+    // @astgen op1 := valuep : Optional[AstNode]
 private:
     uint32_t m_code = 0;  // Trace identifier code; converted to ASCII by trace routines
     const string m_showname;  // Name of variable

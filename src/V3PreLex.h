@@ -225,9 +225,8 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     // Called by VPreStream
     void streamDepthAdd(int delta) { m_streamDepth += delta; }
     int streamDepth() const { return m_streamDepth; }
-    /// Utility
-    static int debug();
-    static void debug(int level);
+    // Utility
+    static void setYYDebug(bool on);
     static string cleanDbgStrg(const string& in);
 
 private:

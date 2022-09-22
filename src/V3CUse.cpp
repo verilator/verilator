@@ -32,6 +32,8 @@
 
 #include <set>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 // Visit within a module all nodes and data types they reference, finding
@@ -106,5 +108,5 @@ void V3CUse::cUseAll() {
         // for each output file and put under that
         CUseVisitor{modp};
     }
-    V3Global::dumpCheckGlobalTree("cuse", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("cuse", 0, dumpTree() >= 3);
 }

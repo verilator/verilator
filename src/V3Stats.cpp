@@ -28,6 +28,8 @@
 #include <iomanip>
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Stats class functions
 
@@ -61,7 +63,6 @@ private:
     VDouble0 m_statVarScpBytes;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void allNodes(AstNode* nodep) {
         m_instrs += nodep->instrCount();

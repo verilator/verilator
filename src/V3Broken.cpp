@@ -36,6 +36,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Generation counter for AstNode::m_brokenState
 

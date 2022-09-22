@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Link state, as a visitor of each AstNode
 
@@ -54,9 +56,6 @@ private:
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
     bool m_underGenerate = false;  // Under GenFor/GenIf
-
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITs
     // TODO: Most of these visitors are here for historical reasons.
@@ -483,9 +482,6 @@ private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
 
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.
@@ -521,5 +517,5 @@ void V3LinkResolve::linkResolve(AstNetlist* rootp) {
         const LinkResolveVisitor visitor{rootp};
         LinkBotupVisitor{rootp};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkresolve", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("linkresolve", 0, dumpTree() >= 6);
 }

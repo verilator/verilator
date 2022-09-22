@@ -24,6 +24,8 @@
 
 #include <iomanip>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 /// Estimate the instruction cost for executing all logic within and below
 /// a given AST node. Note this estimates the number of instructions we'll
 /// execute, not the number we'll generate. That is, for conditionals,
@@ -290,7 +292,6 @@ private:
         iterateChildren(nodep);
     }
 
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(InstrCountVisitor);
 };
 
@@ -326,7 +327,7 @@ private:
         }
         --m_depth;
     }
-    VL_DEBUG_FUNC;  // Declare debug()
+
     VL_UNCOPYABLE(InstrCountDumpVisitor);
 };
 

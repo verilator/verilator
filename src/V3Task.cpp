@@ -38,6 +38,8 @@
 #include <map>
 #include <tuple>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Graph subclasses
 
@@ -281,7 +283,7 @@ public:
         iterate(nodep);
         //
         m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
-        m_callGraph.dumpDotFilePrefixed("task_call");
+        if (dumpGraph()) m_callGraph.dumpDotFilePrefixed("task_call");
     }
     ~TaskStateVisitor() override = default;
     VL_UNCOPYABLE(TaskStateVisitor);
@@ -365,7 +367,6 @@ private:
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
         AstVar* const newvarp = new AstVar(funcp->fileline(), VVarType::BLOCKTEMP, name, examplep);
@@ -1812,5 +1813,5 @@ void V3Task::taskAll(AstNetlist* nodep) {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("task", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("task", 0, dumpTree() >= 3);
 }

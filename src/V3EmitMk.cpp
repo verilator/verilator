@@ -24,13 +24,14 @@
 #include "V3HierBlock.h"
 #include "V3Os.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Emit statements and math operators
 
 class EmitMk final {
 public:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
         of.puts("\t" + V3Os::filenameNonDirExt(name) + " \\\n");
@@ -404,7 +405,6 @@ public:
         V3OutMkFile of(m_makefile);
         emit(of);
     }
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################

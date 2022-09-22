@@ -48,6 +48,8 @@
 #include <unordered_map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 namespace V3Sched {
 
 namespace {
@@ -132,8 +134,6 @@ class SchedGraphBuilder final : public VNVisitor {
     std::function<bool(AstVarScope*)> m_readTriggersThisLogic;
     // The DPI export trigger variable, if any
     AstVarScope* const m_dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp();
-
-    VL_DEBUG_FUNC;
 
     SchedVarVertex* getVarVertex(AstVarScope* vscp) const {
         if (!vscp->user1p()) {
@@ -341,11 +341,11 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
     // Build the graph
     const std::unique_ptr<V3Graph> graphp
         = SchedGraphBuilder::build(clockedLogic, combinationalLogic, hybridLogic);
-    if (debug() > 6) graphp->dumpDotFilePrefixed("sched");
+    if (dumpGraph() >= 6) graphp->dumpDotFilePrefixed("sched");
 
     // Partition into Active and NBA regions
     colorActiveRegion(*(graphp.get()));
-    if (debug() > 6) graphp->dumpDotFilePrefixed("sched-partitioned", true);
+    if (dumpGraph() >= 6) graphp->dumpDotFilePrefixed("sched-partitioned", true);
 
     LogicRegions result;
 

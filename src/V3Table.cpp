@@ -34,6 +34,8 @@
 #include <cmath>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Table class functions
 
@@ -169,7 +171,6 @@ private:
     std::vector<TableOutputVar> m_outVarps;  // Output variable list
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     void simulateVarRefCb(AstVarRef* nodep) {
@@ -430,5 +431,5 @@ void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
 void V3Table::tableAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TableVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("table", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("table", 0, dumpTree() >= 3);
 }

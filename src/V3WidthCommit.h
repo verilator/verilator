@@ -35,8 +35,9 @@
 /// This step is only called on real V3Width, not intermediate e.g. widthParams
 
 class WidthRemoveVisitor final : public VNVisitor {
-private:
     // METHODS
+    VL_DEFINE_DEBUG_FUNCTIONS;
+
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
         UINFO(6, " Replace " << nodep << " w/ " << newp << endl);
         nodep->replaceWith(newp);
@@ -74,6 +75,8 @@ class WidthCommitVisitor final : public VNVisitor {
 
 public:
     // METHODS
+    VL_DEFINE_DEBUG_FUNCTIONS;
+
     static AstConst* newIfConstCommitSize(AstConst* nodep) {
         if (((nodep->dtypep()->width() != nodep->num().width()) || !nodep->num().sized())
             && !nodep->num().isString()) {  // Need to force the number from unsized to sized

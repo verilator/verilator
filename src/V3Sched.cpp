@@ -47,7 +47,7 @@
 #include "V3SenExprBuilder.h"
 #include "V3Stats.h"
 
-#include <unordered_set>
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace V3Sched {
 
@@ -1035,7 +1035,7 @@ void schedule(AstNetlist* netlistp) {
 
     netlistp->dpiExportTriggerp(nullptr);
 
-    V3Global::dumpCheckGlobalTree("sched", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("sched", 0, dumpTree() >= 3);
 }
 
 }  // namespace V3Sched

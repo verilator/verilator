@@ -38,6 +38,8 @@
 
 #include <unordered_map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //***** See below for main transformation engine
 
 //######################################################################
@@ -78,8 +80,6 @@ class LatchDetectGraph final : public V3Graph {
 protected:
     LatchDetectGraphVertex* m_curVertexp = nullptr;  // Current latch detection graph vertex
     std::vector<AstVarRef*> m_outputs;  // Vector of lvalues encountered on this pass
-
-    VL_DEBUG_FUNC;  // Declare debug()
 
     static LatchDetectGraphVertex* castVertexp(void* vertexp) {
         return reinterpret_cast<LatchDetectGraphVertex*>(vertexp);
@@ -183,7 +183,7 @@ public:
                         << " (not all control paths of combinational always assign a value)\n"
                         << nodep->warnMore()
                         << "... Suggest use of always_latch for intentional latches");
-                if (debug() >= 9) dumpDotFilePrefixed("latch_" + vrp->name());
+                if (dumpGraph() >= 9) dumpDotFilePrefixed("latch_" + vrp->name());
             }
             vertp->user(false);  // Clear again (see above)
             vrp->varp()->isLatched(latch_detected);
@@ -198,12 +198,7 @@ public:
 //######################################################################
 // Collect existing active names
 
-class ActiveBaseVisitor VL_NOT_FINAL : public VNVisitor {
-protected:
-    VL_DEBUG_FUNC;  // Declare debug()
-};
-
-class ActiveNamer final : public ActiveBaseVisitor {
+class ActiveNamer final : public VNVisitor {
 private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope to add statement to
@@ -304,7 +299,7 @@ AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Combo>() {
 //######################################################################
 // Latch checking visitor
 
-class ActiveLatchCheckVisitor final : public ActiveBaseVisitor {
+class ActiveLatchCheckVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Input:
@@ -346,7 +341,7 @@ public:
 //######################################################################
 // Replace unsupported non-blocking assignments with blocking assignments
 
-class ActiveDlyVisitor final : public ActiveBaseVisitor {
+class ActiveDlyVisitor final : public VNVisitor {
 public:
     enum CheckType : uint8_t { CT_SEQ, CT_COMB, CT_INITIAL };
 
@@ -418,7 +413,7 @@ public:
 //######################################################################
 // Active class functions
 
-class ActiveVisitor final : public ActiveBaseVisitor {
+class ActiveVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Each call to V3Const::constify
@@ -631,5 +626,5 @@ public:
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ActiveVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("active", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("active", 0, dumpTree() >= 3);
 }

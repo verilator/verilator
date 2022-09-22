@@ -40,6 +40,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class ReloopVisitor final : public VNVisitor {
@@ -66,7 +68,6 @@ private:
     uint32_t m_mgIndexHi = 0;  // Merge range
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     static AstVar* findCreateVarTemp(FileLine* fl, AstCFunc* cfuncp) {
         AstVar* varp = VN_AS(cfuncp->user1p(), Var);
@@ -269,5 +270,5 @@ public:
 void V3Reloop::reloopAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ReloopVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("reloop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("reloop", 0, dumpTree() >= 6);
 }

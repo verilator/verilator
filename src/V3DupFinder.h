@@ -59,7 +59,6 @@ public:
     }
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // Expose minimal set of superclass interface
     using Super::begin;

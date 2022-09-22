@@ -38,6 +38,8 @@
 #include <memory>  // for std::unique_ptr -> auto_ptr or unique_ptr
 #include <unordered_map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // LifePost class functions
 
@@ -50,8 +52,6 @@ private:
     //  AstVarScope::user4p()   -> AstVarScope*, If set, replace this
     //                             varscope with specified new one
     // STATE
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     void visit(AstVarRef* nodep) override {
@@ -160,8 +160,6 @@ private:
     bool m_inEvalNba = false;  // Traversing under _eval__nba
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     bool before(const LifeLocation& a, const LifeLocation& b) {
         if (a.mtaskp == b.mtaskp) return a.sequence < b.sequence;
         return m_checker->pathExistsFrom(a.mtaskp, b.mtaskp);
@@ -371,5 +369,5 @@ void V3LifePost::lifepostAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Mark redundant AssignPost
     { LifePostDlyVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("life_post", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("life_post", 0, dumpTree() >= 3);
 }

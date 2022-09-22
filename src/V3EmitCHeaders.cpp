@@ -24,12 +24,13 @@
 #include <algorithm>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Internal EmitC implementation
 
 class EmitCHeader final : public EmitCConstInit {
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void decorateFirst(bool& first, const string& str) {
         if (first) {

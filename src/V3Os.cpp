@@ -29,8 +29,13 @@
 #include "verilatedos.h"
 
 // Limited V3 headers here - this is a base class for Vlc etc
-#include "V3String.h"
 #include "V3Os.h"
+#include "V3String.h"
+
+#ifndef V3ERROR_NO_GLOBAL_
+#include "V3Global.h"
+VL_DEFINE_DEBUG_FUNCTIONS;
+#endif
 
 #include <cerrno>
 #include <climits>  // PATH_MAX (especially on FreeBSD)
@@ -38,6 +43,7 @@
 #include <dirent.h>
 #include <fstream>
 #include <memory>
+
 #include <sys/stat.h>
 #include <sys/types.h>
 

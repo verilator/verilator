@@ -26,6 +26,8 @@
 
 #include <list>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // ProtectLib top-level visitor
 

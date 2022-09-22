@@ -32,6 +32,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Inst state, as a visitor of each AstNode
 
@@ -44,9 +46,6 @@ private:
 
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell
-
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     void visit(AstCell* nodep) override {
@@ -146,8 +145,6 @@ private:
     // STATE
     std::map<const std::string, AstVar*> m_modVarNameMap;  // Per module, name of cloned variables
 
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // VISITORS
     void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), IfaceRefDType)) {
@@ -199,8 +196,6 @@ private:
     const AstRange* m_cellRangep = nullptr;
     int m_instSelNum = 0;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
-
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     void visit(AstVar* nodep) override {
@@ -492,7 +487,6 @@ public:
 
 class InstStatic final {
 private:
-    VL_DEBUG_FUNC;  // Declare debug()
     InstStatic() = default;  // Static class
 
     static AstNode* extendOrSel(FileLine* fl, AstNode* rhsp, AstNode* cmpWidthp) {
@@ -622,11 +616,11 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("inst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("inst", 0, dumpTree() >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstDeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("dearray", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("dearray", 0, dumpTree() >= 6);
 }

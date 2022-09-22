@@ -53,8 +53,10 @@
 #include "V3SenTree.h"
 #include "V3UniqueNames.h"
 
-//######################################################################
-// Transform nodes affected by timing
+VL_DEFINE_DEBUG_FUNCTIONS;
+
+// ######################################################################
+//  Transform nodes affected by timing
 
 class TimingVisitor final : public VNVisitor {
 private:
@@ -127,7 +129,6 @@ private:
     SenTreeFinder m_finder{m_netlistp};  // Sentree finder and uniquifier
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
     // Get or create the dependency vertex for the given node
     DependencyVertex* getDependencyVertex(AstNode* const nodep) {
         if (!nodep->user3p()) nodep->user3p(new DependencyVertex{&m_depGraph, nodep});
@@ -635,7 +636,7 @@ public:
     explicit TimingVisitor(AstNetlist* nodep)
         : m_netlistp{nodep} {
         iterate(nodep);
-        if (debug() >= 6) m_depGraph.dumpDotFilePrefixed("timing_deps");
+        if (dumpGraph() >= 6) m_depGraph.dumpDotFilePrefixed("timing_deps");
     }
     ~TimingVisitor() override = default;
 };
@@ -646,5 +647,5 @@ public:
 void V3Timing::timingAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     TimingVisitor{nodep};
-    V3Global::dumpCheckGlobalTree("timing", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("timing", 0, dumpTree() >= 3);
 }

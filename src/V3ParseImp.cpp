@@ -38,6 +38,8 @@
 
 #include <sstream>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //======================================================================
 // Globals
 
@@ -58,7 +60,7 @@ V3ParseImp::~V3ParseImp() {
 
     if (debug() >= 9) {
         UINFO(0, "~V3ParseImp\n");
-        symp()->dump(cout, "-vpi: ");
+        symp()->dumpSelf(cout, "-vpi: ");
     }
 }
 
@@ -497,7 +499,7 @@ void V3ParseImp::tokenPipelineSym() {
         const VSymEnt* foundp;
         if (const VSymEnt* const look_underp = V3ParseImp::parsep()->symp()->nextId()) {
             UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
-            // if (debug() >= 7) V3ParseImp::parsep()->symp()->dump(cout, " -symtree: ");
+            // if (debug() >= 7) V3ParseImp::parsep()->symp()->dumpSelf(cout, " -symtree: ");
             foundp = look_underp->findIdFallback(*(yylval.strp));
             // "consume" it.  Must set again if want another token under temp scope
             V3ParseImp::parsep()->symp()->nextId(nullptr);
@@ -505,7 +507,7 @@ void V3ParseImp::tokenPipelineSym() {
             UINFO(7, "   tokenPipelineSym: find upward "
                          << V3ParseImp::parsep()->symp()->symCurrentp() << " for '"
                          << *(yylval.strp) << "'" << endl);
-            // if (debug()>=9) V3ParseImp::parsep()->symp()->symCurrentp()->dump(cout,
+            // if (debug()>=9) V3ParseImp::parsep()->symp()->symCurrentp()->dumpSelf(cout,
             // " -findtree: ", true);
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }

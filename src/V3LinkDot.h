@@ -28,32 +28,13 @@
 enum VLinkDotStep : uint8_t { LDS_PRIMARY, LDS_PARAMED, LDS_ARRAYED, LDS_SCOPED };
 
 class V3LinkDot final {
-private:
-    static int debug();
     static void linkDotGuts(AstNetlist* rootp, VLinkDotStep step);
 
 public:
-    static void linkDotPrimary(AstNetlist* nodep) {
-        UINFO(2, __FUNCTION__ << ": " << endl);
-        linkDotGuts(nodep, LDS_PRIMARY);
-        V3Global::dumpCheckGlobalTree("linkdot", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
-    }
-    static void linkDotParamed(AstNetlist* nodep) {
-        UINFO(2, __FUNCTION__ << ": " << endl);
-        linkDotGuts(nodep, LDS_PARAMED);
-        V3Global::dumpCheckGlobalTree("linkdotparam", 0,
-                                      v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
-    }
-    static void linkDotArrayed(AstNetlist* nodep) {
-        UINFO(2, __FUNCTION__ << ": " << endl);
-        linkDotGuts(nodep, LDS_ARRAYED);
-        V3Global::dumpCheckGlobalTree("linkdot", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
-    }
-    static void linkDotScope(AstNetlist* nodep) {
-        UINFO(2, __FUNCTION__ << ": " << endl);
-        linkDotGuts(nodep, LDS_SCOPED);
-        V3Global::dumpCheckGlobalTree("linkdot", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
-    }
+    static void linkDotPrimary(AstNetlist* nodep);
+    static void linkDotParamed(AstNetlist* nodep);
+    static void linkDotArrayed(AstNetlist* nodep);
+    static void linkDotScope(AstNetlist* nodep);
 };
 
 #endif  // Guard

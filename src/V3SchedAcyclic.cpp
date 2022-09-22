@@ -50,12 +50,14 @@
 #include <utility>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 namespace V3Sched {
 
 namespace {
 
-//##############################################################################
-// Data structures (graph types)
+// ##############################################################################
+//  Data structures (graph types)
 
 class LogicVertex final : public V3GraphVertex {
     AstNode* const m_logicp;  // The logic node this vertex represents
@@ -396,7 +398,7 @@ LogicByScope breakCycles(AstNetlist* netlistp, LogicByScope& combinationalLogic)
     if (graphp->empty()) return LogicByScope{};
 
     // Dump for debug
-    if (debug() > 6) graphp->dumpDotFilePrefixed("sched-comb-cycles");
+    if (dumpGraph() >= 6) graphp->dumpDotFilePrefixed("sched-comb-cycles");
 
     // Make graph acyclic by cutting some edges. Note: This also colors strongly connected
     // components which reportCycles uses to print each SCCs separately.

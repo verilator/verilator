@@ -43,6 +43,7 @@
 #include <memory>
 #include <thread>
 #include <set>
+#include <string>
 
 #include "config_rev.h"
 
@@ -50,6 +51,8 @@
 # include <io.h>  // open, close
 #endif
 // clang-format on
+
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // V3 Internal state
@@ -1069,7 +1072,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
     DECL_OPTION("-debugi", CbVal, [this](int v) { setDebugMode(v); });
     DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
-        setDebugSrcLevel(optp, std::atoi(valp));
+        m_debugLevel[optp] = std::atoi(valp);
     });
     DECL_OPTION("-debug-abort", CbCall,
                 V3Error::vlAbort)
@@ -1090,15 +1093,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
     DECL_OPTION("-decoration", OnOff, &m_decoration);
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
-    DECL_OPTION("-dump-defines", OnOff, &m_dumpDefines);
-    DECL_OPTION("-dump-tree", CbOnOff,
-                [this](bool flag) { m_dumpTree = flag ? 3 : 0; });  // Also see --dump-treei
-    DECL_OPTION("-dump-tree-addrids", OnOff, &m_dumpTreeAddrids);
-    DECL_OPTION("-dump-treei", Set, &m_dumpTree);
-    DECL_OPTION("-dump-treei-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
-        setDumpTreeLevel(optp, std::atoi(valp));
+    DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 3; });
+    DECL_OPTION("-no-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 0; });
+    DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
+        m_dumpLevel[optp] = std::atoi(valp);
     });
-
     DECL_OPTION("-E", Set, &m_preprocOnly);
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
@@ -1807,52 +1806,42 @@ V3Options::~V3Options() { VL_DO_CLEAR(delete m_impp, m_impp = nullptr); }
 
 void V3Options::setDebugMode(int level) {
     V3Error::debugDefault(level);
-    if (!m_dumpTree) m_dumpTree = 3;  // Don't override if already set.
+    if (!m_dumpLevel.count("tree")) m_dumpLevel["tree"] = 3;  // Don't override if already set.
     m_stats = true;
     m_debugCheck = true;
     cout << "Starting " << version() << endl;
 }
 
-void V3Options::setDebugSrcLevel(const string& srcfile, int level) {
-    const auto iter = m_debugSrcs.find(srcfile);
-    if (iter != m_debugSrcs.end()) {
-        iter->second = level;
-    } else {
-        m_debugSrcs.emplace(srcfile, level);
-    }
+unsigned V3Options::debugLevel(const string& tag) const {
+    const auto iter = m_debugLevel.find(tag);
+    return iter != m_debugLevel.end() ? iter->second : V3Error::debugDefault();
 }
 
-int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
+unsigned V3Options::debugSrcLevel(const string& srcfile_path) const {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
-    // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
-    const string srcfile = V3Os::filenameNonDirExt(srcfile_path);
-    const auto iter = m_debugSrcs.find(srcfile);
-    if (iter != m_debugSrcs.end()) {
-        return iter->second;
-    } else {
-        return default_level;
-    }
+    // That means we need to strip the filenames: ../Foo.cpp -> Foo
+    return debugLevel(V3Os::filenameNonDirExt(srcfile_path));
 }
 
-void V3Options::setDumpTreeLevel(const string& srcfile, int level) {
-    const auto iter = m_dumpTrees.find(srcfile);
-    if (iter != m_dumpTrees.end()) {
-        iter->second = level;
-    } else {
-        m_dumpTrees.emplace(srcfile, level);
-    }
+unsigned V3Options::dumpLevel(const string& tag) const {
+    const auto iter = m_dumpLevel.find(tag);
+    return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-int V3Options::dumpTreeLevel(const string& srcfile_path) {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
-    // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
-    const string srcfile = V3Os::filenameNonDirExt(srcfile_path);
-    const auto iter = m_dumpTrees.find(srcfile);
-    if (iter != m_dumpTrees.end()) {
-        return iter->second;
-    } else {
-        return m_dumpTree;
+    // That means we need to strip the filenames: ../Foo.cpp -> Foo
+    return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));
+}
+
+bool V3Options::dumpTreeAddrids() const {
+    static int level = -1;
+    if (VL_UNLIKELY(level < 0)) {
+        const unsigned value = dumpLevel("tree-addrids");
+        if (!available()) return value > 0;
+        level = static_cast<unsigned>(value);
     }
+    return level > 0;
 }
 
 void V3Options::optimize(int level) {

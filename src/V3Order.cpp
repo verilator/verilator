@@ -103,6 +103,8 @@
 #include <unordered_map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Order information stored under each AstNode::user1p()...
 
@@ -183,7 +185,6 @@ class OrderBuildVisitor final : public VNVisitor {
     std::function<bool(const AstVarScope*)> m_readTriggersCombLogic;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void iterateLogic(AstNode* nodep) {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
@@ -454,11 +455,7 @@ class OrderBuildVisitor final : public VNVisitor {
     OrderBuildVisitor(AstNetlist* /*nodep*/, const std::vector<V3Sched::LogicByScope*>& coll,
                       const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen)
         : m_trigToSen{trigToSen} {
-
-        // Enable debugging (3 is default if global debug; we want acyc debugging)
-        if (debug()) m_graphp->debug(5);
-
-        // Build the rest of the graph
+        // Build the graph
         for (const V3Sched::LogicByScope* const lbsp : coll) {
             for (const auto& pair : *lbsp) {
                 m_scopep = pair.first;
@@ -845,7 +842,6 @@ class OrderProcess final : VNDeleter {
     std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;  // Function ordinals
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void process(bool multiThreaded);
     void processDomains();
@@ -1432,7 +1428,7 @@ void OrderProcess::processMTasks() {
 
 void OrderProcess::process(bool multiThreaded) {
     // Dump data
-    m_graph.dumpDotFilePrefixed(m_tag + "_orderg_pre");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_pre");
 
     // Break cycles. Each strongly connected subgraph (including cutable
     // edges) will have its own color, and corresponds to a loop in the
@@ -1440,29 +1436,27 @@ void OrderProcess::process(bool multiThreaded) {
     // edges are actually still there, just with weight 0).
     UINFO(2, "  Acyclic & Order...\n");
     m_graph.acyclic(&V3GraphEdge::followAlwaysTrue);
-    m_graph.dumpDotFilePrefixed(m_tag + "_orderg_acyc");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_acyc");
 
     // Assign ranks so we know what to follow
     // Then, sort vertices and edges by that ordering
     m_graph.order();
-    m_graph.dumpDotFilePrefixed(m_tag + "_orderg_order");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_order");
 
     // Assign logic vertices to new domains
     UINFO(2, "  Domains...\n");
     processDomains();
-    m_graph.dumpDotFilePrefixed(m_tag + "_orderg_domain");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_domain");
 
-    if (debug() && v3Global.opt.dumpTree()) processEdgeReport();
+    if (dump()) processEdgeReport();
 
     if (!multiThreaded) {
         UINFO(2, "  Construct Move Graph...\n");
         processMoveBuildGraph();
-        if (debug() >= 4) {
-            // Different prefix (ordermv) as it's not the same graph
-            m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_start");
-        }
+        // Different prefix (ordermv) as it's not the same graph
+        if (dumpGraph() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_start");
         m_pomGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
-        if (debug() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_simpl");
+        if (dumpGraph() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_simpl");
 
         UINFO(2, "  Move...\n");
         processMove();
@@ -1472,7 +1466,7 @@ void OrderProcess::process(bool multiThreaded) {
     }
 
     // Dump data
-    m_graph.dumpDotFilePrefixed(m_tag + "_orderg_done");
+    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_done");
 }
 
 //######################################################################

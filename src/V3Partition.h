@@ -70,7 +70,6 @@ public:
 private:
     uint32_t setupMTaskDeps(V3Graph* mtasksp);
 
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(V3Partition);
 };
 

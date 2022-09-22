@@ -47,6 +47,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Cast state, as a visitor of each AstNode
 
@@ -60,7 +62,6 @@ private:
     // STATE
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedCast " << nodep << endl);
@@ -207,5 +208,5 @@ public:
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CastVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("cast", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("cast", 0, dumpTree() >= 3);
 }

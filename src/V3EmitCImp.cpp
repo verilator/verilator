@@ -28,6 +28,8 @@
 #include <set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Visitor that gathers the headers required by an AstCFunc
 

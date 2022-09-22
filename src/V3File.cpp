@@ -56,6 +56,8 @@
 #endif
 // clang-format on
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 // If change this code, run a test with the below size set very small
 // #define INFILTER_IPC_BUFSIZ 16
 constexpr int INFILTER_IPC_BUFSIZ = (64 * 1024);  // For debug, try this as a small number
@@ -346,7 +348,6 @@ class VInFilterImp final {
 
 private:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     bool readContents(const string& filename, StrList& outl) {
         if (m_pid) {

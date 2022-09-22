@@ -76,8 +76,10 @@
 #include <map>
 #include <vector>
 
-//######################################################################
-// Matcher classes (for suggestion matching)
+VL_DEFINE_DEBUG_FUNCTIONS;
+
+// ######################################################################
+//  Matcher classes (for suggestion matching)
 
 class LinkNodeMatcherClass final : public VNodeMatcher {
 public:
@@ -162,14 +164,14 @@ private:
 
 public:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-    void dump(const string& nameComment = "linkdot", bool force = false) {
-        if (debug() >= 6 || force) {
+
+    void dumpSelf(const string& nameComment = "linkdot", bool force = false) {
+        if (dump() >= 6 || force) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
             const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
             if (logp->fail()) v3fatal("Can't write " << filename);
             std::ostream& os = *logp;
-            m_syms.dump(os);
+            m_syms.dumpSelf(os);
             bool first = true;
             for (int samn = 0; samn < SAMN__MAX; ++samn) {
                 if (!m_scopeAliasMap[samn].empty()) {
@@ -191,9 +193,9 @@ public:
     }
     void preErrorDump() {
         static bool diddump = false;
-        if (!diddump && v3Global.opt.dumpTree()) {
+        if (!diddump && dumpTree()) {
             diddump = true;
-            dump("linkdot-preerr", true);
+            dumpSelf("linkdot-preerr", true);
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot-preerr.tree"));
         }
     }
@@ -726,8 +728,6 @@ class LinkDotFindVisitor final : public VNVisitor {
     int m_modWithNum = 0;  // With block number, 0=none seen
 
     // METHODS
-    static int debug() { return LinkDotState::debug(); }
-
     void makeImplicitNew(AstClass* nodep) {
         AstFunc* const newp = new AstFunc(nodep->fileline(), "new", nullptr, nullptr);
         newp->isConstructor(true);
@@ -1400,8 +1400,6 @@ private:
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     AstNodeModule* m_modp = nullptr;  // Current module
 
-    static int debug() { return LinkDotState::debug(); }
-
     void pinImplicitExprRecurse(AstNode* nodep) {
         // Under a pin, Check interconnect expression for a pin reference or a concat.
         // Create implicit variable as needed
@@ -1591,8 +1589,6 @@ class LinkDotScopeVisitor final : public VNVisitor {
     const AstScope* m_scopep = nullptr;  // The current scope
     VSymEnt* m_modSymp = nullptr;  // Symbol entry for current module
 
-    static int debug() { return LinkDotState::debug(); }
-
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
@@ -1756,9 +1752,6 @@ class LinkDotIfaceVisitor final : public VNVisitor {
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
 
-    // METHODS
-    static int debug() { return LinkDotState::debug(); }
-
     // VISITs
     void visit(AstModport* nodep) override {
         // Modport: Remember its name for later resolution
@@ -1905,8 +1898,6 @@ private:
             return sstr.str();
         }
     } m_ds;  // State to preserve across recursions
-
-    static int debug() { return LinkDotState::debug(); }
 
     // METHODS - Variables
     void createImplicitVar(VSymEnt* /*lookupSymp*/, AstVarRef* nodep, AstNodeModule* modp,
@@ -3176,21 +3167,19 @@ public:
 //######################################################################
 // Link class functions
 
-int V3LinkDot::debug() { return LinkDotState::debug(); }
-
 void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
-    if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
+    if (debug() >= 5 || dumpTree() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
     }
     LinkDotState state(rootp, step);
     const LinkDotFindVisitor visitor{rootp, &state};
-    if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
+    if (debug() >= 5 || dumpTree() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
     }
     if (step == LDS_PRIMARY || step == LDS_PARAMED) {
         // Initial link stage, resolve parameters
         const LinkDotParamVisitor visitors{rootp, &state};
-        if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
+        if (debug() >= 5 || dumpTree() >= 9) {
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-param.tree"));
         }
     } else if (step == LDS_ARRAYED) {
@@ -3199,16 +3188,40 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
         // process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
         const LinkDotScopeVisitor visitors{rootp, &state};
         v3Global.assertScoped(true);
-        if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
+        if (debug() >= 5 || dumpTree() >= 9) {
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
         }
     } else {
         v3fatalSrc("Bad case");
     }
-    state.dump();
+    state.dumpSelf();
     state.computeIfaceModSyms();
     state.computeIfaceVarSyms();
     state.computeScopeAliases();
-    state.dump();
+    state.dumpSelf();
     { LinkDotResolveVisitor{rootp, &state}; }
+}
+
+void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    linkDotGuts(nodep, LDS_PRIMARY);
+    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTree() >= 6);
+}
+
+void V3LinkDot::linkDotParamed(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    linkDotGuts(nodep, LDS_PARAMED);
+    V3Global::dumpCheckGlobalTree("linkdotparam", 0, dumpTree() >= 3);
+}
+
+void V3LinkDot::linkDotArrayed(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    linkDotGuts(nodep, LDS_ARRAYED);
+    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTree() >= 6);
+}
+
+void V3LinkDot::linkDotScope(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    linkDotGuts(nodep, LDS_SCOPED);
+    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTree() >= 3);
 }

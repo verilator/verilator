@@ -38,13 +38,14 @@
 #include <iomanip>
 #include <memory>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 constexpr int CDC_WEIGHT_ASYNC = 0x1000;  // Weight for edges that feed async logic
 
 //######################################################################
 
 class CdcBaseVisitor VL_NOT_FINAL : public VNVisitor {
 public:
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
@@ -323,13 +324,11 @@ private:
 
     void analyze() {
         UINFO(3, __FUNCTION__ << ": " << endl);
-        // if (debug() > 6) m_graph.dump();
-        if (debug() > 6) m_graph.dumpDotFilePrefixed("cdc_pre");
+        if (dumpGraph() > 6) m_graph.dumpDotFilePrefixed("cdc_pre");
+        // This will MAX across edge weights
+        m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
         //
-        m_graph.removeRedundantEdges(
-            &V3GraphEdge::followAlwaysTrue);  // This will MAX across edge weights
-        //
-        m_graph.dumpDotFilePrefixed("cdc_simp");
+        if (dumpGraph() >= 3) m_graph.dumpDotFilePrefixed("cdc_simp");
         //
         analyzeReset();
     }

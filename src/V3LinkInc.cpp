@@ -46,6 +46,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class LinkIncVisitor final : public VNVisitor {
@@ -64,8 +66,6 @@ private:
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
         // See also AstNode::addBeforeStmt; this predates that function
@@ -295,5 +295,5 @@ public:
 void V3LinkInc::linkIncrements(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LinkIncVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkinc", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("linkinc", 0, dumpTree() >= 3);
 }

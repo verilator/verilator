@@ -28,6 +28,8 @@
 #include <algorithm>
 #include <iostream>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class V3PreShellImp final {
@@ -41,21 +43,11 @@ protected:
     //---------------------------------------
     // METHODS
 
-    static int debug(bool reset = false) {
-        static int level = -1;
-        if (VL_UNLIKELY(level < 0) || reset) {
-            level = v3Global.opt.debugSrcLevel(__FILE__);
-            if (s_preprocp) s_preprocp->debug(debug());
-        }
-        return level;
-    }
-
     void boot() {
         // Create the implementation pointer
         if (!s_preprocp) {
             FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
             s_preprocp = V3PreProc::createPreProc(cmdfl);
-            s_preprocp->debug(debug());
             // Default defines
             FileLine* const prefl = new FileLine(FileLine::builtInFilename());
             s_preprocp->defineCmdLine(prefl, "VERILATOR", "1");  // LEAK_OK
@@ -88,8 +80,6 @@ protected:
 
     bool preproc(FileLine* fl, const string& modname, VInFilter* filterp, V3ParseImp* parsep,
                  const string& errmsg) {  // "" for no error
-        debug(true);  // Recheck if debug on - first check was before command line passed
-
         // Preprocess the given module, putting output in vppFilename
         UINFONL(1, "  Preprocessing " << modname << endl);
 

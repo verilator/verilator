@@ -28,9 +28,12 @@
 #include "verilatedos.h"
 
 #include "V3EmitCBase.h"
+#include "V3Error.h"
 #include "V3Sched.h"
 
 #include <unordered_map>
+
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace V3Sched {
 
@@ -371,7 +374,7 @@ void transformForks(AstNetlist* const netlistp) {
         ~ForkVisitor() override = default;
     };
     ForkVisitor{netlistp};
-    V3Global::dumpCheckGlobalTree("sched_forks", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("sched_forks", 0, dumpTree() >= 6);
 }
 
 }  // namespace V3Sched

@@ -33,6 +33,8 @@
 
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Branch state, as a visitor of each AstNode
 
@@ -49,7 +51,6 @@ private:
     std::vector<AstCFunc*> m_cfuncsp;  // List of all tasks
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void reset() {
         m_likely = false;

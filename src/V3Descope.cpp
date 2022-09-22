@@ -33,6 +33,8 @@
 
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class DescopeVisitor final : public VNVisitor {
@@ -53,7 +55,6 @@ private:
     FuncMmap m_modFuncs;  // Name of public functions added
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     static bool modIsSingleton(AstNodeModule* modp) {
         // True iff there's exactly one instance of this module in the design (including top).
@@ -279,5 +280,5 @@ public:
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DescopeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("descope", 0, dumpTree() >= 3);
 }

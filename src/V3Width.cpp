@@ -81,6 +81,8 @@
 #define VERILATOR_V3WIDTH_CPP_
 #include "V3WidthCommit.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 enum Stage : uint8_t {
@@ -235,9 +237,6 @@ private:
         EXTEND_LHS,  // Extend with sign if node signed. e.g. node=y in ASSIGN(y,x), "x = y"
         EXTEND_OFF  // No extension
     };
-
-    // METHODS
-    static int debug() { return V3Width::debug(); }
 
     // VISITORS
     //   Naming:  width_O{outputtype}_L{lhstype}_R{rhstype}_W{widthing}_S{signing}
@@ -6831,12 +6830,6 @@ public:
 //######################################################################
 // Width class functions
 
-int V3Width::debug() {
-    static int level = -1;
-    if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-    return level;
-}
-
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
@@ -6847,7 +6840,7 @@ void V3Width::width(AstNetlist* nodep) {
         WidthRemoveVisitor rvisitor;
         (void)rvisitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("width", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("width", 0, dumpTree() >= 3);
 }
 
 //! Single node parameter propagation
@@ -6883,5 +6876,5 @@ AstNode* V3Width::widthGenerateParamsEdit(
 void V3Width::widthCommit(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { WidthCommitVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("widthcommit", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("widthcommit", 0, dumpTree() >= 6);
 }

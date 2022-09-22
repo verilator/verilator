@@ -38,6 +38,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Convert every WRITE AstVarRef to a READ ref
 
@@ -79,7 +81,6 @@ private:
     bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     AstNode* createSenseEquation(AstSenItem* nodesp) {
         AstNode* senEqnp = nullptr;
@@ -221,5 +222,5 @@ public:
 void V3Clock::clockAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ClockVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("clock", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("clock", 0, dumpTree() >= 3);
 }

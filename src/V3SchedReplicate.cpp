@@ -42,7 +42,7 @@
 #include "V3Graph.h"
 #include "V3Sched.h"
 
-#include <vector>
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace V3Sched {
 
@@ -261,13 +261,13 @@ LogicReplicas replicateLogic(LogicRegions& logicRegionsRegions) {
     // Build the dataflow (dependency) graph
     const std::unique_ptr<Graph> graphp = buildGraph(logicRegionsRegions);
     // Dump for debug
-    graphp->dumpDotFilePrefixed("sched-replicate");
+    if (dumpGraph() >= 6) graphp->dumpDotFilePrefixed("sched-replicate");
     // Propagate driving region flags
     for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
         propagateDrivingRegions(static_cast<Vertex*>(vtxp));
     }
     // Dump for debug
-    graphp->dumpDotFilePrefixed("sched-replicate-propagated");
+    if (dumpGraph() >= 6) graphp->dumpDotFilePrefixed("sched-replicate-propagated");
     // Replicate the necessary logic
     return replicate(graphp.get());
 }

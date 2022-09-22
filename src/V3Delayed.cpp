@@ -61,6 +61,8 @@
 #include <deque>
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Delayed state, as a visitor of each AstNode
 
@@ -106,7 +108,6 @@ private:
     std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void markVarUsage(AstNodeVarRef* nodep, bool blocking) {
         // Ignore if warning is disabled on this reference (used by V3Force).
@@ -623,5 +624,5 @@ public:
 void V3Delayed::delayedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DelayedVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("delayed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("delayed", 0, dumpTree() >= 3);
 }

@@ -86,6 +86,8 @@
 #include <utility>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
     return v3Global.opt.makeDir() + "/" + prefix
            + (forCMake ? "_hierCMakeArgs.f" : "_hierMkArgs.f");
@@ -302,7 +304,6 @@ public:
         : m_planp{planp} {
         iterateChildren(netlist);
     }
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
