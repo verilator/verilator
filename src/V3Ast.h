@@ -95,18 +95,18 @@ public:
     // cppcheck-suppress uninitVar  // responsibility of each subclass
     VNType() = default;
     // cppcheck-suppress noExplicitConstructor
-    VNType(en _e)
+    constexpr VNType(en _e)
         : m_e{_e} {}
     explicit VNType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
 };
-inline bool operator==(const VNType& lhs, const VNType& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VNType& lhs, VNType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VNType::en lhs, const VNType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VNType& lhs, const VNType& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VNType& lhs, VNType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VNType::en lhs, const VNType& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VNType& rhs) { return os << rhs.ascii(); }
 
-//######################################################################
+// ######################################################################
 
 class VLifetime final {
 public:
@@ -119,23 +119,25 @@ public:
     VLifetime()
         : m_e{NONE} {}
     // cppcheck-suppress noExplicitConstructor
-    VLifetime(en _e)
+    constexpr VLifetime(en _e)
         : m_e{_e} {}
     explicit VLifetime(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     bool isNone() const { return m_e == NONE; }
     bool isAutomatic() const { return m_e == AUTOMATIC; }
     bool isStatic() const { return m_e == STATIC; }
 };
-inline bool operator==(const VLifetime& lhs, const VLifetime& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VLifetime& lhs, VLifetime::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VLifetime::en lhs, const VLifetime& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VLifetime& lhs, const VLifetime& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VLifetime& lhs, VLifetime::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VLifetime::en lhs, const VLifetime& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class VAccess final {
 public:
@@ -160,11 +162,11 @@ public:
     VAccess()
         : m_e{READ} {}
     // cppcheck-suppress noExplicitConstructor
-    VAccess(en _e)
+    constexpr VAccess(en _e)
         : m_e{_e} {}
     explicit VAccess(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     VAccess invert() const {
         return (m_e == READWRITE) ? VAccess{m_e} : (m_e == WRITE ? VAccess{READ} : VAccess{WRITE});
     }
@@ -174,12 +176,12 @@ public:
     bool isWriteOrRW() const { return m_e == WRITE || m_e == READWRITE; }
     bool isRW() const { return m_e == READWRITE; }
 };
-inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VAccess::en lhs, const VAccess& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VAccess::en lhs, const VAccess& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return os << rhs.ascii(); }
 
-//######################################################################
+// ######################################################################
 
 class VSigning final {
 public:
@@ -197,26 +199,26 @@ public:
     VSigning()
         : m_e{UNSIGNED} {}
     // cppcheck-suppress noExplicitConstructor
-    VSigning(en _e)
+    constexpr VSigning(en _e)
         : m_e{_e} {}
     static VSigning fromBool(bool isSigned) {  // Factory method
         return isSigned ? VSigning{SIGNED} : VSigning{UNSIGNED};
     }
     explicit VSigning(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     bool isSigned() const { return m_e == SIGNED; }
     bool isNosign() const { return m_e == NOSIGN; }
     // No isUnsigned() as it's ambiguous if NOSIGN should be included or not.
 };
-inline bool operator==(const VSigning& lhs, const VSigning& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VSigning& lhs, VSigning::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VSigning::en lhs, const VSigning& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VSigning& lhs, const VSigning& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VSigning& lhs, VSigning::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VSigning::en lhs, const VSigning& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VSigning& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class VPragmaType final {
 public:
@@ -237,19 +239,19 @@ public:
     VPragmaType()
         : m_e{ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor
-    VPragmaType(en _e)
+    constexpr VPragmaType(en _e)
         : m_e{_e} {}
     explicit VPragmaType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
 };
-inline bool operator==(const VPragmaType& lhs, const VPragmaType& rhs) {
+constexpr bool operator==(const VPragmaType& lhs, const VPragmaType& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VPragmaType& lhs, VPragmaType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VPragmaType::en lhs, const VPragmaType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VPragmaType& lhs, VPragmaType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VPragmaType::en lhs, const VPragmaType& rhs) { return lhs == rhs.m_e; }
 
-//######################################################################
+// ######################################################################
 
 class VEdgeType final {
 public:
@@ -333,17 +335,19 @@ public:
     VEdgeType()
         : m_e{ET_ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor
-    VEdgeType(en _e)
+    constexpr VEdgeType(en _e)
         : m_e{_e} {}
     explicit VEdgeType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
 };
-inline bool operator==(const VEdgeType& lhs, const VEdgeType& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VEdgeType& lhs, VEdgeType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VEdgeType& lhs, const VEdgeType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VEdgeType& lhs, VEdgeType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs == rhs.m_e; }
 
-//######################################################################
+// ######################################################################
 
 class VAttrType final {
 public:
@@ -414,17 +418,19 @@ public:
     VAttrType()
         : m_e{ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor
-    VAttrType(en _e)
+    constexpr VAttrType(en _e)
         : m_e{_e} {}
     explicit VAttrType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
 };
-inline bool operator==(const VAttrType& lhs, const VAttrType& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VAttrType& lhs, VAttrType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VAttrType::en lhs, const VAttrType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VAttrType& lhs, const VAttrType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAttrType& lhs, VAttrType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VAttrType::en lhs, const VAttrType& rhs) { return lhs == rhs.m_e; }
 
-//######################################################################
+// ######################################################################
 
 class VBasicDTypeKwd final {
 public:
@@ -523,11 +529,11 @@ public:
     VBasicDTypeKwd()
         : m_e{UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    VBasicDTypeKwd(en _e)
+    constexpr VBasicDTypeKwd(en _e)
         : m_e{_e} {}
     explicit VBasicDTypeKwd(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     int width() const {
         switch (m_e) {
         case BIT: return 1;  // scalar, can't bit extract unless ranged
@@ -612,13 +618,13 @@ public:
         }
     }
 };
-inline bool operator==(const VBasicDTypeKwd& lhs, const VBasicDTypeKwd& rhs) {
+constexpr bool operator==(const VBasicDTypeKwd& lhs, const VBasicDTypeKwd& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VBasicDTypeKwd& lhs, VBasicDTypeKwd::en rhs) {
+constexpr bool operator==(const VBasicDTypeKwd& lhs, VBasicDTypeKwd::en rhs) {
     return lhs.m_e == rhs;
 }
-inline bool operator==(VBasicDTypeKwd::en lhs, const VBasicDTypeKwd& rhs) {
+constexpr bool operator==(VBasicDTypeKwd::en lhs, const VBasicDTypeKwd& rhs) {
     return lhs == rhs.m_e;
 }
 
@@ -631,11 +637,11 @@ public:
     VDirection()
         : m_e{NONE} {}
     // cppcheck-suppress noExplicitConstructor
-    VDirection(en _e)
+    constexpr VDirection(en _e)
         : m_e{_e} {}
     explicit VDirection(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"NONE", "INPUT", "OUTPUT", "INOUT", "REF", "CONSTREF"};
         return names[m_e];
@@ -659,14 +665,16 @@ public:
     bool isWritable() const { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRefOrConstRef() const { return m_e == REF || m_e == CONSTREF; }
 };
-inline bool operator==(const VDirection& lhs, const VDirection& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VDirection& lhs, VDirection::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VDirection::en lhs, const VDirection& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VDirection& lhs, VDirection::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VDirection::en lhs, const VDirection& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VDirection& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 /// Boolean or unknown
 class VBoolOrUnknown final {
@@ -677,7 +685,7 @@ public:
     VBoolOrUnknown()
         : m_e{BU_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    VBoolOrUnknown(en _e)
+    constexpr VBoolOrUnknown(en _e)
         : m_e{_e} {}
     explicit VBoolOrUnknown(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
@@ -692,13 +700,13 @@ public:
     bool unknown() const { return m_e == BU_UNKNOWN; }
     void setTrueOrFalse(bool flag) { m_e = flag ? BU_TRUE : BU_FALSE; }
 };
-inline bool operator==(const VBoolOrUnknown& lhs, const VBoolOrUnknown& rhs) {
+constexpr bool operator==(const VBoolOrUnknown& lhs, const VBoolOrUnknown& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VBoolOrUnknown& lhs, VBoolOrUnknown::en rhs) {
+constexpr bool operator==(const VBoolOrUnknown& lhs, VBoolOrUnknown::en rhs) {
     return lhs.m_e == rhs;
 }
-inline bool operator==(VBoolOrUnknown::en lhs, const VBoolOrUnknown& rhs) {
+constexpr bool operator==(VBoolOrUnknown::en lhs, const VBoolOrUnknown& rhs) {
     return lhs == rhs.m_e;
 }
 inline std::ostream& operator<<(std::ostream& os, const VBoolOrUnknown& rhs) {
@@ -716,7 +724,7 @@ public:
     VJoinType()
         : m_e{JOIN} {}
     // cppcheck-suppress noExplicitConstructor
-    VJoinType(en _e)
+    constexpr VJoinType(en _e)
         : m_e{_e} {}
     explicit VJoinType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
@@ -732,14 +740,16 @@ public:
     bool joinAny() const { return m_e == JOIN_ANY; }
     bool joinNone() const { return m_e == JOIN_NONE; }
 };
-inline bool operator==(const VJoinType& lhs, const VJoinType& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VJoinType& lhs, VJoinType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VJoinType::en lhs, const VJoinType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VJoinType& lhs, const VJoinType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VJoinType& lhs, VJoinType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VJoinType::en lhs, const VJoinType& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VJoinType& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class VVarType final {
 public:
@@ -769,11 +779,11 @@ public:
     VVarType()
         : m_e{UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    VVarType(en _e)
+    constexpr VVarType(en _e)
         : m_e{_e} {}
     explicit VVarType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {
             "?",         "GPARAM",     "LPARAM",       "GENVAR",  "VAR",      "SUPPLY0", "SUPPLY1",
@@ -804,14 +814,14 @@ public:
         return (m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP);
     }
 };
-inline bool operator==(const VVarType& lhs, const VVarType& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VVarType& lhs, VVarType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VVarType::en lhs, const VVarType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VVarType& lhs, const VVarType& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VVarType& lhs, VVarType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VVarType::en lhs, const VVarType& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VVarType& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class VBranchPred final {
 public:
@@ -821,11 +831,11 @@ public:
     VBranchPred()
         : m_e{BP_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    VBranchPred(en _e)
+    constexpr VBranchPred(en _e)
         : m_e{_e} {}
     explicit VBranchPred(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     bool unknown() const { return m_e == BP_UNKNOWN; }
     bool likely() const { return m_e == BP_LIKELY; }
     bool unlikely() const { return m_e == BP_UNLIKELY; }
@@ -843,16 +853,16 @@ public:
         return names[m_e];
     }
 };
-inline bool operator==(const VBranchPred& lhs, const VBranchPred& rhs) {
+constexpr bool operator==(const VBranchPred& lhs, const VBranchPred& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VBranchPred& lhs, VBranchPred::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VBranchPred::en lhs, const VBranchPred& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VBranchPred& lhs, VBranchPred::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VBranchPred::en lhs, const VBranchPred& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class VVarAttrClocker final {
 public:
@@ -862,11 +872,11 @@ public:
     VVarAttrClocker()
         : m_e{CLOCKER_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    VVarAttrClocker(en _e)
+    constexpr VVarAttrClocker(en _e)
         : m_e{_e} {}
     explicit VVarAttrClocker(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     bool unknown() const { return m_e == CLOCKER_UNKNOWN; }
     VVarAttrClocker invert() const {
         if (m_e == CLOCKER_YES) {
@@ -882,13 +892,13 @@ public:
         return names[m_e];
     }
 };
-inline bool operator==(const VVarAttrClocker& lhs, const VVarAttrClocker& rhs) {
+constexpr bool operator==(const VVarAttrClocker& lhs, const VVarAttrClocker& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VVarAttrClocker& lhs, VVarAttrClocker::en rhs) {
+constexpr bool operator==(const VVarAttrClocker& lhs, VVarAttrClocker::en rhs) {
     return lhs.m_e == rhs;
 }
-inline bool operator==(VVarAttrClocker::en lhs, const VVarAttrClocker& rhs) {
+constexpr bool operator==(VVarAttrClocker::en lhs, const VVarAttrClocker& rhs) {
     return lhs == rhs.m_e;
 }
 inline std::ostream& operator<<(std::ostream& os, const VVarAttrClocker& rhs) {
@@ -904,21 +914,23 @@ public:
     VAlwaysKwd()
         : m_e{ALWAYS} {}
     // cppcheck-suppress noExplicitConstructor
-    VAlwaysKwd(en _e)
+    constexpr VAlwaysKwd(en _e)
         : m_e{_e} {}
     explicit VAlwaysKwd(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"always", "always_ff", "always_latch", "always_comb"};
         return names[m_e];
     }
 };
-inline bool operator==(const VAlwaysKwd& lhs, const VAlwaysKwd& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VAlwaysKwd& lhs, VAlwaysKwd::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VAlwaysKwd::en lhs, const VAlwaysKwd& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VAlwaysKwd& lhs, const VAlwaysKwd& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAlwaysKwd& lhs, VAlwaysKwd::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VAlwaysKwd::en lhs, const VAlwaysKwd& rhs) { return lhs == rhs.m_e; }
 
-//######################################################################
+// ######################################################################
 
 class VCaseType final {
 public:
@@ -927,17 +939,19 @@ public:
     VCaseType()
         : m_e{CT_CASE} {}
     // cppcheck-suppress noExplicitConstructor
-    VCaseType(en _e)
+    constexpr VCaseType(en _e)
         : m_e{_e} {}
     explicit VCaseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
 };
-inline bool operator==(const VCaseType& lhs, const VCaseType& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VCaseType& lhs, VCaseType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VCaseType::en lhs, const VCaseType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VCaseType& lhs, const VCaseType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCaseType& lhs, VCaseType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCaseType::en lhs, const VCaseType& rhs) { return lhs == rhs.m_e; }
 
-//######################################################################
+// ######################################################################
 
 class VDisplayType final {
 public:
@@ -955,11 +969,11 @@ public:
     VDisplayType()
         : m_e{DT_DISPLAY} {}
     // cppcheck-suppress noExplicitConstructor
-    VDisplayType(en _e)
+    constexpr VDisplayType(en _e)
         : m_e{_e} {}
     explicit VDisplayType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     bool addNewline() const { return m_e != DT_WRITE; }
     bool needScopeTracking() const { return m_e != DT_DISPLAY && m_e != DT_WRITE; }
     const char* ascii() const {
@@ -968,13 +982,13 @@ public:
         return names[m_e];
     }
 };
-inline bool operator==(const VDisplayType& lhs, const VDisplayType& rhs) {
+constexpr bool operator==(const VDisplayType& lhs, const VDisplayType& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VDisplayType& lhs, VDisplayType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VDisplayType::en lhs, const VDisplayType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VDisplayType& lhs, VDisplayType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VDisplayType::en lhs, const VDisplayType& rhs) { return lhs == rhs.m_e; }
 
-//######################################################################
+// ######################################################################
 
 class VDumpCtlType final {
 public:
@@ -983,24 +997,24 @@ public:
     VDumpCtlType()
         : m_e{ON} {}
     // cppcheck-suppress noExplicitConstructor
-    VDumpCtlType(en _e)
+    constexpr VDumpCtlType(en _e)
         : m_e{_e} {}
     explicit VDumpCtlType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"$dumpfile",  "$dumpvars", "$dumpall", "$dumpflush",
                                             "$dumplimit", "$dumpoff",  "$dumpon"};
         return names[m_e];
     }
 };
-inline bool operator==(const VDumpCtlType& lhs, const VDumpCtlType& rhs) {
+constexpr bool operator==(const VDumpCtlType& lhs, const VDumpCtlType& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VDumpCtlType& lhs, VDumpCtlType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VDumpCtlType::en lhs, const VDumpCtlType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VDumpCtlType& lhs, VDumpCtlType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VDumpCtlType::en lhs, const VDumpCtlType& rhs) { return lhs == rhs.m_e; }
 
-//######################################################################
+// ######################################################################
 
 class VParseRefExp final {
 public:
@@ -1013,26 +1027,26 @@ public:
     VParseRefExp()
         : m_e{PX_NONE} {}
     // cppcheck-suppress noExplicitConstructor
-    VParseRefExp(en _e)
+    constexpr VParseRefExp(en _e)
         : m_e{_e} {}
     explicit VParseRefExp(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"", "$root", "TEXT", "PREDOT"};
         return names[m_e];
     }
 };
-inline bool operator==(const VParseRefExp& lhs, const VParseRefExp& rhs) {
+constexpr bool operator==(const VParseRefExp& lhs, const VParseRefExp& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VParseRefExp& lhs, VParseRefExp::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VParseRefExp::en lhs, const VParseRefExp& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VParseRefExp& lhs, VParseRefExp::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VParseRefExp::en lhs, const VParseRefExp& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class VStrength final {
 public:
@@ -1040,28 +1054,29 @@ public:
     enum en m_e;
 
     // cppcheck-suppress noExplicitConstructor
-    VStrength(en strengthLevel)
+    constexpr VStrength(en strengthLevel)
         : m_e(strengthLevel) {}
     explicit VStrength(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[]
             = {"highz", "small", "medium", "weak", "large", "pull", "strong", "supply"};
         return names[m_e];
     }
 };
-inline bool operator==(const VStrength& lhs, const VStrength& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VStrength& lhs, VStrength::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VStrength::en lhs, const VStrength& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VStrength& lhs, const VStrength& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VStrength& lhs, VStrength::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VStrength::en lhs, const VStrength& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VStrength& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
-// VNumRange - Structure containing numeric range information
-// See also AstRange, which is a symbolic version of this
+// ######################################################################
+//  VNumRange - Structure containing numeric range information
+//  See also AstRange, which is a symbolic version of this
 
 class VNumRange final {
 public:
@@ -1137,26 +1152,26 @@ public:
     VUseType()
         : m_e{IMP_FWD_CLASS} {}
     // cppcheck-suppress noExplicitConstructor
-    VUseType(en _e)
+    constexpr VUseType(en _e)
         : m_e{_e} {}
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
     bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"IMP_INC", "INT_INC", "IMP_FWD", "INT_FWD"};
         return names[m_e];
     }
 };
-inline bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class VBasicTypeKey final {
 public:

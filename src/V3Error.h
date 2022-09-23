@@ -153,12 +153,12 @@ public:
     V3ErrorCode()
         : m_e{EC_MIN} {}
     // cppcheck-suppress noExplicitConstructor
-    V3ErrorCode(en _e)
+    constexpr V3ErrorCode(en _e)
         : m_e{_e} {}
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
     explicit V3ErrorCode(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         // clang-format off
         static const char* const names[] = {
@@ -229,16 +229,16 @@ public:
                 || m_e == VARHIDDEN);
     }
 };
-inline bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
+constexpr bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const V3ErrorCode& lhs, V3ErrorCode::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(V3ErrorCode::en lhs, const V3ErrorCode& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const V3ErrorCode& lhs, V3ErrorCode::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(V3ErrorCode::en lhs, const V3ErrorCode& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class V3Error final {
     // Base class for any object that wants debugging and error reporting
