@@ -61,7 +61,7 @@ public:
         : m_e{_e} {}
     explicit constexpr GraphWay(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"FORWARD", "REVERSE"};
         return names[m_e];
@@ -71,9 +71,9 @@ public:
     constexpr bool forward() const { return m_e == FORWARD; }
     constexpr bool reverse() const { return m_e != FORWARD; }
 };
-inline bool operator==(const GraphWay& lhs, const GraphWay& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const GraphWay& lhs, GraphWay::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(GraphWay::en lhs, const GraphWay& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const GraphWay& lhs, const GraphWay& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const GraphWay& lhs, GraphWay::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(GraphWay::en lhs, const GraphWay& rhs) { return lhs == rhs.m_e; }
 
 //============================================================================
 

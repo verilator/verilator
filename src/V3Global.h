@@ -70,19 +70,19 @@ public:
     VWidthMinUsage()
         : m_e{LINT_WIDTH} {}
     // cppcheck-suppress noExplicitConstructor
-    VWidthMinUsage(en _e)
+    constexpr VWidthMinUsage(en _e)
         : m_e{_e} {}
     explicit VWidthMinUsage(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
 };
-inline bool operator==(const VWidthMinUsage& lhs, const VWidthMinUsage& rhs) {
+constexpr bool operator==(const VWidthMinUsage& lhs, const VWidthMinUsage& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VWidthMinUsage& lhs, VWidthMinUsage::en rhs) {
+constexpr bool operator==(const VWidthMinUsage& lhs, VWidthMinUsage::en rhs) {
     return lhs.m_e == rhs;
 }
-inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
+constexpr bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
     return lhs == rhs.m_e;
 }
 

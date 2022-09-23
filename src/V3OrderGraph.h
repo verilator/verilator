@@ -90,19 +90,19 @@ struct OrderVEdgeType {
     OrderVEdgeType()
         : m_e{VERTEX_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    OrderVEdgeType(en _e)
+    constexpr OrderVEdgeType(en _e)
         : m_e{_e} {}
     explicit OrderVEdgeType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
 };
-inline bool operator==(const OrderVEdgeType& lhs, const OrderVEdgeType& rhs) {
+constexpr bool operator==(const OrderVEdgeType& lhs, const OrderVEdgeType& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const OrderVEdgeType& lhs, OrderVEdgeType::en rhs) {
+constexpr bool operator==(const OrderVEdgeType& lhs, OrderVEdgeType::en rhs) {
     return lhs.m_e == rhs;
 }
-inline bool operator==(OrderVEdgeType::en lhs, const OrderVEdgeType& rhs) {
+constexpr bool operator==(OrderVEdgeType::en lhs, const OrderVEdgeType& rhs) {
     return lhs == rhs.m_e;
 }
 

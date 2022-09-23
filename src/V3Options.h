@@ -42,24 +42,24 @@ public:
     VOptionBool()
         : m_e{OPT_DEFAULT_FALSE} {}
     // cppcheck-suppress noExplicitConstructor
-    VOptionBool(en _e)
+    constexpr VOptionBool(en _e)
         : m_e{_e} {}
     explicit VOptionBool(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
     bool isSetTrue() const { return m_e == OPT_TRUE; }
     bool isSetFalse() const { return m_e == OPT_FALSE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? OPT_TRUE : OPT_FALSE; }
 };
-inline bool operator==(const VOptionBool& lhs, const VOptionBool& rhs) {
+constexpr bool operator==(const VOptionBool& lhs, const VOptionBool& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const VOptionBool& lhs, VOptionBool::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VOptionBool::en lhs, const VOptionBool& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VOptionBool& lhs, VOptionBool::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VOptionBool::en lhs, const VOptionBool& rhs) { return lhs == rhs.m_e; }
 
-//######################################################################
+// ######################################################################
 
 class VTimescale final {
 public:
@@ -81,7 +81,7 @@ public:
     VTimescale()
         : m_e{NONE} {}
     // cppcheck-suppress noExplicitConstructor
-    VTimescale(en _e)
+    constexpr VTimescale(en _e)
         : m_e{_e} {}
     explicit VTimescale(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
@@ -116,26 +116,30 @@ public:
         return values[m_e];
     }
 };
-inline bool operator==(const VTimescale& lhs, const VTimescale& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const VTimescale& lhs, VTimescale::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(VTimescale::en lhs, const VTimescale& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VTimescale& lhs, const VTimescale& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VTimescale& lhs, VTimescale::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VTimescale::en lhs, const VTimescale& rhs) { return lhs == rhs.m_e; }
 // Comparisons are based on time, not enum values, so seconds > milliseconds
-inline bool operator<(const VTimescale& lhs, const VTimescale& rhs) { return lhs.m_e > rhs.m_e; }
+constexpr bool operator<(const VTimescale& lhs, const VTimescale& rhs) {
+    return lhs.m_e > rhs.m_e;
+}
 inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
     return os << rhs.ascii();
 }
 
-//######################################################################
+// ######################################################################
 
 class TraceFormat final {
 public:
     enum en : uint8_t { VCD = 0, FST } m_e;
     // cppcheck-suppress noExplicitConstructor
-    TraceFormat(en _e = VCD)
+    constexpr TraceFormat(en _e = VCD)
         : m_e{_e} {}
     explicit TraceFormat(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
     bool vcd() const { return m_e == VCD; }
     string classBase() const {
@@ -147,16 +151,16 @@ public:
         return names[m_e];
     }
 };
-inline bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
+constexpr bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-inline bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
 
 using V3StringList = std::vector<std::string>;
 using V3StringSet = std::set<std::string>;
 
-//######################################################################
+// ######################################################################
 
 // Information given by --hierarchical-block option
 class V3HierarchicalBlockOption final {

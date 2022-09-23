@@ -46,7 +46,7 @@ private:
 
 public:
     // cppcheck-suppress noExplicitConstructor
-    VCtorType(en _e)
+    constexpr VCtorType(en _e)
         : m_e{_e} {}
     bool isClass() const { return m_e == CLASS; }
     bool isCoverage() const { return m_e == COVERAGE; }
