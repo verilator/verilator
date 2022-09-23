@@ -1841,6 +1841,8 @@ public:
     void dumpTreeFile(const string& filename, bool append = false, bool doDump = true,
                       bool doCheck = true);
     static void dumpTreeFileGdb(const AstNode* nodep, const char* filenamep = nullptr);
+    void dumpTreeDot(std::ostream& os = std::cout) const;
+    void dumpTreeDotFile(const string& filename, bool append = false, bool doDump = true);
 
     // METHODS - queries
     // Changes control flow, disable some optimizations
