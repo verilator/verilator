@@ -180,6 +180,12 @@ RAW_OBJS = \
 	V3Depth.o \
 	V3DepthBlock.o \
 	V3Descope.o \
+	V3Dfg.o \
+	V3DfgAstToDfg.o \
+	V3DfgDfgToAst.o \
+	V3DfgOptimizer.o \
+	V3DfgPasses.o \
+	V3DfgPeephole.o \
 	V3DupFinder.o \
 	V3Timing.o \
 	V3EmitCBase.o \

@@ -309,10 +309,12 @@ detailed descriptions of these arguments.
      +define+<var>=<value>      Set preprocessor define
     --dpi-hdr-only              Only produce the DPI header file
     --dump-defines              Show preprocessor defines with -E
-    --dump-graph                Enable dumping V3Graphs to .dot
+    --dump-dfg                  Enable dumping DfgGraphs to .dot files
+    --dump-graph                Enable dumping V3Graphs to .dot files
     --dump-tree                 Enable dumping Ast .tree files
     --dump-tree-addrids         Use short identifiers instead of addresses
     --dump-<srcfile>            Enable dumping everything in source file
+    --dumpi-dfg <level>         Enable dumping DfgGraphs to .dot files at level
     --dumpi-graph <level>       Enable dumping V3Graphs to .dot files at level
     --dumpi-tree <level>        Enable dumping Ast .tree files at level
     --dumpi-<srcfile> <level>   Enable dumping everything in source file at level

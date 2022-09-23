@@ -46,6 +46,7 @@
 //END_MODULE_NAME--------------------------------------------------------------
 
 //See also: https://github.com/twosigma/verilator_support
+// verilator lint_off BLKANDNBLK
 // verilator lint_off COMBDLY
 // verilator lint_off INITIALDLY
 // verilator lint_off MULTIDRIVEN

@@ -69,4 +69,9 @@ public:
 
 std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
 
+template <>
+struct std::hash<V3Hash> {
+    std::size_t operator()(const V3Hash& h) const noexcept { return h.value(); }
+};
+
 #endif  // Guard

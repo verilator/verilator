@@ -355,6 +355,11 @@ Summary:
 
        touch foo.v ; verilator -E --dump-defines foo.v
 
+.. option:: --dump-dfg
+
+   Rarely needed.  Enable dumping DfgGraph .dot debug files with dumping
+   level 3.
+
 .. option:: --dump-graph
 
    Rarely needed.  Enable dumping V3Graph .dot debug files with dumping
@@ -383,6 +388,11 @@ Summary:
 
    Rarely needed - for developer use. Enable all dumping in the given
    source file at level 3.
+
+.. option:: --dumpi-dfg <level>
+
+   Rarely needed - for developer use.  Set internal DfgGraph dumping level
+   globally to the specified value.
 
 .. option:: --dumpi-graph <level>
 
@@ -481,6 +491,27 @@ Summary:
 .. option:: -fno-const-bit-op-tree
 
 .. option:: -fno-dedup
+
+.. option:: -fno-dfg
+
+   Disable all use of the DFG based combinational logic optimizer.
+   Alias for :vlopt:`-fno-dfg-pre-inline` and :vlopt:`-fno-dfg-post-inline`.
+
+.. option:: -fno-dfg-peephole
+
+   Disable the DFG peephole optimizer.
+
+.. option:: -fno-dfg-peephole-<pattern>
+
+   Disable individula DFG peephole optimizer pattern.
+
+.. option:: -fno-dfg-pre-inline
+
+   Do not apply the DFG optimizer before inlining.
+
+.. option:: -fno-dfg-post-inline
+
+   Do not apply the DFG optimizer after inlining.
 
 .. option:: -fno-expand
 

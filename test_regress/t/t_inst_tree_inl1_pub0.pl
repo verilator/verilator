@@ -14,7 +14,7 @@ top_filename("t/t_inst_tree.v");
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
 compile(
-    v_flags2 => ["$Self->{t_dir}/t_inst_tree_inl1_pub0.vlt"],
+    v_flags2 => ["-fno-dfg-post-inline", "$Self->{t_dir}/t_inst_tree_inl1_pub0.vlt"],
     );
 
 if ($Self->{vlt_all}) {

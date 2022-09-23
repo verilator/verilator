@@ -1,14 +1,14 @@
 %Warning-DEPRECATED: Option --cdc is deprecated and is planned for removal
                      ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
                      ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
-%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:28:21: Logic in path that feeds async reset, via signal: 't.rst2_bad_n'
-   28 |    wire  rst2_bad_n = rst0_n | rst1_n;
-      |                     ^
-%Warning-CDCRSTLOGIC:      See details in obj_vlt/t_cdc_async_bad/Vt_cdc_async_bad__cdc.txt
 %Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:53:21: Logic in path that feeds async reset, via signal: 't.rst6a_bad_n'
    53 |    wire rst6a_bad_n = rst6_bad_n ^ $c1("0");   
       |                     ^
+%Warning-CDCRSTLOGIC:      See details in obj_vlt/t_cdc_async_bad/Vt_cdc_async_bad__cdc.txt
 %Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:54:21: Logic in path that feeds async reset, via signal: 't.rst6b_bad_n'
    54 |    wire rst6b_bad_n = rst6_bad_n ^ $c1("1");
+      |                     ^
+%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:28:21: Logic in path that feeds async reset, via signal: 't.rst2_bad_n'
+   28 |    wire  rst2_bad_n = rst0_n | rst1_n;
       |                     ^
 %Error: Exiting due to
