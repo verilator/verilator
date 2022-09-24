@@ -624,6 +624,8 @@ class EmitCTrace final : EmitCFunc {
     void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("tracep->declDouble");
+        } else if (nodep->isString()) {
+            puts("tracep->declString");
         } else if (nodep->isWide()) {
             puts("tracep->declArray");
         } else if (nodep->isQuad()) {
@@ -682,6 +684,7 @@ class EmitCTrace final : EmitCFunc {
             else if (kwd == VBasicDTypeKwd::SHORTINT) { fstvt = "FST_VT_SV_SHORTINT"; }
             else if (kwd == VBasicDTypeKwd::LONGINT) {  fstvt = "FST_VT_SV_LONGINT"; }
             else if (kwd == VBasicDTypeKwd::BYTE) {     fstvt = "FST_VT_SV_BYTE"; }
+            else if (kwd == VBasicDTypeKwd::STRING) {   fstvt = "FST_VT_GEN_STRING"; }
             else { fstvt = "FST_VT_SV_BIT"; }
             // clang-format on
             //
@@ -697,7 +700,6 @@ class EmitCTrace final : EmitCFunc {
             // FST_VT_VCD_WAND
             // FST_VT_VCD_WOR
             // FST_VT_SV_ENUM
-            // FST_VT_GEN_STRING
             puts("," + fstvt);
         }
         // Range
@@ -706,7 +708,8 @@ class EmitCTrace final : EmitCFunc {
         } else {
             puts(", false,-1");
         }
-        if (!nodep->dtypep()->basicp()->isDouble() && nodep->bitRange().ranged()) {
+        if (!nodep->dtypep()->basicp()->isDouble() && !nodep->isString()
+            && nodep->bitRange().ranged()) {
             puts(", " + cvtToStr(nodep->bitRange().left()) + ","
                  + cvtToStr(nodep->bitRange().right()));
         }
@@ -761,6 +764,9 @@ class EmitCTrace final : EmitCFunc {
         bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("bufp->" + func + "Double");
+            emitWidth = false;
+        } else if (nodep->isString()) {
+            puts("bufp->" + func + "String");
             emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
             puts("bufp->" + func + "WData");

@@ -3516,9 +3516,12 @@ public:
         , m_showname{showname}
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
-        , m_codeInc(
-              ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
-               * (VL_EDATASIZE / 32)))  // A code is always 32-bits
+        , m_codeInc(((arrayRange.ranged() ? arrayRange.elements() : 1)
+                     * (valuep->isString() ? ((LEN_FAST_TRACED_STRING + 1)
+                                              / 4)  // strings get a small buffer to dedup
+                                                    // (different from actual storage size)
+                                           : valuep->dtypep()->widthWords())
+                     * (VL_EDATASIZE / 32)))  // A code is always 32-bits
         , m_varType{varp->varType()}
         , m_declKwd{varp->declKwd()}
         , m_declDirection{varp->declDirection()} {

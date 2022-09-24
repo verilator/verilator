@@ -409,6 +409,7 @@ detailed descriptions of these arguments.
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
     --trace-params              Enable tracing of parameters
+    --trace-strings             Enable tracing strings
     --trace-structs             Enable tracing structure names
     --trace-threads <threads>   Enable FST waveform creation on separate threads
     --trace-underscore          Enable tracing of _signals

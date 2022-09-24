@@ -1270,6 +1270,11 @@ Summary:
 
    Disable tracing of parameters.
 
+.. option:: --trace-strings
+
+   Enable tracing to dump string variables. This may result in significantly
+   slower trace times and larger trace files.
+
 .. option:: --trace-structs
 
    Enable tracing to show the name of packed structure, union, and packed

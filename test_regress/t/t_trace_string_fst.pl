@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 top_filename("t/t_trace_string.v");
 
 compile(
-    verilator_flags2 => ['--cc --trace'],
+    verilator_flags2 => ['--cc --trace-fst --trace-strings'],
     );
 
 execute(

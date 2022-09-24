@@ -25,6 +25,7 @@
 // clang-format on
 
 #include "verilatedos.h"
+#include "verilated_trace.h"
 
 #include "V3Error.h"
 #include "V3FileLine.h"

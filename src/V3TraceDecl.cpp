@@ -453,7 +453,11 @@ private:
     void visit(AstBasicDType* nodep) override {
         if (m_traVscp) {
             if (nodep->isString()) {
-                addIgnore("Unsupported: strings");
+                if (v3Global.opt.traceStrings()) {
+                    addTraceDecl(VNumRange{}, 0);
+                } else {
+                    addIgnore("Unsupported: strings");
+                }
             } else {
                 addTraceDecl(VNumRange{}, 0);
             }

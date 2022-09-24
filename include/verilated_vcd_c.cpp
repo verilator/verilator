@@ -568,6 +568,10 @@ void VerilatedVcd::declArray(uint32_t code, const char* name, bool array, int ar
 void VerilatedVcd::declDouble(uint32_t code, const char* name, bool array, int arraynum) {
     declare(code, name, "real", array, arraynum, false, false, 63, 0);
 }
+void VerilatedVcd::declString(uint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "string", array, arraynum, false, false, (LEN_FAST_TRACED_STRING + 1) * 8,
+            0);
+}
 
 //=============================================================================
 // Get/commit trace buffer
@@ -769,5 +773,37 @@ void VerilatedVcdBuffer::emitDouble(uint32_t code, double newval) {
     // Buffer can't overflow before VL_SNPRINTF; we sized during declaration
     VL_SNPRINTF(wp, m_maxSignalBytes, "r%.16g", newval);
     wp += std::strlen(wp);
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitStringRaw(uint32_t code, const char* newval, int size) {
+    char* wp = m_writep;
+
+    // Hand roll this because we need to escape all whitespace, unicode, and escape
+    // chars. This will never overflow, but may end up with invalid utf8 if truncated.
+    *wp++ = 's';
+    uint32_t bytesRem = m_maxSignalBytes - 2;
+    while (size && bytesRem) {
+        if (VL_UNLIKELY((*newval & 0x80) || isspace(*newval) || (*newval == '\\'))) {
+            if (bytesRem >= 4) {
+                static const char hexbytes[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',
+                                                '9', '0', 'a', 'b', 'c', 'd', 'e', 'f'};
+                *wp++ = '\\';
+                *wp++ = 'x';
+                *wp++ = hexbytes[(*newval >> 4) & 0xF];
+                *wp++ = hexbytes[*newval & 0xF];
+                bytesRem -= 4;
+            } else {
+                break;  // Out of space in dest
+            }
+        } else if (*newval) {
+            *wp++ = *newval;
+            --bytesRem;
+        }
+        ++newval;
+        --size;
+    }
+    *wp = '\0';  // Just in case
     finishLine(code, wp);
 }

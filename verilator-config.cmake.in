@@ -175,6 +175,10 @@ function(verilate TARGET)
     list(APPEND VERILATOR_ARGS --cc)
   endif()
 
+  if (VERILATE_TRACE_STRINGS)
+      list(APPEND VERILATOR_ARGS --trace-strings)
+  endif()
+
   if (VERILATE_TRACE_STRUCTS)
       list(APPEND VERILATOR_ARGS --trace-structs)
   endif()

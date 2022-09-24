@@ -186,6 +186,17 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
                 traceBufp->chgDouble(oldp, *reinterpret_cast<const double*>(readp));
                 readp += 2;
                 continue;
+            case VerilatedTraceOffloadCommand::CHG_STRING:
+                VL_TRACE_OFFLOAD_DEBUG("Command CHG_STRING" << top);
+                traceBufp->chgStringRaw(oldp, reinterpret_cast<const char*>(readp), top);
+                readp += ((top + 3) >> 2);
+                continue;
+            case VerilatedTraceOffloadCommand::CHG_BIG_STRING:
+                VL_TRACE_OFFLOAD_DEBUG("Command CHG_BIG_STRING" << top);
+                traceBufp->chgStringRaw(oldp, *reinterpret_cast<const char*const*>(readp), top);
+                readp += 2;
+                delete[] * reinterpret_cast<const char*const*>(readp);
+                continue;
 
                 //===
                 // Rare commands
@@ -907,6 +918,20 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     // cppcheck-suppress invalidPointerCast
     emitDouble(code, newval);
+}
+
+template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullStringRaw(uint32_t* oldp, const char* newval, int bytes) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    if (bytes > LEN_FAST_TRACED_STRING) {
+        *reinterpret_cast<char*>(oldp) = 0xFF;
+    } else {
+        *reinterpret_cast<char*>(oldp) = bytes;
+        memcpy(reinterpret_cast<char*>(oldp) + 1, newval, bytes);
+    }
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    // cppcheck-suppress invalidPointerCast
+    emitStringRaw(code, newval, bytes);
 }
 
 #ifdef VL_THREADED

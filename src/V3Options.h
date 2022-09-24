@@ -277,6 +277,7 @@ private:
     bool m_trace = false;           // main switch: --trace
     bool m_traceCoverage = false;   // main switch: --trace-coverage
     bool m_traceParams = true;      // main switch: --trace-params
+    bool m_traceStrings = false;    // main switch: --trace-strings
     bool m_traceStructs = false;    // main switch: --trace-structs
     bool m_traceUnderscore = false; // main switch: --trace-underscore
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
@@ -463,6 +464,7 @@ public:
     bool trace() const { return m_trace; }
     bool traceCoverage() const { return m_traceCoverage; }
     bool traceParams() const { return m_traceParams; }
+    bool traceStrings() const { return m_traceStrings; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool main() const { return m_main; }

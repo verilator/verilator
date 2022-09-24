@@ -10,20 +10,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-if (!$Self->have_sc) {
-    skip("No SystemC installed");
-}
-else {
-    top_filename("t/t_trace_string.v");
+top_filename("t/t_trace_string.v");
 
-    compile(
-        verilator_flags2 => ['--sc --trace-fst --trace-strings'],
-        );
+compile(
+    verilator_flags2 => ['--cc --trace'],
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

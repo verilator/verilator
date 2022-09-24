@@ -111,6 +111,8 @@ public:
                    fstVarType vartype, bool array, int arraynum, int msb, int lsb);
     void declDouble(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                     fstVarType vartype, bool array, int arraynum);
+    void declString(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                    fstVarType vartype, bool array, int arraynum);
 
     void declDTypeEnum(int dtypenum, const char* name, uint32_t elements, unsigned int minValbits,
                        const char** itemNamesp, const char** itemValuesp);
@@ -168,6 +170,7 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     VL_ATTR_ALWINLINE void emitQData(uint32_t code, QData newval, int bits);
     VL_ATTR_ALWINLINE void emitWData(uint32_t code, const WData* newvalp, int bits);
     VL_ATTR_ALWINLINE void emitDouble(uint32_t code, double newval);
+    VL_ATTR_ALWINLINE void emitStringRaw(uint32_t code, const char* newvalp, int bytes);
 };
 
 //=============================================================================

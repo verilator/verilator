@@ -243,6 +243,11 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
                               fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 63, 0);
 }
+void VerilatedFst::declString(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                              fstVarType vartype, bool array, int arraynum) {
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false,
+            (LEN_FAST_TRACED_STRING + 1) * 8, 0);
+}
 
 //=============================================================================
 // Get/commit trace buffer
@@ -342,4 +347,9 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitStringRaw(uint32_t code, const char* newval, int bytes) {
+    fstWriterEmitVariableLengthValueChange(m_fst, m_symbolp[code], newval, bytes);
 }

@@ -1401,6 +1401,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
     DECL_OPTION("-trace-params", OnOff, &m_traceParams);
     DECL_OPTION("-trace-structs", OnOff, &m_traceStructs);
+    DECL_OPTION("-trace-strings", OnOff, &m_traceStrings);
     DECL_OPTION("-trace-threads", CbVal, [this, fl](const char* valp) {
         m_trace = true;
         m_traceThreads = std::atoi(valp);

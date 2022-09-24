@@ -48,6 +48,11 @@ class VerilatedTraceBuffer;
 template <class T_Buffer>
 class VerilatedTraceOffloadBuffer;
 
+// Traced strings above this size may be inefficient as they cannot be deduped.
+// Must be <=254, but larger sizes bloat memory proportional to the number of
+// traceable strings.
+constexpr size_t LEN_FAST_TRACED_STRING = 63;
+
 #ifdef VL_THREADED
 //=============================================================================
 // Offloaded tracing
@@ -110,6 +115,8 @@ public:
         CHG_QDATA = 0x5,
         CHG_WDATA = 0x6,
         CHG_DOUBLE = 0x8,
+        CHG_STRING = 0x9,
+        CHG_BIG_STRING = 0xa,
         // TODO: full..
         TIME_CHANGE = 0xc,
         TRACE_BUFFER = 0xd,
@@ -424,6 +431,7 @@ public:
     // duck-typed void emitQData(uint32_t code, QData newval, int bits) = 0;
     // duck-typed void emitWData(uint32_t code, const WData* newvalp, int bits) = 0;
     // duck-typed void emitDouble(uint32_t code, double newval) = 0;
+    // duck-typed void emitStringRaw(uint32_t code, const char* newval, int bytes) = 0;
 
     VL_ATTR_ALWINLINE uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
 
@@ -435,6 +443,10 @@ public:
     void fullQData(uint32_t* oldp, QData newval, int bits);
     void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
     void fullDouble(uint32_t* oldp, double newval);
+    void fullStringRaw(uint32_t* oldp, const char* newval, int bytes);
+    void fullString(uint32_t* oldp, std::string newval) {
+        fullStringRaw(oldp, newval.data(), newval.size());
+    }
 
     // In non-offload mode, these are called directly by the trace callbacks,
     // and are called chg*. In offload mode, they are called by the worker
@@ -472,6 +484,18 @@ public:
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
         if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
+    }
+    VL_ATTR_ALWINLINE void chgStringRaw(uint32_t* oldp, const char* newval, int bytes) {
+        // cppcheck-suppress invalidPointerCast
+        int oldsize = *reinterpret_cast<char*>(oldp);
+        const char* oldstr = reinterpret_cast<char*>(oldp) + 1;
+        if (VL_UNLIKELY((oldsize > LEN_FAST_TRACED_STRING) || (oldsize != bytes)
+                        || (memcmp(newval, oldstr, bytes)))) {
+            fullStringRaw(oldp, newval, bytes);
+        }
+    }
+    VL_ATTR_ALWINLINE void chgString(uint32_t* oldp, std::string newval) {
+        chgStringRaw(oldp, newval.data(), newval.size());
     }
 };
 
@@ -545,6 +569,27 @@ public:
         // cppcheck-suppress invalidPointerCast
         *reinterpret_cast<double*>(m_offloadBufferWritep + 2) = newval;
         m_offloadBufferWritep += 4;
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
+    }
+    void chgStringRaw(uint32_t code, char* newval, int bytes) {
+        if (bytes > LEN_FAST_TRACED_STRING) {
+            // For big strings, make a temporary allocation
+            VL_DEBUG_IF(assert(bytes >= 0x1000000););  // 16MB is enough for anybody
+            m_offloadBufferWritep[0] = (bytes << 4) | VerilatedTraceOffloadCommand::CHG_BIG_STRING;
+            m_offloadBufferWritep[1] = code;
+            char* indirectstringbufp = new char[bytes];
+            // cppcheck-suppress invalidPointerCast
+            *reinterpret_cast<const char**>(m_offloadBufferWritep + 2) = indirectstringbufp;
+            memcpy(indirectstringbufp, newval, bytes);
+            m_offloadBufferWritep += 4;
+        } else {
+            // For smallish strings, write inline
+            int stringSizeDw = (bytes + 3) >> 2;  // Bytes to DW, rounded up.
+            m_offloadBufferWritep[0] = (bytes << 4) | VerilatedTraceOffloadCommand::CHG_STRING;
+            m_offloadBufferWritep[1] = code;
+            memcpy(m_offloadBufferWritep + 2, newval, bytes);
+            m_offloadBufferWritep += stringSizeDw + 2;
+        }
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
 };
