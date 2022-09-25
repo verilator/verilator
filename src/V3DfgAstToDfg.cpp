@@ -35,6 +35,8 @@
 #include "V3Error.h"
 #include "V3Global.h"
 
+#include <tuple>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
@@ -86,6 +88,7 @@ class AstToDfgVisitor final : public VNVisitor {
     bool m_foundUnhandled = false;  // Found node not implemented as DFG or not implemented 'visit'
     std::vector<DfgVertex*> m_uncommittedVertices;  // Vertices that we might decide to revert
     bool m_converting = false;  // We are trying to convert some logic at the moment
+    std::vector<DfgVar*> m_varps;  // All the DfgVar vertices we created.
 
     // METHODS
     void markReferenced(AstNode* nodep) {
@@ -110,7 +113,9 @@ class AstToDfgVisitor final : public VNVisitor {
             // multiple AstVarRef instances, so we will never revert a DfgVar once created. This
             // means we can end up with DfgVar vertices in the graph which have no connections at
             // all (which is fine for later processing).
-            varp->user1p(new DfgVar{*m_dfgp, varp});
+            DfgVar* const vtxp = new DfgVar{*m_dfgp, varp};
+            m_varps.push_back(vtxp);
+            varp->user1p(vtxp);
         }
         return varp->user1u().to<DfgVar*>();
     }
@@ -139,6 +144,95 @@ class AstToDfgVisitor final : public VNVisitor {
         return m_foundUnhandled;
     }
 
+    // Build DfgEdge representing the LValue assignment. Returns false if unsuccessful.
+    bool convertAssignment(FileLine* flp, AstNode* nodep, DfgVertex* vtxp) {
+        if (AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
+            m_foundUnhandled = false;
+            visit(vrefp);
+            if (m_foundUnhandled) return false;
+            getVertex(vrefp)->as<DfgVar>()->addDriver(flp, 0, vtxp);
+            return true;
+        }
+        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
+            AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
+            if (!vrefp || !lsbp || !VN_IS(selp->widthp(), Const)) {
+                ++m_ctx.m_nonRepLhs;
+                return false;
+            }
+            m_foundUnhandled = false;
+            visit(vrefp);
+            if (m_foundUnhandled) return false;
+            getVertex(vrefp)->as<DfgVar>()->addDriver(flp, lsbp->toUInt(), vtxp);
+            return true;
+        }
+        if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
+            AstNode* const lhsp = concatp->lhsp();
+            AstNode* const rhsp = concatp->rhsp();
+            const uint32_t lWidth = lhsp->width();
+            const uint32_t rWidth = rhsp->width();
+
+            {
+                FileLine* const lFlp = lhsp->fileline();
+                DfgSel* const lVtxp = new DfgSel{*m_dfgp, lFlp, DfgVertex::dtypeFor(lhsp)};
+                lVtxp->fromp(vtxp);
+                lVtxp->lsbp(new DfgConst{*m_dfgp, new AstConst{lFlp, rWidth}});
+                lVtxp->widthp(new DfgConst{*m_dfgp, new AstConst{lFlp, lWidth}});
+                if (!convertAssignment(flp, lhsp, lVtxp)) return false;
+            }
+
+            {
+                FileLine* const rFlp = rhsp->fileline();
+                DfgSel* const rVtxp = new DfgSel{*m_dfgp, rFlp, DfgVertex::dtypeFor(rhsp)};
+                rVtxp->fromp(vtxp);
+                rVtxp->lsbp(new DfgConst{*m_dfgp, new AstConst{rFlp, 0u}});
+                rVtxp->widthp(new DfgConst{*m_dfgp, new AstConst{rFlp, rWidth}});
+                return convertAssignment(flp, rhsp, rVtxp);
+            }
+        }
+        ++m_ctx.m_nonRepLhs;
+        return false;
+    }
+
+    bool convertEquation(AstNode* nodep, AstNode* lhsp, AstNode* rhsp) {
+        UASSERT_OBJ(m_uncommittedVertices.empty(), nodep, "Should not nest");
+
+        // Cannot handle mismatched widths. Mismatched assignments should have been fixed up in
+        // earlier passes anyway, so this should never be hit, but being paranoid just in case.
+        if (lhsp->width() != rhsp->width()) {  // LCOV_EXCL_START
+            markReferenced(nodep);
+            ++m_ctx.m_nonRepWidth;
+            return false;
+        }  // LCOV_EXCL_STOP
+
+        VL_RESTORER(m_converting);
+        m_converting = true;
+
+        m_foundUnhandled = false;
+        iterate(rhsp);
+        if (m_foundUnhandled) {
+            revertUncommittedVertices();
+            markReferenced(nodep);
+            return false;
+        }
+
+        if (!convertAssignment(nodep->fileline(), lhsp, getVertex(rhsp))) {
+            revertUncommittedVertices();
+            markReferenced(nodep);
+            return false;
+        }
+
+        // Connect the rhs vertex to the driven edge
+        commitVertices();
+
+        // Remove node from Ast. Now represented by the Dfg.
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+
+        //
+        ++m_ctx.m_representable;
+        return true;
+    }
+
     // VISITORS
     void visit(AstNode* nodep) override {
         // Conservatively treat this node as unhandled
@@ -159,8 +253,6 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
     void visit(AstAssignW* nodep) override {
-        VL_RESTORER(m_converting);
-        m_converting = true;
         ++m_ctx.m_inputEquations;
 
         // Cannot handle assignment with timing control yet
@@ -170,50 +262,7 @@ class AstToDfgVisitor final : public VNVisitor {
             return;
         }
 
-        // Cannot handle mismatched widths. Mismatched assignments should have been fixed up in
-        // earlier passes anyway, so this should never be hit, but being paranoid just in case.
-        if (nodep->lhsp()->width() != nodep->rhsp()->width()) {  // LCOV_EXCL_START
-            markReferenced(nodep);
-            ++m_ctx.m_nonRepWidth;
-            return;
-        }  // LCOV_EXCL_START
-
-        // Simple assignment with whole variable on left-hand side
-        if (AstVarRef* const vrefp = VN_CAST(nodep->lhsp(), VarRef)) {
-            UASSERT_OBJ(m_uncommittedVertices.empty(), nodep, "Should not nest");
-
-            // Build DFG vertices representing the two sides
-            {
-                m_foundUnhandled = false;
-                iterate(vrefp);
-                iterate(nodep->rhsp());
-                // If this assignment contains an AstNode not representable by a DfgVertex,
-                // then revert the graph.
-                if (m_foundUnhandled) {
-                    revertUncommittedVertices();
-                    markReferenced(nodep);
-                    return;
-                }
-            }
-
-            // Connect the vertices representing the 2 sides
-            DfgVar* const lVtxp = getVertex(vrefp)->as<DfgVar>();
-            DfgVertex* const rVtxp = getVertex(nodep->rhsp());
-            lVtxp->driverp(rVtxp);
-            lVtxp->assignmentFileline(nodep->fileline());
-            commitVertices();
-
-            // Remove assignment from Ast. Now represented by the Dfg.
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-
-            //
-            ++m_ctx.m_representable;
-            return;
-        }
-
-        // TODO: handle complex left-hand sides
-        markReferenced(nodep);
-        ++m_ctx.m_nonRepLhs;
+        convertEquation(nodep, nodep->lhsp(), nodep->rhsp());
     }
 
     void visit(AstVarRef* nodep) override {
@@ -259,6 +308,71 @@ class AstToDfgVisitor final : public VNVisitor {
         // Build the DFG
         iterateChildren(&module);
         UASSERT_OBJ(m_uncommittedVertices.empty(), &module, "Uncommitted vertices remain");
+
+        // Canonicalize variable assignments
+        for (DfgVar* const varp : m_varps) {
+            // Gather (and unlink) all drivers
+            struct Driver {
+                FileLine* flp;
+                uint32_t lsb;
+                DfgVertex* vtxp;
+                Driver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp)
+                    : flp{flp}
+                    , lsb{lsb}
+                    , vtxp{vtxp} {}
+            };
+            std::vector<Driver> drivers;
+            drivers.reserve(varp->arity());
+            varp->forEachSourceEdge([varp, &drivers](DfgEdge& edge, size_t idx) {
+                UASSERT(edge.sourcep(), "Should not have created undriven sources");
+                drivers.emplace_back(varp->driverFileLine(idx), varp->driverLsb(idx),
+                                     edge.sourcep());
+                edge.unlinkSource();
+            });
+
+            // Sort drivers by LSB
+            std::stable_sort(drivers.begin(), drivers.end(),
+                             [](const Driver& a, const Driver& b) { return a.lsb < b.lsb; });
+
+            // TODO: bail on multidriver
+
+            // Coalesce adjacent ranges
+            for (size_t i = 0, j = 1; j < drivers.size(); ++j) {
+                Driver& a = drivers[i];
+                Driver& b = drivers[j];
+
+                // Coalesce adjacent range
+                const uint32_t aWidth = a.vtxp->width();
+                const uint32_t bWidth = b.vtxp->width();
+                if (a.lsb + aWidth == b.lsb) {
+                    const auto dtypep = DfgVertex::dtypeForWidth(aWidth + bWidth);
+                    DfgConcat* const concatp = new DfgConcat{*m_dfgp, a.flp, dtypep};
+                    concatp->rhsp(a.vtxp);
+                    concatp->lhsp(b.vtxp);
+                    a.vtxp = concatp;
+                    b.vtxp = nullptr;  // Mark as moved
+                    ++m_ctx.m_coalescedAssignments;
+                    continue;
+                }
+
+                ++i;
+
+                // Compact non-adjacent ranges within the vector
+                if (j != i) {
+                    Driver& c = drivers[i];
+                    UASSERT_OBJ(!c.vtxp, c.flp, "Should have been marked moved");
+                    c = b;
+                    b.vtxp = nullptr;  // Mark as moved
+                }
+            }
+
+            // Reinsert sources in order
+            varp->resetSources();
+            for (const Driver& driver : drivers) {
+                if (!driver.vtxp) break;  // Stop at end of cmpacted list
+                varp->addDriver(driver.flp, driver.lsb, driver.vtxp);
+            }
+        }
     }
 
 public:

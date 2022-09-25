@@ -53,6 +53,7 @@ V3DfgOptimizationContext::V3DfgOptimizationContext(const std::string& label)
 V3DfgOptimizationContext::~V3DfgOptimizationContext() {
     const string prefix = "Optimizations, DFG " + m_label + " ";
     V3Stats::addStat(prefix + "General, modules", m_modules);
+    V3Stats::addStat(prefix + "Ast2Dfg, coalesced assignments", m_coalescedAssignments);
     V3Stats::addStat(prefix + "Ast2Dfg, input equations", m_inputEquations);
     V3Stats::addStat(prefix + "Ast2Dfg, representable", m_representable);
     V3Stats::addStat(prefix + "Ast2Dfg, non-representable (dtype)", m_nonRepDType);
@@ -79,8 +80,9 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
     dfg.forEachVertex([](DfgVertex& vtx) {
         // For each DfgVar that has a known driver
         if (DfgVar* const varVtxp = vtx.cast<DfgVar>()) {
-            if (DfgVertex* const driverp = varVtxp->driverp()) {
+            if (varVtxp->isDrivenFullyByDfg()) {
                 // Make consumers of the DfgVar consume the driver directly
+                DfgVertex* const driverp = varVtxp->source(0);
                 varVtxp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
             }
         }
@@ -123,7 +125,10 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
         if (varp->hasSinks()) return;
 
         // Can't remove if read in the module and driven here (i.e.: it's an output of the DFG)
-        if (varp->hasModRefs() && varp->driverp()) return;
+        if (varp->hasModRefs() && varp->isDrivenByDfg()) return;
+
+        // Can't remove if only partially driven by the DFG
+        if (varp->isDrivenByDfg() && !varp->isDrivenFullyByDfg()) return;
 
         // Can't remove if referenced externally, or other special reasons
         if (varp->keep()) return;
@@ -131,7 +136,8 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
         // If the driver of this variable has multiple non-variable sinks, then we would need
         // a temporary when rendering the graph. Instead of introducing a temporary, keep the
         // first variable that is driven by that driver
-        if (DfgVertex* const driverp = varp->driverp()) {
+        if (varp->isDrivenByDfg()) {
+            DfgVertex* const driverp = varp->source(0);
             unsigned nonVarSinks = 0;
             const DfgVar* firstSinkVarp = nullptr;
             const bool keepFirst = driverp->findSink<DfgVertex>([&](const DfgVertex& sink) {
@@ -147,7 +153,7 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
             if (keepFirst && firstSinkVarp == varp) return;
         }
 
-        // OK, we can delete this DfgVar!
+        // OK, we can delete this DfgVar
         ++ctx.m_removed;
 
         // If not referenced outside the DFG, then also delete the referenced AstVar,
@@ -177,11 +183,13 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
     // There is absolutely nothing useful we can do with a graph of size 2 or less
     if (dfg.size() <= 2) return;
 
-    // We consider a DFG trivial if it contains no more than 1 non-variable, non-constant vertex
+    // We consider a DFG trivial if it contains no more than 1 non-variable, non-constant vertex,
+    // or if if it contains a DfgConcat, which can be introduced through assinment coalescing.
     unsigned excitingVertices = 0;
     const bool isTrivial = !dfg.findVertex<DfgVertex>([&](const DfgVertex& vtx) {  //
         if (vtx.is<DfgVar>()) return false;
         if (vtx.is<DfgConst>()) return false;
+        if (vtx.is<DfgConcat>()) return true;
         return ++excitingVertices >= 2;
     });
 

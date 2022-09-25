@@ -127,19 +127,21 @@ class DfgToAstVisitor final : DfgVisitor {
     // Given a DfgVar, return the canonical AstVar that can be used for this DfgVar.
     // Also builds the m_canonVars map as a side effect.
     AstVar* getCanonicalVar(const DfgVar* vtxp) {
-        // Variable only read by DFG
-        if (!vtxp->driverp()) return vtxp->varp();
+        // If variable driven (at least partially) outside the DFG, then we have no choice
+        if (!vtxp->isDrivenFullyByDfg()) return vtxp->varp();
 
         // Look up map
         const auto it = m_canonVars.find(vtxp->varp());
         if (it != m_canonVars.end()) return it->second;
 
-        // Not known yet, compute it (for all vars from the same driver)
+        // Not known yet, compute it (for all vars driven fully from the same driver)
         std::vector<const DfgVar*> varps;
-        vtxp->driverp()->forEachSink([&](const DfgVertex& vtx) {
-            if (const DfgVar* const varVtxp = vtx.cast<DfgVar>()) varps.push_back(varVtxp);
+        vtxp->source(0)->forEachSink([&](const DfgVertex& vtx) {
+            if (const DfgVar* const varVtxp = vtx.cast<DfgVar>()) {
+                if (varVtxp->isDrivenFullyByDfg()) varps.push_back(varVtxp);
+            }
         });
-        UASSERT_OBJ(!varps.empty(), vtxp, "The input vtxp->varp() is always available");
+        UASSERT_OBJ(!varps.empty(), vtxp, "The input vtxp is always available");
         std::stable_sort(varps.begin(), varps.end(), [](const DfgVar* ap, const DfgVar* bp) {
             if (ap->hasExtRefs() != bp->hasExtRefs()) return ap->hasExtRefs();
             const FileLine& aFl = *(ap->fileline());
@@ -168,11 +170,13 @@ class DfgToAstVisitor final : DfgVisitor {
             if (const DfgVar* const thisDfgVarp = vtxp->cast<DfgVar>()) {
                 // This is a DfgVar
                 varp = getCanonicalVar(thisDfgVarp);
-            } else if (const DfgVar* const sinkDfgVarp = vtxp->findSink<DfgVar>()) {
-                // We found a DfgVar driven by this node
+            } else if (const DfgVar* const sinkDfgVarp = vtxp->findSink<DfgVar>(
+                           [](const DfgVar& var) { return var.isDrivenFullyByDfg(); })) {
+                // We found a DfgVar driven fully by this node
                 varp = getCanonicalVar(sinkDfgVarp);
             } else {
-                // No DfgVar driven by this node. Create a temporary.
+                // No DfgVar driven fully by this node. Create a temporary.
+                // TODO: should we reuse parts when the AstVar is used as an rvalue?
                 const string name = m_tmpNames.get(vtxp->hash(m_hashCache).toString());
                 // Note: It is ok for these temporary variables to be always unsigned. They are
                 // read only by other expressions within the graph and all expressions interpret
@@ -208,6 +212,62 @@ class DfgToAstVisitor final : DfgVisitor {
         }
     }
 
+    void convertCanonicalVarDriver(const DfgVar* dfgVarp) {
+        const auto wRef = [dfgVarp]() {
+            return new AstVarRef{dfgVarp->fileline(), dfgVarp->varp(), VAccess::WRITE};
+        };
+        if (dfgVarp->isDrivenFullyByDfg()) {
+            // Whole variable is driven. Render driver and assign directly to whole variable.
+            AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(dfgVarp->source(0));
+            addResultEquation(dfgVarp->driverFileLine(0), wRef(), rhsp);
+        } else {
+            // Variable is driven partially. Render each driver as a separate assignment.
+            dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
+                UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
+                // Render the rhs expression
+                AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(edge.sourcep());
+                // Create select LValue
+                FileLine* const flp = dfgVarp->driverFileLine(idx);
+                AstConst* const lsbp = new AstConst{flp, dfgVarp->driverLsb(idx)};
+                AstConst* const widthp = new AstConst{flp, edge.sourcep()->width()};
+                AstSel* const lhsp = new AstSel{flp, wRef(), lsbp, widthp};
+                // Add assignment of the value to the selected bits
+                addResultEquation(flp, lhsp, rhsp);
+            });
+        }
+    }
+
+    void convertDuplicateVarDriver(const DfgVar* dfgVarp, AstVar* canonVarp) {
+        const auto rRef = [canonVarp]() {
+            return new AstVarRef{canonVarp->fileline(), canonVarp, VAccess::READ};
+        };
+        const auto wRef = [dfgVarp]() {
+            return new AstVarRef{dfgVarp->fileline(), dfgVarp->varp(), VAccess::WRITE};
+        };
+        if (dfgVarp->isDrivenFullyByDfg()) {
+            // Whole variable is driven. Just assign from the canonical variable.
+            addResultEquation(dfgVarp->driverFileLine(0), wRef(), rRef());
+        } else {
+            // Variable is driven partially. Asign from parts of the canonical var.
+            dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
+                UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
+                // Create select LValue
+                FileLine* const flp = dfgVarp->driverFileLine(idx);
+                AstConst* const lsbp = new AstConst{flp, dfgVarp->driverLsb(idx)};
+                AstConst* const widthp = new AstConst{flp, edge.sourcep()->width()};
+                AstSel* const rhsp = new AstSel{flp, rRef(), lsbp, widthp->cloneTree(false)};
+                AstSel* const lhsp = new AstSel{flp, wRef(), lsbp->cloneTree(false), widthp};
+                // Add assignment of the value to the selected bits
+                addResultEquation(flp, lhsp, rhsp);
+            });
+        }
+    }
+
+    void addResultEquation(FileLine* flp, AstNode* lhsp, AstNode* rhsp) {
+        m_modp->addStmtsp(new AstAssignW{flp, lhsp, rhsp});
+        ++m_ctx.m_resultEquations;
+    }
+
     // VISITORS
     void visit(DfgVertex* vtxp) override {  // LCOV_EXCL_START
         vtxp->v3fatal("Unhandled DfgVertex: " << vtxp->typeName());
@@ -231,57 +291,51 @@ class DfgToAstVisitor final : DfgVisitor {
         // We can eliminate some variables completely
         std::vector<AstVar*> redundantVarps;
 
-        // Render the logic
+        // Convert vertices back to assignments
         dfg.forEachVertex([&](DfgVertex& vtx) {
-            // Compute the AstNodeMath expression representing this DfgVertex
-            AstNodeMath* rhsp = nullptr;
-            AstNodeMath* lhsp = nullptr;
-            FileLine* assignmentFlp = nullptr;
+            // Render variable assignments
             if (const DfgVar* const dfgVarp = vtx.cast<DfgVar>()) {
                 // DfgVar instances (these might be driving the given AstVar variable)
-                // If there is no driver (i.e.: this DfgVar is an input to the Dfg), then nothing
-                // to do
-                if (!dfgVarp->driverp()) return;
+                // If there is no driver (i.e.: this DfgVar is an input to the Dfg), then
+                // nothing to do
+                if (!dfgVarp->isDrivenByDfg()) return;
                 // The driver of this DfgVar might drive multiple variables. Only emit one
                 // assignment from the driver to an arbitrarily chosen canonical variable, and
                 // assign the other variables from that canonical variable
                 AstVar* const canonVarp = getCanonicalVar(dfgVarp);
                 if (canonVarp == dfgVarp->varp()) {
                     // This is the canonical variable, so render the driver
-                    rhsp = convertDfgVertexToAstNodeMath(dfgVarp->driverp());
+                    convertCanonicalVarDriver(dfgVarp);
                 } else if (dfgVarp->keep()) {
-                    // Not the canonical variable but it must be kept, just assign from the
-                    // canonical variable.
-                    rhsp = new AstVarRef{canonVarp->fileline(), canonVarp, VAccess::READ};
+                    // Not the canonical variable but it must be kept
+                    convertDuplicateVarDriver(dfgVarp, canonVarp);
                 } else {
                     // Not a canonical var, and it can be removed. We will replace all references
                     // to it with the canonical variable, and hence this can be removed.
                     redundantVarps.push_back(dfgVarp->varp());
                     ++m_ctx.m_replacedVars;
-                    return;
                 }
-                // The Lhs is the variable driven by this DfgVar
-                lhsp = new AstVarRef{vtx.fileline(), dfgVarp->varp(), VAccess::WRITE};
-                // Set location to the location of the original assignment to this variable
-                assignmentFlp = dfgVarp->assignmentFileline();
-            } else if (vtx.hasMultipleSinks() && !vtx.findSink<DfgVar>()) {
-                // DfgVertex that has multiple sinks, but does not drive a DfgVar (needs temporary)
-                // Just render the logic
-                rhsp = convertDfgVertexToAstNodeMath(&vtx);
-                // The lhs is a temporary
-                lhsp = new AstVarRef{vtx.fileline(), getResultVar(&vtx), VAccess::WRITE};
-                // Render vertex
-                assignmentFlp = vtx.fileline();
-                // Stats
-                ++m_ctx.m_intermediateVars;
-            } else {
-                // Every other DfgVertex will be inlined by 'convertDfgVertexToAstNodeMath' as an
-                // AstNodeMath at use, and hence need not be converted.
                 return;
             }
-            // Add assignment of the value to the variable
-            m_modp->addStmtsp(new AstAssignW{assignmentFlp, lhsp, rhsp});
-            ++m_ctx.m_resultEquations;
+
+            // Vertices driving a single vertex will be in-lined by 'convertDfgVertexToAstNodeMath'
+            if (!vtx.hasMultipleSinks()) return;
+
+            // Vertices with multiple sinks needs a temporary if they do not fully drive a DfgVar
+            const bool needsTemporary = !vtx.findSink<DfgVar>([](const DfgVar& var) {  //
+                return var.isDrivenFullyByDfg();
+            });
+            if (needsTemporary) {
+                // DfgVertex that has multiple sinks, but does not drive a DfgVar (needs temporary)
+                ++m_ctx.m_intermediateVars;
+                // Just render the logic
+                AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(&vtx);
+                // The lhs is a temporary
+                AstNodeMath* const lhsp
+                    = new AstVarRef{vtx.fileline(), getResultVar(&vtx), VAccess::WRITE};
+                // Add assignment of the value to the variable
+                addResultEquation(vtx.fileline(), lhsp, rhsp);
+            }
         });
 
         // Remap all references to point to the canonical variables, if one exists

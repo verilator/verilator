@@ -251,7 +251,7 @@ static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) 
     vtx.forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {  //
         if (edge.sourcep()) {
             string headLabel;
-            if (vtx.arity() > 1) headLabel = std::toupper(vtx.srcName(idx)[0]);
+            if (vtx.arity() > 1) headLabel = vtx.srcName(idx);
             dumpDotEdge(os, edge, headLabel);
         }
     });
@@ -502,11 +502,15 @@ void DfgVertex::replaceWith(DfgVertex* newSorucep) {
 void DfgVar::accept(DfgVisitor& visitor) { visitor.visit(this); }
 
 bool DfgVar::selfEquals(const DfgVertex& that) const {
-    if (const DfgVar* otherp = that.cast<DfgVar>()) return varp() == otherp->varp();
+    if (const DfgVar* otherp = that.cast<DfgVar>()) {
+        UASSERT_OBJ(varp() != otherp->varp() || this == otherp, this,
+                    "There should only be one DfgVar for a given AstVar");
+        return this == otherp;
+    }
     return false;
 }
 
-V3Hash DfgVar::selfHash() const { return V3Hasher::uncachedHash(m_varp); }
+V3Hash DfgVar::selfHash() const { return V3Hasher::uncachedHash(varp()); }
 
 // DfgConst ----------
 void DfgConst::accept(DfgVisitor& visitor) { visitor.visit(this); }

@@ -39,6 +39,7 @@
 #include "V3Hasher.h"
 #include "V3List.h"
 
+#include <array>
 #include <functional>
 #include <type_traits>
 #include <unordered_map>
@@ -157,18 +158,18 @@ public:
 
 class DfgEdge final {
     friend class DfgVertex;
-    template <size_t Arity>
-    friend class DfgVertexWithArity;
 
     DfgEdge* m_nextp = nullptr;  // Next edge in sink list
     DfgEdge* m_prevp = nullptr;  // Previous edge in sink list
     DfgVertex* m_sourcep = nullptr;  // The source vertex driving this edge
-    DfgVertex* const m_sinkp;  // The sink vertex. The sink owns the edge, so immutable
-
-    explicit DfgEdge(DfgVertex* sinkp)  // The sink vertices own the edges, hence private
-        : m_sinkp{sinkp} {}
+    // Note that the sink vertex owns the edge, so it is immutable, but because we want to be able
+    // to allocate these as arrays, we use a default constructor + 'init' method to set m_sinkp.
+    DfgVertex* const m_sinkp = nullptr;  // The sink vertex
 
 public:
+    DfgEdge() {}
+    void init(DfgVertex* sinkp) { const_cast<DfgVertex*&>(m_sinkp) = sinkp; }
+
     // The source (driver) of this edge
     DfgVertex* sourcep() const { return m_sourcep; }
     // The sink (consumer) of this edge
@@ -290,10 +291,10 @@ public:
     }
 
     // Source edges of this vertex
-    virtual std::pair<DfgEdge*, size_t> sourceEdges() { return {nullptr, 0}; }
+    virtual std::pair<DfgEdge*, size_t> sourceEdges() = 0;
 
     // Source edges of this vertex
-    virtual std::pair<const DfgEdge*, size_t> sourceEdges() const { return {nullptr, 0}; }
+    virtual std::pair<const DfgEdge*, size_t> sourceEdges() const = 0;
 
     // Arity (number of sources) of this vertex
     size_t arity() const { return sourceEdges().second; }
@@ -429,45 +430,42 @@ template <size_t Arity>
 class DfgVertexWithArity VL_NOT_FINAL : public DfgVertex {
     static_assert(1 <= Arity && Arity <= 4, "Arity must be between 1 and 4 inclusive");
 
-    // Uninitialized storage for source edges
-    typename std::aligned_storage<sizeof(DfgEdge[Arity]), alignof(DfgEdge[Arity])>::type
-        m_sourceEdges;
-
-    constexpr DfgEdge& sourceEdge(size_t index) {
-        return reinterpret_cast<DfgEdge*>(&m_sourceEdges)[index];
-    }
-    constexpr const DfgEdge& sourceEdge(size_t index) const {
-        return reinterpret_cast<const DfgEdge*>(&m_sourceEdges)[index];
-    }
+    std::array<DfgEdge, Arity> m_srcs;  // Source edges
 
 protected:
     DfgVertexWithArity<Arity>(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep, DfgType type)
         : DfgVertex{dfg, flp, dtypep, type} {
         // Initialize source edges
-        for (size_t i = 0; i < Arity; ++i) new (&sourceEdge(i)) DfgEdge{this};
+        for (size_t i = 0; i < Arity; ++i) m_srcs[i].init(this);
     }
 
-    virtual ~DfgVertexWithArity<Arity>() = default;
+    ~DfgVertexWithArity<Arity>() override = default;
 
 public:
     std::pair<DfgEdge*, size_t> sourceEdges() override {  //
-        return {&sourceEdge(0), Arity};
+        return {m_srcs.data(), Arity};
     }
     std::pair<const DfgEdge*, size_t> sourceEdges() const override {
-        return {&sourceEdge(0), Arity};
+        return {m_srcs.data(), Arity};
+    }
+
+    template <size_t Index>
+    DfgEdge* sourceEdge() {
+        static_assert(Index < Arity, "Source index out of range");
+        return &m_srcs[Index];
     }
 
     template <size_t Index>
     DfgVertex* source() const {
         static_assert(Index < Arity, "Source index out of range");
-        return sourceEdge(Index).m_sourcep;
+        return m_srcs[Index].sourcep();
     }
 
     template <size_t Index>
     void relinkSource(DfgVertex* newSourcep) {
         static_assert(Index < Arity, "Source index out of range");
-        UASSERT_OBJ(sourceEdge(Index).m_sinkp == this, this, "Inconsistent");
-        sourceEdge(Index).relinkSource(newSourcep);
+        UASSERT_OBJ(m_srcs[Index].sinkp() == this, this, "Inconsistent");
+        m_srcs[Index].relinkSource(newSourcep);
     }
 
     // Named source getter/setter for unary vertices
@@ -506,40 +504,88 @@ public:
     }
 };
 
+class DfgVertexVariadic VL_NOT_FINAL : public DfgVertex {
+    DfgEdge* m_srcsp;  // The source edges
+    uint32_t m_srcCnt = 0;  // Number of sources used
+    uint32_t m_srcCap;  // Number of sources allocated
+
+    // Allocate a new source edge array
+    DfgEdge* allocSources(size_t n) {
+        DfgEdge* const srcsp = new DfgEdge[n];
+        for (size_t i = 0; i < n; ++i) srcsp[i].init(this);
+        return srcsp;
+    }
+
+    // Double the capacity of m_srcsp
+    void growSources() {
+        m_srcCap *= 2;
+        DfgEdge* const newsp = allocSources(m_srcCap);
+        for (size_t i = 0; i < m_srcCnt; ++i) {
+            DfgEdge* const oldp = m_srcsp + i;
+            // Skip over unlinked source edge
+            if (!oldp->sourcep()) continue;
+            // New edge driven from the same vertex as the old edge
+            newsp[i].relinkSource(oldp->sourcep());
+            // Unlink the old edge, it will be deleted
+            oldp->unlinkSource();
+        }
+        // Delete old source edges
+        delete[] m_srcsp;
+        // Keep hold of new source edges
+        m_srcsp = newsp;
+    }
+
+protected:
+    DfgVertexVariadic(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep, DfgType type,
+                      uint32_t initialCapacity = 1)
+        : DfgVertex{dfg, flp, dtypep, type}
+        , m_srcsp{allocSources(initialCapacity)}
+        , m_srcCap{initialCapacity} {}
+
+    ~DfgVertexVariadic() override { delete[] m_srcsp; };
+
+    DfgEdge* addSource() {
+        if (m_srcCnt == m_srcCap) growSources();
+        return m_srcsp + m_srcCnt++;
+    }
+
+    void resetSources() {
+        // #ifdef VL_DEBUG TODO: DEBUG ONLY
+        for (uint32_t i = 0; i < m_srcCnt; ++i) {
+            UASSERT_OBJ(!m_srcsp[i].sourcep(), m_srcsp[i].sourcep(), "Connected source");
+        }
+        // #endif
+        m_srcCnt = 0;
+    }
+
+public:
+    DfgEdge* sourceEdge(size_t idx) const { return &m_srcsp[idx]; }
+    DfgVertex* source(size_t idx) const { return m_srcsp[idx].sourcep(); }
+
+    std::pair<DfgEdge*, size_t> sourceEdges() override { return {m_srcsp, m_srcCnt}; }
+    std::pair<const DfgEdge*, size_t> sourceEdges() const override { return {m_srcsp, m_srcCnt}; }
+};
+
 //------------------------------------------------------------------------------
 // Vertex classes
 //------------------------------------------------------------------------------
 
-class DfgVar final : public DfgVertexWithArity<1> {
-    friend class DfgVertex;
-    friend class DfgVisitor;
-
+class DfgVertexLValue VL_NOT_FINAL : public DfgVertexVariadic {
     AstVar* const m_varp;  // The AstVar associated with this vertex (not owned by this vertex)
-    FileLine* m_assignmentFlp;  // The FileLine of the original assignment driving this var
     bool m_hasModRefs = false;  // This AstVar is referenced outside the DFG, but in the module
     bool m_hasExtRefs = false;  // This AstVar is referenced from outside the module
 
-    void accept(DfgVisitor& visitor) override;
-    bool selfEquals(const DfgVertex& that) const override;
-    V3Hash selfHash() const override;
-    static constexpr DfgType dfgType() { return DfgType::atVar; };
-
 public:
-    DfgVar(DfgGraph& dfg, AstVar* varp)
-        : DfgVertexWithArity<1>{dfg, varp->fileline(), dtypeFor(varp), dfgType()}
+    DfgVertexLValue(DfgGraph& dfg, DfgType type, AstVar* varp, uint32_t initialCapacity)
+        : DfgVertexVariadic{dfg, varp->fileline(), dtypeFor(varp), type, initialCapacity}
         , m_varp{varp} {}
 
     AstVar* varp() const { return m_varp; }
-    FileLine* assignmentFileline() const { return m_assignmentFlp; }
-    void assignmentFileline(FileLine* flp) { m_assignmentFlp = flp; }
     bool hasModRefs() const { return m_hasModRefs; }
     void setHasModRefs() { m_hasModRefs = true; }
     bool hasExtRefs() const { return m_hasExtRefs; }
     void setHasExtRefs() { m_hasExtRefs = true; }
     bool hasRefs() const { return m_hasModRefs || m_hasExtRefs; }
-
-    DfgVertex* driverp() const { return srcp(); }
-    void driverp(DfgVertex* vtxp) { srcp(vtxp); }
 
     // Variable cannot be removed, even if redundant in the DfgGraph (might be used externally)
     bool keep() const {
@@ -552,8 +598,44 @@ public:
         // Otherwise it can be removed
         return false;
     }
+};
 
-    const string srcName(size_t) const override { return "driverp"; }
+class DfgVar final : public DfgVertexLValue {
+    friend class DfgVertex;
+    friend class DfgVisitor;
+
+    using DriverData = std::pair<FileLine*, uint32_t>;
+
+    std::vector<DriverData> m_driverData;  // Additional data associate with each driver
+
+    void accept(DfgVisitor& visitor) override;
+    bool selfEquals(const DfgVertex& that) const override;
+    V3Hash selfHash() const override;
+    static constexpr DfgType dfgType() { return DfgType::atVar; };
+
+public:
+    DfgVar(DfgGraph& dfg, AstVar* varp)
+        : DfgVertexLValue{dfg, dfgType(), varp, 1u} {}
+
+    bool isDrivenByDfg() const { return arity() > 0; }
+    bool isDrivenFullyByDfg() const { return arity() == 1 && source(0)->dtypep() == dtypep(); }
+
+    void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {
+        m_driverData.emplace_back(flp, lsb);
+        DfgVertexVariadic::addSource()->relinkSource(vtxp);
+    }
+
+    void resetSources() {
+        m_driverData.clear();
+        DfgVertexVariadic::resetSources();
+    }
+
+    FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
+    uint32_t driverLsb(size_t idx) const { return m_driverData[idx].second; }
+
+    const string srcName(size_t idx) const override {
+        return isDrivenFullyByDfg() ? "" : cvtToStr(driverLsb(idx));
+    }
 };
 
 class DfgConst final : public DfgVertex {
@@ -572,7 +654,7 @@ public:
         : DfgVertex{dfg, constp->fileline(), dtypeFor(constp), dfgType()}
         , m_constp{constp} {}
 
-    ~DfgConst() { VL_DO_DANGLING(m_constp->deleteTree(), m_constp); }
+    ~DfgConst() override { VL_DO_DANGLING(m_constp->deleteTree(), m_constp); }
 
     AstConst* constp() const { return m_constp; }
     V3Number& num() const { return m_constp->num(); }
@@ -583,6 +665,8 @@ public:
     bool isZero() const { return num().isEqZero(); }
     bool isOnes() const { return num().isEqAllOnes(width()); }
 
+    std::pair<DfgEdge*, size_t> sourceEdges() override { return {nullptr, 0}; }
+    std::pair<const DfgEdge*, size_t> sourceEdges() const override { return {nullptr, 0}; }
     const string srcName(size_t) const override {  // LCOV_EXCL_START
         VL_UNREACHABLE;
         return "";
