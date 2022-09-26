@@ -205,7 +205,7 @@ protected:
     DfgVertex(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep, DfgType type);
 
 public:
-    virtual ~DfgVertex() = default;
+    virtual ~DfgVertex();
 
     // METHODS
 private:
@@ -219,20 +219,30 @@ private:
     virtual V3Hash selfHash() const;
 
 public:
-    // Returns true if an AstNode with the given 'dtype' can be represented as a DfgVertex
-    static bool isSupportedDType(const AstNodeDType* dtypep) {
-        // Conservatively only support bit-vector like basic types and packed arrays of the same
+    // Supported packed types
+    static bool isSupportedPackedDType(const AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
         if (const AstBasicDType* const typep = VN_CAST(dtypep, BasicDType)) {
             return typep->keyword().isIntNumeric();
         }
         if (const AstPackArrayDType* const typep = VN_CAST(dtypep, PackArrayDType)) {
-            return isSupportedDType(typep->subDTypep());
+            return isSupportedPackedDType(typep->subDTypep());
         }
         if (const AstNodeUOrStructDType* const typep = VN_CAST(dtypep, NodeUOrStructDType)) {
             return typep->packed();
         }
         return false;
+    }
+
+    // Returns true if an AstNode with the given 'dtype' can be represented as a DfgVertex
+    static bool isSupportedDType(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        // Support unpacked arrays of packed types
+        if (const AstUnpackArrayDType* const typep = VN_CAST(dtypep, UnpackArrayDType)) {
+            return isSupportedPackedDType(typep->subDTypep());
+        }
+        // Support packed types
+        return isSupportedPackedDType(dtypep);
     }
 
     // Return data type used to represent any packed value of the given 'width'. All packed types
@@ -245,7 +255,13 @@ public:
     // Return data type used to represent the type of 'nodep' when converted to a DfgVertex
     static AstNodeDType* dtypeFor(const AstNode* nodep) {
         UDEBUGONLY(UASSERT_OBJ(isSupportedDType(nodep->dtypep()), nodep, "Unsupported dtype"););
-        // Currently all supported types are packed, so this is simple
+        // For simplicity, all packed types are represented with a fixed type
+        if (AstUnpackArrayDType* const typep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+            // TODO: these need interning via AstTypeTable otherwise they leak
+            return new AstUnpackArrayDType{typep->fileline(),
+                                           dtypeForWidth(typep->subDTypep()->width()),
+                                           typep->rangep()->cloneTree(false)};
+        }
         return dtypeForWidth(nodep->width());
     }
 
@@ -257,6 +273,7 @@ public:
     // Width of result
     uint32_t width() const {
         // Everything supported is packed now, so we can just do this:
+        UASSERT_OBJ(VN_IS(dtypep(), BasicDType), this, "'width()' called on unpacked value");
         return dtypep()->width();
     }
 
@@ -325,6 +342,8 @@ public:
     inline void forEachSourceEdge(std::function<void(const DfgEdge&, size_t)> f) const;
 
     // Calls given function 'f' for each sink vertex of this vertex
+    // Unlinking/deleting the given sink during iteration is safe, but not other sinks of this
+    // vertex.
     inline void forEachSink(std::function<void(DfgVertex&)> f);
 
     // Calls given function 'f' for each sink vertex of this vertex
@@ -337,6 +356,10 @@ public:
 
     // Calls given function 'f' for each sink edge of this vertex.
     inline void forEachSinkEdge(std::function<void(const DfgEdge&)> f) const;
+
+    // Returns first source edge which satisfies the given predicate 'p', or nullptr if no such
+    // sink vertex exists
+    inline DfgEdge* findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p);
 
     // Returns first sink vertex of type 'Vertex' which satisfies the given predicate 'p',
     // or nullptr if no such sink vertex exists
@@ -600,7 +623,7 @@ public:
     }
 };
 
-class DfgVar final : public DfgVertexLValue {
+class DfgVarPacked final : public DfgVertexLValue {
     friend class DfgVertex;
     friend class DfgVisitor;
 
@@ -614,7 +637,7 @@ class DfgVar final : public DfgVertexLValue {
     static constexpr DfgType dfgType() { return DfgType::atVar; };
 
 public:
-    DfgVar(DfgGraph& dfg, AstVar* varp)
+    DfgVarPacked(DfgGraph& dfg, AstVar* varp)
         : DfgVertexLValue{dfg, dfgType(), varp, 1u} {}
 
     bool isDrivenByDfg() const { return arity() > 0; }
@@ -636,6 +659,43 @@ public:
     const string srcName(size_t idx) const override {
         return isDrivenFullyByDfg() ? "" : cvtToStr(driverLsb(idx));
     }
+};
+
+class DfgVarArray final : public DfgVertexLValue {
+    friend class DfgVertex;
+    friend class DfgVisitor;
+
+    using DriverData = std::pair<FileLine*, uint32_t>;
+
+    std::vector<DriverData> m_driverData;  // Additional data associate with each driver
+
+    void accept(DfgVisitor& visitor) override;
+    bool selfEquals(const DfgVertex& that) const override;
+    V3Hash selfHash() const override;
+    static constexpr DfgType dfgType() { return DfgType::atUnpackArrayDType; };  // TODO: gross
+
+public:
+    DfgVarArray(DfgGraph& dfg, AstVar* varp)
+        : DfgVertexLValue{dfg, dfgType(), varp, 4u} {
+        UASSERT_OBJ(VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType), varp, "Non array DfgVarArray");
+    }
+
+    bool isDrivenByDfg() const { return arity() > 0; }
+
+    void addDriver(FileLine* flp, uint32_t index, DfgVertex* vtxp) {
+        m_driverData.emplace_back(flp, index);
+        DfgVertexVariadic::addSource()->relinkSource(vtxp);
+    }
+
+    void resetSources() {
+        m_driverData.clear();
+        DfgVertexVariadic::resetSources();
+    }
+
+    FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
+    uint32_t driverIndex(size_t idx) const { return m_driverData[idx].second; }
+
+    const string srcName(size_t idx) const override { return cvtToStr(driverIndex(idx)); }
 };
 
 class DfgConst final : public DfgVertex {
@@ -685,7 +745,8 @@ public:
     // Dispatch to most specific 'visit' method on 'vtxp'
     void iterate(DfgVertex* vtxp) { vtxp->accept(*this); }
 
-    virtual void visit(DfgVar* vtxp);
+    virtual void visit(DfgVarPacked* vtxp);
+    virtual void visit(DfgVarArray* vtxp);
     virtual void visit(DfgConst* vtxp);
 #include "V3Dfg__gen_visitor_decls.h"
 };
@@ -746,7 +807,10 @@ void DfgVertex::forEachSource(std::function<void(const DfgVertex&)> f) const {
 }
 
 void DfgVertex::forEachSink(std::function<void(DfgVertex&)> f) {
-    for (const DfgEdge* edgep = m_sinksp; edgep; edgep = edgep->m_nextp) f(*edgep->m_sinkp);
+    for (const DfgEdge *edgep = m_sinksp, *nextp; edgep; edgep = nextp) {
+        nextp = edgep->m_nextp;
+        f(*edgep->m_sinkp);
+    }
 }
 
 void DfgVertex::forEachSink(std::function<void(const DfgVertex&)> f) const {
@@ -779,6 +843,17 @@ void DfgVertex::forEachSinkEdge(std::function<void(const DfgEdge&)> f) const {
         nextp = edgep->m_nextp;
         f(*edgep);
     }
+}
+
+DfgEdge* DfgVertex::findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) {
+    const auto pair = sourceEdges();
+    DfgEdge* const edgesp = pair.first;
+    const size_t arity = pair.second;
+    for (size_t i = 0; i < arity; ++i) {
+        DfgEdge& edge = edgesp[i];
+        if (p(edge, i)) return &edge;
+    }
+    return nullptr;
 }
 
 template <typename Vertex>

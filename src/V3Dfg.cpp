@@ -187,32 +187,59 @@ static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) 
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     os << toDotId(vtx);
-    if (const DfgVar* const varVtxp = vtx.cast<DfgVar>()) {
+
+    if (const DfgVarPacked* const varVtxp = vtx.cast<DfgVarPacked>()) {
         AstVar* const varp = varVtxp->varp();
         os << " [label=\"" << varp->name() << "\nW" << varVtxp->width() << " / F"
            << varVtxp->fanout() << '"';
-        if (varp->isIO()) {
-            if (varp->direction() == VDirection::INPUT) {
-                os << ", shape=house, orientation=270";
-            } else if (varp->direction() == VDirection::OUTPUT) {
-                os << ", shape=house, orientation=90";
-            } else {
-                os << ", shape=star";
-            }
+
+        if (varp->direction() == VDirection::INPUT) {
+            os << ", shape=box, style=filled, fillcolor=chartreuse2";  // Green
+        } else if (varp->direction() == VDirection::OUTPUT) {
+            os << ", shape=box, style=filled, fillcolor=cyan2";  // Cyan
+        } else if (varp->direction() == VDirection::INOUT) {
+            os << ", shape=box, style=filled, fillcolor=darkorchid2";  // Purple
         } else if (varVtxp->hasExtRefs()) {
-            os << ", shape=box, style=diagonals,filled, fillcolor=red";
+            os << ", shape=box, style=filled, fillcolor=firebrick2";  // Red
         } else if (varVtxp->hasModRefs()) {
-            os << ", shape=box, style=diagonals";
+            os << ", shape=box, style=filled, fillcolor=gold2";  // Yellow
+        } else if (varVtxp->keep()) {
+            os << ", shape=box, style=filled, fillcolor=grey";
         } else {
             os << ", shape=box";
         }
-        os << "]";
-    } else if (const DfgConst* const constVtxp = vtx.cast<DfgConst>()) {
+        os << "]" << endl;
+        return;
+    }
+
+    if (const DfgVarArray* const arrVtxp = vtx.cast<DfgVarArray>()) {
+        AstVar* const varp = arrVtxp->varp();
+        os << " [label=\"" << varp->name() << "[]\"";
+        if (varp->direction() == VDirection::INPUT) {
+            os << ", shape=box3d, style=filled, fillcolor=chartreuse2";  // Green
+        } else if (varp->direction() == VDirection::OUTPUT) {
+            os << ", shape=box3d, style=filled, fillcolor=cyan2";  // Cyan
+        } else if (varp->direction() == VDirection::INOUT) {
+            os << ", shape=box3d, style=filled, fillcolor=darkorchid2";  // Purple
+        } else if (arrVtxp->hasExtRefs()) {
+            os << ", shape=box3d, style=filled, fillcolor=firebrick2";  // Red
+        } else if (arrVtxp->hasModRefs()) {
+            os << ", shape=box3d, style=filled, fillcolor=gold2";  // Yellow
+        } else if (arrVtxp->keep()) {
+            os << ", shape=box3d, style=filled, fillcolor=grey";
+        } else {
+            os << ", shape=box3d";
+        }
+        os << "]" << endl;
+        return;
+    }
+
+    if (const DfgConst* const constVtxp = vtx.cast<DfgConst>()) {
         const V3Number& num = constVtxp->constp()->num();
         os << " [label=\"";
         if (num.width() <= 32 && !num.isSigned()) {
             const bool feedsSel = !constVtxp->findSink<DfgVertex>([](const DfgVertex& vtx) {  //
-                return !vtx.is<DfgSel>();
+                return !vtx.is<DfgSel>() && !vtx.is<DfgArraySel>();
             });
             if (feedsSel) {
                 os << num.toUInt();
@@ -225,17 +252,17 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         }
         os << '"';
         os << ", shape=plain";
-        os << "]";
-    } else {
-        os << " [label=\"" << vtx.typeName() << "\nW" << vtx.width() << " / F" << vtx.fanout()
-           << '"';
-        if (vtx.hasMultipleSinks())
-            os << ", shape=doublecircle";
-        else
-            os << ", shape=circle";
-        os << "]";
+        os << "]" << endl;
+        return;
     }
-    os << endl;
+
+    os << " [label=\"" << vtx.typeName() << "\nW" << vtx.width() << " / F" << vtx.fanout() << '"';
+    if (vtx.hasMultipleSinks()) {
+        os << ", shape=doublecircle";
+    } else {
+        os << ", shape=circle";
+    }
+    os << "]" << endl;
 }
 
 // Dump one DfgEdge in Graphviz format
@@ -314,9 +341,9 @@ static void dumpDotUpstreamConeFromVertex(std::ostream& os, const DfgVertex& vtx
         dumpDotVertexAndSourceEdges(os, *itemp);
     }
 
-    // Emit all DfgVar vertices that have external references driven by this vertex
+    // Emit all DfgVarPacked vertices that have external references driven by this vertex
     vtx.forEachSink([&](const DfgVertex& dst) {
-        if (const DfgVar* const varVtxp = dst.cast<DfgVar>()) {
+        if (const DfgVarPacked* const varVtxp = dst.cast<DfgVarPacked>()) {
             if (varVtxp->hasRefs()) dumpDotVertexAndSourceEdges(os, dst);
         }
     });
@@ -349,9 +376,10 @@ void DfgGraph::dumpDotAllVarConesPrefixed(const string& label) const {
     const string prefix = label.empty() ? name() + "-cone-" : name() + "-" + label + "-cone-";
     forEachVertex([&](const DfgVertex& vtx) {
         // Check if this vertex drives a variable referenced outside the DFG.
-        const DfgVar* const sinkp = vtx.findSink<DfgVar>([](const DfgVar& sink) {  //
-            return sink.hasRefs();
-        });
+        const DfgVarPacked* const sinkp
+            = vtx.findSink<DfgVarPacked>([](const DfgVarPacked& sink) {  //
+                  return sink.hasRefs();
+              });
 
         // We only dump cones driving an externally referenced variable
         if (!sinkp) return;
@@ -428,6 +456,11 @@ DfgVertex::DfgVertex(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep, DfgType
     dfg.addVertex(*this);
 }
 
+DfgVertex::~DfgVertex() {
+    // TODO: It would be best to intern these via AstTypeTable to save the effort
+    if (VN_IS(m_dtypep, UnpackArrayDType)) VL_DO_DANGLING(delete m_dtypep, m_dtypep);
+}
+
 bool DfgVertex::selfEquals(const DfgVertex& that) const {
     return this->m_type == that.m_type && this->dtypep() == that.dtypep();
 }
@@ -470,7 +503,7 @@ V3Hash DfgVertex::hash(HashCache& cache) const {
         result += selfHash();
         // Variables are defined by themselves, so there is no need to hash the sources. This
         // enables sound hashing of graphs circular only through variables, which we rely on.
-        if (!is<DfgVar>()) {
+        if (!is<DfgVarPacked>() && !is<DfgVarArray>()) {
             forEachSource([&result, &cache](const DfgVertex& src) { result += src.hash(cache); });
         }
     }
@@ -502,18 +535,31 @@ void DfgVertex::replaceWith(DfgVertex* newSorucep) {
 // Vertex classes
 //------------------------------------------------------------------------------
 
-// DfgVar ----------
-void DfgVar::accept(DfgVisitor& visitor) { visitor.visit(this); }
+// DfgVarPacked ----------
+void DfgVarPacked::accept(DfgVisitor& visitor) { visitor.visit(this); }
 
-bool DfgVar::selfEquals(const DfgVertex& that) const {
-    if (const DfgVar* otherp = that.cast<DfgVar>()) {
+bool DfgVarPacked::selfEquals(const DfgVertex& that) const {
+    if (const DfgVarPacked* otherp = that.cast<DfgVarPacked>()) {
         UASSERT_OBJ(varp() != otherp->varp(), this,
-                    "There should only be one DfgVar for a given AstVar");
+                    "There should only be one DfgVarPacked for a given AstVar");
     }
     return false;
 }
 
-V3Hash DfgVar::selfHash() const { return V3Hasher::uncachedHash(varp()); }
+V3Hash DfgVarPacked::selfHash() const { return V3Hasher::uncachedHash(varp()); }
+
+// DfgVarPacked ----------
+void DfgVarArray::accept(DfgVisitor& visitor) { visitor.visit(this); }
+
+bool DfgVarArray::selfEquals(const DfgVertex& that) const {
+    if (const DfgVarArray* otherp = that.cast<DfgVarArray>()) {
+        UASSERT_OBJ(varp() != otherp->varp(), this,
+                    "There should only be one DfgVarArray for a given AstVar");
+    }
+    return false;
+}
+
+V3Hash DfgVarArray::selfHash() const { return V3Hasher::uncachedHash(varp()); }
 
 // DfgConst ----------
 void DfgConst::accept(DfgVisitor& visitor) { visitor.visit(this); }
@@ -531,8 +577,8 @@ V3Hash DfgConst::selfHash() const { return V3Hasher::uncachedHash(m_constp); }
 // DfgVisitor
 //------------------------------------------------------------------------------
 
-void DfgVisitor::visit(DfgVar* vtxp) { visit(static_cast<DfgVertex*>(vtxp)); }
-
+void DfgVisitor::visit(DfgVarPacked* vtxp) { visit(static_cast<DfgVertex*>(vtxp)); }
+void DfgVisitor::visit(DfgVarArray* vtxp) { visit(static_cast<DfgVertex*>(vtxp)); }
 void DfgVisitor::visit(DfgConst* vtxp) { visit(static_cast<DfgVertex*>(vtxp)); }
 
 //------------------------------------------------------------------------------

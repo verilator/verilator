@@ -120,9 +120,9 @@ class V3DfgPeephole final : public DfgVisitor {
         }
         // If both sides are variable references, order the side in some defined way. This allows
         // CSE to later merge 'a op b' with 'b op a'.
-        if (lhsp->is<DfgVar>() && rhsp->is<DfgVar>()) {
-            AstVar* const lVarp = lhsp->as<DfgVar>()->varp();
-            AstVar* const rVarp = rhsp->as<DfgVar>()->varp();
+        if (lhsp->is<DfgVarPacked>() && rhsp->is<DfgVarPacked>()) {
+            AstVar* const lVarp = lhsp->as<DfgVarPacked>()->varp();
+            AstVar* const rVarp = rhsp->as<DfgVarPacked>()->varp();
             if (lVarp->name() > rVarp->name()) {
                 APPLYING(SWAP_VAR_IN_COMMUTATIVE_BINARY) {
                     vtxp->lhsp(rhsp);
@@ -1102,7 +1102,7 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
-    void visit(DfgVar* vtxp) override {
+    void visit(DfgVarPacked* vtxp) override {
         // Inline variables fully driven by the logic represented by the DFG
         if (vtxp->hasSinks() && vtxp->isDrivenFullyByDfg()) {
             APPLYING(INLINE_VAR) {
@@ -1122,7 +1122,7 @@ class V3DfgPeephole final : public DfgVisitor {
         // multiple sinks (otherwise we would need to introduce a temporary, but it is better for
         // debugging to keep the original variable name, if one is available), so we can't remove
         // redundant variables here.
-        const bool keep = vtx.is<DfgVar>();
+        const bool keep = vtx.is<DfgVarPacked>() || vtx.is<DfgVarArray>();
 
         // If it has no sinks (unused), we can remove it
         if (!keep && !vtx.hasSinks()) {

@@ -103,8 +103,8 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
 
 void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
     dfg.forEachVertex([&](DfgVertex& vtx) {
-        // We can eliminate certain redundant DfgVar vertices
-        DfgVar* const varp = vtx.cast<DfgVar>();
+        // We can eliminate certain redundant DfgVarPacked vertices
+        DfgVarPacked* const varp = vtx.cast<DfgVarPacked>();
         if (!varp) return;
 
         // Can't remove if it has consumers
@@ -125,9 +125,9 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
         if (varp->isDrivenByDfg()) {
             DfgVertex* const driverp = varp->source(0);
             unsigned nonVarSinks = 0;
-            const DfgVar* firstSinkVarp = nullptr;
+            const DfgVarPacked* firstSinkVarp = nullptr;
             const bool keepFirst = driverp->findSink<DfgVertex>([&](const DfgVertex& sink) {
-                if (const DfgVar* const sinkVarp = sink.cast<DfgVar>()) {
+                if (const DfgVarPacked* const sinkVarp = sink.cast<DfgVarPacked>()) {
                     if (!firstSinkVarp) firstSinkVarp = sinkVarp;
                 } else {
                     ++nonVarSinks;
@@ -135,11 +135,11 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
                 // We can stop as soon as we found the first var, and 2 non-var sinks
                 return firstSinkVarp && nonVarSinks >= 2;
             });
-            // Keep this DfgVar if needed
+            // Keep this DfgVarPacked if needed
             if (keepFirst && firstSinkVarp == varp) return;
         }
 
-        // OK, we can delete this DfgVar
+        // OK, we can delete this DfgVarPacked
         ++ctx.m_removed;
 
         // If not referenced outside the DFG, then also delete the referenced AstVar,
@@ -154,7 +154,7 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
 void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     const auto processVertex = [&](DfgVertex& vtx) {
         // Keep variables
-        if (vtx.is<DfgVar>()) return false;
+        if (vtx.is<DfgVarPacked>() || vtx.is<DfgVarArray>()) return false;
         // Keep if it has sinks
         if (vtx.hasSinks()) return false;
         // Unlink and delete vertex

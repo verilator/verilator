@@ -35,8 +35,6 @@
 #include "V3Error.h"
 #include "V3Global.h"
 
-#include <tuple>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
@@ -88,7 +86,8 @@ class AstToDfgVisitor final : public VNVisitor {
     bool m_foundUnhandled = false;  // Found node not implemented as DFG or not implemented 'visit'
     std::vector<DfgVertex*> m_uncommittedVertices;  // Vertices that we might decide to revert
     bool m_converting = false;  // We are trying to convert some logic at the moment
-    std::vector<DfgVar*> m_varps;  // All the DfgVar vertices we created.
+    std::vector<DfgVarPacked*> m_varPackedps;  // All the DfgVarPacked vertices we created.
+    std::vector<DfgVarArray*> m_varArrayps;  // All the DfgVarArray vertices we created.
 
     // METHODS
     void markReferenced(AstNode* nodep) {
@@ -106,18 +105,25 @@ class AstToDfgVisitor final : public VNVisitor {
         m_uncommittedVertices.clear();
     }
 
-    DfgVar* getNet(AstVar* varp) {
+    DfgVertexLValue* getNet(AstVar* varp) {
         if (!varp->user1p()) {
-            // Note DfgVar vertices are not added to m_uncommittedVertices, because we want to
-            // hold onto them via AstVar::user1p, and the AstVar which might be referenced via
-            // multiple AstVarRef instances, so we will never revert a DfgVar once created. This
-            // means we can end up with DfgVar vertices in the graph which have no connections at
-            // all (which is fine for later processing).
-            DfgVar* const vtxp = new DfgVar{*m_dfgp, varp};
-            m_varps.push_back(vtxp);
-            varp->user1p(vtxp);
+            // Note DfgVertexLValue vertices are not added to m_uncommittedVertices, because we
+            // want to hold onto them via AstVar::user1p, and the AstVar might be referenced via
+            // multiple AstVarRef instances, so we will never revert a DfgVertexLValue once
+            // created. This means we can end up with DfgVertexLValue vertices in the graph which
+            // have no connections at all (which is fine for later processing).
+            if (VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                DfgVarArray* const vtxp = new DfgVarArray{*m_dfgp, varp};
+                varp->user1p();
+                m_varArrayps.push_back(vtxp);
+                varp->user1p(vtxp);
+            } else {
+                DfgVarPacked* const vtxp = new DfgVarPacked{*m_dfgp, varp};
+                m_varPackedps.push_back(vtxp);
+                varp->user1p(vtxp);
+            }
         }
-        return varp->user1u().to<DfgVar*>();
+        return varp->user1u().to<DfgVertexLValue*>();
     }
 
     DfgVertex* getVertex(AstNode* nodep) {
@@ -150,12 +156,12 @@ class AstToDfgVisitor final : public VNVisitor {
             m_foundUnhandled = false;
             visit(vrefp);
             if (m_foundUnhandled) return false;
-            getVertex(vrefp)->as<DfgVar>()->addDriver(flp, 0, vtxp);
+            getVertex(vrefp)->as<DfgVarPacked>()->addDriver(flp, 0, vtxp);
             return true;
         }
         if (AstSel* const selp = VN_CAST(nodep, Sel)) {
             AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
-            AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
+            const AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
             if (!vrefp || !lsbp || !VN_IS(selp->widthp(), Const)) {
                 ++m_ctx.m_nonRepLhs;
                 return false;
@@ -163,7 +169,20 @@ class AstToDfgVisitor final : public VNVisitor {
             m_foundUnhandled = false;
             visit(vrefp);
             if (m_foundUnhandled) return false;
-            getVertex(vrefp)->as<DfgVar>()->addDriver(flp, lsbp->toUInt(), vtxp);
+            getVertex(vrefp)->as<DfgVarPacked>()->addDriver(flp, lsbp->toUInt(), vtxp);
+            return true;
+        }
+        if (AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
+            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
+            const AstConst* const idxp = VN_CAST(selp->bitp(), Const);
+            if (!vrefp || !idxp) {
+                ++m_ctx.m_nonRepLhs;
+                return false;
+            }
+            m_foundUnhandled = false;
+            visit(vrefp);
+            if (m_foundUnhandled) return false;
+            getVertex(vrefp)->as<DfgVarArray>()->addDriver(flp, idxp->toUInt(), vtxp);
             return true;
         }
         if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
@@ -196,6 +215,15 @@ class AstToDfgVisitor final : public VNVisitor {
 
     bool convertEquation(AstNode* nodep, AstNode* lhsp, AstNode* rhsp) {
         UASSERT_OBJ(m_uncommittedVertices.empty(), nodep, "Should not nest");
+
+        // Currently cannot handle direct assignments between unpacked types. These arise e.g.
+        // when passing an unpacked array through a module port.
+        if (!DfgVertex::isSupportedPackedDType(lhsp->dtypep())
+            || !DfgVertex::isSupportedPackedDType(rhsp->dtypep())) {
+            markReferenced(nodep);
+            ++m_ctx.m_nonRepDType;
+            return false;
+        }
 
         // Cannot handle mismatched widths. Mismatched assignments should have been fixed up in
         // earlier passes anyway, so this should never be hit, but being paranoid just in case.
@@ -231,6 +259,73 @@ class AstToDfgVisitor final : public VNVisitor {
         //
         ++m_ctx.m_representable;
         return true;
+    }
+
+    // Canonicalize packed variables
+    void canonicalizePacked() {
+        for (DfgVarPacked* const varp : m_varPackedps) {
+            // Gather (and unlink) all drivers
+            struct Driver {
+                FileLine* flp;
+                uint32_t lsb;
+                DfgVertex* vtxp;
+                Driver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp)
+                    : flp{flp}
+                    , lsb{lsb}
+                    , vtxp{vtxp} {}
+            };
+            std::vector<Driver> drivers;
+            drivers.reserve(varp->arity());
+            varp->forEachSourceEdge([varp, &drivers](DfgEdge& edge, size_t idx) {
+                UASSERT(edge.sourcep(), "Should not have created undriven sources");
+                drivers.emplace_back(varp->driverFileLine(idx), varp->driverLsb(idx),
+                                     edge.sourcep());
+                edge.unlinkSource();
+            });
+
+            // Sort drivers by LSB
+            std::stable_sort(drivers.begin(), drivers.end(),
+                             [](const Driver& a, const Driver& b) { return a.lsb < b.lsb; });
+
+            // TODO: bail on multidriver
+
+            // Coalesce adjacent ranges
+            for (size_t i = 0, j = 1; j < drivers.size(); ++j) {
+                Driver& a = drivers[i];
+                Driver& b = drivers[j];
+
+                // Coalesce adjacent range
+                const uint32_t aWidth = a.vtxp->width();
+                const uint32_t bWidth = b.vtxp->width();
+                if (a.lsb + aWidth == b.lsb) {
+                    const auto dtypep = DfgVertex::dtypeForWidth(aWidth + bWidth);
+                    DfgConcat* const concatp = new DfgConcat{*m_dfgp, a.flp, dtypep};
+                    concatp->rhsp(a.vtxp);
+                    concatp->lhsp(b.vtxp);
+                    a.vtxp = concatp;
+                    b.vtxp = nullptr;  // Mark as moved
+                    ++m_ctx.m_coalescedAssignments;
+                    continue;
+                }
+
+                ++i;
+
+                // Compact non-adjacent ranges within the vector
+                if (j != i) {
+                    Driver& c = drivers[i];
+                    UASSERT_OBJ(!c.vtxp, c.flp, "Should have been marked moved");
+                    c = b;
+                    b.vtxp = nullptr;  // Mark as moved
+                }
+            }
+
+            // Reinsert sources in order
+            varp->resetSources();
+            for (const Driver& driver : drivers) {
+                if (!driver.vtxp) break;  // Stop at end of cmpacted list
+                varp->addDriver(driver.flp, driver.lsb, driver.vtxp);
+            }
+        }
     }
 
     // VISITORS
@@ -298,7 +393,7 @@ class AstToDfgVisitor final : public VNVisitor {
         nodep->user1p(vtxp);
     }
 
-    // The rest of the 'visit' methods are generated by 'astgen'
+// The rest of the 'visit' methods are generated by 'astgen'
 #include "V3Dfg__gen_ast_to_dfg.h"
 
     // CONSTRUCTOR
@@ -309,70 +404,8 @@ class AstToDfgVisitor final : public VNVisitor {
         iterateChildren(&module);
         UASSERT_OBJ(m_uncommittedVertices.empty(), &module, "Uncommitted vertices remain");
 
-        // Canonicalize variable assignments
-        for (DfgVar* const varp : m_varps) {
-            // Gather (and unlink) all drivers
-            struct Driver {
-                FileLine* flp;
-                uint32_t lsb;
-                DfgVertex* vtxp;
-                Driver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp)
-                    : flp{flp}
-                    , lsb{lsb}
-                    , vtxp{vtxp} {}
-            };
-            std::vector<Driver> drivers;
-            drivers.reserve(varp->arity());
-            varp->forEachSourceEdge([varp, &drivers](DfgEdge& edge, size_t idx) {
-                UASSERT(edge.sourcep(), "Should not have created undriven sources");
-                drivers.emplace_back(varp->driverFileLine(idx), varp->driverLsb(idx),
-                                     edge.sourcep());
-                edge.unlinkSource();
-            });
-
-            // Sort drivers by LSB
-            std::stable_sort(drivers.begin(), drivers.end(),
-                             [](const Driver& a, const Driver& b) { return a.lsb < b.lsb; });
-
-            // TODO: bail on multidriver
-
-            // Coalesce adjacent ranges
-            for (size_t i = 0, j = 1; j < drivers.size(); ++j) {
-                Driver& a = drivers[i];
-                Driver& b = drivers[j];
-
-                // Coalesce adjacent range
-                const uint32_t aWidth = a.vtxp->width();
-                const uint32_t bWidth = b.vtxp->width();
-                if (a.lsb + aWidth == b.lsb) {
-                    const auto dtypep = DfgVertex::dtypeForWidth(aWidth + bWidth);
-                    DfgConcat* const concatp = new DfgConcat{*m_dfgp, a.flp, dtypep};
-                    concatp->rhsp(a.vtxp);
-                    concatp->lhsp(b.vtxp);
-                    a.vtxp = concatp;
-                    b.vtxp = nullptr;  // Mark as moved
-                    ++m_ctx.m_coalescedAssignments;
-                    continue;
-                }
-
-                ++i;
-
-                // Compact non-adjacent ranges within the vector
-                if (j != i) {
-                    Driver& c = drivers[i];
-                    UASSERT_OBJ(!c.vtxp, c.flp, "Should have been marked moved");
-                    c = b;
-                    b.vtxp = nullptr;  // Mark as moved
-                }
-            }
-
-            // Reinsert sources in order
-            varp->resetSources();
-            for (const Driver& driver : drivers) {
-                if (!driver.vtxp) break;  // Stop at end of cmpacted list
-                varp->addDriver(driver.flp, driver.lsb, driver.vtxp);
-            }
-        }
+        // Canonicalize variables
+        canonicalizePacked();
     }
 
 public:
