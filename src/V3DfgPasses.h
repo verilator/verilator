@@ -54,6 +54,7 @@ class V3DfgOptimizationContext final {
 
 public:
     VDouble0 m_modules;  // Number of modules optimized
+    VDouble0 m_inputEquations;  // Number of input combinational equations
     VDouble0 m_representable;  // Number of combinational equations representable
     VDouble0 m_nonRepDType;  // Equations non-representable due to data type
     VDouble0 m_nonRepImpure;  // Equations non-representable due to impure node

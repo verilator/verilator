@@ -53,6 +53,7 @@ V3DfgOptimizationContext::V3DfgOptimizationContext(const std::string& label)
 V3DfgOptimizationContext::~V3DfgOptimizationContext() {
     const string prefix = "Optimizations, DFG " + m_label + " ";
     V3Stats::addStat(prefix + "General, modules", m_modules);
+    V3Stats::addStat(prefix + "Ast2Dfg, input equations", m_inputEquations);
     V3Stats::addStat(prefix + "Ast2Dfg, representable", m_representable);
     V3Stats::addStat(prefix + "Ast2Dfg, non-representable (dtype)", m_nonRepDType);
     V3Stats::addStat(prefix + "Ast2Dfg, non-representable (impure)", m_nonRepImpure);
@@ -65,6 +66,12 @@ V3DfgOptimizationContext::~V3DfgOptimizationContext() {
     V3Stats::addStat(prefix + "Dfg2Ast, intermediate variables", m_intermediateVars);
     V3Stats::addStat(prefix + "Dfg2Ast, replaced variables", m_replacedVars);
     V3Stats::addStat(prefix + "Dfg2Ast, result equations", m_resultEquations);
+
+    // Check the stats are consistent
+    UASSERT(m_inputEquations
+                == m_representable + m_nonRepDType + m_nonRepImpure + m_nonRepTiming + m_nonRepLhs
+                       + m_nonRepNode + m_nonRepUnknown + m_nonRepVarRef + m_nonRepWidth,
+            "Inconsistent statistics");
 }
 
 // 'Inline' DfgVar nodes with known drivers

@@ -85,6 +85,7 @@ class AstToDfgVisitor final : public VNVisitor {
     V3DfgOptimizationContext& m_ctx;  // The optimization context for stats
     bool m_foundUnhandled = false;  // Found node not implemented as DFG or not implemented 'visit'
     std::vector<DfgVertex*> m_uncommittedVertices;  // Vertices that we might decide to revert
+    bool m_converting = false;  // We are trying to convert some logic at the moment
 
     // METHODS
     void markReferenced(AstNode* nodep) {
@@ -141,8 +142,8 @@ class AstToDfgVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNode* nodep) override {
         // Conservatively treat this node as unhandled
+        if (!m_foundUnhandled && m_converting) ++m_ctx.m_nonRepUnknown;
         m_foundUnhandled = true;
-        ++m_ctx.m_nonRepUnknown;
         markReferenced(nodep);
     }
     void visit(AstCell* nodep) override { markReferenced(nodep); }
@@ -158,6 +159,10 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
     void visit(AstAssignW* nodep) override {
+        VL_RESTORER(m_converting);
+        m_converting = true;
+        ++m_ctx.m_inputEquations;
+
         // Cannot handle assignment with timing control yet
         if (nodep->timingControlp()) {
             markReferenced(nodep);
