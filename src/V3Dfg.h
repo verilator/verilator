@@ -228,6 +228,9 @@ public:
         if (const AstPackArrayDType* const typep = VN_CAST(dtypep, PackArrayDType)) {
             return isSupportedDType(typep->subDTypep());
         }
+        if (const AstNodeUOrStructDType* const typep = VN_CAST(dtypep, NodeUOrStructDType)) {
+            return typep->packed();
+        }
         return false;
     }
 
