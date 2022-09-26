@@ -1,5 +1,6 @@
 \#*
 .#*
+.gdb_history
 .nfs*
 *~
 *.tidy

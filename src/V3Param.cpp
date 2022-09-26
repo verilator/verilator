@@ -101,7 +101,7 @@ public:
             for (V3HierarchicalBlockOption::ParamStrMap::const_iterator pIt = params.begin();
                  pIt != params.end(); ++pIt) {
                 std::unique_ptr<AstConst> constp{AstConst::parseParamLiteral(
-                    new FileLine(FileLine::EmptySecret()), pIt->second)};
+                    new FileLine{FileLine::builtInFilename()}, pIt->second)};
                 UASSERT(constp, pIt->second << " is not a valid parameter literal");
                 const bool inserted = consts.emplace(pIt->first, std::move(constp)).second;
                 UASSERT(inserted, pIt->first << " is already added");

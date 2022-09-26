@@ -130,6 +130,7 @@ class LifeBlock final {
     LifeMap m_map;  // Current active lifetime map for current scope
     LifeBlock* const m_aboveLifep;  // Upper life, or nullptr
     LifeState* const m_statep;  // Current global state
+    bool m_replacedVref = false;  // Replaced a variable reference since last clearing
 
 public:
     LifeBlock(LifeBlock* aboveLifep, LifeState* statep)
@@ -178,6 +179,8 @@ public:
             m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::COMPLEXASSIGN{}});
         }
     }
+    void clearReplaced() { m_replacedVref = false; }
+    bool replaced() const { return m_replacedVref; }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
         // Variable rvalue.  If it references a constant, we can replace it
         const auto it = m_map.find(nodep);
@@ -188,6 +191,7 @@ public:
                     // We'll later constant propagate
                     UINFO(4, "     replaceconst: " << varrefp << endl);
                     varrefp->replaceWith(constp->cloneTree(false));
+                    m_replacedVref = true;
                     VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
                     ++m_statep->m_statAssnCon;
                     return;  // **DONE, no longer a var reference**
@@ -313,10 +317,10 @@ private:
         }
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
-        const uint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
         m_sideEffect = false;
+        m_lifep->clearReplaced();
         iterateAndNextNull(nodep->rhsp());
-        if (lastEdit != AstNode::editCountGbl()) {
+        if (m_lifep->replaced()) {
             // We changed something, try to constant propagate, but don't delete the
             // assignment as we still need nodep to remain.
             V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
