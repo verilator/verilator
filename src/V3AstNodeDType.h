@@ -465,6 +465,7 @@ public:
     int right() const { return littleEndian() ? hi() : lo(); }
     inline bool littleEndian() const;
     bool implicit() const { return keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT; }
+    bool untyped() const { return keyword() == VBasicDTypeKwd::UNTYPED; }
     VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }
     void cvtRangeConst();  // Convert to smaller representation
     bool isCompound() const override { return isString(); }

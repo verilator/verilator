@@ -4026,7 +4026,7 @@ private:
         return times;
     }
 
-    void visit(AstPropClocked* nodep) override {
+    void visit(AstPropSpec* nodep) override {
         if (m_vup->prelim()) {  // First stage evaluation
             iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);
             userIterateAndNext(nodep->sensesp(), nullptr);
@@ -4939,8 +4939,13 @@ private:
             m_funcp = VN_AS(nodep, Func);
             UASSERT_OBJ(m_funcp, nodep, "FTask with function variable, but isn't a function");
             nodep->dtypeFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
+        } else if (VN_IS(nodep, Property)) {
+            nodep->dtypeSetBit();
         }
-        userIterateChildren(nodep, nullptr);
+        WidthVP* vup = nullptr;
+        if (VN_IS(nodep, Property)) vup = WidthVP(SELF, BOTH).p();
+        userIterateChildren(nodep, vup);
+
         nodep->didWidth(true);
         nodep->doingWidth(false);
         m_funcp = nullptr;
@@ -4949,6 +4954,34 @@ private:
             nodep->dpiOpenParentInc();  // Mark so V3Task will wait for a child to build calling
                                         // func
         }
+    }
+    void visit(AstProperty* nodep) override {
+        if (nodep->didWidth()) return;
+        if (nodep->doingWidth()) {
+            UINFO(5, "Recursive property call: " << nodep);
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Recursive property call: " << nodep->prettyNameQ());
+            nodep->recursive(true);
+            nodep->didWidth(true);
+            return;
+        }
+        nodep->doingWidth(true);
+        m_ftaskp = nodep;
+        // Property call will be replaced by property body in V3AssertPre. Property body has bit
+        // dtype, so set it here too
+        nodep->dtypeSetBit();
+        for (AstNode* propStmtp = nodep->stmtsp(); propStmtp; propStmtp = propStmtp->nextp()) {
+            if (VN_IS(propStmtp, Var)) {
+                userIterate(propStmtp, nullptr);
+            } else if (VN_IS(propStmtp, PropSpec)) {
+                iterateCheckSizedSelf(nodep, "PropSpec", propStmtp, SELF, BOTH);
+            } else {
+                propStmtp->v3fatal("Invalid statement under AstProperty");
+            }
+        }
+        nodep->didWidth(true);
+        nodep->doingWidth(false);
+        m_ftaskp = nullptr;
     }
     void visit(AstReturn* nodep) override {
         // IEEE: Assignment-like context
@@ -5717,6 +5750,7 @@ private:
         UASSERT_OBJ(nodep->dtypep(), nodep,
                     "Under node " << nodep->prettyTypeName()
                                   << " has no dtype?? Missing Visitor func?");
+        if (expDTypep->basicp()->untyped() || nodep->dtypep()->basicp()->untyped()) return false;
         UASSERT_OBJ(nodep->width() != 0, nodep,
                     "Under node " << nodep->prettyTypeName()
                                   << " has no expected width?? Missing Visitor func?");

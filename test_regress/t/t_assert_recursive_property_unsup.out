@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_assert_recursive_property_unsup.v:20:4: Unsupported: Recursive property call: 'check'
+                                                              : ... In instance t
+   20 |    property check(int n);
+      |    ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

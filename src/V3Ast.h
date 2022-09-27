@@ -453,6 +453,8 @@ public:
         TIME,
         // Closer to a class type, but limited usage
         STRING,
+        // Property / Sequence argument type
+        UNTYPED,
         // Internal types for mid-steps
         SCOPEPTR,
         CHARPTR,
@@ -485,6 +487,7 @@ public:
                                             "shortint",
                                             "time",
                                             "string",
+                                            "untyped",
                                             "VerilatedScope*",
                                             "char*",
                                             "VlMTaskState",
@@ -501,11 +504,12 @@ public:
     }
     const char* dpiType() const {
         static const char* const names[]
-            = {"%E-unk",        "svBit",         "char",         "void*",           "char",
-               "int",           "%E-integer",    "svLogic",      "long long",       "double",
-               "short",         "%E-time",       "const char*",  "dpiScope",        "const char*",
-               "%E-mtaskstate", "%E-triggervec", "%E-dly-sched", "%E-trig-sched",   "%E-dyn-sched",
-               "%E-fork",       "IData",         "QData",        "%E-logic-implct", " MAX"};
+            = {"%E-unk",       "svBit",         "char",          "void*",        "char",
+               "int",          "%E-integer",    "svLogic",       "long long",    "double",
+               "short",        "%E-time",       "const char*",   "%E-untyped",   "dpiScope",
+               "const char*",  "%E-mtaskstate", "%E-triggervec", "%E-dly-sched", "%E-trig-sched",
+               "%E-dyn-sched", "%E-fork",       "IData",         "QData",        "%E-logic-implct",
+               " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -582,7 +586,7 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DELAY_SCHEDULER
                 || m_e == TRIGGER_SCHEDULER || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC
-                || m_e == DOUBLE);
+                || m_e == DOUBLE || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }

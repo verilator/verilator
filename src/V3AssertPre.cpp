@@ -15,6 +15,7 @@
 //*************************************************************************
 //  Pre steps:
 //      Attach clocks to each assertion
+//      Substitute property references by property body (IEEE Std 1800-2012, section 16.12.1).
 //*************************************************************************
 
 #include "config_build.h"
@@ -24,6 +25,7 @@
 
 #include "V3Ast.h"
 #include "V3Global.h"
+#include "V3Task.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -66,6 +68,72 @@ private:
     void clearAssertInfo() {
         m_senip = nullptr;
         m_disablep = nullptr;
+    }
+    AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
+        // The only statements possible in AstProperty are AstPropSpec (body)
+        // and AstVar (arguments).
+        AstNode* propExprp = propp->stmtsp();
+        while (VN_IS(propExprp, Var)) propExprp = propExprp->nextp();
+        return VN_CAST(propExprp, PropSpec);
+    }
+    void replaceVarRefsWithExprRecurse(AstNode* const nodep, const AstVar* varp,
+                                       AstNode* const exprp) {
+        if (!nodep) return;
+        if (const AstVarRef* varrefp = VN_CAST(nodep, VarRef)) {
+            if (varp == varrefp->varp()) nodep->replaceWith(exprp->cloneTree(false));
+        }
+        replaceVarRefsWithExprRecurse(nodep->op1p(), varp, exprp);
+        replaceVarRefsWithExprRecurse(nodep->op2p(), varp, exprp);
+        replaceVarRefsWithExprRecurse(nodep->op3p(), varp, exprp);
+        replaceVarRefsWithExprRecurse(nodep->op4p(), varp, exprp);
+    }
+    AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
+        if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
+            if (AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
+                AstPropSpec* propExprp = getPropertyExprp(propp);
+                // Substitute inner property call befory copying in order to not doing the same for
+                // each call of outer property call.
+                propExprp = substitutePropertyCall(propExprp);
+                // Clone subtree after substitution. It is needed, because property might be called
+                // multiple times with different arguments.
+                propExprp = propExprp->cloneTree(false);
+                // Substitute formal arguments with actual arguments
+                const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->stmtsp());
+                for (const auto& tconnect : tconnects) {
+                    const AstVar* const portp = tconnect.first;
+                    AstArg* const argp = tconnect.second;
+                    AstNode* const pinp = argp->exprp()->unlinkFrBack();
+                    replaceVarRefsWithExprRecurse(propExprp, portp, pinp);
+                }
+                // Handle case with 2 disable iff statement (IEEE 1800-2017 16.12.1)
+                if (nodep->disablep() && propExprp->disablep()) {
+                    nodep->v3error("disable iff expression before property call and in its "
+                                   "body is not legal");
+                }
+                // If disable iff is in outer property, move it to inner
+                if (nodep->disablep()) {
+                    AstNode* const disablep = nodep->disablep()->unlinkFrBack();
+                    propExprp->disablep(disablep);
+                }
+
+                if (nodep->sensesp() && propExprp->sensesp()) {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Clock event before property call and in its body");
+                    pushDeletep(propExprp->sensesp()->unlinkFrBack());
+                }
+                // If clock event is in outer property, move it to inner
+                if (nodep->sensesp()) {
+                    AstSenItem* const sensesp = nodep->sensesp();
+                    sensesp->unlinkFrBack();
+                    propExprp->sensesp(sensesp);
+                }
+
+                // Now substitute property reference with property body
+                nodep->replaceWith(propExprp);
+                return propExprp;
+            }
+        }
+        return nodep;
     }
 
     // VISITORS
@@ -162,7 +230,8 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
-    void visit(AstPropClocked* nodep) override {
+    void visit(AstPropSpec* nodep) override {
+        nodep = substitutePropertyCall(nodep);
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
         if (m_senip)
@@ -188,6 +257,11 @@ private:
         iterateChildren(nodep);
         // Reset defaults
         m_seniDefaultp = nullptr;
+    }
+    void visit(AstProperty* nodep) override {
+        // The body will be visited when will be substituted in place of property reference
+        // (AstFuncRef)
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

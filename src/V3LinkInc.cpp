@@ -195,7 +195,7 @@ private:
     void visit(AstLogEq* nodep) override { unsupported_visit(nodep); }
     void visit(AstLogIf* nodep) override { unsupported_visit(nodep); }
     void visit(AstNodeCond* nodep) override { unsupported_visit(nodep); }
-    void visit(AstPropClocked* nodep) override { unsupported_visit(nodep); }
+    void visit(AstPropSpec* nodep) override { unsupported_visit(nodep); }
     void prepost_visit(AstNodeTriop* nodep) {
         // Check if we are underneath a statement
         if (!m_insStmtp) {
