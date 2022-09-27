@@ -32,12 +32,12 @@ private:
     using ModVec = std::vector<AstNodeModule*>;
 
     static void timescaling(const ModVec& mods);
-    static void wrapTopCell(AstNetlist* rootp, bool instantiateTopIfaces);
+    static void wrapTopCell(AstNetlist* rootp);
     static void wrapTopPackages(AstNetlist* rootp);
 
 public:
     static void modSortByLevel();
-    static void wrapTop(AstNetlist* rootp, bool instantiateTopIfaces);
+    static void wrapTop(AstNetlist* rootp);
 };
 
 #endif  // Guard

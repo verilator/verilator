@@ -425,21 +425,28 @@ private:
 
     void preserveTopIfaces(AstNetlist* rootp) {
         for (AstNodeModule* modp = rootp->modulesp(); modp && modp->level() <= 2;
-             modp = VN_AS(modp->nextp(), NodeModule)) {
+            modp = VN_AS(modp->nextp(), NodeModule)) {
             for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
                 if (AstVar* const varp = VN_CAST(subnodep, Var)) {
                     if (varp->isIfaceRef()) {
-                        AstIfaceRefDType* ifacerefp = nullptr;
-                        if (VN_IS(varp->subDTypep(), IfaceRefDType)) {
+                        const AstNodeDType* const subtypep = varp->subDTypep();
+                        const AstIfaceRefDType* ifacerefp = nullptr;
+                        if (VN_IS(subtypep, IfaceRefDType)) {
                             ifacerefp = VN_AS(varp->subDTypep(), IfaceRefDType);
                         }
-                        else if (VN_IS(varp->subDTypep(), BracketArrayDType)
-                                    && VN_IS(VN_AS(varp->subDTypep(), BracketArrayDType)->subDTypep(), IfaceRefDType)) {
-                            ifacerefp = VN_AS(VN_AS(varp->subDTypep(), BracketArrayDType)->subDTypep(), IfaceRefDType);
+                        else if (VN_IS(subtypep, BracketArrayDType)) {
+                            const AstBracketArrayDType* const arrp = VN_AS(subtypep, BracketArrayDType);
+                            const AstNodeDType* const arrsubtypep = arrp->subDTypep();
+                            if (VN_IS(arrsubtypep, IfaceRefDType)) {
+                                ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
+                            }
                         }
-                        else if (VN_IS(varp->subDTypep(), UnpackArrayDType)
-                                    && VN_IS(VN_AS(varp->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
-                            ifacerefp = VN_AS(VN_AS(varp->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType);
+                        else if (VN_IS(subtypep, UnpackArrayDType)) {
+                            const AstUnpackArrayDType* const arrp = VN_AS(subtypep, UnpackArrayDType);
+                            const AstNodeDType* const arrsubtypep = arrp->subDTypep();
+                            if (VN_IS(arrsubtypep, IfaceRefDType)) {
+                                ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
+                            }
                         }
 
                         if (ifacerefp && !ifacerefp->cellp() && (ifacerefp->ifacep()->user1() == 0)) {
@@ -482,9 +489,9 @@ public:
 //######################################################################
 // Dead class functions
 
-void V3Dead::deadifyModules(AstNetlist* nodep, bool topIfacesSupported) {
+void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor{nodep, false, false, false, false, !topIfacesSupported}; }  // Destruct before checking
+    { DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTree() >= 6);
 }
 

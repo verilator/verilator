@@ -28,11 +28,11 @@
 enum VLinkDotStep : uint8_t { LDS_PRIMARY, LDS_PARAMED, LDS_ARRAYED, LDS_SCOPED };
 
 class V3LinkDot final {
-    static void linkDotGuts(AstNetlist* rootp, VLinkDotStep step, bool topIfacesSupported = false);
+    static void linkDotGuts(AstNetlist* rootp, VLinkDotStep step);
 
 public:
-    static void linkDotPrimary(AstNetlist* nodep, bool topIfacesSupported);
-    static void linkDotParamed(AstNetlist* nodep, bool topIfacesSupported);
+    static void linkDotPrimary(AstNetlist* nodep);
+    static void linkDotParamed(AstNetlist* nodep);
     static void linkDotArrayed(AstNetlist* nodep);
     static void linkDotScope(AstNetlist* nodep);
 };

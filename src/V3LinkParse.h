@@ -26,7 +26,7 @@ class AstNetlist;
 
 class V3LinkParse final {
 public:
-    static void linkParse(AstNetlist* rootp, bool topIfacesSupported);
+    static void linkParse(AstNetlist* rootp);
 };
 
 #endif  // Guard
