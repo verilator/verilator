@@ -12,6 +12,7 @@ scenarios(vlt => 1);
 
 if (!$Self->cfg_with_ccache) {
     skip("Requires configuring with ccache");
+    return 1;
 }
 
 top_filename("t_a1_first_cc.v");
