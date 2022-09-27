@@ -1102,19 +1102,30 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
+    void visit(DfgVar* vtxp) override {
+        // Inline variables fully driven by the logic represented by the DFG
+        if (vtxp->hasSinks() && vtxp->isDrivenFullyByDfg()) {
+            APPLYING(INLINE_VAR) {
+                // Make consumers of the DfgVar consume the driver directly
+                DfgVertex* const driverp = vtxp->source(0);
+                vtxp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
+            }
+        }
+    }
+
 #undef APPLYING
 
     // Process one vertex. Return true if graph changed
     bool processVertex(DfgVertex& vtx) {
-        // Keep DfgVars in this pass, we will remove them later if they become redundant
-        // Note: We want to keep the original variables for non-var vertices that drive multiple
-        // sinks (otherwise we would need to introduce a temporary, it is better for debugging to
-        // keep the original variable name, if one is available), so we can't remove redundant
-        // variables here.
-        if (vtx.is<DfgVar>()) return false;
+        // Keep DfgVertexLValue vertices in this pass. We will remove them later if they become
+        // redundant. We want to keep the original variables for non-var vertices that drive
+        // multiple sinks (otherwise we would need to introduce a temporary, but it is better for
+        // debugging to keep the original variable name, if one is available), so we can't remove
+        // redundant variables here.
+        const bool keep = vtx.is<DfgVar>();
 
         // If it has no sinks (unused), we can remove it
-        if (!vtx.hasSinks()) {
+        if (!keep && !vtx.hasSinks()) {
             vtx.unlinkDelete(m_dfg);
             return true;
         }
@@ -1122,7 +1133,15 @@ class V3DfgPeephole final : public DfgVisitor {
         // Transform node
         m_changed = false;
         iterate(&vtx);
-        if (!vtx.hasSinks()) vtx.unlinkDelete(m_dfg);  // If it became unused, we can remove it
+
+        // If it became unused, we can remove it
+        if (!keep && !vtx.hasSinks()) {
+            UASSERT_OBJ(m_changed, &vtx, "'m_changed' must be set if node became unused");
+            vtx.unlinkDelete(m_dfg);
+            return true;
+        }
+
+        // Return the changed status
         return m_changed;
     }
 

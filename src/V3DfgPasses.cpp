@@ -75,20 +75,6 @@ V3DfgOptimizationContext::~V3DfgOptimizationContext() {
             "Inconsistent statistics");
 }
 
-// 'Inline' DfgVar nodes with known drivers
-void V3DfgPasses::inlineVars(DfgGraph& dfg) {
-    dfg.forEachVertex([](DfgVertex& vtx) {
-        // For each DfgVar that has a known driver
-        if (DfgVar* const varVtxp = vtx.cast<DfgVar>()) {
-            if (varVtxp->isDrivenFullyByDfg()) {
-                // Make consumers of the DfgVar consume the driver directly
-                DfgVertex* const driverp = varVtxp->source(0);
-                varVtxp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
-            }
-        }
-    });
-}
-
 // Common subexpression elimination
 void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
     DfgVertex::HashCache hashCache;
@@ -183,16 +169,6 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
     // There is absolutely nothing useful we can do with a graph of size 2 or less
     if (dfg.size() <= 2) return;
 
-    // We consider a DFG trivial if it contains no more than 1 non-variable, non-constant vertex,
-    // or if if it contains a DfgConcat, which can be introduced through assinment coalescing.
-    unsigned excitingVertices = 0;
-    const bool isTrivial = !dfg.findVertex<DfgVertex>([&](const DfgVertex& vtx) {  //
-        if (vtx.is<DfgVar>()) return false;
-        if (vtx.is<DfgConst>()) return false;
-        if (vtx.is<DfgConcat>()) return true;
-        return ++excitingVertices >= 2;
-    });
-
     int passNumber = 0;
 
     const auto apply = [&](int dumpLevel, const string name, std::function<void()> pass) {
@@ -206,23 +182,15 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
         ++passNumber;
     };
 
-    if (!isTrivial) {
-        // Optimize non-trivial graph
-        if (dumpDfg() >= 8) { dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "input"); }
-        apply(3, "input         ", [&]() {});
-        apply(4, "inlineVars    ", [&]() { inlineVars(dfg); });
-        apply(4, "cse           ", [&]() { cse(dfg, ctx.m_cseContext0); });
-        if (v3Global.opt.fDfgPeephole()) {
-            apply(4, "peephole      ", [&]() { peephole(dfg, ctx.m_peepholeContext); });
-        }
+    if (dumpDfg() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "input");
+    apply(3, "input         ", [&]() {});
+    apply(4, "cse           ", [&]() { cse(dfg, ctx.m_cseContext0); });
+    if (v3Global.opt.fDfgPeephole()) {
+        apply(4, "peephole      ", [&]() { peephole(dfg, ctx.m_peepholeContext); });
+        // Without peephole no variables will be redundant, and we just did CSE, so skip these
         apply(4, "removeVars    ", [&]() { removeVars(dfg, ctx.m_removeVarsContext); });
         apply(4, "cse           ", [&]() { cse(dfg, ctx.m_cseContext1); });
-        apply(3, "optimized     ", [&]() { removeUnused(dfg); });
-        if (dumpDfg() >= 8) { dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "optimized"); }
-    } else {
-        // We can still eliminate redundancies from trivial graphs
-        apply(5, "trivial-input         ", [&]() {});
-        apply(6, "trivial-inlineVars    ", [&]() { inlineVars(dfg); });
-        apply(5, "trivial-optimized     ", [&]() { removeVars(dfg, ctx.m_removeVarsContext); });
     }
+    apply(3, "optimized     ", [&]() { removeUnused(dfg); });
+    if (dumpDfg() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "optimized");
 }

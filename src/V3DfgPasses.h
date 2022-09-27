@@ -100,8 +100,6 @@ AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&);
 // Intermediate/internal operations
 //===========================================================================
 
-// Inline variables
-void inlineVars(DfgGraph&);
 // Common subexpression elimination
 void cse(DfgGraph&, V3DfgCseContext&);
 // Peephole optimizations
