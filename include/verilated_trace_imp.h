@@ -923,7 +923,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
 template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullStringRaw(uint32_t* oldp, const char* newval, int bytes) {
     const uint32_t code = oldp - m_sigs_oldvalp;
-    if (bytes > LEN_FAST_TRACED_STRING) {
+    if (bytes > VL_LEN_FAST_TRACED_STRING) {
         *reinterpret_cast<char*>(oldp) = 0xFF;
     } else {
         *reinterpret_cast<char*>(oldp) = bytes;

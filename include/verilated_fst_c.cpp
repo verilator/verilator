@@ -246,7 +246,7 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
 void VerilatedFst::declString(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false,
-            (LEN_FAST_TRACED_STRING + 1) * 8, 0);
+            (VL_LEN_FAST_TRACED_STRING + 1) * 8, 0);
 }
 
 //=============================================================================

@@ -48,11 +48,6 @@ class VerilatedTraceBuffer;
 template <class T_Buffer>
 class VerilatedTraceOffloadBuffer;
 
-// Traced strings above this size may be inefficient as they cannot be deduped.
-// Must be <=254, but larger sizes bloat memory proportional to the number of
-// traceable strings.
-constexpr size_t LEN_FAST_TRACED_STRING = 63;
-
 #ifdef VL_THREADED
 //=============================================================================
 // Offloaded tracing
@@ -489,7 +484,7 @@ public:
         // cppcheck-suppress invalidPointerCast
         int oldsize = *reinterpret_cast<char*>(oldp);
         const char* oldstr = reinterpret_cast<char*>(oldp) + 1;
-        if (VL_UNLIKELY((oldsize > LEN_FAST_TRACED_STRING) || (oldsize != bytes)
+        if (VL_UNLIKELY((oldsize > VL_LEN_FAST_TRACED_STRING) || (oldsize != bytes)
                         || (memcmp(newval, oldstr, bytes)))) {
             fullStringRaw(oldp, newval, bytes);
         }
@@ -572,7 +567,7 @@ public:
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     void chgStringRaw(uint32_t code, char* newval, int bytes) {
-        if (bytes > LEN_FAST_TRACED_STRING) {
+        if (bytes > VL_LEN_FAST_TRACED_STRING) {
             // For big strings, make a temporary allocation
             VL_DEBUG_IF(assert(bytes >= 0x1000000););  // 16MB is enough for anybody
             m_offloadBufferWritep[0] = (bytes << 4) | VerilatedTraceOffloadCommand::CHG_BIG_STRING;

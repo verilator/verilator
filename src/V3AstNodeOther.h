@@ -3517,7 +3517,7 @@ public:
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
         , m_codeInc(((arrayRange.ranged() ? arrayRange.elements() : 1)
-                     * (valuep->isString() ? ((LEN_FAST_TRACED_STRING + 1)
+                     * (valuep->isString() ? ((VL_LEN_FAST_TRACED_STRING + 1)
                                               / 4)  // strings get a small buffer to dedup
                                                     // (different from actual storage size)
                                            : valuep->dtypep()->widthWords())

@@ -569,7 +569,7 @@ void VerilatedVcd::declDouble(uint32_t code, const char* name, bool array, int a
     declare(code, name, "real", array, arraynum, false, false, 63, 0);
 }
 void VerilatedVcd::declString(uint32_t code, const char* name, bool array, int arraynum) {
-    declare(code, name, "string", array, arraynum, false, false, (LEN_FAST_TRACED_STRING + 1) * 8,
+    declare(code, name, "string", array, arraynum, false, false, (VL_LEN_FAST_TRACED_STRING + 1) * 8,
             0);
 }
 
