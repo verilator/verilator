@@ -485,7 +485,7 @@ public:
         int oldsize = *reinterpret_cast<char*>(oldp);
         const char* oldstr = reinterpret_cast<char*>(oldp) + 1;
         if (VL_UNLIKELY((oldsize > VL_LEN_FAST_TRACED_STRING) || (oldsize != bytes)
-                        || (memcmp(newval, oldstr, bytes)))) {
+                        || (std::memcmp(newval, oldstr, bytes)))) {
             fullStringRaw(oldp, newval, bytes);
         }
     }
@@ -575,14 +575,14 @@ public:
             char* indirectstringbufp = new char[bytes];
             // cppcheck-suppress invalidPointerCast
             *reinterpret_cast<const char**>(m_offloadBufferWritep + 2) = indirectstringbufp;
-            memcpy(indirectstringbufp, newval, bytes);
+            std::memcpy(indirectstringbufp, newval, bytes);
             m_offloadBufferWritep += 4;
         } else {
             // For smallish strings, write inline
             int stringSizeDw = (bytes + 3) >> 2;  // Bytes to DW, rounded up.
             m_offloadBufferWritep[0] = (bytes << 4) | VerilatedTraceOffloadCommand::CHG_STRING;
             m_offloadBufferWritep[1] = code;
-            memcpy(m_offloadBufferWritep + 2, newval, bytes);
+            std::memcpy(m_offloadBufferWritep + 2, newval, bytes);
             m_offloadBufferWritep += stringSizeDw + 2;
         }
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););

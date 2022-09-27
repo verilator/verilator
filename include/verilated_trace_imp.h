@@ -927,7 +927,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullStringRaw(uint32_t* oldp, const char* n
         *reinterpret_cast<char*>(oldp) = 0xFF;
     } else {
         *reinterpret_cast<char*>(oldp) = bytes;
-        memcpy(reinterpret_cast<char*>(oldp) + 1, newval, bytes);
+        std::memcpy(reinterpret_cast<char*>(oldp) + 1, newval, bytes);
     }
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     // cppcheck-suppress invalidPointerCast
